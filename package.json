@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest --run",
+    "type-check": "tsc --noEmit",
+    "pre-push": "npm run lint && npm run type-check && npm run test:run && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",
