@@ -1,3 +1,10 @@
+
+---
+
+### `.github/PULL_REQUEST_TEMPLATE/bugfix.md`
+
+```markdown
+
 ---
 name: Config / Setup Update
 about: For PRs involving configuration changes, environment setup, onboarding scripts, CI/CD changes, etc.
