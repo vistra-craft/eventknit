@@ -9,8 +9,8 @@ A modern React application built with TypeScript, Vite, and Tailwind CSS, follow
 - 🧪 Comprehensive testing setup
 - 🚀 CI/CD pipeline with GitHub Actions
 - 🔒 Type-safe with TypeScript
-- 🎯 ESLint and Prettier for code quality
-- 📝 Standardized PR templates for better collaboration
+- 🎯 ESLint for code quality and consistency
+- 🧪 Vitest for fast unit and integration testing
 
 ## 🛠️ Development Setup
 
@@ -51,6 +51,7 @@ We follow the Git Flow branching model with the following main branches:
 ### Workflow
 
 1. Create a new feature branch from `development`:
+
    ```bash
    git checkout development
    git pull origin development
@@ -73,10 +74,11 @@ We use GitHub Actions for our CI/CD pipeline. The workflow includes:
 
 ### Continuous Integration (CI)
 
-- Linting and type checking
-- Unit tests
-- Build verification
-- Security scanning
+- **Linting**: ESLint with TypeScript support
+- **Type Checking**: TypeScript compiler validation
+- **Testing**: Vitest test suite execution
+- **Build Verification**: Production build validation
+- **Artifact Upload**: Build files for deployment
 
 ### Continuous Deployment (CD)
 
@@ -93,7 +95,9 @@ Environment variables are managed through GitHub Secrets and are automatically i
 
 ## 🧪 Testing
 
-Run the test suite:
+We use **Vitest** as our testing framework with React Testing Library for component testing.
+
+### Test Commands
 
 ```bash
 # Run all tests
@@ -104,6 +108,30 @@ npm test:watch
 
 # Run test coverage
 npm test:coverage
+```
+
+### Testing Setup
+
+- **Framework**: Vitest (optimized for Vite projects)
+- **Component Testing**: React Testing Library
+- **Test Environment**: jsdom
+- **Coverage**: Built-in coverage reporting
+
+### Writing Tests
+
+Tests are located in `src/` with `.test.tsx` or `.test.ts` extensions. Example:
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import MyComponent from "./MyComponent";
+
+describe("MyComponent", () => {
+  it("renders correctly", () => {
+    render(<MyComponent />);
+    expect(screen.getByText("Hello")).toBeInTheDocument();
+  });
+});
 ```
 
 ## 📦 Build
@@ -124,16 +152,17 @@ We welcome contributions from the community! Here's how to get started:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request using the appropriate template
 
-### Pull Request Templates
+### Development Workflow
 
-We use different PR templates based on the type of change:
-
-- **Bugfix**: For fixing bugs or regressions
-- **Feature**: For adding new features
-- **Chore**: For maintenance tasks, dependency updates, or cleanup
-- **Config**: For configuration or setup changes
-
-Each template includes a checklist to ensure all necessary information is provided and the change is properly tested.
+1. **Create Feature Branch**: `git checkout -b feature/your-feature-name`
+2. **Make Changes**: Write code, add tests, update documentation
+3. **Run Tests**: `npm test` to ensure all tests pass
+4. **Lint Code**: `npm run lint` to check code quality
+5. **Build Project**: `npm run build` to verify production build
+6. **Commit Changes**: Use descriptive commit messages
+7. **Push & Create PR**: Push branch and create pull request
+8. **Code Review**: Address feedback and ensure CI passes
+9. **Merge**: Merge to `development` branch
 
 ## 📄 License
 
