@@ -11,6 +11,13 @@ export default defineConfig({
     environmentOptions: {
       jsdom: {
         resources: 'usable',
+        url: 'http://localhost:3000',
+      },
+    },
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
       },
     },
   },

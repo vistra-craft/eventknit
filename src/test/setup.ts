@@ -12,3 +12,17 @@ if (typeof global === 'undefined') {
   (global as any) = globalThis
 }
 
+// Fix for webidl-conversions issue in GitHub Actions
+if (typeof process !== 'undefined') {
+  process.env.NODE_OPTIONS = '--max-old-space-size=4096'
+}
+
+// Mock URL constructor for better compatibility
+if (typeof window !== 'undefined') {
+  // Ensure URL is available
+  if (!window.URL) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).URL = URL
+  }
+}
+
