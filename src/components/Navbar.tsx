@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Menu, X, User, LogOut, ChevronDown, Globe, Bell } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // Define types
 interface User {
@@ -20,8 +20,8 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null); // Mock user state - replace with your auth
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -159,42 +159,35 @@ const Navbar: React.FC = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-1">
-              {navItems.map((item) => (
-                <div key={item.name} className="relative group">
-                  <a
-                    href={item.href}
-                    className="px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ease-in-out text-foreground/80 hover:text-primary flex items-center group"
-                    onMouseEnter={() =>
-                      item.dropdown && setActiveDropdown(item.name)
-                    }
-                    onMouseLeave={() => !item.dropdown && setActiveDropdown(null)}
-                  >
-                    {item.name}
-                    {item.dropdown && (
-                      <ChevronDown className="inline w-4 h-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    )}
-                  </a>
+            <div className="hidden md:flex items-center space-x-8">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.href || 
+                               (item.href === '/about' && location.pathname.startsWith('/event/'));
 
-                  {item.dropdown && activeDropdown === item.name && (
-                    <div
-                      className="absolute top-full left-0 mt-1 w-64 bg-background rounded-lg shadow-lg border border-border py-2 z-50"
-                      onMouseEnter={() => setActiveDropdown(item.name)}
-                      onMouseLeave={() => setActiveDropdown(null)}
+                return (
+                  <div key={item.name} className="relative group">
+                    <button
+                      onClick={() => navigate(item.href)}
+                      className={`flex items-center text-sm font-medium ${isActive ? 'text-primary' : 'text-gray-700 hover:text-primary'} transition-colors duration-200`}
                     >
-                      {item.dropdown.map((subItem, index) => (
-                        <a
-                          key={index}
-                          href={`/${subItem.toLowerCase().replace(/\s+/g, "-").replace(/&/g, "and")}`}
-                          className="block px-4 py-2 text-sm text-foreground/80 hover:bg-accent hover:text-primary transition-colors"
-                        >
-                          {subItem}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                      {item.name}
+                      {item.dropdown && <ChevronDown className="ml-1 w-4 h-4" />}
+                    </button>
+                    {item.dropdown && (
+                      <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform -translate-y-1 group-hover:translate-y-0">
+                        {item.dropdown.map((subItem) => (
+                          <button
+                            key={subItem}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            {subItem}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Desktop Actions */}
@@ -223,27 +216,24 @@ const Navbar: React.FC = () => {
             <div className="container mx-auto px-6 py-4 max-h-96 overflow-y-auto">
               {navItems.map((item) => (
                 <div key={item.name}>
-                  <a
-                    href={item.href}
-                    className="flex items-center justify-between px-3 py-2 text-foreground/80 hover:text-primary font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                  <button
+                    onClick={() => navigate(item.href)}
+                    className={`flex items-center justify-between px-3 py-2 text-foreground/80 hover:text-primary font-medium ${location.pathname === item.href ? 'text-primary' : ''}`}
                   >
                     {item.name}
                     {item.dropdown && (
                       <ChevronDown className="w-4 h-4" />
                     )}
-                  </a>
+                  </button>
                   {item.dropdown && (
                     <div className="pl-4 border-l-2 border-border ml-3">
-                      {item.dropdown.map((subItem, index) => (
-                        <a
-                          key={index}
-                          href={`/${subItem.toLowerCase().replace(/\s+/g, "-").replace(/&/g, "and")}`}
+                      {item.dropdown.map((subItem) => (
+                        <button
+                          key={subItem}
                           className="block px-3 py-1 text-sm text-foreground/60 hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
                         >
                           {subItem}
-                        </a>
+                        </button>
                       ))}
                     </div>
                   )}
