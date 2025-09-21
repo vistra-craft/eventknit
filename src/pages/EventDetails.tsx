@@ -49,26 +49,32 @@ const EventDetails = () => {
     }));
   };
 
-  // const getTotalPrice = () => {
-  //   return Object.entries(ticketQuantities).reduce((total, [ticketName, quantity]) => {
-  //     const ticket = event.ticketTypes.find(t => t.name === ticketName);
-  //     return total + (ticket ? ticket.price * quantity : 0);
-  //   }, 0);
-  // };
+  const handleRegisterClick = () => {
+    // Calculate total price including service fee (8%)
+    const totalPrice = Object.entries(ticketQuantities).reduce((total: number, [ticketName, quantity]: [string, number]) => {
+      if (quantity === 0) return total;
+      const ticket = event?.ticketTypes.find((t: { name: string }) => t.name === ticketName);
+      return total + (ticket ? (ticket.price * 1.08) * quantity : 0);
+    }, 0);
 
-  // const getTotalQuantity = () => {
-  //   return Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0);
-  // };
+    // Filter out tickets with 0 quantity
+    const selectedTickets = Object.entries(ticketQuantities)
+      .filter(([, qty]) => qty > 0)
+      .map(([name, quantity]: [string, number]) => ({
+        name,
+        quantity,
+        price: event?.ticketTypes.find((t: { name: string }) => t.name === name)?.price || 0
+      }));
 
-  // const handleGetTickets = () => {
-  //   navigate('/payment', { 
-  //     state: { 
-  //       event, 
-  //       ticketQuantities, 
-  //       totalPrice: getTotalPrice() + getTotalPrice() * 0.08 
-  //     } 
-  //   });
-  // };
+    navigate(`/event/${id}/payment`, {
+      state: {
+        eventId: id,
+        eventTitle: event?.title,
+        tickets: selectedTickets,
+        totalPrice: parseFloat(totalPrice.toFixed(2))
+      }
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -314,8 +320,8 @@ const EventDetails = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {event.speakers.map((speaker, index) => (
-                            <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20">
+                          {event.speakers.map((speaker) => (
+                            <div key={speaker.name} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20">
                               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                                 <User className="w-5 h-5 text-primary" />
                               </div>
@@ -331,43 +337,6 @@ const EventDetails = () => {
                     </Card>
                   )}
 
-                  {/* Sponsors - Commented out as per request
-                  {event.sponsors && event.sponsors.length > 0 && (
-                    <Card className="border-0 shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Award className="w-5 h-5 text-primary" />
-                          Our Sponsors
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap items-center gap-4">
-                          {event.sponsors.map((sponsor, index) => (
-                            <div key={index} className="flex items-center gap-2 p-2 rounded-md border">
-                              {sponsor.logo ? (
-                                <img 
-                                  src={sponsor.logo} 
-                                  alt={sponsor.name} 
-                                  className="h-8 w-auto object-contain"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src = '';
-                                    target.parentElement?.querySelector('span')?.classList.remove('hidden');
-                                  }}
-                                />
-                              ) : (
-                                <span className="font-medium">{sponsor.name}</span>
-                              )}
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                {sponsor.level}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  */}
                 </div>
 
                 {/* Event Settings Section */}
@@ -493,9 +462,12 @@ const EventDetails = () => {
                 );
               })}
               
-              <div className="text-center py-4 text-sm text-muted-foreground">
-                Select tickets to continue
-              </div>
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 py-6 text-lg font-medium mt-4"
+                onClick={handleRegisterClick}
+              >
+                Register Now
+              </Button>
             </div>
           </div>
         </div>
