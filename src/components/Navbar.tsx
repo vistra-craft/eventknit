@@ -78,6 +78,7 @@ const Navbar: React.FC = () => {
       ]
     },
     { name: "My Tickets", href: "/my-tickets" },
+    { name: "About", href: "/about" },
   ];
 
   const handleLogout = (): void => {
