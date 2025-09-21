@@ -1,17 +1,4 @@
 
----
-
-###  `.github/PULL_REQUEST_TEMPLATE/feature.md`
-
-```markdown
----
-name: Feature
-about: For PRs that introduce a new feature or functionality
-title: "[Feature] - "
-labels: ["feature"]
-assignees: []
----
-
 ### New Feature PR
 
 **Feature Description**  
