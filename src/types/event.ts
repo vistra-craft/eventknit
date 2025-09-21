@@ -1,4 +1,3 @@
-import { EventItem } from "@/data/events";
 
 export interface RegistrationField {
   id: string;

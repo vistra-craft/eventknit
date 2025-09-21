@@ -29,13 +29,6 @@ interface FormErrors {
   [key: string]: string;
 }
 
-// const getDaysUntilEvent = (dateStr: string): number => {
-//   const eventDate = dayjs(dateStr);
-//   const now = dayjs();
-//   const diff = eventDate.diff(now, "day");
-//   return diff > 0 ? diff : 0;
-// };
-
 const EventRegistration = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -225,13 +218,6 @@ const EventRegistration = () => {
     
     setErrors(formErrors);
     return Object.keys(formErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
-      navigate(`/event/${eventId}/payment`);
-    }
   };
 
   const handleRegistrationSubmit = (e: React.FormEvent) => {
@@ -618,7 +604,7 @@ const EventRegistration = () => {
                     autoComplete="on"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {event.registrationFields.map((field, idx) => {
+                      {event.registrationFields.map((field) => {
                         // Long-form fields (textarea) span both columns
                         if (field.type === "textarea") {
                           return (

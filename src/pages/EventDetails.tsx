@@ -59,7 +59,7 @@ const EventDetails = () => {
 
     // Filter out tickets with 0 quantity
     const selectedTickets = Object.entries(ticketQuantities)
-      .filter(([_, qty]: [string, number]) => qty > 0)
+      .filter(([, qty]) => qty > 0)
       .map(([name, quantity]: [string, number]) => ({
         name,
         quantity,
@@ -320,8 +320,8 @@ const EventDetails = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {event.speakers.map((speaker, index) => (
-                            <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20">
+                          {event.speakers.map((speaker) => (
+                            <div key={speaker.name} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20">
                               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                                 <User className="w-5 h-5 text-primary" />
                               </div>
@@ -337,43 +337,6 @@ const EventDetails = () => {
                     </Card>
                   )}
 
-                  {/* Sponsors - Commented out as per request
-                  {event.sponsors && event.sponsors.length > 0 && (
-                    <Card className="border-0 shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Award className="w-5 h-5 text-primary" />
-                          Our Sponsors
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap items-center gap-4">
-                          {event.sponsors.map((sponsor, index) => (
-                            <div key={index} className="flex items-center gap-2 p-2 rounded-md border">
-                              {sponsor.logo ? (
-                                <img 
-                                  src={sponsor.logo} 
-                                  alt={sponsor.name} 
-                                  className="h-8 w-auto object-contain"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src = '';
-                                    target.parentElement?.querySelector('span')?.classList.remove('hidden');
-                                  }}
-                                />
-                              ) : (
-                                <span className="font-medium">{sponsor.name}</span>
-                              )}
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                {sponsor.level}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  */}
                 </div>
 
                 {/* Event Settings Section */}

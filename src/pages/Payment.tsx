@@ -81,13 +81,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     title: locationState.eventTitle || ''
   } : undefined);
   
-  const tickets = propTickets || locationState?.tickets || [];
   const totalPrice = propTotalPrice !== undefined ? propTotalPrice : (locationState?.totalPrice || 0);
   const onSuccess = propOnSuccess || (() => navigate(`/event/${event?.id}/confirmation`, { state: locationState }));
   const onBack = propOnBack || (() => navigate(-1));
 
   // Set payment data from props or location state
-  const [paymentData, setPaymentData] = useState<PaymentData | null>(() => {
+  const [paymentData] = useState<PaymentData | null>(() => {
     if (locationState) {
       return {
         eventId: locationState.eventId || '',
