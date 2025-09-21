@@ -78,30 +78,17 @@ const About = () => {
           className="w-full h-full object-cover"
         />
         {/* Gradient overlay for fading effect */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40"></div>
         
-        {/* Back Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="absolute top-24 left-6 bg-glass-bg backdrop-blur-sm border-glass-border hover:bg-white"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
 
         {/* Hero Content */}
         <div className="absolute bottom-0 left-0 right-0 p-6">
           <div className="container mx-auto">
             <div className="max-w-4xl">
-              <Badge variant="secondary" className="mb-4 bg-primary/20 text-primary border-primary/30">
-                Our Story
-              </Badge>
-              <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+              <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
                 About EventHub
               </h1>
-              <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-3xl">
+              <p className="text-xl md:text-2xl text-foreground/90 leading-relaxed max-w-3xl">
                 We're passionate about creating extraordinary experiences that bring people together, 
                 inspire connections, and leave lasting memories.
               </p>
@@ -161,7 +148,7 @@ const About = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
-              <Card key={index} className="bg-card border-card-border text-center h-full">
+              <Card key={index} variant="default" className="text-center h-full">
                 <CardContent className="p-8">
                   <div className="text-primary mb-4 flex justify-center">
                     {value.icon}
@@ -187,7 +174,7 @@ const About = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {teamMembers.map((member, index) => (
-              <Card key={index} className="bg-card border-card-border text-center hover:shadow-lg transition-shadow">
+              <Card key={index} variant="default" className="text-center hover:shadow-card-hover transition-shadow">
                 <CardContent className="p-6">
                   <div className="mb-4">
                     <img 
@@ -216,7 +203,7 @@ const About = () => {
         </div>
 
         {/* Contact Section */}
-        <Card className="bg-gradient-card border-card-border">
+        <Card variant="gradient">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl mb-4">Get in Touch</CardTitle>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">

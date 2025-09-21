@@ -486,7 +486,7 @@ const EventRegistration = () => {
 
           {/* Hero Section */}
           <div className="mb-10">
-            <Card className="w-full overflow-hidden">
+            <Card variant="default" className="w-full overflow-hidden">
               <div className="flex flex-col md:flex-row">
                 {/* Event Image */}
                 <div className="md:w-2/5 w-full h-64 md:h-auto relative">
@@ -561,10 +561,10 @@ const EventRegistration = () => {
           </div>
 
           {/* Progress Indicator */}
-          <div className="mb-8 flex items-center gap-2 text-sm text-gray-500 justify-center">
+          <div className="mb-8 flex items-center gap-2 text-sm text-muted-foreground justify-center">
             <span
               className={
-                currentStep === "registration" ? "font-bold text-green-600" : ""
+                currentStep === "registration" ? "font-bold text-primary" : ""
               }
             >
               1. Registration Info
@@ -572,7 +572,7 @@ const EventRegistration = () => {
             <span>→</span>
             <span
               className={
-                currentStep === "payment" ? "font-bold text-green-600" : ""
+                currentStep === "payment" ? "font-bold text-primary" : ""
               }
             >
               2. Payment
@@ -580,7 +580,7 @@ const EventRegistration = () => {
             <span>→</span>
             <span
               className={
-                currentStep === "confirmation" ? "font-bold text-green-600" : ""
+                currentStep === "confirmation" ? "font-bold text-primary" : ""
               }
             >
               3. Confirmation
@@ -590,7 +590,7 @@ const EventRegistration = () => {
           {/* Registration Form Section */}
           <div className="mb-10">
             {currentStep === "registration" && (
-              <Card>
+              <Card variant="default">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
@@ -618,12 +618,12 @@ const EventRegistration = () => {
                             {renderFormField(field)}
                             {/* Helper text for email/phone */}
                             {field.type === "email" && (
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 We'll never share your email.
                               </p>
                             )}
                             {field.type === "tel" && (
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 Format: +1 (555) 123-4567
                               </p>
                             )}
@@ -634,7 +634,7 @@ const EventRegistration = () => {
                     <div className="flex flex-col sm:flex-row justify-between pt-6 border-t gap-4">
                       <Link
                         to={`/event/${eventId}`}
-                        className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors text-center"
+                        className="px-6 py-2 border border-border rounded-full text-foreground/80 hover:bg-accent transition-colors text-center"
                       >
                         Back to Event
                       </Link>
@@ -656,7 +656,7 @@ const EventRegistration = () => {
 
             {/* Payment Form */}
             {currentStep === "payment" && event && event.ticketTypes && (
-              <Card>
+              <Card variant="default">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
@@ -685,38 +685,38 @@ const EventRegistration = () => {
 
             {/* Confirmation Step */}
             {currentStep === "confirmation" && event && (
-              <Card>
+              <Card variant="default">
                 <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                    <Check className="w-8 h-8 text-green-600" />
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                    <Check className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-2xl font-bold text-foreground mb-2">
                     Registration Confirmed!
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-muted-foreground mb-6">
                     You have successfully registered for{" "}
                     <strong>{event.title}</strong>. A confirmation email will be
                     sent to your registered email address.
                   </p>
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div className="bg-muted rounded-lg p-4 mb-6">
                     <h4 className="font-semibold mb-2">Event Details:</h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {event.date} at {event.location}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       Organized by {event.organizer}
                     </p>
                   </div>
                   <div className="flex gap-4 justify-center">
                     <Link
                       to="/browse-events"
-                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-semibold transition-colors duration-200"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-full font-semibold transition-colors duration-200"
                     >
                       Browse More Events
                     </Link>
                     <Link
                       to="/user/dashboard"
-                      className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="px-6 py-2 border border-border rounded-full text-foreground/80 hover:bg-accent transition-colors"
                     >
                       Go to Dashboard
                     </Link>

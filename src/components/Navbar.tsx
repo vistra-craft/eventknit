@@ -90,7 +90,7 @@ const Navbar: React.FC = () => {
     <>
       {/* Utility Bar - Using your primary color instead of green */}
       <div className="bg-primary h-8 w-full">
-        <div className="container mx-auto px-6 h-full flex items-center justify-between text-white text-sm font-medium">
+        <div className="container mx-auto px-6 h-full flex items-center justify-between text-primary-foreground text-sm font-medium">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Globe className="w-4 h-4" />
@@ -153,7 +153,7 @@ const Navbar: React.FC = () => {
             {/* Logo */}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-white" />
+                <Calendar className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-foreground">EventKnit</span>
             </div>
@@ -168,17 +168,17 @@ const Navbar: React.FC = () => {
                   <div key={item.name} className="relative group">
                     <button
                       onClick={() => navigate(item.href)}
-                      className={`flex items-center text-sm font-medium ${isActive ? 'text-primary' : 'text-gray-700 hover:text-primary'} transition-colors duration-200`}
+                      className={`flex items-center text-sm font-medium ${isActive ? 'text-primary' : 'text-foreground/80 hover:text-primary'} transition-colors duration-200`}
                     >
                       {item.name}
                       {item.dropdown && <ChevronDown className="ml-1 w-4 h-4" />}
                     </button>
                     {item.dropdown && (
-                      <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform -translate-y-1 group-hover:translate-y-0">
+                      <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-card ring-1 ring-border py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform -translate-y-1 group-hover:translate-y-0">
                         {item.dropdown.map((subItem) => (
                           <button
                             key={subItem}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="block w-full text-left px-4 py-2 text-sm text-foreground/80 hover:bg-accent"
                           >
                             {subItem}
                           </button>

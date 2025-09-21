@@ -106,7 +106,7 @@ const EventDetails = () => {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
-                <Badge className="bg-red-600 hover:bg-red-700 text-white border-0 mb-3 shadow-lg">
+                <Badge className="bg-destructive hover:bg-destructive/90 text-destructive-foreground border-0 mb-3 shadow-lg">
                   {event.category}
                 </Badge>
                 <h2 className="text-2xl font-bold mb-2 drop-shadow-lg">{event.title}</h2>
@@ -124,7 +124,7 @@ const EventDetails = () => {
             </div>
             
             {/* Event Details Card */}
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-card to-muted/20 backdrop-blur-sm overflow-hidden">
+            <Card variant="gradient" className="shadow-xl overflow-hidden">
               <div className="p-5 space-y-4">
                 {/* Event Time & Date */}
                 <div className="flex items-start gap-3">
@@ -180,10 +180,10 @@ const EventDetails = () => {
             {/* Event Header */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Badge className="bg-red-600 text-white border-0">
+                <Badge className="bg-destructive text-destructive-foreground border-0">
                   {event.category}
                 </Badge>
-                <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">
+                <Badge variant="outline" className="border-primary text-primary bg-primary/10">
                   <Users className="w-3 h-3 mr-1" />
                   {event.ageRestriction}
                 </Badge>
@@ -206,7 +206,7 @@ const EventDetails = () => {
               </div>
               
               {/* Organizers Card */}
-              <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-card to-muted/20 backdrop-blur-sm">
+              <Card variant="gradient" className="shadow-lg overflow-hidden">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Building className="w-5 h-5 text-primary" />
@@ -289,7 +289,7 @@ const EventDetails = () => {
                 <div className="space-y-6">
                   {/* FAQs */}
                   {event.faqs && event.faqs.length > 0 && (
-                    <Card className="border-0 shadow-sm">
+                    <Card variant="minimal">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Info className="w-5 h-5 text-primary" />
@@ -311,7 +311,7 @@ const EventDetails = () => {
 
                   {/* Speakers */}
                   {event.speakers && event.speakers.length > 0 && (
-                    <Card className="border-0 shadow-sm">
+                    <Card variant="minimal">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <User className="w-5 h-5 text-primary" />
@@ -340,7 +340,7 @@ const EventDetails = () => {
                 </div>
 
                 {/* Event Settings Section */}
-                <Card className="border-0 shadow-sm">
+                <Card variant="minimal">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Settings className="w-5 h-5 text-primary" />
@@ -383,7 +383,7 @@ const EventDetails = () => {
                           <ul className="space-y-2 text-sm text-muted-foreground">
                             {event.requirements.map((req, i) => (
                               <li key={i} className="flex items-start gap-2">
-                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                                 <span>{req}</span>
                               </li>
                             ))}
@@ -398,7 +398,7 @@ const EventDetails = () => {
             
             {/* Ticket Selection */}
             <div className="w-full max-w-[280px] space-y-2">
-              <h2 className="text-sm font-semibold text-gray-700">Tickets</h2>
+              <h2 className="text-sm font-semibold text-foreground">Tickets</h2>
               
               {event.ticketTypes.map((ticket, index) => {
                 const quantity = ticketQuantities[ticket.name] || 0;
@@ -414,18 +414,18 @@ const EventDetails = () => {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-medium text-xs">{ticket.name}</h3>
-                        <p className="text-[11px] text-gray-500 mt-0.5">
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           +${(ticket.price * 0.08).toFixed(2)} service fee
                         </p>
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-xs">${ticket.price}</div>
-                        <div className="text-[10px] text-gray-400">per ticket</div>
+                        <div className="text-[10px] text-muted-foreground">per ticket</div>
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-[11px] text-gray-500">Quantity</span>
+                      <span className="text-[11px] text-muted-foreground">Quantity</span>
                       <div className="flex items-center gap-0.5">
                         <Button
                           variant="outline"

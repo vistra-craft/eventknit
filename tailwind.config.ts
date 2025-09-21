@@ -21,6 +21,15 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         surface: "hsl(var(--surface))",
+        // Custom EventKnit Colors
+        "eventknit": {
+          "bg": "#f2f4f6",
+          "card": "#fefeff", 
+          "text": "#0f172a",
+          "accent": "#cfe7ee",
+          "primary": "#0f172a",
+          "primary-light": "#cfe7ee"
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
