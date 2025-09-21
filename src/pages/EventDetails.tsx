@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, DollarSign, User, Phone, Mail, Building, Ticket, Info, Star, Award, Shield, Accessibility, Car } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, User, Mail, Building, Info, Award, Settings, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,6 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
   const [event, setEvent] = useState<EventItem | null>(null);
-  const [activeSection, setActiveSection] = useState<string>('info');
   
   useEffect(() => {
     if (id && eventsById[id]) {
@@ -50,26 +49,26 @@ const EventDetails = () => {
     }));
   };
 
-  const getTotalPrice = () => {
-    return Object.entries(ticketQuantities).reduce((total, [ticketName, quantity]) => {
-      const ticket = event.ticketTypes.find(t => t.name === ticketName);
-      return total + (ticket ? ticket.price * quantity : 0);
-    }, 0);
-  };
+  // const getTotalPrice = () => {
+  //   return Object.entries(ticketQuantities).reduce((total, [ticketName, quantity]) => {
+  //     const ticket = event.ticketTypes.find(t => t.name === ticketName);
+  //     return total + (ticket ? ticket.price * quantity : 0);
+  //   }, 0);
+  // };
 
-  const getTotalQuantity = () => {
-    return Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0);
-  };
+  // const getTotalQuantity = () => {
+  //   return Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0);
+  // };
 
-  const handleGetTickets = () => {
-    navigate('/payment', { 
-      state: { 
-        event, 
-        ticketQuantities, 
-        totalPrice: getTotalPrice() + getTotalPrice() * 0.08 
-      } 
-    });
-  };
+  // const handleGetTickets = () => {
+  //   navigate('/payment', { 
+  //     state: { 
+  //       event, 
+  //       ticketQuantities, 
+  //       totalPrice: getTotalPrice() + getTotalPrice() * 0.08 
+  //     } 
+  //   });
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -200,15 +199,194 @@ const EventDetails = () => {
                 </div>
               </div>
               
+              {/* Organizers Card */}
+              <Card className="border-0 shadow-lg overflow-hidden bg-gradient-to-br from-card to-muted/20 backdrop-blur-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Building className="w-5 h-5 text-primary" />
+                    Organized By
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Building className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{event.organizer}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Event Organizer</p>
+                      <div className="flex gap-3 mt-3">
+                        <Button variant="outline" size="sm" className="text-xs h-8">
+                          <ExternalLink className="w-3 h-3 mr-1.5" />
+                          Website
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-xs h-8">
+                          <Mail className="w-3 h-3 mr-1.5" />
+                          Contact
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
               <Separator className="my-4" />
               
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Event Details</h2>
-                <p className="text-muted-foreground">
-                  Don't miss the most anticipated game of the season as the top teams battle it out for the championship title. 
-                  Experience the excitement live with amazing performances during halftime.
-                </p>
-                
+              <div className="space-y-8">
+                {/* Event Details Section */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold">Event Details</h2>
+                  <p className="text-muted-foreground">
+                    {event.fullDescription}
+                  </p>
+                </div>
+
+                {/* Additional Information Section */}
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold">Additional Information</h2>
+                  
+                  {/* FAQs */}
+                  {event.faqs && event.faqs.length > 0 && (
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Info className="w-5 h-5 text-primary" />
+                          Frequently Asked Questions
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {event.faqs.map((faq, index) => (
+                            <div key={index} className="border-b pb-3 last:border-b-0 last:pb-0">
+                              <h4 className="font-medium text-foreground">{faq.question}</h4>
+                              <p className="text-sm text-muted-foreground mt-1">{faq.answer}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Speakers */}
+                  {event.speakers && event.speakers.length > 0 && (
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <User className="w-5 h-5 text-primary" />
+                          Featured Speakers
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {event.speakers.map((speaker, index) => (
+                            <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20">
+                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <User className="w-5 h-5 text-primary" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{speaker.name}</h4>
+                                <p className="text-sm text-muted-foreground">{speaker.title}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{speaker.bio}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Sponsors */}
+                  {event.sponsors && event.sponsors.length > 0 && (
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Award className="w-5 h-5 text-primary" />
+                          Our Sponsors
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap items-center gap-4">
+                          {event.sponsors.map((sponsor, index) => (
+                            <div key={index} className="flex items-center gap-2 p-2 rounded-md border">
+                              {sponsor.logo ? (
+                                <img 
+                                  src={sponsor.logo} 
+                                  alt={sponsor.name} 
+                                  className="h-8 w-auto object-contain"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '';
+                                    target.parentElement?.querySelector('span')?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : (
+                                <span className="font-medium">{sponsor.name}</span>
+                              )}
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                {sponsor.level}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Event Settings Section */}
+                <Card className="border-0 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Settings className="w-5 h-5 text-primary" />
+                      Event Settings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">Event Type</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {event.isPrivate ? 'Private Event' : 'Public Event'}
+                          </p>
+                        </div>
+                        <Badge variant={event.isPrivate ? 'secondary' : 'default'}> 
+                          {event.isPrivate ? 'Private' : 'Public'}
+                        </Badge>
+                      </div>
+
+                      {event.registrationDeadline && (
+                        <div>
+                          <h4 className="font-medium">Registration Deadline</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {event.registrationDeadline}
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <h4 className="font-medium">Age Restriction</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {event.ageRestriction}
+                        </p>
+                      </div>
+
+                      {event.requirements && event.requirements.length > 0 && (
+                        <div>
+                          <h4 className="font-medium mb-2">Requirements</h4>
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            {event.requirements.map((req, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span>{req}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
             

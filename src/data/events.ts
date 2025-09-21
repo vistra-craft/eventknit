@@ -9,12 +9,31 @@ export interface TicketType {
   features: string[];
 }
 
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
+export interface Speaker {
+  name: string;
+  title: string;
+  bio: string;
+  image?: string;
+}
+
+export interface Sponsor {
+  name: string;
+  level: 'gold' | 'silver' | 'bronze';
+  logo: string;
+}
+
 export interface EventItem {
   id: string;
   title: string;
   image: string;
   date: string;
   time: string;
+  endTime?: string;
   venue: string;
   location: string;
   organizer: string;
@@ -27,6 +46,12 @@ export interface EventItem {
   ageRestriction: string;
   ticketTypes: TicketType[];
   coordinates: { lat: number; lng: number };
+  isPrivate: boolean;
+  registrationDeadline?: string;
+  faqs: FAQ[];
+  speakers: Speaker[];
+  sponsors: Sponsor[];
+  requirements: string[];
 }
 
 const baseDescription = "Get ready for an unforgettable experience packed with energy, world-class performances, and immersive production.";
@@ -39,6 +64,7 @@ export const events: EventItem[] = [
     image: concertImg,
     date: "Dec 15, 2024",
     time: "8:00 PM",
+    endTime: "2:00 AM",
     venue: "Madison Square Garden",
     location: "New York, NY",
     organizer: "Live Nation",
@@ -48,6 +74,56 @@ export const events: EventItem[] = [
     description: baseDescription,
     fullDescription: baseFullDescription,
     duration: "6 hours",
+    isPrivate: false,
+    registrationDeadline: "Dec 10, 2024",
+    requirements: [
+      "Valid ID required for age verification",
+      "No outside food or drinks",
+      "No professional cameras without permission"
+    ],
+    faqs: [
+      {
+        question: "What's the refund policy?",
+        answer: "Tickets are non-refundable but can be transferred to another person up to 24 hours before the event."
+      },
+      {
+        question: "Is there parking available?",
+        answer: "Yes, there is paid parking available at the venue. We recommend carpooling or using public transportation."
+      },
+      {
+        question: "What time should I arrive?",
+        answer: "Doors open at 7:00 PM. We recommend arriving at least 30 minutes early to allow time for security checks."
+      }
+    ],
+    speakers: [
+      {
+        name: "DJ Nova",
+        title: "Headline Performer",
+        bio: "International DJ and producer with over 10 years of experience in the electronic music scene."
+      },
+      {
+        name: "Sarah Chen",
+        title: "Visual Artist",
+        bio: "Award-winning visual artist known for creating immersive digital experiences at major music festivals worldwide."
+      }
+    ],
+    sponsors: [
+      {
+        name: "Red Bull",
+        level: "gold",
+        logo: "https://logo.clearbit.com/redbull.com"
+      },
+      {
+        name: "Beats by Dre",
+        level: "silver",
+        logo: "https://logo.clearbit.com/beatsbydre.com"
+      },
+      {
+        name: "Urban Outfitters",
+        level: "bronze",
+        logo: "https://logo.clearbit.com/urbanoutfitters.com"
+      }
+    ],
     ageRestriction: "18+",
     ticketTypes: [
       { name: "General Admission", price: 89, features: ["Access to main stage", "Food court access", "Merchandise discount"] },
