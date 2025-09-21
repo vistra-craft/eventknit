@@ -213,69 +213,73 @@ const EventDetails = () => {
             </div>
             
             {/* Ticket Selection */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Select Your Tickets</h2>
-                <div className="text-sm text-muted-foreground">Maximum 10</div>
-              </div>
+            <div className="w-full max-w-[280px] space-y-2">
+              <h2 className="text-sm font-semibold text-gray-700">Tickets</h2>
               
-              <div className="space-y-4">
-                {event.ticketTypes.map((ticket, index) => {
-                  const quantity = ticketQuantities[ticket.name] || 0;
-                  const isSelected = quantity > 0;
-                  
-                  return (
-                    <div 
-                      key={index}
-                      className={`p-4 border rounded-lg transition-all ${
-                        isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="font-medium">{ticket.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            +${(ticket.price * 0.08).toFixed(2)} service fee included
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold text-primary">${ticket.price}</div>
-                          <div className="text-xs text-muted-foreground">per ticket</div>
-                        </div>
+              {event.ticketTypes.map((ticket, index) => {
+                const quantity = ticketQuantities[ticket.name] || 0;
+                const isSelected = quantity > 0;
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`p-2 border rounded-md text-xs ${
+                      isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium text-xs">{ticket.name}</h3>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          +${(ticket.price * 0.08).toFixed(2)} service fee
+                        </p>
                       </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm">
-                          Subtotal: <span className="font-medium">${((ticket.price + ticket.price * 0.08) * quantity).toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => updateQuantity(ticket.name, -1)}
-                            disabled={quantity === 0}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-6 text-center">{quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() => updateQuantity(ticket.name, 1)}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
+                      <div className="text-right">
+                        <div className="font-bold text-xs">${ticket.price}</div>
+                        <div className="text-[10px] text-gray-400">per ticket</div>
                       </div>
                     </div>
-                  );
-                })}
-                
-                <div className="text-center py-4 text-sm text-muted-foreground">
-                  Select tickets to continue
-                </div>
+                    
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-[11px] text-gray-500">Quantity</span>
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-5 w-5 p-0 rounded-full"
+                          onClick={() => updateQuantity(ticket.name, -1)}
+                          disabled={!quantity}
+                        >
+                          <Minus className="w-2.5 h-2.5" />
+                        </Button>
+                        <span className="w-4 text-center text-xs">{quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-5 w-5 p-0 rounded-full"
+                          onClick={() => updateQuantity(ticket.name, 1)}
+                        >
+                          <Plus className="w-2.5 h-2.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {isSelected && (
+                      <div className="mt-1.5 pt-1.5 border-t text-sm">
+                        <div className="flex justify-between">
+                          <span>Subtotal:</span>
+                          <span className="font-medium">
+                            ${((ticket.price + ticket.price * 0.08) * quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                Select tickets to continue
               </div>
             </div>
           </div>
@@ -286,244 +290,3 @@ const EventDetails = () => {
 };
 
 export default EventDetails;
-
-
-
-
-
-
-// import { useParams, useNavigate } from "react-router-dom";
-// import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, Ticket } from "lucide-react";
-// import { Button } from "@/components/ui/button";
-// import { Card, CardContent } from "@/components/ui/card";
-// import { Badge } from "@/components/ui/badge";
-// import { Separator } from "@/components/ui/separator";
-// import Navbar from "@/components/Navbar";
-// import { EventMap } from "@/components/EventMap";
-// import { useState } from "react";
-// import { events } from "@/data/events";
-// import type { EventItem } from "@/data/events";// // Create a map of event IDs to events
-// const eventsById = events.reduce<Record<string, EventItem>>((acc, event) => {
-//   acc[event.id] = event;
-//   return acc;
-// }, {});// const EventDetails = () => {
-//   const { id } = useParams<{ id: string }>();
-//   const navigate = useNavigate();
-//   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
-//   const event = id ? eventsById[id] : null;//   if (!event) {
-//     return (
-//       <div className="min-h-screen bg-background">
-//         <Navbar />
-//         <div className="flex items-center justify-center min-h-[60vh]">
-//           <div className="text-center">
-//             <h2 className="text-2xl font-bold mb-4">Event not found</h2>
-//             <Button onClick={() => navigate('/')}>Back to Home</Button>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }//   const updateQuantity = (ticketName: string, change: number) => {
-//     setTicketQuantities(prev => ({
-//       ...prev,
-//       [ticketName]: Math.max(0, (prev[ticketName] || 0) + change)
-//     }));
-//   };//   const getTotalPrice = () => {
-//     return Object.entries(ticketQuantities).reduce((total, [ticketName, quantity]) => {
-//       const ticket = event.ticketTypes.find(t => t.name === ticketName);
-//       return total + (ticket ? ticket.price * quantity : 0);
-//     }, 0);
-//   };//   const getTotalQuantity = () => {
-//     return Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0);
-//   };//   const handleGetTickets = () => {
-//     navigate('/payment', { 
-//       state: { 
-//         event, 
-//         ticketQuantities, 
-//         totalPrice: getTotalPrice() + getTotalPrice() * 0.08 
-//       } 
-//     });
-//   };//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-//       <Navbar />//       {/* Back Button */}
-//       <div className="container mx-auto px-4 sm:px-6 pt-6">
-//         <Button
-//           variant="ghost"
-//           onClick={() => navigate("/")}
-//           className="mb-6 hover:bg-muted group transition-all duration-200"
-//         >
-//           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
-//           Back to Events
-//         </Button>
-//       </div>//       <div className="container mx-auto px-4 sm:px-6 pb-12 max-w-4xl">
-//         {/* Event Header */}
-//         <div className="mb-8">
-//           <div className="flex items-center gap-3 mb-2">
-//             <Badge className="bg-red-600 text-white border-0">
-//               {event.category}
-//             </Badge>
-//             <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">
-//               <Users className="w-3 h-3 mr-1" />
-//               {event.ageRestriction}
-//             </Badge>
-//           </div>
-//           <h1 className="text-3xl sm:text-4xl font-bold mb-2">{event.title}</h1>
-//           <div className="flex items-center gap-4 text-muted-foreground mb-6">
-//             <div className="flex items-center gap-1">
-//               <Calendar className="w-4 h-4" />
-//               {event.date}
-//             </div>
-//             <div className="flex items-center gap-1">
-//               <Clock className="w-4 h-4" />
-//               {event.time} (Doors: 5:30 PM CDT)
-//             </div>
-//           </div>
-//         </div>//         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-//           {/* Main Content */}
-//           <div className="md:col-span-2 space-y-6">
-//             {/* Event Image */}
-//             <div className="relative overflow-hidden rounded-xl aspect-video">
-//               <img 
-//                 src={event.image} 
-//                 alt={event.title}
-//                 className="w-full h-full object-cover"
-//                 loading="eager"
-//               />
-//             </div>//             {/* Event Description */}
-//             <div className="space-y-4">
-//               <h2 className="text-xl font-semibold">Event Details</h2>
-//               <p className="text-muted-foreground">
-//                 Don't miss the most anticipated game of the season as the top teams battle it out for the championship title. 
-//                 Experience the excitement live with amazing performances during halftime.
-//               </p>//               <div className="grid grid-cols-2 gap-4 pt-4">
-//                 <div>
-//                   <h3 className="font-medium">Duration</h3>
-//                   <p className="text-sm text-muted-foreground">≈ 3 hours</p>
-//                 </div>
-//                 <div>
-//                   <h3 className="font-medium">Venue</h3>
-//                   <p className="text-sm text-muted-foreground">{event.venue}</p>
-//                 </div>
-//                 <div>
-//                   <h3 className="font-medium">Location</h3>
-//                   <p className="text-sm text-muted-foreground">{event.location}</p>
-//                 </div>
-//                 <div>
-//                   <h3 className="font-medium">Capacity</h3>
-//                   <p className="text-sm text-muted-foreground">20,000 seats</p>
-//                 </div>
-//               </div>
-//             </div>//             {/* Venue Map */}
-//             <div className="pt-4">
-//               <h2 className="text-xl font-semibold mb-4">Location</h2>
-//               <div className="rounded-xl overflow-hidden h-64">
-//                 <EventMap 
-//                   venue={event.venue} 
-//                   location={event.location} 
-//                   coordinates={event.coordinates}
-//                 />
-//               </div>
-//               <div className="mt-2 flex justify-between items-center">
-//                 <p className="text-sm text-muted-foreground">{event.venue}, {event.location}</p>
-//                 <Button variant="ghost" size="sm" className="text-primary">
-//                   <ExternalLink className="w-4 h-4 mr-2" />
-//                   View on map
-//                 </Button>
-//               </div>
-//             </div>
-//           </div>//           {/* Ticket Selection */}
-//           <div className="space-y-4">
-//             <div className="sticky top-4 space-y-4">
-//               <h2 className="text-xl font-semibold">Tickets</h2>//               {event.ticketTypes.map((ticket, index) => {
-//                 const quantity = ticketQuantities[ticket.name] || 0;
-//                 const isSelected = quantity > 0;//                 return (
-//                   <div 
-//                     key={index}
-//                     className={p-4 border rounded-lg transition-all ${ //                       isSelected ? 'border-primary bg-primary/5' : 'hover:border-primary/50' //                     }}
-//                   >
-//                     <div className="flex justify-between items-start mb-3">
-//                       <div>
-//                         <h3 className="font-medium">{ticket.name}</h3>
-//                         <p className="text-sm text-muted-foreground">
-//                           +${(ticket.price * 0.08).toFixed(2)} service fee
-//                         </p>
-//                       </div>
-//                       <div className="text-right">
-//                         <div className="font-bold">${ticket.price}</div>
-//                         <div className="text-xs text-muted-foreground">per ticket</div>
-//                       </div>
-//                     </div>//                     <div className="flex items-center justify-between mt-2">
-//                       <span className="text-sm">Quantity</span>
-//                       <div className="flex items-center gap-2">
-//                         <Button
-//                           variant="outline"
-//                           size="sm"
-//                           className="h-8 w-8 p-0 rounded-full"
-//                           onClick={() => updateQuantity(ticket.name, -1)}
-//                           disabled={!quantity}
-//                         >
-//                           <Minus className="w-3 h-3" />
-//                         </Button>
-//                         <span className="w-6 text-center">{quantity}</span>
-//                         <Button
-//                           variant="outline"
-//                           size="sm"
-//                           className="h-8 w-8 p-0 rounded-full"
-//                           onClick={() => updateQuantity(ticket.name, 1)}
-//                         >
-//                           <Plus className="w-3 h-3" />
-//                         </Button>
-//                       </div>
-//                     </div>//                     {isSelected && (
-//                       <div className="mt-3 pt-3 border-t text-sm">
-//                         <div className="flex justify-between">
-//                           <span>Subtotal:</span>
-//                           <span className="font-medium">
-//                             ${((ticket.price + ticket.price * 0.08) * quantity).toFixed(2)}
-//                           </span>
-//                         </div>
-//                       </div>
-//                     )}
-//                   </div>
-//                 );
-//               })}//               {getTotalQuantity() > 0 ? (
-//                 <div className="space-y-4">
-//                   <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
-//                     <div className="flex justify-between">
-//                       <span>Subtotal ({getTotalQuantity()} ticket{getTotalQuantity() !== 1 ? 's' : ''}):</span>
-//                       <span>${getTotalPrice().toFixed(2)}</span>
-//                     </div>
-//                     <div className="flex justify-between text-sm text-muted-foreground">
-//                       <span>Service fee (8%):</span>
-//                       <span>${(getTotalPrice() * 0.08).toFixed(2)}</span>
-//                     </div>
-//                     <Separator className="my-2" />
-//                     <div className="flex justify-between font-semibold">
-//                       <span>Total:</span>
-//                       <span>${(getTotalPrice() * 1.08).toFixed(2)}</span>
-//                     </div>
-//                   </div>//                   <Button 
-//                     className="w-full h-12 text-base font-semibold"
-//                     onClick={handleGetTickets}
-//                   >
-//                     <Ticket className="w-5 h-5 mr-2" />
-//                     Get Tickets
-//                   </Button>
-//                 </div>
-//               ) : (
-//                 <div className="text-center py-4 text-sm text-muted-foreground">
-//                   Select tickets to continue
-//                 </div>
-//               )}//               <div className="text-xs text-muted-foreground text-center">
-//                 *Service fees apply at checkout
-//               </div>//               <Button variant="outline" className="w-full mt-2">
-//                 <Share2 className="w-4 h-4 mr-2" />
-//                 Share Event
-//               </Button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };// export default EventDetails;
-
