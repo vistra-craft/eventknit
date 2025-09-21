@@ -1,23 +1,10 @@
 
----
+# Feature PR
 
-###  `.github/PULL_REQUEST_TEMPLATE/feature.md`
-
-```markdown
----
-name: Feature
-about: For PRs that introduce a new feature or functionality
-title: "[Feature] - "
-labels: ["feature"]
-assignees: []
----
-
-### New Feature PR
-
-**Feature Description**  
+## Feature Description  
 _Describe the feature being added and the problem it solves._
 
-**What's Included**
+## What's Included
 - [ ] UI components/screens
 - [ ] Backend logic (if any)
 - [ ] New routes or API endpoints

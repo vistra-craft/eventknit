@@ -1,23 +1,10 @@
 
----
+# Bugfix PR
 
-### `.github/PULL_REQUEST_TEMPLATE/bugfix.md`
-
-```markdown
----
-name: Bugfix
-about: For PRs that fix a bug or regression
-title: "[Bugfix] - "
-labels: ["bug"]
-assignees: []
----
-
-### Bugfix PR
-
-**Bug Description**  
+## Bug Description  
 _What was broken? Describe the issue or bug._
 
-**Fix Summary**  
+## Fix Summary  
 _How was the bug fixed? Mention any files/functions touched._
 
 **Steps to Reproduce (Before Fix)**
