@@ -197,7 +197,7 @@ const Navbar: React.FC = () => {
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-4">
               <Button variant="ghost">Find My Tickets</Button>
-              <Button variant="default">Create Event</Button>
+              <Button variant="hero">Create Event</Button>
             </div>
 
             {/* Mobile Menu Button */}
@@ -246,7 +246,7 @@ const Navbar: React.FC = () => {
                 <Button variant="ghost" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
                   Find My Tickets
                 </Button>
-                <Button variant="default" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button variant="hero" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
                   Create Event
                 </Button>
               </div>

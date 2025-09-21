@@ -41,7 +41,7 @@ export const Hero = () => {
                   className="pl-12 h-14 bg-card-surface/50 border-card-border text-lg placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary"
                 />
               </div>
-              <Button variant="default" size="lg" className="h-14 px-8 w-full md:w-auto">
+              <Button variant="hero" size="lg" className="h-14 px-8 w-full md:w-auto">
                 Find Events
               </Button>
             </div>

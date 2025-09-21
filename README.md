@@ -1,41 +1,56 @@
 # EventKnit UI
 
-A modern React application built with TypeScript, Vite, and Tailwind CSS, following best practices for development and deployment.
+A modern, type-safe React application built with TypeScript, Vite, and Tailwind CSS, following best practices for development and deployment. This project serves as the frontend for EventKnit, featuring a clean architecture and modern development tooling.
 
 ## 🚀 Features
 
-- ⚡ Blazing fast development with Vite
-- 🎨 Styled with Tailwind CSS
-- 🧪 Comprehensive testing setup
+- ⚡ Blazing fast development with Vite 5
+- 🎨 Styled with Tailwind CSS 3.4 and CSS Variables
+- 🧪 Comprehensive testing setup with Vitest and React Testing Library
 - 🚀 CI/CD pipeline with GitHub Actions
-- 🔒 Type-safe with TypeScript
-- 🎯 ESLint for code quality and consistency
-- 🧪 Vitest for fast unit and integration testing
+- 🔒 Type-safe with TypeScript 5
+- 🎯 ESLint + Prettier for code quality and consistency
+- 🏗️ Component-based architecture with Radix UI primitives
+- 🎭 Class Variance Authority for type-safe component variants
+- 🔄 Fast Refresh for rapid development
 
 ## 🛠️ Development Setup
 
 ### Prerequisites
 
 - Node.js 18+
-- npm 9+ or yarn
+- npm 9+ or pnpm
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/eventknit-ui.git
+git clone https://github.com/vistra-craft/eventknit-ui.git
 cd eventknit-ui
 
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server
-npm run dev
+pnpm dev
 ```
 
-## 🌿 Branching Strategy
+### Available Scripts
 
-We follow the Git Flow branching model with the following main branches:
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm lint` - Run ESLint
+- `pnpm test` - Run tests in watch mode
+- `pnpm test:run` - Run tests once
+- `pnpm test:coverage` - Generate test coverage report
+- `pnpm type-check` - Run TypeScript type checking
+- `pnpm pre-push` - Run all checks before pushing (lint, type-check, test, build)
+
+## 🌿 Development Workflow
+
+### Branching Strategy
+
+We follow GitHub Flow with the following main branches:
 
 - `main` - Production-ready code that's always deployable
 - `development` - Main development branch where features are integrated
@@ -47,6 +62,15 @@ We follow the Git Flow branching model with the following main branches:
 - `fix/<issue-description>` - For bug fixes
 - `hotfix/<issue-description>` - For critical production fixes
 - `chore/<task-description>` - For maintenance tasks
+- `config/<changes>` - For configuration changes
+
+### Pull Request Guidelines
+
+1. Ensure all tests pass (`pnpm test`)
+2. Run the linter (`pnpm lint`)
+3. Verify TypeScript types (`pnpm type-check`)
+4. Update documentation if necessary
+5. Use the PR template when creating pull requests
 
 ### Workflow
 
