@@ -27,6 +27,64 @@ export interface Sponsor {
   logo: string;
 }
 
+// Helper function to ensure all events have required properties
+const withDefaults = (event: Omit<EventItem, 'isPrivate' | 'faqs' | 'speakers' | 'sponsors' | 'requirements' | 'endTime' | 'registrationDeadline'> & 
+  Partial<Pick<EventItem, 'isPrivate' | 'faqs' | 'speakers' | 'sponsors' | 'requirements' | 'endTime' | 'registrationDeadline'>>): EventItem => {
+  const {
+    id,
+    title,
+    image,
+    date,
+    time,
+    venue,
+    location,
+    organizer,
+    price,
+    rating,
+    category,
+    description,
+    fullDescription,
+    duration,
+    ageRestriction,
+    ticketTypes = [],
+    coordinates = { lat: 0, lng: 0 },
+    isPrivate = false,
+    faqs = [],
+    speakers = [],
+    sponsors = [],
+    requirements = [],
+    endTime = '',
+    registrationDeadline = ''
+  } = event;
+
+  return {
+    id,
+    title,
+    image,
+    date,
+    time,
+    venue,
+    location,
+    organizer,
+    price,
+    rating,
+    category,
+    description,
+    fullDescription,
+    duration,
+    ageRestriction,
+    ticketTypes,
+    coordinates,
+    isPrivate,
+    faqs,
+    speakers,
+    sponsors,
+    requirements,
+    endTime,
+    registrationDeadline
+  };
+};
+
 export interface EventItem {
   id: string;
   title: string;
@@ -58,7 +116,7 @@ const baseDescription = "Get ready for an unforgettable experience packed with e
 const baseFullDescription = "Join thousands of fans for a night that blends cutting-edge visuals, incredible sound, and a lineup of acclaimed performers. Expect breathtaking moments and memories that last.";
 
 export const events: EventItem[] = [
-  {
+  withDefaults({
     id: "1",
     title: "Electric Nights Festival 2024",
     image: concertImg,
@@ -131,8 +189,8 @@ export const events: EventItem[] = [
       { name: "Platinum Package", price: 399, features: ["All VIP features", "Backstage access", "Private bar", "Dedicated concierge", "Premium gift bag"] }
     ],
     coordinates: { lat: 40.7505, lng: -73.9934 },
-  },
-  {
+  }),
+  withDefaults({
     id: "2",
     title: "Comedy Central Live",
     image: comedyImg,
@@ -153,8 +211,8 @@ export const events: EventItem[] = [
       { name: "Front Row", price: 79, features: ["Front row seats", "Meet the comics"] },
     ],
     coordinates: { lat: 34.1016, lng: -118.3269 },
-  },
-  {
+  }),
+  withDefaults({
     id: "3",
     title: "NBA Finals Game 7",
     image: sportsImg,
@@ -170,14 +228,52 @@ export const events: EventItem[] = [
     fullDescription: baseFullDescription,
     duration: "3 hours",
     ageRestriction: "All ages",
+    isPrivate: false,
+    faqs: [
+      {
+        question: "What's the refund policy?",
+        answer: "Tickets are non-refundable but can be transferred to another person up to 24 hours before the event."
+      },
+      {
+        question: "Is there parking available?",
+        answer: "Yes, there is paid parking available at the venue. We recommend carpooling or using public transportation."
+      },
+      {
+        question: "What time should I arrive?",
+        answer: "Doors open at 8:00 PM. We recommend arriving at least 30 minutes early to allow time for security checks."
+      }
+    ],
+    speakers: [],
+    sponsors: [
+      {
+        name: "Red Bull",
+        level: "gold",
+        logo: "https://logo.clearbit.com/redbull.com"
+      },
+      {
+        name: "Beats by Dre",
+        level: "silver",
+        logo: "https://logo.clearbit.com/beatsbydre.com"
+      },
+      {
+        name: "Urban Outfitters",
+        level: "bronze",
+        logo: "https://logo.clearbit.com/urbanoutfitters.com"
+      }
+    ],
+    requirements: [
+      "Valid ID required for age verification",
+      "No outside food or drinks",
+      "No professional cameras without permission"
+    ],
     ticketTypes: [
       { name: "Upper Bowl", price: 299, features: ["Arena entry", "Merch store access"] },
       { name: "Lower Bowl", price: 499, features: ["Lower bowl seats", "Exclusive lounge"] },
       { name: "Courtside", price: 1299, features: ["Courtside seats", "On-court photo"] },
     ],
     coordinates: { lat: 34.043, lng: -118.2673 },
-  },
-  {
+  }),
+  withDefaults({
     id: "4",
     title: "Modern Art Exhibition",
     image: artImg,
@@ -198,8 +294,8 @@ export const events: EventItem[] = [
       { name: "Guided Tour", price: 45, features: ["Guided tour", "Exclusive exhibit room"] },
     ],
     coordinates: { lat: 40.7614, lng: -73.9776 },
-  },
-  {
+  }),
+  withDefaults({
     id: "5",
     title: "Synthwave Dreams Concert",
     image: concertImg,
@@ -220,8 +316,8 @@ export const events: EventItem[] = [
       { name: "VIP", price: 249, features: ["VIP deck", "Priority bar"] },
     ],
     coordinates: { lat: 39.6654, lng: -105.2057 },
-  },
-  {
+  }),
+  withDefaults({
     id: "6",
     title: "Stand-Up Showdown",
     image: comedyImg,
@@ -242,8 +338,8 @@ export const events: EventItem[] = [
       { name: "Premium", price: 95, features: ["Front seating", "Meet & greet"] },
     ],
     coordinates: { lat: 40.81, lng: -73.9496 },
-  },
-  {
+  }),
+  withDefaults({
     id: "7",
     title: "World Cup Final Watch Party",
     image: sportsImg,
@@ -264,8 +360,8 @@ export const events: EventItem[] = [
       { name: "VIP Table", price: 120, features: ["Private table", "Bottle service"] },
     ],
     coordinates: { lat: 25.7617, lng: -80.1918 },
-  },
-  {
+  }),
+  withDefaults({
     id: "8",
     title: "Contemporary Dance Performance",
     image: artImg,
@@ -286,7 +382,7 @@ export const events: EventItem[] = [
       { name: "Orchestra", price: 149, features: ["Orchestra seating", "Backstage talk"] },
     ],
     coordinates: { lat: 40.7725, lng: -73.9835 },
-  },
+  })
 ];
 
 export const eventsById = events.reduce<Record<string, EventItem>>((acc, ev) => {

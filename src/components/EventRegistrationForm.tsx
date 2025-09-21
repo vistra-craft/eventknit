@@ -2,13 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { EventItem } from "@/data/events";
 
-interface EventRegistrationFormProps {
-  event: EventItem;
-}
-
-export const EventRegistrationForm = ({ event }: EventRegistrationFormProps) => {
+export const EventRegistrationForm = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",

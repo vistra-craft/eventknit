@@ -1,5 +1,4 @@
 import { MapPin } from "lucide-react";
-import type { EventItem } from "@/data/events";
 
 interface EventMapProps {
   venue: string;
