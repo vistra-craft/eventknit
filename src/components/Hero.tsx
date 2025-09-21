@@ -1,69 +1,92 @@
-import { Search, MapPin } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Heart, Share2, MapPin, Calendar, Clock, Eye, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
 export const Hero = () => {
+  const [isFavorited, setIsFavorited] = useState(false);
+  
   return (
-    <section className="relative bg-gradient-hero min-h-[80vh] flex items-center justify-center overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent-neon/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-accent-electric/20 rounded-full blur-2xl animate-pulse delay-500"></div>
-      </div>
-
-      <div className="relative z-10 container mx-auto px-6 text-center">
-        {/* Hero Content */}
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent leading-tight">
-            Discover Epic
-            <br />
-            <span className="text-accent-electric">Events</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-foreground/80 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Find and book tickets for the most amazing concerts, festivals, comedy shows, and sporting events near you
-          </p>
-
-          {/* Search Section */}
-          <div className="bg-glass-bg backdrop-blur-xl border border-glass-border rounded-2xl p-8 shadow-elevated">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="relative flex-1 w-full">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  placeholder="Search for events, artists, or venues..."
-                  className="pl-12 h-14 bg-card-surface/50 border-card-border text-lg placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                />
+    <div className="relative">
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60 z-10" />
+      <img 
+        src="/src/assets/event-concert.jpg" 
+        alt="Summer Music Festival 2025"
+        className="w-full h-[60vh] object-cover"
+        loading="eager"
+      />
+      
+      {/* Hero Content Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-white">
+        <div className="container mx-auto max-w-7xl">
+          <Button
+            variant="secondary"
+            className="mb-6 bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Events
+          </Button>
+          
+          <div className="flex flex-col lg:flex-row lg:items-end gap-6">
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                  Music
+                </Badge>
+                <div className="flex items-center gap-2 text-sm">
+                  <Eye className="w-4 h-4" />
+                  <span>132 interested</span>
+                </div>
               </div>
-              <div className="relative w-full md:w-64">
-                <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <Input
-                  placeholder="Location"
-                  className="pl-12 h-14 bg-card-surface/50 border-card-border text-lg placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                />
+              
+              <h1 className="text-4xl lg:text-5xl font-bold leading-tight">
+                Summer Music Festival 2025
+              </h1>
+              
+              <div className="flex flex-wrap items-center gap-4 text-white/90">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  <div>
+                    <div className="font-semibold">Tuesday</div>
+                    <div className="text-sm">July 15, 2025</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  <span className="font-medium">6:00 PM</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  <div>
+                    <div className="font-semibold">Riverside Park Amphitheater</div>
+                    <div className="text-sm">123 River Road, Downtown, City 12345</div>
+                  </div>
+                </div>
               </div>
-              <Button variant="hero" size="lg" className="h-14 px-8 w-full md:w-auto">
-                Find Events
+            </div>
+            
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setIsFavorited(!isFavorited)}
+                className={`bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 ${isFavorited ? 'text-red-400' : 'text-white'}`}
+              >
+                <Heart className={`w-5 h-5 mr-2 ${isFavorited ? 'fill-current' : ''}`} />
+                {isFavorited ? 'Saved' : 'Save'}
               </Button>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="flex flex-wrap justify-center gap-8 mt-16">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary-glow">50K+</div>
-              <div className="text-muted-foreground">Events</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-accent-electric">2M+</div>
-              <div className="text-muted-foreground">Happy Customers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-accent-neon">500+</div>
-              <div className="text-muted-foreground">Cities</div>
+              <Button
+                variant="secondary"
+                size="lg"
+                className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+              >
+                <Share2 className="w-5 h-5 mr-2" />
+                Share
+              </Button>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };

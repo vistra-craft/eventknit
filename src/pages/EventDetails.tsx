@@ -239,18 +239,54 @@ const EventDetails = () => {
               <Separator className="my-4" />
               
               <div className="space-y-8">
-                {/* Event Details Section */}
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Event Details</h2>
-                  <p className="text-muted-foreground">
-                    {event.fullDescription}
-                  </p>
-                </div>
+                {/* About This Event Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Info className="w-5 h-5" />
+                      About This Event
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                        {event.fullDescription}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Important Information Card */}
+                {(event.ageRestriction || event.requirements?.length > 0) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Important Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {event.ageRestriction && (
+                        <div className="flex items-start gap-3">
+                          <Users className="w-5 h-5 mt-0.5 text-muted-foreground" />
+                          <div>
+                            <p className="font-semibold">Age Restriction</p>
+                            <p className="text-muted-foreground text-sm">{event.ageRestriction}</p>
+                          </div>
+                        </div>
+                      )}
+                      {event.requirements?.map((req, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <CheckCircle className="w-5 h-5 mt-0.5 text-muted-foreground" />
+                          <div>
+                            <p className="font-semibold">Requirement {i + 1}</p>
+                            <p className="text-muted-foreground text-sm">{req}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Additional Information Section */}
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold">Additional Information</h2>
-                  
                   {/* FAQs */}
                   {event.faqs && event.faqs.length > 0 && (
                     <Card className="border-0 shadow-sm">
@@ -301,6 +337,43 @@ const EventDetails = () => {
                     </Card>
                   )}
 
+                  {/* Sponsors - Commented out as per request
+                  {event.sponsors && event.sponsors.length > 0 && (
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Award className="w-5 h-5 text-primary" />
+                          Our Sponsors
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap items-center gap-4">
+                          {event.sponsors.map((sponsor, index) => (
+                            <div key={index} className="flex items-center gap-2 p-2 rounded-md border">
+                              {sponsor.logo ? (
+                                <img 
+                                  src={sponsor.logo} 
+                                  alt={sponsor.name} 
+                                  className="h-8 w-auto object-contain"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '';
+                                    target.parentElement?.querySelector('span')?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : (
+                                <span className="font-medium">{sponsor.name}</span>
+                              )}
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                {sponsor.level}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  */}
                 </div>
 
                 {/* Event Settings Section */}
