@@ -1,7 +1,7 @@
-import { CategoryFilter } from "@/components/CategoryFilter";
-import { EventGrid } from "@/components/EventGrid";
-import { Hero } from "@/components/Hero";
-import Navbar from "@/components/Navbar";
+import { CategoryFilter } from "../components/CategoryFilter";
+import { EventGrid } from "../components/EventGrid";
+import { Hero } from "../components/Hero";
+import Navbar from "../components/Navbar";
 
 const Index = () => {
   return (
