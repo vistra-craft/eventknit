@@ -30,8 +30,15 @@ export const EventCard: React.FC<EventCardProps> = ({
   category 
 }) => {
   const navigate = useNavigate();
+  const handleCardClick = () => {
+    navigate(`/event/${id}`);
+  };
+
   return (
-    <div className="group bg-gradient-card border border-card-border rounded-xl overflow-hidden shadow-card hover:bg-gradient-card-hover hover:shadow-card-hover transition-all duration-500 hover:-translate-y-3 hover:border-primary hover:scale-[1.02]">
+    <div 
+      onClick={handleCardClick}
+      className="group bg-gradient-card border border-card-border rounded-xl overflow-hidden shadow-card hover:bg-gradient-card-hover hover:shadow-card-hover transition-all duration-500 hover:-translate-y-3 hover:border-primary hover:scale-[1.02] cursor-pointer"
+    >
       {/* Event Image */}
       <div className="relative overflow-hidden h-48">
         <img 

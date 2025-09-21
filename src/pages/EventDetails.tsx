@@ -49,6 +49,33 @@ const EventDetails = () => {
     }));
   };
 
+  const handleRegisterClick = () => {
+    // Calculate total price including service fee (8%)
+    const totalPrice = Object.entries(ticketQuantities).reduce((total: number, [ticketName, quantity]: [string, number]) => {
+      if (quantity === 0) return total;
+      const ticket = event?.ticketTypes.find((t: { name: string }) => t.name === ticketName);
+      return total + (ticket ? (ticket.price * 1.08) * quantity : 0);
+    }, 0);
+
+    // Filter out tickets with 0 quantity
+    const selectedTickets = Object.entries(ticketQuantities)
+      .filter(([_, qty]: [string, number]) => qty > 0)
+      .map(([name, quantity]: [string, number]) => ({
+        name,
+        quantity,
+        price: event?.ticketTypes.find((t: { name: string }) => t.name === name)?.price || 0
+      }));
+
+    navigate(`/event/${id}/payment`, {
+      state: {
+        eventId: id,
+        eventTitle: event?.title,
+        tickets: selectedTickets,
+        totalPrice: parseFloat(totalPrice.toFixed(2))
+      }
+    });
+  };
+
   // const getTotalPrice = () => {
   //   return Object.entries(ticketQuantities).reduce((total, [ticketName, quantity]) => {
   //     const ticket = event.ticketTypes.find(t => t.name === ticketName);
@@ -296,7 +323,7 @@ const EventDetails = () => {
                   )}
 
                   {/* Sponsors */}
-                  {event.sponsors && event.sponsors.length > 0 && (
+                  {/* {event.sponsors && event.sponsors.length > 0 && (
                     <Card className="border-0 shadow-sm">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -330,7 +357,7 @@ const EventDetails = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Event Settings Section */}
@@ -456,9 +483,12 @@ const EventDetails = () => {
                 );
               })}
               
-              <div className="text-center py-4 text-sm text-muted-foreground">
-                Select tickets to continue
-              </div>
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 py-6 text-lg font-medium mt-4"
+                onClick={handleRegisterClick}
+              >
+                Register Now
+              </Button>
             </div>
           </div>
         </div>
