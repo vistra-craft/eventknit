@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, User, Mail, Building, Info, Award, Settings, CheckCircle } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, User, Mail, Building, Info, Settings, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,27 +75,6 @@ const EventDetails = () => {
       }
     });
   };
-
-  // const getTotalPrice = () => {
-  //   return Object.entries(ticketQuantities).reduce((total, [ticketName, quantity]) => {
-  //     const ticket = event.ticketTypes.find(t => t.name === ticketName);
-  //     return total + (ticket ? ticket.price * quantity : 0);
-  //   }, 0);
-  // };
-
-  // const getTotalQuantity = () => {
-  //   return Object.values(ticketQuantities).reduce((sum, qty) => sum + qty, 0);
-  // };
-
-  // const handleGetTickets = () => {
-  //   navigate('/payment', { 
-  //     state: { 
-  //       event, 
-  //       ticketQuantities, 
-  //       totalPrice: getTotalPrice() + getTotalPrice() * 0.08 
-  //     } 
-  //   });
-  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -322,42 +301,6 @@ const EventDetails = () => {
                     </Card>
                   )}
 
-                  {/* Sponsors */}
-                  {/* {event.sponsors && event.sponsors.length > 0 && (
-                    <Card className="border-0 shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Award className="w-5 h-5 text-primary" />
-                          Our Sponsors
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex flex-wrap items-center gap-4">
-                          {event.sponsors.map((sponsor, index) => (
-                            <div key={index} className="flex items-center gap-2 p-2 rounded-md border">
-                              {sponsor.logo ? (
-                                <img 
-                                  src={sponsor.logo} 
-                                  alt={sponsor.name} 
-                                  className="h-8 w-auto object-contain"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src = '';
-                                    target.parentElement?.querySelector('span')?.classList.remove('hidden');
-                                  }}
-                                />
-                              ) : (
-                                <span className="font-medium">{sponsor.name}</span>
-                              )}
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                                {sponsor.level}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )} */}
                 </div>
 
                 {/* Event Settings Section */}
