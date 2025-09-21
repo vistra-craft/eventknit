@@ -1,10 +1,3 @@
----
-name: Chore
-about: For PRs involving cleanup, dependency updates, or general maintenance
-title: "[Chore] - "
-labels: ["chore"]
-assignees: []
----
 
 ### Maintenance / Chore PR
 
