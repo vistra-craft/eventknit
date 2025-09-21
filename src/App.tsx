@@ -1,15 +1,13 @@
-import { CategoryFilter } from "./components/CategoryFilter"
-import { Hero } from "./components/Hero"
-import Navbar from "./components/Navbar"
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/index";
 
-const App = () => {
-  return (
-    <div>
-      <Navbar />
-      <Hero />
-      <CategoryFilter />
-    </div>
-  )
-}
+const App = () => (
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      {/* ADD ALL CUSTOM ROUTES BELOW */}
+    </Routes>
+  </BrowserRouter>
+);
 
-export default App
+export default App;
