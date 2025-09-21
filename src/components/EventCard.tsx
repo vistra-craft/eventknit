@@ -12,11 +12,11 @@ interface EventCardProps {
   location: string;
   organizer: string;
   price: string;
-  rating: number;
+  rating?: number;
   category: string;
 }
 
-export const EventCard = ({ 
+export const EventCard: React.FC<EventCardProps> = ({ 
   id, 
   title, 
   image, 
@@ -26,9 +26,9 @@ export const EventCard = ({
   location, 
   organizer, 
   price, 
-  rating,
+  rating = 0,
   category 
-}: EventCardProps) => {
+}) => {
   const navigate = useNavigate();
   return (
     <div className="group bg-gradient-card border border-card-border rounded-xl overflow-hidden shadow-card hover:bg-gradient-card-hover hover:shadow-card-hover transition-all duration-500 hover:-translate-y-3 hover:border-primary hover:scale-[1.02]">
