@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Menu, X, User, LogOut, ChevronDown, Globe, Bell } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 // Define types
 interface User {
@@ -16,6 +17,7 @@ interface NavItem {
 }
 
 const Navbar: React.FC = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -197,7 +199,12 @@ const Navbar: React.FC = () => {
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-4">
               <Button variant="ghost">Find My Tickets</Button>
-              <Button variant="hero">Create Event</Button>
+              <Button 
+                variant="hero" 
+                onClick={() => navigate('/create-event')}
+              >
+                Create Event
+              </Button>
             </div>
 
             {/* Mobile Menu Button */}
