@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { EventMap } from "@/components/EventMap";
 import { useState, useEffect } from "react";
 import { events } from "@/data/events";
@@ -81,11 +82,11 @@ const EventDetails = () => {
       <Navbar />
       
       {/* Back Button */}
-      <div className="container mx-auto px-4 sm:px-6 pt-6">
+      <div className="container mx-auto px-4 sm:px-6 pt-24">
         <Button
-          variant="ghost"
+          variant="outline"
           onClick={() => navigate("/")}
-          className="mb-6 hover:bg-muted group transition-all duration-200"
+          className="mb-6 hover:bg-muted group transition-all duration-200 border-border bg-background/80 backdrop-blur-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
           Back to Events
@@ -472,6 +473,7 @@ const EventDetails = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -16,7 +16,8 @@ import { Badge } from "@/components/ui/badge";
 
 // App Components
 import Navbar from "@/components/Navbar";
-import PaymentForm from "./Payment";
+import Footer from "@/components/Footer";
+import PaymentForm from "@/components/PaymentForm";
 
 // Types
 import type { EventData, RegistrationField } from "@/types/event";
@@ -727,7 +728,7 @@ const EventRegistration = () => {
           </div>
         </div>
       </main>
-
+      <Footer />
     </div>
   );
 };

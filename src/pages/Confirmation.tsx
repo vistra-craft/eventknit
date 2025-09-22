@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // App Components
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 interface TicketType {
   name: string;
@@ -118,6 +119,7 @@ const Confirmation = () => {
           </Button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

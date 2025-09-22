@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Menu, X, User, LogOut, ChevronDown, Globe, Bell } from 'lucide-react';
+import { Calendar, Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
+import SearchBar from "./Searchbar";
 
 // Define types
 interface User {
@@ -36,49 +37,10 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Simplified navigation items - keeping only essential ones
   const navItems: NavItem[] = [
-    { 
-      name: "Browse Events", 
-      href: "/events",
-      dropdown: [
-        "Music & Concerts",
-        "Sports & Fitness",
-        "Arts & Theater",
-        "Food & Drink",
-        "Business & Professional",
-        "Health & Wellness",
-        "Family & Education",
-        "Holiday & Seasonal"
-      ]
-    },
-    { name: "Find Events Near You", href: "/nearby" },
-    { 
-      name: "Categories", 
-      href: "/categories",
-      dropdown: [
-        "Conferences",
-        "Workshops",
-        "Festivals",
-        "Networking Events",
-        "Classes & Courses",
-        "Charity & Causes"
-      ]
-    },
-    { name: "Venues", href: "/venues" },
-    { 
-      name: "For Organizers", 
-      href: "/organizers",
-      dropdown: [
-        "Event Planning Tools",
-        "Ticketing Solutions",
-        "Marketing Resources",
-        "Analytics & Reports",
-        "Pricing Plans",
-        "Success Stories"
-      ]
-    },
-    { name: "My Tickets", href: "/my-tickets" },
     { name: "About", href: "/about" },
+    { name: "Find Events", href: "/" },
   ];
 
   const handleLogout = (): void => {
@@ -88,16 +50,11 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Utility Bar - Using your primary color instead of green */}
+      {/* Utility Bar - Simplified */}
       <div className="bg-primary h-8 w-full">
         <div className="container mx-auto px-6 h-full flex items-center justify-between text-primary-foreground text-sm font-medium">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Globe className="w-4 h-4" />
-              <span>United States</span>
-            </div>
-            <span>|</span>
-            <span>Help Center</span>
+            <span>Welcome to EventKnit</span>
           </div>
           
           <div className="flex items-center space-x-6">
@@ -106,11 +63,6 @@ const Navbar: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4" />
                   <span>{user.name || 'John Doe'}</span>
-                </div>
-                <span>|</span>
-                <div className="flex items-center space-x-2">
-                  <Bell className="w-4 h-4" />
-                  <span>Notifications</span>
                 </div>
                 <span>|</span>
                 <button
@@ -148,61 +100,52 @@ const Navbar: React.FC = () => {
         }`}
       >
         <div className="container mx-auto px-6">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex items-center h-16 gap-6">
             
             {/* Logo */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-foreground">EventKnit</span>
             </div>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              {navItems.map((item) => {
-                const isActive = location.pathname === item.href || 
-                               (item.href === '/about' && location.pathname.startsWith('/event/'));
-
-                return (
-                  <div key={item.name} className="relative group">
-                    <button
-                      onClick={() => navigate(item.href)}
-                      className={`flex items-center text-sm font-medium ${isActive ? 'text-primary' : 'text-foreground/80 hover:text-primary'} transition-colors duration-200`}
-                    >
-                      {item.name}
-                      {item.dropdown && <ChevronDown className="ml-1 w-4 h-4" />}
-                    </button>
-                    {item.dropdown && (
-                      <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-card ring-1 ring-border py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform -translate-y-1 group-hover:translate-y-0">
-                        {item.dropdown.map((subItem) => (
-                          <button
-                            key={subItem}
-                            className="block w-full text-left px-4 py-2 text-sm text-foreground/80 hover:bg-accent"
-                          >
-                            {subItem}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            {/* Search Bar - Full Width */}
+            <div className="hidden lg:flex flex-1">
+              <SearchBar />
             </div>
 
-            {/* Desktop Actions */}
-            <div className="hidden md:flex items-center gap-4">
-              <Button variant="ghost">Find My Tickets</Button>
-              <Button 
-                variant="hero" 
+            {/* Desktop Navigation & Actions */}
+            <div className="hidden md:flex items-center space-x-6 flex-shrink-0">
+              {/* Navigation */}
+              <div className="flex items-center space-x-6">
+                {navItems.map((item) => {
+                  const isActive = location.pathname === item.href || 
+                                 (item.href === '/' && location.pathname === '/');
+
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => navigate(item.href)}
+                      className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-foreground/80 hover:text-primary'} transition-colors duration-200`}
+                    >
+                      {item.name}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Actions */}
+              <button
                 onClick={() => navigate('/create-event')}
+                className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors duration-200"
               >
                 Create Event
-              </Button>
+              </button>
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="lg:hidden">
+            <div className="md:hidden">
               <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
@@ -212,41 +155,36 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden bg-background/95 backdrop-blur-xl border-t border-border shadow-lg">
-            <div className="container mx-auto px-6 py-4 max-h-96 overflow-y-auto">
+          <div className="md:hidden bg-background/95 backdrop-blur-xl border-t border-border shadow-lg">
+            <div className="container mx-auto px-6 py-4">
+              {/* Mobile Search Bar */}
+              <div className="mb-4">
+                <SearchBar />
+              </div>
+              
               {navItems.map((item) => (
-                <div key={item.name}>
-                  <button
-                    onClick={() => navigate(item.href)}
-                    className={`flex items-center justify-between px-3 py-2 text-foreground/80 hover:text-primary font-medium ${location.pathname === item.href ? 'text-primary' : ''}`}
-                  >
-                    {item.name}
-                    {item.dropdown && (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </button>
-                  {item.dropdown && (
-                    <div className="pl-4 border-l-2 border-border ml-3">
-                      {item.dropdown.map((subItem) => (
-                        <button
-                          key={subItem}
-                          className="block px-3 py-1 text-sm text-foreground/60 hover:text-primary"
-                        >
-                          {subItem}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    navigate(item.href);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`block w-full text-left px-3 py-2 text-foreground/80 hover:text-primary font-medium ${location.pathname === item.href ? 'text-primary' : ''}`}
+                >
+                  {item.name}
+                </button>
               ))}
               
               <div className="mt-4 space-y-2 border-t border-border pt-4">
-                <Button variant="ghost" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                  Find My Tickets
-                </Button>
-                <Button variant="hero" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                <button
+                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-primary font-medium"
+                  onClick={() => {
+                    navigate('/create-event');
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
                   Create Event
-                </Button>
+                </button>
               </div>
             </div>
           </div>

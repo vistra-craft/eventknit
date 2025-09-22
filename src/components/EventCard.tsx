@@ -42,11 +42,11 @@ export const EventCard: React.FC<EventCardProps> = ({
       className="group overflow-hidden"
     >
       {/* Event Image */}
-      <div className="relative overflow-hidden h-48">
+      <div className="relative overflow-hidden h-64">
         <img 
           src={image} 
           alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         
@@ -65,7 +65,7 @@ export const EventCard: React.FC<EventCardProps> = ({
       </div>
 
       {/* Event Details */}
-      <div className="p-6 space-y-4">
+      <div className="p-4 space-y-3">
         <div>
           <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2">
             {title}

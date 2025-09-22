@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const About = () => {
   const navigate = useNavigate();
@@ -257,6 +258,7 @@ const About = () => {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 };

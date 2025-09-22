@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 
 // App Components
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 // Types
 interface TicketType {
@@ -412,6 +413,7 @@ const PaymentPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
