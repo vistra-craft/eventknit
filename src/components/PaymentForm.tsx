@@ -43,15 +43,13 @@ interface PaymentFormProps {
 }
 
 const PaymentForm: React.FC<PaymentFormProps> = ({ 
-  event,
-  tickets,
   totalPrice,
   onSuccess,
   onBack,
   onCancel
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   
   const [cardDetails, setCardDetails] = useState<CardDetails>({
@@ -106,8 +104,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     onSuccess();
   };
 
-  const subtotal = tickets.reduce((sum: number, ticket: TicketType) => sum + (ticket.price * ticket.quantity), 0);
-  const tax = totalPrice - subtotal;
 
   return (
     <div className="space-y-6">

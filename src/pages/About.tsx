@@ -1,15 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, Target, Award, Heart, MapPin, Mail, Phone, Linkedin, Twitter, Instagram, Play, CheckCircle, TrendingUp, Globe, Zap, Shield, Star, ArrowRight, Calendar, Ticket, Sparkles, Settings, Clock, DollarSign, Rocket, Smartphone, QrCode, BarChart3, Bell, Palette, Smartphone as Mobile, CheckCircle2, Eye, BarChart, Share2 } from "lucide-react";
+import { Users, Target, Award, Heart, MapPin, Mail, Phone, Linkedin, Twitter, Instagram, Play, CheckCircle, TrendingUp, Globe, Star, ArrowRight, Calendar, Ticket, Sparkles, Settings, Clock, DollarSign, Rocket, QrCode, BarChart3, Bell, Smartphone as Mobile, CheckCircle2, Eye, BarChart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useState, useEffect } from "react";
 
 const About = () => {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [animatedStats, setAnimatedStats] = useState([0, 0, 0, 0]);
@@ -43,40 +40,6 @@ const About = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const teamMembers = [
-    {
-      name: "Sarah Johnson",
-      role: "CEO & Founder",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face",
-      description: "Passionate about bringing people together through unforgettable experiences.",
-      linkedin: "https://linkedin.com/in/sarah-johnson",
-      twitter: "https://twitter.com/sarah_j"
-    },
-    {
-      name: "Michael Chen",
-      role: "Head of Events",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
-      description: "Expert event coordinator with 10+ years of experience in large-scale productions.",
-      linkedin: "https://linkedin.com/in/michael-chen",
-      twitter: "https://twitter.com/michael_c"
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Creative Director",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face",
-      description: "Innovative designer who transforms spaces into magical experiences.",
-      linkedin: "https://linkedin.com/in/emily-rodriguez",
-      twitter: "https://twitter.com/emily_r"
-    },
-    {
-      name: "David Thompson",
-      role: "Technology Lead",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face",
-      description: "Building the future of event discovery and ticketing technology.",
-      linkedin: "https://linkedin.com/in/david-thompson",
-      twitter: "https://twitter.com/david_t"
-    }
-  ];
 
   const stats = [
     { number: animatedStats[0], suffix: "K+", label: "Happy Attendees", icon: <Users className="w-6 h-6" /> },
@@ -112,28 +75,6 @@ const About = () => {
     }
   ];
 
-  const features = [
-    {
-      icon: <Zap className="w-6 h-6" />,
-      title: "Lightning Fast Booking",
-      description: "Secure your spot in seconds with our streamlined booking process"
-    },
-    {
-      icon: <Shield className="w-6 h-6" />,
-      title: "Secure Payments",
-      description: "Bank-level security for all transactions with fraud protection"
-    },
-    {
-      icon: <Ticket className="w-6 h-6" />,
-      title: "Digital Tickets",
-      description: "No more paper tickets - everything is digital and eco-friendly"
-    },
-    {
-      icon: <Sparkles className="w-6 h-6" />,
-      title: "Smart Recommendations",
-      description: "AI-powered suggestions based on your interests and preferences"
-    }
-  ];
 
   const tabs = [
     { id: 0, label: "Our Story", icon: <Heart className="w-4 h-4" /> },
@@ -172,49 +113,7 @@ const About = () => {
     }
   ];
 
-  const organizerBenefits = [
-    {
-      icon: <Palette className="w-8 h-8" />,
-      title: "Customize Freely",
-      description: "Full control over your event settings, branding, and registration forms. Make it uniquely yours.",
-      color: "text-pink-500"
-    },
-    {
-      icon: <Mobile className="w-8 h-8" />,
-      title: "Mobile Power",
-      description: "Seamlessly manage your events via our mobile app. Check-in attendees with QR codes on the go.",
-      color: "text-blue-500"
-    },
-    {
-      icon: <Users className="w-8 h-8" />,
-      title: "Audience Ready",
-      description: "Powerful tools to attract and engage attendees. From marketing to analytics, we've got you covered.",
-      color: "text-green-500"
-    }
-  ];
 
-  const ticketingFeatures = [
-    {
-      icon: <QrCode className="w-6 h-6" />,
-      title: "QR Check-in",
-      description: "Fast, contactless entry"
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6" />,
-      title: "Real-Time Analytics",
-      description: "Track performance live"
-    },
-    {
-      icon: <Bell className="w-6 h-6" />,
-      title: "Instant Notifications",
-      description: "Stay updated always"
-    },
-    {
-      icon: <Ticket className="w-6 h-6" />,
-      title: "Flexible Ticketing",
-      description: "Custom pricing options"
-    }
-  ];
 
   const ticketingSteps = [
     {

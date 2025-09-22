@@ -193,38 +193,6 @@ const EventRegistration = () => {
     }
   };
 
-  const validateForm = (): boolean => {
-    if (!event) return false;
-    
-    const formErrors: FormErrors = {};
-    
-    event.registrationFields.forEach(field => {
-      const value = formData[field.id];
-      
-      if (field.required && (value === undefined || value === '')) {
-        formErrors[field.id] = `${field.label} is required`;
-      }
-      
-      // Additional validation for phone numbers
-      if (field.type === 'tel' && value) {
-        const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,3}[-\s.]?[0-9]{4,6}$/;
-        if (!phoneRegex.test(String(value))) {
-          formErrors[field.id] = 'Please enter a valid phone number';
-        }
-      }
-      
-      // Additional validation for email
-      if (field.type === 'email' && value) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(String(value))) {
-          formErrors[field.id] = 'Please enter a valid email address';
-        }
-      }
-    });
-    
-    setErrors(formErrors);
-    return Object.keys(formErrors).length === 0;
-  };
 
   const handleRegistrationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -603,7 +571,7 @@ const EventRegistration = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {event.ticketTypes.map((ticket, index) => (
+                    {event.ticketTypes?.map((ticket, index) => (
                       <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex-1">
                           <h3 className="font-semibold">{ticket.name}</h3>

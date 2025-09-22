@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Menu, X, User, LogOut, ChevronDown, Globe } from 'lucide-react';
+import { Calendar, Menu, X, User, LogOut, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchBar from "./Searchbar";
@@ -22,7 +22,7 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null); // Mock user state - replace with your auth
-  const [country, setCountry] = useState<string>('US'); // Default to US
+  const [country] = useState<string>('US'); // Default to US
   const location = useLocation();
 
   useEffect(() => {
