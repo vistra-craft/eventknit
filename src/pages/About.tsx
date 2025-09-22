@@ -444,38 +444,52 @@ const About = () => {
           </div>
         </div>
 
-        {/* Interactive Features Section - Compact */}
-        <div className="mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4">Why Choose EventKnit?</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Experience the future of event management with our cutting-edge features
-            </p>
-          </div>
-          
-          {/* Compact 2x2 grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {features.map((feature, index) => (
-              <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                      <div className="text-primary">
-                        {feature.icon}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {feature.description}
-                      </p>
-                    </div>
+        {/* Process Section */}
+        <section className="py-20 bg-gradient-to-b from-primary/5 via-background to-muted/20">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-16 animate-fade-up">
+              <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+                How We Work With You
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Our streamlined process ensures seamless attendee management for your events
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-4 gap-8">
+              {[
+                {
+                  step: "01",
+                  title: "Consultation",
+                  description: "We discuss your event requirements and create a customized management plan."
+                },
+                {
+                  step: "02", 
+                  title: "Setup & Integration",
+                  description: "Our team handles all technical setup and integrations with your existing systems."
+                },
+                {
+                  step: "03",
+                  title: "Training & Support",
+                  description: "We provide comprehensive training and ongoing support throughout your event."
+                },
+                {
+                  step: "04",
+                  title: "Analytics & Optimization",
+                  description: "Post-event analysis and recommendations for continuous improvement."
+                }
+              ].map((process, index) => (
+                <div key={index} className="text-center animate-fade-up" style={{animationDelay: `${index * 200}ms`}}>
+                  <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center text-primary-foreground text-2xl font-bold mx-auto mb-6 shadow-glow">
+                    {process.step}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <h3 className="text-xl font-bold text-foreground mb-4">{process.title}</h3>
+                  <p className="text-muted-foreground">{process.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
 
 
         {/* Creative Visual Separator */}
