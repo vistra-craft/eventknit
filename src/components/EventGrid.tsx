@@ -78,7 +78,7 @@ export const EventGrid = () => {
         </div>
 
         <div className="text-center mt-12">
-          <button className="px-8 py-3 bg-gradient-primary text-primary-foreground rounded-lg font-semibold hover:shadow-glow transition-all duration-200">
+          <button className="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-200">
             Load More Events
           </button>
         </div>

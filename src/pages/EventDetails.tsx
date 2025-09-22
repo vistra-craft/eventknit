@@ -51,30 +51,8 @@ const EventDetails = () => {
   };
 
   const handleRegisterClick = () => {
-    // Calculate total price including service fee (8%)
-    const totalPrice = Object.entries(ticketQuantities).reduce((total: number, [ticketName, quantity]: [string, number]) => {
-      if (quantity === 0) return total;
-      const ticket = event?.ticketTypes.find((t: { name: string }) => t.name === ticketName);
-      return total + (ticket ? (ticket.price * 1.08) * quantity : 0);
-    }, 0);
-
-    // Filter out tickets with 0 quantity
-    const selectedTickets = Object.entries(ticketQuantities)
-      .filter(([, qty]) => qty > 0)
-      .map(([name, quantity]: [string, number]) => ({
-        name,
-        quantity,
-        price: event?.ticketTypes.find((t: { name: string }) => t.name === name)?.price || 0
-      }));
-
-    navigate(`/event/${id}/payment`, {
-      state: {
-        eventId: id,
-        eventTitle: event?.title,
-        tickets: selectedTickets,
-        totalPrice: parseFloat(totalPrice.toFixed(2))
-      }
-    });
+    // Navigate to the registration page first
+    navigate(`/event/${id}/register`);
   };
 
   return (
@@ -223,11 +201,11 @@ const EventDetails = () => {
                       <h3 className="font-semibold">{event.organizer}</h3>
                       <p className="text-sm text-muted-foreground mt-1">Event Organizer</p>
                       <div className="flex gap-3 mt-3">
-                        <Button variant="outline" size="sm" className="text-xs h-8">
+                        <Button variant="outline" size="sm" className="text-xs h-8 hover:bg-primary hover:text-primary-foreground">
                           <ExternalLink className="w-3 h-3 mr-1.5" />
                           Website
                         </Button>
-                        <Button variant="outline" size="sm" className="text-xs h-8">
+                        <Button variant="outline" size="sm" className="text-xs h-8 hover:bg-primary hover:text-primary-foreground">
                           <Mail className="w-3 h-3 mr-1.5" />
                           Contact
                         </Button>

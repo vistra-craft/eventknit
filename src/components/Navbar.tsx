@@ -38,23 +38,22 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Country detection based on IP
-  useEffect(() => {
-    const detectCountry = async () => {
-      try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
-        if (data.country_code) {
-          setCountry(data.country_code);
-        }
-      } catch (error) {
-        // If API fails, keep default 'US'
-        console.log('Country detection failed, using default US');
-      }
-    };
-
-    detectCountry();
-  }, []);
+  // Country detection disabled to prevent CORS/rate limiting issues
+  // useEffect(() => {
+  //   const detectCountry = async () => {
+  //     try {
+  //       const response = await fetch('https://ipapi.co/json/');
+  //       const data = await response.json();
+  //       if (data.country_code) {
+  //         setCountry(data.country_code);
+  //       }
+  //     } catch (error) {
+  //       // If API fails, keep default 'US'
+  //       console.log('Country detection failed, using default US');
+  //     }
+  //   };
+  //   detectCountry();
+  // }, []);
 
   // Simplified navigation items - keeping only essential ones
   const navItems: NavItem[] = [
