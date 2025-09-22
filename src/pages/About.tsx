@@ -477,6 +477,29 @@ const About = () => {
           </div>
         </div>
 
+
+        {/* Creative Visual Separator */}
+        <div className="relative py-20 mb-20 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
+          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full transform -translate-x-32 -translate-y-32"></div>
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full transform translate-x-24 translate-y-24"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-pink-500/10 rounded-full"></div>
+          
+          <div className="relative text-center">
+            <div className="inline-block px-8 py-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg">
+              <div className="flex items-center gap-4">
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse delay-100"></div>
+                <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse delay-200"></div>
+                <span className="text-muted-foreground font-medium">Creating Amazing Experiences</span>
+                <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse delay-300"></div>
+                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse delay-400"></div>
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse delay-500"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Event Creation Process Section - Compact */}
         <div className="mb-16">
           <div className="text-center mb-8">
@@ -516,24 +539,101 @@ const About = () => {
           </div>
         </div>
 
-        {/* Creative Visual Separator */}
-        <div className="relative py-20 mb-20 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full transform -translate-x-32 -translate-y-32"></div>
-          <div className="absolute bottom-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full transform translate-x-24 translate-y-24"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-pink-500/10 rounded-full"></div>
-          
-          <div className="relative text-center">
-            <div className="inline-block px-8 py-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg">
-              <div className="flex items-center gap-4">
-                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse delay-100"></div>
-                <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse delay-200"></div>
-                <span className="text-muted-foreground font-medium">Creating Amazing Experiences</span>
-                <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse delay-300"></div>
-                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse delay-400"></div>
-                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse delay-500"></div>
+        {/* Process Steps Section */}
+        <div className="py-20 bg-gradient-to-b from-background to-muted/30 mb-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                <span className="text-primary">Sell Event Tickets Online</span> in 2 Simple Steps
+              </h2>
+            </div>
+
+            <div className="relative max-w-6xl mx-auto">
+              {/* Step 1 */}
+              <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
+                <div className="order-2 md:order-1">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="text-8xl font-bold text-muted-foreground/20">1</div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-navy">Step</h3>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold">
+                        Book A Demo
+                      </div>
+                      <div className="text-primary text-2xl">→</div>
+                      <div className="text-navy font-medium">Set up your account</div>
+                      <div className="text-primary text-2xl">→</div>
+                      <div className="text-navy font-medium">Get onboarding assistance</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="order-1 md:order-2 relative">
+                  <svg className="w-full h-32" viewBox="0 0 400 100">
+                    <path
+                      d="M 50 50 Q 200 10 350 50"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="3"
+                      fill="none"
+                      className="animate-pulse"
+                    />
+                    <circle cx="50" cy="50" r="6" fill="hsl(var(--primary))" />
+                  </svg>
+                </div>
               </div>
+
+              {/* Step 2 */}
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                <div className="relative">
+                  <svg className="w-full h-32" viewBox="0 0 400 100">
+                    <path
+                      d="M 50 50 Q 200 90 350 50"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="3"
+                      fill="none"
+                      className="animate-pulse"
+                    />
+                    <circle cx="350" cy="50" r="6" fill="hsl(var(--primary))" />
+                  </svg>
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="text-8xl font-bold text-muted-foreground/20">2</div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-navy">Step</h3>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
+                      <div className="font-semibold text-navy mb-2">Create an event</div>
+                      <div className="text-muted-foreground">→</div>
+                    </div>
+                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
+                      <div className="font-semibold text-navy mb-2">Customize tickets</div>
+                      <div className="text-muted-foreground">→</div>
+                    </div>
+                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
+                      <div className="font-semibold text-navy mb-2">Launch sales & track analytics</div>
+                      <div className="text-muted-foreground">→</div>
+                    </div>
+                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
+                      <div className="font-semibold text-navy mb-2">Start selling tickets online</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center mt-16">
+              <Button size="lg" className="bg-primary hover:bg-primary-light text-primary-foreground px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all">
+                Book A Demo
+              </Button>
             </div>
           </div>
         </div>
@@ -724,9 +824,99 @@ const About = () => {
           </div>
         </div>
 
+        {/* Success Stories Section */}
+        <div className="py-20 bg-background mb-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Turn Your Events into <span className="text-primary">High-Revenue Success Stories</span>
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
+                See how Yapsody's ticketing platform transforms event ticketing challenges into sold-out events with tailored solutions. Real stories, real success!
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              <Card className="group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
+                <div className="relative overflow-hidden">
+                  <img 
+                    src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=300&fit=crop"
+                    alt="Concert Venue Success Story"
+                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                      Yapsody
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <CardContent className="p-6">
+                  <div className="text-sm text-primary font-semibold mb-2">Concert Venue</div>
+                  <h3 className="text-lg font-bold text-navy leading-tight group-hover:text-primary transition-colors duration-300">
+                    How Yapsody Helped Boot Barn Hall Simplify Reporting And Sales
+                  </h3>
+                </CardContent>
+              </Card>
+
+              <Card className="group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
+                <div className="relative overflow-hidden">
+                  <img 
+                    src="/src/assets/event-concert.jpg"
+                    alt="Casino Resort Success Story"
+                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                      Yapsody
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <CardContent className="p-6">
+                  <div className="text-sm text-primary font-semibold mb-2">Casino Resort</div>
+                  <h3 className="text-lg font-bold text-navy leading-tight group-hover:text-primary transition-colors duration-300">
+                    How Yapsody Delivered Custom Ticketing & Security Solutions
+                  </h3>
+                </CardContent>
+              </Card>
+
+              <Card className="group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
+                <div className="relative overflow-hidden">
+                  <img 
+                    src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
+                    alt="Sports Event Success Story"
+                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <div className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                      Yapsody
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <CardContent className="p-6">
+                  <div className="text-sm text-primary font-semibold mb-2">Sports Event</div>
+                  <h3 className="text-lg font-bold text-navy leading-tight group-hover:text-primary transition-colors duration-300">
+                    How Yapsody Helped Black Rodeo USA Tackle Ticket Scalping Through Blocklist Feature Customization
+                  </h3>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="text-center">
+              <Button 
+                size="lg" 
+                className="bg-primary hover:bg-primary-light text-primary-foreground px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all"
+              >
+                Discover More Success Stories
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Interactive CTA Section */}
-        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-primary/20">
+        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-primary/20 mb-20">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl mb-4">Ready to Join Our Community?</CardTitle>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -749,6 +939,157 @@ const About = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Event Presenters Testimonials Section */}
+        <div className="py-20 bg-gradient-to-b from-muted/30 to-background mb-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Event Presenters Share Their <span className="text-primary">Yapsody Experience</span>
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-4xl mx-auto">
+                Our renowned event ticketing software has a proven track record of helping presenters sell tickets fast worldwide.
+              </p>
+            </div>
+
+            {/* Testimonials Carousel */}
+            <div className="relative overflow-hidden">
+              <div className="flex animate-scroll gap-8">
+                {/* First set of testimonials */}
+                <div className="flex gap-8 flex-shrink-0">
+                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+                            alt="John Smith"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-navy">John Smith</h4>
+                          <p className="text-sm text-muted-foreground">Music Festival Organizer</p>
+                        </div>
+                      </div>
+                      <blockquote className="text-muted-foreground italic leading-relaxed">
+                        "Yapsody transformed our ticket sales completely. We sold out our festival in record time and the analytics helped us understand our audience better than ever."
+                      </blockquote>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
+                            alt="Sarah Johnson"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-navy">Sarah Johnson</h4>
+                          <p className="text-sm text-muted-foreground">Corporate Events Manager</p>
+                        </div>
+                      </div>
+                      <blockquote className="text-muted-foreground italic leading-relaxed">
+                        "The ease of use is incredible. From setting up events to managing attendees, Yapsody makes everything seamless. Our corporate clients love the professional experience."
+                      </blockquote>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face"
+                            alt="Mike Chen"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-navy">Mike Chen</h4>
+                          <p className="text-sm text-muted-foreground">Sports Event Coordinator</p>
+                        </div>
+                      </div>
+                      <blockquote className="text-muted-foreground italic leading-relaxed">
+                        "The QR code check-in feature is a game-changer. We can handle large crowds efficiently and the real-time analytics help us optimize our events on the fly."
+                      </blockquote>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Duplicate set for seamless loop */}
+                <div className="flex gap-8 flex-shrink-0">
+                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
+                            alt="Emily Rodriguez"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-navy">Emily Rodriguez</h4>
+                          <p className="text-sm text-muted-foreground">Art Gallery Director</p>
+                        </div>
+                      </div>
+                      <blockquote className="text-muted-foreground italic leading-relaxed">
+                        "Yapsody's customization options are perfect for our art exhibitions. We can create unique experiences that match our brand and engage our visitors beautifully."
+                      </blockquote>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
+                            alt="David Thompson"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-navy">David Thompson</h4>
+                          <p className="text-sm text-muted-foreground">Conference Organizer</p>
+                        </div>
+                      </div>
+                      <blockquote className="text-muted-foreground italic leading-relaxed">
+                        "The reporting features are outstanding. We get detailed insights into attendee behavior and can make data-driven decisions for future events."
+                      </blockquote>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face"
+                            alt="Lisa Wang"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-navy">Lisa Wang</h4>
+                          <p className="text-sm text-muted-foreground">Wedding Planner</p>
+                        </div>
+                      </div>
+                      <blockquote className="text-muted-foreground italic leading-relaxed">
+                        "For intimate events like weddings, Yapsody provides the perfect balance of elegance and functionality. Our clients appreciate the seamless experience."
+                      </blockquote>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Creative Contact Section */}
         <div className="mt-16">
