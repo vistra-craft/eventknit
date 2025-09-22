@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
+import { Calendar, Menu, X, User, LogOut, ChevronDown, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import SearchBar from "./Searchbar";
@@ -22,6 +22,7 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null); // Mock user state - replace with your auth
+  const [country, setCountry] = useState<string>('US'); // Default to US
   const location = useLocation();
 
   useEffect(() => {
@@ -35,6 +36,24 @@ const Navbar: React.FC = () => {
     handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Country detection based on IP
+  useEffect(() => {
+    const detectCountry = async () => {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        if (data.country_code) {
+          setCountry(data.country_code);
+        }
+      } catch (error) {
+        // If API fails, keep default 'US'
+        console.log('Country detection failed, using default US');
+      }
+    };
+
+    detectCountry();
   }, []);
 
   // Simplified navigation items - keeping only essential ones
@@ -53,8 +72,10 @@ const Navbar: React.FC = () => {
       {/* Utility Bar - Simplified */}
       <div className="bg-primary h-8 w-full">
         <div className="container mx-auto px-6 h-full flex items-center justify-between text-primary-foreground text-sm font-medium">
-          <div className="flex items-center space-x-4">
-            <span>Welcome to EventKnit</span>
+          <div className="flex items-center space-x-2">
+            <Globe className="w-4 h-4" />
+            <span>|</span>
+            <span>{country}</span>
           </div>
           
           <div className="flex items-center space-x-6">
