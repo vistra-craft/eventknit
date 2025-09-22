@@ -86,7 +86,7 @@ const EventDetails = () => {
         <Button
           variant="outline"
           onClick={() => navigate("/")}
-          className="mb-6 hover:bg-muted group transition-all duration-200 border-border bg-background/80 backdrop-blur-sm"
+          className="mb-6 hover:border-primary hover:bg-primary/5 group transition-all duration-200 border-border bg-background/80 backdrop-blur-sm"
         >
           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
           Back to Events

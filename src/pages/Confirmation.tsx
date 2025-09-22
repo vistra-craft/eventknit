@@ -111,7 +111,7 @@ const Confirmation = () => {
           <Button
             variant="outline"
             onClick={handleBackToEvent}
-            className="gap-2"
+            className="gap-2 hover:border-primary hover:bg-primary/5 transition-all duration-200"
             size="lg"
           >
             <ArrowLeft className="w-5 h-5" />

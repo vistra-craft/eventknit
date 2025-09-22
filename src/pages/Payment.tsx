@@ -164,7 +164,12 @@ const PaymentPage = () => {
 
         {/* Navigation Header */}
         <div className="flex items-center gap-2 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => navigate(-1)}
+            className="hover:border-primary hover:bg-primary/5 transition-all duration-200"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold">Complete Your Purchase</h1>
