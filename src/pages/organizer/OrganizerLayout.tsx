@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import OrganizerSidebar from "./OrganizerSidebar";
 import OrganizerHeader from "./OrganizerHeader";
+import Footer from "@/components/Footer";
 
 interface OrganizerLayoutProps {
   children: React.ReactNode;
@@ -47,9 +48,13 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
       <div className="lg:hidden">
         <OrganizerSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
 
 export default OrganizerLayout;
+
 
