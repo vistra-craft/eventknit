@@ -10,7 +10,6 @@ import {
   Network,
   Bell,
   BarChart3,
-  Ticket,
   Badge as BadgeIcon,
   ArrowLeft,
   Clock,
@@ -178,59 +177,50 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ eventData, user, registra
               </div>
 
               {/* Event Features Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-8">
                 <Button 
                   variant="outline"
-                  className="h-20 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
                   onClick={() => window.location.href = '/user/dashboard?section=speakers'}
                 >
-                  <Mic className="w-6 h-6" />
-                  <span className="font-medium">Speakers</span>
+                  <Mic className="w-5 h-5" />
+                  <span className="font-medium text-xs sm:text-sm">Speakers</span>
                 </Button>
 
                 <Button 
                   variant="outline"
-                  className="h-20 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
                   onClick={() => window.location.href = '/user/dashboard?section=exhibitors'}
                 >
-                  <Users2 className="w-6 h-6" />
-                  <span className="font-medium">Exhibitors</span>
+                  <Users2 className="w-5 h-5" />
+                  <span className="font-medium text-xs sm:text-sm">Exhibitors</span>
                 </Button>
 
                 <Button 
                   variant="outline"
-                  className="h-20 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
                   onClick={() => window.location.href = '/user/dashboard?section=agenda'}
                 >
-                  <CalendarIcon className="w-6 h-6" />
-                  <span className="font-medium">Agenda</span>
+                  <CalendarIcon className="w-5 h-5" />
+                  <span className="font-medium text-xs sm:text-sm">Agenda</span>
                 </Button>
 
                 <Button 
                   variant="outline"
-                  className="h-20 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200"
-                  onClick={() => window.location.href = '/user/dashboard?section=my-event'}
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
+                  onClick={() => window.location.href = '/user/dashboard?section=badge'}
                 >
-                  <Ticket className="w-6 h-6" />
-                  <span className="font-medium">My Event</span>
+                  <BadgeIcon className="w-5 h-5" />
+                  <span className="font-medium text-xs sm:text-sm">My Badge</span>
                 </Button>
 
                 <Button 
                   variant="outline"
-                  className="h-20 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200"
-                  onClick={() => window.location.href = '/user/dashboard?section=my-badge'}
-                >
-                  <BadgeIcon className="w-6 h-6" />
-                  <span className="font-medium">My Badge</span>
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  className="h-20 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
                   onClick={() => window.location.href = '/user/dashboard?section=abstracts'}
                 >
-                  <FileText className="w-6 h-6" />
-                  <span className="font-medium">Submit Abstract</span>
+                  <FileText className="w-5 h-5" />
+                  <span className="font-medium text-xs sm:text-sm">Submit Abstract</span>
                 </Button>
               </div>
 
