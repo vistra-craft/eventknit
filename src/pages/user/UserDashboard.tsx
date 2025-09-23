@@ -39,6 +39,9 @@ const UserDashboard = () => {
   // Show success message if available
   const successMessage = location.state?.message;
 
+  // Check if we should show navigation buttons (only on specific sections)
+  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
+
   const renderSection = () => {
     switch (activeSection) {
       case "speakers":
@@ -81,7 +84,7 @@ const UserDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DashboardNavbar user={user} activeSection={activeSection} />
-      <main className="pt-20 flex-1">
+      <main className={`${shouldShowNavigationButtons ? 'pt-32' : 'pt-20'} flex-1`}>
         {/* Success Message */}
         {successMessage && (
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
