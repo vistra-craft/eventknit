@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Calendar,
@@ -9,6 +9,11 @@ import {
   QrCode,
   Home,
   Menu,
+  UserPlus,
+  Megaphone,
+  TrendingUp,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 interface OrganizerSidebarProps {
@@ -18,6 +23,7 @@ interface OrganizerSidebarProps {
 
 const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation();
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   const navigationItems = [
     { 
@@ -30,30 +36,28 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
     { 
       id: "events", 
       label: "Events", 
-      href: "/organizer/events", 
       icon: Calendar,
-      group: "main"
-    },
-    { 
-      id: "attendees", 
-      label: "Attendees", 
-      href: "/organizer/attendees", 
-      icon: Users,
-      group: "main"
+      group: "main",
+      children: [
+        { name: "All Events", href: "/organizer/events" },
+        { name: "Upcoming", href: "/organizer/events/upcoming" },
+        { name: "Past Events", href: "/organizer/events/past" },
+        { name: "Create New", href: "/organizer/events/create" },
+        { name: "Templates", href: "/organizer/events/templates" },
+        { name: "Drafts", href: "/organizer/events/drafts" },
+      ]
     },
     { 
       id: "analytics", 
       label: "Analytics", 
-      href: "/organizer/analytics", 
-      icon: BarChart3,
-      group: "main"
-    },
-    { 
-      id: "tickets", 
-      label: "Tickets", 
-      href: "/organizer/tickets", 
-      icon: QrCode,
-      group: "management"
+      icon: TrendingUp,
+      group: "main",
+      children: [
+        { name: "Overview", href: "/organizer/analytics" },
+        { name: "Event Performance", href: "/organizer/analytics/events" },
+        { name: "Attendee Insights", href: "/organizer/analytics/attendees" },
+        { name: "Revenue Reports", href: "/organizer/analytics/revenue" },
+      ]
     },
     { 
       id: "communications", 
@@ -63,6 +67,31 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
       group: "management"
     },
     { 
+      id: "team", 
+      label: "Team", 
+      icon: UserPlus,
+      group: "management",
+      children: [
+        { name: "Staff Management", href: "/organizer/team/staff" },
+        { name: "Roles & Permissions", href: "/organizer/team/roles" },
+        { name: "Team Calendar", href: "/organizer/team/calendar" },
+        { name: "Performance", href: "/organizer/team/performance" },
+      ]
+    },
+    { 
+      id: "marketing", 
+      label: "Marketing", 
+      icon: Megaphone,
+      group: "management",
+      children: [
+        { name: "Campaigns", href: "/organizer/marketing/campaigns" },
+        { name: "Social Media", href: "/organizer/marketing/social" },
+        { name: "Email Marketing", href: "/organizer/marketing/email" },
+        { name: "Promotions", href: "/organizer/marketing/promotions" },
+        { name: "Partnerships", href: "/organizer/marketing/partnerships" },
+      ]
+    },
+    { 
       id: "settings", 
       label: "Settings", 
       href: "/organizer/settings", 
@@ -70,6 +99,20 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
       group: "account"
     },
   ];
+
+  const toggleExpanded = (itemId: string) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }));
+  };
+
+  const isActive = (href: string, exact = false) => {
+    if (exact) {
+      return location.pathname === href;
+    }
+    return location.pathname.startsWith(href);
+  };
 
   const groupedItems = navigationItems.reduce((acc, item) => {
     if (!acc[item.group]) {
@@ -110,13 +153,62 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
               )}
               <div className="space-y-1">
                 {items.map((item) => {
-                  const isActive = location.pathname === item.href;
+                  const hasChildren = item.children && item.children.length > 0;
+                  const isExpanded = expandedItems[item.id];
+                  const isItemActive = item.href ? isActive(item.href) : false;
+
+                  if (hasChildren) {
+                    return (
+                      <div key={item.id}>
+                        <button
+                          onClick={() => toggleExpanded(item.id)}
+                          className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
+                            isItemActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                          }`}
+                          title={!isOpen ? item.label : undefined}
+                        >
+                          <item.icon className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                          {isOpen && (
+                            <>
+                              <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </>
+                          )}
+                        </button>
+
+                        {isExpanded && isOpen && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            {item.children!.map((child) => (
+                              <Link
+                                key={child.name}
+                                to={child.href}
+                                className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
+                                  isActive(child.href)
+                                    ? 'bg-primary/10 text-primary font-medium'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                }`}
+                              >
+                                {child.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <Link
                       key={item.id}
-                      to={item.href}
+                      to={item.href!}
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
-                        isActive 
+                        isItemActive 
                           ? 'bg-primary text-primary-foreground' 
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       }`}
