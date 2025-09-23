@@ -1,18 +1,14 @@
 import React, { useState } from "react";
-import { Bell, Menu, Moon, Sun, User, ChevronDown, Settings, LogOut, Building2 } from "lucide-react";
+import { Bell, Menu, User, ChevronDown, Settings, LogOut, Building2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 interface OrganizerHeaderProps {
   onMenuToggle: () => void;
-  isDarkMode: boolean;
-  onThemeToggle: () => void;
 }
 
 const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({ 
-  onMenuToggle, 
-  isDarkMode, 
-  onThemeToggle 
+  onMenuToggle
 }) => {
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -53,18 +49,6 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onThemeToggle}
-          >
-            {isDarkMode ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
-          </Button>
-          
           <Button variant="ghost" size="sm" className="relative">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-xs rounded-full flex items-center justify-center">
@@ -78,7 +62,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
               variant="ghost" 
               size="sm"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 hover:bg-muted"
             >
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-primary-foreground" />
@@ -115,7 +99,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                       setIsProfileOpen(false);
                       navigate('/organizer/profile');
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                   >
                     <User className="h-4 w-4" />
                     <span>View Profile</span>
@@ -126,7 +110,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                       setIsProfileOpen(false);
                       navigate('/organizer/settings');
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                   >
                     <Settings className="h-4 w-4" />
                     <span>Settings</span>
@@ -139,7 +123,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                       setIsProfileOpen(false);
                       handleLogout();
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Sign Out</span>

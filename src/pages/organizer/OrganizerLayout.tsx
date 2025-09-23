@@ -9,19 +9,13 @@ interface OrganizerLayoutProps {
 
 const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    // In a real app, you'd save this to localStorage and apply theme classes
-  };
-
   return (
-    <div className={`min-h-screen bg-background ${isDarkMode ? "dark" : ""}`}>
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto flex">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
@@ -33,8 +27,6 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
           {/* Header */}
           <OrganizerHeader
             onMenuToggle={toggleSidebar}
-            isDarkMode={isDarkMode}
-            onThemeToggle={toggleTheme}
           />
 
           {/* Page Content */}

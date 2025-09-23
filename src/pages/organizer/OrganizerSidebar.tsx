@@ -5,31 +5,10 @@ import {
   Users,
   BarChart3,
   Settings,
-  Bell,
   MessageCircle,
-  FileText,
   QrCode,
-  DollarSign,
-  TrendingUp,
-  Eye,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Plus,
-  Edit,
-  Trash2,
-  Download,
-  Star,
-  Award,
-  Globe,
-  MapPin,
   Home,
-  User,
-  HelpCircle,
-  LogOut,
   Menu,
-  Building2,
-  ChevronRight,
 } from "lucide-react";
 
 interface OrganizerSidebarProps {
@@ -39,15 +18,6 @@ interface OrganizerSidebarProps {
 
 const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation();
-  
-  // Mock user data - replace with actual user data
-  const user = {
-    name: "John Doe",
-    organization: "Tech Events Co.",
-    avatar: null,
-    eventsCount: 24,
-    revenue: "$127,450"
-  };
 
   const navigationItems = [
     { 
@@ -62,8 +32,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
       label: "Events", 
       href: "/organizer/events", 
       icon: Calendar,
-      group: "main",
-      badge: user.eventsCount
+      group: "main"
     },
     { 
       id: "attendees", 
@@ -119,8 +88,8 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
   return (
     <div className={`bg-card border-r border-border h-full ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}>
       <div className="p-4">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-foreground">EventKnit</h2>
+        <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
+          {isOpen && <h2 className="text-lg font-semibold text-foreground">EventKnit</h2>}
           <button
             onClick={onToggle}
             className="p-2 rounded-lg hover:bg-muted transition-colors"
@@ -129,33 +98,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
           </button>
         </div>
         
-        {/* User Profile Summary */}
-        {isOpen && (
-          <div className="mb-6 p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground flex items-center">
-                  <Building2 className="h-3 w-3 mr-1" />
-                  {user.organization}
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="text-center p-2 bg-background rounded">
-                <p className="font-medium text-foreground">{user.eventsCount}</p>
-                <p className="text-muted-foreground">Events</p>
-              </div>
-              <div className="text-center p-2 bg-background rounded">
-                <p className="font-medium text-foreground">{user.revenue}</p>
-                <p className="text-muted-foreground">Revenue</p>
-              </div>
-            </div>
-          </div>
-        )}
         
         {/* Navigation */}
         <nav className="space-y-4">
@@ -173,22 +115,16 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
                     <Link
                       key={item.id}
                       to={item.href}
-                      className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                      className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                         isActive 
                           ? 'bg-primary text-primary-foreground' 
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       }`}
+                      title={!isOpen ? item.label : undefined}
                     >
-                      <item.icon className="h-5 w-5" />
+                      <item.icon className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
                       {isOpen && (
-                        <>
-                          <span className="text-sm font-medium flex-1">{item.label}</span>
-                          {item.badge && (
-                            <span className="bg-accent-neon text-primary text-xs px-2 py-1 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
+                        <span className="text-sm font-medium flex-1">{item.label}</span>
                       )}
                     </Link>
                   );
@@ -199,18 +135,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
         </nav>
       </div>
       
-      {/* Quick Actions */}
-      {isOpen && (
-        <div className="mt-auto p-4 border-t border-border">
-          <Link
-            to="/events/create"
-            className="flex items-center space-x-3 px-3 py-2 bg-accent-neon text-primary rounded-lg font-medium hover:bg-accent-neon/80 transition-colors"
-          >
-            <Plus className="h-5 w-5" />
-            <span className="text-sm">Create Event</span>
-          </Link>
-        </div>
-      )}
     </div>
   );
 };
