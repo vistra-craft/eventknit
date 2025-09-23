@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, User, Mail, Building, Info, Settings, CheckCircle } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, User, Mail, Building, Info, Settings, CheckCircle, Mic, Users2, Calendar as CalendarIcon, FileText, Network, Bell, BarChart3, Ticket, Badge as BadgeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +53,16 @@ const EventDetails = () => {
   const handleRegisterClick = () => {
     // Navigate to the registration page first
     navigate(`/event/${id}/register`);
+  };
+
+  const handleEventFeatureClick = (section: string) => {
+    // Navigate to user dashboard with the specific section
+    navigate(`/user/dashboard?section=${section}`, {
+      state: {
+        eventData: event,
+        message: `Welcome to ${event?.title} - ${section.charAt(0).toUpperCase() + section.slice(1)}`
+      }
+    });
   };
 
   return (
@@ -374,6 +384,112 @@ const EventDetails = () => {
                 </Card>
               </div>
             </div>
+
+            {/* Event Features Navigation */}
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-primary" />
+                  Event Features
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Explore all features and activities available for this event
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Speakers */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('speakers')}
+                  >
+                    <Mic className="w-5 h-5" />
+                    <span className="text-sm font-medium">Speakers</span>
+                  </Button>
+
+                  {/* Exhibitors */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('exhibitors')}
+                  >
+                    <Users2 className="w-5 h-5" />
+                    <span className="text-sm font-medium">Exhibitors</span>
+                  </Button>
+
+                  {/* Agenda */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('agenda')}
+                  >
+                    <CalendarIcon className="w-5 h-5" />
+                    <span className="text-sm font-medium">Agenda</span>
+                  </Button>
+
+                  {/* Submit Abstract */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('abstracts')}
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span className="text-sm font-medium">Submit Abstract</span>
+                  </Button>
+
+                  {/* Networking */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('networking')}
+                  >
+                    <Network className="w-5 h-5" />
+                    <span className="text-sm font-medium">Networking</span>
+                  </Button>
+
+                  {/* Notifications */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('notifications')}
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span className="text-sm font-medium">Notifications</span>
+                  </Button>
+
+                  {/* Analytics */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('analytics')}
+                  >
+                    <BarChart3 className="w-5 h-5" />
+                    <span className="text-sm font-medium">Analytics</span>
+                  </Button>
+
+                  {/* My Event */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('my-event')}
+                  >
+                    <Ticket className="w-5 h-5" />
+                    <span className="text-sm font-medium">My Event</span>
+                  </Button>
+
+                  {/* My Badge */}
+                  <Button
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                    onClick={() => handleEventFeatureClick('my-badge')}
+                  >
+                    <BadgeIcon className="w-5 h-5" />
+                    <span className="text-sm font-medium">My Badge</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
             
             {/* Ticket Selection */}
             <div className="w-full max-w-[280px] space-y-2">

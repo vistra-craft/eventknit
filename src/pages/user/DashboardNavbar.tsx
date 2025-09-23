@@ -11,6 +11,7 @@ import {
   FileText,
   LogOut,
   ChevronDown,
+  Calendar,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 
@@ -29,50 +30,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
   const navigate = useNavigate();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
-  const navigationItems = [
-    { id: "home", label: "Home", href: "/user/dashboard?section=home" },
-    {
-      id: "speakers",
-      label: "Speakers",
-      href: "/user/dashboard?section=speakers",
-    },
-    {
-      id: "exhibitors",
-      label: "Exhibitors",
-      href: "/user/dashboard?section=exhibitors",
-    },
-    { id: "agenda", label: "Agenda", href: "/user/dashboard?section=agenda" },
-    {
-      id: "abstracts",
-      label: "Submit Abstract",
-      href: "/user/dashboard?section=abstracts",
-    },
-    {
-      id: "networking",
-      label: "Networking",
-      href: "/user/dashboard?section=networking",
-    },
-    {
-      id: "notifications",
-      label: "Notifications",
-      href: "/user/dashboard?section=notifications",
-    },
-    {
-      id: "analytics",
-      label: "Analytics",
-      href: "/user/dashboard?section=analytics",
-    },
-    {
-      id: "my-event",
-      label: "My Event",
-      href: "/user/dashboard?section=my-event",
-    },
-    {
-      id: "my-badge",
-      label: "My Badge",
-      href: "/user/dashboard?section=my-badge",
-    },
-  ];
+  // Removed complex navigation items for minimalist design
 
   const handleLogout = () => {
     // Handle logout logic here
@@ -84,12 +42,12 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left Side - Logo */}
+          {/* Left Side - Logo and Event Title */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-2xl font-bold text-foreground">
-                EventKnit
-              </span>
+              <span className="text-xl font-bold text-primary">EventKnit</span>
+              <span className="text-muted-foreground mx-2">&gt;</span>
+              <span className="text-lg font-medium text-foreground">Seamless East Africa 2025</span>
             </Link>
           </div>
 
@@ -106,104 +64,94 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
             </Button>
 
             {/* Message Icon */}
-            <div className="relative">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground relative">
-                <MessageCircle className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-accent-electric text-white text-xs rounded-full flex items-center justify-center">
-                  2
-                </span>
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <MessageCircle className="h-5 w-5" />
+            </Button>
 
             {/* Notification Bell */}
-            <div className="relative">
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <Bell className="h-5 w-5" />
+            </Button>
 
             {/* Profile Dropdown */}
             <div className="relative">
               <Button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="relative h-10 w-10 rounded-full bg-accent-neon text-primary hover:bg-accent-neon/80 p-0"
+                className="relative h-10 w-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 p-0"
               >
                 {user.initials}
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-card"></div>
               </Button>
 
               {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-card rounded-md shadow-card border border-border py-2 z-50">
-                  <div className="flex items-center justify-start gap-2 p-2 border-b border-border">
-                    <div className="flex flex-col space-y-1 leading-none">
+                <div className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border py-3 z-50">
+                  <div className="flex items-center gap-3 px-4 pb-3 border-b border-border">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary">{user.initials}</span>
+                    </div>
+                    <div>
                       <p className="font-medium text-foreground">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    My Profile
-                  </button>
+                  <div className="px-4 py-2">
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground py-1">
+                      Edit profile &gt;
+                    </button>
+                  </div>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center">
-                    <Users className="mr-2 h-4 w-4" />
-                    My Contacts
-                  </button>
+                  <div className="border-t border-border my-2"></div>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </button>
+                  <div className="px-4 py-2 space-y-2">
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                      <Users className="h-4 w-4" />
+                      My contacts
+                    </button>
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                      <Calendar className="h-4 w-4" />
+                      My schedule
+                    </button>
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                      <FileText className="h-4 w-4" />
+                      My bookmarks
+                    </button>
+                  </div>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center">
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    Resource Center
-                  </button>
+                  <div className="border-t border-border my-2"></div>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Contact App Support
-                  </button>
+                  <div className="px-4 py-2 space-y-2">
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </button>
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                      <MessageCircle className="h-4 w-4" />
+                      Contact app support
+                    </button>
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                      <HelpCircle className="h-4 w-4" />
+                      Resource center
+                    </button>
+                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                      <FileText className="h-4 w-4" />
+                      Legal &gt;
+                    </button>
+                  </div>
 
-                  <button className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Legal
-                  </button>
+                  <div className="border-t border-border my-2"></div>
 
-                  <div className="border-t border-border my-1"></div>
-
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-muted flex items-center"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log Out
-                  </button>
+                  <div className="px-4 py-2">
+                    <button
+                      className="w-full text-left text-sm text-destructive hover:text-destructive/80 flex items-center gap-2 py-1"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Sub-navigation */}
-        <div className="border-t border-border">
-          <div className="flex space-x-8 overflow-x-auto">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.id}
-                to={item.href}
-                className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeSection === item.id
-                    ? "border-accent-neon text-accent-neon"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
           </div>
         </div>
       </div>

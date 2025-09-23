@@ -11,6 +11,7 @@ import DashboardAbstracts from "./DashboardAbstracts";
 import AttendeeDiscovery from "./AttendeeDiscovery";
 import NotificationsCenter from "./NotificationsCenter";
 import PersonalAnalytics from "./PersonalAnalytics";
+import Footer from "../../components/Footer";
 
 const UserDashboard = () => {
   const location = useLocation();
@@ -78,9 +79,9 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <DashboardNavbar user={user} activeSection={activeSection} />
-      <main className="pt-20">
+      <main className="pt-20 flex-1">
         {/* Success Message */}
         {successMessage && (
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
@@ -93,6 +94,7 @@ const UserDashboard = () => {
         )}
         {renderSection()}
       </main>
+      <Footer />
     </div>
   );
 };
