@@ -6,10 +6,8 @@ import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import EventDetails from "./pages/EventDetails";
-// Dashboard imports
-import AdminDashboard from "./pages/admin/AdminDashboard";
+// User Dashboard import
 import UserDashboard from "./pages/user/UserDashboard";
-import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 
 const App = () => (
   <BrowserRouter>
@@ -21,10 +19,8 @@ const App = () => (
       <Route path="/event/:id/register" element={<RegisterEvent />} />
       <Route path="/event/:id/payment" element={<Payment />} />
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
-      {/* Dashboard Routes */}
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      {/* User Dashboard Route */}
       <Route path="/user/dashboard" element={<UserDashboard />} />
-      <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
     </Routes>
   </BrowserRouter>
 );
