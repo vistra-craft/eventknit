@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User, CreditCard } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User } from "lucide-react";
 // import dayjs from "dayjs";
 
 // UI Components
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 
 // App Components
 import Navbar from "@/components/Navbar";
-import PaymentForm from "./Payment";
+import Footer from "@/components/Footer";
 
 // Types
 import type { EventData, RegistrationField } from "@/types/event";
@@ -32,63 +32,55 @@ interface FormErrors {
 const EventRegistration = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<'registration' | 'payment' | 'confirmation'>('registration');
+  const [currentStep, setCurrentStep] = useState<'registration' | 'confirmation'>('registration');
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch event data
+  // Use mock data directly - no async fetching
   useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        setLoading(true);
-        // In a real app, you would fetch the event data from an API
-        // const response = await fetch(`/api/events/${eventId}`);
-        // if (!response.ok) throw new Error('Failed to fetch event');
-        // const data = await response.json();
-        
-        // Mock data for development
-        const mockEvent: EventData = {
-          id: eventId || '1',
-          title: "Tech Innovation Summit 2024",
-          date: "March 15, 2024",
-          time: "09:00 AM",
-          endTime: "05:00 PM",
-          venue: "Moscone Center",
-          location: "San Francisco, CA",
-          description: "Join industry leaders discussing the future of technology and innovation.",
-          fullDescription: "This full-day conference will feature keynote speakers, panel discussions, and workshops on the latest trends in technology and innovation. Network with industry professionals and gain insights into the future of tech.",
-          image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    // Mock data for development
+    const mockEvent: EventData = {
+      id: eventId || '1',
+      title: "Tech Innovation Summit 2024",
+      date: "March 15, 2024",
+      time: "09:00 AM",
+      endTime: "05:00 PM",
+      venue: "Moscone Center",
+      location: "San Francisco, CA",
+      description: "Join industry leaders discussing the future of technology and innovation.",
+      fullDescription: "This full-day conference will feature keynote speakers, panel discussions, and workshops on the latest trends in technology and innovation. Network with industry professionals and gain insights into the future of tech.",
+      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      price: 299,
+      category: "Technology",
+      rating: 4.8,
+      duration: "8 hours",
+      ageRestriction: "18+",
+      isPrivate: false,
+      availableSlots: 45,
+      totalSlots: 200,
+      organizer: "Tech Innovation Corp",
+      coordinates: { lat: 37.7833, lng: -122.4167 },
+      ticketTypes: [
+        {
+          name: "General Admission",
           price: 299,
-          category: "Technology",
-          rating: 4.8,
-          duration: "8 hours",
-          ageRestriction: "18+",
-          isPrivate: false,
-          availableSlots: 45,
-          totalSlots: 200,
-          organizer: "Tech Innovation Corp",
-          coordinates: { lat: 37.7833, lng: -122.4167 },
-          ticketTypes: [
-            {
-              name: "General Admission",
-              price: 299,
-              features: ["Access to all sessions", "Lunch included", "Conference swag"]
-            },
-            {
-              name: "VIP",
-              price: 599,
-              features: ["VIP seating", "Access to VIP lounge", "Meet & greet with speakers"]
-            }
-          ],
-          faqs: [
-            {
-              question: "What's included in the ticket?",
-              answer: "Your ticket includes access to all sessions, lunch, and conference materials."
-            }
-          ],
+          features: ["Access to all sessions", "Lunch included", "Conference swag"]
+        },
+        {
+          name: "VIP",
+          price: 599,
+          features: ["VIP seating", "Access to VIP lounge", "Meet & greet with speakers"]
+        }
+      ],
+      faqs: [
+        {
+          question: "What's included in the ticket?",
+          answer: "Your ticket includes access to all sessions, lunch, and conference materials."
+        }
+      ],
       registrationFields: [
         {
           id: "firstName",
@@ -154,22 +146,36 @@ const EventRegistration = () => {
           required: false,
           placeholder: "Please specify any dietary restrictions...",
         },
+        {
+          id: "emergencyContact",
+          name: "emergencyContact",
+          type: "tel",
+          label: "Emergency Contact Number",
+          required: true,
+          placeholder: "+1 (555) 123-4567",
+        },
+        {
+          id: "accessibilityNeeds",
+          name: "accessibilityNeeds",
+          type: "textarea",
+          label: "Accessibility Requirements",
+          required: false,
+          placeholder: "Please let us know if you have any accessibility requirements...",
+        },
+        {
+          id: "marketingConsent",
+          name: "marketingConsent",
+          type: "checkbox",
+          label: "Marketing Communications",
+          required: false,
+          options: ["I agree to receive marketing emails about future events"],
+        },
       ],
     };
 
-        setEvent(mockEvent);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching event:', err);
-        setError('Failed to load event details. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (eventId) {
-      fetchEvent();
-    }
+    setEvent(mockEvent);
+    setLoading(false);
+    setError(null);
   }, [eventId]);
 
   const handleInputChange = (fieldId: string, value: string | boolean) => {
@@ -187,52 +193,33 @@ const EventRegistration = () => {
     }
   };
 
-  const validateForm = (): boolean => {
-    if (!event) return false;
-    
-    const formErrors: FormErrors = {};
-    
-    event.registrationFields.forEach(field => {
-      const value = formData[field.id];
-      
-      if (field.required && (value === undefined || value === '')) {
-        formErrors[field.id] = `${field.label} is required`;
-      }
-      
-      // Additional validation for phone numbers
-      if (field.type === 'tel' && value) {
-        const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,3}[-\s.]?[0-9]{4,6}$/;
-        if (!phoneRegex.test(String(value))) {
-          formErrors[field.id] = 'Please enter a valid phone number';
-        }
-      }
-      
-      // Additional validation for email
-      if (field.type === 'email' && value) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(String(value))) {
-          formErrors[field.id] = 'Please enter a valid email address';
-        }
-      }
-    });
-    
-    setErrors(formErrors);
-    return Object.keys(formErrors).length === 0;
-  };
 
   const handleRegistrationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    // Skip validation for now - allow proceeding without filling all fields
+    // if (!validateForm()) {
+    //   return;
+    // }
 
     if (event?.price === 0) {
       // Free event - go directly to confirmation
       handleFreeEventSubmission();
     } else {
-      // Paid event - go to payment step
-      setCurrentStep('payment');
+      // Paid event - navigate to separate payment page
+      navigate(`/event/${eventId}/payment`, {
+        state: {
+          eventId: eventId,
+          eventTitle: event?.title,
+          registrationData: formData,
+          tickets: event?.ticketTypes?.map(t => ({
+            name: t.name,
+            quantity: 1, // Default quantity
+            price: t.price
+          })) || [],
+          totalPrice: event?.price || 0
+        }
+      });
     }
   };
 
@@ -245,16 +232,6 @@ const EventRegistration = () => {
     setCurrentStep("confirmation");
   };
 
-  const handlePaymentSuccess = () => {
-    // In a real app, you would submit the registration data to your backend here
-    console.log('Payment successful, submitting registration:', { 
-      eventId: event?.id,
-      eventTitle: event?.title,
-      formData 
-    });
-    
-    setCurrentStep('confirmation');
-  };
 
   const renderFormField = (field: RegistrationField) => {
     const fieldError = errors[field.id];
@@ -475,18 +452,19 @@ const EventRegistration = () => {
           {/* Back Button */}
           <div className="mb-6">
             <Button
-              variant="ghost"
-              className="pl-0"
-              onClick={() => navigate(-1)}
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="gap-2 hover:border-primary hover:bg-primary/5 transition-all duration-200"
+              size="lg"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="w-5 h-5" />
               Back to Events
             </Button>
           </div>
 
           {/* Hero Section */}
           <div className="mb-10">
-            <Card className="w-full overflow-hidden">
+            <Card variant="default" className="w-full overflow-hidden">
               <div className="flex flex-col md:flex-row">
                 {/* Event Image */}
                 <div className="md:w-2/5 w-full h-64 md:h-auto relative">
@@ -561,10 +539,10 @@ const EventRegistration = () => {
           </div>
 
           {/* Progress Indicator */}
-          <div className="mb-8 flex items-center gap-2 text-sm text-gray-500 justify-center">
+          <div className="mb-8 flex items-center gap-2 text-sm text-muted-foreground justify-center">
             <span
               className={
-                currentStep === "registration" ? "font-bold text-green-600" : ""
+                currentStep === "registration" ? "font-bold text-primary" : ""
               }
             >
               1. Registration Info
@@ -572,25 +550,60 @@ const EventRegistration = () => {
             <span>→</span>
             <span
               className={
-                currentStep === "payment" ? "font-bold text-green-600" : ""
+                currentStep === "confirmation" ? "font-bold text-primary" : ""
               }
             >
-              2. Payment
+              2. Confirmation
             </span>
-            <span>→</span>
-            <span
-              className={
-                currentStep === "confirmation" ? "font-bold text-green-600" : ""
-              }
-            >
-              3. Confirmation
-            </span>
+          </div>
+
+          {/* Ticket Selection Section */}
+          <div className="mb-10">
+            {currentStep === "registration" && (
+              <Card variant="default" className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                    </svg>
+                    Select Tickets
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {event.ticketTypes?.map((ticket, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{ticket.name}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {ticket.features.join(" • ")}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold">${ticket.price}</div>
+                          <div className="text-sm text-muted-foreground">per ticket</div>
+                        </div>
+                        <div className="ml-4">
+                          <input
+                            type="radio"
+                            name="selectedTicket"
+                            value={ticket.name}
+                            defaultChecked={index === 0}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Registration Form Section */}
           <div className="mb-10">
             {currentStep === "registration" && (
-              <Card>
+              <Card variant="default">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
@@ -618,12 +631,12 @@ const EventRegistration = () => {
                             {renderFormField(field)}
                             {/* Helper text for email/phone */}
                             {field.type === "email" && (
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 We'll never share your email.
                               </p>
                             )}
                             {field.type === "tel" && (
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 Format: +1 (555) 123-4567
                               </p>
                             )}
@@ -631,10 +644,34 @@ const EventRegistration = () => {
                         );
                       })}
                     </div>
+                    
+                    {/* Terms & Conditions */}
+                    <div className="pt-6 border-t">
+                      <div className="flex items-start gap-3 mb-4">
+                        <input
+                          type="checkbox"
+                          id="termsConsent"
+                          required
+                          className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                        />
+                        <label htmlFor="termsConsent" className="text-sm text-muted-foreground">
+                          I agree to the{" "}
+                          <a href="#" className="text-primary hover:underline">
+                            Terms and Conditions
+                          </a>{" "}
+                          and{" "}
+                          <a href="#" className="text-primary hover:underline">
+                            Privacy Policy
+                          </a>
+                          . I understand that my information will be used for event management purposes.
+                        </label>
+                      </div>
+                    </div>
+                    
                     <div className="flex flex-col sm:flex-row justify-between pt-6 border-t gap-4">
                       <Link
                         to={`/event/${eventId}`}
-                        className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors text-center"
+                        className="px-6 py-2 border border-border rounded-full text-foreground/80 hover:bg-accent transition-colors text-center"
                       >
                         Back to Event
                       </Link>
@@ -654,69 +691,41 @@ const EventRegistration = () => {
               </Card>
             )}
 
-            {/* Payment Form */}
-            {currentStep === "payment" && event && event.ticketTypes && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Payment Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <PaymentForm
-                    event={{
-                      id: event.id,
-                      title: event.title
-                    }}
-                    tickets={event.ticketTypes.map(t => ({
-                      name: t.name,
-                      quantity: 1, // Default quantity
-                      price: t.price
-                    }))}
-                    totalPrice={event.price || 0}
-                    onSuccess={handlePaymentSuccess}
-                    onBack={() => setCurrentStep('registration')}
-                    onCancel={() => navigate('/')}
-                  />
-                </CardContent>
-              </Card>
-            )}
 
             {/* Confirmation Step */}
             {currentStep === "confirmation" && event && (
-              <Card>
+              <Card variant="default">
                 <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                    <Check className="w-8 h-8 text-green-600" />
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                    <Check className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-2xl font-bold text-foreground mb-2">
                     Registration Confirmed!
                   </h3>
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-muted-foreground mb-6">
                     You have successfully registered for{" "}
                     <strong>{event.title}</strong>. A confirmation email will be
                     sent to your registered email address.
                   </p>
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div className="bg-muted rounded-lg p-4 mb-6">
                     <h4 className="font-semibold mb-2">Event Details:</h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {event.date} at {event.location}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       Organized by {event.organizer}
                     </p>
                   </div>
                   <div className="flex gap-4 justify-center">
                     <Link
                       to="/browse-events"
-                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full font-semibold transition-colors duration-200"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-full font-semibold transition-colors duration-200"
                     >
                       Browse More Events
                     </Link>
                     <Link
                       to="/user/dashboard"
-                      className="px-6 py-2 border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="px-6 py-2 border border-border rounded-full text-foreground/80 hover:bg-accent transition-colors"
                     >
                       Go to Dashboard
                     </Link>
@@ -727,7 +736,7 @@ const EventRegistration = () => {
           </div>
         </div>
       </main>
-
+      <Footer />
     </div>
   );
 };

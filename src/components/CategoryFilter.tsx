@@ -29,7 +29,7 @@ export const CategoryFilter = () => {
                 size="lg"
                 className="flex items-center gap-3 px-6 py-3 group"
               >
-                <IconComponent className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+                <IconComponent className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
                 <span>{category.name}</span>
               </Button>
             );

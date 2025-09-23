@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { 
   MapPin, 
   Users, 
@@ -1572,6 +1573,7 @@ export default function CreateEvent() {
           </Tabs>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
