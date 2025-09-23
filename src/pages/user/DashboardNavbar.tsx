@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Bell,
   MessageCircle,
@@ -12,6 +12,10 @@ import {
   LogOut,
   ChevronDown,
   Calendar,
+  Mic,
+  Building2,
+  CalendarDays,
+  Badge,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 
@@ -28,9 +32,24 @@ interface DashboardNavbarProps {
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  // Removed complex navigation items for minimalist design
+  // Navigation items for the center of the navbar
+  const navigationItems = [
+    { key: "speakers", label: "Speakers", icon: Mic },
+    { key: "exhibitors", label: "Exhibitors", icon: Building2 },
+    { key: "agenda", label: "Agenda", icon: CalendarDays },
+    { key: "my-badge", label: "My Badge", icon: Badge },
+    { key: "abstracts", label: "Submit Abstract", icon: FileText },
+  ];
+
+  const handleNavigation = (section: string) => {
+    const currentPath = location.pathname;
+    const newUrl = `${currentPath}?section=${section}`;
+    navigate(newUrl);
+  };
 
   const handleLogout = () => {
     // Handle logout logic here
@@ -51,8 +70,44 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
             </Link>
           </div>
 
+          {/* Center - Navigation Buttons */}
+          <div className="hidden lg:flex items-center space-x-1">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.key;
+              return (
+                <Button
+                  key={item.key}
+                  onClick={() => handleNavigation(item.key)}
+                  variant={isActive ? "default" : "ghost"}
+                  size="sm"
+                  className={`px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="h-4 w-4 mr-2" />
+                  {item.label}
+                </Button>
+              );
+            })}
+          </div>
+
           {/* Right Side - Icons and Profile */}
           <div className="flex items-center space-x-4">
+            {/* Mobile Navigation Menu */}
+            <div className="lg:hidden">
+              <Button
+                onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Calendar className="h-5 w-5" />
+              </Button>
+            </div>
+
             {/* Home Icon */}
             <Button
               onClick={() => navigate("/")}
@@ -152,6 +207,38 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
                 </div>
               )}
             </div>
+
+            {/* Mobile Navigation Dropdown */}
+            {isMobileNavOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border py-3 z-50 lg:hidden">
+                <div className="px-4 pb-3 border-b border-border">
+                  <h3 className="font-medium text-foreground">Navigation</h3>
+                </div>
+                <div className="px-4 py-2 space-y-2">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeSection === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() => {
+                          handleNavigation(item.key);
+                          setIsMobileNavOpen(false);
+                        }}
+                        className={`w-full text-left text-sm flex items-center gap-2 py-2 px-2 rounded-md transition-colors ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
