@@ -1,9 +1,9 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Building2, MapPin, Phone, Mail, Globe } from 'lucide-react';
+import ExhibitorDetailsModal from '../../components/ExhibitorDetailsModal';
 
 interface EventData {
   id: number;
@@ -44,10 +44,29 @@ interface Exhibitor {
   description: string;
   website?: string;
   email?: string;
+  phone?: string;
+  location?: string;
+  products: string[];
+  representatives: {
+    name: string;
+    position: string;
+    avatar: string;
+  }[];
 }
 
 const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, user, registration }) => {
-  const navigate = useNavigate();
+  const [selectedExhibitor, setSelectedExhibitor] = useState<Exhibitor | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleExhibitorClick = (exhibitor: Exhibitor) => {
+    setSelectedExhibitor(exhibitor);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedExhibitor(null);
+  };
 
   // Mock exhibitors data
   const exhibitors: Exhibitor[] = [
@@ -60,7 +79,28 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
       booth: 'A-15',
       description: 'Leading provider of enterprise software solutions and digital transformation services.',
       website: 'https://techcorp.com',
-      email: 'info@techcorp.com'
+      email: 'info@techcorp.com',
+      phone: '+1 (555) 123-4567',
+      location: 'San Francisco, CA',
+      products: [
+        'Enterprise Resource Planning (ERP)',
+        'Customer Relationship Management (CRM)',
+        'Business Intelligence & Analytics',
+        'Cloud Migration Services',
+        'Digital Transformation Consulting'
+      ],
+      representatives: [
+        {
+          name: 'Sarah Johnson',
+          position: 'Sales Director',
+          avatar: '/api/placeholder/40/40'
+        },
+        {
+          name: 'Michael Chen',
+          position: 'Technical Lead',
+          avatar: '/api/placeholder/40/40'
+        }
+      ]
     },
     {
       id: 2,
@@ -71,7 +111,23 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
       booth: 'B-22',
       description: 'Advanced data analytics and business intelligence solutions for modern enterprises.',
       website: 'https://dataflow.com',
-      email: 'contact@dataflow.com'
+      email: 'contact@dataflow.com',
+      phone: '+1 (555) 234-5678',
+      location: 'New York, NY',
+      products: [
+        'Data Analytics Platform',
+        'Business Intelligence Tools',
+        'Machine Learning Solutions',
+        'Data Visualization',
+        'Predictive Analytics'
+      ],
+      representatives: [
+        {
+          name: 'Emily Rodriguez',
+          position: 'Data Scientist',
+          avatar: '/api/placeholder/40/40'
+        }
+      ]
     },
     {
       id: 3,
@@ -82,7 +138,28 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
       booth: 'C-08',
       description: 'Cloud infrastructure and migration services for scalable business operations.',
       website: 'https://cloudtech.com',
-      email: 'hello@cloudtech.com'
+      email: 'hello@cloudtech.com',
+      phone: '+1 (555) 345-6789',
+      location: 'Austin, TX',
+      products: [
+        'Cloud Migration Services',
+        'Infrastructure as a Service',
+        'DevOps Solutions',
+        'Container Orchestration',
+        'Cloud Security'
+      ],
+      representatives: [
+        {
+          name: 'David Kim',
+          position: 'Cloud Architect',
+          avatar: '/api/placeholder/40/40'
+        },
+        {
+          name: 'Lisa Wang',
+          position: 'DevOps Engineer',
+          avatar: '/api/placeholder/40/40'
+        }
+      ]
     },
     {
       id: 4,
@@ -93,7 +170,23 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
       booth: 'D-12',
       description: 'Innovation consulting and digital transformation solutions.',
       website: 'https://innovatelab.com',
-      email: 'info@innovatelab.com'
+      email: 'info@innovatelab.com',
+      phone: '+1 (555) 456-7890',
+      location: 'Seattle, WA',
+      products: [
+        'Digital Transformation Consulting',
+        'Innovation Strategy',
+        'Product Development',
+        'Technology Assessment',
+        'Change Management'
+      ],
+      representatives: [
+        {
+          name: 'Alex Thompson',
+          position: 'Innovation Consultant',
+          avatar: '/api/placeholder/40/40'
+        }
+      ]
     },
     {
       id: 5,
@@ -104,7 +197,28 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
       booth: 'A-20',
       description: 'Enterprise cybersecurity solutions and threat protection services.',
       website: 'https://securenetpro.com',
-      email: 'security@securenetpro.com'
+      email: 'security@securenetpro.com',
+      phone: '+1 (555) 567-8901',
+      location: 'Boston, MA',
+      products: [
+        'Cybersecurity Solutions',
+        'Threat Detection',
+        'Security Monitoring',
+        'Incident Response',
+        'Security Training'
+      ],
+      representatives: [
+        {
+          name: 'Rachel Green',
+          position: 'Security Specialist',
+          avatar: '/api/placeholder/40/40'
+        },
+        {
+          name: 'James Wilson',
+          position: 'Threat Analyst',
+          avatar: '/api/placeholder/40/40'
+        }
+      ]
     },
     {
       id: 6,
@@ -115,7 +229,23 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
       booth: 'B-15',
       description: 'Mobile app development and cross-platform solutions.',
       website: 'https://mobilefirst.com',
-      email: 'dev@mobilefirst.com'
+      email: 'dev@mobilefirst.com',
+      phone: '+1 (555) 678-9012',
+      location: 'Los Angeles, CA',
+      products: [
+        'Mobile App Development',
+        'Cross-Platform Solutions',
+        'UI/UX Design',
+        'App Testing',
+        'App Store Optimization'
+      ],
+      representatives: [
+        {
+          name: 'Maria Garcia',
+          position: 'Mobile Developer',
+          avatar: '/api/placeholder/40/40'
+        }
+      ]
     }
   ];
 
@@ -182,7 +312,7 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
                     <Card 
                       key={exhibitor.id} 
                       className="bg-muted/30 border border-border hover:shadow-lg transition-all duration-200 cursor-pointer"
-                      onClick={() => navigate(`/exhibitors/${exhibitor.id}`)}
+                      onClick={() => handleExhibitorClick(exhibitor)}
                     >
                       <CardContent className="p-4">
                         <div className="space-y-4">
@@ -269,6 +399,15 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, us
           </div>
         </div>
       </div>
+
+      {/* Exhibitor Details Modal */}
+      {selectedExhibitor && (
+        <ExhibitorDetailsModal
+          exhibitor={selectedExhibitor}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 };
