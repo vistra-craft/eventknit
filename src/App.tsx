@@ -6,8 +6,9 @@ import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import EventDetails from "./pages/EventDetails";
-// User Dashboard import
+// User Dashboard imports
 import UserDashboard from "./pages/user/UserDashboard";
+import ExhibitorDetails from "./pages/user/ExhibitorDetails";
 
 const App = () => (
   <BrowserRouter>
@@ -19,8 +20,9 @@ const App = () => (
       <Route path="/event/:id/register" element={<RegisterEvent />} />
       <Route path="/event/:id/payment" element={<Payment />} />
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
-      {/* User Dashboard Route */}
+      {/* User Dashboard Routes */}
       <Route path="/user/dashboard" element={<UserDashboard />} />
+      <Route path="/exhibitors/:id" element={<ExhibitorDetails />} />
     </Routes>
   </BrowserRouter>
 );
