@@ -1,4 +1,4 @@
-import EventCard from "./EventCard";
+import { EventCard } from "./EventCard";
 import { events } from "@/data/events";
 import { useState } from "react";
 import { Calendar, Sparkles, TrendingUp } from "lucide-react";
@@ -73,7 +73,7 @@ export const EventGrid = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} {...event} />
           ))}
         </div>
 
