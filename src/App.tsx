@@ -7,6 +7,9 @@ import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import EventDetails from "./pages/EventDetails";
 import PublicEventForm from "./pages/PublicEventForm";
+// User Dashboard imports
+import UserDashboard from "./pages/user/UserDashboard";
+import ExhibitorDetails from "./pages/user/ExhibitorDetails";
 // Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import EventManagement from "./pages/organizer/EventManagement";
@@ -50,6 +53,9 @@ const App = () => (
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
       {/* Public Form Routes */}
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
+      {/* User Dashboard Routes */}
+      <Route path="/user/dashboard" element={<UserDashboard />} />
+      <Route path="/exhibitors/:id" element={<ExhibitorDetails />} />
       {/* Organizer Dashboard Routes */}
       <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
       <Route path="/organizer/events/upcoming" element={<UpcomingEventsPage />} />
