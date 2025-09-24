@@ -374,144 +374,349 @@ const EnhancedDashboard = () => {
               ))}
             </div>
 
-            {/* My Events Section */}
-            <div className="mb-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-foreground">My Events</h2>
-                <Link
-                  to="/organizer/events"
-                  className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
-                >
-                  View all events
-                  <ArrowUpRight className="h-4 w-4 ml-1" />
-                </Link>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              
+              {/* Left Column - Events Overview */}
+              <div className="xl:col-span-2 space-y-8">
+                {/* My Events Section */}
+                <div>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+                    <Link
+                      to="/organizer/events"
+                      className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
+                    >
+                      View all events
+                      <ArrowUpRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </div>
+
+                  {/* Events Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {recentEvents.map((event) => (
+                      <Card 
+                        key={event.id} 
+                        className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                        onClick={() => setSelectedEvent(event)}
+                      >
+                        <div className="relative overflow-hidden">
+                          <img 
+                            src={event.image}
+                            alt={event.title}
+                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-4 left-4">
+                            <Badge className={`${getStatusColor(event.status)} border-0`}>
+                              <div className="flex items-center gap-1">
+                                {getStatusIcon(event.status)}
+                                <span className="capitalize">{event.status}</span>
+                              </div>
+                            </Badge>
+                          </div>
+                          <div className="absolute top-4 right-4">
+                            <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                              {event.category}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <CardContent className="p-6">
+                          <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                            {event.title}
+                          </h3>
+                          
+                          <div className="space-y-2 mb-4">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="w-4 h-4" />
+                              <span>{event.date}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="w-4 h-4" />
+                              <span>{event.location}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Users className="w-4 h-4" />
+                              <span>{event.attendees}/{event.capacity} attendees</span>
+                            </div>
+                          </div>
+                          
+                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                            {event.description}
+                          </p>
+                          
+                          {/* Event Metrics */}
+                          <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Speakers</p>
+                              <p className="font-semibold text-foreground">{event.speakers}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Exhibitors</p>
+                              <p className="font-semibold text-foreground">{event.exhibitors}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Revenue</p>
+                              <p className="font-semibold text-foreground">${event.revenue.toLocaleString()}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {event.conversion}% conversion
+                            </span>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/organizer/event/${event.id}`;
+                              }}
+                            >
+                              Manage Event
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-4">
+                    Quick Actions
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Link
+                      to="/events/create"
+                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                    >
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                        <Plus className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Create Event</p>
+                        <p className="text-sm text-muted-foreground">Start a new event</p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/organizer/analytics"
+                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                    >
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                        <BarChart3 className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">View Analytics</p>
+                        <p className="text-sm text-muted-foreground">Performance insights</p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/organizer/attendees"
+                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                    >
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Manage Attendees</p>
+                        <p className="text-sm text-muted-foreground">View and manage</p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to="/organizer/tickets/scanner"
+                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                    >
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                        <Calendar className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">Ticket Scanner</p>
+                        <p className="text-sm text-muted-foreground">Check-in attendees</p>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
               </div>
 
-              {/* Events Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {recentEvents.map((event) => (
-                  <Card 
-                    key={event.id} 
-                    className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                    onClick={() => setSelectedEvent(event)}
-                  >
-                    <div className="relative overflow-hidden">
-                      <img 
-                        src={event.image}
-                        alt={event.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-4 left-4">
-                        <Badge className={`${getStatusColor(event.status)} border-0`}>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon(event.status)}
-                            <span className="capitalize">{event.status}</span>
+              {/* Right Column - Activity & Insights */}
+              <div className="xl:col-span-1 space-y-6">
+                {/* Recent Activity */}
+                <div className="bg-card rounded-xl shadow-sm border border-border">
+                  <div className="p-6 border-b border-border">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        Recent Activity
+                      </h3>
+                      <Link
+                        to="/organizer/activity"
+                        className="text-sm text-primary hover:text-primary/80 font-medium"
+                      >
+                        View all
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <div className="space-y-4">
+                      {recentActivity.slice(0, 6).map((activity) => (
+                        <div key={activity.id} className="flex items-start space-x-3">
+                          <div
+                            className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
+                          >
+                            <activity.icon className={`h-4 w-4 ${activity.color}`} />
                           </div>
-                        </Badge>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground">
+                              {activity.message}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {activity.time}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Performance Insights */}
+                <div className="bg-card rounded-xl shadow-sm border border-border">
+                  <div className="p-6 border-b border-border">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Performance Insights
+                    </h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Best Performing Event</p>
+                        <p className="text-xs text-muted-foreground">Tech Innovation Summit</p>
                       </div>
-                      <div className="absolute top-4 right-4">
-                        <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                          {event.category}
-                        </Badge>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-green-600">21.4%</p>
+                        <p className="text-xs text-muted-foreground">conversion</p>
                       </div>
                     </div>
                     
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                        {event.title}
-                      </h3>
-                      
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
-                          <span>{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="w-4 h-4" />
-                          <span>{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Users className="w-4 h-4" />
-                          <span>{event.attendees}/{event.capacity} attendees</span>
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Total Revenue Growth</p>
+                        <p className="text-xs text-muted-foreground">Last 30 days</p>
                       </div>
-                      
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {event.description}
-                      </p>
-                      
-                      {/* Event Metrics */}
-                      <div className="grid grid-cols-3 gap-4 mb-4 text-center">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Speakers</p>
-                          <p className="font-semibold text-foreground">{event.speakers}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Exhibitors</p>
-                          <p className="font-semibold text-foreground">{event.exhibitors}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Revenue</p>
-                          <p className="font-semibold text-foreground">${event.revenue.toLocaleString()}</p>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-green-600">+24%</p>
+                        <p className="text-xs text-muted-foreground">vs last month</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Average Attendance</p>
+                        <p className="text-xs text-muted-foreground">All events</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-primary">87%</p>
+                        <p className="text-xs text-muted-foreground">capacity</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upcoming Deadlines */}
+                <div className="bg-card rounded-xl shadow-sm border border-border">
+                  <div className="p-6 border-b border-border">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Upcoming Deadlines
+                    </h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Speaker Confirmations</p>
+                        <p className="text-xs text-muted-foreground">Business Workshop</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-yellow-600">3 days</p>
+                        <p className="text-xs text-muted-foreground">left</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Abstract Submissions</p>
+                        <p className="text-xs text-muted-foreground">Tech Summit</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-red-600">1 week</p>
+                        <p className="text-xs text-muted-foreground">left</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Early Bird Pricing</p>
+                        <p className="text-xs text-muted-foreground">Startup Competition</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-blue-600">2 weeks</p>
+                        <p className="text-xs text-muted-foreground">left</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Event Health Score */}
+                <div className="bg-card rounded-xl shadow-sm border border-border">
+                  <div className="p-6 border-b border-border">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Event Health Score
+                    </h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="text-center mb-4">
+                      <div className="w-20 h-20 mx-auto bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mb-2">
+                        <span className="text-2xl font-bold text-white">92</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Overall Health</p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Registration Rate</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-muted rounded-full">
+                            <div className="w-4/5 h-full bg-green-500 rounded-full"></div>
+                          </div>
+                          <span className="text-sm font-medium">85%</span>
                         </div>
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {event.conversion}% conversion
-                        </span>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.href = `/organizer/event/${event.id}`;
-                          }}
-                        >
-                          Manage Event
-                        </Button>
+                        <span className="text-sm text-muted-foreground">Speaker Confirmation</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-muted rounded-full">
+                            <div className="w-3/4 h-full bg-blue-500 rounded-full"></div>
+                          </div>
+                          <span className="text-sm font-medium">75%</span>
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="bg-card rounded-xl shadow-sm border border-border">
-              <div className="p-6 border-b border-border">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Recent Activity
-                  </h3>
-                  <Link
-                    to="/organizer/activity"
-                    className="text-sm text-primary hover:text-primary/80 font-medium"
-                  >
-                    View all activity
-                  </Link>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {recentActivity.slice(0, 6).map((activity) => (
-                    <div key={activity.id} className="flex items-start space-x-3">
-                      <div
-                        className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
-                      >
-                        <activity.icon className={`h-4 w-4 ${activity.color}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground">
-                          {activity.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {activity.time}
-                        </p>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Sponsor Engagement</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-muted rounded-full">
+                            <div className="w-full h-full bg-yellow-500 rounded-full"></div>
+                          </div>
+                          <span className="text-sm font-medium">95%</span>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             </div>
