@@ -27,7 +27,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
   };
 
   return (
-    <header className="bg-card border-b border-border px-6 py-4 sticky top-0 z-40">
+    <header className="bg-card border-b border-border py-4 sticky top-0 z-40">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button
@@ -38,14 +38,14 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">
-              Organizer Dashboard
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Welcome back, {user.name}
-            </p>
-          </div>
+            <div>
+              <h1 className="text-lg sm:text-xl font-semibold text-foreground">
+                Organizer Dashboard
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Welcome back, {user.name}
+              </p>
+            </div>
         </div>
         
         <div className="flex items-center space-x-4">

@@ -45,15 +45,17 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col">
           {/* Header */}
-          <OrganizerHeader
-            onMenuToggle={toggleSidebar}
-          />
+          <div className="px-4 sm:px-6">
+            <OrganizerHeader
+              onMenuToggle={toggleSidebar}
+            />
+          </div>
 
           {/* Page Content */}
-          <main className="w-full">
-            <div className="p-6">{children}</div>
+          <main className="flex-1 px-4 sm:px-6">
+            {children}
           </main>
         </div>
       </div>
