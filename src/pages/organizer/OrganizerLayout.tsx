@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import OrganizerSidebar from "./OrganizerSidebar";
 import OrganizerHeader from "./OrganizerHeader";
 import Footer from "../../components/Footer";
@@ -8,10 +8,32 @@ interface OrganizerLayoutProps {
 }
 
 const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  // Check if screen is mobile on mount and resize
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  // Auto-close sidebar on mobile when navigating
+  const handleSidebarToggle = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    } else {
+      setSidebarOpen(!sidebarOpen);
+    }
   };
 
   return (
@@ -19,7 +41,7 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
       <div className="container mx-auto flex">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
-          <OrganizerSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
+          <OrganizerSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} isMobile={isMobile} />
         </div>
 
         {/* Main Content */}
@@ -39,9 +61,9 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
-          <div className="fixed inset-0 bg-black/50" onClick={toggleSidebar}></div>
+          <div className="fixed inset-0 bg-black/50" onClick={handleSidebarToggle}></div>
           <div className="fixed left-0 top-0 h-full w-64 z-50">
-            <OrganizerSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
+            <OrganizerSidebar isOpen={sidebarOpen} onToggle={handleSidebarToggle} isMobile={isMobile} />
           </div>
         </div>
       )}

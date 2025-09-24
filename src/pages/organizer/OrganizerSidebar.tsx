@@ -19,9 +19,10 @@ import {
 interface OrganizerSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  isMobile?: boolean;
 }
 
-const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle }) => {
+const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, isMobile = false }) => {
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     // Auto-expand events section if on events pages
@@ -108,6 +109,13 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
       ...prev,
       [itemId]: !prev[itemId],
     }));
+  };
+
+  // Handle navigation clicks - only close sidebar on mobile
+  const handleNavigationClick = () => {
+    if (isMobile) {
+      onToggle();
+    }
   };
 
   // Update expanded state when location changes
@@ -199,6 +207,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
                               <Link
                                 key={child.name}
                                 to={child.href}
+                                onClick={handleNavigationClick}
                                 className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
                                   isActive(child.href)
                                     ? 'bg-primary/10 text-primary font-medium'
@@ -218,6 +227,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
                     <Link
                       key={item.id}
                       to={item.href!}
+                      onClick={handleNavigationClick}
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                         isItemActive 
                           ? 'bg-primary text-primary-foreground' 
