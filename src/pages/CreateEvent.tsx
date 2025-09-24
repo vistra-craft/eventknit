@@ -73,7 +73,11 @@ interface EventData {
 
 type Tag = string;
 
-export default function CreateEvent() {
+interface CreateEventProps {
+  showLayout?: boolean; // Whether to show navbar and footer
+}
+
+export default function CreateEvent({ showLayout = true }: CreateEventProps) {
   const [eventType, setEventType] = useState("in-person");
   const [isRecurring, setIsRecurring] = useState(false);
   interface TicketType {
@@ -315,8 +319,8 @@ export default function CreateEvent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="pt-20 pb-12">
+      {showLayout && <Navbar />}
+      <div className={showLayout ? "pt-20 pb-12" : "py-8"}>
         <div className="container mx-auto px-6 max-w-4xl">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Create New Event</h1>
@@ -1573,7 +1577,7 @@ export default function CreateEvent() {
           </Tabs>
         </div>
       </div>
-      <Footer />
+      {showLayout && <Footer />}
     </div>
   );
 }

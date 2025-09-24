@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Calendar,
@@ -23,7 +23,10 @@ interface OrganizerSidebarProps {
 
 const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation();
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
+    // Auto-expand events section if on events pages
+    events: location.pathname.startsWith('/organizer/events')
+  });
 
   const navigationItems = [
     { 
@@ -106,6 +109,14 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle })
       [itemId]: !prev[itemId],
     }));
   };
+
+  // Update expanded state when location changes
+  useEffect(() => {
+    setExpandedItems(prev => ({
+      ...prev,
+      events: location.pathname.startsWith('/organizer/events')
+    }));
+  }, [location.pathname]);
 
   const isActive = (href: string, exact = false) => {
     if (exact) {

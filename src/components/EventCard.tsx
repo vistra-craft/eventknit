@@ -1,107 +1,148 @@
-import { Calendar, MapPin, User, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import {
+  Calendar,
+  Users,
+  MapPin,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { Card, CardContent } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 
 interface EventCardProps {
-  id: string;
-  title: string;
-  image: string;
-  date: string;
-  time: string;
-  venue: string;
-  location: string;
-  organizer: string;
-  price: string;
-  rating?: number;
-  category: string;
+  event: {
+    id: number;
+    title: string;
+    date: string;
+    time: string;
+    location: string;
+    venue: string;
+    status: string;
+    attendees: number;
+    capacity: number;
+    revenue: number;
+    views: number;
+    conversion: number;
+    speakers: number;
+    exhibitors: number;
+    sponsors: number;
+    image: string;
+    description: string;
+    category: string;
+  };
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ 
-  id, 
-  title, 
-  image, 
-  date, 
-  time, 
-  venue, 
-  location, 
-  organizer, 
-  price, 
-  rating = 0,
-  category 
-}) => {
-  const navigate = useNavigate();
-  const handleCardClick = () => {
-    navigate(`/event/${id}`);
+const EventCard = ({ event }: EventCardProps) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-accent-neon/10 text-accent-neon border-accent-neon/20";
+      case "upcoming":
+        return "bg-accent-electric/10 text-accent-electric border-accent-electric/20";
+      case "completed":
+        return "bg-muted text-muted-foreground border-border";
+      default:
+        return "bg-muted text-muted-foreground border-border";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "active":
+        return <CheckCircle className="h-4 w-4" />;
+      case "upcoming":
+        return <Clock className="h-4 w-4" />;
+      case "completed":
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
   };
 
   return (
-    <Card 
-      variant="interactive"
-      onClick={handleCardClick}
-      className="group overflow-hidden"
-    >
-      {/* Event Image */}
-      <div className="relative overflow-hidden h-64">
+    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+      <div className="relative overflow-hidden">
         <img 
-          src={image} 
-          alt={title}
-          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+          src={event.image}
+          alt={event.title}
+          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        
-        {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 bg-primary text-primary-foreground backdrop-blur-sm border border-primary rounded-full text-xs font-medium">
-            {category}
-          </span>
+          <Badge className={`${getStatusColor(event.status)} border-0`}>
+            <div className="flex items-center gap-1">
+              {getStatusIcon(event.status)}
+              <span className="capitalize">{event.status}</span>
+            </div>
+          </Badge>
         </div>
-        
-        {/* Rating Badge */}
-        <div className="absolute top-4 right-4 flex items-center gap-1 bg-primary text-primary-foreground backdrop-blur-sm border border-primary rounded-full px-2 py-1">
-          <Star className="w-3 h-3 fill-primary-foreground text-primary-foreground" />
-          <span className="text-xs font-medium">{rating}</span>
+        <div className="absolute top-4 right-4">
+          <Badge variant="secondary" className="bg-white/90 text-gray-800">
+            {event.category}
+          </Badge>
         </div>
       </div>
-
-      {/* Event Details */}
-      <div className="p-4 space-y-3">
-        <div>
-          <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2">
-            {title}
-          </h3>
-          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1 transition-colors duration-300">
-            <User className="w-3 h-3" />
-            by {organizer}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-foreground/70 transition-colors duration-300">
-            <Calendar className="w-4 h-4 text-accent-electric" />
-            <span>{date} • {time}</span>
+      
+      <CardContent className="p-6">
+        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+          {event.title}
+        </h3>
+        
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4" />
+            <span>{event.date}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-foreground/70 transition-colors duration-300">
-            <MapPin className="w-4 h-4 text-accent-neon" />
-            <span className="truncate">{venue}, {location}</span>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="w-4 h-4" />
+            <span>{event.location}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="w-4 h-4" />
+            <span>{event.attendees}/{event.capacity} attendees</span>
           </div>
         </div>
-
-        <div className="flex items-center justify-between pt-4 border-t border-card-border transition-colors duration-300">
+        
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+          {event.description}
+        </p>
+        
+        {/* Event Metrics */}
+        <div className="grid grid-cols-3 gap-4 mb-4 text-center">
           <div>
-            <div className="text-sm text-muted-foreground transition-colors duration-300">From</div>
-            <div className="text-xl font-bold text-primary transition-colors duration-300">{price}</div>
+            <p className="text-xs text-muted-foreground">Speakers</p>
+            <p className="font-semibold text-foreground">{event.speakers}</p>
           </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Exhibitors</p>
+            <p className="font-semibold text-foreground">{event.exhibitors}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Revenue</p>
+            <p className="font-semibold text-foreground">${event.revenue.toLocaleString()}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {event.conversion}% conversion
+          </span>
           <Button 
-            variant="event" 
-            size="sm" 
-            className="group-hover:bg-primary-foreground group-hover:text-primary transition-all duration-200"
-            onClick={() => navigate(`/event/${id}`)}
+            variant="outline" 
+            size="sm"
+            className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `/organizer/event/${event.id}`;
+            }}
           >
-            Get Tickets
+            Manage Event
           </Button>
         </div>
-      </div>
+      </CardContent>
     </Card>
   );
 };
+
+export default EventCard;

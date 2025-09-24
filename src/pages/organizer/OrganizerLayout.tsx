@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import OrganizerSidebar from "./OrganizerSidebar";
 import OrganizerHeader from "./OrganizerHeader";
-import Footer from "@/components/Footer";
+import Footer from "../../components/Footer";
 
 interface OrganizerLayoutProps {
   children: React.ReactNode;
@@ -37,9 +37,14 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
       </div>
 
       {/* Mobile Sidebar Overlay */}
-      <div className="lg:hidden">
-        <OrganizerSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
-      </div>
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-50">
+          <div className="fixed inset-0 bg-black/50" onClick={toggleSidebar}></div>
+          <div className="fixed left-0 top-0 h-full w-64 z-50">
+            <OrganizerSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
+          </div>
+        </div>
+      )}
       
       {/* Footer */}
       <Footer />

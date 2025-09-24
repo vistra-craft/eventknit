@@ -1,4 +1,4 @@
-import { EventCard } from "./EventCard";
+import EventCard from "./EventCard";
 import { events } from "@/data/events";
 import { useState } from "react";
 import { Calendar, Sparkles, TrendingUp } from "lucide-react";

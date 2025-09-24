@@ -9,6 +9,10 @@ import EventDetails from "./pages/EventDetails";
 // Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import EventManagement from "./pages/organizer/EventManagement";
+import AllEventsPage from "./pages/organizer/AllEventsPage";
+import UpcomingEventsPage from "./pages/organizer/UpcomingEventsPage";
+import PastEventsPage from "./pages/organizer/PastEventsPage";
+import CreateEventPage from "./pages/organizer/CreateEventPage";
 
 const App = () => (
   <BrowserRouter>
@@ -22,6 +26,10 @@ const App = () => (
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
       {/* Organizer Dashboard Routes */}
       <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+      <Route path="/organizer/events/upcoming" element={<UpcomingEventsPage />} />
+      <Route path="/organizer/events/past" element={<PastEventsPage />} />
+      <Route path="/organizer/events" element={<AllEventsPage />} />
+      <Route path="/organizer/events/create" element={<CreateEventPage />} />
       <Route path="/organizer/event/:eventId" element={<EventManagement />} />
     </Routes>
   </BrowserRouter>
