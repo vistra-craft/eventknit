@@ -55,8 +55,8 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto flex">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="container mx-auto flex flex-1">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
           <OrganizerSidebar isOpen={sidebarOpen} onToggle={isMobile ? handleSidebarToggle : toggleSidebar} isMobile={isMobile} />
