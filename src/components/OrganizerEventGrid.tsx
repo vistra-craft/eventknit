@@ -1,11 +1,11 @@
-import { EventCard } from "./EventCard";
+import OrganizerEventCard from "./OrganizerEventCard";
 import { events } from "@/data/events";
 import { useState } from "react";
 import { Calendar, Sparkles, TrendingUp } from "lucide-react";
 
 // events are imported from shared data source
 
-export const EventGrid = () => {
+export const OrganizerEventGrid = () => {
   const [selectedFilter, setSelectedFilter] = useState("today");
 
   const timeFilters = [
@@ -73,7 +73,7 @@ export const EventGrid = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {events.map((event) => (
-            <EventCard key={event.id} {...event} />
+            <OrganizerEventCard key={event.id} event={event} />
           ))}
         </div>
 

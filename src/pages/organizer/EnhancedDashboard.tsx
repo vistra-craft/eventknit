@@ -20,7 +20,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import EventCard from "../../components/EventCard";
+import OrganizerEventCard from "../../components/OrganizerEventCard";
 
 const EnhancedDashboard = () => {
   const [timeRange, setTimeRange] = useState("30d");
@@ -355,7 +355,7 @@ const EnhancedDashboard = () => {
             {/* Events Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {recentEvents.slice(0, 3).map((event) => (
-                <EventCard key={event.id} event={event} />
+                <OrganizerEventCard key={event.id} event={event} />
               ))}
             </div>
           </div>

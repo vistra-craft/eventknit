@@ -17,7 +17,7 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
-import EventCard from "../../components/EventCard";
+import OrganizerEventCard from "../../components/OrganizerEventCard";
 
 const AllEvents = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -301,7 +301,7 @@ const AllEvents = () => {
         {filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
+              <OrganizerEventCard key={event.id} event={event} />
             ))}
           </div>
         ) : (

@@ -1,161 +1,107 @@
-import { Link } from "react-router-dom";
-import {
-  Calendar,
-  Users,
-  MapPin,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-} from "lucide-react";
-import { Card, CardContent } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
+import { Calendar, MapPin, User, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 interface EventCardProps {
-  event: {
-    id: string;
-    title: string;
-    image: string;
-    date: string;
-    time: string;
-    venue: string;
-    location: string;
-    organizer: string;
-    price: string;
-    rating: number;
-    category: string;
-    description: string;
-    fullDescription: string;
-    duration: string;
-    ageRestriction: string;
-  };
+  id: string;
+  title: string;
+  image: string;
+  date: string;
+  time: string;
+  venue: string;
+  location: string;
+  organizer: string;
+  price: string;
+  rating?: number;
+  category: string;
 }
 
-const EventCard = ({ event }: EventCardProps) => {
-  // Generate mock data for organizer dashboard metrics
-  const mockMetrics = {
-    attendees: Math.floor(Math.random() * 500) + 50,
-    capacity: Math.floor(Math.random() * 200) + 300,
-    revenue: Math.floor(Math.random() * 50000) + 10000,
-    views: Math.floor(Math.random() * 1000) + 200,
-    conversion: Math.floor(Math.random() * 20) + 5,
-    speakers: Math.floor(Math.random() * 10) + 1,
-    exhibitors: Math.floor(Math.random() * 15) + 2,
-    sponsors: Math.floor(Math.random() * 8) + 1,
-  };
-
-  const getStatusColor = (category: string) => {
-    switch (category.toLowerCase()) {
-      case "music":
-        return "bg-accent-neon/10 text-accent-neon border-accent-neon/20";
-      case "comedy":
-        return "bg-accent-electric/10 text-accent-electric border-accent-electric/20";
-      case "sports":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "arts":
-        return "bg-purple-500/10 text-purple-500 border-purple-500/20";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
-  };
-
-  const getStatusIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case "music":
-        return <CheckCircle className="h-4 w-4" />;
-      case "comedy":
-        return <Clock className="h-4 w-4" />;
-      case "sports":
-        return <CheckCircle className="h-4 w-4" />;
-      case "arts":
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return <AlertCircle className="h-4 w-4" />;
-    }
+export const EventCard: React.FC<EventCardProps> = ({ 
+  id, 
+  title, 
+  image, 
+  date, 
+  time, 
+  venue, 
+  location, 
+  organizer, 
+  price, 
+  rating = 0,
+  category 
+}) => {
+  const navigate = useNavigate();
+  const handleCardClick = () => {
+    navigate(`/event/${id}`);
   };
 
   return (
-    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-      <div className="relative overflow-hidden">
+    <Card 
+      variant="interactive"
+      onClick={handleCardClick}
+      className="group overflow-hidden"
+    >
+      {/* Event Image */}
+      <div className="relative overflow-hidden h-64">
         <img 
-          src={event.image}
-          alt={event.title}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          src={image} 
+          alt={title}
+          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        
+        {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <Badge className={`${getStatusColor(event.category)} border-0`}>
-            <div className="flex items-center gap-1">
-              {getStatusIcon(event.category)}
-              <span className="capitalize">{event.category}</span>
-            </div>
-          </Badge>
+          <span className="px-3 py-1 bg-primary text-primary-foreground backdrop-blur-sm border border-primary rounded-full text-xs font-medium">
+            {category}
+          </span>
         </div>
-        <div className="absolute top-4 right-4">
-          <Badge variant="secondary" className="bg-white/90 text-gray-800">
-            {event.category}
-          </Badge>
+        
+        {/* Rating Badge */}
+        <div className="absolute top-4 right-4 flex items-center gap-1 bg-primary text-primary-foreground backdrop-blur-sm border border-primary rounded-full px-2 py-1">
+          <Star className="w-3 h-3 fill-primary-foreground text-primary-foreground" />
+          <span className="text-xs font-medium">{rating}</span>
         </div>
       </div>
-      
-      <CardContent className="p-6">
-        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-          {event.title}
-        </h3>
-        
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>{event.date}</span>
+
+      {/* Event Details */}
+      <div className="p-4 space-y-3">
+        <div>
+          <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2">
+            {title}
+          </h3>
+          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1 transition-colors duration-300">
+            <User className="w-3 h-3" />
+            by {organizer}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm text-foreground/70 transition-colors duration-300">
+            <Calendar className="w-4 h-4 text-accent-electric" />
+            <span>{date} • {time}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="w-4 h-4" />
-            <span>{event.location}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="w-4 h-4" />
-            <span>{mockMetrics.attendees}/{mockMetrics.capacity} attendees</span>
+          <div className="flex items-center gap-2 text-sm text-foreground/70 transition-colors duration-300">
+            <MapPin className="w-4 h-4 text-accent-neon" />
+            <span className="truncate">{venue}, {location}</span>
           </div>
         </div>
-        
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-          {event.description}
-        </p>
-        
-        {/* Event Metrics */}
-        <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+
+        <div className="flex items-center justify-between pt-4 border-t border-card-border transition-colors duration-300">
           <div>
-            <p className="text-xs text-muted-foreground">Speakers</p>
-            <p className="font-semibold text-foreground">{mockMetrics.speakers}</p>
+            <div className="text-sm text-muted-foreground transition-colors duration-300">From</div>
+            <div className="text-xl font-bold text-primary transition-colors duration-300">{price}</div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Exhibitors</p>
-            <p className="font-semibold text-foreground">{mockMetrics.exhibitors}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Revenue</p>
-            <p className="font-semibold text-foreground">${mockMetrics.revenue.toLocaleString()}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {mockMetrics.conversion}% conversion
-          </span>
           <Button 
-            variant="outline" 
-            size="sm"
-            className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              window.location.href = `/organizer/event/${event.id}`;
-            }}
+            variant="event" 
+            size="sm" 
+            className="group-hover:bg-primary-foreground group-hover:text-primary transition-all duration-200"
+            onClick={() => navigate(`/event/${id}`)}
           >
-            Manage Event
+            Get Tickets
           </Button>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
-
-export default EventCard;
