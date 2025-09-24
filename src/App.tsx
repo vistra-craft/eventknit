@@ -6,6 +6,7 @@ import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import EventDetails from "./pages/EventDetails";
+import PublicEventForm from "./pages/PublicEventForm";
 // Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import EventManagement from "./pages/organizer/EventManagement";
@@ -47,6 +48,8 @@ const App = () => (
       <Route path="/event/:id/register" element={<RegisterEvent />} />
       <Route path="/event/:id/payment" element={<Payment />} />
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
+      {/* Public Form Routes */}
+      <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
       {/* Organizer Dashboard Routes */}
       <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
       <Route path="/organizer/events/upcoming" element={<UpcomingEventsPage />} />

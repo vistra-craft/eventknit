@@ -426,27 +426,7 @@ export const SettingsPage = () => {
 };
 
 // Event Templates and Drafts
-export const EventTemplates = () => (
-  <OrganizerLayout>
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Event Templates</h1>
-        <p className="text-muted-foreground mt-1">Create and manage event templates</p>
-      </div>
-      <Card>
-        <CardContent className="p-12 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Template Library</h3>
-          <p className="text-muted-foreground mb-4">Event templates and reusable designs coming soon</p>
-          <Button variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Template
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  </OrganizerLayout>
-);
+export { default as EventTemplates } from "./EventTemplates";
 
 export const EventDrafts = () => (
   <OrganizerLayout>
