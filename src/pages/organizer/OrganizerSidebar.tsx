@@ -133,6 +133,11 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     return location.pathname.startsWith(href);
   };
 
+  const isChildActive = (href: string) => {
+    // For child items, use exact matching to prevent parent highlighting
+    return location.pathname === href;
+  };
+
   const groupedItems = navigationItems.reduce((acc, item) => {
     if (!acc[item.group]) {
       acc[item.group] = [];
@@ -174,7 +179,8 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                 {items.map((item) => {
                   const hasChildren = item.children && item.children.length > 0;
                   const isExpanded = expandedItems[item.id];
-                  const isItemActive = item.href ? isActive(item.href) : false;
+                  // For parent items with children, only highlight if we're on the exact parent route
+                  const isItemActive = item.href ? isActive(item.href, true) : false;
 
                   if (hasChildren) {
                     return (
@@ -209,7 +215,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                                 to={child.href}
                                 onClick={handleNavigationClick}
                                 className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
-                                  isActive(child.href)
+                                  isChildActive(child.href)
                                     ? 'bg-primary/10 text-primary font-medium'
                                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                                 }`}
