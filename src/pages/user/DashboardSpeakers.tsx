@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { speakers, Speaker } from "../../data/speakers";
+import { SocialConnections } from "../../components/SocialConnections";
 
 interface EventData {
   id: number;
@@ -98,9 +99,6 @@ const SpeakerModal: React.FC<{ speaker: Speaker; onClose: () => void }> = ({ spe
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                Connect
-              </Button>
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="w-4 h-4" />
               </Button>
@@ -173,37 +171,13 @@ const SpeakerModal: React.FC<{ speaker: Speaker; onClose: () => void }> = ({ spe
             </div>
           )}
 
-          {/* Contact Details */}
-          {speaker.contactDetails && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Contact details</h3>
-              <div className="space-y-2">
-                {speaker.contactDetails.website && (
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4 text-primary" />
-                    <a 
-                      href={speaker.contactDetails.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      {speaker.contactDetails.website}
-                    </a>
-                  </div>
-                )}
-                {speaker.contactDetails.email && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{speaker.contactDetails.email}</span>
-                  </div>
-                )}
-                {speaker.contactDetails.phone && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{speaker.contactDetails.phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Social Connections */}
+          <div className="mb-6">
+            <SocialConnections 
+              socialLinks={speaker.socialLinks}
+              contactDetails={speaker.contactDetails}
+            />
+          </div>
 
           {/* Speaking At */}
           {speaker.speakingAt && speaker.speakingAt.length > 0 && (

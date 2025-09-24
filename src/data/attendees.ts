@@ -11,6 +11,9 @@ export interface Attendee {
     twitter?: string;
     linkedin?: string;
     website?: string;
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
   };
   detailedBio?: string;
   jobFunction?: string;
@@ -40,7 +43,9 @@ export const attendees: Attendee[] = [
     expertise: ["Digital Marketing", "Brand Strategy", "Social Media"],
     socialLinks: {
       twitter: "@sarahjohnson",
-      linkedin: "sarah-johnson-marketing"
+      linkedin: "sarah-johnson-marketing",
+      instagram: "@sarahjohnson",
+      facebook: "sarah.johnson.marketing"
     },
     detailedBio: "Sarah Johnson is a dynamic marketing professional with over 8 years of experience in digital marketing and brand strategy. Currently serving as Marketing Manager at TechCorp Africa, Sarah has been instrumental in driving brand awareness and customer engagement across multiple African markets.\n\nHer expertise spans across digital marketing, social media strategy, content creation, and brand development. Sarah is passionate about leveraging technology to create meaningful connections between brands and their audiences in the rapidly evolving digital landscape.\n\nAt Seamless East Africa 2025, Sarah is looking forward to networking with fellow marketing professionals, learning about the latest trends in digital commerce, and exploring potential partnerships and collaborations.",
     jobFunction: "Marketing",
@@ -66,7 +71,9 @@ export const attendees: Attendee[] = [
     bio: "Driving fintech innovation and financial inclusion across East Africa.",
     expertise: ["FinTech", "Business Development", "Financial Services"],
     socialLinks: {
-      linkedin: "ahmed-hassan-fintech"
+      linkedin: "ahmed-hassan-fintech",
+      twitter: "@ahmedhassan",
+      website: "https://ahmedhassan.dev"
     },
     detailedBio: "Ahmed Hassan is a seasoned business development professional with a strong focus on fintech innovation and financial inclusion. As Business Development Director at FinTech Solutions, Ahmed has been at the forefront of developing and implementing financial technology solutions that serve underserved communities across East Africa.\n\nWith over 10 years of experience in the financial services sector, Ahmed brings a unique perspective on how technology can be leveraged to drive financial inclusion and economic growth. His expertise includes business strategy, partnership development, and market expansion.\n\nAhmed is passionate about creating sustainable business models that benefit both companies and communities. He is always looking for opportunities to collaborate with like-minded professionals and organizations that share his vision of using technology for social good.",
     jobFunction: "Business Development",

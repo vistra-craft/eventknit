@@ -140,10 +140,6 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
 
                   <div className="px-4 py-2 space-y-2">
                     <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
-                      <Users className="h-4 w-4" />
-                      My networks
-                    </button>
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
                       <Calendar className="h-4 w-4" />
                       My schedule
                     </button>

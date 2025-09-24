@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { X, Building2, MapPin, Phone, Mail, Globe, MessageCircle, Send } from 'lucide-react';
+import { SocialConnections } from './SocialConnections';
 
 interface Exhibitor {
   id: number;
@@ -23,6 +24,19 @@ interface Exhibitor {
     name: string;
     position: string;
     avatar: string;
+    socialLinks?: {
+      twitter?: string;
+      linkedin?: string;
+      website?: string;
+      instagram?: string;
+      facebook?: string;
+      tiktok?: string;
+    };
+    contactDetails?: {
+      website?: string;
+      email?: string;
+      phone?: string;
+    };
   }[];
 }
 
@@ -57,6 +71,7 @@ const ExhibitorDetailsModal: React.FC<ExhibitorDetailsModalProps> = ({ exhibitor
     setMessage('');
     // Show success message or handle success
   };
+
 
   // Mock related exhibitors data
   const relatedExhibitors = [
@@ -221,22 +236,30 @@ const ExhibitorDetailsModal: React.FC<ExhibitorDetailsModalProps> = ({ exhibitor
                 <CardTitle className="text-lg font-bold text-foreground">Team Representatives</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {exhibitor.representatives.map((rep, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-                      <Avatar className="w-12 h-12">
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {rep.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-foreground">{rep.name}</h4>
-                        <p className="text-sm text-muted-foreground">{rep.position}</p>
+                    <div key={index} className="p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-start gap-4 mb-4">
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                            {rep.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-foreground">{rep.name}</h4>
+                          <p className="text-sm text-muted-foreground">{rep.position}</p>
+                        </div>
                       </div>
-                      <Button size="sm" variant="outline">
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Message
-                      </Button>
+                      
+                      {/* Social Connections for Representative */}
+                      {(rep.socialLinks || rep.contactDetails) && (
+                        <div className="ml-16">
+                          <SocialConnections 
+                            socialLinks={rep.socialLinks}
+                            contactDetails={rep.contactDetails}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -11,6 +11,9 @@ export interface Speaker {
     twitter?: string;
     linkedin?: string;
     website?: string;
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
   };
   detailedBio?: string;
   jobFunction?: string;

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Calendar, MapPin, Users, ArrowLeft, X, ExternalLink, Eye, EyeOff } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowLeft, X, Eye, EyeOff } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { attendees, type Attendee } from "../../data/attendees";
+import { SocialConnections } from "../../components/SocialConnections";
 
 interface EventData {
   id: number;
@@ -118,9 +119,6 @@ const AttendeeModal: React.FC<{ attendee: Attendee; onClose: () => void }> = ({ 
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                Connect
-              </Button>
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="w-4 h-4" />
               </Button>
@@ -215,37 +213,13 @@ const AttendeeModal: React.FC<{ attendee: Attendee; onClose: () => void }> = ({ 
             </div>
           )}
 
-          {/* Contact Details */}
-          {attendee.contactDetails && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-foreground mb-3">Contact details</h3>
-              <div className="space-y-2">
-                {attendee.contactDetails.website && (
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4 text-primary" />
-                    <a 
-                      href={attendee.contactDetails.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      {attendee.contactDetails.website}
-                    </a>
-                  </div>
-                )}
-                {attendee.contactDetails.email && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{attendee.contactDetails.email}</span>
-                  </div>
-                )}
-                {attendee.contactDetails.phone && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{attendee.contactDetails.phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Social Connections */}
+          <div className="mb-6">
+            <SocialConnections 
+              socialLinks={attendee.socialLinks}
+              contactDetails={attendee.contactDetails}
+            />
+          </div>
         </div>
       </div>
     </div>
