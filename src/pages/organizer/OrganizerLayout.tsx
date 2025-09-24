@@ -8,17 +8,30 @@ interface OrganizerLayoutProps {
 }
 
 const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
 
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+    // Only allow manual toggle on desktop (lg and above)
+    if (!isMobile) {
+      setSidebarOpen(!sidebarOpen);
+    }
   };
 
-  // Check if screen is mobile on mount and resize
+  // Check if screen is mobile on mount and resize, auto-manage sidebar
   useEffect(() => {
     const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+      const isMobileSize = window.innerWidth < 1024; // lg breakpoint
+      setIsMobile(isMobileSize);
+      
+      // Auto-manage sidebar based on screen size
+      if (isMobileSize) {
+        // On mobile, always close sidebar
+        setSidebarOpen(false);
+      } else {
+        // On desktop, always open sidebar
+        setSidebarOpen(true);
+      }
     };
     
     checkIsMobile();
@@ -27,12 +40,17 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Auto-close sidebar on mobile when navigating
+  // Handle sidebar toggle for mobile overlay
   const handleSidebarToggle = () => {
     if (isMobile) {
       setSidebarOpen(false);
-    } else {
-      setSidebarOpen(!sidebarOpen);
+    }
+  };
+
+  // Handle mobile menu button click
+  const handleMobileMenuClick = () => {
+    if (isMobile) {
+      setSidebarOpen(true);
     }
   };
 
@@ -41,7 +59,7 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
       <div className="container mx-auto flex">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
-          <OrganizerSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} isMobile={isMobile} />
+          <OrganizerSidebar isOpen={sidebarOpen} onToggle={isMobile ? handleSidebarToggle : toggleSidebar} isMobile={isMobile} />
         </div>
 
         {/* Main Content */}
@@ -49,7 +67,7 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
           {/* Header */}
           <div className="px-4 sm:px-6">
             <OrganizerHeader
-              onMenuToggle={toggleSidebar}
+              onMenuToggle={isMobile ? handleMobileMenuClick : toggleSidebar}
             />
           </div>
 
