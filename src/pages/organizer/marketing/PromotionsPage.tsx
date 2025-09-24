@@ -10,12 +10,10 @@ import {
   Percent,
   DollarSign,
   Plus,
-  Calendar,
   Users,
   TrendingUp,
   BarChart3,
   Edit,
-  Trash2,
   Copy,
   MoreHorizontal,
   CheckCircle,
@@ -23,9 +21,7 @@ import {
   AlertCircle,
   Search,
   Filter,
-  Eye,
-  EyeOff,
-  Settings
+  EyeOff
 } from "lucide-react";
 
 interface Promotion {
@@ -51,7 +47,7 @@ interface PromotionTemplate {
   name: string;
   description: string;
   type: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 

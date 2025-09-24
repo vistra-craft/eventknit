@@ -1,4 +1,3 @@
-import React from "react";
 import MarketingOverview from "./marketing/MarketingOverview";
 
 const MarketingPage = () => {

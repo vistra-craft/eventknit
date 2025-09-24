@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import OrganizerLayout from "../OrganizerLayout";
@@ -9,12 +9,9 @@ import {
   Mail, 
   Share2, 
   Target,
-  TrendingUp,
   Users,
   Eye,
-  MousePointer,
   Plus,
-  Calendar,
   DollarSign,
   BarChart3,
   Search,
@@ -22,10 +19,9 @@ import {
   MoreHorizontal,
   Play,
   Pause,
+  Calendar,
   Edit,
-  Trash2,
   Copy,
-  Send
 } from "lucide-react";
 
 interface Campaign {
@@ -195,7 +191,6 @@ const CampaignsPage = () => {
   const totalRecipients = campaigns.reduce((sum, campaign) => sum + campaign.recipients, 0);
   const totalRevenue = campaigns.reduce((sum, campaign) => sum + campaign.revenue, 0);
   const avgOpenRate = campaigns.filter(c => c.openRate > 0).reduce((sum, campaign) => sum + campaign.openRate, 0) / campaigns.filter(c => c.openRate > 0).length;
-  const avgClickRate = campaigns.filter(c => c.clickRate > 0).reduce((sum, campaign) => sum + campaign.clickRate, 0) / campaigns.filter(c => c.clickRate > 0).length;
 
   return (
     <OrganizerLayout>

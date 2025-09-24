@@ -7,15 +7,10 @@ import {
   Calendar,
   Users,
   DollarSign,
-  Eye,
   Clock,
   CheckCircle,
-  AlertCircle,
-  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 
@@ -162,7 +157,6 @@ const AllEvents = () => {
   const totalEvents = allEvents.length;
   const activeEvents = allEvents.filter(e => e.status === "active").length;
   const upcomingEvents = allEvents.filter(e => e.status === "upcoming").length;
-  const completedEvents = allEvents.filter(e => e.status === "completed").length;
   const totalRevenue = allEvents.reduce((sum, e) => sum + e.revenue, 0);
   const totalAttendees = allEvents.reduce((sum, e) => sum + e.attendees, 0);
 

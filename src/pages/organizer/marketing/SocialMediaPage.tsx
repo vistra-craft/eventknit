@@ -1,9 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import OrganizerLayout from "../OrganizerLayout";
 import { 
   Share2, 
@@ -21,14 +19,9 @@ import {
   Share,
   TrendingUp,
   BarChart3,
-  Image,
-  Video,
-  Link as LinkIcon,
-  Send,
-  Schedule,
   Edit,
-  Trash2,
-  MoreHorizontal
+  MoreHorizontal,
+  Filter
 } from "lucide-react";
 
 interface SocialPost {
@@ -55,7 +48,7 @@ interface SocialAccount {
   followers: number;
   engagement: number;
   status: 'connected' | 'disconnected';
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 

@@ -1,4 +1,4 @@
-import { EventPerformanceData, AnalyticsMetric } from './types';
+import type { EventPerformanceData, AnalyticsMetric } from './types';
 
 export const eventPerformanceData: EventPerformanceData[] = [
   {

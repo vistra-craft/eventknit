@@ -1,4 +1,4 @@
-import { AnalyticsMetric, TopPerformingEvent, RecentInsight, RecentActivity } from './types';
+import type { AnalyticsMetric, TopPerformingEvent, RecentInsight, RecentActivity } from './types';
 
 export const analyticsOverviewStats: AnalyticsMetric[] = [
   {

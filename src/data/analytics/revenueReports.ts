@@ -1,4 +1,4 @@
-import { AnalyticsMetric, RevenueData, PaymentMethod, RevenueTrend, FinancialInsight } from './types';
+import type { AnalyticsMetric, RevenueData, PaymentMethod, RevenueTrend, FinancialInsight } from './types';
 
 export const revenueStats: AnalyticsMetric[] = [
   {

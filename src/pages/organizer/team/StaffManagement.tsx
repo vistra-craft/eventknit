@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,6 @@ interface StaffMember {
 const StaffManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
-  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Mock staff data
   const staffMembers: StaffMember[] = [
@@ -150,7 +149,7 @@ const StaffManagement = () => {
         </div>
         <Button 
           className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto"
-          onClick={() => setShowInviteModal(true)}
+          onClick={() => console.log('Add staff clicked')}
         >
           <UserPlus className="h-4 w-4 mr-2" />
           Add Staff

@@ -1,4 +1,4 @@
-import { AnalyticsMetric, AttendeeDemographics, BehaviorInsight, AttendeeSegment } from './types';
+import type { AnalyticsMetric, AttendeeDemographics, BehaviorInsight, AttendeeSegment } from './types';
 
 export const attendeeStats: AnalyticsMetric[] = [
   {

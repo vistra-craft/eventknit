@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,17 +7,12 @@ import OrganizerLayout from "../OrganizerLayout";
 import {
   BarChart3,
   TrendingUp,
-  TrendingDown,
   Users,
-  Calendar,
   DollarSign,
-  Eye,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
   Download,
-  Filter,
-  RefreshCw,
   Star,
   MapPin,
   Mic,

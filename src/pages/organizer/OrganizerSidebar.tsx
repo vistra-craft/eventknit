@@ -2,14 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Calendar,
-  Users,
-  BarChart3,
   Settings,
   MessageCircle,
-  QrCode,
   Home,
   Menu,
-  User,
   UserPlus,
   Megaphone,
   TrendingUp,

@@ -10,11 +10,9 @@ import {
   Users,
   DollarSign,
   Plus,
-  Calendar,
   TrendingUp,
   BarChart3,
   Edit,
-  Trash2,
   Copy,
   MoreHorizontal,
   CheckCircle,
@@ -22,13 +20,10 @@ import {
   AlertCircle,
   Search,
   Filter,
-  Eye,
-  EyeOff,
   Settings,
   Star,
   Globe,
   Mail,
-  Phone,
   MapPin,
   ExternalLink
 } from "lucide-react";
@@ -58,7 +53,7 @@ interface PartnershipTemplate {
   name: string;
   description: string;
   type: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 

@@ -11,10 +11,7 @@ import {
   Target,
   TrendingUp,
   Users,
-  Eye,
-  MousePointer,
   Plus,
-  Calendar,
   DollarSign,
   BarChart3,
   ArrowUpRight,
@@ -28,7 +25,7 @@ interface MarketingMetric {
   title: string;
   value: string;
   change: number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 
@@ -36,7 +33,7 @@ interface QuickAction {
   title: string;
   description: string;
   href: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 

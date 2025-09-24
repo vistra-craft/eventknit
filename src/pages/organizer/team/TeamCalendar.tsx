@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,6 @@ import {
   Filter,
   Search,
   User,
-  QrCode,
   CheckCircle,
   AlertCircle
 } from "lucide-react";
@@ -48,9 +47,7 @@ interface StaffSchedule {
 }
 
 const TeamCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Mock data
   const eventAssignments: EventAssignment[] = [
@@ -148,11 +145,6 @@ const TeamCalendar = () => {
     return eventAssignments.filter(event => new Date(event.date) >= today);
   };
 
-  const getStaffByEvent = (eventId: string) => {
-    const event = eventAssignments.find(e => e.id === eventId);
-    return event ? event.staff : [];
-  };
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -198,7 +190,7 @@ const TeamCalendar = () => {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <h3 className="text-lg font-semibold text-foreground">
-                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </h3>
               <Button variant="outline" size="sm">
                 <ChevronRight className="h-4 w-4" />

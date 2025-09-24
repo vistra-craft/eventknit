@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +22,6 @@ import {
 
 const AnalyticsOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
-  const [selectedMetric, setSelectedMetric] = useState("all");
 
   // Mock data - in a real app, this would come from your API
   const overviewStats = [

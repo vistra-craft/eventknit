@@ -4,10 +4,6 @@ import {
   Calendar,
   Users,
   DollarSign,
-  Eye,
-  Clock,
-  CheckCircle,
-  AlertCircle,
   Plus,
   BarChart3,
   ArrowUpRight,
@@ -15,11 +11,9 @@ import {
   Mic,
   Building2,
   Star,
-  MapPin,
+  CheckCircle,
+  Eye,
 } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 
 const EnhancedDashboard = () => {

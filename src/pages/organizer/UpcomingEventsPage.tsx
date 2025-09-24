@@ -1,4 +1,3 @@
-import React from "react";
 import OrganizerLayout from "./OrganizerLayout";
 import UpcomingEvents from "./UpcomingEvents";
 

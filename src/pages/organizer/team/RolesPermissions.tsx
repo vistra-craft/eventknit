@@ -1,19 +1,15 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Shield, 
-  QrCode, 
   Smartphone, 
-  User,
   Settings,
-  Eye,
   Edit,
   Trash2,
   Plus,
   Check,
-  X,
   Calendar,
   BarChart3,
   Users
@@ -37,7 +33,6 @@ interface Role {
 
 const RolesPermissions = () => {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [showCreateRole, setShowCreateRole] = useState(false);
 
   const permissions: Permission[] = [
     // Mobile permissions
@@ -130,7 +125,7 @@ const RolesPermissions = () => {
         </div>
         <Button 
           className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto"
-          onClick={() => setShowCreateRole(true)}
+          onClick={() => console.log('Create role clicked')}
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Role

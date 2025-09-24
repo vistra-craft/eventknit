@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,20 +7,17 @@ import OrganizerLayout from "../OrganizerLayout";
 import {
   DollarSign,
   TrendingUp,
-  TrendingDown,
   CreditCard,
   Receipt,
   ArrowUpRight,
   ArrowDownRight,
   Download,
-  Filter,
   RefreshCw,
   Calendar,
   Users,
   BarChart3,
   PieChart,
   Target,
-  Wallet,
 } from "lucide-react";
 
 const RevenueReports = () => {
