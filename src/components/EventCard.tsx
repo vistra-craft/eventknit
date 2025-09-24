@@ -13,48 +13,61 @@ import { Button } from "./ui/button";
 
 interface EventCardProps {
   event: {
-    id: number;
+    id: string;
     title: string;
+    image: string;
     date: string;
     time: string;
-    location: string;
     venue: string;
-    status: string;
-    attendees: number;
-    capacity: number;
-    revenue: number;
-    views: number;
-    conversion: number;
-    speakers: number;
-    exhibitors: number;
-    sponsors: number;
-    image: string;
-    description: string;
+    location: string;
+    organizer: string;
+    price: string;
+    rating: number;
     category: string;
+    description: string;
+    fullDescription: string;
+    duration: string;
+    ageRestriction: string;
   };
 }
 
 const EventCard = ({ event }: EventCardProps) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
+  // Generate mock data for organizer dashboard metrics
+  const mockMetrics = {
+    attendees: Math.floor(Math.random() * 500) + 50,
+    capacity: Math.floor(Math.random() * 200) + 300,
+    revenue: Math.floor(Math.random() * 50000) + 10000,
+    views: Math.floor(Math.random() * 1000) + 200,
+    conversion: Math.floor(Math.random() * 20) + 5,
+    speakers: Math.floor(Math.random() * 10) + 1,
+    exhibitors: Math.floor(Math.random() * 15) + 2,
+    sponsors: Math.floor(Math.random() * 8) + 1,
+  };
+
+  const getStatusColor = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "music":
         return "bg-accent-neon/10 text-accent-neon border-accent-neon/20";
-      case "upcoming":
+      case "comedy":
         return "bg-accent-electric/10 text-accent-electric border-accent-electric/20";
-      case "completed":
-        return "bg-muted text-muted-foreground border-border";
+      case "sports":
+        return "bg-green-500/10 text-green-500 border-green-500/20";
+      case "arts":
+        return "bg-purple-500/10 text-purple-500 border-purple-500/20";
       default:
         return "bg-muted text-muted-foreground border-border";
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
+  const getStatusIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "music":
         return <CheckCircle className="h-4 w-4" />;
-      case "upcoming":
+      case "comedy":
         return <Clock className="h-4 w-4" />;
-      case "completed":
+      case "sports":
+        return <CheckCircle className="h-4 w-4" />;
+      case "arts":
         return <CheckCircle className="h-4 w-4" />;
       default:
         return <AlertCircle className="h-4 w-4" />;
@@ -70,10 +83,10 @@ const EventCard = ({ event }: EventCardProps) => {
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <div className="absolute top-4 left-4">
-          <Badge className={`${getStatusColor(event.status)} border-0`}>
+          <Badge className={`${getStatusColor(event.category)} border-0`}>
             <div className="flex items-center gap-1">
-              {getStatusIcon(event.status)}
-              <span className="capitalize">{event.status}</span>
+              {getStatusIcon(event.category)}
+              <span className="capitalize">{event.category}</span>
             </div>
           </Badge>
         </div>
@@ -100,7 +113,7 @@ const EventCard = ({ event }: EventCardProps) => {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />
-            <span>{event.attendees}/{event.capacity} attendees</span>
+            <span>{mockMetrics.attendees}/{mockMetrics.capacity} attendees</span>
           </div>
         </div>
         
@@ -112,21 +125,21 @@ const EventCard = ({ event }: EventCardProps) => {
         <div className="grid grid-cols-3 gap-4 mb-4 text-center">
           <div>
             <p className="text-xs text-muted-foreground">Speakers</p>
-            <p className="font-semibold text-foreground">{event.speakers}</p>
+            <p className="font-semibold text-foreground">{mockMetrics.speakers}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Exhibitors</p>
-            <p className="font-semibold text-foreground">{event.exhibitors}</p>
+            <p className="font-semibold text-foreground">{mockMetrics.exhibitors}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Revenue</p>
-            <p className="font-semibold text-foreground">${event.revenue.toLocaleString()}</p>
+            <p className="font-semibold text-foreground">${mockMetrics.revenue.toLocaleString()}</p>
           </div>
         </div>
         
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {event.conversion}% conversion
+            {mockMetrics.conversion}% conversion
           </span>
           <Button 
             variant="outline" 
