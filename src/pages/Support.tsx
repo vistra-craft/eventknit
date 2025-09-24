@@ -23,7 +23,6 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
-  HelpCircle,
   Zap,
   BookOpen
 } from "lucide-react";
