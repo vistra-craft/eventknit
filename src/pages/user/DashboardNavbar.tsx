@@ -10,7 +10,6 @@ import {
   HelpCircle,
   FileText,
   LogOut,
-  ChevronDown,
   Calendar,
   Mic,
   Building2,

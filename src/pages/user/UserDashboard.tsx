@@ -1,4 +1,3 @@
-import React from "react";
 import { useLocation } from "react-router-dom";
 import DashboardNavbar from "./DashboardNavbar";
 import DashboardHome from "./DashboardHome";
@@ -48,11 +47,11 @@ const UserDashboard = () => {
       case "speakers":
         return <DashboardSpeakers eventData={eventData} />;
       case "exhibitors":
-        return <DashboardExhibitors eventData={eventData} />;
+        return <DashboardExhibitors eventData={eventData} user={user} />;
       case "attendees":
-        return <DashboardAttendees eventData={eventData} />;
+        return <DashboardAttendees />;
       case "agenda":
-        return <DashboardAgenda eventData={eventData} />;
+        return <DashboardAgenda eventData={eventData} user={user} />;
       case "my-event":
         return (
           <DashboardMyEvent eventData={eventData} registration={registration} />

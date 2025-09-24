@@ -30,7 +30,7 @@ interface DashboardMyBadgeProps {
   registration?: Registration;
 }
 
-const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user, registration }) => {
+const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) => {
   // Generate placeholder data
   const badgeData = {
     eventName: eventData.title || "Tech Conference 2024",

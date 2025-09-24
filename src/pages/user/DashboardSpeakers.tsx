@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Calendar, MapPin, Users, ArrowLeft, X, ExternalLink, Clock, Users2 } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowLeft, X, Clock, Users2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { speakers, Speaker } from "../../data/speakers";
+import { speakers, type Speaker } from "../../data/speakers";
 import { SocialConnections } from "../../components/SocialConnections";
 
 interface EventData {

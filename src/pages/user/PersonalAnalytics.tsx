@@ -21,7 +21,7 @@ interface PersonalAnalyticsProps {
   user: User;
 }
 
-const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = ({ eventData, user }) => {
+const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold text-foreground mb-6">Personal Analytics</h1>

@@ -7,16 +7,13 @@ import {
   Users2,
   Calendar as CalendarIcon,
   FileText,
-  Network,
-  Bell,
-  BarChart3,
   Badge as BadgeIcon,
   ArrowLeft,
   Clock,
   Star,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 
 interface EventData {
@@ -50,7 +47,7 @@ interface DashboardHomeProps {
   registration?: Registration;
 }
 
-const DashboardHome: React.FC<DashboardHomeProps> = ({ eventData, user, registration }) => {
+const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
 
   // Mock data for user's events
@@ -354,10 +351,10 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ eventData, user, registra
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-4 left-4">
-                      <Badge className={`${getStatusColor(event.status)} border-0`}>
+                      <Badge className={`${getStatusColor(event.status || 'upcoming')} border-0`}>
                         <div className="flex items-center gap-1">
-                          {getStatusIcon(event.status)}
-                          <span className="capitalize">{event.status}</span>
+                          {getStatusIcon(event.status || 'upcoming')}
+                          <span className="capitalize">{event.status || 'upcoming'}</span>
                         </div>
                       </Badge>
                     </div>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
 import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils } from 'lucide-react';
 
 interface EventData {
@@ -44,7 +43,7 @@ interface AgendaItem {
   duration: string;
 }
 
-const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData, user, registration }) => {
+const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
   // Mock agenda data
   const agendaItems: AgendaItem[] = [
     {

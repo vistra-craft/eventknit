@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { X, Building2, MapPin, Phone, Mail, Globe, MessageCircle, Send } from 'lucide-react';
+import { X, Building2, MapPin, Phone, Mail, Globe, Send } from 'lucide-react';
 import { SocialConnections } from './SocialConnections';
 
 interface Exhibitor {

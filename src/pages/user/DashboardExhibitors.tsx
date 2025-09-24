@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Building2, MapPin, Phone, Mail, Globe } from 'lucide-react';
+import { Building2, MapPin, Mail, Globe } from 'lucide-react';
 import ExhibitorDetailsModal from '../../components/ExhibitorDetailsModal';
 
 interface EventData {
@@ -54,7 +54,7 @@ interface Exhibitor {
   }[];
 }
 
-const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData, user, registration }) => {
+const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) => {
   const [selectedExhibitor, setSelectedExhibitor] = useState<Exhibitor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
