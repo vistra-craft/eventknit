@@ -121,7 +121,7 @@ const RolesPermissions = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Roles & Permissions</h1>
           <p className="text-muted-foreground">
@@ -129,7 +129,7 @@ const RolesPermissions = () => {
           </p>
         </div>
         <Button 
-          className="bg-accent-neon hover:bg-accent-neon/80 text-primary"
+          className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto"
           onClick={() => setShowCreateRole(true)}
         >
           <Plus className="h-4 w-4 mr-2" />

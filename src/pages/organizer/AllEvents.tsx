@@ -213,7 +213,7 @@ const AllEvents = () => {
     <div className="space-y-8">
       
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">All Events</h1>
           <p className="text-muted-foreground">
@@ -223,7 +223,7 @@ const AllEvents = () => {
         <div className="flex items-center space-x-3">
           <Link
             to="/organizer/events/create"
-            className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
+            className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center w-full sm:w-auto justify-center"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Event

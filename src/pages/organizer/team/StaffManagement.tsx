@@ -226,11 +226,11 @@ const StaffManagement = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent w-full sm:w-auto"
               >
                 <option value="all">All Roles</option>
                 <option value="ticket_scanner">Ticket Scanner</option>
@@ -238,7 +238,7 @@ const StaffManagement = () => {
                 <option value="check_in_staff">Check-in Staff</option>
                 <option value="supervisor">Supervisor</option>
               </select>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Filter className="h-4 w-4 mr-2" />
                 More Filters
               </Button>

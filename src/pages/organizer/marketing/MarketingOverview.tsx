@@ -207,25 +207,25 @@ const MarketingOverview = () => {
     <OrganizerLayout>
       <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Marketing Center</h1>
           <p className="text-muted-foreground mt-1">
             Manage campaigns, promotions, and grow your event audience
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
           <select 
             value={timeRange} 
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+            className="px-3 py-2 border border-border rounded-lg bg-background text-foreground w-full sm:w-auto"
           >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
             <option value="1y">Last year</option>
           </select>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Campaign
           </Button>

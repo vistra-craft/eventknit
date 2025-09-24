@@ -156,29 +156,33 @@ const TeamCalendar = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Team Calendar</h1>
           <p className="text-muted-foreground">
             Schedule staff assignments and track event coverage
           </p>
         </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant={viewMode === 'week' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('week')}
-          >
-            Week
-          </Button>
-          <Button 
-            variant={viewMode === 'month' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('month')}
-          >
-            Month
-          </Button>
-          <Button className="bg-accent-neon hover:bg-accent-neon/80 text-primary">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-2">
+            <Button 
+              variant={viewMode === 'week' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('week')}
+              className="flex-1 sm:flex-none"
+            >
+              Week
+            </Button>
+            <Button 
+              variant={viewMode === 'month' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('month')}
+              className="flex-1 sm:flex-none"
+            >
+              Month
+            </Button>
+          </div>
+          <Button className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Assign Staff
           </Button>
@@ -188,7 +192,7 @@ const TeamCalendar = () => {
       {/* Calendar Navigation */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm">
                 <ChevronLeft className="h-4 w-4" />
@@ -200,12 +204,12 @@ const TeamCalendar = () => {
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Search className="h-4 w-4 mr-2" />
                 Search
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Filter className="h-4 w-4 mr-2" />
                 Filter
               </Button>
