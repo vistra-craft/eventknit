@@ -31,6 +31,8 @@ import {
   EventTemplates,
   EventDrafts
 } from "./pages/organizer/placeholder-pages";
+// Profile import
+import Profile from "./pages/organizer/Profile";
 
 const App = () => (
   <BrowserRouter>
@@ -70,6 +72,8 @@ const App = () => (
       <Route path="/organizer/team/performance" element={<TeamPerformance />} />
       {/* Settings Route */}
       <Route path="/organizer/settings" element={<SettingsPage />} />
+      {/* Profile Route */}
+      <Route path="/organizer/profile" element={<Profile />} />
       {/* Event Templates and Drafts */}
       <Route path="/organizer/events/templates" element={<EventTemplates />} />
       <Route path="/organizer/events/drafts" element={<EventDrafts />} />

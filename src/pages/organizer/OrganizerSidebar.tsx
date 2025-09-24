@@ -9,6 +9,7 @@ import {
   QrCode,
   Home,
   Menu,
+  User,
   UserPlus,
   Megaphone,
   TrendingUp,
