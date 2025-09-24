@@ -13,10 +13,21 @@ import {
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
+  Mic,
+  Building2,
+  Star,
+  MapPin,
+  ArrowLeft,
+  Settings,
+  MessageCircle,
 } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 
 const EnhancedDashboard = () => {
   const [timeRange, setTimeRange] = useState("30d");
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   // Mock data - in a real app, this would come from your API
   const stats = [
@@ -31,14 +42,34 @@ const EnhancedDashboard = () => {
       borderColor: "border-accent-electric/20",
     },
     {
+      title: "Speakers",
+      value: "156",
+      change: "+8%",
+      changeType: "positive",
+      icon: Mic,
+      color: "text-accent-neon",
+      bgColor: "bg-accent-neon/10",
+      borderColor: "border-accent-neon/20",
+    },
+    {
+      title: "Exhibitors",
+      value: "89",
+      change: "+15%",
+      changeType: "positive",
+      icon: Building2,
+      color: "text-accent-coral",
+      bgColor: "bg-accent-coral/10",
+      borderColor: "border-accent-coral/20",
+    },
+    {
       title: "Active Attendees",
       value: "4,247",
       change: "+18%",
       changeType: "positive",
       icon: Users,
-      color: "text-accent-neon",
-      bgColor: "bg-accent-neon/10",
-      borderColor: "border-accent-neon/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Total Revenue",
@@ -46,19 +77,9 @@ const EnhancedDashboard = () => {
       change: "+24%",
       changeType: "positive",
       icon: DollarSign,
-      color: "text-accent-coral",
-      bgColor: "bg-accent-coral/10",
-      borderColor: "border-accent-coral/20",
-    },
-    {
-      title: "Conversion Rate",
-      value: "15.8%",
-      change: "+3.2%",
-      changeType: "positive",
-      icon: TrendingUp,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      borderColor: "border-primary/20",
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      borderColor: "border-green-200",
     },
   ];
 
@@ -66,67 +87,102 @@ const EnhancedDashboard = () => {
     {
       id: 1,
       title: "Tech Innovation Summit 2024",
-      date: "2024-03-15",
+      date: "March 15-17, 2024",
       time: "9:00 AM - 5:00 PM",
       location: "San Francisco, CA",
+      venue: "Moscone Center",
       status: "active",
       attendees: 485,
       capacity: 500,
       revenue: 145200,
       views: 3250,
       conversion: 14.9,
+      speakers: 24,
+      exhibitors: 18,
+      sponsors: 12,
+      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+      description: "Explore the latest in technology innovation and digital transformation.",
+      category: "Technology"
     },
     {
       id: 2,
       title: "Business Leadership Workshop",
-      date: "2024-04-02",
+      date: "April 2, 2024",
       time: "10:00 AM - 3:00 PM",
       location: "New York, NY",
+      venue: "Manhattan Center",
       status: "upcoming",
       attendees: 78,
       capacity: 100,
       revenue: 15600,
       views: 890,
       conversion: 8.8,
+      speakers: 8,
+      exhibitors: 5,
+      sponsors: 3,
+      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop",
+      description: "Master leadership skills for the modern business landscape.",
+      category: "Business"
     },
     {
       id: 3,
       title: "Food & Wine Expo",
-      date: "2024-02-10",
+      date: "February 10, 2024",
       time: "11:00 AM - 8:00 PM",
       location: "Los Angeles, CA",
+      venue: "Convention Center",
       status: "completed",
       attendees: 320,
       capacity: 350,
       revenue: 25600,
       views: 1890,
       conversion: 16.9,
+      speakers: 15,
+      exhibitors: 45,
+      sponsors: 8,
+      image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop",
+      description: "Discover the finest culinary experiences and wine tastings.",
+      category: "Food & Drink"
     },
     {
       id: 4,
       title: "Digital Marketing Conference",
-      date: "2024-01-20",
+      date: "January 20, 2024",
       time: "8:30 AM - 6:00 PM",
       location: "Chicago, IL",
+      venue: "McCormick Place",
       status: "completed",
       attendees: 450,
       capacity: 500,
       revenue: 67500,
       views: 2100,
       conversion: 21.4,
+      speakers: 32,
+      exhibitors: 28,
+      sponsors: 15,
+      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=400&h=300&fit=crop",
+      description: "Learn cutting-edge digital marketing strategies and tools.",
+      category: "Marketing"
     },
     {
       id: 5,
       title: "Startup Pitch Competition",
-      date: "2024-05-15",
+      date: "May 15, 2024",
       time: "2:00 PM - 8:00 PM",
       location: "Austin, TX",
+      venue: "Austin Convention Center",
       status: "upcoming",
       attendees: 25,
       capacity: 200,
       revenue: 3750,
       views: 450,
       conversion: 5.6,
+      speakers: 12,
+      exhibitors: 8,
+      sponsors: 5,
+      image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=300&fit=crop",
+      description: "Watch innovative startups pitch their ideas to investors.",
+      category: "Startup"
     },
   ];
 
@@ -138,6 +194,7 @@ const EnhancedDashboard = () => {
       time: "2 minutes ago",
       icon: Users,
       color: "text-accent-neon",
+      eventId: 1,
     },
     {
       id: 2,
@@ -146,54 +203,70 @@ const EnhancedDashboard = () => {
       time: "5 minutes ago",
       icon: DollarSign,
       color: "text-accent-electric",
+      eventId: 2,
     },
     {
       id: 3,
-      type: "registration",
-      message: "Michael Chen registered for Startup Pitch Competition",
+      type: "speaker",
+      message: "New speaker Dr. Maria Rodriguez added to Digital Marketing Conference",
       time: "12 minutes ago",
-      icon: Users,
-      color: "text-accent-neon",
+      icon: Mic,
+      color: "text-accent-coral",
+      eventId: 4,
     },
     {
       id: 4,
-      type: "view",
-      message: "Tech Innovation Summit 2024 page viewed 47 times today",
+      type: "exhibitor",
+      message: "Exhibitor booth confirmed for Food & Wine Expo - Wine Masters Inc.",
       time: "18 minutes ago",
-      icon: Eye,
-      color: "text-accent-coral",
+      icon: Building2,
+      color: "text-primary",
+      eventId: 3,
     },
     {
       id: 5,
-      type: "payment",
-      message: "Payment of $150 received for Food & Wine Expo",
+      type: "registration",
+      message: "Michael Chen registered for Startup Pitch Competition",
       time: "25 minutes ago",
-      icon: DollarSign,
-      color: "text-accent-electric",
+      icon: Users,
+      color: "text-accent-neon",
+      eventId: 5,
     },
     {
       id: 6,
-      type: "registration",
-      message: "Emma Wilson registered for Digital Marketing Conference",
+      type: "sponsor",
+      message: "Gold sponsor partnership confirmed for Tech Innovation Summit",
       time: "1 hour ago",
-      icon: Users,
-      color: "text-accent-neon",
+      icon: Star,
+      color: "text-yellow-600",
+      eventId: 1,
     },
     {
       id: 7,
+      type: "payment",
+      message: "Payment of $150 received for Food & Wine Expo",
+      time: "1 hour ago",
+      icon: DollarSign,
+      color: "text-accent-electric",
+      eventId: 3,
+    },
+    {
+      id: 8,
       type: "completion",
       message: "Food & Wine Expo completed successfully with 320 attendees",
       time: "2 hours ago",
       icon: CheckCircle,
-      color: "text-accent-neon",
+      color: "text-green-600",
+      eventId: 3,
     },
     {
-      id: 8,
+      id: 9,
       type: "view",
       message: "Business Leadership Workshop page viewed 23 times today",
       time: "3 hours ago",
       icon: Eye,
       color: "text-accent-coral",
+      eventId: 2,
     },
   ];
 
@@ -224,267 +297,225 @@ const EnhancedDashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Dashboard Overview
-          </h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your events.
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent-neon focus:border-transparent bg-card text-foreground"
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="1y">Last year</option>
-          </select>
-          <Link
-            to="/events/create"
-            className="bg-accent-neon hover:bg-accent-neon/80 text-primary px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Create Event
-          </Link>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            className={`bg-card rounded-xl border ${stat.borderColor} p-6 shadow-card hover:shadow-card-hover transition-shadow duration-200`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-muted-foreground mb-1">
-                  {stat.title}
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto">
+          
+          {/* Main Content - Dashboard Overview */}
+          <div>
+            {/* Header */}
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>
+                <p className="text-muted-foreground">
+                  Welcome back! Here's what's happening with your events.
                 </p>
-                <p className="text-2xl font-bold text-foreground mb-2">
-                  {stat.value}
-                </p>
-                <div className="flex items-center">
-                  {stat.changeType === "positive" ? (
-                    <ArrowUpRight className="h-4 w-4 text-accent-neon mr-1" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4 text-destructive mr-1" />
-                  )}
-                  <span
-                    className={`text-sm font-medium ${
-                      stat.changeType === "positive"
-                        ? "text-accent-neon"
-                        : "text-destructive"
-                    }`}
-                  >
-                    {stat.change}
-                  </span>
-                  <span className="text-sm text-muted-foreground ml-1">
-                    vs last period
-                  </span>
-                </div>
               </div>
-              <div
-                className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}
-              >
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              <div className="flex items-center space-x-3">
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
+                >
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                  <option value="1y">Last year</option>
+                </select>
+                <Link
+                  to="/events/create"
+                  className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Event
+                </Link>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Events */}
-        <div className="lg:col-span-2">
-          <div className="bg-card rounded-xl shadow-card border border-border">
-            <div className="p-6 border-b border-border">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Recent Events
-                </h3>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+              {stats.map((stat, index) => (
+                <div
+                  key={index}
+                  className={`bg-card rounded-xl border ${stat.borderColor} p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        {stat.title}
+                      </p>
+                      <p className="text-xl font-bold text-foreground mb-1">
+                        {stat.value}
+                      </p>
+                      <div className="flex items-center">
+                        {stat.changeType === "positive" ? (
+                          <ArrowUpRight className="h-3 w-3 text-green-600 mr-1" />
+                        ) : (
+                          <ArrowDownRight className="h-3 w-3 text-red-600 mr-1" />
+                        )}
+                        <span
+                          className={`text-xs font-medium ${
+                            stat.changeType === "positive"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {stat.change}
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      className={`w-8 h-8 rounded-lg ${stat.bgColor} flex items-center justify-center`}
+                    >
+                      <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* My Events Section */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-foreground">My Events</h2>
                 <Link
                   to="/organizer/events"
-                  className="text-accent-neon hover:text-accent-neon/80 font-medium text-sm flex items-center"
+                  className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
                 >
                   View all events
                   <ArrowUpRight className="h-4 w-4 ml-1" />
                 </Link>
               </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
+
+              {/* Events Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {recentEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="border border-border rounded-lg p-4 hover:shadow-card transition-shadow duration-200"
+                  <Card 
+                    key={event.id} 
+                    className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                    onClick={() => setSelectedEvent(event)}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-foreground mb-1">
-                          {event.title}
-                        </h4>
-                        <div className="flex items-center text-sm text-muted-foreground space-x-4">
-                          <span className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            {event.date}
-                          </span>
-                          <span>{event.time}</span>
+                    <div className="relative overflow-hidden">
+                      <img 
+                        src={event.image}
+                        alt={event.title}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-4 left-4">
+                        <Badge className={`${getStatusColor(event.status)} border-0`}>
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon(event.status)}
+                            <span className="capitalize">{event.status}</span>
+                          </div>
+                        </Badge>
+                      </div>
+                      <div className="absolute top-4 right-4">
+                        <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                          {event.category}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                        {event.title}
+                      </h3>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>{event.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          <span>{event.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Users className="w-4 h-4" />
+                          <span>{event.attendees}/{event.capacity} attendees</span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                            event.status
-                          )} flex items-center`}
-                        >
-                          {getStatusIcon(event.status)}
-                          <span className="ml-1 capitalize">
-                            {event.status}
-                          </span>
+                      
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                        {event.description}
+                      </p>
+                      
+                      {/* Event Metrics */}
+                      <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Speakers</p>
+                          <p className="font-semibold text-foreground">{event.speakers}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Exhibitors</p>
+                          <p className="font-semibold text-foreground">{event.exhibitors}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Revenue</p>
+                          <p className="font-semibold text-foreground">${event.revenue.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {event.conversion}% conversion
                         </span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/organizer/event/${event.id}`;
+                          }}
+                        >
+                          Manage Event
+                        </Button>
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Attendees</p>
-                        <p className="font-medium text-foreground">
-                          {event.attendees}/{event.capacity}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Revenue</p>
-                        <p className="font-medium text-foreground">
-                          ${event.revenue.toLocaleString()}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Views</p>
-                        <p className="font-medium text-foreground">
-                          {event.views}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Conversion</p>
-                        <p className="font-medium text-foreground">
-                          {event.conversion}%
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Recent Activity */}
-        <div className="lg:col-span-1">
-          <div className="bg-card rounded-xl shadow-card border border-border">
-            <div className="p-6 border-b border-border">
-              <h3 className="text-lg font-semibold text-foreground">
-                Recent Activity
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div
-                      className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
-                    >
-                      <activity.icon className={`h-4 w-4 ${activity.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
-                        {activity.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            {/* Recent Activity */}
+            <div className="bg-card rounded-xl shadow-sm border border-border">
+              <div className="p-6 border-b border-border">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Recent Activity
+                  </h3>
+                  <Link
+                    to="/organizer/activity"
+                    className="text-sm text-primary hover:text-primary/80 font-medium"
+                  >
+                    View all activity
+                  </Link>
+                </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <Link
-                  to="/organizer/activity"
-                  className="text-sm text-accent-neon hover:text-accent-neon/80 font-medium"
-                >
-                  View all activity
-                </Link>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {recentActivity.slice(0, 6).map((activity) => (
+                    <div key={activity.id} className="flex items-start space-x-3">
+                      <div
+                        className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
+                      >
+                        <activity.icon className={`h-4 w-4 ${activity.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">
+                          {activity.message}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {activity.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-card rounded-xl shadow-card border border-border p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/events/create"
-            className="flex items-center p-4 border border-border rounded-lg hover:border-accent-neon hover:bg-accent-neon/5 transition-colors duration-200"
-          >
-            <div className="w-10 h-10 bg-accent-neon/10 rounded-lg flex items-center justify-center mr-3">
-              <Plus className="h-5 w-5 text-accent-neon" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Create Event</p>
-              <p className="text-sm text-muted-foreground">Start a new event</p>
-            </div>
-          </Link>
-
-          <Link
-            to="/organizer/analytics"
-            className="flex items-center p-4 border border-border rounded-lg hover:border-accent-electric hover:bg-accent-electric/5 transition-colors duration-200"
-          >
-            <div className="w-10 h-10 bg-accent-electric/10 rounded-lg flex items-center justify-center mr-3">
-              <BarChart3 className="h-5 w-5 text-accent-electric" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">View Analytics</p>
-              <p className="text-sm text-muted-foreground">Performance insights</p>
-            </div>
-          </Link>
-
-          <Link
-            to="/organizer/attendees"
-            className="flex items-center p-4 border border-border rounded-lg hover:border-accent-coral hover:bg-accent-coral/5 transition-colors duration-200"
-          >
-            <div className="w-10 h-10 bg-accent-coral/10 rounded-lg flex items-center justify-center mr-3">
-              <Users className="h-5 w-5 text-accent-coral" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Manage Attendees</p>
-              <p className="text-sm text-muted-foreground">View and manage</p>
-            </div>
-          </Link>
-
-          <Link
-            to="/organizer/tickets/scanner"
-            className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-          >
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-              <Calendar className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Ticket Scanner</p>
-              <p className="text-sm text-muted-foreground">Check-in attendees</p>
-            </div>
-          </Link>
         </div>
       </div>
     </div>

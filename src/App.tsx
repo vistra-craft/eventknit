@@ -6,8 +6,9 @@ import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import EventDetails from "./pages/EventDetails";
-// Organizer Dashboard import
+// Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
+import EventManagement from "./pages/organizer/EventManagement";
 
 const App = () => (
   <BrowserRouter>
@@ -19,8 +20,9 @@ const App = () => (
       <Route path="/event/:id/register" element={<RegisterEvent />} />
       <Route path="/event/:id/payment" element={<Payment />} />
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
-      {/* Organizer Dashboard Route */}
+      {/* Organizer Dashboard Routes */}
       <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+      <Route path="/organizer/event/:eventId" element={<EventManagement />} />
     </Routes>
   </BrowserRouter>
 );
