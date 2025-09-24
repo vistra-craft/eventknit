@@ -23,14 +23,17 @@ import {
   AttendeeInsights, 
   RevenueReports,
   CommunicationsPage,
-  StaffManagement,
-  RolesPermissions,
-  TeamCalendar,
-  TeamPerformance,
   SettingsPage,
   EventTemplates,
   EventDrafts
 } from "./pages/organizer/placeholder-pages";
+// Team Management imports
+import { 
+  StaffManagementPage,
+  RolesPermissionsPage,
+  TeamCalendarPage,
+  TeamPerformancePage
+} from "./pages/organizer/team";
 // Profile import
 import Profile from "./pages/organizer/Profile";
 
@@ -66,10 +69,10 @@ const App = () => (
       {/* Communications Route */}
       <Route path="/organizer/communications" element={<CommunicationsPage />} />
       {/* Team Routes */}
-      <Route path="/organizer/team/staff" element={<StaffManagement />} />
-      <Route path="/organizer/team/roles" element={<RolesPermissions />} />
-      <Route path="/organizer/team/calendar" element={<TeamCalendar />} />
-      <Route path="/organizer/team/performance" element={<TeamPerformance />} />
+      <Route path="/organizer/team/staff" element={<StaffManagementPage />} />
+      <Route path="/organizer/team/roles" element={<RolesPermissionsPage />} />
+      <Route path="/organizer/team/calendar" element={<TeamCalendarPage />} />
+      <Route path="/organizer/team/performance" element={<TeamPerformancePage />} />
       {/* Settings Route */}
       <Route path="/organizer/settings" element={<SettingsPage />} />
       {/* Profile Route */}
