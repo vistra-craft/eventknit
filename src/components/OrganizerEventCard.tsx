@@ -89,11 +89,6 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
             </div>
           </Badge>
         </div>
-        <div className="absolute top-4 right-4">
-          <Badge variant="secondary" className="bg-white/90 text-gray-800">
-            {event.category}
-          </Badge>
-        </div>
       </div>
       
       <CardContent className="p-6">
