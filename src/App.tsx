@@ -13,6 +13,24 @@ import AllEventsPage from "./pages/organizer/AllEventsPage";
 import UpcomingEventsPage from "./pages/organizer/UpcomingEventsPage";
 import PastEventsPage from "./pages/organizer/PastEventsPage";
 import CreateEventPage from "./pages/organizer/CreateEventPage";
+// Marketing imports
+import MarketingPage from "./pages/organizer/MarketingPage";
+import { CampaignsPage, SocialMediaPage, EmailMarketingPage, PromotionsPage, PartnershipsPage } from "./pages/organizer/marketing";
+// Placeholder page imports
+import { 
+  AnalyticsOverview, 
+  EventPerformance, 
+  AttendeeInsights, 
+  RevenueReports,
+  CommunicationsPage,
+  StaffManagement,
+  RolesPermissions,
+  TeamCalendar,
+  TeamPerformance,
+  SettingsPage,
+  EventTemplates,
+  EventDrafts
+} from "./pages/organizer/placeholder-pages";
 
 const App = () => (
   <BrowserRouter>
@@ -31,6 +49,30 @@ const App = () => (
       <Route path="/organizer/events" element={<AllEventsPage />} />
       <Route path="/organizer/events/create" element={<CreateEventPage />} />
       <Route path="/organizer/event/:eventId" element={<EventManagement />} />
+      {/* Marketing Routes */}
+      <Route path="/organizer/marketing" element={<MarketingPage />} />
+      <Route path="/organizer/marketing/campaigns" element={<CampaignsPage />} />
+      <Route path="/organizer/marketing/social" element={<SocialMediaPage />} />
+      <Route path="/organizer/marketing/email" element={<EmailMarketingPage />} />
+      <Route path="/organizer/marketing/promotions" element={<PromotionsPage />} />
+      <Route path="/organizer/marketing/partnerships" element={<PartnershipsPage />} />
+      {/* Analytics Routes */}
+      <Route path="/organizer/analytics" element={<AnalyticsOverview />} />
+      <Route path="/organizer/analytics/events" element={<EventPerformance />} />
+      <Route path="/organizer/analytics/attendees" element={<AttendeeInsights />} />
+      <Route path="/organizer/analytics/revenue" element={<RevenueReports />} />
+      {/* Communications Route */}
+      <Route path="/organizer/communications" element={<CommunicationsPage />} />
+      {/* Team Routes */}
+      <Route path="/organizer/team/staff" element={<StaffManagement />} />
+      <Route path="/organizer/team/roles" element={<RolesPermissions />} />
+      <Route path="/organizer/team/calendar" element={<TeamCalendar />} />
+      <Route path="/organizer/team/performance" element={<TeamPerformance />} />
+      {/* Settings Route */}
+      <Route path="/organizer/settings" element={<SettingsPage />} />
+      {/* Event Templates and Drafts */}
+      <Route path="/organizer/events/templates" element={<EventTemplates />} />
+      <Route path="/organizer/events/drafts" element={<EventDrafts />} />
     </Routes>
   </BrowserRouter>
 );
