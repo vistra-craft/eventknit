@@ -66,17 +66,11 @@ const AttendeeCard: React.FC<{ attendee: Attendee; onClick: () => void }> = ({ a
 
           {/* Networking Goals Preview */}
           {attendee.networkingGoals && attendee.networkingGoals.length > 0 && (
-            <div className="flex flex-wrap gap-1 justify-center mt-3">
-              {attendee.networkingGoals.slice(0, 2).map((goal: string, index: number) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {goal}
-                </Badge>
-              ))}
-              {attendee.networkingGoals.length > 2 && (
-                <Badge variant="outline" className="text-xs">
-                  +{attendee.networkingGoals.length - 2}
-                </Badge>
-              )}
+            <div className="mt-3">
+              <p className="text-xs text-muted-foreground">
+                {attendee.networkingGoals.slice(0, 2).join(", ")}
+                {attendee.networkingGoals.length > 2 && ` +${attendee.networkingGoals.length - 2} more`}
+              </p>
             </div>
           )}
         </div>
