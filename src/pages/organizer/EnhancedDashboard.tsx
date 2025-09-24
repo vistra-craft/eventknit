@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar,
   Users,
   DollarSign,
-  TrendingUp,
   Eye,
   Clock,
   CheckCircle,
@@ -17,9 +16,6 @@ import {
   Building2,
   Star,
   MapPin,
-  ArrowLeft,
-  Settings,
-  MessageCircle,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
@@ -27,7 +23,6 @@ import { Badge } from "../../components/ui/badge";
 
 const EnhancedDashboard = () => {
   const [timeRange, setTimeRange] = useState("30d");
-  const [selectedEvent, setSelectedEvent] = useState(null);
 
   // Mock data - in a real app, this would come from your API
   const stats = [
@@ -374,216 +369,114 @@ const EnhancedDashboard = () => {
               ))}
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="space-y-8">
               
-              {/* Left Column - Events Overview */}
-              <div className="xl:col-span-2 space-y-8">
-                {/* My Events Section */}
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-foreground">My Events</h2>
-                    <Link
-                      to="/organizer/events"
-                      className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
-                    >
-                      View all events
-                      <ArrowUpRight className="h-4 w-4 ml-1" />
-                    </Link>
-                  </div>
+              {/* My Events Section */}
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+                  <Link
+                    to="/organizer/events"
+                    className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
+                  >
+                    View all events
+                    <ArrowUpRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </div>
 
-                  {/* Events Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {recentEvents.map((event) => (
-                      <Card 
-                        key={event.id} 
-                        className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                        onClick={() => setSelectedEvent(event)}
-                      >
-                        <div className="relative overflow-hidden">
-                          <img 
-                            src={event.image}
-                            alt={event.title}
-                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute top-4 left-4">
-                            <Badge className={`${getStatusColor(event.status)} border-0`}>
-                              <div className="flex items-center gap-1">
-                                {getStatusIcon(event.status)}
-                                <span className="capitalize">{event.status}</span>
-                              </div>
-                            </Badge>
+                {/* Events Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {recentEvents.slice(0, 3).map((event) => (
+                    <Card 
+                      key={event.id} 
+                      className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                    >
+                      <div className="relative overflow-hidden">
+                        <img 
+                          src={event.image}
+                          alt={event.title}
+                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-4 left-4">
+                          <Badge className={`${getStatusColor(event.status)} border-0`}>
+                            <div className="flex items-center gap-1">
+                              {getStatusIcon(event.status)}
+                              <span className="capitalize">{event.status}</span>
+                            </div>
+                          </Badge>
+                        </div>
+                        <div className="absolute top-4 right-4">
+                          <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                            {event.category}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <CardContent className="p-6">
+                        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                          {event.title}
+                        </h3>
+                        
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="w-4 h-4" />
+                            <span>{event.date}</span>
                           </div>
-                          <div className="absolute top-4 right-4">
-                            <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                              {event.category}
-                            </Badge>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            <span>{event.location}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Users className="w-4 h-4" />
+                            <span>{event.attendees}/{event.capacity} attendees</span>
                           </div>
                         </div>
                         
-                        <CardContent className="p-6">
-                          <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-                            {event.title}
-                          </h3>
-                          
-                          <div className="space-y-2 mb-4">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Calendar className="w-4 h-4" />
-                              <span>{event.date}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="w-4 h-4" />
-                              <span>{event.location}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Users className="w-4 h-4" />
-                              <span>{event.attendees}/{event.capacity} attendees</span>
-                            </div>
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                          {event.description}
+                        </p>
+                        
+                        {/* Event Metrics */}
+                        <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Speakers</p>
+                            <p className="font-semibold text-foreground">{event.speakers}</p>
                           </div>
-                          
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                            {event.description}
-                          </p>
-                          
-                          {/* Event Metrics */}
-                          <div className="grid grid-cols-3 gap-4 mb-4 text-center">
-                            <div>
-                              <p className="text-xs text-muted-foreground">Speakers</p>
-                              <p className="font-semibold text-foreground">{event.speakers}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Exhibitors</p>
-                              <p className="font-semibold text-foreground">{event.exhibitors}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Revenue</p>
-                              <p className="font-semibold text-foreground">${event.revenue.toLocaleString()}</p>
-                            </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Exhibitors</p>
+                            <p className="font-semibold text-foreground">{event.exhibitors}</p>
                           </div>
-                          
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">
-                              {event.conversion}% conversion
-                            </span>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.location.href = `/organizer/event/${event.id}`;
-                              }}
-                            >
-                              Manage Event
-                            </Button>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Revenue</p>
+                            <p className="font-semibold text-foreground">${event.revenue.toLocaleString()}</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-card rounded-xl shadow-sm border border-border p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4">
-                    Quick Actions
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Link
-                      to="/events/create"
-                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-                    >
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                        <Plus className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Create Event</p>
-                        <p className="text-sm text-muted-foreground">Start a new event</p>
-                      </div>
-                    </Link>
-
-                    <Link
-                      to="/organizer/analytics"
-                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-                    >
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                        <BarChart3 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">View Analytics</p>
-                        <p className="text-sm text-muted-foreground">Performance insights</p>
-                      </div>
-                    </Link>
-
-                    <Link
-                      to="/organizer/attendees"
-                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-                    >
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                        <Users className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Manage Attendees</p>
-                        <p className="text-sm text-muted-foreground">View and manage</p>
-                      </div>
-                    </Link>
-
-                    <Link
-                      to="/organizer/tickets/scanner"
-                      className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-                    >
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                        <Calendar className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground">Ticket Scanner</p>
-                        <p className="text-sm text-muted-foreground">Check-in attendees</p>
-                      </div>
-                    </Link>
-                  </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {event.conversion}% conversion
+                          </span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `/organizer/event/${event.id}`;
+                            }}
+                          >
+                            Manage Event
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
 
-              {/* Right Column - Activity & Insights */}
-              <div className="xl:col-span-1 space-y-6">
-                {/* Recent Activity */}
-                <div className="bg-card rounded-xl shadow-sm border border-border">
-                  <div className="p-6 border-b border-border">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        Recent Activity
-                      </h3>
-                      <Link
-                        to="/organizer/activity"
-                        className="text-sm text-primary hover:text-primary/80 font-medium"
-                      >
-                        View all
-                      </Link>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      {recentActivity.slice(0, 6).map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3">
-                          <div
-                            className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
-                          >
-                            <activity.icon className={`h-4 w-4 ${activity.color}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground">
-                              {activity.message}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {activity.time}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
+              {/* Insights Cards Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Performance Insights */}
                 <div className="bg-card rounded-xl shadow-sm border border-border">
                   <div className="p-6 border-b border-border">
@@ -716,6 +609,104 @@ const EnhancedDashboard = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">
+                  Quick Actions
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Link
+                    to="/events/create"
+                    className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                  >
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                      <Plus className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Create Event</p>
+                      <p className="text-sm text-muted-foreground">Start a new event</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/organizer/analytics"
+                    className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                  >
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">View Analytics</p>
+                      <p className="text-sm text-muted-foreground">Performance insights</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/organizer/attendees"
+                    className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                  >
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Manage Attendees</p>
+                      <p className="text-sm text-muted-foreground">View and manage</p>
+                    </div>
+                  </Link>
+
+                  <Link
+                    to="/organizer/tickets/scanner"
+                    className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                  >
+                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Ticket Scanner</p>
+                      <p className="text-sm text-muted-foreground">Check-in attendees</p>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="bg-card rounded-xl shadow-sm border border-border">
+                <div className="p-6 border-b border-border">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      Recent Activity
+                    </h3>
+                    <Link
+                      to="/organizer/activity"
+                      className="text-sm text-primary hover:text-primary/80 font-medium"
+                    >
+                      View all
+                    </Link>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {recentActivity.slice(0, 6).map((activity) => (
+                      <div key={activity.id} className="flex items-start space-x-3">
+                        <div
+                          className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
+                        >
+                          <activity.icon className={`h-4 w-4 ${activity.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground">
+                            {activity.message}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {activity.time}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
