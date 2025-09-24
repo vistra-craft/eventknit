@@ -21,7 +21,7 @@ const UpcomingEvents = () => {
   // Mock data - filtered for upcoming events only
   const upcomingEvents = [
     {
-      id: 2,
+      id: "2",
       title: "Business Leadership Workshop",
       date: "April 2, 2024",
       time: "10:00 AM - 3:00 PM",
@@ -38,10 +38,16 @@ const UpcomingEvents = () => {
       sponsors: 3,
       image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop",
       description: "Master leadership skills for the modern business landscape.",
-      category: "Business"
+      category: "Business",
+      organizer: "Business Academy",
+      price: "$199",
+      rating: 4.6,
+      fullDescription: "A comprehensive workshop designed to enhance your leadership capabilities and strategic thinking.",
+      duration: "5 hours",
+      ageRestriction: "16+"
     },
     {
-      id: 5,
+      id: "5",
       title: "Startup Pitch Competition",
       date: "May 15, 2024",
       time: "2:00 PM - 8:00 PM",
@@ -58,10 +64,16 @@ const UpcomingEvents = () => {
       sponsors: 5,
       image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=300&fit=crop",
       description: "Watch innovative startups pitch their ideas to investors.",
-      category: "Startup"
+      category: "Startup",
+      organizer: "Startup Hub",
+      price: "$79",
+      rating: 4.7,
+      fullDescription: "An exciting competition where innovative startups present their ideas to a panel of investors.",
+      duration: "6 hours",
+      ageRestriction: "16+"
     },
     {
-      id: 6,
+      id: "6",
       title: "Healthcare Innovation Summit",
       date: "June 20-22, 2024",
       time: "9:00 AM - 6:00 PM",
@@ -78,10 +90,16 @@ const UpcomingEvents = () => {
       sponsors: 0,
       image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=400&h=300&fit=crop",
       description: "Explore the latest innovations in healthcare technology and patient care.",
-      category: "Healthcare"
+      category: "Healthcare",
+      organizer: "HealthTech Events",
+      price: "$399",
+      rating: 4.8,
+      fullDescription: "A comprehensive summit showcasing the latest innovations and technologies in healthcare.",
+      duration: "3 days",
+      ageRestriction: "18+"
     },
     {
-      id: 7,
+      id: "7",
       title: "AI & Machine Learning Conference",
       date: "July 10-12, 2024",
       time: "9:00 AM - 5:00 PM",
@@ -98,10 +116,16 @@ const UpcomingEvents = () => {
       sponsors: 8,
       image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=300&fit=crop",
       description: "Discover the latest advances in artificial intelligence and machine learning.",
-      category: "Technology"
+      category: "Technology",
+      organizer: "AI Institute",
+      price: "$349",
+      rating: 4.9,
+      fullDescription: "A comprehensive conference covering the latest advances in artificial intelligence and machine learning.",
+      duration: "3 days",
+      ageRestriction: "18+"
     },
     {
-      id: 8,
+      id: "8",
       title: "Sustainable Business Summit",
       date: "August 5, 2024",
       time: "8:30 AM - 4:30 PM",
@@ -118,10 +142,16 @@ const UpcomingEvents = () => {
       sponsors: 4,
       image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=300&fit=crop",
       description: "Learn about sustainable business practices and environmental responsibility.",
-      category: "Sustainability"
+      category: "Sustainability",
+      organizer: "Green Business Institute",
+      price: "$179",
+      rating: 4.6,
+      fullDescription: "A comprehensive summit covering sustainable business practices and environmental consciousness.",
+      duration: "1 day",
+      ageRestriction: "18+"
     },
     {
-      id: 9,
+      id: "9",
       title: "FinTech Innovation Forum",
       date: "September 15-16, 2024",
       time: "9:00 AM - 6:00 PM",
@@ -138,7 +168,13 @@ const UpcomingEvents = () => {
       sponsors: 6,
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
       description: "Explore the future of financial technology and digital banking.",
-      category: "Finance"
+      category: "Finance",
+      organizer: "FinTech Institute",
+      price: "$299",
+      rating: 4.7,
+      fullDescription: "A comprehensive forum covering the latest trends and innovations in financial technology.",
+      duration: "2 days",
+      ageRestriction: "18+"
     },
   ];
 

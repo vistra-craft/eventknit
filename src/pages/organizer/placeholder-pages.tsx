@@ -160,7 +160,7 @@ export const SettingsPage = () => {
     analyticsTracking: true
   });
 
-  const handleToggle = (key: string) => {
+  const handleToggle = (key: keyof typeof settings) => {
     setSettings(prev => ({
       ...prev,
       [key]: !prev[key]

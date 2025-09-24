@@ -20,7 +20,7 @@ const PastEvents = () => {
   // Mock data - filtered for completed events only
   const pastEvents = [
     {
-      id: 3,
+      id: "3",
       title: "Food & Wine Expo",
       date: "February 10, 2024",
       time: "11:00 AM - 8:00 PM",
@@ -37,10 +37,16 @@ const PastEvents = () => {
       sponsors: 8,
       image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop",
       description: "Discover the finest culinary experiences and wine tastings.",
-      category: "Food & Drink"
+      category: "Food & Drink",
+      organizer: "Culinary Events Co.",
+      price: "$89",
+      rating: 4.9,
+      fullDescription: "An exclusive expo featuring world-class chefs, sommeliers, and culinary experts showcasing the best in food and wine.",
+      duration: "9 hours",
+      ageRestriction: "21+"
     },
     {
-      id: 4,
+      id: "4",
       title: "Digital Marketing Conference",
       date: "January 20, 2024",
       time: "8:30 AM - 6:00 PM",
@@ -57,10 +63,16 @@ const PastEvents = () => {
       sponsors: 15,
       image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=400&h=300&fit=crop",
       description: "Learn cutting-edge digital marketing strategies and tools.",
-      category: "Marketing"
+      category: "Marketing",
+      organizer: "Marketing Pro",
+      price: "$149",
+      rating: 4.5,
+      fullDescription: "A comprehensive conference covering the latest trends and strategies in digital marketing.",
+      duration: "9.5 hours",
+      ageRestriction: "18+"
     },
     {
-      id: 10,
+      id: "10",
       title: "Tech Innovation Summit 2023",
       date: "December 5-7, 2023",
       time: "9:00 AM - 5:00 PM",
@@ -77,10 +89,16 @@ const PastEvents = () => {
       sponsors: 18,
       image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
       description: "Annual technology innovation summit showcasing the latest in tech.",
-      category: "Technology"
+      category: "Technology",
+      organizer: "Tech Events Inc.",
+      price: "$299",
+      rating: 4.8,
+      fullDescription: "Join us for the most comprehensive technology innovation summit of the year. Featuring keynote speakers, hands-on workshops, and networking opportunities.",
+      duration: "3 days",
+      ageRestriction: "18+"
     },
     {
-      id: 11,
+      id: "11",
       title: "Creative Design Workshop",
       date: "November 15, 2023",
       time: "10:00 AM - 4:00 PM",
@@ -97,10 +115,16 @@ const PastEvents = () => {
       sponsors: 3,
       image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
       description: "Hands-on workshop for creative professionals and designers.",
-      category: "Design"
+      category: "Design",
+      organizer: "Design Academy",
+      price: "$129",
+      rating: 4.6,
+      fullDescription: "A comprehensive workshop covering modern design principles, tools, and techniques.",
+      duration: "6 hours",
+      ageRestriction: "16+"
     },
     {
-      id: 12,
+      id: "12",
       title: "E-commerce Growth Summit",
       date: "October 12-13, 2023",
       time: "9:00 AM - 6:00 PM",
@@ -117,10 +141,16 @@ const PastEvents = () => {
       sponsors: 12,
       image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop",
       description: "Learn strategies for scaling e-commerce businesses.",
-      category: "E-commerce"
+      category: "E-commerce",
+      organizer: "E-commerce Pro",
+      price: "$199",
+      rating: 4.7,
+      fullDescription: "A comprehensive summit covering e-commerce growth strategies, tools, and best practices.",
+      duration: "2 days",
+      ageRestriction: "18+"
     },
     {
-      id: 13,
+      id: "13",
       title: "Data Science Conference",
       date: "September 8-9, 2023",
       time: "8:30 AM - 5:30 PM",
@@ -137,7 +167,13 @@ const PastEvents = () => {
       sponsors: 10,
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
       description: "Explore the latest trends in data science and analytics.",
-      category: "Data Science"
+      category: "Data Science",
+      organizer: "Data Science Institute",
+      price: "$249",
+      rating: 4.8,
+      fullDescription: "A comprehensive conference covering the latest trends and techniques in data science and machine learning.",
+      duration: "2 days",
+      ageRestriction: "18+"
     },
   ];
 
