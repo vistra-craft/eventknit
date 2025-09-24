@@ -6,6 +6,8 @@ import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import EventDetails from "./pages/EventDetails";
+import NotFound from "./pages/NotFound";
+import Support from "./pages/Support";
 
 const App = () => (
   <BrowserRouter>
@@ -17,6 +19,8 @@ const App = () => (
       <Route path="/event/:id/register" element={<RegisterEvent />} />
       <Route path="/event/:id/payment" element={<Payment />} />
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
+      <Route path="/support" element={<Support />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   </BrowserRouter>
 );
