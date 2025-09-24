@@ -40,6 +40,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
   const navigationItems = [
     { key: "speakers", label: "Speakers", icon: Mic },
     { key: "exhibitors", label: "Exhibitors", icon: Building2 },
+    { key: "attendees", label: "Attendees", icon: Users },
     { key: "agenda", label: "Agenda", icon: CalendarDays },
     { key: "my-badge", label: "My Badge", icon: Badge },
     { key: "abstracts", label: "Submit Abstract", icon: FileText },
@@ -58,7 +59,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
   };
 
   // Check if we should show navigation buttons (only on specific sections)
-  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
+  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'attendees', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-sm ${shouldShowNavigationButtons ? 'h-32' : 'h-16'}`}>
@@ -140,7 +141,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
                   <div className="px-4 py-2 space-y-2">
                     <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
                       <Users className="h-4 w-4" />
-                      My contacts
+                      My networks
                     </button>
                     <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
                       <Calendar className="h-4 w-4" />

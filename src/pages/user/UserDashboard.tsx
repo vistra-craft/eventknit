@@ -8,6 +8,7 @@ import DashboardAgenda from "./DashboardAgenda";
 import DashboardMyEvent from "./DashboardMyEvent";
 import DashboardMyBadge from "./DashboardMyBadge";
 import DashboardAbstracts from "./DashboardAbstracts";
+import DashboardAttendees from "./DashboardAttendees";
 import AttendeeDiscovery from "./AttendeeDiscovery";
 import NotificationsCenter from "./NotificationsCenter";
 import PersonalAnalytics from "./PersonalAnalytics";
@@ -40,7 +41,7 @@ const UserDashboard = () => {
   const successMessage = location.state?.message;
 
   // Check if we should show navigation buttons (only on specific sections)
-  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
+  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'attendees', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -48,6 +49,8 @@ const UserDashboard = () => {
         return <DashboardSpeakers eventData={eventData} />;
       case "exhibitors":
         return <DashboardExhibitors eventData={eventData} />;
+      case "attendees":
+        return <DashboardAttendees eventData={eventData} />;
       case "agenda":
         return <DashboardAgenda eventData={eventData} />;
       case "my-event":
