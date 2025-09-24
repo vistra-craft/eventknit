@@ -12,94 +12,16 @@ import {
   Plus
 } from "lucide-react";
 
-// Analytics Pages
-export const AnalyticsOverview = () => (
-  <OrganizerLayout>
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Analytics Overview</h1>
-        <p className="text-muted-foreground mt-1">Track your event performance and insights</p>
-      </div>
-      <Card>
-        <CardContent className="p-12 text-center">
-          <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Analytics Dashboard</h3>
-          <p className="text-muted-foreground mb-4">Comprehensive analytics and reporting coming soon</p>
-          <Button variant="outline">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            View Reports
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  </OrganizerLayout>
-);
+// Import the new analytics components
+import { 
+  AnalyticsOverview, 
+  EventPerformance, 
+  AttendeeInsights, 
+  RevenueReports 
+} from "./analytics";
 
-export const EventPerformance = () => (
-  <OrganizerLayout>
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Event Performance</h1>
-        <p className="text-muted-foreground mt-1">Detailed performance metrics for your events</p>
-      </div>
-      <Card>
-        <CardContent className="p-12 text-center">
-          <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Event Performance Analytics</h3>
-          <p className="text-muted-foreground mb-4">Detailed event performance metrics coming soon</p>
-          <Button variant="outline">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            View Performance Data
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  </OrganizerLayout>
-);
-
-export const AttendeeInsights = () => (
-  <OrganizerLayout>
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Attendee Insights</h1>
-        <p className="text-muted-foreground mt-1">Understand your audience better</p>
-      </div>
-      <Card>
-        <CardContent className="p-12 text-center">
-          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Attendee Analytics</h3>
-          <p className="text-muted-foreground mb-4">Detailed attendee insights and demographics coming soon</p>
-          <Button variant="outline">
-            <Users className="h-4 w-4 mr-2" />
-            View Insights
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  </OrganizerLayout>
-);
-
-export const RevenueReports = () => (
-  <OrganizerLayout>
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Revenue Reports</h1>
-        <p className="text-muted-foreground mt-1">Track your financial performance</p>
-      </div>
-      <Card>
-        <CardContent className="p-12 text-center">
-          <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Revenue Analytics</h3>
-          <p className="text-muted-foreground mb-4">Comprehensive revenue reporting coming soon</p>
-          <Button variant="outline">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            View Revenue Data
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  </OrganizerLayout>
-);
+// Re-export the analytics components
+export { AnalyticsOverview, EventPerformance, AttendeeInsights, RevenueReports };
 
 // Communications Page
 export const CommunicationsPage = () => (
