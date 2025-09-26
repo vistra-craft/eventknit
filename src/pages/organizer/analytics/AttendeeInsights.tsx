@@ -18,192 +18,78 @@ import {
   Globe,
   Heart,
 } from "lucide-react";
+import {
+  CustomLineChart,
+  CustomAreaChart,
+  CustomBarChart,
+  CustomPieChart,
+  CustomMultiLineChart,
+  CustomComposedChart,
+  CustomRadialBarChart,
+  CHART_COLORS,
+} from "@/components/charts/ChartComponents";
+import {
+  attendeeStats,
+  demographicData,
+  behaviorInsights,
+  attendeeSegments,
+} from "@/data/analytics";
 
 const AttendeeInsights = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
 
-  // Mock data - in a real app, this would come from your API
-  const attendeeStats = [
-    {
-      title: "Total Attendees",
-      value: "4,247",
-      change: "+18%",
-      changeType: "positive",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      description: "Registered attendees",
-    },
-    {
-      title: "New Attendees",
-      value: "1,892",
-      change: "+24%",
-      changeType: "positive",
-      icon: UserCheck,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      description: "First-time attendees",
-    },
-    {
-      title: "Returning Attendees",
-      value: "2,355",
-      change: "+12%",
-      changeType: "positive",
-      icon: Heart,
-      color: "text-red-600",
-      bgColor: "bg-red-100",
-      description: "Repeat attendees",
-    },
-    {
-      title: "No-Shows",
-      value: "127",
-      change: "-8%",
-      changeType: "positive",
-      icon: UserX,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
-      description: "Registered but didn't attend",
-    },
-    {
-      title: "Avg. Satisfaction",
-      value: "4.6",
-      change: "+0.3",
-      changeType: "positive",
-      icon: Star,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-100",
-      description: "Average rating",
-    },
-    {
-      title: "Engagement Score",
-      value: "87%",
-      change: "+5%",
-      changeType: "positive",
-      icon: TrendingUp,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
-      description: "Overall engagement",
-    },
+  // Debug: Log the imported data
+  console.log('AttendeeInsights - attendeeStats:', attendeeStats);
+  console.log('AttendeeInsights - demographicData:', demographicData);
+  console.log('AttendeeInsights - behaviorInsights:', behaviorInsights);
+  console.log('AttendeeInsights - attendeeSegments:', attendeeSegments);
+
+  // Chart data for attendee analysis
+  const engagementTrendsData = [
+    { month: "Jan", engagement: 78, satisfaction: 4.2, retention: 72 },
+    { month: "Feb", engagement: 82, satisfaction: 4.4, retention: 75 },
+    { month: "Mar", engagement: 89, satisfaction: 4.6, retention: 78 },
+    { month: "Apr", engagement: 85, satisfaction: 4.5, retention: 76 },
+    { month: "May", engagement: 91, satisfaction: 4.7, retention: 80 },
+    { month: "Jun", engagement: 93, satisfaction: 4.8, retention: 82 },
   ];
 
-  const demographicData = {
-    ageGroups: [
-      { range: "18-24", count: 892, percentage: 21 },
-      { range: "25-34", count: 1456, percentage: 34 },
-      { range: "35-44", count: 1203, percentage: 28 },
-      { range: "45-54", count: 512, percentage: 12 },
-      { range: "55+", count: 184, percentage: 5 },
-    ],
-    locations: [
-      { city: "San Francisco", count: 1245, percentage: 29 },
-      { city: "New York", count: 892, percentage: 21 },
-      { city: "Los Angeles", count: 678, percentage: 16 },
-      { city: "Chicago", count: 456, percentage: 11 },
-      { city: "Austin", count: 234, percentage: 6 },
-      { city: "Other", count: 742, percentage: 17 },
-    ],
-    industries: [
-      { industry: "Technology", count: 1456, percentage: 34 },
-      { industry: "Marketing", count: 892, percentage: 21 },
-      { industry: "Finance", count: 678, percentage: 16 },
-      { industry: "Healthcare", count: 456, percentage: 11 },
-      { industry: "Education", count: 234, percentage: 6 },
-      { industry: "Other", count: 531, percentage: 12 },
-    ],
-    experience: [
-      { level: "Entry Level", count: 1245, percentage: 29 },
-      { level: "Mid-Level", count: 1789, percentage: 42 },
-      { level: "Senior Level", count: 892, percentage: 21 },
-      { level: "Executive", count: 321, percentage: 8 },
-    ],
-  };
-
-  const behaviorInsights = [
-    {
-      id: 1,
-      title: "Peak Registration Times",
-      description: "Most registrations occur between 2-4 PM on weekdays",
-      insight: "Consider scheduling important announcements during peak hours",
-      icon: Clock,
-      type: "timing",
-    },
-    {
-      id: 2,
-      title: "Mobile vs Desktop Usage",
-      description: "68% of attendees register via mobile devices",
-      insight: "Ensure mobile-optimized registration experience",
-      icon: Globe,
-      type: "device",
-    },
-    {
-      id: 3,
-      title: "Early Bird Preference",
-      description: "Early bird registrations have 23% higher satisfaction scores",
-      insight: "Consider extending early bird pricing periods",
-      icon: Calendar,
-      type: "pricing",
-    },
-    {
-      id: 4,
-      title: "Social Media Influence",
-      description: "Attendees who found events via social media have 15% higher engagement",
-      insight: "Increase social media marketing investment",
-      icon: TrendingUp,
-      type: "marketing",
-    },
-    {
-      id: 5,
-      title: "Networking Preferences",
-      description: "Tech professionals prefer structured networking sessions",
-      insight: "Add more structured networking opportunities",
-      icon: Users,
-      type: "networking",
-    },
-    {
-      id: 6,
-      title: "Content Consumption",
-      description: "Video content has 40% higher engagement than text",
-      insight: "Increase video content in event materials",
-      icon: Star,
-      type: "content",
-    },
+  const registrationTimingData = [
+    { hour: "9AM", registrations: 12, views: 180 },
+    { hour: "10AM", registrations: 18, views: 220 },
+    { hour: "11AM", registrations: 25, views: 280 },
+    { hour: "12PM", registrations: 22, views: 250 },
+    { hour: "1PM", registrations: 15, views: 200 },
+    { hour: "2PM", registrations: 35, views: 320 },
+    { hour: "3PM", registrations: 42, views: 380 },
+    { hour: "4PM", registrations: 38, views: 350 },
+    { hour: "5PM", registrations: 28, views: 280 },
+    { hour: "6PM", registrations: 20, views: 220 },
   ];
 
-  const attendeeSegments = [
-    {
-      name: "Tech Enthusiasts",
-      count: 1456,
-      percentage: 34,
-      characteristics: ["High engagement", "Prefers technical content", "Active in Q&A"],
-      satisfaction: 4.8,
-      retention: 78,
-    },
-    {
-      name: "Business Professionals",
-      count: 1203,
-      percentage: 28,
-      characteristics: ["Networking focused", "Values ROI", "Prefers case studies"],
-      satisfaction: 4.5,
-      retention: 72,
-    },
-    {
-      name: "Students & Newcomers",
-      count: 892,
-      percentage: 21,
-      characteristics: ["Learning focused", "Budget conscious", "Seeks mentorship"],
-      satisfaction: 4.7,
-      retention: 65,
-    },
-    {
-      name: "Industry Veterans",
-      count: 696,
-      percentage: 17,
-      characteristics: ["Experience sharing", "Mentorship role", "High-value content"],
-      satisfaction: 4.6,
-      retention: 85,
-    },
+  const deviceUsageData = [
+    { device: "Mobile", percentage: 68, count: 2890 },
+    { device: "Desktop", percentage: 28, count: 1190 },
+    { device: "Tablet", percentage: 4, count: 170 },
   ];
+
+  const satisfactionBySegmentData = [
+    { segment: "Tech Enthusiasts", satisfaction: 4.8, retention: 78 },
+    { segment: "Business Professionals", satisfaction: 4.5, retention: 72 },
+    { segment: "Students & Newcomers", satisfaction: 4.7, retention: 65 },
+    { segment: "Industry Veterans", satisfaction: 4.6, retention: 85 },
+  ];
+
+  // Use imported data
+  const statsData = attendeeStats;
+
+  // Use imported demographic data
+  const demographicsData = demographicData;
+
+  // Use imported behavior insights and segments
+  const insightsData = behaviorInsights;
+  const segmentsData = attendeeSegments;
 
   const getInsightTypeColor = (type: string) => {
     switch (type) {
@@ -226,7 +112,8 @@ const AttendeeInsights = () => {
 
   return (
     <OrganizerLayout>
-      <div className="space-y-8">
+      <div className="py-8">
+        <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -265,7 +152,7 @@ const AttendeeInsights = () => {
 
         {/* Attendee Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {attendeeStats.map((stat, index) => (
+          {statsData.map((stat, index) => (
             <Card key={index} className="hover:shadow-md transition-shadow duration-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -295,7 +182,7 @@ const AttendeeInsights = () => {
                     </p>
                   </div>
                   <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                    <Users className={`h-5 w-5 ${stat.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -320,22 +207,13 @@ const AttendeeInsights = () => {
                   <CardTitle>Age Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {demographicData.ageGroups.map((group, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium text-foreground">{group.range}</span>
-                          <span className="text-sm text-muted-foreground">{group.count} ({group.percentage}%)</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full"
-                            style={{ width: `${group.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <CustomPieChart
+                    data={demographicsData.ageGroups}
+                    dataKey="percentage"
+                    nameKey="range"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
                 </CardContent>
               </Card>
 
@@ -345,22 +223,14 @@ const AttendeeInsights = () => {
                   <CardTitle>Geographic Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {demographicData.locations.map((location, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium text-foreground">{location.city}</span>
-                          <span className="text-sm text-muted-foreground">{location.count} ({location.percentage}%)</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className="bg-green-500 h-2 rounded-full"
-                            style={{ width: `${location.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <CustomBarChart
+                    data={demographicsData.locations}
+                    dataKey="percentage"
+                    xAxisKey="city"
+                    height={300}
+                    color={CHART_COLORS.success}
+                    formatter={(value) => `${value}%`}
+                  />
                 </CardContent>
               </Card>
 
@@ -370,22 +240,14 @@ const AttendeeInsights = () => {
                   <CardTitle>Industry Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {demographicData.industries.map((industry, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium text-foreground">{industry.industry}</span>
-                          <span className="text-sm text-muted-foreground">{industry.count} ({industry.percentage}%)</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className="bg-blue-500 h-2 rounded-full"
-                            style={{ width: `${industry.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <CustomBarChart
+                    data={demographicsData.industries}
+                    dataKey="percentage"
+                    xAxisKey="industry"
+                    height={300}
+                    color={CHART_COLORS.primary}
+                    formatter={(value) => `${value}%`}
+                  />
                 </CardContent>
               </Card>
 
@@ -395,35 +257,64 @@ const AttendeeInsights = () => {
                   <CardTitle>Experience Level</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {demographicData.experience.map((level, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium text-foreground">{level.level}</span>
-                          <span className="text-sm text-muted-foreground">{level.count} ({level.percentage}%)</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className="bg-purple-500 h-2 rounded-full"
-                            style={{ width: `${level.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <CustomPieChart
+                    data={demographicsData.experience}
+                    dataKey="percentage"
+                    nameKey="level"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
           <TabsContent value="behavior" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Registration Timing */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registration Timing Patterns</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomComposedChart
+                    data={registrationTimingData}
+                    xAxisKey="hour"
+                    bars={[
+                      { dataKey: "registrations", name: "Registrations", color: CHART_COLORS.primary },
+                    ]}
+                    lines={[
+                      { dataKey: "views", name: "Page Views", color: CHART_COLORS.secondary },
+                    ]}
+                    height={300}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Device Usage */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Device Usage Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomPieChart
+                    data={deviceUsageData}
+                    dataKey="percentage"
+                    nameKey="device"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {behaviorInsights.map((insight) => (
+              {insightsData.map((insight) => (
                 <Card key={insight.id} className={`border ${getInsightTypeColor(insight.type).split(' ')[2]}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
                       <div className={`w-8 h-8 rounded-full ${getInsightTypeColor(insight.type).split(' ')[1]} flex items-center justify-center`}>
-                        <insight.icon className={`h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}`} />
+                        <Clock className={`h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}`} />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium text-foreground mb-1">{insight.title}</h3>
@@ -441,8 +332,51 @@ const AttendeeInsights = () => {
           </TabsContent>
 
           <TabsContent value="segments" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Satisfaction by Segment */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Satisfaction by Segment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomComposedChart
+                    data={satisfactionBySegmentData}
+                    xAxisKey="segment"
+                    bars={[
+                      { dataKey: "retention", name: "Retention Rate", color: CHART_COLORS.success },
+                    ]}
+                    lines={[
+                      { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
+                    ]}
+                    height={300}
+                    formatter={(value, name) => {
+                      if (name === "Retention Rate") return `${value}%`;
+                      if (name === "Satisfaction Score") return value.toFixed(1);
+                      return value.toString();
+                    }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Segment Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Segment Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomPieChart
+                    data={segmentsData}
+                    dataKey="percentage"
+                    nameKey="name"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {attendeeSegments.map((segment, index) => (
+              {segmentsData.map((segment, index) => (
                 <Card key={index}>
                   <CardHeader>
                     <CardTitle className="text-lg">{segment.name}</CardTitle>
@@ -479,18 +413,28 @@ const AttendeeInsights = () => {
 
           <TabsContent value="engagement" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Engagement Chart Placeholder */}
+              {/* Engagement Trends */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Engagement Over Time</CardTitle>
+                  <CardTitle>Engagement Trends Over Time</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Engagement trend chart will be displayed here</p>
-                    </div>
-                  </div>
+                  <CustomMultiLineChart
+                    data={engagementTrendsData}
+                    xAxisKey="month"
+                    lines={[
+                      { dataKey: "engagement", name: "Engagement Score", color: CHART_COLORS.primary },
+                      { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
+                      { dataKey: "retention", name: "Retention Rate", color: CHART_COLORS.success },
+                    ]}
+                    height={300}
+                    formatter={(value, name) => {
+                      if (name === "Engagement Score") return `${value}%`;
+                      if (name === "Satisfaction Score") return value.toFixed(1);
+                      if (name === "Retention Rate") return `${value}%`;
+                      return value.toString();
+                    }}
+                  />
                 </CardContent>
               </Card>
 
@@ -546,8 +490,47 @@ const AttendeeInsights = () => {
                 </CardContent>
               </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Engagement Score Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Engagement Score Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomRadialBarChart
+                    data={[
+                      { name: "High Engagement", value: 45 },
+                      { name: "Medium Engagement", value: 35 },
+                      { name: "Low Engagement", value: 20 },
+                    ]}
+                    dataKey="value"
+                    nameKey="name"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Engagement by Time of Day */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Engagement by Time of Day</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomAreaChart
+                    data={registrationTimingData}
+                    dataKey="registrations"
+                    xAxisKey="hour"
+                    height={300}
+                    color={CHART_COLORS.info}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </OrganizerLayout>
   );

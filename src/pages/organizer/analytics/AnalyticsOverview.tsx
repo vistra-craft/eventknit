@@ -19,78 +19,67 @@ import {
   Filter,
   RefreshCw,
 } from "lucide-react";
+import {
+  CustomLineChart,
+  CustomAreaChart,
+  CustomBarChart,
+  CustomPieChart,
+  CustomMultiLineChart,
+  CustomComposedChart,
+  CHART_COLORS,
+} from "@/components/charts/ChartComponents";
+import {
+  analyticsOverviewStats,
+  topPerformingEvents,
+  recentInsights,
+  recentActivity,
+} from "@/data/analytics";
 
 const AnalyticsOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
 
-  // Mock data - in a real app, this would come from your API
-  const overviewStats = [
-    {
-      title: "Total Events",
-      value: "24",
-      change: "+12%",
-      changeType: "positive",
-      icon: Calendar,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      borderColor: "border-blue-200",
-      description: "Events created this period",
-    },
-    {
-      title: "Total Attendees",
-      value: "4,247",
-      change: "+18%",
-      changeType: "positive",
-      icon: Users,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
-      description: "Registered attendees",
-    },
-    {
-      title: "Total Revenue",
-      value: "$127,450",
-      change: "+24%",
-      changeType: "positive",
-      icon: DollarSign,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100",
-      borderColor: "border-emerald-200",
-      description: "Revenue generated",
-    },
-    {
-      title: "Page Views",
-      value: "89,234",
-      change: "+8%",
-      changeType: "positive",
-      icon: Eye,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
-      borderColor: "border-purple-200",
-      description: "Event page views",
-    },
-    {
-      title: "Conversion Rate",
-      value: "14.9%",
-      change: "+2.1%",
-      changeType: "positive",
-      icon: TrendingUp,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
-      borderColor: "border-orange-200",
-      description: "View to registration",
-    },
-    {
-      title: "Avg. Event Duration",
-      value: "6.5h",
-      change: "-0.3h",
-      changeType: "negative",
-      icon: Clock,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-100",
-      borderColor: "border-indigo-200",
-      description: "Average event length",
-    },
+  // Chart data
+  const performanceTrendsData = [
+    { month: "Jan", events: 3, attendees: 1200, revenue: 45000, views: 8500 },
+    { month: "Feb", events: 2, attendees: 800, revenue: 32000, views: 6200 },
+    { month: "Mar", events: 4, attendees: 1800, revenue: 145200, views: 12500 },
+    { month: "Apr", events: 3, attendees: 950, revenue: 28000, views: 7800 },
+    { month: "May", events: 2, attendees: 600, revenue: 18000, views: 4500 },
+    { month: "Jun", events: 5, attendees: 2200, revenue: 165000, views: 18900 },
+  ];
+
+  const registrationTrendsData = [
+    { day: "Mon", registrations: 45, views: 1200 },
+    { day: "Tue", registrations: 52, views: 1350 },
+    { day: "Wed", registrations: 38, views: 980 },
+    { day: "Thu", registrations: 61, views: 1650 },
+    { day: "Fri", registrations: 48, views: 1200 },
+    { day: "Sat", registrations: 35, views: 850 },
+    { day: "Sun", registrations: 28, views: 720 },
+  ];
+
+  const revenueTrendsData = [
+    { month: "Jan", revenue: 45000, events: 3 },
+    { month: "Feb", revenue: 32000, events: 2 },
+    { month: "Mar", revenue: 145200, events: 4 },
+    { month: "Apr", revenue: 28000, events: 3 },
+    { month: "May", revenue: 18000, events: 2 },
+    { month: "Jun", revenue: 165000, events: 5 },
+  ];
+
+  const eventCategoriesData = [
+    { name: "Technology", value: 45, count: 12 },
+    { name: "Business", value: 25, count: 7 },
+    { name: "Marketing", value: 15, count: 4 },
+    { name: "Health", value: 10, count: 3 },
+    { name: "Other", value: 5, count: 2 },
+  ];
+
+  const conversionFunnelData = [
+    { stage: "Page Views", value: 100, count: 89234 },
+    { stage: "Registration", value: 15, count: 13385 },
+    { stage: "Payment", value: 12, count: 10708 },
+    { stage: "Attendance", value: 10, count: 8923 },
   ];
 
   const topPerformingEvents = [
@@ -197,7 +186,8 @@ const AnalyticsOverview = () => {
 
   return (
     <OrganizerLayout>
-      <div className="space-y-8">
+      <div className="py-8">
+        <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -234,7 +224,7 @@ const AnalyticsOverview = () => {
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {overviewStats.map((stat, index) => (
+          {analyticsOverviewStats.map((stat, index) => (
             <Card key={index} className={`border ${stat.borderColor} hover:shadow-md transition-shadow duration-200`}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -264,7 +254,7 @@ const AnalyticsOverview = () => {
                     </p>
                   </div>
                   <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                    <Calendar className={`h-5 w-5 ${stat.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -283,18 +273,65 @@ const AnalyticsOverview = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Performance Chart Placeholder */}
+              {/* Performance Trends Chart */}
               <Card>
                 <CardHeader>
                   <CardTitle>Performance Trends</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Performance chart will be displayed here</p>
-                    </div>
-                  </div>
+                  <CustomComposedChart
+                    data={performanceTrendsData}
+                    xAxisKey="month"
+                    bars={[
+                      { dataKey: "events", name: "Events", color: CHART_COLORS.primary },
+                    ]}
+                    lines={[
+                      { dataKey: "attendees", name: "Attendees", color: CHART_COLORS.success },
+                      { dataKey: "revenue", name: "Revenue", color: CHART_COLORS.warning },
+                    ]}
+                    height={300}
+                    formatter={(value, name) => {
+                      if (name === "Revenue") return `$${value.toLocaleString()}`;
+                      if (name === "Attendees") return value.toLocaleString();
+                      return value.toString();
+                    }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Event Categories Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Event Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomPieChart
+                    data={eventCategoriesData}
+                    dataKey="value"
+                    nameKey="name"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Registration Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Weekly Registration Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomMultiLineChart
+                    data={registrationTrendsData}
+                    xAxisKey="day"
+                    lines={[
+                      { dataKey: "registrations", name: "Registrations", color: CHART_COLORS.primary },
+                      { dataKey: "views", name: "Page Views", color: CHART_COLORS.secondary },
+                    ]}
+                    height={250}
+                  />
                 </CardContent>
               </Card>
 
@@ -403,38 +440,84 @@ const AnalyticsOverview = () => {
 
           <TabsContent value="trends" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Trend Chart Placeholder */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Registration Trends</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Registration trend chart will be displayed here</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Revenue Chart Placeholder */}
+              {/* Revenue Trends */}
               <Card>
                 <CardHeader>
                   <CardTitle>Revenue Trends</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Revenue trend chart will be displayed here</p>
-                    </div>
-                  </div>
+                  <CustomAreaChart
+                    data={revenueTrendsData}
+                    dataKey="revenue"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.success}
+                    formatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Event Volume Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Event Volume Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomBarChart
+                    data={revenueTrendsData}
+                    dataKey="events"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.primary}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Conversion Funnel */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Conversion Funnel</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomBarChart
+                    data={conversionFunnelData}
+                    dataKey="value"
+                    xAxisKey="stage"
+                    height={300}
+                    color={CHART_COLORS.warning}
+                    formatter={(value) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Performance Comparison */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance Comparison</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomMultiLineChart
+                    data={performanceTrendsData}
+                    xAxisKey="month"
+                    lines={[
+                      { dataKey: "views", name: "Page Views", color: CHART_COLORS.info },
+                      { dataKey: "attendees", name: "Attendees", color: CHART_COLORS.success },
+                    ]}
+                    height={300}
+                    formatter={(value, name) => {
+                      if (name === "Page Views") return value.toLocaleString();
+                      if (name === "Attendees") return value.toLocaleString();
+                      return value.toString();
+                    }}
+                  />
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </OrganizerLayout>
   );

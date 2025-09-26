@@ -18,181 +18,66 @@ import {
   Mic,
   Building2,
 } from "lucide-react";
+import {
+  CustomLineChart,
+  CustomAreaChart,
+  CustomBarChart,
+  CustomPieChart,
+  CustomMultiLineChart,
+  CustomComposedChart,
+  CustomScatterChart,
+  CHART_COLORS,
+} from "@/components/charts/ChartComponents";
+import {
+  eventPerformanceData,
+  performanceMetrics,
+} from "@/data/analytics";
 
 const EventPerformance = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
 
-  // Mock data - in a real app, this would come from your API
-  const eventPerformanceData = [
-    {
-      id: 1,
-      title: "Tech Innovation Summit 2024",
-      date: "March 15-17, 2024",
-      status: "completed",
-      metrics: {
-        attendees: 485,
-        capacity: 500,
-        revenue: 145200,
-        views: 3250,
-        conversion: 14.9,
-        rating: 4.8,
-        speakers: 24,
-        exhibitors: 18,
-        sponsors: 12,
-        duration: "3 days",
-        location: "San Francisco, CA",
-      },
-      performance: {
-        attendanceRate: 97,
-        revenuePerAttendee: 299,
-        conversionRate: 14.9,
-        satisfactionScore: 4.8,
-        engagementScore: 92,
-      },
-      trends: {
-        registrationGrowth: 18,
-        revenueGrowth: 24,
-        attendanceGrowth: 12,
-        satisfactionGrowth: 5,
-      },
-    },
-    {
-      id: 2,
-      title: "Digital Marketing Conference",
-      date: "January 20, 2024",
-      status: "completed",
-      metrics: {
-        attendees: 450,
-        capacity: 500,
-        revenue: 67500,
-        views: 2100,
-        conversion: 21.4,
-        rating: 4.6,
-        speakers: 32,
-        exhibitors: 28,
-        sponsors: 15,
-        duration: "1 day",
-        location: "Chicago, IL",
-      },
-      performance: {
-        attendanceRate: 90,
-        revenuePerAttendee: 150,
-        conversionRate: 21.4,
-        satisfactionScore: 4.6,
-        engagementScore: 88,
-      },
-      trends: {
-        registrationGrowth: 15,
-        revenueGrowth: 19,
-        attendanceGrowth: 8,
-        satisfactionGrowth: 3,
-      },
-    },
-    {
-      id: 3,
-      title: "Business Leadership Workshop",
-      date: "April 2, 2024",
-      status: "upcoming",
-      metrics: {
-        attendees: 78,
-        capacity: 100,
-        revenue: 15600,
-        views: 890,
-        conversion: 8.8,
-        rating: 4.7,
-        speakers: 8,
-        exhibitors: 5,
-        sponsors: 3,
-        duration: "5 hours",
-        location: "New York, NY",
-      },
-      performance: {
-        attendanceRate: 78,
-        revenuePerAttendee: 200,
-        conversionRate: 8.8,
-        satisfactionScore: 4.7,
-        engagementScore: 85,
-      },
-      trends: {
-        registrationGrowth: 22,
-        revenueGrowth: 28,
-        attendanceGrowth: 15,
-        satisfactionGrowth: 7,
-      },
-    },
-    {
-      id: 4,
-      title: "Food & Wine Expo",
-      date: "February 10, 2024",
-      status: "completed",
-      metrics: {
-        attendees: 320,
-        capacity: 350,
-        revenue: 25600,
-        views: 1890,
-        conversion: 16.9,
-        rating: 4.5,
-        speakers: 15,
-        exhibitors: 45,
-        sponsors: 8,
-        duration: "9 hours",
-        location: "Los Angeles, CA",
-      },
-      performance: {
-        attendanceRate: 91,
-        revenuePerAttendee: 80,
-        conversionRate: 16.9,
-        satisfactionScore: 4.5,
-        engagementScore: 89,
-      },
-      trends: {
-        registrationGrowth: 12,
-        revenueGrowth: 16,
-        attendanceGrowth: 6,
-        satisfactionGrowth: 2,
-      },
-    },
+  // Chart data for performance analysis
+  const performanceTrendsData = [
+    { month: "Jan", attendance: 85, satisfaction: 4.2, engagement: 78, revenue: 45000 },
+    { month: "Feb", attendance: 88, satisfaction: 4.4, engagement: 82, revenue: 32000 },
+    { month: "Mar", attendance: 92, satisfaction: 4.6, engagement: 89, revenue: 145200 },
+    { month: "Apr", attendance: 87, satisfaction: 4.5, engagement: 85, revenue: 28000 },
+    { month: "May", attendance: 90, satisfaction: 4.7, engagement: 91, revenue: 18000 },
+    { month: "Jun", attendance: 94, satisfaction: 4.8, engagement: 93, revenue: 165000 },
   ];
 
-  const performanceMetrics = [
-    {
-      title: "Average Attendance Rate",
-      value: "89%",
-      change: "+5%",
-      changeType: "positive",
-      icon: Users,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-    },
-    {
-      title: "Average Conversion Rate",
-      value: "15.5%",
-      change: "+2.1%",
-      changeType: "positive",
-      icon: TrendingUp,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-    },
-    {
-      title: "Average Revenue per Event",
-      value: "$63,475",
-      change: "+18%",
-      changeType: "positive",
-      icon: DollarSign,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100",
-    },
-    {
-      title: "Average Satisfaction Score",
-      value: "4.6",
-      change: "+0.3",
-      changeType: "positive",
-      icon: Star,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-100",
-    },
+  const eventComparisonData = [
+    { name: "Tech Summit", attendees: 485, revenue: 145200, conversion: 14.9, rating: 4.8 },
+    { name: "Marketing Conf", attendees: 450, revenue: 67500, conversion: 21.4, rating: 4.6 },
+    { name: "Business Workshop", attendees: 78, revenue: 15600, conversion: 8.8, rating: 4.7 },
+    { name: "Food & Wine Expo", attendees: 320, revenue: 25600, conversion: 16.9, rating: 4.5 },
   ];
+
+  const satisfactionDistributionData = [
+    { rating: "5 stars", count: 45, percentage: 45 },
+    { rating: "4 stars", count: 35, percentage: 35 },
+    { rating: "3 stars", count: 15, percentage: 15 },
+    { rating: "2 stars", count: 3, percentage: 3 },
+    { rating: "1 star", count: 2, percentage: 2 },
+  ];
+
+  const attendanceVsRevenueData = [
+    { attendees: 78, revenue: 15600, event: "Business Workshop" },
+    { attendees: 320, revenue: 25600, event: "Food & Wine Expo" },
+    { attendees: 450, revenue: 67500, event: "Marketing Conf" },
+    { attendees: 485, revenue: 145200, event: "Tech Summit" },
+  ];
+
+  // Use imported data
+  const eventsData = eventPerformanceData;
+
+  // Use imported performance metrics
+  const metricsData = performanceMetrics;
+
+  // Debug: Log the data to console
+  console.log('EventPerformance - metricsData:', metricsData);
+  console.log('EventPerformance - eventsData:', eventsData);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -221,7 +106,8 @@ const EventPerformance = () => {
 
   return (
     <OrganizerLayout>
-      <div className="space-y-8">
+      <div className="py-8">
+        <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -260,7 +146,7 @@ const EventPerformance = () => {
 
         {/* Performance Overview Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {performanceMetrics.map((metric, index) => (
+          {metricsData.map((metric, index) => (
             <Card key={index} className="hover:shadow-md transition-shadow duration-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -287,7 +173,7 @@ const EventPerformance = () => {
                     </div>
                   </div>
                   <div className={`w-10 h-10 rounded-lg ${metric.bgColor} flex items-center justify-center`}>
-                    <metric.icon className={`h-5 w-5 ${metric.color}`} />
+                    <Users className={`h-5 w-5 ${metric.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -306,44 +192,94 @@ const EventPerformance = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Performance Chart Placeholder */}
+              {/* Performance Trends Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Event Performance Overview</CardTitle>
+                  <CardTitle>Performance Trends Over Time</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Performance overview chart will be displayed here</p>
-                    </div>
-                  </div>
+                  <CustomMultiLineChart
+                    data={performanceTrendsData}
+                    xAxisKey="month"
+                    lines={[
+                      { dataKey: "attendance", name: "Attendance Rate", color: CHART_COLORS.success },
+                      { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
+                      { dataKey: "engagement", name: "Engagement Score", color: CHART_COLORS.primary },
+                    ]}
+                    height={300}
+                    formatter={(value, name) => {
+                      if (name === "Attendance Rate") return `${value}%`;
+                      if (name === "Satisfaction Score") return value.toFixed(1);
+                      if (name === "Engagement Score") return `${value}%`;
+                      return value.toString();
+                    }}
+                  />
                 </CardContent>
               </Card>
 
-              {/* Top Performers */}
+              {/* Event Comparison Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Top Performing Events</CardTitle>
+                  <CardTitle>Event Performance Comparison</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {eventPerformanceData
-                    .sort((a, b) => b.performance.engagementScore - a.performance.engagementScore)
-                    .slice(0, 3)
-                    .map((event) => (
-                      <div key={event.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                        <div className="flex-1">
-                          <h3 className="font-medium text-foreground text-sm">{event.title}</h3>
-                          <p className="text-xs text-muted-foreground">{event.date}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-sm font-bold ${getPerformanceColor(event.performance.engagementScore)}`}>
-                            {event.performance.engagementScore}
-                          </p>
-                          <p className="text-xs text-muted-foreground">score</p>
-                        </div>
-                      </div>
-                    ))}
+                <CardContent>
+                  <CustomComposedChart
+                    data={eventComparisonData}
+                    xAxisKey="name"
+                    bars={[
+                      { dataKey: "attendees", name: "Attendees", color: CHART_COLORS.primary },
+                    ]}
+                    lines={[
+                      { dataKey: "conversion", name: "Conversion Rate", color: CHART_COLORS.success },
+                      { dataKey: "rating", name: "Rating", color: CHART_COLORS.warning },
+                    ]}
+                    height={300}
+                    formatter={(value, name) => {
+                      if (name === "Attendees") return value.toLocaleString();
+                      if (name === "Conversion Rate") return `${value}%`;
+                      if (name === "Rating") return value.toFixed(1);
+                      return value.toString();
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Satisfaction Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Satisfaction Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomPieChart
+                    data={satisfactionDistributionData}
+                    dataKey="count"
+                    nameKey="rating"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Attendance vs Revenue Scatter */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendance vs Revenue Correlation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomScatterChart
+                    data={attendanceVsRevenueData}
+                    xDataKey="attendees"
+                    yDataKey="revenue"
+                    height={300}
+                    color={CHART_COLORS.primary}
+                    formatter={(value, name) => {
+                      if (name === "attendees") return value.toLocaleString();
+                      if (name === "revenue") return `$${value.toLocaleString()}`;
+                      return value.toString();
+                    }}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -524,38 +460,79 @@ const EventPerformance = () => {
 
           <TabsContent value="trends" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Trend Chart Placeholder */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance Trends Over Time</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Performance trend chart will be displayed here</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Revenue Trend Chart Placeholder */}
+              {/* Revenue Trends */}
               <Card>
                 <CardHeader>
                   <CardTitle>Revenue Trends</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Revenue trend chart will be displayed here</p>
-                    </div>
-                  </div>
+                  <CustomAreaChart
+                    data={performanceTrendsData}
+                    dataKey="revenue"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.success}
+                    formatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Engagement Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Engagement Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomLineChart
+                    data={performanceTrendsData}
+                    dataKey="engagement"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.primary}
+                    formatter={(value) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Attendance Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendance Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomBarChart
+                    data={performanceTrendsData}
+                    dataKey="attendance"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.info}
+                    formatter={(value) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Satisfaction Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Satisfaction Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomLineChart
+                    data={performanceTrendsData}
+                    dataKey="satisfaction"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.warning}
+                    formatter={(value) => value.toFixed(1)}
+                  />
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </OrganizerLayout>
   );

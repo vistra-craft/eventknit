@@ -20,17 +20,14 @@ import CreateEventPage from "./pages/organizer/CreateEventPage";
 // Marketing imports
 import MarketingPage from "./pages/organizer/MarketingPage";
 import { CampaignsPage, SocialMediaPage, EmailMarketingPage, PromotionsPage, PartnershipsPage } from "./pages/organizer/marketing";
-// Placeholder page imports
+// Analytics imports
 import { 
   AnalyticsOverview, 
   EventPerformance, 
   AttendeeInsights, 
   RevenueReports,
-  CommunicationsPage,
-  SettingsPage,
-  EventTemplates,
-  EventDrafts
-} from "./pages/organizer/placeholder-pages";
+  TestAnalytics
+} from "./pages/organizer/analytics";
 // Team Management imports
 import { 
   StaffManagementPage,
@@ -40,6 +37,8 @@ import {
 } from "./pages/organizer/team";
 // Profile import
 import Profile from "./pages/organizer/Profile";
+// Event Templates import
+import EventTemplates from "./pages/organizer/EventTemplates";
 // Admin Dashboard imports
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarketingPage from "./pages/admin/AdminMarketingPage";
@@ -78,6 +77,8 @@ import {
 import ModerationPage from "./pages/admin/ModerationPage";
 // Admin Communications import
 import AdminCommunicationsPage from "./pages/admin/CommunicationsPage";
+// Admin Analytics imports
+import { AdminAnalyticsOverview } from "./pages/admin/analytics";
 // Admin Support import
 import SupportPage from "./pages/admin/SupportPage";
 // Admin Finance imports
@@ -127,20 +128,16 @@ const App = () => (
       <Route path="/organizer/analytics/events" element={<EventPerformance />} />
       <Route path="/organizer/analytics/attendees" element={<AttendeeInsights />} />
       <Route path="/organizer/analytics/revenue" element={<RevenueReports />} />
-      {/* Communications Route */}
-      <Route path="/organizer/communications" element={<CommunicationsPage />} />
+      <Route path="/organizer/analytics/test" element={<TestAnalytics />} />
       {/* Team Routes */}
       <Route path="/organizer/team/staff" element={<StaffManagementPage />} />
       <Route path="/organizer/team/roles" element={<RolesPermissionsPage />} />
       <Route path="/organizer/team/calendar" element={<TeamCalendarPage />} />
       <Route path="/organizer/team/performance" element={<TeamPerformancePage />} />
-      {/* Settings Route */}
-      <Route path="/organizer/settings" element={<SettingsPage />} />
       {/* Profile Route */}
       <Route path="/organizer/profile" element={<Profile />} />
       {/* Event Templates and Drafts */}
       <Route path="/organizer/events/templates" element={<EventTemplates />} />
-      <Route path="/organizer/events/drafts" element={<EventDrafts />} />
       {/* Admin Dashboard Routes */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       {/* Admin Events Routes */}
@@ -190,6 +187,12 @@ const App = () => (
       <Route path="/admin/marketing/email" element={<AdminEmailMarketingPage />} />
       <Route path="/admin/marketing/promotions" element={<AdminPromotionsPage />} />
       <Route path="/admin/marketing/partnerships" element={<AdminPartnershipsPage />} />
+      {/* Admin Analytics Routes */}
+      <Route path="/admin/analytics" element={<AdminAnalyticsOverview />} />
+      <Route path="/admin/analytics/events" element={<AdminAnalyticsOverview />} />
+      <Route path="/admin/analytics/users" element={<AdminAnalyticsOverview />} />
+      <Route path="/admin/analytics/revenue" element={<AdminAnalyticsOverview />} />
+      <Route path="/admin/analytics/system" element={<AdminAnalyticsOverview />} />
     </Routes>
   </BrowserRouter>
 );

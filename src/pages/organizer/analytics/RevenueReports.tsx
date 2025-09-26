@@ -19,205 +19,75 @@ import {
   PieChart,
   Target,
 } from "lucide-react";
+import {
+  CustomLineChart,
+  CustomAreaChart,
+  CustomBarChart,
+  CustomPieChart,
+  CustomMultiLineChart,
+  CustomComposedChart,
+  CHART_COLORS,
+} from "@/components/charts/ChartComponents";
+import {
+  revenueStats,
+  revenueBreakdown,
+  paymentMethods,
+  revenueTrends,
+  financialInsights,
+} from "@/data/analytics";
 
 const RevenueReports = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
 
-  // Mock data - in a real app, this would come from your API
-  const revenueStats = [
-    {
-      title: "Total Revenue",
-      value: "$127,450",
-      change: "+24%",
-      changeType: "positive",
-      icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      description: "All-time revenue",
-    },
-    {
-      title: "Monthly Revenue",
-      value: "$45,230",
-      change: "+18%",
-      changeType: "positive",
-      icon: TrendingUp,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      description: "This month",
-    },
-    {
-      title: "Avg. Revenue/Event",
-      value: "$5,310",
-      change: "+12%",
-      changeType: "positive",
-      icon: Target,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
-      description: "Per event",
-    },
-    {
-      title: "Avg. Revenue/Attendee",
-      value: "$30",
-      change: "+8%",
-      changeType: "positive",
-      icon: Users,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
-      description: "Per attendee",
-    },
-    {
-      title: "Refund Rate",
-      value: "2.3%",
-      change: "-0.5%",
-      changeType: "positive",
-      icon: Receipt,
-      color: "text-red-600",
-      bgColor: "bg-red-100",
-      description: "Refund percentage",
-    },
-    {
-      title: "Payment Success Rate",
-      value: "98.7%",
-      change: "+1.2%",
-      changeType: "positive",
-      icon: CreditCard,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100",
-      description: "Successful payments",
-    },
+  // Debug: Log the imported data
+  console.log('RevenueReports - revenueStats:', revenueStats);
+  console.log('RevenueReports - revenueBreakdown:', revenueBreakdown);
+  console.log('RevenueReports - paymentMethods:', paymentMethods);
+  console.log('RevenueReports - revenueTrends:', revenueTrends);
+  console.log('RevenueReports - financialInsights:', financialInsights);
+
+  // Chart data for revenue analysis
+  const monthlyRevenueData = [
+    { month: "Jan", revenue: 45000, events: 3, attendees: 1200 },
+    { month: "Feb", revenue: 32000, events: 2, attendees: 800 },
+    { month: "Mar", revenue: 145200, events: 4, attendees: 1800 },
+    { month: "Apr", revenue: 28000, events: 3, attendees: 950 },
+    { month: "May", revenue: 18000, events: 2, attendees: 600 },
+    { month: "Jun", revenue: 165000, events: 5, attendees: 2200 },
   ];
 
-  const revenueBreakdown = [
-    {
-      event: "Tech Innovation Summit 2024",
-      date: "March 15-17, 2024",
-      status: "completed",
-      revenue: 145200,
-      attendees: 485,
-      ticketPrice: 299,
-      revenuePerAttendee: 299,
-      refunds: 3200,
-      netRevenue: 142000,
-      growth: 24,
-    },
-    {
-      event: "Digital Marketing Conference",
-      date: "January 20, 2024",
-      status: "completed",
-      revenue: 67500,
-      attendees: 450,
-      ticketPrice: 150,
-      revenuePerAttendee: 150,
-      refunds: 1200,
-      netRevenue: 66300,
-      growth: 19,
-    },
-    {
-      event: "Business Leadership Workshop",
-      date: "April 2, 2024",
-      status: "upcoming",
-      revenue: 15600,
-      attendees: 78,
-      ticketPrice: 200,
-      revenuePerAttendee: 200,
-      refunds: 0,
-      netRevenue: 15600,
-      growth: 28,
-    },
-    {
-      event: "Food & Wine Expo",
-      date: "February 10, 2024",
-      status: "completed",
-      revenue: 25600,
-      attendees: 320,
-      ticketPrice: 80,
-      revenuePerAttendee: 80,
-      refunds: 800,
-      netRevenue: 24800,
-      growth: 16,
-    },
-    {
-      event: "Startup Pitch Competition",
-      date: "May 15, 2024",
-      status: "upcoming",
-      revenue: 3750,
-      attendees: 25,
-      ticketPrice: 150,
-      revenuePerAttendee: 150,
-      refunds: 0,
-      netRevenue: 3750,
-      growth: 35,
-    },
+  const revenueByEventTypeData = [
+    { type: "Technology", revenue: 145200, percentage: 45 },
+    { type: "Business", revenue: 67500, percentage: 21 },
+    { type: "Marketing", revenue: 25600, percentage: 8 },
+    { type: "Health", revenue: 15600, percentage: 5 },
+    { type: "Other", revenue: 67550, percentage: 21 },
   ];
 
-  const paymentMethods = [
-    { method: "Credit Card", percentage: 68, amount: 86666, count: 2890 },
-    { method: "PayPal", percentage: 18, amount: 22941, count: 765 },
-    { method: "Bank Transfer", percentage: 8, amount: 10196, count: 340 },
-    { method: "Cryptocurrency", percentage: 4, amount: 5098, count: 170 },
-    { method: "Other", percentage: 2, amount: 2549, count: 85 },
+  const paymentMethodData = [
+    { method: "Credit Card", percentage: 68, amount: 86666 },
+    { method: "PayPal", percentage: 18, amount: 22941 },
+    { method: "Bank Transfer", percentage: 8, amount: 10196 },
+    { method: "Cryptocurrency", percentage: 4, amount: 5098 },
+    { method: "Other", percentage: 2, amount: 2549 },
   ];
 
-  const revenueTrends = [
-    { month: "Jan", revenue: 42000, events: 3 },
-    { month: "Feb", revenue: 38000, events: 2 },
-    { month: "Mar", revenue: 145200, events: 1 },
-    { month: "Apr", revenue: 15600, events: 1 },
-    { month: "May", revenue: 3750, events: 1 },
-    { month: "Jun", revenue: 0, events: 0 },
+  const revenueVsAttendeesData = [
+    { attendees: 78, revenue: 15600, event: "Business Workshop" },
+    { attendees: 320, revenue: 25600, event: "Food & Wine Expo" },
+    { attendees: 450, revenue: 67500, event: "Marketing Conf" },
+    { attendees: 485, revenue: 145200, event: "Tech Summit" },
   ];
 
-  const financialInsights = [
-    {
-      id: 1,
-      title: "Revenue Growth Trend",
-      description: "Monthly revenue has grown 24% compared to last quarter",
-      insight: "Consider increasing event frequency to capitalize on growth",
-      icon: TrendingUp,
-      type: "growth",
-    },
-    {
-      id: 2,
-      title: "High-Value Events",
-      description: "Tech events generate 3x more revenue than other categories",
-      insight: "Focus on expanding tech event portfolio",
-      icon: Target,
-      type: "strategy",
-    },
-    {
-      id: 3,
-      title: "Payment Method Optimization",
-      description: "Credit card payments have 98.7% success rate",
-      insight: "Consider offering credit card incentives",
-      icon: CreditCard,
-      type: "payment",
-    },
-    {
-      id: 4,
-      title: "Refund Management",
-      description: "Refund rate decreased to 2.3% - below industry average",
-      insight: "Current refund policy is working well",
-      icon: Receipt,
-      type: "policy",
-    },
-    {
-      id: 5,
-      title: "Seasonal Patterns",
-      description: "Q1 shows highest revenue potential",
-      insight: "Plan major events for Q1 next year",
-      icon: Calendar,
-      type: "timing",
-    },
-    {
-      id: 6,
-      title: "Attendee Value",
-      description: "Average revenue per attendee increased 8%",
-      insight: "Consider premium pricing tiers",
-      icon: Users,
-      type: "pricing",
-    },
-  ];
+  // Use imported data
+  const statsData = revenueStats;
+
+  // Use imported data
+  const breakdownData = revenueBreakdown;
+  const paymentMethodsData = paymentMethods;
+  const trendsData = revenueTrends;
+  const insightsData = financialInsights;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -253,7 +123,8 @@ const RevenueReports = () => {
 
   return (
     <OrganizerLayout>
-      <div className="space-y-8">
+      <div className="py-8">
+        <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -296,7 +167,7 @@ const RevenueReports = () => {
 
         {/* Revenue Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {revenueStats.map((stat, index) => (
+          {statsData.map((stat, index) => (
             <Card key={index} className="hover:shadow-md transition-shadow duration-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -326,7 +197,7 @@ const RevenueReports = () => {
                     </p>
                   </div>
                   <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                    <DollarSign className={`h-5 w-5 ${stat.color}`} />
                   </div>
                 </div>
               </CardContent>
@@ -345,18 +216,63 @@ const RevenueReports = () => {
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Revenue Chart Placeholder */}
+              {/* Revenue Trends */}
               <Card>
                 <CardHeader>
                   <CardTitle>Revenue Trends</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Revenue trend chart will be displayed here</p>
-                    </div>
-                  </div>
+                  <CustomAreaChart
+                    data={monthlyRevenueData}
+                    dataKey="revenue"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.success}
+                    formatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Revenue by Event Type */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revenue by Event Type</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomPieChart
+                    data={revenueByEventTypeData}
+                    dataKey="percentage"
+                    nameKey="type"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Revenue vs Attendees */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revenue vs Attendees Correlation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomComposedChart
+                    data={revenueVsAttendeesData}
+                    xAxisKey="event"
+                    bars={[
+                      { dataKey: "attendees", name: "Attendees", color: CHART_COLORS.primary },
+                    ]}
+                    lines={[
+                      { dataKey: "revenue", name: "Revenue", color: CHART_COLORS.success },
+                    ]}
+                    height={300}
+                    formatter={(value, name) => {
+                      if (name === "Attendees") return value.toLocaleString();
+                      if (name === "Revenue") return `$${value.toLocaleString()}`;
+                      return value.toString();
+                    }}
+                  />
                 </CardContent>
               </Card>
 
@@ -366,7 +282,7 @@ const RevenueReports = () => {
                   <CardTitle>Monthly Revenue Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {revenueTrends.map((trend, index) => (
+                  {trendsData.map((trend, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex-1">
                         <h3 className="font-medium text-foreground text-sm">{trend.month}</h3>
@@ -392,7 +308,7 @@ const RevenueReports = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {revenueBreakdown.map((event) => (
+                  {breakdownData.map((event) => (
                     <div key={event.event} className="border border-border rounded-lg p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div>
@@ -453,18 +369,19 @@ const RevenueReports = () => {
 
           <TabsContent value="payments" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Payment Methods Chart Placeholder */}
+              {/* Payment Methods Distribution */}
               <Card>
                 <CardHeader>
                   <CardTitle>Payment Methods Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 bg-muted/20 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <PieChart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <p className="text-muted-foreground">Payment methods pie chart will be displayed here</p>
-                    </div>
-                  </div>
+                  <CustomPieChart
+                    data={paymentMethodData}
+                    dataKey="percentage"
+                    nameKey="method"
+                    height={300}
+                    formatter={(value, name) => `${value}%`}
+                  />
                 </CardContent>
               </Card>
 
@@ -475,7 +392,7 @@ const RevenueReports = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {paymentMethods.map((method, index) => (
+                    {paymentMethodsData.map((method, index) => (
                       <div key={index} className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm font-medium text-foreground">{method.method}</span>
@@ -496,11 +413,47 @@ const RevenueReports = () => {
                 </CardContent>
               </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Payment Success Rate Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Success Rate Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomLineChart
+                    data={monthlyRevenueData}
+                    dataKey="revenue"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.success}
+                    formatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Revenue by Payment Method */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revenue by Payment Method</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomBarChart
+                    data={paymentMethodData}
+                    dataKey="amount"
+                    xAxisKey="method"
+                    height={300}
+                    color={CHART_COLORS.primary}
+                    formatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {financialInsights.map((insight) => (
+              {insightsData.map((insight) => (
                 <Card key={insight.id} className={`border ${getInsightTypeColor(insight.type).split(' ')[2]}`}>
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
@@ -522,6 +475,7 @@ const RevenueReports = () => {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </OrganizerLayout>
   );
