@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "../AdminLayout";
 
 const EditTransactionPage = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     type: "income",

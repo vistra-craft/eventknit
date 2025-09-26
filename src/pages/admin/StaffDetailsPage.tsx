@@ -3,33 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Calendar,
-  MapPin,
-  Users,
   DollarSign,
   Star,
   Eye,
   Edit,
   CheckCircle,
   XCircle,
-  Clock,
-  Building2,
-  Mail,
-  Phone,
-  Globe,
-  FileText,
-  TrendingUp,
-  AlertCircle,
+  Download,
   Shield,
   User,
-  Download,
+  AlertTriangle,
   CreditCard,
   Award,
-  Activity,
-  Target,
-  Zap,
-  Briefcase,
-  UserCheck,
-  AlertTriangle
+  FileText
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

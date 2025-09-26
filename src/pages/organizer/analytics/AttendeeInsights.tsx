@@ -6,28 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import OrganizerLayout from "../OrganizerLayout";
 import {
   Users,
-  TrendingUp,
-  Calendar,
   Clock,
-  Star,
   ArrowUpRight,
   ArrowDownRight,
   Download,
-  UserCheck,
-  UserX,
-  Globe,
-  Heart,
 } from "lucide-react";
 import {
-  CustomLineChart,
   CustomAreaChart,
   CustomBarChart,
   CustomPieChart,
   CustomMultiLineChart,
   CustomComposedChart,
   CustomRadialBarChart,
-  CHART_COLORS,
 } from "@/components/charts/ChartComponents";
+import { CHART_COLORS } from "@/components/charts/chartConstants";
 import {
   attendeeStats,
   demographicData,
@@ -212,7 +204,7 @@ const AttendeeInsights = () => {
                     dataKey="percentage"
                     nameKey="range"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -262,7 +254,7 @@ const AttendeeInsights = () => {
                     dataKey="percentage"
                     nameKey="level"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -302,7 +294,7 @@ const AttendeeInsights = () => {
                     dataKey="percentage"
                     nameKey="device"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -351,8 +343,8 @@ const AttendeeInsights = () => {
                     height={300}
                     formatter={(value, name) => {
                       if (name === "Retention Rate") return `${value}%`;
-                      if (name === "Satisfaction Score") return value.toFixed(1);
-                      return value.toString();
+                      if (name === "Satisfaction Score") return (value as number).toFixed(1);
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>
@@ -365,11 +357,11 @@ const AttendeeInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <CustomPieChart
-                    data={segmentsData}
+                    data={segmentsData as unknown as Array<Record<string, unknown>>}
                     dataKey="percentage"
                     nameKey="name"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -430,9 +422,9 @@ const AttendeeInsights = () => {
                     height={300}
                     formatter={(value, name) => {
                       if (name === "Engagement Score") return `${value}%`;
-                      if (name === "Satisfaction Score") return value.toFixed(1);
+                      if (name === "Satisfaction Score") return (value as number).toFixed(1);
                       if (name === "Retention Rate") return `${value}%`;
-                      return value.toString();
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>
@@ -507,7 +499,7 @@ const AttendeeInsights = () => {
                     dataKey="value"
                     nameKey="name"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>

@@ -2,26 +2,18 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  Calendar,
-  MapPin,
   Users,
   DollarSign,
-  Clock,
-  Building2,
   Star,
   Eye,
   Download,
   Settings,
   CheckCircle,
   XCircle,
-  AlertCircle,
   TrendingUp,
-  TrendingDown,
   User,
   CreditCard,
   RefreshCw,
-  FileText,
-  BarChart3,
   Search
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

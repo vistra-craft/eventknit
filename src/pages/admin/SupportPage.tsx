@@ -1,53 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
   MessageSquare, 
   Search, 
-  Filter, 
   Plus, 
   Send, 
   Clock, 
   CheckCircle, 
   AlertTriangle, 
   User, 
-  Phone, 
-  Mail, 
-  Globe,
+  Eye, 
+  Reply, 
+  Tag, 
+  X, 
+  Paperclip, 
+  Smile,
+  MessageCircle,
   Facebook,
   Instagram,
   Twitter,
   Linkedin,
-  MessageCircle,
-  Eye,
-  Reply,
-  Archive,
-  Tag,
-  Users,
-  TrendingUp,
-  Settings,
-  Bell,
-  Calendar,
-  BarChart3,
-  Zap,
-  Star,
+  Mail,
+  Globe,
   Flag,
-  MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
-  X,
-  Paperclip,
-  Smile,
-  RefreshCw
+  Settings,
+  BarChart3,
+  Bell,
+  Zap,
+  TrendingUp
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import AdminLayout from "./AdminLayout";
-import { 
+import type { 
   SupportQuery, 
   SupportResponse, 
   SocialPlatform, 
@@ -456,10 +444,6 @@ const SupportPage = () => {
     
     return matchesSearch && matchesStatus && matchesPlatform && matchesPriority && matchesCategory;
   });
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
 
   const getTimeAgo = (dateString: string) => {
     const now = new Date();

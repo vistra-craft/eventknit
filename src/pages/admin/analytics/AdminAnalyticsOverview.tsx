@@ -6,14 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
   Users,
   Calendar,
   DollarSign,
   Eye,
-  Clock,
   ArrowUpRight,
   ArrowDownRight,
   Download,
@@ -30,8 +26,8 @@ import {
   CustomPieChart,
   CustomMultiLineChart,
   CustomComposedChart,
-  CHART_COLORS,
 } from "@/components/charts/ChartComponents";
+import { CHART_COLORS } from "@/components/charts/chartConstants";
 
 const AdminAnalyticsOverview = () => {
   const location = useLocation();
@@ -41,7 +37,7 @@ const AdminAnalyticsOverview = () => {
   const getCurrentTab = () => {
     if (location.pathname.includes('/events')) return 'events';
     if (location.pathname.includes('/users')) return 'organizers';
-    if (location.pathname.includes('/revenue')) return 'system';
+    if (location.pathname.includes('/revenue')) return 'revenue';
     if (location.pathname.includes('/system')) return 'system';
     return 'overview';
   };
@@ -288,10 +284,11 @@ const AdminAnalyticsOverview = () => {
 
           {/* Main Content Tabs */}
           <Tabs value={currentTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="organizers">Organizers</TabsTrigger>
+              <TabsTrigger value="revenue">Revenue</TabsTrigger>
               <TabsTrigger value="system">System</TabsTrigger>
             </TabsList>
 
@@ -316,9 +313,9 @@ const AdminAnalyticsOverview = () => {
                       ]}
                       height={300}
                       formatter={(value, name) => {
-                        if (name === "Revenue") return `$${value.toLocaleString()}`;
-                        if (name === "Attendees") return value.toLocaleString();
-                        return value.toString();
+                        if (name === "Revenue") return `$${(value as number).toLocaleString()}`;
+                        if (name === "Attendees") return (value as number).toLocaleString();
+                        return (value as number).toString();
                       }}
                     />
                   </CardContent>
@@ -335,7 +332,7 @@ const AdminAnalyticsOverview = () => {
                       dataKey="percentage"
                       nameKey="category"
                       height={300}
-                      formatter={(value, name) => `${value}%`}
+                      formatter={(value) => `${value}%`}
                     />
                   </CardContent>
                 </Card>
@@ -445,7 +442,7 @@ const AdminAnalyticsOverview = () => {
                       xAxisKey="tier"
                       height={300}
                       color={CHART_COLORS.success}
-                      formatter={(value) => `$${value.toLocaleString()}`}
+                      formatter={(value) => `$${(value as number).toLocaleString()}`}
                     />
                   </CardContent>
                 </Card>
@@ -463,6 +460,115 @@ const AdminAnalyticsOverview = () => {
                       height={300}
                       color={CHART_COLORS.primary}
                     />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="revenue" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Revenue Trends */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Revenue Trends</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CustomLineChart
+                      data={platformGrowthData}
+                      dataKey="revenue"
+                      xAxisKey="month"
+                      height={300}
+                      color={CHART_COLORS.success}
+                      formatter={(value) => `$${(value as number).toLocaleString()}`}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Revenue by Organizer Tier */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Revenue by Organizer Tier</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CustomBarChart
+                      data={organizerTierData}
+                      dataKey="revenue"
+                      xAxisKey="tier"
+                      height={300}
+                      color={CHART_COLORS.success}
+                      formatter={(value) => `$${(value as number).toLocaleString()}`}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Revenue Summary */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Revenue Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total Revenue</span>
+                        <span className="font-semibold">$2,847,450</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Monthly Average</span>
+                        <span className="font-semibold">$474,575</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Growth Rate</span>
+                        <span className="font-semibold text-green-600">+32%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Top Revenue Sources */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Revenue Sources</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm">Event Fees</span>
+                        <span className="text-sm font-medium">$1,234,500</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Premium Subscriptions</span>
+                        <span className="text-sm font-medium">$890,200</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Transaction Fees</span>
+                        <span className="text-sm font-medium">$722,750</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Revenue Forecast */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Revenue Forecast</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm">Next Month</span>
+                        <span className="text-sm font-medium">$520,000</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Next Quarter</span>
+                        <span className="text-sm font-medium">$1,560,000</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Next Year</span>
+                        <span className="text-sm font-medium">$6,240,000</span>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -501,9 +607,9 @@ const AdminAnalyticsOverview = () => {
                       ]}
                       height={300}
                       formatter={(value, name) => {
-                        if (name === "Events") return value.toString();
-                        if (name === "Attendees") return value.toLocaleString();
-                        return value.toString();
+                        if (name === "Events") return (value as number).toString();
+                        if (name === "Attendees") return (value as number).toLocaleString();
+                        return (value as number).toString();
                       }}
                     />
                   </CardContent>

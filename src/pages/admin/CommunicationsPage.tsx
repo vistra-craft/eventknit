@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { MessageSquare, Send, Users, Mail, Bell, Search, Filter, Eye, Edit, Trash2, Plus, Calendar, Clock, CheckCircle, AlertTriangle, X, Paperclip, Smile, Save, Copy } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MessageSquare, Send, Mail, Bell, Search, Eye, Edit, Trash2, Plus, CheckCircle, AlertTriangle, X, Paperclip, Smile, Save } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AdminLayout from "./AdminLayout";
 
 interface Announcement {
@@ -162,7 +162,7 @@ const mockEmailTemplates: EmailTemplate[] = [
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #2563eb;">Welcome to EventKnit!</h1>
-        <p>Hi \{\{user_name\}\},</p>
+        <p>Hi {{user_name}},</p>
         <p>We're thrilled to have you join the EventKnit community! You now have access to powerful event management tools that will help you create, manage, and promote amazing events.</p>
         
         <h2>Getting Started:</h2>
@@ -188,7 +188,7 @@ const mockEmailTemplates: EmailTemplate[] = [
   {
     id: "2",
     name: "Event Confirmation",
-    subject: "Your event '\\{\\{event_title\\}\\}' has been created successfully",
+    subject: "Your event '{{event_title}}' has been created successfully",
     description: "Confirm event creation to organizers",
     content: `<!DOCTYPE html>
 <html>
@@ -199,15 +199,15 @@ const mockEmailTemplates: EmailTemplate[] = [
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #16a34a;">Event Created Successfully!</h1>
-        <p>Hi \{\{organizer_name\}\},</p>
-        <p>Congratulations! Your event "<strong>\{\{event_title\}\}</strong>" has been successfully created and is now live on EventKnit.</p>
+        <p>Hi {{organizer_name}},</p>
+        <p>Congratulations! Your event "<strong>{{event_title}}</strong>" has been successfully created and is now live on EventKnit.</p>
         
         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3>Event Details:</h3>
-            <p><strong>Event:</strong> \{\{event_title\}\}</p>
-            <p><strong>Date:</strong> \{\{event_date\}\}</p>
-            <p><strong>Location:</strong> \{\{event_location\}\}</p>
-            <p><strong>Event URL:</strong> <a href="\{\{event_url\}\}">\{\{event_url\}\}</a></p>
+            <p><strong>Event:</strong> {{event_title}}</p>
+            <p><strong>Date:</strong> {{event_date}}</p>
+            <p><strong>Location:</strong> {{event_location}}</p>
+            <p><strong>Event URL:</strong> <a href="{{event_url}}">{{event_url}}</a></p>
         </div>
         
         <p>You can now start promoting your event and managing registrations through your organizer dashboard.</p>
@@ -226,7 +226,7 @@ const mockEmailTemplates: EmailTemplate[] = [
   {
     id: "3",
     name: "Payment Receipt",
-    subject: "Payment confirmation for \\{\\{event_title\\}\\}",
+    subject: "Payment confirmation for {{event_title}}",
     description: "Send payment receipts to users",
     content: `<!DOCTYPE html>
 <html>
@@ -237,16 +237,16 @@ const mockEmailTemplates: EmailTemplate[] = [
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #16a34a;">Payment Confirmed!</h1>
-        <p>Hi \{\{attendee_name\}\},</p>
+        <p>Hi {{attendee_name}},</p>
         <p>Thank you for your purchase! Your payment has been successfully processed.</p>
         
         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3>Order Details:</h3>
-            <p><strong>Event:</strong> \{\{event_title\}\}</p>
-            <p><strong>Date:</strong> \{\{event_date\}\}</p>
-            <p><strong>Tickets:</strong> \{\{ticket_quantity\}\} x \{\{ticket_type\}\}</p>
-            <p><strong>Total Amount:</strong> $\{\{total_amount\}\}</p>
-            <p><strong>Transaction ID:</strong> \{\{transaction_id\}\}</p>
+            <p><strong>Event:</strong> {{event_title}}</p>
+            <p><strong>Date:</strong> {{event_date}}</p>
+            <p><strong>Tickets:</strong> {{ticket_quantity}} x {{ticket_type}}</p>
+            <p><strong>Total Amount:</strong> \${{total_amount}}</p>
+            <p><strong>Transaction ID:</strong> {{transaction_id}}</p>
         </div>
         
         <p>Your tickets have been sent to your email. Please bring a valid ID to the event.</p>
@@ -265,7 +265,7 @@ const mockEmailTemplates: EmailTemplate[] = [
   {
     id: "4",
     name: "Event Reminder",
-    subject: "Don't forget! \\{\\{event_title\\}\\} is tomorrow",
+    subject: "Don't forget! {{event_title}} is tomorrow",
     description: "Remind attendees about upcoming events",
     content: `<!DOCTYPE html>
 <html>
@@ -276,15 +276,15 @@ const mockEmailTemplates: EmailTemplate[] = [
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #dc2626;">Event Reminder</h1>
-        <p>Hi \{\{attendee_name\}\},</p>
-        <p>This is a friendly reminder that <strong>\{\{event_title\}\}</strong> is happening tomorrow!</p>
+        <p>Hi {{attendee_name}},</p>
+        <p>This is a friendly reminder that <strong>{{event_title}}</strong> is happening tomorrow!</p>
         
         <div style="background: #fef2f2; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc2626;">
             <h3>Event Details:</h3>
-            <p><strong>Event:</strong> \{\{event_title\}\}</p>
-            <p><strong>Date:</strong> \{\{event_date\}\}</p>
-            <p><strong>Time:</strong> \{\{event_time\}\}</p>
-            <p><strong>Location:</strong> \{\{event_location\}\}</p>
+            <p><strong>Event:</strong> {{event_title}}</p>
+            <p><strong>Date:</strong> {{event_date}}</p>
+            <p><strong>Time:</strong> {{event_time}}</p>
+            <p><strong>Location:</strong> {{event_location}}</p>
         </div>
         
         <p>Please arrive 15 minutes early for check-in. Don't forget to bring your ticket and a valid ID.</p>
@@ -303,7 +303,7 @@ const mockEmailTemplates: EmailTemplate[] = [
   {
     id: "5",
     name: "Marketing Newsletter",
-    subject: "Monthly EventKnit Newsletter - \\{\\{month\\}\\} \\{\\{year\\}\\}",
+    subject: "Monthly EventKnit Newsletter - {{month}} {{year}}",
     description: "Monthly newsletter for marketing purposes",
     content: `<!DOCTYPE html>
 <html>
@@ -314,14 +314,14 @@ const mockEmailTemplates: EmailTemplate[] = [
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #2563eb;">EventKnit Newsletter</h1>
-        <p>Hi \{\{subscriber_name\}\},</p>
+        <p>Hi {{subscriber_name}},</p>
         <p>Welcome to our monthly newsletter! Here's what's happening in the EventKnit community this month.</p>
         
         <h2>Featured Events</h2>
         <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3>\{\{featured_event_title\}\}</h3>
-            <p>\{\{featured_event_description\}\}</p>
-            <p><strong>Date:</strong> \{\{featured_event_date\}\}</p>
+            <h3>{{featured_event_title}}</h3>
+            <p>{{featured_event_description}}</p>
+            <p><strong>Date:</strong> {{featured_event_date}}</p>
         </div>
         
         <h2>Platform Updates</h2>
@@ -360,7 +360,6 @@ const CommunicationsPage = () => {
   const [audienceFilter, setAudienceFilter] = useState("all");
   const [showChat, setShowChat] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
-  const [selectedRecipient, setSelectedRecipient] = useState("");
   
   // State for announcements
   const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
@@ -384,16 +383,16 @@ const CommunicationsPage = () => {
   const [announcementForm, setAnnouncementForm] = useState({
     title: "",
     content: "",
-    type: "general" as const,
-    targetAudience: "all" as const,
+    type: "general" as "general" | "maintenance" | "feature" | "urgent",
+    targetAudience: "all" as "all" | "organizers" | "attendees" | "admins",
     scheduledAt: ""
   });
   
   const [notificationForm, setNotificationForm] = useState({
     title: "",
     message: "",
-    type: "info" as const,
-    targetAudience: "all" as const,
+    type: "info" as "info" | "warning" | "error" | "success",
+    targetAudience: "all" as "all" | "organizers" | "attendees" | "admins",
     startDate: "",
     endDate: ""
   });
@@ -403,7 +402,7 @@ const CommunicationsPage = () => {
     subject: "",
     description: "",
     content: "",
-    category: "welcome" as const
+    category: "welcome" as "welcome" | "event" | "payment" | "notification" | "marketing" | "reminder" | "promotional"
   });
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -1062,7 +1061,7 @@ const CommunicationsPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="announcement-type">Type</Label>
-                  <Select value={announcementForm.type} onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, type: value as any }))}>
+                  <Select value={announcementForm.type} onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, type: value as "general" | "maintenance" | "feature" | "urgent" }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1076,7 +1075,7 @@ const CommunicationsPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="announcement-audience">Target Audience</Label>
-                  <Select value={announcementForm.targetAudience} onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, targetAudience: value as any }))}>
+                  <Select value={announcementForm.targetAudience} onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, targetAudience: value as "all" | "organizers" | "attendees" | "admins" }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1142,7 +1141,7 @@ const CommunicationsPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="notification-type">Type</Label>
-                  <Select value={notificationForm.type} onValueChange={(value) => setNotificationForm(prev => ({ ...prev, type: value as any }))}>
+                  <Select value={notificationForm.type} onValueChange={(value) => setNotificationForm(prev => ({ ...prev, type: value as "info" | "warning" | "error" | "success" }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1156,7 +1155,7 @@ const CommunicationsPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="notification-audience">Target Audience</Label>
-                  <Select value={notificationForm.targetAudience} onValueChange={(value) => setNotificationForm(prev => ({ ...prev, targetAudience: value as any }))}>
+                  <Select value={notificationForm.targetAudience} onValueChange={(value) => setNotificationForm(prev => ({ ...prev, targetAudience: value as "all" | "organizers" | "attendees" | "admins" }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1223,7 +1222,7 @@ const CommunicationsPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="template-category">Category</Label>
-                  <Select value={templateForm.category} onValueChange={(value) => setTemplateForm(prev => ({ ...prev, category: value as any }))}>
+                  <Select value={templateForm.category} onValueChange={(value) => setTemplateForm(prev => ({ ...prev, category: value as "welcome" | "event" | "payment" | "notification" | "marketing" | "reminder" | "promotional" }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

@@ -20,49 +20,27 @@ import {
   ComposedChart,
   Scatter,
   ScatterChart,
-  Treemap,
-  FunnelChart,
-  Funnel,
-  LabelList,
 } from 'recharts';
-
-// Color palette for consistent theming
-export const CHART_COLORS = {
-  primary: '#3b82f6',
-  secondary: '#8b5cf6',
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  info: '#06b6d4',
-  purple: '#8b5cf6',
-  pink: '#ec4899',
-  indigo: '#6366f1',
-  teal: '#14b8a6',
-  orange: '#f97316',
-  gray: '#6b7280',
-};
-
-export const CHART_COLOR_ARRAY = [
-  CHART_COLORS.primary,
-  CHART_COLORS.secondary,
-  CHART_COLORS.success,
-  CHART_COLORS.warning,
-  CHART_COLORS.error,
-  CHART_COLORS.info,
-  CHART_COLORS.purple,
-  CHART_COLORS.pink,
-  CHART_COLORS.indigo,
-  CHART_COLORS.teal,
-  CHART_COLORS.orange,
-];
+import { CHART_COLORS, CHART_COLOR_ARRAY } from './chartConstants';
 
 // Custom tooltip component
-export const CustomTooltip = ({ active, payload, label, formatter }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: unknown;
+    name: string;
+    color: string;
+  }>;
+  label?: string;
+  formatter?: (value: unknown, name: string) => string;
+}
+
+const CustomTooltip = ({ active, payload, label, formatter }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-card border border-border rounded-lg shadow-lg p-3">
         <p className="text-sm font-medium text-foreground mb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index: number) => (
           <div key={index} className="flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full"
@@ -70,7 +48,7 @@ export const CustomTooltip = ({ active, payload, label, formatter }: any) => {
             />
             <span className="text-sm text-muted-foreground">{entry.name}:</span>
             <span className="text-sm font-medium text-foreground">
-              {formatter ? formatter(entry.value, entry.name) : entry.value}
+              {formatter ? String(formatter(entry.value as number, entry.name as string)) : String(entry.value)}
             </span>
           </div>
         ))}
@@ -82,7 +60,7 @@ export const CustomTooltip = ({ active, payload, label, formatter }: any) => {
 
 // Line Chart Component
 interface LineChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   dataKey: string;
   xAxisKey: string;
   height?: number;
@@ -91,7 +69,7 @@ interface LineChartProps {
   showGrid?: boolean;
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomLineChart: React.FC<LineChartProps> = ({
@@ -145,7 +123,7 @@ export const CustomLineChart: React.FC<LineChartProps> = ({
 
 // Area Chart Component
 interface AreaChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   dataKey: string;
   xAxisKey: string;
   height?: number;
@@ -153,7 +131,7 @@ interface AreaChartProps {
   showGrid?: boolean;
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomAreaChart: React.FC<AreaChartProps> = ({
@@ -205,7 +183,7 @@ export const CustomAreaChart: React.FC<AreaChartProps> = ({
 
 // Bar Chart Component
 interface BarChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   dataKey: string;
   xAxisKey: string;
   height?: number;
@@ -213,7 +191,7 @@ interface BarChartProps {
   showGrid?: boolean;
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomBarChart: React.FC<BarChartProps> = ({
@@ -263,20 +241,19 @@ export const CustomBarChart: React.FC<BarChartProps> = ({
 
 // Pie Chart Component
 interface PieChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   dataKey: string;
   nameKey: string;
   height?: number;
   colors?: string[];
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomPieChart: React.FC<PieChartProps> = ({
   data,
   dataKey,
-  nameKey,
   height = 300,
   colors = CHART_COLOR_ARRAY,
   showTooltip = true,
@@ -291,12 +268,12 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
           cx="50%"
           cy="50%"
           labelLine={false}
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
           outerRadius={80}
           fill="#8884d8"
           dataKey={dataKey}
         >
-          {data.map((entry, index) => (
+          {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Pie>
@@ -313,7 +290,7 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
 
 // Multi-line Chart Component
 interface MultiLineChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   lines: Array<{
     dataKey: string;
     name: string;
@@ -325,7 +302,7 @@ interface MultiLineChartProps {
   showGrid?: boolean;
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomMultiLineChart: React.FC<MultiLineChartProps> = ({
@@ -380,7 +357,7 @@ export const CustomMultiLineChart: React.FC<MultiLineChartProps> = ({
 
 // Composed Chart Component (Bar + Line)
 interface ComposedChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   bars: Array<{
     dataKey: string;
     name: string;
@@ -397,7 +374,7 @@ interface ComposedChartProps {
   showGrid?: boolean;
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomComposedChart: React.FC<ComposedChartProps> = ({
@@ -462,20 +439,19 @@ export const CustomComposedChart: React.FC<ComposedChartProps> = ({
 
 // Radial Bar Chart Component
 interface RadialBarChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   dataKey: string;
   nameKey: string;
   height?: number;
   colors?: string[];
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomRadialBarChart: React.FC<RadialBarChartProps> = ({
   data,
   dataKey,
-  nameKey,
   height = 300,
   colors = CHART_COLOR_ARRAY,
   showTooltip = true,
@@ -490,7 +466,7 @@ export const CustomRadialBarChart: React.FC<RadialBarChartProps> = ({
           cornerRadius={10}
           fill="#8884d8"
         >
-          {data.map((entry, index) => (
+          {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </RadialBar>
@@ -507,7 +483,7 @@ export const CustomRadialBarChart: React.FC<RadialBarChartProps> = ({
 
 // Scatter Chart Component
 interface ScatterChartProps {
-  data: any[];
+  data: Array<Record<string, unknown>>;
   xDataKey: string;
   yDataKey: string;
   height?: number;
@@ -515,7 +491,7 @@ interface ScatterChartProps {
   showGrid?: boolean;
   showTooltip?: boolean;
   showLegend?: boolean;
-  formatter?: (value: any, name: string) => string;
+  formatter?: (value: unknown, name: string) => string;
 }
 
 export const CustomScatterChart: React.FC<ScatterChartProps> = ({

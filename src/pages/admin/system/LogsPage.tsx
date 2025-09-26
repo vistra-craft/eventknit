@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Search, Filter, Download, RefreshCw, AlertTriangle, Info, XCircle, CheckCircle } from "lucide-react";
+import { FileText, Search, Download, RefreshCw, AlertTriangle, Info, XCircle, CheckCircle } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -139,21 +139,6 @@ const LogsPage = () => {
         return <CheckCircle className="h-4 w-4" />;
       default:
         return <Info className="h-4 w-4" />;
-    }
-  };
-
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case "info":
-        return "text-blue-600";
-      case "warning":
-        return "text-yellow-600";
-      case "error":
-        return "text-red-600";
-      case "success":
-        return "text-green-600";
-      default:
-        return "text-gray-600";
     }
   };
 

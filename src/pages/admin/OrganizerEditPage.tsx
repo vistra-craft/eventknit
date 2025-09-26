@@ -3,19 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Save,
-  User,
-  Building2,
-  Mail,
-  Phone,
-  MapPin,
-  Globe,
-  FileText,
   AlertCircle,
-  CheckCircle,
-  XCircle,
-  Shield,
-  CreditCard,
-  UserCheck
+  Shield
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

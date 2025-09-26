@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Search,
-  Filter,
   Plus,
   Eye,
   Edit,
   Trash2,
-  MoreHorizontal,
   Shield,
   Users,
   Settings,
@@ -17,12 +14,8 @@ import {
   MessageCircle,
   Database,
   Megaphone,
-  AlertTriangle,
   CheckCircle,
-  XCircle,
   Copy,
-  Save,
-  X,
   Star,
   UserPlus,
   Download,
@@ -45,7 +38,7 @@ export interface PagePermission {
   name: string;
   category: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 export interface UserRole {
@@ -61,12 +54,10 @@ export interface UserRole {
 }
 
 const UserRolesPage = () => {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [editingRole, setEditingRole] = useState<UserRole | null>(null);
 
   // Define all available page permissions

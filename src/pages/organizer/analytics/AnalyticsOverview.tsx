@@ -8,11 +8,8 @@ import {
   BarChart3,
   TrendingUp,
   TrendingDown,
-  Users,
   Calendar,
   DollarSign,
-  Eye,
-  Clock,
   ArrowUpRight,
   ArrowDownRight,
   Download,
@@ -20,19 +17,15 @@ import {
   RefreshCw,
 } from "lucide-react";
 import {
-  CustomLineChart,
   CustomAreaChart,
   CustomBarChart,
   CustomPieChart,
   CustomMultiLineChart,
   CustomComposedChart,
-  CHART_COLORS,
 } from "@/components/charts/ChartComponents";
+import { CHART_COLORS } from "@/components/charts/chartConstants";
 import {
   analyticsOverviewStats,
-  topPerformingEvents,
-  recentInsights,
-  recentActivity,
 } from "@/data/analytics";
 
 const AnalyticsOverview = () => {
@@ -291,9 +284,9 @@ const AnalyticsOverview = () => {
                     ]}
                     height={300}
                     formatter={(value, name) => {
-                      if (name === "Revenue") return `$${value.toLocaleString()}`;
-                      if (name === "Attendees") return value.toLocaleString();
-                      return value.toString();
+                      if (name === "Revenue") return `$${(value as number).toLocaleString()}`;
+                      if (name === "Attendees") return (value as number).toLocaleString();
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>
@@ -310,7 +303,7 @@ const AnalyticsOverview = () => {
                     dataKey="value"
                     nameKey="name"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -452,7 +445,7 @@ const AnalyticsOverview = () => {
                     xAxisKey="month"
                     height={300}
                     color={CHART_COLORS.success}
-                    formatter={(value) => `$${value.toLocaleString()}`}
+                    formatter={(value) => `$${(value as number).toLocaleString()}`}
                   />
                 </CardContent>
               </Card>
@@ -507,9 +500,9 @@ const AnalyticsOverview = () => {
                     ]}
                     height={300}
                     formatter={(value, name) => {
-                      if (name === "Page Views") return value.toLocaleString();
-                      if (name === "Attendees") return value.toLocaleString();
-                      return value.toString();
+                      if (name === "Page Views") return (value as number).toLocaleString();
+                      if (name === "Attendees") return (value as number).toLocaleString();
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>

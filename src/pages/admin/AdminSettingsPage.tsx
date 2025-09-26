@@ -4,7 +4,6 @@ import {
   User,
   Bell,
   Shield,
-  Globe,
   Palette,
   Mail,
   Database,
@@ -13,7 +12,6 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
-  Info
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +20,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import AdminLayout from "./AdminLayout";
 
 interface SettingsData {
@@ -144,7 +141,7 @@ const AdminSettingsPage = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSaveStatus("success");
       setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch (error) {
+    } catch {
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
@@ -166,7 +163,7 @@ const AdminSettingsPage = () => {
     });
   };
 
-  const updateSetting = (key: keyof SettingsData, value: any) => {
+  const updateSetting = (key: keyof SettingsData, value: string | number | boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 

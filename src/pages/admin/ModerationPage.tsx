@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Shield, AlertTriangle, CheckCircle, XCircle, Eye, Ban, User, Flag, MessageSquare, Calendar, Search, Filter } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle, XCircle, Eye, Ban, User, Flag, MessageSquare, Calendar, Search } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

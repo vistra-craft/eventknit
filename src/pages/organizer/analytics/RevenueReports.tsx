@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,28 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import OrganizerLayout from "../OrganizerLayout";
 import {
   DollarSign,
-  TrendingUp,
-  CreditCard,
-  Receipt,
   ArrowUpRight,
   ArrowDownRight,
   Download,
   RefreshCw,
-  Calendar,
-  Users,
-  BarChart3,
-  PieChart,
-  Target,
 } from "lucide-react";
 import {
   CustomLineChart,
   CustomAreaChart,
   CustomBarChart,
   CustomPieChart,
-  CustomMultiLineChart,
   CustomComposedChart,
-  CHART_COLORS,
 } from "@/components/charts/ChartComponents";
+import { CHART_COLORS } from "@/components/charts/chartConstants";
 import {
   revenueStats,
   revenueBreakdown,
@@ -228,7 +219,7 @@ const RevenueReports = () => {
                     xAxisKey="month"
                     height={300}
                     color={CHART_COLORS.success}
-                    formatter={(value) => `$${value.toLocaleString()}`}
+                    formatter={(value) => `$${(value as number).toLocaleString()}`}
                   />
                 </CardContent>
               </Card>
@@ -244,7 +235,7 @@ const RevenueReports = () => {
                     dataKey="percentage"
                     nameKey="type"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -268,9 +259,9 @@ const RevenueReports = () => {
                     ]}
                     height={300}
                     formatter={(value, name) => {
-                      if (name === "Attendees") return value.toLocaleString();
-                      if (name === "Revenue") return `$${value.toLocaleString()}`;
-                      return value.toString();
+                      if (name === "Attendees") return (value as number).toLocaleString();
+                      if (name === "Revenue") return `$${(value as number).toLocaleString()}`;
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>
@@ -380,7 +371,7 @@ const RevenueReports = () => {
                     dataKey="percentage"
                     nameKey="method"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -427,7 +418,7 @@ const RevenueReports = () => {
                     xAxisKey="month"
                     height={300}
                     color={CHART_COLORS.success}
-                    formatter={(value) => `$${value.toLocaleString()}`}
+                    formatter={(value) => `$${(value as number).toLocaleString()}`}
                   />
                 </CardContent>
               </Card>
@@ -444,7 +435,7 @@ const RevenueReports = () => {
                     xAxisKey="method"
                     height={300}
                     color={CHART_COLORS.primary}
-                    formatter={(value) => `$${value.toLocaleString()}`}
+                    formatter={(value) => `$${(value as number).toLocaleString()}`}
                   />
                 </CardContent>
               </Card>
@@ -458,7 +449,7 @@ const RevenueReports = () => {
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
                       <div className={`w-8 h-8 rounded-full ${getInsightTypeColor(insight.type).split(' ')[1]} flex items-center justify-center`}>
-                        <insight.icon className={`h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}`} />
+                        {React.createElement(insight.icon, { className: `h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}` })}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium text-foreground mb-1">{insight.title}</h3>

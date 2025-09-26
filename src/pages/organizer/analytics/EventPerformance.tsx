@@ -5,15 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import OrganizerLayout from "../OrganizerLayout";
 import {
-  BarChart3,
-  TrendingUp,
   Users,
-  DollarSign,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
   Download,
-  Star,
   MapPin,
   Mic,
   Building2,
@@ -25,9 +21,9 @@ import {
   CustomPieChart,
   CustomMultiLineChart,
   CustomComposedChart,
-  CustomScatterChart,
-  CHART_COLORS,
+  CustomScatterChart
 } from "@/components/charts/ChartComponents";
+import { CHART_COLORS } from "@/components/charts/chartConstants";
 import {
   eventPerformanceData,
   performanceMetrics,
@@ -209,9 +205,9 @@ const EventPerformance = () => {
                     height={300}
                     formatter={(value, name) => {
                       if (name === "Attendance Rate") return `${value}%`;
-                      if (name === "Satisfaction Score") return value.toFixed(1);
+                      if (name === "Satisfaction Score") return (value as number).toFixed(1);
                       if (name === "Engagement Score") return `${value}%`;
-                      return value.toString();
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>
@@ -235,10 +231,10 @@ const EventPerformance = () => {
                     ]}
                     height={300}
                     formatter={(value, name) => {
-                      if (name === "Attendees") return value.toLocaleString();
+                      if (name === "Attendees") return (value as number).toLocaleString();
                       if (name === "Conversion Rate") return `${value}%`;
-                      if (name === "Rating") return value.toFixed(1);
-                      return value.toString();
+                      if (name === "Rating") return (value as number).toFixed(1);
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>
@@ -257,7 +253,7 @@ const EventPerformance = () => {
                     dataKey="count"
                     nameKey="rating"
                     height={300}
-                    formatter={(value, name) => `${value}%`}
+                    formatter={(value) => `${value}%`}
                   />
                 </CardContent>
               </Card>
@@ -275,9 +271,9 @@ const EventPerformance = () => {
                     height={300}
                     color={CHART_COLORS.primary}
                     formatter={(value, name) => {
-                      if (name === "attendees") return value.toLocaleString();
-                      if (name === "revenue") return `$${value.toLocaleString()}`;
-                      return value.toString();
+                      if (name === "attendees") return (value as number).toLocaleString();
+                      if (name === "revenue") return `$${(value as number).toLocaleString()}`;
+                      return (value as number).toString();
                     }}
                   />
                 </CardContent>
@@ -472,7 +468,7 @@ const EventPerformance = () => {
                     xAxisKey="month"
                     height={300}
                     color={CHART_COLORS.success}
-                    formatter={(value) => `$${value.toLocaleString()}`}
+                    formatter={(value) => `$${(value as number).toLocaleString()}`}
                   />
                 </CardContent>
               </Card>
@@ -525,7 +521,7 @@ const EventPerformance = () => {
                     xAxisKey="month"
                     height={300}
                     color={CHART_COLORS.warning}
-                    formatter={(value) => value.toFixed(1)}
+                    formatter={(value) => (value as number).toFixed(1)}
                   />
                 </CardContent>
               </Card>

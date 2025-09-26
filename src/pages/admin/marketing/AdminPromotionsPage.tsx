@@ -20,7 +20,6 @@ import {
   Clock,
   AlertCircle,
   Search,
-  Filter,
   EyeOff,
   Building2,
   Shield

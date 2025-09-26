@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, Calendar, MapPin, Users, Eye, Check, X, Clock, MoreHorizontal } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -106,7 +106,6 @@ const PendingApprovalPage = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
-  const [locationFilter, setLocationFilter] = useState("all");
 
   const filteredEvents = mockPendingEvents.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,9 +113,8 @@ const PendingApprovalPage = () => {
     const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
     const matchesType = typeFilter === "all" || event.type === typeFilter;
     const matchesPrice = priceFilter === "all" || event.price === priceFilter;
-    const matchesLocation = locationFilter === "all" || event.location.includes(locationFilter);
     
-    return matchesSearch && matchesCategory && matchesType && matchesPrice && matchesLocation;
+    return matchesSearch && matchesCategory && matchesType && matchesPrice;
   });
 
   const getTypeBadge = (type: string) => {

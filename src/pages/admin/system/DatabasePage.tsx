@@ -20,7 +20,7 @@ interface DatabaseMetric {
   id: string;
   name: string;
   value: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   description: string;
   trend: "up" | "down" | "stable";
 }

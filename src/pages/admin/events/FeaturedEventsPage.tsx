@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, Calendar, MapPin, Users, Eye, Star, MoreHorizontal, TrendingUp } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Star, MoreHorizontal, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -112,7 +112,6 @@ const FeaturedEventsPage = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
 
   const filteredEvents = mockFeaturedEvents.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,9 +119,8 @@ const FeaturedEventsPage = () => {
     const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
     const matchesType = typeFilter === "all" || event.type === typeFilter;
     const matchesPrice = priceFilter === "all" || event.price === priceFilter;
-    const matchesStatus = statusFilter === "all" || event.status === statusFilter;
     
-    return matchesSearch && matchesCategory && matchesType && matchesPrice && matchesStatus;
+    return matchesSearch && matchesCategory && matchesType && matchesPrice;
   });
 
   const getTypeBadge = (type: string) => {

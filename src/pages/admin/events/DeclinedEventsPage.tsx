@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, Calendar, MapPin, Users, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";

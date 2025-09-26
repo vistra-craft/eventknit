@@ -13,10 +13,6 @@ import {
   ChevronRight,
   Shield,
   Database,
-  BarChart3,
-  UserCheck,
-  Building2,
-  AlertTriangle,
   DollarSign,
   HeadphonesIcon,
 } from "lucide-react";

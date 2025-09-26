@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Search, Filter, Eye, Calendar, TrendingUp, TrendingDown, DollarSign, Edit, Trash2, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreditCard, Search, Eye, Calendar, TrendingUp, TrendingDown, DollarSign, Edit, Trash2, X } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -137,7 +137,7 @@ const mockTransactions: Transaction[] = [
     date: "2024-01-28",
     source: "EventKnit Platform",
     status: "completed",
-    paymentMethod: "internal",
+    paymentMethod: "bank_transfer",
     reference: "TXN-005",
     createdBy: "system",
     createdAt: "2024-01-28 14:30:00",

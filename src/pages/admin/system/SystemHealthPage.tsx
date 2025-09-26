@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Activity, Server, Database, Cpu, HardDrive, Wifi, AlertTriangle, CheckCircle, Clock, RefreshCw } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import AdminLayout from "../AdminLayout";
@@ -10,7 +10,7 @@ interface SystemMetric {
   name: string;
   value: string;
   status: "healthy" | "warning" | "critical";
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   description: string;
   lastUpdated: string;
 }

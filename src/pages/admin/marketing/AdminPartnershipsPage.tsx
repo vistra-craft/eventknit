@@ -19,7 +19,6 @@ import {
   Clock,
   AlertCircle,
   Search,
-  Filter,
   Settings,
   Star,
   Globe,

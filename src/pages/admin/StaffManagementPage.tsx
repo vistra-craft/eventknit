@@ -2,22 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
-  Filter,
   Plus,
   Eye,
   Edit,
-  Trash2,
-  MoreHorizontal,
   User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
   Shield,
   CheckCircle,
   XCircle,
-  Clock,
-  Building2,
   Download,
   Upload
 } from "lucide-react";
@@ -192,14 +183,6 @@ const StaffManagementPage = () => {
       management: "bg-orange-100 text-orange-800 border-orange-200"
     };
     return variants[department as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
   };
 
   const handleViewStaff = (id: string) => {

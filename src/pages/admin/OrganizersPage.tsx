@@ -2,26 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
-  Filter,
   Plus,
   Eye,
   Edit,
-  Trash2,
-  MoreHorizontal,
   User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  Shield,
   CheckCircle,
   XCircle,
-  Clock,
-  Building2,
   Download,
   Upload,
-  Star,
-  TrendingUp
+  Star
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -188,10 +177,6 @@ const OrganizersPage = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
   };
 
   const handleViewOrganizer = (id: string) => {

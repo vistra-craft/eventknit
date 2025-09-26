@@ -17,7 +17,6 @@ import {
   Target,
   BarChart3,
   TrendingUp,
-  Filter,
   Search,
   Pause,
   Clock,
