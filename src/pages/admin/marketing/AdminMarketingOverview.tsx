@@ -31,6 +31,8 @@ interface MarketingMetric {
   change: number;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  bgColor: string;
+  borderColor: string;
 }
 
 interface QuickAction {
@@ -51,42 +53,54 @@ const AdminMarketingOverview = () => {
       value: "1,247",
       change: 18.2,
       icon: Megaphone,
-      color: "text-blue-600"
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border"
     },
     {
       title: "Total Subscribers",
       value: "2.4M",
       change: 25.5,
       icon: Mail,
-      color: "text-green-600"
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border"
     },
     {
       title: "Social Reach",
       value: "15.6M",
       change: 32.1,
       icon: Share2,
-      color: "text-purple-600"
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border"
     },
     {
       title: "Platform Conversion",
       value: "4.8%",
       change: 8.3,
       icon: Target,
-      color: "text-orange-600"
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border"
     },
     {
       title: "Marketing Revenue",
       value: "$2.8M",
       change: 42.7,
       icon: DollarSign,
-      color: "text-emerald-600"
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border"
     },
     {
       title: "Platform ROI",
       value: "580%",
       change: 15.2,
       icon: TrendingUp,
-      color: "text-red-600"
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border"
     }
   ];
 
@@ -273,11 +287,14 @@ const AdminMarketingOverview = () => {
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
           {metrics.map((metric, index) => (
-            <Card key={index} className="border-border hover:shadow-lg transition-shadow">
+            <Card
+              key={index}
+              className="border-border bg-card hover:shadow-lg transition-all duration-200"
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-lg bg-${metric.color.split('-')[1]}-100`}>
-                    <metric.icon className={`h-6 w-6 ${metric.color}`} />
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <metric.icon className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex items-center space-x-1">
                     {metric.change > 0 ? (

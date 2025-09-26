@@ -33,9 +33,9 @@ const AdminEnhancedDashboard = () => {
       change: "+18%",
       changeType: "positive",
       icon: Calendar,
-      color: "text-accent-electric",
-      bgColor: "bg-accent-electric/10",
-      borderColor: "border-accent-electric/20",
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
     },
     {
       title: "Active Users",
@@ -44,8 +44,8 @@ const AdminEnhancedDashboard = () => {
       changeType: "positive",
       icon: Users,
       color: "text-primary",
-      bgColor: "bg-primary/10",
-      borderColor: "border-primary/20",
+      bgColor: "bg-card",
+      borderColor: "border-border",
     },
     {
       title: "Organizers",
@@ -53,9 +53,9 @@ const AdminEnhancedDashboard = () => {
       change: "+15%",
       changeType: "positive",
       icon: Building2,
-      color: "text-accent-coral",
-      bgColor: "bg-accent-coral/10",
-      borderColor: "border-accent-coral/20",
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
     },
     {
       title: "Platform Revenue",
@@ -63,9 +63,9 @@ const AdminEnhancedDashboard = () => {
       change: "+32%",
       changeType: "positive",
       icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
     },
     {
       title: "System Health",
@@ -73,9 +73,9 @@ const AdminEnhancedDashboard = () => {
       change: "+0.1%",
       changeType: "positive",
       icon: Activity,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
+      color: "text-primary",
+      bgColor: "bg-card",
+      borderColor: "border-border",
     },
   ];
 
@@ -245,11 +245,11 @@ const AdminEnhancedDashboard = () => {
           {stats.map((stat, index) => (
             <div
               key={index}
-              className={`p-6 rounded-xl border ${stat.borderColor} ${stat.bgColor} transition-all duration-200 hover:shadow-lg`}
+              className="p-6 rounded-xl border border-border bg-card transition-all duration-200 hover:shadow-lg"
             >
               <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <stat.icon className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex items-center space-x-1">
                   {stat.changeType === "positive" ? (
