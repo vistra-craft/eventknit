@@ -3,3 +3,7 @@ export { default as ExpensesPage } from './ExpensesPage';
 export { default as IncomePage } from './IncomePage';
 export { default as WagesPage } from './WagesPage';
 export { default as TransactionsPage } from './TransactionsPage';
+export { default as EditTransactionPage } from './EditTransactionPage';
+export { default as EditExpensePage } from './EditExpensePage';
+export { default as EditIncomePage } from './EditIncomePage';
+export { default as EditWagePage } from './EditWagePage';

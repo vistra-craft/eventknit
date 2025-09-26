@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CreditCard, Search, Filter, Eye, Calendar, TrendingUp, TrendingDown, DollarSign, Edit, Trash2, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -196,6 +197,7 @@ const mockTransactions: Transaction[] = [
 ];
 
 const TransactionsPage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -288,8 +290,7 @@ const TransactionsPage = () => {
   };
 
   const handleEditTransaction = (id: string) => {
-    console.log("Editing transaction:", id);
-    // TODO: Navigate to edit page
+    navigate(`/admin/finance/transactions/edit/${id}`);
   };
 
   const handleDeleteTransaction = (id: string) => {
@@ -548,7 +549,7 @@ const TransactionsPage = () => {
         {/* View Transaction Modal */}
         {showViewModal && selectedTransaction && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h2 className="text-xl font-semibold text-gray-900">Transaction Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>

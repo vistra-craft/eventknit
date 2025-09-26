@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Users, Plus, Search, Filter, Eye, Edit, Trash2, Calendar, CreditCard, User, DollarSign, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,6 +153,7 @@ const mockWages: Wage[] = [
 ];
 
 const WagesPage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -218,8 +220,7 @@ const WagesPage = () => {
   };
 
   const handleEditWage = (id: string) => {
-    console.log("Editing wage:", id);
-    // TODO: Navigate to edit page
+    navigate(`/admin/finance/wages/edit/${id}`);
   };
 
   const handleDeleteWage = (id: string) => {
@@ -436,7 +437,7 @@ const WagesPage = () => {
         {/* View Wage Modal */}
         {showViewModal && selectedWage && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h2 className="text-xl font-semibold text-gray-900">Wage Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>

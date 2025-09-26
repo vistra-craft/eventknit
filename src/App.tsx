@@ -75,7 +75,11 @@ import {
   ExpensesPage,
   IncomePage,
   WagesPage,
-  TransactionsPage
+  TransactionsPage,
+  EditTransactionPage,
+  EditExpensePage,
+  EditIncomePage,
+  EditWagePage
 } from "./pages/admin/finance";
 
 const App = () => (
@@ -151,6 +155,11 @@ const App = () => (
       <Route path="/admin/finance/income" element={<IncomePage />} />
       <Route path="/admin/finance/wages" element={<WagesPage />} />
       <Route path="/admin/finance/transactions" element={<TransactionsPage />} />
+      {/* Admin Finance Edit Routes */}
+      <Route path="/admin/finance/transactions/edit/:id" element={<EditTransactionPage />} />
+      <Route path="/admin/finance/expenses/edit/:id" element={<EditExpensePage />} />
+      <Route path="/admin/finance/income/edit/:id" element={<EditIncomePage />} />
+      <Route path="/admin/finance/wages/edit/:id" element={<EditWagePage />} />
       {/* Admin Marketing Routes */}
       <Route path="/admin/marketing" element={<AdminMarketingPage />} />
       <Route path="/admin/marketing/campaigns" element={<AdminCampaignsPage />} />

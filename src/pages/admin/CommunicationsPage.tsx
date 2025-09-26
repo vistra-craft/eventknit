@@ -641,7 +641,7 @@ const CommunicationsPage = () => {
         {/* Chat Modal */}
         {showChat && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[600px] flex flex-col">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[600px] flex flex-col scrollbar-hide">
               {/* Chat Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -663,7 +663,7 @@ const CommunicationsPage = () => {
               </div>
 
               {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
                 {chatMessages.map((message) => (
                   <div
                     key={message.id}

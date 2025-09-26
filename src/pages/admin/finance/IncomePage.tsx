@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TrendingUp, Plus, Search, Filter, Eye, Edit, Trash2, Calendar, CreditCard, Receipt, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,7 @@ const mockIncome: Income[] = [
 ];
 
 const IncomePage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -174,8 +176,7 @@ const IncomePage = () => {
   };
 
   const handleEditIncome = (id: string) => {
-    console.log("Editing income:", id);
-    // TODO: Navigate to edit page
+    navigate(`/admin/finance/income/edit/${id}`);
   };
 
   const handleDeleteIncome = (id: string) => {
@@ -374,7 +375,7 @@ const IncomePage = () => {
         {/* View Income Modal */}
         {showViewModal && selectedIncome && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h2 className="text-xl font-semibold text-gray-900">Income Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
