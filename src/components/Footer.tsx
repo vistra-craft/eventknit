@@ -1,4 +1,5 @@
 import { Facebook, Twitter, Instagram } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -38,28 +39,28 @@ const Footer = () => {
           <div className="text-center md:text-left">
             <ul className="space-y-1">
               <li>
-                <a
-                  href="/"
+                <Link
+                  to="/"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   EventKnit Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="/about"
+                <Link
+                  to="/about"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   About EventKnit
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="/create-event"
+                <Link
+                  to="/create-event"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   Create Event
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -76,28 +77,28 @@ const Footer = () => {
                 </a>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/privacy-policy"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/terms-of-service"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/cookie-policy"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   Cookie Policy
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -142,26 +143,26 @@ const Footer = () => {
         <div>
           <p className="text-center text-xs text-gray-500 leading-relaxed">
             BY CONTINUING PAST THIS PAGE, YOU AGREE TO OUR{" "}
-            <a
-              href="#"
+            <Link
+              to="/terms-of-service"
               className="text-gray-700 underline hover:no-underline transition-colors"
             >
               TERMS OF USE
-            </a>{" "}
+            </Link>{" "}
             AND{" "}
-            <a
-              href="#"
+            <Link
+              to="/privacy-policy"
               className="text-gray-700 underline hover:no-underline transition-colors"
             >
-              PURCHASE POLICY
-            </a>{" "}
+              PRIVACY POLICY
+            </Link>{" "}
             |{" "}
-            <a
-              href="#"
+            <Link
+              to="/cookie-policy"
               className="text-gray-700 underline hover:no-underline transition-colors"
             >
               COOKIE POLICY
-            </a>{" "}
+            </Link>{" "}
             |
           </p>
           <p className="text-center text-xs text-gray-500 mt-1">

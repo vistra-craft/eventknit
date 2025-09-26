@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/index";
 import CreateEvent from "./pages/CreateEvent";
 import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import CookiePolicy from "./pages/CookiePolicy";
 import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
@@ -99,6 +102,9 @@ const App = () => (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
       <Route path="/create-event" element={<CreateEvent />} />
       <Route path="/event/:id" element={<EventDetails />} />
       <Route path="/event/:id/register" element={<RegisterEvent />} />
