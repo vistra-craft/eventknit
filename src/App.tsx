@@ -50,6 +50,13 @@ import {
   AdminPromotionsPage,
   AdminPartnershipsPage
 } from "./pages/admin/marketing";
+// Admin Events imports
+import AdminAllEventsPage from "./pages/admin/events/AllEventsPage";
+import AdminPendingApprovalPage from "./pages/admin/events/PendingApprovalPage";
+import AdminFeaturedEventsPage from "./pages/admin/events/FeaturedEventsPage";
+import AdminPastEventsPage from "./pages/admin/events/PastEventsPage";
+import AdminUpcomingEventsPage from "./pages/admin/events/UpcomingEventsPage";
+import AdminDeclinedEventsPage from "./pages/admin/events/DeclinedEventsPage";
 
 const App = () => (
   <BrowserRouter>
@@ -101,6 +108,13 @@ const App = () => (
       <Route path="/organizer/events/drafts" element={<EventDrafts />} />
       {/* Admin Dashboard Routes */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      {/* Admin Events Routes */}
+      <Route path="/admin/events" element={<AdminAllEventsPage />} />
+      <Route path="/admin/events/pending" element={<AdminPendingApprovalPage />} />
+      <Route path="/admin/events/featured" element={<AdminFeaturedEventsPage />} />
+      <Route path="/admin/events/past" element={<AdminPastEventsPage />} />
+      <Route path="/admin/events/upcoming" element={<AdminUpcomingEventsPage />} />
+      <Route path="/admin/events/declined" element={<AdminDeclinedEventsPage />} />
       {/* Admin Marketing Routes */}
       <Route path="/admin/marketing" element={<AdminMarketingPage />} />
       <Route path="/admin/marketing/campaigns" element={<AdminCampaignsPage />} />
