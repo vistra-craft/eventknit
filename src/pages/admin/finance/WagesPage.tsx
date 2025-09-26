@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Plus, Search, Filter, Eye, Edit, Trash2, Calendar, CreditCard, User, DollarSign } from "lucide-react";
+import { Users, Plus, Search, Filter, Eye, Edit, Trash2, Calendar, CreditCard, User, DollarSign, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -156,6 +156,8 @@ const WagesPage = () => {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [positionFilter, setPositionFilter] = useState("all");
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedWage, setSelectedWage] = useState<Wage | null>(null);
 
   const filteredWages = mockWages.filter(wage => {
     const matchesSearch = wage.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -210,14 +212,21 @@ const WagesPage = () => {
     // TODO: Implement add wage logic
   };
 
+  const handleViewWage = (wage: Wage) => {
+    setSelectedWage(wage);
+    setShowViewModal(true);
+  };
+
   const handleEditWage = (id: string) => {
     console.log("Editing wage:", id);
-    // TODO: Implement edit wage logic
+    // TODO: Navigate to edit page
   };
 
   const handleDeleteWage = (id: string) => {
-    console.log("Deleting wage:", id);
-    // TODO: Implement delete wage logic
+    if (window.confirm("Are you sure you want to delete this wage record? This action cannot be undone.")) {
+      console.log("Deleting wage:", id);
+      // TODO: Implement delete wage logic
+    }
   };
 
   return (
@@ -395,7 +404,7 @@ const WagesPage = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleViewWage(wage)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditWage(wage.id)}>
@@ -422,6 +431,122 @@ const WagesPage = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* View Wage Modal */}
+        {showViewModal && selectedWage && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-border">
+                <h2 className="text-xl font-semibold text-gray-900">Wage Details</h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Wage ID</label>
+                    <p className="text-sm text-gray-900">{selectedWage.id}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Employee ID</label>
+                    <p className="text-sm text-gray-900">{selectedWage.employeeId}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Employee Name</label>
+                    <p className="text-sm text-gray-900">{selectedWage.employeeName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Position</label>
+                    <p className="text-sm text-gray-900">{selectedWage.position}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Department</label>
+                    <p className="text-sm text-gray-900">{selectedWage.department}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Amount</label>
+                    <p className="text-sm font-semibold text-red-600">-{formatCurrency(selectedWage.amount)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Status</label>
+                    <Badge className={`text-xs ${getStatusBadge(selectedWage.status)}`}>
+                      {selectedWage.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Payment Method</label>
+                    <p className="text-sm text-gray-900 capitalize">{selectedWage.paymentMethod.replace('_', ' ')}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Pay Period</label>
+                    <p className="text-sm text-gray-900">{selectedWage.payPeriod}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Pay Date</label>
+                    <p className="text-sm text-gray-900">{formatDate(selectedWage.payDate)}</p>
+                  </div>
+                </div>
+
+                {selectedWage.hoursWorked && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Hours Worked</label>
+                      <p className="text-sm text-gray-900">{selectedWage.hoursWorked} hours</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600">Hourly Rate</label>
+                      <p className="text-sm text-gray-900">{formatCurrency(selectedWage.hourlyRate || 0)}/hour</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedWage.bonuses && selectedWage.bonuses > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Bonuses</label>
+                    <p className="text-sm text-green-600">+{formatCurrency(selectedWage.bonuses)}</p>
+                  </div>
+                )}
+
+                {selectedWage.deductions && selectedWage.deductions > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Deductions</label>
+                    <p className="text-sm text-red-600">-{formatCurrency(selectedWage.deductions)}</p>
+                  </div>
+                )}
+
+                {selectedWage.notes && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Notes</label>
+                    <p className="text-sm text-gray-900">{selectedWage.notes}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Created By</label>
+                    <p className="text-sm text-gray-900">{selectedWage.createdBy}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Created At</label>
+                    <p className="text-sm text-gray-900">{formatDate(selectedWage.createdAt)}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+                <Button variant="outline" onClick={() => setShowViewModal(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setShowViewModal(false);
+                  handleEditWage(selectedWage.id);
+                }}>
+                  Edit Wage
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </AdminLayout>

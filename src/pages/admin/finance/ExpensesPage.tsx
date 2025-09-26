@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TrendingDown, Plus, Search, Filter, Eye, Edit, Trash2, Calendar, CreditCard, Receipt } from "lucide-react";
+import { TrendingDown, Plus, Search, Filter, Eye, Edit, Trash2, Calendar, CreditCard, Receipt, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,6 +112,8 @@ const ExpensesPage = () => {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
   const filteredExpenses = mockExpenses.filter(expense => {
     const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -167,14 +169,21 @@ const ExpensesPage = () => {
     // TODO: Implement add expense logic
   };
 
+  const handleViewExpense = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setShowViewModal(true);
+  };
+
   const handleEditExpense = (id: string) => {
     console.log("Editing expense:", id);
-    // TODO: Implement edit expense logic
+    // TODO: Navigate to edit page
   };
 
   const handleDeleteExpense = (id: string) => {
-    console.log("Deleting expense:", id);
-    // TODO: Implement delete expense logic
+    if (window.confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
+      console.log("Deleting expense:", id);
+      // TODO: Implement delete expense logic
+    }
   };
 
   return (
@@ -333,7 +342,7 @@ const ExpensesPage = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleViewExpense(expense)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleEditExpense(expense.id)}>
@@ -360,6 +369,96 @@ const ExpensesPage = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* View Expense Modal */}
+        {showViewModal && selectedExpense && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-border">
+                <h2 className="text-xl font-semibold text-gray-900">Expense Details</h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Expense ID</label>
+                    <p className="text-sm text-gray-900">{selectedExpense.id}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Category</label>
+                    <p className="text-sm text-gray-900">{selectedExpense.category}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Amount</label>
+                    <p className="text-sm font-semibold text-red-600">-{formatCurrency(selectedExpense.amount)}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Status</label>
+                    <Badge className={`text-xs ${getStatusBadge(selectedExpense.status)}`}>
+                      {selectedExpense.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Payment Method</label>
+                    <p className="text-sm text-gray-900 capitalize">{selectedExpense.paymentMethod.replace('_', ' ')}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Date</label>
+                    <p className="text-sm text-gray-900">{formatDate(selectedExpense.date)}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Description</label>
+                  <p className="text-sm text-gray-900">{selectedExpense.description}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Recipient</label>
+                  <p className="text-sm text-gray-900">{selectedExpense.recipient}</p>
+                </div>
+
+                {selectedExpense.receipt && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Receipt</label>
+                    <p className="text-sm text-gray-900">{selectedExpense.receipt}</p>
+                  </div>
+                )}
+
+                {selectedExpense.notes && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Notes</label>
+                    <p className="text-sm text-gray-900">{selectedExpense.notes}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Created By</label>
+                    <p className="text-sm text-gray-900">{selectedExpense.createdBy}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Created At</label>
+                    <p className="text-sm text-gray-900">{formatDate(selectedExpense.createdAt)}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+                <Button variant="outline" onClick={() => setShowViewModal(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setShowViewModal(false);
+                  handleEditExpense(selectedExpense.id);
+                }}>
+                  Edit Expense
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </AdminLayout>
