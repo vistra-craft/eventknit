@@ -34,7 +34,8 @@ interface StaffMember {
   lastName: string;
   email: string;
   phone?: string;
-  role: "event_manager" | "ticket_scanner" | "support_staff" | "admin" | "supervisor";
+  roleId: string; // Reference to role ID instead of hardcoded role
+  roleName: string; // Display name for the role
   department: "operations" | "customer_service" | "technical" | "management";
   status: "active" | "inactive" | "pending";
   hireDate: string;
@@ -53,6 +54,16 @@ const StaffManagementPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
 
+  // Mock role data (in a real app, this would come from the role management system)
+  const availableRoles = [
+    { id: "super_admin", name: "Super Administrator", color: "bg-red-100 text-red-800" },
+    { id: "event_manager", name: "Event Manager", color: "bg-blue-100 text-blue-800" },
+    { id: "content_moderator", name: "Content Moderator", color: "bg-yellow-100 text-yellow-800" },
+    { id: "finance_manager", name: "Finance Manager", color: "bg-green-100 text-green-800" },
+    { id: "support_staff", name: "Support Staff", color: "bg-purple-100 text-purple-800" },
+    { id: "marketing_specialist", name: "Marketing Specialist", color: "bg-pink-100 text-pink-800" }
+  ];
+
   // Mock staff data
   const staffMembers: StaffMember[] = [
     {
@@ -61,7 +72,8 @@ const StaffManagementPage = () => {
       lastName: "Johnson",
       email: "sarah.johnson@eventknit.com",
       phone: "+1 (555) 123-4567",
-      role: "event_manager",
+      roleId: "event_manager",
+      roleName: "Event Manager",
       department: "operations",
       status: "active",
       hireDate: "2023-01-15",
@@ -78,7 +90,8 @@ const StaffManagementPage = () => {
       lastName: "Chen",
       email: "michael.chen@eventknit.com",
       phone: "+1 (555) 234-5678",
-      role: "ticket_scanner",
+      roleId: "support_staff",
+      roleName: "Support Staff",
       department: "operations",
       status: "active",
       hireDate: "2023-03-20",
@@ -95,7 +108,8 @@ const StaffManagementPage = () => {
       lastName: "Wilson",
       email: "emma.wilson@eventknit.com",
       phone: "+1 (555) 345-6789",
-      role: "support_staff",
+      roleId: "support_staff",
+      roleName: "Support Staff",
       department: "customer_service",
       status: "active",
       hireDate: "2023-06-10",
@@ -112,7 +126,8 @@ const StaffManagementPage = () => {
       lastName: "Brown",
       email: "david.brown@eventknit.com",
       phone: "+1 (555) 456-7890",
-      role: "supervisor",
+      roleId: "finance_manager",
+      roleName: "Finance Manager",
       department: "management",
       status: "active",
       hireDate: "2022-11-05",
@@ -129,7 +144,8 @@ const StaffManagementPage = () => {
       lastName: "Anderson",
       email: "lisa.anderson@eventknit.com",
       phone: "+1 (555) 567-8901",
-      role: "admin",
+      roleId: "super_admin",
+      roleName: "Super Administrator",
       department: "technical",
       status: "inactive",
       hireDate: "2023-09-12",
@@ -147,22 +163,16 @@ const StaffManagementPage = () => {
       staff.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === "all" || staff.role === roleFilter;
+    const matchesRole = roleFilter === "all" || staff.roleId === roleFilter;
     const matchesStatus = statusFilter === "all" || staff.status === statusFilter;
     const matchesDepartment = departmentFilter === "all" || staff.department === departmentFilter;
     
     return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
   });
 
-  const getRoleBadge = (role: string) => {
-    const variants = {
-      event_manager: "bg-blue-100 text-blue-800 border-blue-200",
-      ticket_scanner: "bg-green-100 text-green-800 border-green-200",
-      support_staff: "bg-purple-100 text-purple-800 border-purple-200",
-      admin: "bg-red-100 text-red-800 border-red-200",
-      supervisor: "bg-orange-100 text-orange-800 border-orange-200"
-    };
-    return variants[role as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+  const getRoleBadge = (roleId: string) => {
+    const role = availableRoles.find(r => r.id === roleId);
+    return role ? role.color : "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   const getStatusBadge = (status: string) => {
@@ -225,6 +235,14 @@ const StaffManagementPage = () => {
             <p className="text-gray-600">Manage company employees and event staff</p>
           </div>
           <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/admin/users/roles')}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Manage Roles
+            </Button>
             <Button variant="outline" size="sm">
               <Upload className="h-4 w-4 mr-2" />
               Import
@@ -295,11 +313,11 @@ const StaffManagementPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="event_manager">Event Manager</SelectItem>
-                  <SelectItem value="ticket_scanner">Ticket Scanner</SelectItem>
-                  <SelectItem value="support_staff">Support Staff</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                  {availableRoles.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -356,8 +374,8 @@ const StaffManagementPage = () => {
                       </h4>
                       <p className="text-sm text-gray-600">{staff.email}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge className={`text-xs ${getRoleBadge(staff.role)}`}>
-                          {staff.role.replace('_', ' ')}
+                        <Badge className={`text-xs ${getRoleBadge(staff.roleId)}`}>
+                          {staff.roleName}
                         </Badge>
                         <Badge className={`text-xs ${getStatusBadge(staff.status)}`}>
                           {staff.status}

@@ -648,3 +648,4 @@ const OrganizerDetailsPage = () => {
 export default OrganizerDetailsPage;
 
 
+
