@@ -57,6 +57,14 @@ import AdminFeaturedEventsPage from "./pages/admin/events/FeaturedEventsPage";
 import AdminPastEventsPage from "./pages/admin/events/PastEventsPage";
 import AdminUpcomingEventsPage from "./pages/admin/events/UpcomingEventsPage";
 import AdminDeclinedEventsPage from "./pages/admin/events/DeclinedEventsPage";
+// Admin System imports
+import { 
+  SystemHealthPage,
+  DatabasePage,
+  LogsPage,
+  BackupsPage,
+  MaintenancePage
+} from "./pages/admin/system";
 
 const App = () => (
   <BrowserRouter>
@@ -115,6 +123,12 @@ const App = () => (
       <Route path="/admin/events/past" element={<AdminPastEventsPage />} />
       <Route path="/admin/events/upcoming" element={<AdminUpcomingEventsPage />} />
       <Route path="/admin/events/declined" element={<AdminDeclinedEventsPage />} />
+      {/* Admin System Routes */}
+      <Route path="/admin/system/health" element={<SystemHealthPage />} />
+      <Route path="/admin/system/database" element={<DatabasePage />} />
+      <Route path="/admin/system/logs" element={<LogsPage />} />
+      <Route path="/admin/system/backups" element={<BackupsPage />} />
+      <Route path="/admin/system/maintenance" element={<MaintenancePage />} />
       {/* Admin Marketing Routes */}
       <Route path="/admin/marketing" element={<AdminMarketingPage />} />
       <Route path="/admin/marketing/campaigns" element={<AdminCampaignsPage />} />
