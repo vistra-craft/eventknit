@@ -17,6 +17,7 @@ import {
   UserCheck,
   Building2,
   AlertTriangle,
+  DollarSign,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -31,7 +32,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand events section if on events pages
     events: location.pathname.startsWith('/admin/events'),
     // Auto-expand marketing section if on marketing pages
-    marketing: location.pathname.startsWith('/admin/marketing')
+    marketing: location.pathname.startsWith('/admin/marketing'),
+    // Auto-expand finance section if on finance pages
+    finance: location.pathname.startsWith('/admin/finance')
   });
 
   const navigationItems = [
@@ -111,6 +114,19 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       group: "management"
     },
     { 
+      id: "finance", 
+      label: "Finance", 
+      icon: DollarSign,
+      group: "management",
+      children: [
+        { name: "Dashboard", href: "/admin/finance" },
+        { name: "Expenses", href: "/admin/finance/expenses" },
+        { name: "Income", href: "/admin/finance/income" },
+        { name: "Wages", href: "/admin/finance/wages" },
+        { name: "Transactions", href: "/admin/finance/transactions" },
+      ]
+    },
+    { 
       id: "system", 
       label: "System", 
       icon: Database,
@@ -151,7 +167,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     setExpandedItems(prev => ({
       ...prev,
       events: location.pathname.startsWith('/admin/events'),
-      marketing: location.pathname.startsWith('/admin/marketing')
+      marketing: location.pathname.startsWith('/admin/marketing'),
+      finance: location.pathname.startsWith('/admin/finance')
     }));
   }, [location.pathname]);
 

@@ -69,6 +69,14 @@ import {
 import ModerationPage from "./pages/admin/ModerationPage";
 // Admin Communications import
 import AdminCommunicationsPage from "./pages/admin/CommunicationsPage";
+// Admin Finance imports
+import { 
+  FinanceDashboard,
+  ExpensesPage,
+  IncomePage,
+  WagesPage,
+  TransactionsPage
+} from "./pages/admin/finance";
 
 const App = () => (
   <BrowserRouter>
@@ -137,6 +145,12 @@ const App = () => (
       <Route path="/admin/moderation" element={<ModerationPage />} />
       {/* Admin Communications Route */}
       <Route path="/admin/communications" element={<AdminCommunicationsPage />} />
+      {/* Admin Finance Routes */}
+      <Route path="/admin/finance" element={<FinanceDashboard />} />
+      <Route path="/admin/finance/expenses" element={<ExpensesPage />} />
+      <Route path="/admin/finance/income" element={<IncomePage />} />
+      <Route path="/admin/finance/wages" element={<WagesPage />} />
+      <Route path="/admin/finance/transactions" element={<TransactionsPage />} />
       {/* Admin Marketing Routes */}
       <Route path="/admin/marketing" element={<AdminMarketingPage />} />
       <Route path="/admin/marketing/campaigns" element={<AdminCampaignsPage />} />
