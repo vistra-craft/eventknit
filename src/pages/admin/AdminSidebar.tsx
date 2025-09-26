@@ -265,7 +265,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
                       onClick={handleNavigationClick}
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                         isItemActive 
-                          ? 'bg-primary text-primary-foreground' 
+                          ? 'bg-primary/10 text-primary font-medium' 
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       }`}
                       title={!isOpen ? item.label : undefined}
