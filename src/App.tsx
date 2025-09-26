@@ -40,6 +40,16 @@ import {
 } from "./pages/organizer/team";
 // Profile import
 import Profile from "./pages/organizer/Profile";
+// Admin Dashboard imports
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminMarketingPage from "./pages/admin/AdminMarketingPage";
+import { 
+  AdminCampaignsPage,
+  AdminSocialMediaPage,
+  AdminEmailMarketingPage,
+  AdminPromotionsPage,
+  AdminPartnershipsPage
+} from "./pages/admin/marketing";
 
 const App = () => (
   <BrowserRouter>
@@ -89,6 +99,15 @@ const App = () => (
       {/* Event Templates and Drafts */}
       <Route path="/organizer/events/templates" element={<EventTemplates />} />
       <Route path="/organizer/events/drafts" element={<EventDrafts />} />
+      {/* Admin Dashboard Routes */}
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      {/* Admin Marketing Routes */}
+      <Route path="/admin/marketing" element={<AdminMarketingPage />} />
+      <Route path="/admin/marketing/campaigns" element={<AdminCampaignsPage />} />
+      <Route path="/admin/marketing/social" element={<AdminSocialMediaPage />} />
+      <Route path="/admin/marketing/email" element={<AdminEmailMarketingPage />} />
+      <Route path="/admin/marketing/promotions" element={<AdminPromotionsPage />} />
+      <Route path="/admin/marketing/partnerships" element={<AdminPartnershipsPage />} />
     </Routes>
   </BrowserRouter>
 );
