@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Send, Users, Mail, Bell, Search, Filter, Eye, Edit, Trash2, Plus, Calendar, Clock, CheckCircle, AlertTriangle, X, Paperclip, Smile } from "lucide-react";
+import { MessageSquare, Send, Users, Mail, Bell, Search, Filter, Eye, Edit, Trash2, Plus, Calendar, Clock, CheckCircle, AlertTriangle, X, Paperclip, Smile, Save, Copy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import AdminLayout from "./AdminLayout";
 
 interface Announcement {
@@ -43,7 +45,8 @@ interface EmailTemplate {
   name: string;
   subject: string;
   description: string;
-  category: "welcome" | "event" | "payment" | "notification" | "marketing";
+  content: string;
+  category: "welcome" | "event" | "payment" | "notification" | "marketing" | "reminder" | "promotional";
   status: "active" | "inactive" | "draft";
   lastUsed: string;
   usageCount: number;
@@ -150,6 +153,31 @@ const mockEmailTemplates: EmailTemplate[] = [
     name: "Welcome Email",
     subject: "Welcome to EventKnit!",
     description: "Welcome new users to the platform",
+    content: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Welcome to EventKnit</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">Welcome to EventKnit!</h1>
+        <p>Hi \{\{user_name\}\},</p>
+        <p>We're thrilled to have you join the EventKnit community! You now have access to powerful event management tools that will help you create, manage, and promote amazing events.</p>
+        
+        <h2>Getting Started:</h2>
+        <ul>
+            <li>Create your first event</li>
+            <li>Set up your organizer profile</li>
+            <li>Explore our analytics dashboard</li>
+            <li>Connect with our support team</li>
+        </ul>
+        
+        <p>If you have any questions, don't hesitate to reach out to our support team.</p>
+        <p>Best regards,<br>The EventKnit Team</p>
+    </div>
+</body>
+</html>`,
     category: "welcome",
     status: "active",
     lastUsed: "2024-01-28 14:30:00",
@@ -160,8 +188,34 @@ const mockEmailTemplates: EmailTemplate[] = [
   {
     id: "2",
     name: "Event Confirmation",
-    subject: "Your event has been created successfully",
+    subject: "Your event '\\{\\{event_title\\}\\}' has been created successfully",
     description: "Confirm event creation to organizers",
+    content: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Event Created Successfully</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #16a34a;">Event Created Successfully!</h1>
+        <p>Hi \{\{organizer_name\}\},</p>
+        <p>Congratulations! Your event "<strong>\{\{event_title\}\}</strong>" has been successfully created and is now live on EventKnit.</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>Event Details:</h3>
+            <p><strong>Event:</strong> \{\{event_title\}\}</p>
+            <p><strong>Date:</strong> \{\{event_date\}\}</p>
+            <p><strong>Location:</strong> \{\{event_location\}\}</p>
+            <p><strong>Event URL:</strong> <a href="\{\{event_url\}\}">\{\{event_url\}\}</a></p>
+        </div>
+        
+        <p>You can now start promoting your event and managing registrations through your organizer dashboard.</p>
+        <p>Best of luck with your event!</p>
+        <p>The EventKnit Team</p>
+    </div>
+</body>
+</html>`,
     category: "event",
     status: "active",
     lastUsed: "2024-01-28 13:15:00",
@@ -172,8 +226,35 @@ const mockEmailTemplates: EmailTemplate[] = [
   {
     id: "3",
     name: "Payment Receipt",
-    subject: "Payment confirmation for your event",
+    subject: "Payment confirmation for \\{\\{event_title\\}\\}",
     description: "Send payment receipts to users",
+    content: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Payment Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #16a34a;">Payment Confirmed!</h1>
+        <p>Hi \{\{attendee_name\}\},</p>
+        <p>Thank you for your purchase! Your payment has been successfully processed.</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>Order Details:</h3>
+            <p><strong>Event:</strong> \{\{event_title\}\}</p>
+            <p><strong>Date:</strong> \{\{event_date\}\}</p>
+            <p><strong>Tickets:</strong> \{\{ticket_quantity\}\} x \{\{ticket_type\}\}</p>
+            <p><strong>Total Amount:</strong> $\{\{total_amount\}\}</p>
+            <p><strong>Transaction ID:</strong> \{\{transaction_id\}\}</p>
+        </div>
+        
+        <p>Your tickets have been sent to your email. Please bring a valid ID to the event.</p>
+        <p>If you have any questions, please contact our support team.</p>
+        <p>Thank you for choosing EventKnit!</p>
+    </div>
+</body>
+</html>`,
     category: "payment",
     status: "active",
     lastUsed: "2024-01-28 12:45:00",
@@ -183,9 +264,78 @@ const mockEmailTemplates: EmailTemplate[] = [
   },
   {
     id: "4",
+    name: "Event Reminder",
+    subject: "Don't forget! \\{\\{event_title\\}\\} is tomorrow",
+    description: "Remind attendees about upcoming events",
+    content: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Event Reminder</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #dc2626;">Event Reminder</h1>
+        <p>Hi \{\{attendee_name\}\},</p>
+        <p>This is a friendly reminder that <strong>\{\{event_title\}\}</strong> is happening tomorrow!</p>
+        
+        <div style="background: #fef2f2; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc2626;">
+            <h3>Event Details:</h3>
+            <p><strong>Event:</strong> \{\{event_title\}\}</p>
+            <p><strong>Date:</strong> \{\{event_date\}\}</p>
+            <p><strong>Time:</strong> \{\{event_time\}\}</p>
+            <p><strong>Location:</strong> \{\{event_location\}\}</p>
+        </div>
+        
+        <p>Please arrive 15 minutes early for check-in. Don't forget to bring your ticket and a valid ID.</p>
+        <p>We're excited to see you there!</p>
+        <p>The EventKnit Team</p>
+    </div>
+</body>
+</html>`,
+    category: "reminder",
+    status: "active",
+    lastUsed: "2024-01-28 10:30:00",
+    usageCount: 1567,
+    createdAt: "2024-01-05 09:00:00",
+    createdBy: "admin_001"
+  },
+  {
+    id: "5",
     name: "Marketing Newsletter",
-    subject: "Monthly EventKnit Newsletter",
+    subject: "Monthly EventKnit Newsletter - \\{\\{month\\}\\} \\{\\{year\\}\\}",
     description: "Monthly newsletter for marketing purposes",
+    content: `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>EventKnit Newsletter</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #2563eb;">EventKnit Newsletter</h1>
+        <p>Hi \{\{subscriber_name\}\},</p>
+        <p>Welcome to our monthly newsletter! Here's what's happening in the EventKnit community this month.</p>
+        
+        <h2>Featured Events</h2>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>\{\{featured_event_title\}\}</h3>
+            <p>\{\{featured_event_description\}\}</p>
+            <p><strong>Date:</strong> \{\{featured_event_date\}\}</p>
+        </div>
+        
+        <h2>Platform Updates</h2>
+        <ul>
+            <li>New analytics dashboard</li>
+            <li>Enhanced mobile app</li>
+            <li>Improved payment processing</li>
+        </ul>
+        
+        <p>Thank you for being part of the EventKnit community!</p>
+        <p>The EventKnit Team</p>
+    </div>
+</body>
+</html>`,
     category: "marketing",
     status: "draft",
     lastUsed: "2024-01-25 09:00:00",
@@ -211,6 +361,51 @@ const CommunicationsPage = () => {
   const [showChat, setShowChat] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
   const [selectedRecipient, setSelectedRecipient] = useState("");
+  
+  // State for announcements
+  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [viewingAnnouncement, setViewingAnnouncement] = useState<Announcement | null>(null);
+  
+  // State for notifications
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [showNotificationForm, setShowNotificationForm] = useState(false);
+  const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
+  const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
+  
+  // State for email templates
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(mockEmailTemplates);
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [viewingTemplate, setViewingTemplate] = useState<EmailTemplate | null>(null);
+  
+  // Form data states
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: "",
+    content: "",
+    type: "general" as const,
+    targetAudience: "all" as const,
+    scheduledAt: ""
+  });
+  
+  const [notificationForm, setNotificationForm] = useState({
+    title: "",
+    message: "",
+    type: "info" as const,
+    targetAudience: "all" as const,
+    startDate: "",
+    endDate: ""
+  });
+  
+  const [templateForm, setTemplateForm] = useState({
+    name: "",
+    subject: "",
+    description: "",
+    content: "",
+    category: "welcome" as const
+  });
+  
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: "1",
@@ -235,7 +430,7 @@ const CommunicationsPage = () => {
     }
   ]);
 
-  const filteredAnnouncements = mockAnnouncements.filter(announcement => {
+  const filteredAnnouncements = announcements.filter(announcement => {
     const matchesSearch = announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          announcement.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || announcement.status === statusFilter;
@@ -304,19 +499,209 @@ const CommunicationsPage = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleSendAnnouncement = (id: string) => {
-    console.log("Sending announcement:", id);
-    // TODO: Implement send logic
+  // Announcement handlers
+  const handleCreateAnnouncement = () => {
+    const newAnnouncement: Announcement = {
+      id: Date.now().toString(),
+      title: announcementForm.title,
+      content: announcementForm.content,
+      type: announcementForm.type,
+      status: "draft",
+      targetAudience: announcementForm.targetAudience,
+      scheduledAt: announcementForm.scheduledAt || undefined,
+      views: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: "current_admin"
+    };
+    setAnnouncements(prev => [...prev, newAnnouncement]);
+    resetAnnouncementForm();
+    setShowAnnouncementForm(false);
   };
 
-  const handleEditAnnouncement = (id: string) => {
-    console.log("Editing announcement:", id);
-    // TODO: Implement edit logic
+  const handleEditAnnouncement = (announcement: Announcement) => {
+    setEditingAnnouncement(announcement);
+    setAnnouncementForm({
+      title: announcement.title,
+      content: announcement.content,
+      type: announcement.type,
+      targetAudience: announcement.targetAudience,
+      scheduledAt: announcement.scheduledAt || ""
+    });
+    setShowAnnouncementForm(true);
+  };
+
+  const handleUpdateAnnouncement = () => {
+    if (!editingAnnouncement) return;
+    
+    setAnnouncements(prev => prev.map(announcement => 
+      announcement.id === editingAnnouncement.id 
+        ? { ...announcement, ...announcementForm, updatedAt: new Date().toISOString() }
+        : announcement
+    ));
+    resetAnnouncementForm();
+    setShowAnnouncementForm(false);
+    setEditingAnnouncement(null);
   };
 
   const handleDeleteAnnouncement = (id: string) => {
-    console.log("Deleting announcement:", id);
-    // TODO: Implement delete logic
+    if (window.confirm("Are you sure you want to delete this announcement? This action cannot be undone.")) {
+      setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
+    }
+  };
+
+  const handleViewAnnouncement = (announcement: Announcement) => {
+    setViewingAnnouncement(announcement);
+  };
+
+  const handleSendAnnouncement = (id: string) => {
+    setAnnouncements(prev => prev.map(announcement => 
+      announcement.id === id 
+        ? { ...announcement, status: "sent" as const, sentAt: new Date().toISOString() }
+        : announcement
+    ));
+  };
+
+  const resetAnnouncementForm = () => {
+    setAnnouncementForm({
+      title: "",
+      content: "",
+      type: "general",
+      targetAudience: "all",
+      scheduledAt: ""
+    });
+  };
+
+  // Notification handlers
+  const handleCreateNotification = () => {
+    const newNotification: Notification = {
+      id: Date.now().toString(),
+      title: notificationForm.title,
+      message: notificationForm.message,
+      type: notificationForm.type,
+      status: "active",
+      targetAudience: notificationForm.targetAudience,
+      startDate: notificationForm.startDate,
+      endDate: notificationForm.endDate || undefined,
+      views: 0,
+      clicks: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: "current_admin"
+    };
+    setNotifications(prev => [...prev, newNotification]);
+    resetNotificationForm();
+    setShowNotificationForm(false);
+  };
+
+  const handleEditNotification = (notification: Notification) => {
+    setEditingNotification(notification);
+    setNotificationForm({
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      targetAudience: notification.targetAudience,
+      startDate: notification.startDate,
+      endDate: notification.endDate || ""
+    });
+    setShowNotificationForm(true);
+  };
+
+  const handleUpdateNotification = () => {
+    if (!editingNotification) return;
+    
+    setNotifications(prev => prev.map(notification => 
+      notification.id === editingNotification.id 
+        ? { ...notification, ...notificationForm }
+        : notification
+    ));
+    resetNotificationForm();
+    setShowNotificationForm(false);
+    setEditingNotification(null);
+  };
+
+  const handleDeleteNotification = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this notification? This action cannot be undone.")) {
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
+    }
+  };
+
+  const handleViewNotification = (notification: Notification) => {
+    setViewingNotification(notification);
+  };
+
+  const resetNotificationForm = () => {
+    setNotificationForm({
+      title: "",
+      message: "",
+      type: "info",
+      targetAudience: "all",
+      startDate: "",
+      endDate: ""
+    });
+  };
+
+  // Email template handlers
+  const handleCreateTemplate = () => {
+    const newTemplate: EmailTemplate = {
+      id: Date.now().toString(),
+      name: templateForm.name,
+      subject: templateForm.subject,
+      description: templateForm.description,
+      content: templateForm.content,
+      category: templateForm.category,
+      status: "draft",
+      lastUsed: "",
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: "current_admin"
+    };
+    setEmailTemplates(prev => [...prev, newTemplate]);
+    resetTemplateForm();
+    setShowTemplateForm(false);
+  };
+
+  const handleEditTemplate = (template: EmailTemplate) => {
+    setEditingTemplate(template);
+    setTemplateForm({
+      name: template.name,
+      subject: template.subject,
+      description: template.description,
+      content: template.content,
+      category: template.category
+    });
+    setShowTemplateForm(true);
+  };
+
+  const handleUpdateTemplate = () => {
+    if (!editingTemplate) return;
+    
+    setEmailTemplates(prev => prev.map(template => 
+      template.id === editingTemplate.id 
+        ? { ...template, ...templateForm }
+        : template
+    ));
+    resetTemplateForm();
+    setShowTemplateForm(false);
+    setEditingTemplate(null);
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this email template? This action cannot be undone.")) {
+      setEmailTemplates(prev => prev.filter(template => template.id !== id));
+    }
+  };
+
+  const handleViewTemplate = (template: EmailTemplate) => {
+    setViewingTemplate(template);
+  };
+
+  const resetTemplateForm = () => {
+    setTemplateForm({
+      name: "",
+      subject: "",
+      description: "",
+      content: "",
+      category: "welcome"
+    });
   };
 
   const handleSendChatMessage = () => {
@@ -362,9 +747,17 @@ const CommunicationsPage = () => {
             <p className="text-gray-600">Manage announcements, notifications, and email templates</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setShowAnnouncementForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Announcement
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowNotificationForm(true)}>
+              <Bell className="h-4 w-4 mr-2" />
+              New Notification
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowTemplateForm(true)}>
+              <Mail className="h-4 w-4 mr-2" />
+              New Template
             </Button>
             <Button size="sm" onClick={() => setShowChat(true)}>
               <Send className="h-4 w-4 mr-2" />
@@ -378,7 +771,7 @@ const CommunicationsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
               <div className="text-2xl font-bold text-primary mb-2">
-                {mockAnnouncements.filter(a => a.status === "sent").length}
+                {announcements.filter(a => a.status === "sent").length}
               </div>
               <p className="text-sm text-gray-600">Sent Announcements</p>
             </CardContent>
@@ -386,7 +779,7 @@ const CommunicationsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
               <div className="text-2xl font-bold text-primary mb-2">
-                {mockNotifications.filter(n => n.status === "active").length}
+                {notifications.filter(n => n.status === "active").length}
               </div>
               <p className="text-sm text-gray-600">Active Notifications</p>
             </CardContent>
@@ -394,7 +787,7 @@ const CommunicationsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
               <div className="text-2xl font-bold text-primary mb-2">
-                {mockEmailTemplates.filter(t => t.status === "active").length}
+                {emailTemplates.filter(t => t.status === "active").length}
               </div>
               <p className="text-sm text-gray-600">Active Templates</p>
             </CardContent>
@@ -402,7 +795,7 @@ const CommunicationsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
               <div className="text-2xl font-bold text-primary mb-2">
-                {mockAnnouncements.reduce((sum, a) => sum + a.views, 0)}
+                {announcements.reduce((sum, a) => sum + a.views, 0)}
               </div>
               <p className="text-sm text-gray-600">Total Views</p>
             </CardContent>
@@ -508,7 +901,7 @@ const CommunicationsPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewAnnouncement(announcement)}>
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
@@ -521,11 +914,11 @@ const CommunicationsPage = () => {
                             Send
                           </Button>
                         )}
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleEditAnnouncement(announcement)}>
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteAnnouncement(announcement.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -539,7 +932,7 @@ const CommunicationsPage = () => {
           <TabsContent value="notifications" className="space-y-6">
             {/* Notifications List */}
             <div className="space-y-3">
-              {mockNotifications.map((notification) => (
+              {notifications.map((notification) => (
                 <Card key={notification.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -570,15 +963,15 @@ const CommunicationsPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewNotification(notification)}>
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleEditNotification(notification)}>
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteNotification(notification.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -592,7 +985,7 @@ const CommunicationsPage = () => {
           <TabsContent value="templates" className="space-y-6">
             {/* Email Templates List */}
             <div className="space-y-3">
-              {mockEmailTemplates.map((template) => (
+              {emailTemplates.map((template) => (
                 <Card key={template.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -613,20 +1006,20 @@ const CommunicationsPage = () => {
                         <p className="text-sm font-medium text-gray-900 mb-3">Subject: {template.subject}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>Usage: {template.usageCount.toLocaleString()}</span>
-                          <span>Last used: {formatDate(template.lastUsed)}</span>
+                          <span>Last used: {template.lastUsed ? formatDate(template.lastUsed) : 'Never'}</span>
                           <span>Created: {formatDate(template.createdAt)}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewTemplate(template)}>
                           <Eye className="h-4 w-4 mr-1" />
                           Preview
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleEditTemplate(template)}>
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteTemplate(template.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -637,6 +1030,374 @@ const CommunicationsPage = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Announcement Form Modal */}
+        <Dialog open={showAnnouncementForm} onOpenChange={setShowAnnouncementForm}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingAnnouncement ? "Edit Announcement" : "Create New Announcement"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="announcement-title">Title</Label>
+                <Input
+                  id="announcement-title"
+                  value={announcementForm.title}
+                  onChange={(e) => setAnnouncementForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter announcement title"
+                />
+              </div>
+              <div>
+                <Label htmlFor="announcement-content">Content</Label>
+                <Textarea
+                  id="announcement-content"
+                  value={announcementForm.content}
+                  onChange={(e) => setAnnouncementForm(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="Enter announcement content"
+                  rows={4}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="announcement-type">Type</Label>
+                  <Select value={announcementForm.type} onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, type: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
+                      <SelectItem value="feature">Feature</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="announcement-audience">Target Audience</Label>
+                  <Select value={announcementForm.targetAudience} onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, targetAudience: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Users</SelectItem>
+                      <SelectItem value="organizers">Organizers</SelectItem>
+                      <SelectItem value="attendees">Attendees</SelectItem>
+                      <SelectItem value="admins">Admins</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="announcement-schedule">Schedule (Optional)</Label>
+                <Input
+                  id="announcement-schedule"
+                  type="datetime-local"
+                  value={announcementForm.scheduledAt}
+                  onChange={(e) => setAnnouncementForm(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowAnnouncementForm(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={editingAnnouncement ? handleUpdateAnnouncement : handleCreateAnnouncement}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {editingAnnouncement ? "Update" : "Create"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Notification Form Modal */}
+        <Dialog open={showNotificationForm} onOpenChange={setShowNotificationForm}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {editingNotification ? "Edit Notification" : "Create New Notification"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="notification-title">Title</Label>
+                <Input
+                  id="notification-title"
+                  value={notificationForm.title}
+                  onChange={(e) => setNotificationForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter notification title"
+                />
+              </div>
+              <div>
+                <Label htmlFor="notification-message">Message</Label>
+                <Textarea
+                  id="notification-message"
+                  value={notificationForm.message}
+                  onChange={(e) => setNotificationForm(prev => ({ ...prev, message: e.target.value }))}
+                  placeholder="Enter notification message"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="notification-type">Type</Label>
+                  <Select value={notificationForm.type} onValueChange={(value) => setNotificationForm(prev => ({ ...prev, type: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="info">Info</SelectItem>
+                      <SelectItem value="warning">Warning</SelectItem>
+                      <SelectItem value="error">Error</SelectItem>
+                      <SelectItem value="success">Success</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="notification-audience">Target Audience</Label>
+                  <Select value={notificationForm.targetAudience} onValueChange={(value) => setNotificationForm(prev => ({ ...prev, targetAudience: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Users</SelectItem>
+                      <SelectItem value="organizers">Organizers</SelectItem>
+                      <SelectItem value="attendees">Attendees</SelectItem>
+                      <SelectItem value="admins">Admins</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="notification-start">Start Date</Label>
+                  <Input
+                    id="notification-start"
+                    type="datetime-local"
+                    value={notificationForm.startDate}
+                    onChange={(e) => setNotificationForm(prev => ({ ...prev, startDate: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="notification-end">End Date (Optional)</Label>
+                  <Input
+                    id="notification-end"
+                    type="datetime-local"
+                    value={notificationForm.endDate}
+                    onChange={(e) => setNotificationForm(prev => ({ ...prev, endDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowNotificationForm(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={editingNotification ? handleUpdateNotification : handleCreateNotification}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {editingNotification ? "Update" : "Create"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Email Template Form Modal */}
+        <Dialog open={showTemplateForm} onOpenChange={setShowTemplateForm}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingTemplate ? "Edit Email Template" : "Create New Email Template"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="template-name">Template Name</Label>
+                  <Input
+                    id="template-name"
+                    value={templateForm.name}
+                    onChange={(e) => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter template name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="template-category">Category</Label>
+                  <Select value={templateForm.category} onValueChange={(value) => setTemplateForm(prev => ({ ...prev, category: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="welcome">Welcome</SelectItem>
+                      <SelectItem value="event">Event</SelectItem>
+                      <SelectItem value="payment">Payment</SelectItem>
+                      <SelectItem value="notification">Notification</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="reminder">Reminder</SelectItem>
+                      <SelectItem value="promotional">Promotional</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="template-subject">Email Subject</Label>
+                <Input
+                  id="template-subject"
+                  value={templateForm.subject}
+                  onChange={(e) => setTemplateForm(prev => ({ ...prev, subject: e.target.value }))}
+                  placeholder="Enter email subject"
+                />
+              </div>
+              <div>
+                <Label htmlFor="template-description">Description</Label>
+                <Input
+                  id="template-description"
+                  value={templateForm.description}
+                  onChange={(e) => setTemplateForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Enter template description"
+                />
+              </div>
+              <div>
+                <Label htmlFor="template-content">Email Content (HTML)</Label>
+                <Textarea
+                  id="template-content"
+                  value={templateForm.content}
+                  onChange={(e) => setTemplateForm(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="Enter HTML email content"
+                  rows={12}
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Use variables like {`{{user_name}}`}, {`{{event_title}}`}, etc. for dynamic content
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowTemplateForm(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {editingTemplate ? "Update" : "Create"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Modals */}
+        {/* Announcement View Modal */}
+        {viewingAnnouncement && (
+          <Dialog open={!!viewingAnnouncement} onOpenChange={() => setViewingAnnouncement(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{viewingAnnouncement.title}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Badge className={getStatusBadge(viewingAnnouncement.status)}>
+                    {viewingAnnouncement.status}
+                  </Badge>
+                  <Badge className={getTypeBadge(viewingAnnouncement.type)}>
+                    {viewingAnnouncement.type}
+                  </Badge>
+                  <Badge className={getAudienceBadge(viewingAnnouncement.targetAudience)}>
+                    {viewingAnnouncement.targetAudience}
+                  </Badge>
+                </div>
+                <div className="prose max-w-none">
+                  <p className="whitespace-pre-wrap">{viewingAnnouncement.content}</p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <p>Created: {formatDate(viewingAnnouncement.createdAt)}</p>
+                  <p>Views: {viewingAnnouncement.views.toLocaleString()}</p>
+                  {viewingAnnouncement.scheduledAt && (
+                    <p>Scheduled: {formatDate(viewingAnnouncement.scheduledAt)}</p>
+                  )}
+                  {viewingAnnouncement.sentAt && (
+                    <p>Sent: {formatDate(viewingAnnouncement.sentAt)}</p>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Notification View Modal */}
+        {viewingNotification && (
+          <Dialog open={!!viewingNotification} onOpenChange={() => setViewingNotification(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{viewingNotification.title}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Badge className={getStatusBadge(viewingNotification.status)}>
+                    {viewingNotification.status}
+                  </Badge>
+                  <Badge className={getTypeBadge(viewingNotification.type)}>
+                    {viewingNotification.type}
+                  </Badge>
+                  <Badge className={getAudienceBadge(viewingNotification.targetAudience)}>
+                    {viewingNotification.targetAudience}
+                  </Badge>
+                </div>
+                <div className="prose max-w-none">
+                  <p className="whitespace-pre-wrap">{viewingNotification.message}</p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <p>Created: {formatDate(viewingNotification.createdAt)}</p>
+                  <p>Views: {viewingNotification.views.toLocaleString()}</p>
+                  <p>Clicks: {viewingNotification.clicks.toLocaleString()}</p>
+                  <p>Start: {formatDate(viewingNotification.startDate)}</p>
+                  {viewingNotification.endDate && (
+                    <p>End: {formatDate(viewingNotification.endDate)}</p>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Email Template View Modal */}
+        {viewingTemplate && (
+          <Dialog open={!!viewingTemplate} onOpenChange={() => setViewingTemplate(null)}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{viewingTemplate.name}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Badge className={getStatusBadge(viewingTemplate.status)}>
+                    {viewingTemplate.status}
+                  </Badge>
+                  <Badge className={getTypeBadge(viewingTemplate.category)}>
+                    {viewingTemplate.category}
+                  </Badge>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Subject:</h4>
+                  <p className="text-sm bg-gray-50 p-2 rounded">{viewingTemplate.subject}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Description:</h4>
+                  <p className="text-sm">{viewingTemplate.description}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Email Content Preview:</h4>
+                  <div 
+                    className="border rounded p-4 max-h-96 overflow-y-auto text-sm"
+                    dangerouslySetInnerHTML={{ __html: viewingTemplate.content }}
+                  />
+                </div>
+                <div className="text-sm text-gray-500">
+                  <p>Created: {formatDate(viewingTemplate.createdAt)}</p>
+                  <p>Usage: {viewingTemplate.usageCount.toLocaleString()} times</p>
+                  <p>Last used: {viewingTemplate.lastUsed ? formatDate(viewingTemplate.lastUsed) : 'Never'}</p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Chat Modal */}
         {showChat && (
