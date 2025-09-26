@@ -65,6 +65,7 @@ import OrganizerEditPage from "./pages/admin/OrganizerEditPage";
 import StaffDetailsPage from "./pages/admin/StaffDetailsPage";
 import StaffEditPage from "./pages/admin/StaffEditPage";
 import UserRolesPage from "./pages/admin/UserRolesPage";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 // Admin System imports
 import { 
   SystemHealthPage,
@@ -156,6 +157,7 @@ const App = () => (
       <Route path="/admin/users/organizers/:organizerId" element={<OrganizerDetailsPage />} />
       <Route path="/admin/users/organizers/:organizerId/edit" element={<OrganizerEditPage />} />
       <Route path="/admin/users/roles" element={<UserRolesPage />} />
+      <Route path="/admin/settings" element={<AdminSettingsPage />} />
       {/* Admin System Routes */}
       <Route path="/admin/system/health" element={<SystemHealthPage />} />
       <Route path="/admin/system/database" element={<DatabasePage />} />
