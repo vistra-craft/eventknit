@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import AdminLayout from "../AdminLayout";
 import { 
   Share2, 
@@ -22,21 +21,16 @@ import {
   BarChart3,
   Edit,
   MoreHorizontal,
-  Filter,
-  Building2,
-  Shield,
-  AlertTriangle,
-  Globe
+  Filter
 } from "lucide-react";
 
 interface SocialPost {
   id: string;
-  organizer: string;
   platform: 'facebook' | 'twitter' | 'instagram' | 'linkedin' | 'youtube';
   content: string;
   media?: string;
   scheduledDate?: string;
-  status: 'published' | 'scheduled' | 'draft' | 'pending_approval';
+  status: 'published' | 'scheduled' | 'draft';
   publishedDate?: string;
   engagement: {
     likes: number;
@@ -46,7 +40,6 @@ interface SocialPost {
   };
   reach: number;
   impressions: number;
-  approvalStatus: 'approved' | 'pending' | 'rejected';
 }
 
 interface SocialAccount {
@@ -54,279 +47,381 @@ interface SocialAccount {
   name: string;
   followers: number;
   engagement: number;
-  growth: number;
-  status: 'active' | 'inactive' | 'suspended';
+  status: 'connected' | 'disconnected';
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
 }
 
 const AdminSocialMediaPage = () => {
-  const [activeTab, setActiveTab] = useState("posts");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterPlatform, setFilterPlatform] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterApproval, setFilterApproval] = useState("all");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [selectedPlatform, setSelectedPlatform] = useState("all");
 
-  // Mock platform-wide social media data
+  // Mock social accounts
+  const socialAccounts: SocialAccount[] = [
+    {
+      platform: "facebook",
+      name: "EventKnit Official",
+      followers: 12500,
+      engagement: 4.2,
+      status: "connected",
+      icon: Facebook,
+      color: "bg-blue-600"
+    },
+    {
+      platform: "twitter",
+      name: "@eventknit",
+      followers: 8900,
+      engagement: 6.8,
+      status: "connected",
+      icon: Twitter,
+      color: "bg-sky-500"
+    },
+    {
+      platform: "instagram",
+      name: "@eventknit",
+      followers: 15600,
+      engagement: 8.5,
+      status: "connected",
+      icon: Instagram,
+      color: "bg-pink-600"
+    },
+    {
+      platform: "linkedin",
+      name: "EventKnit",
+      followers: 3200,
+      engagement: 3.1,
+      status: "connected",
+      icon: Linkedin,
+      color: "bg-blue-700"
+    },
+    {
+      platform: "youtube",
+      name: "EventKnit Channel",
+      followers: 2100,
+      engagement: 12.3,
+      status: "disconnected",
+      icon: Youtube,
+      color: "bg-red-600"
+    }
+  ];
+
+  // Mock social posts
   const socialPosts: SocialPost[] = [
     {
       id: "1",
-      organizer: "Tech Events Co.",
       platform: "facebook",
-      content: "🚀 Early bird tickets for Tech Summit 2024 are now live! Save 30% and join 10,000+ tech professionals. #TechSummit2024 #EarlyBird",
-      status: "published",
-      publishedDate: "2024-01-15",
-      engagement: {
-        likes: 1250,
-        comments: 89,
-        shares: 156,
-        views: 15000
-      },
-      reach: 12500,
-      impressions: 18000,
-      approvalStatus: "approved"
-    },
-    {
-      id: "2",
-      organizer: "Music Events Ltd",
-      platform: "instagram",
-      content: "🎵 Behind the scenes at Music Festival 2024! Our team is working hard to bring you an unforgettable experience. Swipe to see the magic! ✨",
-      media: "video",
+      content: "🎉 Early bird tickets for Tech Summit 2024 are now live! Get 30% off when you book before March 1st. Don't miss out on this incredible lineup of speakers! #TechSummit2024 #EarlyBird",
+      media: "tech-summit-poster.jpg",
       status: "published",
       publishedDate: "2024-01-20",
       engagement: {
-        likes: 3400,
-        comments: 234,
-        shares: 89,
-        views: 25000
+        likes: 245,
+        comments: 32,
+        shares: 18,
+        views: 1250
       },
-      reach: 22000,
-      impressions: 28000,
-      approvalStatus: "approved"
+      reach: 3200,
+      impressions: 4500
+    },
+    {
+      id: "2",
+      platform: "instagram",
+      content: "Behind the scenes at our latest event setup! 📸 The team is working hard to make sure everything is perfect for our attendees. Swipe to see more! ✨",
+      media: "behind-scenes.jpg",
+      status: "published",
+      publishedDate: "2024-01-18",
+      engagement: {
+        likes: 189,
+        comments: 15,
+        shares: 8
+      },
+      reach: 2800,
+      impressions: 3200
     },
     {
       id: "3",
-      organizer: "Business Academy",
+      platform: "twitter",
+      content: "Just announced: @elonmusk will be speaking at Tech Summit 2024! 🚀 This is going to be incredible. Tickets selling fast!",
+      status: "published",
+      publishedDate: "2024-01-15",
+      engagement: {
+        likes: 456,
+        comments: 89,
+        shares: 67
+      },
+      reach: 5600,
+      impressions: 8900
+    },
+    {
+      id: "4",
       platform: "linkedin",
-      content: "📈 Join our Business Leadership Workshop and learn from industry experts. Limited seats available! Register now and transform your career.",
+      content: "We're excited to announce our partnership with Microsoft for Tech Summit 2024. Together, we're bringing you the latest in AI and cloud computing innovations.",
       status: "scheduled",
       scheduledDate: "2024-02-01",
       engagement: {
         likes: 0,
         comments: 0,
-        shares: 0,
-        views: 0
+        shares: 0
       },
       reach: 0,
-      impressions: 0,
-      approvalStatus: "pending"
-    },
-    {
-      id: "4",
-      organizer: "Wellness Corp",
-      platform: "youtube",
-      content: "🧘‍♀️ Wellness Expo 2024 - Transform Your Health Journey. Watch our latest video featuring top wellness experts and their insights.",
-      media: "video",
-      status: "published",
-      publishedDate: "2024-01-18",
-      engagement: {
-        likes: 890,
-        comments: 45,
-        shares: 67,
-        views: 12000
-      },
-      reach: 8500,
-      impressions: 12000,
-      approvalStatus: "approved"
-    },
-    {
-      id: "5",
-      organizer: "Entertainment Group",
-      platform: "twitter",
-      content: "🎭 Don't miss out on our Comedy Night! Laugh your way through the evening with top comedians. Tickets selling fast! #ComedyNight #LaughOutLoud",
-      status: "draft",
-      engagement: {
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        views: 0
-      },
-      reach: 0,
-      impressions: 0,
-      approvalStatus: "pending"
-    }
-  ];
-
-  const platformAccounts: SocialAccount[] = [
-    {
-      platform: "Facebook",
-      name: "EventKnit Official",
-      followers: 125000,
-      engagement: 4.2,
-      growth: 12.5,
-      status: "active"
-    },
-    {
-      platform: "Instagram",
-      name: "@eventknit",
-      followers: 89000,
-      engagement: 6.8,
-      growth: 18.3,
-      status: "active"
-    },
-    {
-      platform: "Twitter",
-      name: "@EventKnit",
-      followers: 67000,
-      engagement: 3.1,
-      growth: 8.7,
-      status: "active"
-    },
-    {
-      platform: "LinkedIn",
-      name: "EventKnit",
-      followers: 45000,
-      engagement: 2.9,
-      growth: 15.2,
-      status: "active"
-    },
-    {
-      platform: "YouTube",
-      name: "EventKnit Channel",
-      followers: 23000,
-      engagement: 5.4,
-      growth: 22.1,
-      status: "active"
+      impressions: 0
     }
   ];
 
   const getPlatformIcon = (platform: string) => {
-    switch (platform.toLowerCase()) {
-      case "facebook":
-        return Facebook;
-      case "twitter":
-        return Twitter;
-      case "instagram":
-        return Instagram;
-      case "linkedin":
-        return Linkedin;
-      case "youtube":
-        return Youtube;
-      default:
-        return Share2;
+    switch (platform) {
+      case 'facebook': return <Facebook className="h-4 w-4" />;
+      case 'twitter': return <Twitter className="h-4 w-4" />;
+      case 'instagram': return <Instagram className="h-4 w-4" />;
+      case 'linkedin': return <Linkedin className="h-4 w-4" />;
+      case 'youtube': return <Youtube className="h-4 w-4" />;
+      default: return <Share2 className="h-4 w-4" />;
+    }
+  };
+
+  const getPlatformColor = (platform: string) => {
+    switch (platform) {
+      case 'facebook': return "bg-blue-600";
+      case 'twitter': return "bg-sky-500";
+      case 'instagram': return "bg-pink-600";
+      case 'linkedin': return "bg-blue-700";
+      case 'youtube': return "bg-red-600";
+      default: return "bg-gray-600";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "published":
-        return "bg-green-100 text-green-800";
-      case "scheduled":
-        return "bg-blue-100 text-blue-800";
-      case "draft":
-        return "bg-gray-100 text-gray-800";
-      case "pending_approval":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case 'published': return "bg-green-100 text-green-800";
+      case 'scheduled': return "bg-blue-100 text-blue-800";
+      case 'draft': return "bg-gray-100 text-gray-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getApprovalColor = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const filteredPosts = socialPosts.filter(post => {
-    const matchesSearch = post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPlatform = filterPlatform === "all" || post.platform === filterPlatform;
-    const matchesStatus = filterStatus === "all" || post.status === filterStatus;
-    const matchesApproval = filterApproval === "all" || post.approvalStatus === filterApproval;
-    
-    return matchesSearch && matchesPlatform && matchesStatus && matchesApproval;
-  });
+  const totalFollowers = socialAccounts.reduce((sum, account) => sum + account.followers, 0);
+  const avgEngagement = socialAccounts.reduce((sum, account) => sum + account.engagement, 0) / socialAccounts.length;
+  const totalReach = socialPosts.reduce((sum, post) => sum + post.reach, 0);
+  const totalImpressions = socialPosts.reduce((sum, post) => sum + post.impressions, 0);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 flex items-center">
-              <Share2 className="h-8 w-8 mr-3 text-primary" />
-              Platform Social Media
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Monitor and manage platform-wide social media presence
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Post
-            </Button>
-          </div>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Social Media</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your social media presence and engage with your audience
+          </p>
         </div>
-
-        {/* Tabs */}
-        <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-8">
-          <button
-            onClick={() => setActiveTab("posts")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "posts"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Posts
-          </button>
-          <button
-            onClick={() => setActiveTab("accounts")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "accounts"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Accounts
-          </button>
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "analytics"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Analytics
-          </button>
+        <div className="flex items-center space-x-3">
+          <Button variant="outline">
+            <Calendar className="h-4 w-4 mr-2" />
+            Schedule Post
+          </Button>
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Post
+          </Button>
         </div>
+      </div>
 
-        {activeTab === "posts" && (
-          <>
-            {/* Filters */}
-            <div className="bg-card rounded-xl border border-border p-6 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search posts..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "overview" 
+              ? "bg-background text-foreground shadow-sm" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab("posts")}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "posts" 
+              ? "bg-background text-foreground shadow-sm" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Posts
+        </button>
+        <button
+          onClick={() => setActiveTab("accounts")}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "accounts" 
+              ? "bg-background text-foreground shadow-sm" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Accounts
+        </button>
+        <button
+          onClick={() => setActiveTab("analytics")}
+          className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "analytics" 
+              ? "bg-background text-foreground shadow-sm" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Analytics
+        </button>
+      </div>
+
+      {/* Overview Tab */}
+      {activeTab === "overview" && (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Followers</p>
+                    <p className="text-2xl font-bold text-foreground">{totalFollowers.toLocaleString()}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-primary" />
                 </div>
-                <select
-                  value={filterPlatform}
-                  onChange={(e) => setFilterPlatform(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Avg Engagement</p>
+                    <p className="text-2xl font-bold text-foreground">{avgEngagement.toFixed(1)}%</p>
+                  </div>
+                  <Heart className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Reach</p>
+                    <p className="text-2xl font-bold text-foreground">{totalReach.toLocaleString()}</p>
+                  </div>
+                  <Eye className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Impressions</p>
+                    <p className="text-2xl font-bold text-foreground">{totalImpressions.toLocaleString()}</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Connected Accounts */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Share2 className="h-5 w-5 mr-2 text-primary" />
+                Connected Accounts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {socialAccounts.map((account, index) => (
+                  <div key={index} className="p-4 border border-border rounded-lg hover:border-primary transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`w-10 h-10 rounded-lg ${account.color} flex items-center justify-center`}>
+                        <account.icon className="h-5 w-5 text-white" />
+                      </div>
+                      <Badge className={account.status === "connected" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                        {account.status}
+                      </Badge>
+                    </div>
+                    <h3 className="font-medium text-foreground mb-1">{account.name}</h3>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>{account.followers.toLocaleString()} followers</span>
+                      <span>{account.engagement}% engagement</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Posts */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-primary" />
+                Recent Posts Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {socialPosts.slice(0, 3).map((post) => (
+                  <div key={post.id} className="flex items-start space-x-4 p-4 border border-border rounded-lg">
+                    <div className={`w-8 h-8 rounded-lg ${getPlatformColor(post.platform)} flex items-center justify-center`}>
+                      {getPlatformIcon(post.platform)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h4 className="font-medium text-foreground">{post.platform.charAt(0).toUpperCase() + post.platform.slice(1)}</h4>
+                        <Badge className={`text-xs ${getStatusColor(post.status)}`}>
+                          {post.status}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {post.publishedDate || post.scheduledDate}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.content}</p>
+                      <div className="flex items-center space-x-6 text-sm">
+                        <div className="flex items-center space-x-1">
+                          <Heart className="h-4 w-4 text-red-500" />
+                          <span>{post.engagement.likes}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <MessageCircle className="h-4 w-4 text-blue-500" />
+                          <span>{post.engagement.comments}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Share className="h-4 w-4 text-green-500" />
+                          <span>{post.engagement.shares}</span>
+                        </div>
+                        {post.engagement.views && (
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4 text-purple-500" />
+                            <span>{post.engagement.views}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Posts Tab */}
+      {activeTab === "posts" && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>All Posts</CardTitle>
+              <div className="flex items-center space-x-2">
+                <select 
+                  value={selectedPlatform} 
+                  onChange={(e) => setSelectedPlatform(e.target.value)}
+                  className="px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                 >
                   <option value="all">All Platforms</option>
                   <option value="facebook">Facebook</option>
@@ -335,252 +430,120 @@ const AdminSocialMediaPage = () => {
                   <option value="linkedin">LinkedIn</option>
                   <option value="youtube">YouTube</option>
                 </select>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="all">All Status</option>
-                  <option value="published">Published</option>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="draft">Draft</option>
-                  <option value="pending_approval">Pending Approval</option>
-                </select>
-                <select
-                  value={filterApproval}
-                  onChange={(e) => setFilterApproval(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="all">All Approval</option>
-                  <option value="approved">Approved</option>
-                  <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
               </div>
             </div>
-
-            {/* Posts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredPosts.map((post) => {
-                const PlatformIcon = getPlatformIcon(post.platform);
-                return (
-                  <Card key={post.id} className="border-border hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <PlatformIcon className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {socialPosts.map((post) => (
+                <div key={post.id} className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className={`w-10 h-10 rounded-lg ${getPlatformColor(post.platform)} flex items-center justify-center`}>
+                        {getPlatformIcon(post.platform)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="font-medium text-foreground">{post.platform.charAt(0).toUpperCase() + post.platform.slice(1)} Post</h3>
+                          <Badge className={`text-xs ${getStatusColor(post.status)}`}>
+                            {post.status}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            {post.publishedDate || post.scheduledDate}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground mb-3">{post.content}</p>
+                        <div className="flex items-center space-x-6 text-sm">
+                          <div className="flex items-center space-x-1">
+                            <Heart className="h-4 w-4 text-red-500" />
+                            <span>{post.engagement.likes}</span>
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-foreground capitalize">{post.platform}</h3>
-                            <p className="text-sm text-muted-foreground flex items-center">
-                              <Building2 className="h-3 w-3 mr-1" />
-                              {post.organizer}
-                            </p>
+                          <div className="flex items-center space-x-1">
+                            <MessageCircle className="h-4 w-4 text-blue-500" />
+                            <span>{post.engagement.comments}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Share className="h-4 w-4 text-green-500" />
+                            <span>{post.engagement.shares}</span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            Reach: {post.reach.toLocaleString()}
                           </div>
                         </div>
-                        <div className="flex flex-col space-y-1">
-                          <Badge className={getStatusColor(post.status)}>
-                            {post.status.replace('_', ' ')}
-                          </Badge>
-                          <Badge className={getApprovalColor(post.approvalStatus)}>
-                            {post.approvalStatus}
-                          </Badge>
-                        </div>
                       </div>
-
-                      <p className="text-sm text-foreground mb-4 line-clamp-3">{post.content}</p>
-
-                      {post.media && (
-                        <div className="mb-4">
-                          <Badge variant="outline" className="text-xs">
-                            {post.media}
-                          </Badge>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Reach</p>
-                          <p className="font-semibold">{post.reach.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Impressions</p>
-                          <p className="font-semibold">{post.impressions.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Likes</p>
-                          <p className="font-semibold">{post.engagement.likes.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Comments</p>
-                          <p className="font-semibold">{post.engagement.comments.toLocaleString()}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          {post.approvalStatus === "pending" && (
-                            <Button variant="outline" size="sm" className="text-green-600 hover:text-green-700">
-                              <Shield className="h-4 w-4 mr-1" />
-                              Approve
-                            </Button>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {activeTab === "accounts" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {platformAccounts.map((account) => {
-              const PlatformIcon = getPlatformIcon(account.platform);
-              return (
-                <Card key={account.platform} className="border-border hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <PlatformIcon className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground">{account.platform}</h3>
-                        <p className="text-sm text-muted-foreground">{account.name}</p>
-                      </div>
+      {/* Accounts Tab */}
+      {activeTab === "accounts" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Social Media Accounts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {socialAccounts.map((account, index) => (
+                <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-12 h-12 rounded-lg ${account.color} flex items-center justify-center`}>
+                      <account.icon className="h-6 w-6 text-white" />
                     </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Followers</span>
-                        <span className="font-medium">{account.followers.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Engagement</span>
-                        <span className="font-medium">{account.engagement}%</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Growth</span>
-                        <span className="font-medium text-green-600">+{account.growth}%</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Status</span>
-                        <Badge className={account.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                          {account.status}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4">
-                      <Button variant="outline" size="sm">
-                        <BarChart3 className="h-4 w-4 mr-1" />
-                        Analytics
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Manage
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-
-        {activeTab === "analytics" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="h-5 w-5 mr-2 text-primary" />
-                  Platform Performance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Reach</p>
-                      <p className="text-2xl font-bold">2.4M</p>
+                      <h3 className="font-medium text-foreground">{account.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {account.followers.toLocaleString()} followers • {account.engagement}% engagement
+                      </p>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-green-600" />
                   </div>
-                  <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Engagement</p>
-                      <p className="text-2xl font-bold">4.2%</p>
-                    </div>
-                    <BarChart3 className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Followers</p>
-                      <p className="text-2xl font-bold">349K</p>
-                    </div>
-                    <Users className="h-8 w-8 text-purple-600" />
+                  <div className="flex items-center space-x-3">
+                    <Badge className={account.status === "connected" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      {account.status}
+                    </Badge>
+                    <Button variant="outline" size="sm">
+                      {account.status === "connected" ? "Manage" : "Connect"}
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Globe className="h-5 w-5 mr-2 text-primary" />
-                  Top Performing Posts
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {socialPosts
-                    .filter(post => post.status === "published")
-                    .sort((a, b) => b.engagement.likes - a.engagement.likes)
-                    .slice(0, 3)
-                    .map((post) => {
-                      const PlatformIcon = getPlatformIcon(post.platform);
-                      return (
-                        <div key={post.id} className="flex items-center space-x-3 p-3 rounded-lg bg-muted/50">
-                          <PlatformIcon className="h-5 w-5 text-primary" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-foreground line-clamp-1">{post.content}</p>
-                            <p className="text-xs text-muted-foreground">{post.organizer}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">{post.engagement.likes.toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">likes</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {filteredPosts.length === 0 && activeTab === "posts" && (
-          <div className="text-center py-12">
-            <Share2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No posts found</h3>
-            <p className="text-muted-foreground">Try adjusting your search or filter criteria.</p>
-          </div>
-        )}
+      {/* Analytics Tab */}
+      {activeTab === "analytics" && (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">Social Media Analytics</h3>
+            <p className="text-muted-foreground mb-4">
+              Detailed analytics and insights for your social media performance
+            </p>
+            <Button variant="outline">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              View Detailed Reports
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       </div>
     </AdminLayout>
   );
