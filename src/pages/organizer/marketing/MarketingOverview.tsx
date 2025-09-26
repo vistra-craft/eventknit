@@ -232,7 +232,7 @@ const MarketingOverview = () => {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {metrics.map((metric, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
+          <Card key={index} className="hover:shadow-md transition-shadow bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -260,7 +260,7 @@ const MarketingOverview = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Zap className="h-5 w-5 mr-2 text-primary" />
@@ -296,7 +296,7 @@ const MarketingOverview = () => {
       </Card>
 
       {/* Recent Campaigns */}
-      <Card>
+      <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center">
@@ -356,7 +356,7 @@ const MarketingOverview = () => {
       </Card>
 
       {/* Marketing Tips */}
-      <Card>
+      <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Target className="h-5 w-5 mr-2 text-primary" />

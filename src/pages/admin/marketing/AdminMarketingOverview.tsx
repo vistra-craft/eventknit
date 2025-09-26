@@ -323,7 +323,7 @@ const AdminMarketingOverview = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
           <div className="lg:col-span-1">
-            <Card className="border-border">
+            <Card className="border-border bg-card">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Zap className="h-5 w-5 mr-2 text-primary" />
@@ -359,7 +359,7 @@ const AdminMarketingOverview = () => {
 
           {/* Top Campaigns */}
           <div className="lg:col-span-2">
-            <Card className="border-border">
+            <Card className="border-border bg-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center">
@@ -428,7 +428,7 @@ const AdminMarketingOverview = () => {
 
         {/* Top Organizers */}
         <div className="mt-8">
-          <Card className="border-border">
+          <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Building2 className="h-5 w-5 mr-2 text-primary" />

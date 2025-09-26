@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Filter, Calendar, MapPin, Users, Eye, MoreHorizontal } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -90,6 +91,7 @@ const mockEvents: Event[] = [
 ];
 
 const AllEventsPage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -229,7 +231,11 @@ const AllEventsPage = () => {
         {/* Events List */}
         <div className="space-y-3">
           {filteredEvents.map((event) => (
-            <Card key={event.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+            <Card 
+              key={event.id} 
+              className="border-border bg-card hover:shadow-md transition-all duration-200 cursor-pointer"
+              onClick={() => navigate(`/admin/events/${event.id}`)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -262,11 +268,25 @@ const AllEventsPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/events/${event.id}`);
+                      }}
+                    >
                       <Eye className="h-4 w-4 mr-1" />
                       View
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Add dropdown menu for more actions
+                      }}
+                    >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </div>

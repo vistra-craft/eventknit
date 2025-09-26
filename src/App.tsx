@@ -57,6 +57,13 @@ import AdminFeaturedEventsPage from "./pages/admin/events/FeaturedEventsPage";
 import AdminPastEventsPage from "./pages/admin/events/PastEventsPage";
 import AdminUpcomingEventsPage from "./pages/admin/events/UpcomingEventsPage";
 import AdminDeclinedEventsPage from "./pages/admin/events/DeclinedEventsPage";
+import EventDetailsPage from "./pages/admin/events/EventDetailsPage";
+import AdminStaffManagementPage from "./pages/admin/StaffManagementPage";
+import OrganizersPage from "./pages/admin/OrganizersPage";
+import OrganizerDetailsPage from "./pages/admin/OrganizerDetailsPage";
+import OrganizerEditPage from "./pages/admin/OrganizerEditPage";
+import StaffDetailsPage from "./pages/admin/StaffDetailsPage";
+import StaffEditPage from "./pages/admin/StaffEditPage";
 // Admin System imports
 import { 
   SystemHealthPage,
@@ -139,6 +146,14 @@ const App = () => (
       <Route path="/admin/events/past" element={<AdminPastEventsPage />} />
       <Route path="/admin/events/upcoming" element={<AdminUpcomingEventsPage />} />
       <Route path="/admin/events/declined" element={<AdminDeclinedEventsPage />} />
+      <Route path="/admin/events/:eventId" element={<EventDetailsPage />} />
+      {/* Admin Users Routes */}
+      <Route path="/admin/users/staff" element={<AdminStaffManagementPage />} />
+      <Route path="/admin/users/staff/:staffId" element={<StaffDetailsPage />} />
+      <Route path="/admin/users/staff/:staffId/edit" element={<StaffEditPage />} />
+      <Route path="/admin/users/organizers" element={<OrganizersPage />} />
+      <Route path="/admin/users/organizers/:organizerId" element={<OrganizerDetailsPage />} />
+      <Route path="/admin/users/organizers/:organizerId/edit" element={<OrganizerEditPage />} />
       {/* Admin System Routes */}
       <Route path="/admin/system/health" element={<SystemHealthPage />} />
       <Route path="/admin/system/database" element={<DatabasePage />} />

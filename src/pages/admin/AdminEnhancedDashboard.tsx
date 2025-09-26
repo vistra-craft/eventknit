@@ -38,7 +38,7 @@ const AdminEnhancedDashboard = () => {
       borderColor: "border-border",
     },
     {
-      title: "Active Users",
+      title: "Active Staff",
       value: "12,456",
       change: "+24%",
       changeType: "positive",
@@ -152,8 +152,8 @@ const AdminEnhancedDashboard = () => {
   const recentActivity = [
     {
       id: 1,
-      type: "user_registration",
-      message: "New organizer registered: Tech Events Co.",
+      type: "staff_registration",
+      message: "New staff member registered: John Smith",
       time: "10 minutes ago",
       icon: UserCheck,
       color: "text-primary",
@@ -231,11 +231,11 @@ const AdminEnhancedDashboard = () => {
               <option value="1y">Last year</option>
             </select>
             <Link
-              to="/admin/events/pending"
+              to="/admin/events/create"
               className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
             >
-              <Shield className="h-4 w-4 mr-2" />
-              Review Events
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
             </Link>
           </div>
         </div>

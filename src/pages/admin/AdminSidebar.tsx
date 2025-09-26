@@ -34,7 +34,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand marketing section if on marketing pages
     marketing: location.pathname.startsWith('/admin/marketing'),
     // Auto-expand finance section if on finance pages
-    finance: location.pathname.startsWith('/admin/finance')
+    finance: location.pathname.startsWith('/admin/finance'),
+    // Auto-expand users section if on users pages
+    users: location.pathname.startsWith('/admin/users')
   });
 
   const navigationItems = [
@@ -65,11 +67,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       icon: Users,
       group: "main",
       children: [
-        { name: "All Users", href: "/admin/users" },
+        { name: "Staff", href: "/admin/users/staff" },
         { name: "Organizers", href: "/admin/users/organizers" },
-        { name: "Attendees", href: "/admin/users/attendees" },
         { name: "User Roles", href: "/admin/users/roles" },
-        { name: "User Reports", href: "/admin/users/reports" },
       ]
     },
     { 
@@ -168,7 +168,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       ...prev,
       events: location.pathname.startsWith('/admin/events'),
       marketing: location.pathname.startsWith('/admin/marketing'),
-      finance: location.pathname.startsWith('/admin/finance')
+      finance: location.pathname.startsWith('/admin/finance'),
+      users: location.pathname.startsWith('/admin/users')
     }));
   }, [location.pathname]);
 
