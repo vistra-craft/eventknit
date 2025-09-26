@@ -67,6 +67,8 @@ import {
 } from "./pages/admin/system";
 // Admin Moderation import
 import ModerationPage from "./pages/admin/ModerationPage";
+// Admin Communications import
+import AdminCommunicationsPage from "./pages/admin/CommunicationsPage";
 
 const App = () => (
   <BrowserRouter>
@@ -133,6 +135,8 @@ const App = () => (
       <Route path="/admin/system/maintenance" element={<MaintenancePage />} />
       {/* Admin Moderation Route */}
       <Route path="/admin/moderation" element={<ModerationPage />} />
+      {/* Admin Communications Route */}
+      <Route path="/admin/communications" element={<AdminCommunicationsPage />} />
       {/* Admin Marketing Routes */}
       <Route path="/admin/marketing" element={<AdminMarketingPage />} />
       <Route path="/admin/marketing/campaigns" element={<AdminCampaignsPage />} />
