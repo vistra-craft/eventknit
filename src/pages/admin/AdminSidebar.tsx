@@ -18,6 +18,7 @@ import {
   Building2,
   AlertTriangle,
   DollarSign,
+  HeadphonesIcon,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -111,6 +112,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       label: "Communications", 
       href: "/admin/communications", 
       icon: MessageCircle,
+      group: "management"
+    },
+    { 
+      id: "support", 
+      label: "Support", 
+      href: "/admin/support", 
+      icon: HeadphonesIcon,
       group: "management"
     },
     { 

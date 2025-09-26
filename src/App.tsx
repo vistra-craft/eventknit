@@ -78,6 +78,8 @@ import {
 import ModerationPage from "./pages/admin/ModerationPage";
 // Admin Communications import
 import AdminCommunicationsPage from "./pages/admin/CommunicationsPage";
+// Admin Support import
+import SupportPage from "./pages/admin/SupportPage";
 // Admin Finance imports
 import { 
   FinanceDashboard,
@@ -168,6 +170,8 @@ const App = () => (
       <Route path="/admin/moderation" element={<ModerationPage />} />
       {/* Admin Communications Route */}
       <Route path="/admin/communications" element={<AdminCommunicationsPage />} />
+      {/* Admin Support Route */}
+      <Route path="/admin/support" element={<SupportPage />} />
       {/* Admin Finance Routes */}
       <Route path="/admin/finance" element={<FinanceDashboard />} />
       <Route path="/admin/finance/expenses" element={<ExpensesPage />} />
