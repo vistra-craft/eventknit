@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/index";
 import CreateEvent from "./pages/CreateEvent";
 import About from "./pages/About";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import CookiePolicy from "./pages/CookiePolicy";
 import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
@@ -93,6 +96,8 @@ import {
   EditIncomePage,
   EditWagePage
 } from "./pages/admin/finance";
+import NotFound from "./pages/NotFound";
+import Support from "./pages/Support";
 // Admin Workstation imports
 import WorkstationOverview from "./pages/admin/workstation/WorkstationOverview";
 import WorkstationEvents from "./pages/admin/workstation/WorkstationEvents";
@@ -107,6 +112,9 @@ const App = () => (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
       <Route path="/create-event" element={<CreateEvent />} />
       <Route path="/event/:id" element={<EventDetails />} />
       <Route path="/event/:id/register" element={<RegisterEvent />} />
@@ -201,6 +209,8 @@ const App = () => (
       <Route path="/admin/analytics/users" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/revenue" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/system" element={<AdminAnalyticsOverview />} />
+      <Route path="/support" element={<Support />} />
+      <Route path="*" element={<NotFound />} />
       {/* Admin Workstation Routes */}
       <Route path="/admin/workstation" element={<WorkstationOverview />} />
       <Route path="/admin/workstation/events" element={<WorkstationEvents />} />
