@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Calendar,
   Settings,
-  MessageCircle,
   Home,
   Menu,
   Users,
@@ -11,8 +10,6 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronRight,
-  Shield,
-  Database,
   DollarSign,
   HeadphonesIcon,
   Monitor,
@@ -34,7 +31,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand finance section if on finance pages
     finance: location.pathname.startsWith('/admin/finance'),
     // Auto-expand users section if on users pages
-    users: location.pathname.startsWith('/admin/users')
+    users: location.pathname.startsWith('/admin/users'),
+    // Auto-expand settings section if on settings pages
+    settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/moderation'),
+    // Auto-expand support section if on support pages
+    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications')
   });
 
   const navigationItems = [
@@ -112,25 +113,25 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       ]
     },
     { 
-      id: "moderation", 
-      label: "Moderation", 
-      href: "/admin/moderation", 
-      icon: Shield,
-      group: "management"
-    },
-    { 
-      id: "communications", 
-      label: "Communications", 
-      href: "/admin/communications", 
-      icon: MessageCircle,
-      group: "management"
+      id: "settings", 
+      label: "Settings", 
+      icon: Settings,
+      group: "management",
+      children: [
+        { name: "Configuration", href: "/admin/settings" },
+        { name: "System", href: "/admin/system" },
+        { name: "Moderation", href: "/admin/moderation" },
+      ]
     },
     { 
       id: "support", 
       label: "Support", 
-      href: "/admin/support", 
       icon: HeadphonesIcon,
-      group: "management"
+      group: "management",
+      children: [
+        { name: "Support Services", href: "/admin/support" },
+        { name: "Communications", href: "/admin/communications" },
+      ]
     },
     { 
       id: "finance", 
@@ -145,26 +146,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Transactions", href: "/admin/finance/transactions" },
         { name: "Income Statement", href: "/admin/finance/income-statement" },
       ]
-    },
-    { 
-      id: "system", 
-      label: "System", 
-      icon: Database,
-      group: "management",
-      children: [
-        { name: "System Health", href: "/admin/system/health" },
-        { name: "Database", href: "/admin/system/database" },
-        { name: "Logs", href: "/admin/system/logs" },
-        { name: "Backups", href: "/admin/system/backups" },
-        { name: "Maintenance", href: "/admin/system/maintenance" },
-      ]
-    },
-    { 
-      id: "settings", 
-      label: "Settings", 
-      href: "/admin/settings", 
-      icon: Settings,
-      group: "account"
     },
   ];
 
@@ -189,7 +170,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       events: location.pathname.startsWith('/admin/events'),
       marketing: location.pathname.startsWith('/admin/marketing'),
       finance: location.pathname.startsWith('/admin/finance'),
-      users: location.pathname.startsWith('/admin/users')
+      users: location.pathname.startsWith('/admin/users'),
+      settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/moderation'),
+      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications')
     }));
   }, [location.pathname]);
 
