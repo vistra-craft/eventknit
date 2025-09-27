@@ -96,6 +96,8 @@ import {
   EditIncomePage,
   EditWagePage
 } from "./pages/admin/finance";
+import NotFound from "./pages/NotFound";
+import Support from "./pages/Support";
 
 const App = () => (
   <BrowserRouter>
@@ -199,6 +201,8 @@ const App = () => (
       <Route path="/admin/analytics/users" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/revenue" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/system" element={<AdminAnalyticsOverview />} />
+      <Route path="/support" element={<Support />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   </BrowserRouter>
 );

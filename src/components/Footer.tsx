@@ -1,5 +1,6 @@
 import { Facebook, Twitter, Instagram } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -69,12 +70,12 @@ const Footer = () => {
           <div className="text-center">
             <ul className="space-y-1">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/support"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   Help/Contact Us
-                </a>
+                </Link>
               </li>
               <li>
                 <Link
