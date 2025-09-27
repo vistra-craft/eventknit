@@ -143,6 +143,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Income", href: "/admin/finance/income" },
         { name: "Wages", href: "/admin/finance/wages" },
         { name: "Transactions", href: "/admin/finance/transactions" },
+        { name: "Income Statement", href: "/admin/finance/income-statement" },
       ]
     },
     { 

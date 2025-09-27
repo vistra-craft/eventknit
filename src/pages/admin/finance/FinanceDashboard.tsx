@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, Plus, Eye, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,7 @@ const mockTransactions: Transaction[] = [
 ];
 
 const FinanceDashboard = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -167,7 +169,7 @@ const FinanceDashboard = () => {
               <Plus className="h-4 w-4 mr-2" />
               Add Transaction
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={() => navigate('/admin/finance/income-statement')}>
               <Eye className="h-4 w-4 mr-2" />
               Generate Report
             </Button>

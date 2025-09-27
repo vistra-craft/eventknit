@@ -324,7 +324,7 @@ const TransactionsPage = () => {
               <Calendar className="h-4 w-4 mr-2" />
               Export Report
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={() => navigate('/admin/finance/income-statement')}>
               <DollarSign className="h-4 w-4 mr-2" />
               Financial Summary
             </Button>

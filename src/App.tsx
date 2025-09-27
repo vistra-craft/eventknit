@@ -94,7 +94,8 @@ import {
   EditTransactionPage,
   EditExpensePage,
   EditIncomePage,
-  EditWagePage
+  EditWagePage,
+  IncomeStatementPage
 } from "./pages/admin/finance";
 import NotFound from "./pages/NotFound";
 import Support from "./pages/Support";
@@ -191,6 +192,7 @@ const App = () => (
       <Route path="/admin/finance/income" element={<IncomePage />} />
       <Route path="/admin/finance/wages" element={<WagesPage />} />
       <Route path="/admin/finance/transactions" element={<TransactionsPage />} />
+      <Route path="/admin/finance/income-statement" element={<IncomeStatementPage />} />
       {/* Admin Finance Edit Routes */}
       <Route path="/admin/finance/transactions/edit/:id" element={<EditTransactionPage />} />
       <Route path="/admin/finance/expenses/edit/:id" element={<EditExpensePage />} />
