@@ -1,0 +1,528 @@
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import AdminLayout from "../AdminLayout";
+import { 
+  Handshake, 
+  Building2,
+  Users,
+  Star,
+  Globe,
+  Calendar,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Download,
+  Share2,
+  Printer,
+  ArrowLeft
+} from "lucide-react";
+
+interface Partnership {
+  id: string;
+  name: string;
+  organizer: string;
+  type: 'sponsor' | 'venue' | 'media' | 'vendor' | 'influencer';
+  status: 'active' | 'pending' | 'expired' | 'negotiating' | 'pending_approval';
+  contactPerson: string;
+  email: string;
+  phone?: string;
+  website?: string;
+  location?: string;
+  startDate: string;
+  endDate?: string;
+  value: number;
+  description: string;
+  purpose: string;
+  benefits: string[];
+  events: string[];
+  rating?: number;
+  notes?: string;
+  approvalStatus: 'approved' | 'pending' | 'rejected';
+  acceptedTerms: boolean;
+}
+
+const PartnershipDetailsPage = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [partnership, setPartnership] = useState<Partnership | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isPrintMode, setIsPrintMode] = useState(false);
+
+  // Mock data - in a real app, this would come from your API
+  const mockPartnerships: Partnership[] = useMemo(() => [
+    {
+      id: "1",
+      name: "Microsoft Corporation",
+      organizer: "Tech Events Co.",
+      type: "sponsor",
+      status: "active",
+      contactPerson: "Sarah Johnson",
+      email: "sarah.johnson@microsoft.com",
+      phone: "+1 (555) 123-4567",
+      website: "microsoft.com",
+      location: "Redmond, WA",
+      startDate: "2024-01-01",
+      endDate: "2024-12-31",
+      value: 500000,
+      description: "Primary sponsor for Tech Summit 2024",
+      purpose: "To establish Microsoft as the premier technology partner for major tech events, showcasing their latest innovations and building brand awareness among tech professionals.",
+      benefits: ["Logo placement", "Speaking slot", "Booth space", "Social media mentions"],
+      events: ["Tech Summit 2024"],
+      rating: 5,
+      notes: "Excellent partnership, very responsive team",
+      approvalStatus: "approved",
+      acceptedTerms: true
+    },
+    {
+      id: "2",
+      name: "Madison Square Garden",
+      organizer: "Music Events Ltd",
+      type: "venue",
+      status: "active",
+      contactPerson: "Mike Rodriguez",
+      email: "mike.rodriguez@msg.com",
+      phone: "+1 (555) 987-6543",
+      website: "msg.com",
+      location: "New York, NY",
+      startDate: "2023-06-01",
+      endDate: "2025-05-31",
+      value: 1200000,
+      description: "Exclusive venue partnership for major events",
+      purpose: "To provide premium venue services for large-scale events, ensuring exceptional event experiences and establishing long-term venue partnerships.",
+      benefits: ["Preferred rates", "Priority booking", "Marketing support", "Catering discounts"],
+      events: ["Music Festival 2024", "Sports Expo 2024"],
+      rating: 4,
+      notes: "Great venue, professional staff",
+      approvalStatus: "approved",
+      acceptedTerms: true
+    }
+  ], []);
+
+  useEffect(() => {
+    // Simulate API call
+    const foundPartnership = mockPartnerships.find(p => p.id === id);
+    setPartnership(foundPartnership || null);
+    setLoading(false);
+  }, [id, mockPartnerships]);
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'sponsor': return <Star className="h-5 w-5" />;
+      case 'venue': return <Building2 className="h-5 w-5" />;
+      case 'media': return <Globe className="h-5 w-5" />;
+      case 'vendor': return <Handshake className="h-5 w-5" />;
+      case 'influencer': return <Users className="h-5 w-5" />;
+      default: return <Handshake className="h-5 w-5" />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'sponsor': return 'bg-yellow-100 text-yellow-800';
+      case 'venue': return 'bg-green-100 text-green-800';
+      case 'media': return 'bg-blue-100 text-blue-800';
+      case 'vendor': return 'bg-purple-100 text-purple-800';
+      case 'influencer': return 'bg-pink-100 text-pink-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'expired': return 'bg-red-100 text-red-800';
+      case 'negotiating': return 'bg-blue-100 text-blue-800';
+      case 'pending_approval': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active': return <CheckCircle className="h-4 w-4" />;
+      case 'pending': return <Clock className="h-4 w-4" />;
+      case 'expired': return <AlertCircle className="h-4 w-4" />;
+      case 'negotiating': return <Clock className="h-4 w-4" />;
+      case 'pending_approval': return <Clock className="h-4 w-4" />;
+      default: return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const handleDownload = () => {
+    if (!partnership) return;
+    
+    const content = `
+PARTNERSHIP AGREEMENT
+====================
+
+Partnership Name: ${partnership.name}
+Organizer: ${partnership.organizer}
+Type: ${partnership.type.toUpperCase()}
+Status: ${partnership.status.replace('_', ' ').toUpperCase()}
+Value: $${partnership.value.toLocaleString()}
+
+Contact Information:
+- Contact Person: ${partnership.contactPerson}
+- Email: ${partnership.email}
+- Phone: ${partnership.phone || 'N/A'}
+- Website: ${partnership.website || 'N/A'}
+- Location: ${partnership.location || 'N/A'}
+
+Partnership Terms:
+- Start Date: ${partnership.startDate}
+- End Date: ${partnership.endDate || 'Ongoing'}
+- Rating: ${partnership.rating ? `${partnership.rating}/5` : 'N/A'}
+
+Description:
+${partnership.description}
+
+Purpose:
+${partnership.purpose}
+
+Benefits:
+${partnership.benefits.map(benefit => `- ${benefit}`).join('\n')}
+
+Events:
+${partnership.events.map(event => `- ${event}`).join('\n')}
+
+Additional Notes:
+${partnership.notes || 'None'}
+
+Approval Status: ${partnership.approvalStatus.toUpperCase()}
+Terms Accepted: ${partnership.acceptedTerms ? 'Yes' : 'No'}
+
+Generated on: ${new Date().toLocaleDateString()}
+    `;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `partnership-${partnership.name.replace(/\s+/g, '-').toLowerCase()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    if (!partnership) return;
+    
+    const shareData = {
+      title: `Partnership: ${partnership.name}`,
+      text: `Partnership with ${partnership.organizer} - ${partnership.description}`,
+      url: window.location.href
+    };
+    
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(shareData.url);
+        alert('Partnership link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
+  const handlePrint = () => {
+    setIsPrintMode(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrintMode(false);
+    }, 100);
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading partnership details...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!partnership) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Partnership Not Found</h2>
+            <p className="text-muted-foreground mb-4">The partnership you're looking for doesn't exist.</p>
+            <Button onClick={() => navigate('/admin/marketing/partnerships')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Partnerships
+            </Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <div className={`space-y-6 ${isPrintMode ? 'print-mode' : ''}`}>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/admin/marketing/partnerships')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Partnerships
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Partnership Details</h1>
+              <p className="text-gray-600">View and manage partnership information</p>
+            </div>
+          </div>
+          
+          {!isPrintMode && (
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+              <Button variant="outline" onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+              <Button onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Document Header */}
+        <div className="text-center mb-8 pb-6 border-b border-gray-200">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+              EK
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">EventKnit</h1>
+          <p className="text-gray-600 text-lg mb-4">Connecting Events, Creating Opportunities</p>
+          <div className="flex items-center justify-center space-x-4">
+            <Badge className={`text-lg px-4 py-2 ${getTypeColor(partnership.type)}`}>
+              {partnership.type.toUpperCase()} PARTNERSHIP AGREEMENT
+            </Badge>
+            <Badge className={`text-lg px-4 py-2 ${getStatusColor(partnership.status)}`}>
+              <div className="flex items-center space-x-1">
+                {getStatusIcon(partnership.status)}
+                <span>{partnership.status.replace('_', ' ').toUpperCase()}</span>
+              </div>
+            </Badge>
+          </div>
+        </div>
+
+        {/* Partnership Details */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Handshake className="h-5 w-5 mr-2" />
+              Partnership Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Partnership Name</label>
+                  <p className="text-lg font-semibold text-gray-900">{partnership.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Organizer</label>
+                  <p className="text-lg font-semibold text-gray-900">{partnership.organizer}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Partnership Type</label>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <Badge className={`${getTypeColor(partnership.type)} flex items-center space-x-1`}>
+                      {getTypeIcon(partnership.type)}
+                      <span>{partnership.type.charAt(0).toUpperCase() + partnership.type.slice(1)}</span>
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Partnership Value</label>
+                  <p className="text-2xl font-bold text-green-600">${partnership.value.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Contact Person</label>
+                  <p className="text-lg font-semibold text-gray-900">{partnership.contactPerson}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Email Address</label>
+                  <p className="text-lg font-semibold text-blue-600">{partnership.email}</p>
+                </div>
+                {partnership.phone && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                    <p className="text-lg font-semibold text-gray-900">{partnership.phone}</p>
+                  </div>
+                )}
+                {partnership.location && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Location</label>
+                    <p className="text-lg font-semibold text-gray-900">{partnership.location}</p>
+                  </div>
+                )}
+                {partnership.website && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Website</label>
+                    <p className="text-lg font-semibold text-blue-600">{partnership.website}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Partnership Terms */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Calendar className="h-5 w-5 mr-2" />
+              Partnership Terms
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Start Date</label>
+                <p className="text-lg font-semibold text-gray-900">{new Date(partnership.startDate).toLocaleDateString()}</p>
+              </div>
+              {partnership.endDate && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">End Date</label>
+                  <p className="text-lg font-semibold text-gray-900">{new Date(partnership.endDate).toLocaleDateString()}</p>
+                </div>
+              )}
+              {partnership.rating && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Partnership Rating</label>
+                  <div className="flex items-center space-x-1 mt-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`h-4 w-4 ${i < partnership.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                      />
+                    ))}
+                    <span className="ml-2 text-sm text-gray-600">({partnership.rating}/5)</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Description */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>Description</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 leading-relaxed">{partnership.description}</p>
+          </CardContent>
+        </Card>
+
+        {/* Purpose */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>Partnership Purpose</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-700 leading-relaxed">{partnership.purpose}</p>
+          </CardContent>
+        </Card>
+
+        {/* Benefits */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>Partnership Benefits</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {partnership.benefits.map((benefit, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-gray-700">{benefit}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Events */}
+        <Card className="border-border">
+          <CardHeader>
+            <CardTitle>Associated Events</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {partnership.events.map((event, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-blue-500" />
+                  <span className="text-gray-700">{event}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Additional Notes */}
+        {partnership.notes && (
+          <Card className="border-border">
+            <CardHeader>
+              <CardTitle>Additional Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 leading-relaxed">{partnership.notes}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Document Footer */}
+        <div className="text-center pt-8 border-t border-gray-200">
+          <div className="space-y-4">
+            <div className="text-sm text-gray-500">
+              <p>Document ID: {partnership.id}</p>
+              <p>Generated on: {new Date().toLocaleDateString()}</p>
+              <p>Terms Accepted: {partnership.acceptedTerms ? 'Yes' : 'No'}</p>
+            </div>
+            <div className="flex items-center justify-center space-x-8">
+              <div className="text-center">
+                <div className="border-b border-gray-300 w-32 mb-2"></div>
+                <p className="text-sm text-gray-600">EventKnit Representative</p>
+              </div>
+              <div className="text-center">
+                <div className="border-b border-gray-300 w-32 mb-2"></div>
+                <p className="text-sm text-gray-600">{partnership.contactPerson}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+};
+
+export default PartnershipDetailsPage;

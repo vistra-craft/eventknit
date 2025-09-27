@@ -15,6 +15,7 @@ import {
   Database,
   DollarSign,
   HeadphonesIcon,
+  Monitor,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -94,6 +95,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Email Marketing", href: "/admin/marketing/email" },
         { name: "Promotions", href: "/admin/marketing/promotions" },
         { name: "Partnerships", href: "/admin/marketing/partnerships" },
+      ]
+    },
+    { 
+      id: "workstation", 
+      label: "Workstation", 
+      icon: Monitor,
+      group: "management",
+      children: [
+        { name: "Events Overview", href: "/admin/workstation" },
+        { name: "Event Management", href: "/admin/workstation/events" },
+        { name: "QR Scanner", href: "/admin/workstation/scanner" },
+        { name: "Print Center", href: "/admin/workstation/print" },
+        { name: "Template Editor", href: "/admin/workstation/templates" },
+        { name: "Scan History", href: "/admin/workstation/history" },
       ]
     },
     { 
