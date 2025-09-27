@@ -35,32 +35,32 @@ const Footer = () => {
 
         {/* Footer Links */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-          {/* Column 1 - Regional Sites */}
+          {/* Column 1 - Platform */}
           <div className="text-center md:text-left">
             <ul className="space-y-1">
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  TicketWeb CA
-                </a>
+                  EventKnit Home
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/about"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  TicketWeb UK
-                </a>
+                  About EventKnit
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/create-event"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  Ticketmaster
-                </a>
+                  Create Event
+                </Link>
               </li>
             </ul>
           </div>
@@ -68,22 +68,6 @@ const Footer = () => {
           {/* Column 2 - Support & Info */}
           <div className="text-center">
             <ul className="space-y-1">
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  My Account
-                </a>
-              </li>
               <li>
                 <Link
                   to="/support"
@@ -93,28 +77,28 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/privacy-policy"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/terms-of-service"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  Purchase Policy
-                </a>
+                  Terms of Service
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
+                <Link
+                  to="/cookie-policy"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  Do Not Sell or Share My Personal Information
-                </a>
+                  Cookie Policy
+                </Link>
               </li>
             </ul>
           </div>
@@ -127,15 +111,7 @@ const Footer = () => {
                   href="#"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  Client Sign-In
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Sell Tickets With Us
+                  Partner With Us
                 </a>
               </li>
               <li>
@@ -144,6 +120,14 @@ const Footer = () => {
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
                   Careers
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                >
+                  Press
                 </a>
               </li>
             </ul>
@@ -159,26 +143,26 @@ const Footer = () => {
         <div>
           <p className="text-center text-xs text-gray-500 leading-relaxed">
             BY CONTINUING PAST THIS PAGE, YOU AGREE TO OUR{" "}
-            <a
-              href="#"
+            <Link
+              to="/terms-of-service"
               className="text-gray-700 underline hover:no-underline transition-colors"
             >
               TERMS OF USE
-            </a>{" "}
+            </Link>{" "}
             AND{" "}
-            <a
-              href="#"
+            <Link
+              to="/privacy-policy"
               className="text-gray-700 underline hover:no-underline transition-colors"
             >
-              PURCHASE POLICY
-            </a>{" "}
+              PRIVACY POLICY
+            </Link>{" "}
             |{" "}
-            <a
-              href="#"
+            <Link
+              to="/cookie-policy"
               className="text-gray-700 underline hover:no-underline transition-colors"
             >
               COOKIE POLICY
-            </a>{" "}
+            </Link>{" "}
             |
           </p>
           <p className="text-center text-xs text-gray-500 mt-1">
