@@ -93,6 +93,14 @@ import {
   EditIncomePage,
   EditWagePage
 } from "./pages/admin/finance";
+// Admin Workstation imports
+import WorkstationOverview from "./pages/admin/workstation/WorkstationOverview";
+import WorkstationEvents from "./pages/admin/workstation/WorkstationEvents";
+import WorkstationEventDashboard from "./pages/admin/workstation/WorkstationEventDashboard";
+import WorkstationScanner from "./pages/admin/workstation/WorkstationScanner";
+import WorkstationPrint from "./pages/admin/workstation/WorkstationPrint";
+import WorkstationTemplates from "./pages/admin/workstation/WorkstationTemplates";
+import WorkstationHistory from "./pages/admin/workstation/WorkstationHistory";
 
 const App = () => (
   <BrowserRouter>
@@ -193,6 +201,14 @@ const App = () => (
       <Route path="/admin/analytics/users" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/revenue" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/system" element={<AdminAnalyticsOverview />} />
+      {/* Admin Workstation Routes */}
+      <Route path="/admin/workstation" element={<WorkstationOverview />} />
+      <Route path="/admin/workstation/events" element={<WorkstationEvents />} />
+      <Route path="/admin/workstation/event/:eventId" element={<WorkstationEventDashboard />} />
+      <Route path="/admin/workstation/scanner" element={<WorkstationScanner />} />
+      <Route path="/admin/workstation/print" element={<WorkstationPrint />} />
+      <Route path="/admin/workstation/templates" element={<WorkstationTemplates />} />
+      <Route path="/admin/workstation/history" element={<WorkstationHistory />} />
     </Routes>
   </BrowserRouter>
 );
