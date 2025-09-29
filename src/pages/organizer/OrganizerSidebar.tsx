@@ -7,7 +7,6 @@ import {
   Home,
   Menu,
   UserPlus,
-  Megaphone,
   TrendingUp,
   ChevronDown,
   ChevronRight,
@@ -23,7 +22,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     // Auto-expand events section if on events pages
-    events: location.pathname.startsWith('/organizer/events')
+    events: location.pathname.startsWith('/organizer/events'),
+    // Auto-expand settings section if on settings pages
+    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
   });
 
   const navigationItems = [
@@ -80,24 +81,18 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       ]
     },
     { 
-      id: "marketing", 
-      label: "Marketing", 
-      icon: Megaphone,
-      group: "management",
-      children: [
-        { name: "Campaigns", href: "/organizer/marketing/campaigns" },
-        { name: "Social Media", href: "/organizer/marketing/social" },
-        { name: "Email Marketing", href: "/organizer/marketing/email" },
-        { name: "Promotions", href: "/organizer/marketing/promotions" },
-        { name: "Partnerships", href: "/organizer/marketing/partnerships" },
-      ]
-    },
-    { 
       id: "settings", 
       label: "Settings", 
-      href: "/organizer/settings", 
       icon: Settings,
-      group: "account"
+      group: "management",
+      children: [
+        { name: "Profile", href: "/organizer/profile" },
+        { name: "Preferences", href: "/organizer/settings/preferences" },
+        { name: "Notifications", href: "/organizer/settings/notifications" },
+        { name: "Security", href: "/organizer/settings/security" },
+        { name: "Branding", href: "/organizer/settings/branding" },
+        { name: "Integrations", href: "/organizer/settings/integrations" },
+      ]
     },
   ];
 
@@ -119,7 +114,8 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   useEffect(() => {
     setExpandedItems(prev => ({
       ...prev,
-      events: location.pathname.startsWith('/organizer/events')
+      events: location.pathname.startsWith('/organizer/events'),
+      settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
     }));
   }, [location.pathname]);
 
