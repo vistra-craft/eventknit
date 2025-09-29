@@ -20,6 +20,7 @@ import AllEventsPage from "./pages/organizer/AllEventsPage";
 import UpcomingEventsPage from "./pages/organizer/UpcomingEventsPage";
 import PastEventsPage from "./pages/organizer/PastEventsPage";
 import CreateEventPage from "./pages/organizer/CreateEventPage";
+import OrganizerSettingsPage from "./pages/organizer/OrganizerSettingsPage";
 // Analytics imports
 import { 
   AnalyticsOverview, 
@@ -35,8 +36,6 @@ import {
   TeamCalendarPage,
   TeamPerformancePage
 } from "./pages/organizer/team";
-// Profile import
-import Profile from "./pages/organizer/Profile";
 // Event Templates import
 import EventTemplates from "./pages/organizer/EventTemplates";
 // Admin Dashboard imports
@@ -141,8 +140,14 @@ const App = () => (
       <Route path="/organizer/team/roles" element={<RolesPermissionsPage />} />
       <Route path="/organizer/team/calendar" element={<TeamCalendarPage />} />
       <Route path="/organizer/team/performance" element={<TeamPerformancePage />} />
-      {/* Profile Route */}
-      <Route path="/organizer/profile" element={<Profile />} />
+      {/* Settings Routes */}
+      <Route path="/organizer/settings" element={<OrganizerSettingsPage />} />
+      <Route path="/organizer/settings/profile" element={<OrganizerSettingsPage />} />
+      <Route path="/organizer/settings/notifications" element={<OrganizerSettingsPage />} />
+      <Route path="/organizer/settings/security" element={<OrganizerSettingsPage />} />
+      <Route path="/organizer/settings/appearance" element={<OrganizerSettingsPage />} />
+      {/* Legacy Profile Route - redirects to settings */}
+      <Route path="/organizer/profile" element={<OrganizerSettingsPage />} />
       {/* Event Templates and Drafts */}
       <Route path="/organizer/events/templates" element={<EventTemplates />} />
       {/* Admin Dashboard Routes */}
