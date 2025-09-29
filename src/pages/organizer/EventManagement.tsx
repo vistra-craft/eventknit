@@ -19,8 +19,6 @@ import {
   TrendingUp,
   Download,
   Filter,
-  ArrowUpRight,
-  ArrowDownRight,
   Activity,
   Target,
   Zap,
@@ -860,10 +858,9 @@ const EventManagement = () => {
                   <CustomAreaChart
                     data={registrationTrends}
                     xAxisKey="day"
-                    areas={[
-                      { dataKey: "registrations", name: "Registrations", color: CHART_COLORS.primary }
-                    ]}
+                    dataKey="registrations"
                     height={200}
+                    color={CHART_COLORS.primary}
                   />
                 </CardContent>
               </Card>
@@ -929,10 +926,9 @@ const EventManagement = () => {
                   <CustomBarChart
                     data={attendeeDemographics}
                     xAxisKey="age"
-                    bars={[
-                      { dataKey: "count", name: "Attendees", color: CHART_COLORS.primary }
-                    ]}
+                    dataKey="count"
                     height={150}
+                    color={CHART_COLORS.primary}
                   />
                 </CardContent>
               </Card>

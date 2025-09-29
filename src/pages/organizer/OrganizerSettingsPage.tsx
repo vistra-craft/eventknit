@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import {
-  Settings,
   User,
   Bell,
   Shield,
@@ -13,9 +12,6 @@ import {
   Eye,
   EyeOff,
   Key,
-  Smartphone,
-  Mail,
-  Globe,
   Moon,
   Sun,
   Monitor,
@@ -65,33 +61,26 @@ interface OrganizerSettingsData {
 
 const OrganizerSettingsPage = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   const [showPassword, setShowPassword] = useState(false);
   
   // Determine active tab from URL
-  const getActiveTabFromUrl = () => {
+  const getActiveTabFromUrl = useCallback(() => {
     const path = location.pathname;
     if (path.includes('/notifications')) return 'notifications';
     if (path.includes('/security')) return 'security';
     if (path.includes('/appearance')) return 'appearance';
     if (path.includes('/profile')) return 'profile';
     return 'profile'; // default
-  };
+  }, [location.pathname]);
 
   const [activeTab, setActiveTab] = useState(getActiveTabFromUrl());
   
   // Update active tab when URL changes
   useEffect(() => {
     setActiveTab(getActiveTabFromUrl());
-  }, [location.pathname]);
-
-  // Handle tab navigation
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
-    navigate(`/organizer/settings/${tabId}`);
-  };
+  }, [getActiveTabFromUrl]);
   
   // Mock settings data - in a real app, this would come from your API
   const [settings, setSettings] = useState<OrganizerSettingsData>({
