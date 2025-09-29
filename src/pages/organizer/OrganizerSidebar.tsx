@@ -86,12 +86,10 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       icon: Settings,
       group: "management",
       children: [
-        { name: "Profile", href: "/organizer/profile" },
-        { name: "Preferences", href: "/organizer/settings/preferences" },
+        { name: "Profile", href: "/organizer/settings/profile" },
         { name: "Notifications", href: "/organizer/settings/notifications" },
         { name: "Security", href: "/organizer/settings/security" },
-        { name: "Branding", href: "/organizer/settings/branding" },
-        { name: "Integrations", href: "/organizer/settings/integrations" },
+        { name: "Appearance", href: "/organizer/settings/appearance" },
       ]
     },
   ];

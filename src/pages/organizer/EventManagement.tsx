@@ -19,10 +19,18 @@ import {
   TrendingUp,
   Download,
   Filter,
+  Activity,
+  Target,
+  Zap,
+  Heart,
+  Share2,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../components/charts/ChartComponents";
+import { CHART_COLORS } from "../../components/charts/chartConstants";
 
 const EventManagement = () => {
   const { eventId } = useParams();
@@ -86,6 +94,39 @@ const EventManagement = () => {
     { id: 1, title: "Revolutionary AI Applications", author: "Dr. Sarah Kim", status: "approved", submittedDate: "2024-01-15", category: "Technology" },
     { id: 2, title: "Sustainable Tech Solutions", author: "Prof. David Lee", status: "under_review", submittedDate: "2024-01-20", category: "Sustainability" },
     { id: 3, title: "Future of Work", author: "Dr. Maria Garcia", status: "pending", submittedDate: "2024-02-01", category: "Business" },
+  ];
+
+  // Mock data for charts and analytics
+  const registrationTrends = [
+    { day: "Jan 1", registrations: 12 },
+    { day: "Jan 2", registrations: 19 },
+    { day: "Jan 3", registrations: 25 },
+    { day: "Jan 4", registrations: 32 },
+    { day: "Jan 5", registrations: 28 },
+    { day: "Jan 6", registrations: 35 },
+    { day: "Jan 7", registrations: 42 },
+  ];
+
+  const revenueBySource = [
+    { name: "Ticket Sales", value: 70, amount: 101640 },
+    { name: "Sponsorships", value: 20, amount: 29040 },
+    { name: "Merchandise", value: 7, amount: 10164 },
+    { name: "Donations", value: 3, amount: 4356 },
+  ];
+
+  const attendeeDemographics = [
+    { age: "18-25", count: 85 },
+    { age: "26-35", count: 142 },
+    { age: "36-45", count: 98 },
+    { age: "46-55", count: 67 },
+    { age: "56+", count: 43 },
+  ];
+
+  const recentActivity = [
+    { id: 1, type: "registration", message: "Sarah Johnson registered", time: "2 min ago", icon: Users, color: "text-green-600" },
+    { id: 2, type: "payment", message: "Payment of $299 received", time: "5 min ago", icon: DollarSign, color: "text-blue-600" },
+    { id: 3, type: "speaker", message: "New speaker confirmed", time: "12 min ago", icon: Mic, color: "text-purple-600" },
+    { id: 4, type: "exhibitor", message: "Booth assignment completed", time: "18 min ago", icon: Building2, color: "text-orange-600" },
   ];
 
   const navigationSections = [
@@ -669,110 +710,289 @@ const EventManagement = () => {
 
       default: // overview
         return (
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Event Overview</h3>
-            
-            {/* Event Banner */}
-            <div className="relative rounded-2xl p-8 mb-8 text-white overflow-hidden">
-              <img 
-                src={eventData.image}
-                alt="Event background"
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40"></div>
-              <div className="relative z-10">
-                <div className="mb-4">
-                  <h1 className="text-3xl font-bold mb-2">{eventData.title}</h1>
-                  <p className="text-white/80 text-sm">{eventData.category}</p>
+          <div className="space-y-8">
+            {/* Hero Section with Image Left, Content Right */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Event Image - Left Side */}
+              <div className="lg:col-span-1">
+                <div className="relative rounded-2xl overflow-hidden shadow-xl">
+                  <img 
+                    src={eventData.image}
+                    alt="Event background"
+                    className="w-full h-80 lg:h-96 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 mb-2">
+                      {eventData.category}
+                    </Badge>
+                    <div className="flex items-center gap-4 text-white/90 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Heart className="w-4 h-4" />
+                        <span>2.3k</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Share2 className="w-4 h-4" />
+                        <span>156</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageSquare className="w-4 h-4" />
+                        <span>89</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="mb-6">
-                  <p className="text-xl font-semibold mb-2">{eventData.date}</p>
-                  <p className="text-white/90">{eventData.location}</p>
+              </div>
+
+              {/* Event Details - Right Side */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Event Header */}
+                <div>
+                  <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
+                    {eventData.title}
+                  </h1>
+                  <p className="text-lg text-muted-foreground mb-4">
+                    {eventData.description}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      <span>{eventData.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-primary" />
+                      <span>{eventData.time}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <span>{eventData.venue}, {eventData.location}</span>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="bg-white/20 rounded-lg px-4 py-2 inline-block">
-                  <span className="text-white font-medium">#{eventData.title.replace(/\s+/g, '')}</span>
+
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="border-l-4 border-l-primary">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Attendees</p>
+                          <p className="text-2xl font-bold text-primary">{eventData.attendees}</p>
+                          <p className="text-xs text-muted-foreground">of {eventData.capacity}</p>
+                        </div>
+                        <Users className="w-8 h-8 text-primary/60" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 border-l-blue-500">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Speakers</p>
+                          <p className="text-2xl font-bold text-blue-600">{eventData.speakers}</p>
+                          <p className="text-xs text-muted-foreground">confirmed</p>
+                        </div>
+                        <Mic className="w-8 h-8 text-blue-500/60" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 border-l-green-500">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Revenue</p>
+                          <p className="text-2xl font-bold text-green-600">${eventData.revenue.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">total</p>
+                        </div>
+                        <DollarSign className="w-8 h-8 text-green-500/60" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 border-l-purple-500">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Conversion</p>
+                          <p className="text-2xl font-bold text-purple-600">{eventData.conversion}%</p>
+                          <p className="text-xs text-muted-foreground">rate</p>
+                        </div>
+                        <Target className="w-8 h-8 text-purple-500/60" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-3">
+                  <Button size="lg" className="flex items-center gap-2">
+                    <Eye className="w-4 h-4" />
+                    Preview Event
+                  </Button>
+                  <Button variant="outline" size="lg" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Event Settings
+                  </Button>
+                  <Button variant="outline" size="lg" className="flex items-center gap-2">
+                    <Share2 className="w-4 h-4" />
+                    Share Event
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {/* Analytics Dashboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Registration Trends */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Attendees</p>
-                      <p className="text-2xl font-bold">{eventData.attendees}/{eventData.capacity}</p>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Registration Trends
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomAreaChart
+                    data={registrationTrends}
+                    xAxisKey="day"
+                    dataKey="registrations"
+                    height={200}
+                    color={CHART_COLORS.primary}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Revenue Breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-green-600" />
+                    Revenue Breakdown
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomPieChart
+                    data={revenueBySource}
+                    dataKey="value"
+                    nameKey="name"
+                    height={200}
+                    colors={[CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.error]}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Additional Insights */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Event Health Score */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-500" />
+                    Event Health Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mb-4">
+                      <span className="text-2xl font-bold text-white">92</span>
                     </div>
-                    <Users className="w-8 h-8 text-primary" />
+                    <p className="text-sm text-muted-foreground mb-2">Overall Health</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span>Registration Rate</span>
+                        <span className="font-medium">85%</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div className="w-4/5 h-full bg-green-500 rounded-full"></div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Attendee Demographics */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Speakers</p>
-                      <p className="text-2xl font-bold">{eventData.speakers}</p>
-                    </div>
-                    <Mic className="w-8 h-8 text-blue-600" />
-                  </div>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-500" />
+                    Attendee Demographics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomBarChart
+                    data={attendeeDemographics}
+                    xAxisKey="age"
+                    dataKey="count"
+                    height={150}
+                    color={CHART_COLORS.primary}
+                  />
                 </CardContent>
               </Card>
+
+              {/* Recent Activity */}
               <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Exhibitors</p>
-                      <p className="text-2xl font-bold">{eventData.exhibitors}</p>
-                    </div>
-                    <Building2 className="w-8 h-8 text-green-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Revenue</p>
-                      <p className="text-2xl font-bold">${eventData.revenue.toLocaleString()}</p>
-                    </div>
-                    <DollarSign className="w-8 h-8 text-green-600" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-purple-500" />
+                    Recent Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}>
+                          <activity.icon className={`h-4 w-4 ${activity.color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground">{activity.message}</p>
+                          <p className="text-xs text-muted-foreground">{activity.time}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Event Details */}
+            {/* Quick Stats Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Event Details</CardTitle>
+                <CardTitle>Event Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Description</h4>
-                    <p className="text-muted-foreground">{eventData.description}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                      <Building2 className="w-6 h-6 text-primary" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Exhibitors</p>
+                    <p className="text-xl font-bold">{eventData.exhibitors}</p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        Date & Time
-                      </h4>
-                      <p className="text-muted-foreground">{eventData.date}</p>
-                      <p className="text-muted-foreground">{eventData.time}</p>
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                      <Star className="w-6 h-6 text-yellow-500" />
                     </div>
-                    <div>
-                      <h4 className="font-semibold mb-2 flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-primary" />
-                        Location
-                      </h4>
-                      <p className="text-muted-foreground">{eventData.venue}</p>
-                      <p className="text-muted-foreground">{eventData.location}</p>
+                    <p className="text-sm text-muted-foreground">Sponsors</p>
+                    <p className="text-xl font-bold">{eventData.sponsors}</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                      <Eye className="w-6 h-6 text-blue-500" />
                     </div>
+                    <p className="text-sm text-muted-foreground">Page Views</p>
+                    <p className="text-xl font-bold">{eventData.views.toLocaleString()}</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                      <TrendingUp className="w-6 h-6 text-green-500" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Growth Rate</p>
+                    <p className="text-xl font-bold">+18%</p>
                   </div>
                 </div>
               </CardContent>
