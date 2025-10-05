@@ -29,56 +29,59 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/5 via-background to-muted/10 relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-20 w-48 h-48 bg-eventknit/10 rounded-full blur-2xl"></div>
-          <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-accent-electric/10 rounded-full blur-xl"></div>
-        </div>
-        
-        <div className="relative z-10 flex flex-col justify-between p-12 h-full">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-eventknit rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-eventknit-foreground" />
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10">
+      <div className="container mx-auto px-6 py-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+            {/* Left Panel - Branding */}
+            <div className="hidden lg:block">
+              {/* Background Pattern */}
+              <div className="relative">
+                <div className="absolute top-20 left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 right-20 w-48 h-48 bg-eventknit/10 rounded-full blur-2xl"></div>
+                <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-accent-electric/10 rounded-full blur-xl"></div>
+                
+                <div className="relative z-10 flex flex-col justify-between h-full">
+                  {/* Logo */}
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 bg-eventknit rounded-lg flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-eventknit-foreground" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-eventknit">EventKnit</h1>
+                      <span className="text-sm text-muted-foreground">2.0.0 Beta</span>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="max-w-md">
+                    <h2 className="text-4xl font-bold text-foreground mb-6 leading-tight">
+                      Join EventKnit today
+                    </h2>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                      Create your account to unlock powerful event management tools. From planning to promotion, EventKnit helps you create unforgettable experiences.
+                    </p>
+                  </div>
+
+                  {/* Footer Links */}
+                  <div className="space-y-4 mt-8">
+                    <nav className="flex gap-6 text-sm">
+                      <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
+                      <Link to="/terms-of-service" className="text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
+                      <Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+                      <Link to="/support" className="text-muted-foreground hover:text-foreground transition-colors">Support</Link>
+                    </nav>
+                    <p className="text-xs text-muted-foreground">
+                      ©2025 <span className="text-eventknit">EventKnit</span> Technologies Ltd. All rights reserved.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-eventknit">EventKnit</h1>
-              <span className="text-sm text-muted-foreground">2.0.0 Beta</span>
-            </div>
-          </div>
 
-          {/* Description */}
-          <div className="max-w-md">
-            <h2 className="text-4xl font-bold text-foreground mb-6 leading-tight">
-              Join EventKnit today
-            </h2>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              Create your account to unlock powerful event management tools. From planning to promotion, EventKnit helps you create unforgettable experiences.
-            </p>
-          </div>
-
-          {/* Footer Links */}
-          <div className="space-y-4">
-            <nav className="flex gap-6 text-sm">
-              <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
-              <Link to="/terms-of-service" className="text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
-              <Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
-              <Link to="/support" className="text-muted-foreground hover:text-foreground transition-colors">Support</Link>
-            </nav>
-            <p className="text-xs text-muted-foreground">
-              ©2025 <span className="text-eventknit">EventKnit</span> Technologies Ltd. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel - Sign Up Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+            {/* Right Panel - Sign Up Form */}
+            <div className="flex items-center justify-center">
+              <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Create an account</h1>
             <p className="text-muted-foreground">Create your account to unlock automated event workflows</p>
@@ -218,6 +221,9 @@ const SignUp = () => {
               {' '}and{' '}
               <Link to="/privacy-policy" className="underline hover:no-underline">Privacy Policy</Link>
             </p>
+          </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
