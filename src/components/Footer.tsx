@@ -40,45 +40,67 @@ const Footer = () => {
               <li>
                 <Link
                   to="/"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
-                  <span className="text-eventknit">EventKnit</span> Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/about"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  About <span className="text-eventknit">EventKnit</span>
+                  Discover Events
                 </Link>
               </li>
               <li>
                 <Link
                   to="/create-event"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Create Event
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
+                >
+                  About Us
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 2 - Support & Info */}
+          {/* Column 2 - Support & Resources */}
           <div className="text-center">
             <ul className="space-y-1">
               <li>
                 <Link
                   to="/support"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
-                  Help/Contact Us
+                  Help Center
                 </Link>
               </li>
               <li>
                 <Link
+                  to="/auth/signin"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
+                >
+                  Sign In
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/auth/signup"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
+                >
+                  Get Started
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3 - Legal & Business */}
+          <div className="text-center md:text-right">
+            <ul className="space-y-1">
+              <li>
+                <Link
                   to="/privacy-policy"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Privacy Policy
                 </Link>
@@ -86,7 +108,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/terms-of-service"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Terms of Service
                 </Link>
@@ -94,40 +116,10 @@ const Footer = () => {
               <li>
                 <Link
                   to="/cookie-policy"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Cookie Policy
                 </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3 - Business */}
-          <div className="text-center md:text-right">
-            <ul className="space-y-1">
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Partner With Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Press
-                </a>
               </li>
             </ul>
           </div>
