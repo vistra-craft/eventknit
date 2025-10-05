@@ -17,6 +17,10 @@
     --primary-glow: 194 48% 87%;
     --primary-dark: 222 47% 8%;
 
+    /* EventKnit Brand Color */
+    --eventknit-brand: 331 100% 50%;
+    --eventknit-brand-foreground: 240 100% 100%;
+
     /* Accent Colors - Using New Color Scheme */
     --accent-electric: 194 48% 87%;
     --accent-neon: 194 48% 87%;
@@ -95,6 +99,10 @@
   .dark {
     --background: 222 47% 11%;
     --foreground: 240 100% 100%;
+
+    /* EventKnit Brand Color - Same in dark mode */
+    --eventknit-brand: 331 100% 50%;
+    --eventknit-brand-foreground: 240 100% 100%;
 
     --card: 222 47% 11%;
     --card-foreground: 240 100% 100%;

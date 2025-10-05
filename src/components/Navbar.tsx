@@ -124,10 +124,10 @@ const Navbar: React.FC = () => {
             
             {/* Logo */}
             <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-primary-foreground" />
+              <div className="w-8 h-8 bg-eventknit rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-eventknit-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">EventKnit</span>
+              <span className="text-xl font-bold text-eventknit">EventKnit</span>
             </div>
 
             {/* Search Bar - Full Width */}

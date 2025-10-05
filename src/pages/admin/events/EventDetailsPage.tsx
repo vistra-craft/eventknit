@@ -983,7 +983,7 @@ const EventDetailsPage = () => {
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-blue-50">
                     <div>
                       <h4 className="font-medium text-gray-900">Platform Fees</h4>
-                      <p className="text-sm text-gray-600">EventKnit commission</p>
+                      <p className="text-sm text-gray-600"><span className="text-eventknit">EventKnit</span> commission</p>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-semibold text-blue-600">{formatCurrency(metrics.platformFees)}</div>

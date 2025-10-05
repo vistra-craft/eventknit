@@ -147,7 +147,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}>
       <div className="p-4">
         <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
-          {isOpen && <h2 className="text-lg font-semibold text-foreground">EventKnit</h2>}
+          {isOpen && <h2 className="text-lg font-semibold text-eventknit">EventKnit</h2>}
           <button
             onClick={onToggle}
             className="p-2 rounded-lg hover:bg-muted transition-colors"

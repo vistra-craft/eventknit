@@ -23,6 +23,8 @@ export default {
         surface: "hsl(var(--surface))",
         // Custom EventKnit Colors
         "eventknit": {
+          DEFAULT: "hsl(var(--eventknit-brand))",
+          foreground: "hsl(var(--eventknit-brand-foreground))",
           "bg": "#f2f4f6",
           "card": "#fefeff", 
           "text": "#0f172a",

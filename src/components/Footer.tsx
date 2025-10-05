@@ -40,7 +40,7 @@ const Footer = () => {
                   to="/"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  EventKnit Home
+                  <span className="text-eventknit">EventKnit</span> Home
                 </Link>
               </li>
               <li>
@@ -48,7 +48,7 @@ const Footer = () => {
                   to="/about"
                   className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
                 >
-                  About EventKnit
+                  About <span className="text-eventknit">EventKnit</span>
                 </Link>
               </li>
               <li>
@@ -162,7 +162,7 @@ const Footer = () => {
             |
           </p>
           <p className="text-center text-xs text-gray-500 mt-1">
-            © 2025 EVENTKNIT. ALL RIGHTS RESERVED.
+            © 2025 <span className="text-eventknit">EVENTKNIT</span>. ALL RIGHTS RESERVED.
           </p>
         </div>
       </div>

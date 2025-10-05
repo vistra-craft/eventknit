@@ -68,7 +68,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
           {/* Left Side - Logo and Event Title */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-xl font-bold text-primary">EventKnit</span>
+              <span className="text-xl font-bold text-eventknit">EventKnit</span>
               <span className="text-muted-foreground mx-2">&gt;</span>
               <span className="text-lg font-medium text-foreground">Seamless East Africa 2025</span>
             </Link>
