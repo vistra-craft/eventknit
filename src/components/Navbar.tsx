@@ -96,13 +96,16 @@ const Navbar: React.FC = () => {
             ) : (
               <>
                 <button
-                  onClick={() => setUser({name: 'John Doe'})} // Mock login
+                  onClick={() => navigate('/auth/signin')}
                   className="hover:text-primary/80 transition-colors duration-200 cursor-pointer"
                 >
                   Login
                 </button>
                 <span>|</span>
-                <button className="hover:text-primary/80 transition-colors duration-200 cursor-pointer">
+                <button 
+                  onClick={() => navigate('/auth/signup')}
+                  className="hover:text-primary/80 transition-colors duration-200 cursor-pointer"
+                >
                   Sign Up
                 </button>
               </>

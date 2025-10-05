@@ -21,7 +21,6 @@ interface EventCardProps {
     location: string;
     organizer: string;
     price: string;
-    rating: number;
     category: string;
     description: string;
     fullDescription: string;

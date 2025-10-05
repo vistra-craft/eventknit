@@ -103,6 +103,11 @@ import WorkstationScanner from "./pages/admin/workstation/WorkstationScanner";
 import WorkstationPrint from "./pages/admin/workstation/WorkstationPrint";
 import WorkstationTemplates from "./pages/admin/workstation/WorkstationTemplates";
 import WorkstationHistory from "./pages/admin/workstation/WorkstationHistory";
+// Auth imports
+import SignIn from "./pages/auth/SignIn";
+import SignUp from "./pages/auth/SignUp";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 
 const App = () => (
   <BrowserRouter>
@@ -207,6 +212,11 @@ const App = () => (
       <Route path="/admin/analytics/revenue" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/system" element={<AdminAnalyticsOverview />} />
       <Route path="/support" element={<Support />} />
+      {/* Auth Routes */}
+      <Route path="/auth/signin" element={<SignIn />} />
+      <Route path="/auth/signup" element={<SignUp />} />
+      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+      <Route path="/auth/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<NotFound />} />
       {/* Admin Workstation Routes */}
       <Route path="/admin/workstation" element={<WorkstationOverview />} />
