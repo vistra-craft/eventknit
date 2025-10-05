@@ -1,9 +1,11 @@
 import { Facebook, Twitter, Instagram } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const Footer = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
   return (
-    <footer className="bg-gray-100">
+    <footer className="bg-primary/5">
       <div className="container mx-auto px-6 py-4">
         {/* Social Media Icons */}
         <div className="flex justify-center space-x-4 mb-2">
@@ -132,40 +134,50 @@ const Footer = () => {
         </div>
       </div>
       
-      <div className="container mx-auto px-6 py-2">
-        {/* Line above legal text */}
-        <div className="border-t border-gray-200 pt-2 mb-2"></div>
-        {/* Legal Text */}
-        <div>
-          <p className="text-center text-xs text-gray-500 leading-relaxed">
-            BY CONTINUING PAST THIS PAGE, YOU AGREE TO OUR{" "}
-            <Link
-              to="/terms-of-service"
-              className="text-gray-700 underline hover:no-underline transition-colors"
-            >
-              TERMS OF USE
-            </Link>{" "}
-            AND{" "}
-            <Link
-              to="/privacy-policy"
-              className="text-gray-700 underline hover:no-underline transition-colors"
-            >
-              PRIVACY POLICY
-            </Link>{" "}
-            |{" "}
-            <Link
-              to="/cookie-policy"
-              className="text-gray-700 underline hover:no-underline transition-colors"
-            >
-              COOKIE POLICY
-            </Link>{" "}
-            |
-          </p>
+      {isHomePage && (
+        <div className="container mx-auto px-6 py-2">
+          {/* Line above legal text */}
+          <div className="border-t border-gray-300 pt-2 mb-2"></div>
+          {/* Legal Text */}
+          <div>
+            <p className="text-center text-xs text-gray-500 leading-relaxed">
+              BY CONTINUING PAST THIS PAGE, YOU AGREE TO OUR{" "}
+              <Link
+                to="/terms-of-service"
+                className="text-gray-700 underline hover:no-underline transition-colors"
+              >
+                TERMS OF USE
+              </Link>{" "}
+              AND{" "}
+              <Link
+                to="/privacy-policy"
+                className="text-gray-700 underline hover:no-underline transition-colors"
+              >
+                PRIVACY POLICY
+              </Link>{" "}
+              |{" "}
+              <Link
+                to="/cookie-policy"
+                className="text-gray-700 underline hover:no-underline transition-colors"
+              >
+                COOKIE POLICY
+              </Link>{" "}
+              |
+            </p>
+            <p className="text-center text-xs text-gray-500 mt-1">
+              © 2025 <span className="text-eventknit">EVENTKNIT</span>. ALL RIGHTS RESERVED.
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {!isHomePage && (
+        <div className="container mx-auto px-6 py-2">
           <p className="text-center text-xs text-gray-500 mt-1">
             © 2025 <span className="text-eventknit">EVENTKNIT</span>. ALL RIGHTS RESERVED.
           </p>
         </div>
-      </div>
+      )}
     </footer>
   );
 };
