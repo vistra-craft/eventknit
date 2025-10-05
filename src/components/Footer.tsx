@@ -5,9 +5,6 @@ const Footer = () => {
   return (
     <footer className="bg-gray-100">
       <div className="container mx-auto px-6 py-4">
-        {/* Top border */}
-        <div className="border-t border-gray-200 pt-2 mb-2"></div>
-        
         {/* Social Media Icons */}
         <div className="flex justify-center space-x-4 mb-2">
           <a
@@ -135,10 +132,9 @@ const Footer = () => {
         </div>
       </div>
       
-      {/* Full-width line above legal text */}
-      <div className="border-t border-gray-200"></div>
-      
       <div className="container mx-auto px-6 py-2">
+        {/* Line above legal text */}
+        <div className="border-t border-gray-200 pt-2 mb-2"></div>
         {/* Legal Text */}
         <div>
           <p className="text-center text-xs text-gray-500 leading-relaxed">
