@@ -15,7 +15,7 @@ export const EventGrid = () => {
   ];
 
   return (
-    <section className="py-16 bg-background relative overflow-hidden">
+    <section className="py-16 bg-background relative overflow-hidden" data-section="events">
       {/* Background decorative elements */}
       <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full transform -translate-x-16 -translate-y-16"></div>
       <div className="absolute top-20 right-0 w-24 h-24 bg-primary/5 rounded-full transform translate-x-12 -translate-y-12"></div>

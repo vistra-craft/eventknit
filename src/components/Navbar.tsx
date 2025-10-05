@@ -61,9 +61,22 @@ const Navbar: React.FC = () => {
     { name: "Find Events", href: "/" },
   ];
 
-  const handleLogout = (): void => {
-    setUser(null);
-    // Add your logout logic here
+  const handleNavigation = (item: NavItem) => {
+    if (item.name === "Find Events") {
+      // Navigate to home page and scroll to events section
+      navigate('/');
+      // Use setTimeout to ensure the page loads before scrolling
+      setTimeout(() => {
+        const eventsSection = document.querySelector('[data-section="events"]') || 
+                              document.querySelector('.event-grid') ||
+                              document.querySelector('[class*="EventGrid"]');
+        if (eventsSection) {
+          eventsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      navigate(item.href);
+    }
   };
 
   return (
@@ -87,7 +100,7 @@ const Navbar: React.FC = () => {
                 <span>|</span>
                 <button
                   onClick={handleLogout}
-                  className="hover:text-primary/80 transition-colors duration-200 cursor-pointer flex items-center space-x-1"
+                  className="hover:text-green-500 transition-colors duration-200 cursor-pointer flex items-center space-x-1"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
@@ -97,14 +110,14 @@ const Navbar: React.FC = () => {
               <>
                 <button
                   onClick={() => navigate('/auth/signin')}
-                  className="hover:text-primary/80 transition-colors duration-200 cursor-pointer"
+                  className="hover:text-green-500 transition-colors duration-200 cursor-pointer"
                 >
                   Login
                 </button>
                 <span>|</span>
                 <button 
                   onClick={() => navigate('/auth/signup')}
-                  className="hover:text-primary/80 transition-colors duration-200 cursor-pointer"
+                  className="hover:text-green-500 transition-colors duration-200 cursor-pointer"
                 >
                   Sign Up
                 </button>
@@ -143,14 +156,11 @@ const Navbar: React.FC = () => {
               {/* Navigation */}
               <div className="flex items-center space-x-6">
                 {navItems.map((item) => {
-                  const isActive = location.pathname === item.href || 
-                                 (item.href === '/' && location.pathname === '/');
-
                   return (
                     <button
                       key={item.name}
-                      onClick={() => navigate(item.href)}
-                      className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-foreground/80 hover:text-primary'} transition-colors duration-200`}
+                      onClick={() => handleNavigation(item)}
+                      className={`text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200`}
                     >
                       {item.name}
                     </button>
@@ -161,7 +171,7 @@ const Navbar: React.FC = () => {
               {/* Actions */}
               <button
                 onClick={() => navigate('/create-event')}
-                className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors duration-200"
+                className="text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200"
               >
                 Create Event
               </button>
@@ -189,10 +199,10 @@ const Navbar: React.FC = () => {
                 <button
                   key={item.name}
                   onClick={() => {
-                    navigate(item.href);
+                    handleNavigation(item);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`block w-full text-left px-3 py-2 text-foreground/80 hover:text-primary font-medium ${location.pathname === item.href ? 'text-primary' : ''}`}
+                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
                 >
                   {item.name}
                 </button>
@@ -200,7 +210,7 @@ const Navbar: React.FC = () => {
               
               <div className="mt-4 space-y-2 border-t border-border pt-4">
                 <button
-                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-primary font-medium"
+                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
                   onClick={() => {
                     navigate('/create-event');
                     setIsMobileMenuOpen(false);

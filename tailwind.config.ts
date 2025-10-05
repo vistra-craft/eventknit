@@ -32,6 +32,8 @@ export default {
           "primary": "#0f172a",
           "primary-light": "#cfe7ee"
         },
+        // Navigation Hover Color
+        "nav-hover": "hsl(var(--nav-hover))",
         // Additional Brand Colors
         "red-violet": "#d20b7c",
         "essential-cookie": "hsl(var(--primary) / 0.05)", // Light primary background for essential cookies
