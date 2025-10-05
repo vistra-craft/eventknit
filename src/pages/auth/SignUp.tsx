@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, EyeOff, Calendar, Mail, Lock, User } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -60,19 +61,6 @@ const SignUp = () => {
                     </h2>
                     <p className="text-lg text-muted-foreground leading-relaxed">
                       Create your account to unlock powerful event management tools. From planning to promotion, EventKnit helps you create unforgettable experiences.
-                    </p>
-                  </div>
-
-                  {/* Footer Links */}
-                  <div className="space-y-4 mt-8">
-                    <nav className="flex gap-6 text-sm">
-                      <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
-                      <Link to="/terms-of-service" className="text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
-                      <Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
-                      <Link to="/support" className="text-muted-foreground hover:text-foreground transition-colors">Support</Link>
-                    </nav>
-                    <p className="text-xs text-muted-foreground">
-                      ©2025 <span className="text-eventknit">EventKnit</span> Technologies Ltd. All rights reserved.
                     </p>
                   </div>
                 </div>
@@ -227,6 +215,7 @@ const SignUp = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

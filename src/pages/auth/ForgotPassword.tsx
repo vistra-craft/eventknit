@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -54,19 +55,6 @@ const ForgotPassword = () => {
                     </h2>
                     <p className="text-lg text-muted-foreground leading-relaxed">
                       Don't worry, it happens to the best of us. Enter your email address and we'll send you a link to reset your password.
-                    </p>
-                  </div>
-
-                  {/* Footer Links */}
-                  <div className="space-y-4 mt-8">
-                    <nav className="flex gap-6 text-sm">
-                      <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
-                      <Link to="/terms-of-service" className="text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
-                      <Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
-                      <Link to="/support" className="text-muted-foreground hover:text-foreground transition-colors">Support</Link>
-                    </nav>
-                    <p className="text-xs text-muted-foreground">
-                      ©2025 <span className="text-eventknit">EventKnit</span> Technologies Ltd. All rights reserved.
                     </p>
                   </div>
                 </div>
@@ -172,6 +160,7 @@ const ForgotPassword = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

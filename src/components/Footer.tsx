@@ -165,6 +165,8 @@ const Footer = () => {
       
       {!isHomePage && (
         <div className="container mx-auto px-6 py-2">
+          {/* Line above copyright text */}
+          <div className="border-t border-gray-300 pt-2 mb-2"></div>
           <p className="text-center text-xs text-gray-500 mt-1">
             © 2025 <span className="text-eventknit">EVENTKNIT</span>. ALL RIGHTS RESERVED.
           </p>
