@@ -79,12 +79,15 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
           <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
             {event.title}
           </h3>
-          <Badge className={`${getStatusColor(event.category)} border-0`}>
-            <div className="flex items-center gap-1">
-              {getStatusIcon(event.category)}
-              <span className="capitalize">{event.category}</span>
-            </div>
-          </Badge>
+          {/* Hide category badge for specific events */}
+          {!["Tech Innovation Summit 2024", "Business Leadership Workshop", "Food & Wine Expo"].includes(event.title) && (
+            <Badge className={`${getStatusColor(event.category)} border-0`}>
+              <div className="flex items-center gap-1">
+                {getStatusIcon(event.category)}
+                <span className="capitalize">{event.category}</span>
+              </div>
+            </Badge>
+          )}
         </div>
         
         <div className="space-y-2 mb-4">

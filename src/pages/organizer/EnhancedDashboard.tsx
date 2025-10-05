@@ -581,44 +581,6 @@ const EnhancedDashboard = () => {
               </Link>
             </div>
           </div>
-
-          {/* Recent Activity */}
-          <div className="bg-card rounded-xl shadow-sm border border-border">
-            <div className="p-6 border-b border-border">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Recent Activity
-                </h3>
-                <Link
-                  to="/organizer/activity"
-                  className="text-sm text-primary hover:text-primary/80 font-medium"
-                >
-                  View all
-                </Link>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {recentActivity.slice(0, 6).map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div
-                      className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
-                    >
-                      <activity.icon className={`h-4 w-4 ${activity.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
-                        {activity.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
