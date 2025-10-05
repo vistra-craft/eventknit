@@ -74,13 +74,11 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
 
   return (
     <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-      <div className="relative overflow-hidden">
-        <img 
-          src={event.image}
-          alt={event.title}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="absolute top-4 left-4">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+            {event.title}
+          </h3>
           <Badge className={`${getStatusColor(event.category)} border-0`}>
             <div className="flex items-center gap-1">
               {getStatusIcon(event.category)}
@@ -88,12 +86,6 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
             </div>
           </Badge>
         </div>
-      </div>
-      
-      <CardContent className="p-6">
-        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-          {event.title}
-        </h3>
         
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
