@@ -41,7 +41,7 @@
     /* Shadows & Glows - Light Theme */
     --shadow-primary: 0 20px 40px -12px hsl(var(--primary) / 0.4);
     --shadow-card: 0 8px 32px -8px hsl(194 48% 87% / 0.2);
-    --shadow-card-hover: 0 25px 50px -12px hsl(var(--primary) / 0.6);
+    --shadow-card-hover: 0 12px 24px -8px hsl(var(--primary) / 0.3);
     --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.4);
     --shadow-elevated: 0 25px 50px -12px hsl(194 48% 87% / 0.4);
 

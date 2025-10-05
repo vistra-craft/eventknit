@@ -13,7 +13,7 @@ const cardVariants = cva(
         gradient: "border-card-border bg-gradient-card text-card-foreground shadow-card",
         glass: "border-glass-border bg-glass-bg backdrop-blur-sm text-card-foreground shadow-card",
         minimal: "border-card-border bg-card-surface text-card-foreground shadow-sm",
-        interactive: "border-card-border bg-card-surface text-card-foreground shadow-card hover:shadow-card-hover hover:-translate-y-1 hover:border-primary cursor-pointer"
+        interactive: "border-card-border bg-card-surface text-card-foreground shadow-card hover:shadow-card-hover hover:-translate-y-0.25 cursor-pointer"
       },
     },
     defaultVariants: {

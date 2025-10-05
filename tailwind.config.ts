@@ -30,6 +30,10 @@ export default {
           "primary": "#0f172a",
           "primary-light": "#cfe7ee"
         },
+        // Additional Brand Colors
+        "red-violet": "#d20b7c",
+        "essential-cookie": "hsl(var(--primary) / 0.05)", // Light primary background for essential cookies
+        "functional-cookie": "#eff6ff", // Light blue background for functional cookies
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
