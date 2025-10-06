@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Menu, X, User, LogOut, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "./Searchbar";
 
 // Define types
@@ -21,9 +21,8 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null); // Mock user state - replace with your auth
+  const [user] = useState<User | null>(null); // Mock user state - replace with your auth
   const [country] = useState<string>('US'); // Default to US
-  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,6 +59,12 @@ const Navbar: React.FC = () => {
     { name: "About", href: "/about" },
     { name: "Find Events", href: "/" },
   ];
+
+  const handleLogout = () => {
+    // Handle logout logic here
+    console.log('Logout clicked');
+    navigate('/');
+  };
 
   const handleNavigation = (item: NavItem) => {
     if (item.name === "Find Events") {

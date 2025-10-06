@@ -10,9 +10,6 @@ import {
   ArrowDownRight,
   Mic,
   Building2,
-  Star,
-  CheckCircle,
-  Eye,
 } from "lucide-react";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 
@@ -203,90 +200,6 @@ const EnhancedDashboard = () => {
       fullDescription: "An exciting competition where innovative startups present their ideas to a panel of investors.",
       duration: "6 hours",
       ageRestriction: "16+"
-    },
-  ];
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: "registration",
-      message: "Sarah Johnson registered for Tech Innovation Summit 2024",
-      time: "2 minutes ago",
-      icon: Users,
-      color: "text-accent-neon",
-      eventId: "1",
-    },
-    {
-      id: "2",
-      type: "payment",
-      message: "Payment of $299 received for Business Leadership Workshop",
-      time: "5 minutes ago",
-      icon: DollarSign,
-      color: "text-accent-electric",
-      eventId: "2",
-    },
-    {
-      id: "3",
-      type: "speaker",
-      message: "New speaker Dr. Maria Rodriguez added to Digital Marketing Conference",
-      time: "12 minutes ago",
-      icon: Mic,
-      color: "text-accent-coral",
-      eventId: 4,
-    },
-    {
-      id: "4",
-      type: "exhibitor",
-      message: "Exhibitor booth confirmed for Food & Wine Expo - Wine Masters Inc.",
-      time: "18 minutes ago",
-      icon: Building2,
-      color: "text-primary",
-      eventId: "3",
-    },
-    {
-      id: "5",
-      type: "registration",
-      message: "Michael Chen registered for Startup Pitch Competition",
-      time: "25 minutes ago",
-      icon: Users,
-      color: "text-accent-neon",
-      eventId: 5,
-    },
-    {
-      id: "6",
-      type: "sponsor",
-      message: "Gold sponsor partnership confirmed for Tech Innovation Summit",
-      time: "1 hour ago",
-      icon: Star,
-      color: "text-yellow-600",
-      eventId: "1",
-    },
-    {
-      id: "7",
-      type: "payment",
-      message: "Payment of $150 received for Food & Wine Expo",
-      time: "1 hour ago",
-      icon: DollarSign,
-      color: "text-accent-electric",
-      eventId: "3",
-    },
-    {
-      id: "8",
-      type: "completion",
-      message: "Food & Wine Expo completed successfully with 320 attendees",
-      time: "2 hours ago",
-      icon: CheckCircle,
-      color: "text-green-600",
-      eventId: "3",
-    },
-    {
-      id: "9",
-      type: "view",
-      message: "Business Leadership Workshop page viewed 23 times today",
-      time: "3 hours ago",
-      icon: Eye,
-      color: "text-accent-coral",
-      eventId: "2",
     },
   ];
 
