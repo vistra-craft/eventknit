@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 const Footer = () => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+
   return (
     <footer className="bg-primary/5">
       <div className="container mx-auto px-6 py-4">
@@ -168,7 +169,7 @@ const Footer = () => {
           {/* Line above copyright text */}
           <div className="border-t border-gray-300 pt-2 mb-2"></div>
           <p className="text-center text-xs text-gray-500 mt-1">
-            © 2025 <span className="text-eventknit">EVENTKNIT</span>. ALL RIGHTS RESERVED.
+            © 2025 <span className="text-eventknit">EventKnit</span>. ALL RIGHTS RESERVED.
           </p>
         </div>
       )}

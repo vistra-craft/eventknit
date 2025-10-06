@@ -159,7 +159,7 @@ const mockEmailTemplates: EmailTemplate[] = [
     <meta charset="utf-8">
     <title>Welcome to EventKnit</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<body className="font-sans leading-relaxed text-foreground">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #2563eb;">Welcome to EventKnit!</h1>
         <p>Hi {{user_name}},</p>
@@ -196,7 +196,7 @@ const mockEmailTemplates: EmailTemplate[] = [
     <meta charset="utf-8">
     <title>Event Created Successfully</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<body className="font-sans leading-relaxed text-foreground">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #16a34a;">Event Created Successfully!</h1>
         <p>Hi {{organizer_name}},</p>
@@ -234,7 +234,7 @@ const mockEmailTemplates: EmailTemplate[] = [
     <meta charset="utf-8">
     <title>Payment Confirmation</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<body className="font-sans leading-relaxed text-foreground">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #16a34a;">Payment Confirmed!</h1>
         <p>Hi {{attendee_name}},</p>
@@ -273,7 +273,7 @@ const mockEmailTemplates: EmailTemplate[] = [
     <meta charset="utf-8">
     <title>Event Reminder</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<body className="font-sans leading-relaxed text-foreground">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #dc2626;">Event Reminder</h1>
         <p>Hi {{attendee_name}},</p>
@@ -311,7 +311,7 @@ const mockEmailTemplates: EmailTemplate[] = [
     <meta charset="utf-8">
     <title>EventKnit Newsletter</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<body className="font-sans leading-relaxed text-foreground">
     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <h1 style="color: #2563eb;">EventKnit Newsletter</h1>
         <p>Hi {{subscriber_name}},</p>

@@ -80,7 +80,7 @@ const WorkstationTemplates: React.FC = () => {
           width: 260,
           height: 30,
           fontSize: 18,
-          fontFamily: "Arial",
+          fontFamily: "Inter",
           fontWeight: "bold",
           color: "#000000",
           zIndex: 1
@@ -94,7 +94,7 @@ const WorkstationTemplates: React.FC = () => {
           width: 260,
           height: 25,
           fontSize: 16,
-          fontFamily: "Arial",
+          fontFamily: "Inter",
           fontWeight: "normal",
           color: "#333333",
           zIndex: 2
@@ -108,7 +108,7 @@ const WorkstationTemplates: React.FC = () => {
           width: 260,
           height: 20,
           fontSize: 14,
-          fontFamily: "Arial",
+          fontFamily: "Inter",
           fontWeight: "normal",
           color: "#666666",
           zIndex: 3
@@ -155,7 +155,7 @@ const WorkstationTemplates: React.FC = () => {
       width: type === 'qr' ? 80 : 100,
       height: type === 'qr' ? 80 : 30,
       fontSize: 14,
-      fontFamily: "Arial",
+      fontFamily: "Inter",
       fontWeight: "normal",
       color: "#000000",
       backgroundColor: "#ffffff",
@@ -465,7 +465,7 @@ const WorkstationTemplates: React.FC = () => {
                           <div>
                             <Label className="text-xs">Font Family</Label>
                             <select
-                              value={selectedElementData.fontFamily || 'Arial'}
+                              value={selectedElementData.fontFamily || 'Inter'}
                               onChange={(e) => updateElement(selectedElement!, { fontFamily: e.target.value })}
                               className="w-full h-8 px-2 border border-border rounded text-sm"
                             >
@@ -614,7 +614,7 @@ const WorkstationTemplates: React.FC = () => {
                           width: `${element.width}px`,
                           height: `${element.height}px`,
                           fontSize: `${element.fontSize || 14}px`,
-                          fontFamily: element.fontFamily || 'Arial',
+                          fontFamily: element.fontFamily || 'Inter',
                           fontWeight: element.fontWeight || 'normal',
                           color: element.color || '#000000',
                           backgroundColor: element.backgroundColor || 'transparent',

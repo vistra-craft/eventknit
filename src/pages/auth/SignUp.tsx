@@ -49,7 +49,9 @@ const SignUp = () => {
                     </div>
                     <div>
                       <h1 className="text-2xl font-bold text-eventknit">EventKnit</h1>
-                      <span className="text-sm text-muted-foreground">2.0.0 Beta</span>
+                      <span className="text-sm text-muted-foreground">
+                        {import.meta.env.VITE_APP_VERSION || '1.0.0 Development'}
+                      </span>
                     </div>
                   </div>
 
