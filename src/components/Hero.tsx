@@ -2,11 +2,12 @@ import { Heart, Share2, MapPin, Calendar, Clock, Eye, ChevronLeft, ChevronRight 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Placeholder event data for hero section
 const heroEvents = [
   {
-    id: 1,
+    id: "1",
     title: "Summer Music Festival 2025",
     image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1920&h=1080&fit=crop",
     category: "Music",
@@ -18,7 +19,7 @@ const heroEvents = [
     price: "From $45"
   },
   {
-    id: 2,
+    id: "2",
     title: "Tech Innovation Summit 2024",
     image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1920&h=1080&fit=crop",
     category: "Technology",
@@ -30,7 +31,7 @@ const heroEvents = [
     price: "From $299"
   },
   {
-    id: 3,
+    id: "3",
     title: "Art & Wine Festival",
     image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1920&h=1080&fit=crop",
     category: "Arts & Culture",
@@ -42,7 +43,7 @@ const heroEvents = [
     price: "From $25"
   },
   {
-    id: 4,
+    id: "4",
     title: "Food & Drink Expo",
     image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1920&h=1080&fit=crop",
     category: "Food & Drink",
@@ -56,6 +57,7 @@ const heroEvents = [
 ];
 
 export const Hero = () => {
+  const navigate = useNavigate();
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -93,19 +95,27 @@ export const Hero = () => {
     setIsAutoPlaying(false);
     setCurrentEventIndex(index);
   };
+
+  const handleImageClick = () => {
+    navigate(`/event/${currentEvent.id}`);
+  };
   
   return (
     <div className="relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60 z-10" />
-      <img 
-        src={currentEvent.image} 
-        alt={currentEvent.title}
-        className="w-full h-[60vh] object-cover transition-opacity duration-500"
-        loading="eager"
-      />
+      <div 
+        className="w-full h-[60vh] object-cover transition-opacity duration-500 cursor-pointer hover:opacity-90 relative"
+        onClick={handleImageClick}
+        style={{
+          backgroundImage: `url(${currentEvent.image})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60 z-10" />
+      </div>
       
       {/* Hero Content Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-white">
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-6 text-white pointer-events-none">
         <div className="container mx-auto max-w-7xl">
           
           <div className="flex flex-col lg:flex-row lg:items-end gap-6">
@@ -145,7 +155,7 @@ export const Hero = () => {
               </div>
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex gap-3 pointer-events-auto">
               <Button
                 variant="secondary"
                 size="lg"
