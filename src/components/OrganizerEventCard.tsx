@@ -21,7 +21,6 @@ interface EventCardProps {
     location: string;
     organizer: string;
     price: string;
-    rating: number;
     category: string;
     description: string;
     fullDescription: string;
@@ -75,26 +74,21 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
 
   return (
     <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-      <div className="relative overflow-hidden">
-        <img 
-          src={event.image}
-          alt={event.title}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        <div className="absolute top-4 left-4">
-          <Badge className={`${getStatusColor(event.category)} border-0`}>
-            <div className="flex items-center gap-1">
-              {getStatusIcon(event.category)}
-              <span className="capitalize">{event.category}</span>
-            </div>
-          </Badge>
-        </div>
-      </div>
-      
       <CardContent className="p-6">
-        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
-          {event.title}
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+            {event.title}
+          </h3>
+          {/* Hide category badge for specific events */}
+          {!["Tech Innovation Summit 2024", "Business Leadership Workshop", "Food & Wine Expo"].includes(event.title) && (
+            <Badge className={`${getStatusColor(event.category)} border-0`}>
+              <div className="flex items-center gap-1">
+                {getStatusIcon(event.category)}
+                <span className="capitalize">{event.category}</span>
+              </div>
+            </Badge>
+          )}
+        </div>
         
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

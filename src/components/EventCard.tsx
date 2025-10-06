@@ -1,4 +1,4 @@
-import { Calendar, MapPin, User, Star } from "lucide-react";
+import { Calendar, MapPin, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +13,6 @@ interface EventCardProps {
   location: string;
   organizer: string;
   price: string;
-  rating?: number;
   category: string;
 }
 
@@ -26,8 +25,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   venue, 
   location, 
   organizer, 
-  price, 
-  rating = 0,
+  price,
   category 
 }) => {
   const navigate = useNavigate();
@@ -55,12 +53,6 @@ export const EventCard: React.FC<EventCardProps> = ({
           <span className="px-3 py-1 bg-primary text-primary-foreground backdrop-blur-sm border border-primary rounded-full text-xs font-medium">
             {category}
           </span>
-        </div>
-        
-        {/* Rating Badge */}
-        <div className="absolute top-4 right-4 flex items-center gap-1 bg-primary text-primary-foreground backdrop-blur-sm border border-primary rounded-full px-2 py-1">
-          <Star className="w-3 h-3 fill-primary-foreground text-primary-foreground" />
-          <span className="text-xs font-medium">{rating}</span>
         </div>
       </div>
 

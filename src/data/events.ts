@@ -40,7 +40,6 @@ const withDefaults = (event: Omit<EventItem, 'isPrivate' | 'faqs' | 'speakers' |
     location,
     organizer,
     price,
-    rating,
     category,
     description,
     fullDescription,
@@ -67,7 +66,6 @@ const withDefaults = (event: Omit<EventItem, 'isPrivate' | 'faqs' | 'speakers' |
     location,
     organizer,
     price,
-    rating,
     category,
     description,
     fullDescription,
@@ -96,7 +94,6 @@ export interface EventItem {
   location: string;
   organizer: string;
   price: string; // display price
-  rating: number;
   category: string;
   description: string;
   fullDescription: string;
@@ -127,7 +124,6 @@ export const events: EventItem[] = [
     location: "New York, NY",
     organizer: "Live Nation",
     price: "$89",
-    rating: 4.8,
     category: "Music",
     description: baseDescription,
     fullDescription: baseFullDescription,
@@ -200,7 +196,6 @@ export const events: EventItem[] = [
     location: "Los Angeles, CA",
     organizer: "Funny Business",
     price: "$45",
-    rating: 4.6,
     category: "Comedy",
     description: baseDescription,
     fullDescription: baseFullDescription,
@@ -222,7 +217,6 @@ export const events: EventItem[] = [
     location: "Los Angeles, CA",
     organizer: "NBA",
     price: "$299",
-    rating: 4.9,
     category: "Sports",
     description: baseDescription,
     fullDescription: baseFullDescription,
@@ -283,7 +277,6 @@ export const events: EventItem[] = [
     location: "New York, NY",
     organizer: "MoMA",
     price: "$25",
-    rating: 4.4,
     category: "Arts",
     description: baseDescription,
     fullDescription: baseFullDescription,
@@ -305,7 +298,6 @@ export const events: EventItem[] = [
     location: "Morrison, CO",
     organizer: "Mountain Music",
     price: "$125",
-    rating: 4.7,
     category: "Music",
     description: baseDescription,
     fullDescription: baseFullDescription,
@@ -327,7 +319,6 @@ export const events: EventItem[] = [
     location: "New York, NY",
     organizer: "Comedy Kings",
     price: "$65",
-    rating: 4.5,
     category: "Comedy",
     description: baseDescription,
     fullDescription: baseFullDescription,
@@ -349,7 +340,6 @@ export const events: EventItem[] = [
     location: "Miami, FL",
     organizer: "Sports Central",
     price: "$35",
-    rating: 4.3,
     category: "Sports",
     description: baseDescription,
     fullDescription: baseFullDescription,
@@ -371,7 +361,6 @@ export const events: EventItem[] = [
     location: "New York, NY",
     organizer: "Dance Company",
     price: "$85",
-    rating: 4.6,
     category: "Arts",
     description: baseDescription,
     fullDescription: baseFullDescription,

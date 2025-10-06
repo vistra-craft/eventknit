@@ -165,7 +165,7 @@ const About = () => {
           <div className="container mx-auto">
             <div className="max-w-4xl">
               <h1 className={`text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                About EventKnit
+                About <span className="text-eventknit">EventKnit</span>
               </h1>
               <p className={`text-xl md:text-2xl text-foreground/90 leading-relaxed max-w-3xl transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                 We're passionate about creating extraordinary experiences that bring people together, 

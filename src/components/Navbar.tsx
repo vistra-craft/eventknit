@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Menu, X, User, LogOut, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "./Searchbar";
 
 // Define types
@@ -21,9 +21,8 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null); // Mock user state - replace with your auth
+  const [user] = useState<User | null>(null); // Mock user state - replace with your auth
   const [country] = useState<string>('US'); // Default to US
-  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,9 +60,28 @@ const Navbar: React.FC = () => {
     { name: "Find Events", href: "/" },
   ];
 
-  const handleLogout = (): void => {
-    setUser(null);
-    // Add your logout logic here
+  const handleLogout = () => {
+    // Handle logout logic here
+    console.log('Logout clicked');
+    navigate('/');
+  };
+
+  const handleNavigation = (item: NavItem) => {
+    if (item.name === "Find Events") {
+      // Navigate to home page and scroll to events section
+      navigate('/');
+      // Use setTimeout to ensure the page loads before scrolling
+      setTimeout(() => {
+        const eventsSection = document.querySelector('[data-section="events"]') || 
+                              document.querySelector('.event-grid') ||
+                              document.querySelector('[class*="EventGrid"]');
+        if (eventsSection) {
+          eventsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      navigate(item.href);
+    }
   };
 
   return (
@@ -87,7 +105,7 @@ const Navbar: React.FC = () => {
                 <span>|</span>
                 <button
                   onClick={handleLogout}
-                  className="hover:text-primary/80 transition-colors duration-200 cursor-pointer flex items-center space-x-1"
+                  className="hover:text-green-500 transition-colors duration-200 cursor-pointer flex items-center space-x-1"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
@@ -96,13 +114,16 @@ const Navbar: React.FC = () => {
             ) : (
               <>
                 <button
-                  onClick={() => setUser({name: 'John Doe'})} // Mock login
-                  className="hover:text-primary/80 transition-colors duration-200 cursor-pointer"
+                  onClick={() => navigate('/auth/signin')}
+                  className="hover:text-green-500 transition-colors duration-200 cursor-pointer"
                 >
                   Login
                 </button>
                 <span>|</span>
-                <button className="hover:text-primary/80 transition-colors duration-200 cursor-pointer">
+                <button 
+                  onClick={() => navigate('/auth/signup')}
+                  className="hover:text-green-500 transition-colors duration-200 cursor-pointer"
+                >
                   Sign Up
                 </button>
               </>
@@ -124,10 +145,10 @@ const Navbar: React.FC = () => {
             
             {/* Logo */}
             <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-primary-foreground" />
+              <div className="w-8 h-8 bg-eventknit rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-eventknit-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">EventKnit</span>
+              <span className="text-xl font-bold text-eventknit">EventKnit</span>
             </div>
 
             {/* Search Bar - Full Width */}
@@ -140,14 +161,11 @@ const Navbar: React.FC = () => {
               {/* Navigation */}
               <div className="flex items-center space-x-6">
                 {navItems.map((item) => {
-                  const isActive = location.pathname === item.href || 
-                                 (item.href === '/' && location.pathname === '/');
-
                   return (
                     <button
                       key={item.name}
-                      onClick={() => navigate(item.href)}
-                      className={`text-sm font-medium ${isActive ? 'text-primary' : 'text-foreground/80 hover:text-primary'} transition-colors duration-200`}
+                      onClick={() => handleNavigation(item)}
+                      className={`text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200`}
                     >
                       {item.name}
                     </button>
@@ -158,7 +176,7 @@ const Navbar: React.FC = () => {
               {/* Actions */}
               <button
                 onClick={() => navigate('/create-event')}
-                className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors duration-200"
+                className="text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200"
               >
                 Create Event
               </button>
@@ -186,10 +204,10 @@ const Navbar: React.FC = () => {
                 <button
                   key={item.name}
                   onClick={() => {
-                    navigate(item.href);
+                    handleNavigation(item);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`block w-full text-left px-3 py-2 text-foreground/80 hover:text-primary font-medium ${location.pathname === item.href ? 'text-primary' : ''}`}
+                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
                 >
                   {item.name}
                 </button>
@@ -197,7 +215,7 @@ const Navbar: React.FC = () => {
               
               <div className="mt-4 space-y-2 border-t border-border pt-4">
                 <button
-                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-primary font-medium"
+                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
                   onClick={() => {
                     navigate('/create-event');
                     setIsMobileMenuOpen(false);

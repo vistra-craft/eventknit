@@ -23,6 +23,8 @@ export default {
         surface: "hsl(var(--surface))",
         // Custom EventKnit Colors
         "eventknit": {
+          DEFAULT: "hsl(var(--eventknit-brand))",
+          foreground: "hsl(var(--eventknit-brand-foreground))",
           "bg": "#f2f4f6",
           "card": "#fefeff", 
           "text": "#0f172a",
@@ -30,6 +32,8 @@ export default {
           "primary": "#0f172a",
           "primary-light": "#cfe7ee"
         },
+        // Navigation Hover Color
+        "nav-hover": "hsl(var(--nav-hover))",
         // Additional Brand Colors
         "red-violet": "#d20b7c",
         "essential-cookie": "hsl(var(--primary) / 0.05)", // Light primary background for essential cookies

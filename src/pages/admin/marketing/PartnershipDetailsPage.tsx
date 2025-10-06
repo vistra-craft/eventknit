@@ -311,11 +311,11 @@ Generated on: ${new Date().toLocaleDateString()}
         {/* Document Header */}
         <div className="text-center mb-8 pb-6 border-b border-gray-200">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+            <div className="w-20 h-20 bg-eventknit rounded-xl flex items-center justify-center text-eventknit-foreground font-bold text-2xl shadow-lg">
               EK
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">EventKnit</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2"><span className="text-eventknit">EventKnit</span></h1>
           <p className="text-gray-600 text-lg mb-4">Connecting Events, Creating Opportunities</p>
           <div className="flex items-center justify-center space-x-4">
             <Badge className={`text-lg px-4 py-2 ${getTypeColor(partnership.type)}`}>
@@ -511,7 +511,7 @@ Generated on: ${new Date().toLocaleDateString()}
             <div className="flex items-center justify-center space-x-8">
               <div className="text-center">
                 <div className="border-b border-gray-300 w-32 mb-2"></div>
-                <p className="text-sm text-gray-600">EventKnit Representative</p>
+                <p className="text-sm text-gray-600"><span className="text-eventknit">EventKnit</span> Representative</p>
               </div>
               <div className="text-center">
                 <div className="border-b border-gray-300 w-32 mb-2"></div>

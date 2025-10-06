@@ -10,9 +10,6 @@ import {
   ArrowDownRight,
   Mic,
   Building2,
-  Star,
-  CheckCircle,
-  Eye,
 } from "lucide-react";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 
@@ -203,90 +200,6 @@ const EnhancedDashboard = () => {
       fullDescription: "An exciting competition where innovative startups present their ideas to a panel of investors.",
       duration: "6 hours",
       ageRestriction: "16+"
-    },
-  ];
-
-  const recentActivity = [
-    {
-      id: 1,
-      type: "registration",
-      message: "Sarah Johnson registered for Tech Innovation Summit 2024",
-      time: "2 minutes ago",
-      icon: Users,
-      color: "text-accent-neon",
-      eventId: "1",
-    },
-    {
-      id: "2",
-      type: "payment",
-      message: "Payment of $299 received for Business Leadership Workshop",
-      time: "5 minutes ago",
-      icon: DollarSign,
-      color: "text-accent-electric",
-      eventId: "2",
-    },
-    {
-      id: "3",
-      type: "speaker",
-      message: "New speaker Dr. Maria Rodriguez added to Digital Marketing Conference",
-      time: "12 minutes ago",
-      icon: Mic,
-      color: "text-accent-coral",
-      eventId: 4,
-    },
-    {
-      id: "4",
-      type: "exhibitor",
-      message: "Exhibitor booth confirmed for Food & Wine Expo - Wine Masters Inc.",
-      time: "18 minutes ago",
-      icon: Building2,
-      color: "text-primary",
-      eventId: "3",
-    },
-    {
-      id: "5",
-      type: "registration",
-      message: "Michael Chen registered for Startup Pitch Competition",
-      time: "25 minutes ago",
-      icon: Users,
-      color: "text-accent-neon",
-      eventId: 5,
-    },
-    {
-      id: "6",
-      type: "sponsor",
-      message: "Gold sponsor partnership confirmed for Tech Innovation Summit",
-      time: "1 hour ago",
-      icon: Star,
-      color: "text-yellow-600",
-      eventId: "1",
-    },
-    {
-      id: "7",
-      type: "payment",
-      message: "Payment of $150 received for Food & Wine Expo",
-      time: "1 hour ago",
-      icon: DollarSign,
-      color: "text-accent-electric",
-      eventId: "3",
-    },
-    {
-      id: "8",
-      type: "completion",
-      message: "Food & Wine Expo completed successfully with 320 attendees",
-      time: "2 hours ago",
-      icon: CheckCircle,
-      color: "text-green-600",
-      eventId: "3",
-    },
-    {
-      id: "9",
-      type: "view",
-      message: "Business Leadership Workshop page viewed 23 times today",
-      time: "3 hours ago",
-      icon: Eye,
-      color: "text-accent-coral",
-      eventId: "2",
     },
   ];
 
@@ -579,44 +492,6 @@ const EnhancedDashboard = () => {
                   <p className="text-sm text-muted-foreground">Check-in attendees</p>
                 </div>
               </Link>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-card rounded-xl shadow-sm border border-border">
-            <div className="p-6 border-b border-border">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Recent Activity
-                </h3>
-                <Link
-                  to="/organizer/activity"
-                  className="text-sm text-primary hover:text-primary/80 font-medium"
-                >
-                  View all
-                </Link>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {recentActivity.slice(0, 6).map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div
-                      className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}
-                    >
-                      <activity.icon className={`h-4 w-4 ${activity.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">
-                        {activity.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>

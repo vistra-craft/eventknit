@@ -1,13 +1,12 @@
 import { Facebook, Twitter, Instagram } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const Footer = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
   return (
-    <footer className="bg-gray-100">
+    <footer className="bg-primary/5">
       <div className="container mx-auto px-6 py-4">
-        {/* Top border */}
-        <div className="border-t border-gray-200 pt-2 mb-2"></div>
-        
         {/* Social Media Icons */}
         <div className="flex justify-center space-x-4 mb-2">
           <a
@@ -41,45 +40,67 @@ const Footer = () => {
               <li>
                 <Link
                   to="/"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
-                  EventKnit Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/about"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  About EventKnit
+                  Discover Events
                 </Link>
               </li>
               <li>
                 <Link
                   to="/create-event"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Create Event
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
+                >
+                  About Us
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 2 - Support & Info */}
+          {/* Column 2 - Support & Resources */}
           <div className="text-center">
             <ul className="space-y-1">
               <li>
                 <Link
                   to="/support"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
-                  Help/Contact Us
+                  Help Center
                 </Link>
               </li>
               <li>
                 <Link
+                  to="/auth/signin"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
+                >
+                  Sign In
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/auth/signup"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
+                >
+                  Get Started
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3 - Legal & Business */}
+          <div className="text-center md:text-right">
+            <ul className="space-y-1">
+              <li>
+                <Link
                   to="/privacy-policy"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Privacy Policy
                 </Link>
@@ -87,7 +108,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/terms-of-service"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Terms of Service
                 </Link>
@@ -95,81 +116,62 @@ const Footer = () => {
               <li>
                 <Link
                   to="/cookie-policy"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  className="text-gray-600 hover:text-nav-hover transition-colors text-sm"
                 >
                   Cookie Policy
                 </Link>
               </li>
             </ul>
           </div>
-
-          {/* Column 3 - Business */}
-          <div className="text-center md:text-right">
-            <ul className="space-y-1">
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Partner With Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm"
-                >
-                  Press
-                </a>
-              </li>
-            </ul>
+        </div>
+      </div>
+      
+      {isHomePage && (
+        <div className="container mx-auto px-6 py-2">
+          {/* Line above legal text */}
+          <div className="border-t border-gray-300 pt-2 mb-2"></div>
+          {/* Legal Text */}
+          <div>
+            <p className="text-center text-xs text-gray-500 leading-relaxed">
+              BY CONTINUING PAST THIS PAGE, YOU AGREE TO OUR{" "}
+              <Link
+                to="/terms-of-service"
+                className="text-gray-700 underline hover:no-underline transition-colors"
+              >
+                TERMS OF USE
+              </Link>{" "}
+              AND{" "}
+              <Link
+                to="/privacy-policy"
+                className="text-gray-700 underline hover:no-underline transition-colors"
+              >
+                PRIVACY POLICY
+              </Link>{" "}
+              |{" "}
+              <Link
+                to="/cookie-policy"
+                className="text-gray-700 underline hover:no-underline transition-colors"
+              >
+                COOKIE POLICY
+              </Link>{" "}
+              |
+            </p>
+            <p className="text-center text-xs text-gray-500 mt-1">
+              © 2025 <span className="text-eventknit">EVENTKNIT</span>. ALL RIGHTS RESERVED.
+            </p>
           </div>
         </div>
-      </div>
+      )}
       
-      {/* Full-width line above legal text */}
-      <div className="border-t border-gray-200"></div>
-      
-      <div className="container mx-auto px-6 py-2">
-        {/* Legal Text */}
-        <div>
-          <p className="text-center text-xs text-gray-500 leading-relaxed">
-            BY CONTINUING PAST THIS PAGE, YOU AGREE TO OUR{" "}
-            <Link
-              to="/terms-of-service"
-              className="text-gray-700 underline hover:no-underline transition-colors"
-            >
-              TERMS OF USE
-            </Link>{" "}
-            AND{" "}
-            <Link
-              to="/privacy-policy"
-              className="text-gray-700 underline hover:no-underline transition-colors"
-            >
-              PRIVACY POLICY
-            </Link>{" "}
-            |{" "}
-            <Link
-              to="/cookie-policy"
-              className="text-gray-700 underline hover:no-underline transition-colors"
-            >
-              COOKIE POLICY
-            </Link>{" "}
-            |
-          </p>
+      {!isHomePage && (
+        <div className="container mx-auto px-6 py-2">
+          {/* Line above copyright text */}
+          <div className="border-t border-gray-300 pt-2 mb-2"></div>
           <p className="text-center text-xs text-gray-500 mt-1">
-            © 2025 EVENTKNIT. ALL RIGHTS RESERVED.
+            © 2025 <span className="text-eventknit">EVENTKNIT</span>. ALL RIGHTS RESERVED.
           </p>
         </div>
-      </div>
+      )}
     </footer>
   );
 };
