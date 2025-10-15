@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,12 +10,17 @@ import { Users } from 'lucide-react';
 
 const AttendeeRegistration = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
+  
+  // Get email from previous step
+  const emailFromPrevious = location.state?.email || '';
+  
   const [formData, setFormData] = useState({
     // Basic Info
     firstName: '',
     lastName: '',
-    email: '',
+    email: emailFromPrevious, // Pre-fill email from previous step
     password: '',
     confirmPassword: '',
     phoneNumber: '',

@@ -10,16 +10,72 @@ import Navbar from '@/components/Navbar';
 const SignIn = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign in logic here
-    console.log('Sign in:', formData);
-    navigate('/');
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // TODO: Replace with actual API call
+      // For now, we'll simulate the authentication and role detection
+      const mockUserData = {
+        email: formData.email,
+        role: getUserRole(formData.email), // This would come from the API
+        name: 'John Doe' // This would come from the API
+      };
+
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Redirect based on user role
+      redirectBasedOnRole(mockUserData.role);
+      
+    } catch (error) {
+      console.error('Sign in error:', error);
+      setError('Invalid email or password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Mock function to determine user role based on email
+  // In real implementation, this would be handled by the backend
+  const getUserRole = (email: string): 'admin' | 'staff' | 'organizer' | 'attendee' => {
+    // Mock logic - in real app, this would be determined by the backend
+    if (email.includes('admin') || email.includes('@eventknit.com')) {
+      return 'admin';
+    } else if (email.includes('staff')) {
+      return 'staff';
+    } else if (email.includes('organizer')) {
+      return 'organizer';
+    } else {
+      return 'attendee';
+    }
+  };
+
+  // Redirect user based on their role
+  const redirectBasedOnRole = (role: 'admin' | 'staff' | 'organizer' | 'attendee') => {
+    switch (role) {
+      case 'admin':
+      case 'staff':
+        navigate('/admin/dashboard');
+        break;
+      case 'organizer':
+        navigate('/organizer/dashboard');
+        break;
+      case 'attendee':
+        navigate('/user/dashboard');
+        break;
+      default:
+        navigate('/user/dashboard');
+    }
   };
 
   const handleSocialSignIn = (provider: string) => {
@@ -116,6 +172,12 @@ const SignIn = () => {
 
           {/* Sign In Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                {error}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -128,6 +190,7 @@ const SignIn = () => {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="pl-10 h-12"
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -144,11 +207,13 @@ const SignIn = () => {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="pl-10 pr-10 h-12"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -164,8 +229,12 @@ const SignIn = () => {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full h-12 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground">
-              Sign In
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 

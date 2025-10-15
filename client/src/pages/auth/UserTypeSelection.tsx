@@ -1,17 +1,21 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Users } from 'lucide-react';
+import { Calendar, Users, ArrowLeft, Mail } from 'lucide-react';
 
 const UserTypeSelection = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get email from previous step
+  const email = location.state?.email || '';
 
   const handleUserTypeSelection = (userType: 'organizer' | 'attendee') => {
-    // Navigate to appropriate registration form
+    // Navigate to appropriate registration form with email
     if (userType === 'organizer') {
-      navigate('/auth/register/organizer');
+      navigate('/auth/register/organizer', { state: { email } });
     } else {
-      navigate('/auth/register/attendee');
+      navigate('/auth/register/attendee', { state: { email } });
     }
   };
 
@@ -29,11 +33,17 @@ const UserTypeSelection = () => {
             </button>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            Welcome to EventKnit! 👋
+            Choose your role
           </h1>
           <p className="text-lg text-muted-foreground">
-            We're glad you're here! What can we help you with first?
+            How would you like to use EventKnit?
           </p>
+          {email && (
+            <div className="mt-4 inline-flex items-center px-4 py-2 bg-muted rounded-lg">
+              <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">{email}</span>
+            </div>
+          )}
         </div>
 
         {/* User Type Cards */}
@@ -83,6 +93,18 @@ const UserTypeSelection = () => {
               </Button>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Back Button */}
+        <div className="mt-8 text-center">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/auth/email-entry')}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to email entry
+          </Button>
         </div>
 
         {/* Decorative Elements */}
