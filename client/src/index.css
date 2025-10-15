@@ -27,7 +27,8 @@
     --royal-purple-foreground: 240 100% 100%;
 
     /* Navigation Hover Color */
-    --nav-hover: 217 91% 60%;
+    /* --nav-hover: 217 91% 60%; */ /* Original blue hover color - commented for easy revert */
+    --nav-hover: 215 45% 44%; /* New blue hover color: #3D52A0 (matches EventKnit brand) */
 
     /* Accent Colors - Using New Color Scheme */
     --accent-electric: 194 48% 87%;
@@ -113,7 +114,8 @@
     --eventknit-brand-foreground: 240 100% 100%;
 
     /* Navigation Hover Color - Same in dark mode */
-    --nav-hover: 217 91% 60%;
+    /* --nav-hover: 217 91% 60%; */ /* Original blue hover color - commented for easy revert */
+    --nav-hover: 215 45% 44%; /* New blue hover color: #3D52A0 (matches EventKnit brand) */
 
     --card: 222 47% 11%;
     --card-foreground: 240 100% 100%;
