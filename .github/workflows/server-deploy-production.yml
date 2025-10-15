@@ -65,3 +65,4 @@ jobs:
 
       - name: Notify deployment success
         run: echo "🎉 Server successfully deployed to production!"
+

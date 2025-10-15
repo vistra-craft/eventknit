@@ -92,3 +92,4 @@ case "${1:-both}" in
         exit 1
         ;;
 esac
+

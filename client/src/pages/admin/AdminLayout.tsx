@@ -12,8 +12,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [isMobile, setIsMobile] = useState(false);
 
   const toggleSidebar = () => {
-    // Only allow manual toggle on desktop (lg and above)
-    if (!isMobile) {
+    // Only allow manual toggle on mobile
+    if (isMobile) {
       setSidebarOpen(!sidebarOpen);
     }
   };
@@ -59,7 +59,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <div className="container mx-auto flex flex-1">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
-          <AdminSidebar isOpen={sidebarOpen} onToggle={isMobile ? handleSidebarToggle : toggleSidebar} isMobile={isMobile} />
+          <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
         </div>
 
         {/* Main Content */}
@@ -67,7 +67,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           {/* Header */}
           <div className="px-4 sm:px-6">
             <AdminHeader
-              onMenuToggle={isMobile ? handleMobileMenuClick : toggleSidebar}
+              onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
             />
           </div>
 
