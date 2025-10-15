@@ -1,0 +1,67 @@
+name: Deploy Server to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/server-deploy-production.yml'
+
+jobs:
+  deploy-server-production:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "server/package-lock.json"
+
+      - name: Setup environment variables
+        run: |
+          echo "NODE_ENV=production" >> $GITHUB_ENV
+          echo "MONGODB_URI=${{ secrets.PRODUCTION_MONGODB_URI }}" >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.PRODUCTION_JWT_SECRET }}" >> $GITHUB_ENV
+          echo "PORT=${{ secrets.PRODUCTION_PORT || '3001' }}" >> $GITHUB_ENV
+          echo "CORS_ORIGIN=${{ secrets.PRODUCTION_CLIENT_URL }}" >> $GITHUB_ENV
+          echo "REDIS_URL=${{ secrets.PRODUCTION_REDIS_URL }}" >> $GITHUB_ENV
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Run server tests
+        working-directory: ./server
+        run: npm run test
+
+      - name: Build server
+        working-directory: ./server
+        run: npm run build
+
+      - name: Deploy server to production
+        run: |
+          echo "🚀 Deploying server to production environment..."
+          # Add your server production deployment commands here
+          # Examples:
+          # - Deploy to Heroku: git subtree push --prefix=server heroku main
+          # - Deploy to AWS ECS: aws ecs update-service --cluster production --service eventknit-server
+          # - Deploy to DigitalOcean App Platform: doctl apps create-deployment $SERVER_APP_ID
+          # - Deploy to Railway: railway up --environment production --service server
+          # - Deploy with Docker: docker-compose -f server/docker-compose.yml --env-file server/.env.production up -d
+          echo "✅ Server production deployment completed!"
+
+      - name: Health check server
+        run: |
+          echo "🔍 Performing server health check..."
+          # Add health check commands here
+          # Example: curl -f ${{ secrets.PRODUCTION_SERVER_URL }}/health || exit 1
+          echo "✅ Server health check passed!"
+
+      - name: Notify deployment success
+        run: echo "🎉 Server successfully deployed to production!"

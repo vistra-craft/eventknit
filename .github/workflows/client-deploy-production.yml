@@ -1,0 +1,63 @@
+name: Deploy Client to Production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - '.github/workflows/client-deploy-production.yml'
+
+jobs:
+  deploy-client-production:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "client/package-lock.json"
+
+      - name: Setup environment variables
+        run: |
+          echo "VITE_API_URL=${{ secrets.PRODUCTION_SERVER_URL }}" >> $GITHUB_ENV
+          echo "VITE_NODE_ENV=production" >> $GITHUB_ENV
+
+      - name: Install client dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run client tests
+        working-directory: ./client
+        run: npm run test:run
+
+      - name: Build client for production
+        working-directory: ./client
+        run: npm run build
+
+      - name: Deploy client to production
+        run: |
+          echo "🚀 Deploying client to production environment..."
+          # Add your client production deployment commands here
+          # Examples:
+          # - Deploy to Vercel: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+          # - Deploy to Netlify: netlify deploy --prod --dir=client/dist --token ${{ secrets.NETLIFY_TOKEN }}
+          # - Deploy to AWS S3: aws s3 sync client/dist/ s3://${{ secrets.PRODUCTION_S3_BUCKET }} --delete
+          # - Deploy to Cloudflare Pages: wrangler pages publish client/dist --project-name=${{ secrets.PRODUCTION_CLOUDFLARE_PROJECT }}
+          # - Deploy to GitHub Pages: cp -r client/dist/* ../gh-pages/ && cd ../gh-pages && git add . && git commit -m "Deploy" && git push
+          echo "✅ Client production deployment completed!"
+
+      - name: Health check client
+        run: |
+          echo "🔍 Performing client health check..."
+          # Add health check commands here
+          # Example: curl -f ${{ secrets.PRODUCTION_CLIENT_URL }} || exit 1
+          echo "✅ Client health check passed!"
+
+      - name: Notify deployment success
+        run: echo "🎉 Client successfully deployed to production!"

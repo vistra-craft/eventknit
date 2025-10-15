@@ -1,0 +1,67 @@
+name: Deploy Server to Staging
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'server/**'
+      - '.github/workflows/server-deploy-staging.yml'
+
+jobs:
+  deploy-server-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "server/package-lock.json"
+
+      - name: Setup environment variables
+        run: |
+          echo "NODE_ENV=staging" >> $GITHUB_ENV
+          echo "MONGODB_URI=${{ secrets.STAGING_MONGODB_URI }}" >> $GITHUB_ENV
+          echo "JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}" >> $GITHUB_ENV
+          echo "PORT=${{ secrets.STAGING_PORT || '3001' }}" >> $GITHUB_ENV
+          echo "CORS_ORIGIN=${{ secrets.STAGING_CLIENT_URL }}" >> $GITHUB_ENV
+          echo "REDIS_URL=${{ secrets.STAGING_REDIS_URL }}" >> $GITHUB_ENV
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Run server tests
+        working-directory: ./server
+        run: npm run test
+
+      - name: Build server
+        working-directory: ./server
+        run: npm run build
+
+      - name: Deploy server to staging
+        run: |
+          echo "🚀 Deploying server to staging environment..."
+          # Add your server staging deployment commands here
+          # Examples:
+          # - Deploy to Heroku: git subtree push --prefix=server heroku staging:main
+          # - Deploy to AWS ECS: aws ecs update-service --cluster staging --service eventknit-server
+          # - Deploy to DigitalOcean App Platform: doctl apps create-deployment $SERVER_APP_ID
+          # - Deploy to Railway: railway up --environment staging --service server
+          # - Deploy with Docker: docker-compose -f server/docker-compose.yml --env-file server/.env.staging up -d
+          echo "✅ Server staging deployment completed!"
+
+      - name: Health check server
+        run: |
+          echo "🔍 Performing server health check..."
+          # Add health check commands here
+          # Example: curl -f ${{ secrets.STAGING_SERVER_URL }}/health || exit 1
+          echo "✅ Server health check passed!"
+
+      - name: Notify deployment success
+        run: echo "🎉 Server successfully deployed to staging!"

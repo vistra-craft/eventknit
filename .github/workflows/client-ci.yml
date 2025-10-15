@@ -1,0 +1,65 @@
+name: Client CI Pipeline
+
+on:
+  push:
+    branches: [main, development, staging]
+    paths:
+      - 'client/**'
+      - '.github/workflows/client-ci.yml'
+  pull_request:
+    branches: [main, development, staging]
+    paths:
+      - 'client/**'
+      - '.github/workflows/client-ci.yml'
+
+jobs:
+  client-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "client/package-lock.json"
+
+      - name: Setup test environment
+        run: |
+          echo "VITE_API_URL=http://localhost:3001" >> $GITHUB_ENV
+          echo "VITE_NODE_ENV=test" >> $GITHUB_ENV
+
+      - name: Install client dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run client linter
+        working-directory: ./client
+        run: npm run lint
+
+      - name: Run client type checking
+        working-directory: ./client
+        run: npm run type-check
+
+      - name: Run client tests
+        working-directory: ./client
+        run: npm run test:run
+
+      - name: Build client
+        working-directory: ./client
+        run: npm run build
+
+      - name: Upload client build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-build-files
+          path: client/dist/
+
+      - name: Upload client test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-test-results
+          path: client/coverage/
