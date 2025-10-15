@@ -4,13 +4,13 @@ on:
   push:
     branches: [main, development, staging]
     paths:
-      - 'client/**'
-      - '.github/workflows/client-ci.yml'
+      - "client/**"
+      - ".github/workflows/client-ci.yml"
   pull_request:
     branches: [main, development, staging]
     paths:
-      - 'client/**'
-      - '.github/workflows/client-ci.yml'
+      - "client/**"
+      - ".github/workflows/client-ci.yml"
 
 jobs:
   client-test:

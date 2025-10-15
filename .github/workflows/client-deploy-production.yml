@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'client/**'
-      - '.github/workflows/client-deploy-production.yml'
+      - "client/**"
+      - ".github/workflows/client-deploy-production.yml"
 
 jobs:
   deploy-client-production:

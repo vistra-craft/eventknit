@@ -17,11 +17,13 @@ This repository uses separate CI/CD workflows for client and server to support i
 ## 🎯 Workflow Triggers
 
 ### Client Workflows
+
 - **Triggers on**: Changes to `client/**` directory
 - **Branches**: `main`, `development`, `staging`
 - **Independent**: Client changes don't trigger server builds
 
 ### Server Workflows
+
 - **Triggers on**: Changes to `server/**` directory
 - **Branches**: `main`, `development`, `staging`
 - **Independent**: Server changes don't trigger client builds
@@ -29,11 +31,13 @@ This repository uses separate CI/CD workflows for client and server to support i
 ## 🚀 Deployment Environments
 
 ### Staging Environment
+
 - **Trigger**: Push to `staging` branch
 - **Client**: Deploys to staging CDN/hosting
 - **Server**: Deploys to staging server infrastructure
 
 ### Production Environment
+
 - **Trigger**: Push to `main` branch
 - **Client**: Deploys to production CDN/hosting
 - **Server**: Deploys to production server infrastructure
@@ -41,6 +45,7 @@ This repository uses separate CI/CD workflows for client and server to support i
 ## 🔧 Required Secrets
 
 ### Server Secrets
+
 ```
 STAGING_MONGODB_URI
 STAGING_JWT_SECRET
@@ -58,6 +63,7 @@ PRODUCTION_SERVER_URL
 ```
 
 ### Client Secrets
+
 ```
 STAGING_SERVER_URL
 STAGING_CLIENT_URL
@@ -67,6 +73,7 @@ PRODUCTION_CLIENT_URL
 ```
 
 ### Optional Deployment Secrets
+
 ```
 VERCEL_TOKEN          # For Vercel deployment
 NETLIFY_TOKEN         # For Netlify deployment
@@ -78,6 +85,7 @@ CLOUDFLARE_API_TOKEN  # For Cloudflare Pages deployment
 ## 📋 Workflow Steps
 
 ### CI Workflows (Both Client & Server)
+
 1. **Checkout code**
 2. **Setup Node.js** with caching
 3. **Install dependencies**
@@ -88,6 +96,7 @@ CLOUDFLARE_API_TOKEN  # For Cloudflare Pages deployment
 8. **Upload artifacts**
 
 ### Deployment Workflows
+
 1. **Checkout code**
 2. **Setup Node.js** with caching
 3. **Setup environment variables**
@@ -110,6 +119,7 @@ CLOUDFLARE_API_TOKEN  # For Cloudflare Pages deployment
 ### Example Deployment Commands
 
 #### Client Deployment Examples
+
 ```bash
 # Vercel
 vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
@@ -125,6 +135,7 @@ wrangler pages publish client/dist --project-name=${{ secrets.PRODUCTION_CLOUDFL
 ```
 
 #### Server Deployment Examples
+
 ```bash
 # Heroku
 git subtree push --prefix=server heroku main
@@ -145,11 +156,13 @@ docker-compose -f server/docker-compose.yml --env-file server/.env.production up
 ## 🔍 Monitoring & Debugging
 
 ### Workflow Status
+
 - Check workflow runs in GitHub Actions tab
 - View logs for each step
 - Monitor deployment health checks
 
 ### Common Issues
+
 1. **Missing secrets**: Add required secrets to repository settings
 2. **Path filters**: Ensure workflows trigger on correct file changes
 3. **Environment variables**: Verify environment-specific configurations

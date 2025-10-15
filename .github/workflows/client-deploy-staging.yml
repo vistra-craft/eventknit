@@ -4,8 +4,8 @@ on:
   push:
     branches: [staging]
     paths:
-      - 'client/**'
-      - '.github/workflows/client-deploy-staging.yml'
+      - "client/**"
+      - ".github/workflows/client-deploy-staging.yml"
 
 jobs:
   deploy-client-staging:
