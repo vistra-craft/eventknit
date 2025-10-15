@@ -18,7 +18,8 @@
     --primary-dark: 222 47% 8%;
 
     /* EventKnit Brand Color */
-    --eventknit-brand: 263 46% 51%;
+    /* --eventknit-brand: 263 46% 51%; */ /* Original purple color - commented for easy revert */
+    --eventknit-brand: 215 45% 44%; /* New blue color: #3D52A0 */
     --eventknit-brand-foreground: 240 100% 100%;
 
     /* Royal Purple - Premium accent color */
