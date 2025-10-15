@@ -1,0 +1,464 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Upload } from 'lucide-react';
+
+const OrganizerRegistration = () => {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
+    // Basic Info
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    
+    // Event Preferences
+    eventTypes: [] as string[],
+    organizationType: '',
+    eventsPerYear: '',
+    isRecurringSeries: false,
+    
+    // KYC Information
+    businessName: '',
+    businessType: '',
+    taxId: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: '',
+    phoneNumber: '',
+    
+    // Verification Documents (placeholders)
+    idDocument: null as File | null,
+    businessLicense: null as File | null,
+    taxDocument: null as File | null,
+  });
+
+  const eventTypes = [
+    'Music', 'Comedy', 'Food & Drink', 'Community & Culture', 
+    'Hobbies & Special Interest', 'Performing & Visual Arts', 
+    'Parties', 'Technology', 'Business', 'Sports', 'Education'
+  ];
+
+  const organizationTypes = [
+    'Music Nightlife & Parties',
+    'Music Promoter', 
+    'Music Artist or Performer',
+    'Music Venue',
+    'Music Festival',
+    'Event Planning Company',
+    'Corporate Events',
+    'Non-Profit Organization',
+    'Educational Institution',
+    'Other'
+  ];
+
+  const handleInputChange = (field: string, value: string | boolean | string[]) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEventTypeToggle = (eventType: string) => {
+    setFormData(prev => ({
+      ...prev,
+      eventTypes: prev.eventTypes.includes(eventType)
+        ? prev.eventTypes.filter(type => type !== eventType)
+        : [...prev.eventTypes, eventType]
+    }));
+  };
+
+
+  const handleNext = () => {
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // Mock registration completion
+      console.log('Organizer registration:', formData);
+      navigate('/organizer/dashboard');
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      navigate('/auth/user-type');
+    }
+  };
+
+  const renderStep1 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          Let's get to know you first!
+        </h2>
+        <p className="text-muted-foreground">
+          Tell us what kind of events you want to host and we'll help make it happen.
+        </p>
+      </div>
+
+      {/* Event Types */}
+      <div className="space-y-4">
+        <Label className="text-base font-medium">What type of events do you host? *</Label>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {eventTypes.map((type) => (
+            <Button
+              key={type}
+              variant={formData.eventTypes.includes(type) ? "default" : "outline"}
+              onClick={() => handleEventTypeToggle(type)}
+              className={`h-10 ${
+                formData.eventTypes.includes(type)
+                  ? 'bg-eventknit text-eventknit-foreground'
+                  : 'border-border hover:border-eventknit/50'
+              }`}
+            >
+              {type}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Organization Type */}
+      <div className="space-y-2">
+        <Label htmlFor="organizationType">Which best describes your organization? *</Label>
+        <Select value={formData.organizationType} onValueChange={(value) => handleInputChange('organizationType', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select your organization type" />
+          </SelectTrigger>
+          <SelectContent>
+            {organizationTypes.map((type) => (
+              <SelectItem key={type} value={type}>{type}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Events Per Year */}
+      <div className="space-y-2">
+        <Label htmlFor="eventsPerYear">How many events do you plan to organize in the next year? *</Label>
+        <Select value={formData.eventsPerYear} onValueChange={(value) => handleInputChange('eventsPerYear', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Number of events" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1-2">1-2 events</SelectItem>
+            <SelectItem value="3-5">3-5 events</SelectItem>
+            <SelectItem value="5-10">5-10 events</SelectItem>
+            <SelectItem value="10-20">10-20 events</SelectItem>
+            <SelectItem value="20+">20+ events</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Recurring Series */}
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="isRecurringSeries"
+          checked={formData.isRecurringSeries}
+          onCheckedChange={(checked) => handleInputChange('isRecurringSeries', checked)}
+        />
+        <Label htmlFor="isRecurringSeries">My events are part of a recurring series</Label>
+      </div>
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          Basic Information
+        </h2>
+        <p className="text-muted-foreground">
+          Let's set up your organizer account with some basic details.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="firstName">First Name *</Label>
+          <Input
+            id="firstName"
+            value={formData.firstName}
+            onChange={(e) => handleInputChange('firstName', e.target.value)}
+            placeholder="Enter your first name"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="lastName">Last Name *</Label>
+          <Input
+            id="lastName"
+            value={formData.lastName}
+            onChange={(e) => handleInputChange('lastName', e.target.value)}
+            placeholder="Enter your last name"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">Email Address *</Label>
+        <Input
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={(e) => handleInputChange('email', e.target.value)}
+          placeholder="your.email@example.com"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="password">Password *</Label>
+          <Input
+            id="password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => handleInputChange('password', e.target.value)}
+            placeholder="Create a password"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm Password *</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+            placeholder="Confirm your password"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="phoneNumber">Phone Number *</Label>
+        <Input
+          id="phoneNumber"
+          type="tel"
+          value={formData.phoneNumber}
+          onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+          placeholder="+1 (555) 123-4567"
+          required
+        />
+      </div>
+    </div>
+  );
+
+  const renderStep3 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          Business Information & Verification
+        </h2>
+        <p className="text-muted-foreground">
+          Help us verify your business for secure event hosting.
+        </p>
+      </div>
+
+      {/* Business Information */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-foreground">Business Details</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="businessName">Business Name *</Label>
+            <Input
+              id="businessName"
+              value={formData.businessName}
+              onChange={(e) => handleInputChange('businessName', e.target.value)}
+              placeholder="Your business or organization name"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="businessType">Business Type *</Label>
+            <Select value={formData.businessType} onValueChange={(value) => handleInputChange('businessType', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select business type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="corporation">Corporation</SelectItem>
+                <SelectItem value="llc">LLC</SelectItem>
+                <SelectItem value="partnership">Partnership</SelectItem>
+                <SelectItem value="sole-proprietorship">Sole Proprietorship</SelectItem>
+                <SelectItem value="non-profit">Non-Profit</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="taxId">Tax ID / EIN *</Label>
+          <Input
+            id="taxId"
+            value={formData.taxId}
+            onChange={(e) => handleInputChange('taxId', e.target.value)}
+            placeholder="XX-XXXXXXX"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="address">Business Address *</Label>
+          <Input
+            id="address"
+            value={formData.address}
+            onChange={(e) => handleInputChange('address', e.target.value)}
+            placeholder="Street address"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="city">City *</Label>
+            <Input
+              id="city"
+              value={formData.city}
+              onChange={(e) => handleInputChange('city', e.target.value)}
+              placeholder="City"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="state">State *</Label>
+            <Input
+              id="state"
+              value={formData.state}
+              onChange={(e) => handleInputChange('state', e.target.value)}
+              placeholder="State"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="zipCode">ZIP Code *</Label>
+            <Input
+              id="zipCode"
+              value={formData.zipCode}
+              onChange={(e) => handleInputChange('zipCode', e.target.value)}
+              placeholder="ZIP Code"
+              required
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Document Upload Placeholders */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-foreground">Verification Documents</h3>
+        <p className="text-sm text-muted-foreground">
+          Upload the following documents for verification (required for event hosting):
+        </p>
+
+        <div className="space-y-4">
+          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-2">Government-issued ID</p>
+            <Button variant="outline" size="sm">
+              Upload Document
+            </Button>
+          </div>
+
+          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-2">Business License</p>
+            <Button variant="outline" size="sm">
+              Upload Document
+            </Button>
+          </div>
+
+          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-2">Tax Documentation</p>
+            <Button variant="outline" size="sm">
+              Upload Document
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <button
+            onClick={() => navigate('/')}
+            className="text-2xl font-bold text-eventknit hover:text-eventknit/80 transition-colors mb-4"
+          >
+            EventKnit
+          </button>
+          
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center space-x-4 mb-6">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step <= currentStep
+                      ? 'bg-eventknit text-eventknit-foreground'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {step}
+                </div>
+                {step < 3 && (
+                  <div
+                    className={`w-12 h-0.5 mx-2 ${
+                      step < currentStep ? 'bg-eventknit' : 'bg-muted'
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <Card>
+          <CardContent className="p-8">
+            {currentStep === 1 && renderStep1()}
+            {currentStep === 2 && renderStep2()}
+            {currentStep === 3 && renderStep3()}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                className="px-6"
+              >
+                Back
+              </Button>
+              <Button
+                onClick={handleNext}
+                className="px-6 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+              >
+                {currentStep === 3 ? 'Complete Registration' : 'Continue'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Decorative Elements */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-eventknit/5 to-transparent rounded-full blur-xl"></div>
+        <div className="absolute bottom-20 right-10 w-24 h-24 bg-gradient-to-br from-eventknit/5 to-transparent rounded-full blur-xl"></div>
+      </div>
+    </div>
+  );
+};
+
+export default OrganizerRegistration;
