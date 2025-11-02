@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN_STAFF
+  MARKETER
+  SUPPORT
+  TELLER
+  ORGANIZER
+  ORGANIZER_STAFF
+  ORGANIZER_TELLER
+  ATTENDEE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+}
+
+enum KYCStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  REFRESH_TOKEN
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  password          String
+  firstName         String
+  lastName           String
+  phoneNumber        String?
+  role               UserRole  @default(ATTENDEE)
+  status             UserStatus @default(PENDING_VERIFICATION)
+  isEmailVerified    Boolean   @default(false)
+  emailVerifiedAt    DateTime?
+  
+  // Organizer-specific fields
+  organizationName   String?
+  businessEmail      String?
+  
+  // KYC fields (for organizers)
+  kycStatus          KYCStatus?
+  kycSubmittedAt     DateTime?
+  kycApprovedAt      DateTime?
+  
+  // Security fields
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  
+  // Audit fields
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  createdBy          String?
+  updatedBy          String?
+  deletedAt          DateTime?
+  
+  // Relations
+  refreshTokens      RefreshToken[]
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
+  kycDocuments       KYCDocument[]
+  auditLogs          AuditLog[]
+  
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  userId      String
+  userAgent   String?
+  ipAddress   String?
+  expiresAt   DateTime
+  revoked     Boolean  @default(false)
+  revokedAt   DateTime?
+  revokedReason String?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerification {
+  id          String   @id @default(uuid())
+  userId      String
+  token       String   @unique
+  expiresAt   DateTime
+  verified    Boolean  @default(false)
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordReset {
+  id          String   @id @default(uuid())
+  userId      String
+  token       String   @unique
+  expiresAt   DateTime
+  used        Boolean  @default(false)
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model KYCDocument {
+  id              String    @id @default(uuid())
+  userId          String
+  documentType    String    // BUSINESS_LICENSE, TAX_ID, etc.
+  documentNumber  String?
+  documentUrl     String?
+  status          KYCStatus @default(PENDING)
+  rejectionReason String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entity      String?  // User, Event, etc.
+  entityId    String?
+  metadata    Json?    // Additional data
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([createdAt])
+}
