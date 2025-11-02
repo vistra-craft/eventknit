@@ -2,20 +2,21 @@
   "name": "eventknit-server",
   "version": "1.0.0",
   "description": "EventKnit Backend API Server",
-  "main": "dist/index.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
+    "start": "node dist/server.js",
+    "dev": "nodemon src/server.ts",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:run": "jest --passWithNoTests",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "type-check": "tsc --noEmit",
+    "pre-push": "npm run lint && npm run type-check && npm run test:run && npm run build",
     "clean": "rimraf dist",
-    "prebuild": "npm run clean",
-    "healthcheck": "node dist/healthcheck.js"
+    "prebuild": "npm run clean"
   },
   "repository": {
     "type": "git",
@@ -80,7 +81,7 @@
     "collectCoverageFrom": [
       "src/**/*.ts",
       "!src/**/*.d.ts",
-      "!src/index.ts"
+      "!src/server.ts"
     ],
     "coverageDirectory": "coverage",
     "coverageReporters": [

@@ -1,14 +1,11 @@
 import mongoose from 'mongoose';
+import { config } from './index';
 
 export const connectDB = async (): Promise<void> => {
   try {
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/eventknit-auth';
+    await mongoose.connect(config.database.uri);
+    console.log(`✅ MongoDB connected: ${mongoose.connection.host}`);
     
-    await mongoose.connect(mongoURI);
-    
-    console.log('✅ MongoDB connected successfully');
-    
-    // Handle connection events
     mongoose.connection.on('error', (err) => {
       console.error('❌ MongoDB connection error:', err);
     });
@@ -16,18 +13,9 @@ export const connectDB = async (): Promise<void> => {
     mongoose.connection.on('disconnected', () => {
       console.log('⚠️ MongoDB disconnected');
     });
-    
-    // Graceful shutdown
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('🔌 MongoDB connection closed through app termination');
-      process.exit(0);
-    });
-    
   } catch (error) {
-    console.error('❌ MongoDB connection failed:', error);
+    console.error('❌ Failed to connect to MongoDB:', error);
     process.exit(1);
   }
 };
-
 
