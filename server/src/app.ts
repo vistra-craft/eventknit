@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import { config } from './config';
 import { logger, stream } from './utils/logger';
 import authRoutes from './routes/auth.routes';
+import adminRoutes from './routes/admin.routes';
+import organizerRoutes from './routes/organizer.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { rateLimiter } from './middleware/rateLimiter.middleware';
 
@@ -67,6 +69,8 @@ app.get('/api/v1/status', (_req, res) => {
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/organizer', organizerRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

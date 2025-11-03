@@ -41,30 +41,25 @@ export const authValidations = {
       'string.max': 'Last name must not exceed 100 characters',
       'any.required': 'Last name is required',
     }),
-    phoneNumber: Joi.string().trim().optional().allow(''),
+    otherName: Joi.string().trim().min(1).max(100).optional().allow('', null).messages({
+      'string.max': 'Other name must not exceed 100 characters',
+    }),
+    phoneNumber: Joi.string().trim().optional().allow('', null),
+    companyAffiliation: Joi.string().trim().min(1).max(200).optional().allow('', null).messages({
+      'string.max': 'Company affiliation must not exceed 200 characters',
+    }),
     role: Joi.string()
       .valid(...UserRoleValues)
-      .required()
+      .optional()
+      .default('ATTENDEE')
       .messages({
-        'any.only': 'Invalid role. Must be one of: ATTENDEE, ORGANIZER',
-        'any.required': 'Role is required',
+        'any.only': 'Invalid role. Must be one of: ATTENDEE, ORGANIZER, etc.',
       }),
-    organizationName: Joi.when('role', {
-      is: 'ORGANIZER',
-      then: Joi.string().trim().min(1).max(200).required().messages({
-        'string.empty': 'Organization name is required for organizers',
-        'string.max': 'Organization name must not exceed 200 characters',
-        'any.required': 'Organization name is required for organizers',
-      }),
-      otherwise: Joi.optional(),
+    organizationName: Joi.string().trim().min(1).max(200).optional().allow('', null).messages({
+      'string.max': 'Organization name must not exceed 200 characters',
     }),
-    businessEmail: Joi.when('role', {
-      is: 'ORGANIZER',
-      then: Joi.string().email().required().messages({
-        'string.email': 'Please provide a valid business email address',
-        'any.required': 'Business email is required for organizers',
-      }),
-      otherwise: Joi.optional(),
+    businessEmail: Joi.string().email().optional().allow('', null).messages({
+      'string.email': 'Please provide a valid business email address',
     }),
   }),
 
@@ -153,7 +148,13 @@ export const authValidations = {
     lastName: Joi.string().trim().min(1).max(100).optional().messages({
       'string.max': 'Last name must not exceed 100 characters',
     }),
+    otherName: Joi.string().trim().min(1).max(100).optional().allow(null, '').messages({
+      'string.max': 'Other name must not exceed 100 characters',
+    }),
     phoneNumber: Joi.string().trim().optional().allow(null, ''),
+    companyAffiliation: Joi.string().trim().min(1).max(200).optional().allow(null, '').messages({
+      'string.max': 'Company affiliation must not exceed 200 characters',
+    }),
     organizationName: Joi.string().trim().min(1).max(200).optional().allow(null, ''),
     businessEmail: Joi.string().email().optional().allow(null, '').messages({
       'string.email': 'Please provide a valid business email address',

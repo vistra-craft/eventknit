@@ -241,20 +241,37 @@ export class AuthController {
         return;
       }
 
-      const { firstName, lastName, phoneNumber, organizationName, businessEmail } = req.body;
+      const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, email } = req.body;
+
+      // Email cannot be changed once registered (immutability requirement)
+      if (email !== undefined && email !== req.user.email) {
+        res.status(400).json({
+          success: false,
+          message: 'Email address cannot be changed once registered',
+        });
+        return;
+      }
 
       const updateData: {
         firstName?: string;
         lastName?: string;
+        otherName?: string | null;
         phoneNumber?: string | null;
+        companyAffiliation?: string | null;
         organizationName?: string | null;
         businessEmail?: string | null;
       } = {};
 
       if (firstName !== undefined) updateData.firstName = firstName.trim();
       if (lastName !== undefined) updateData.lastName = lastName.trim();
+      if (otherName !== undefined) {
+        updateData.otherName = otherName && otherName.trim() !== '' ? otherName.trim() : null;
+      }
       if (phoneNumber !== undefined) {
         updateData.phoneNumber = phoneNumber && phoneNumber.trim() !== '' ? phoneNumber.trim() : null;
+      }
+      if (companyAffiliation !== undefined) {
+        updateData.companyAffiliation = companyAffiliation && companyAffiliation.trim() !== '' ? companyAffiliation.trim() : null;
       }
       if (organizationName !== undefined) {
         updateData.organizationName = organizationName && organizationName.trim() !== '' ? organizationName.trim() : null;
