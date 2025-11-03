@@ -22,3 +22,4 @@ module.exports = {
   verbose: true,
   maxWorkers: 1, // Run tests with single worker to avoid database connection issues
 };
+

@@ -76,3 +76,4 @@ echo "2. Open Prisma Studio: npm run prisma:studio"
 echo "3. Test API: curl http://localhost:3001/health"
 echo ""
 
+
