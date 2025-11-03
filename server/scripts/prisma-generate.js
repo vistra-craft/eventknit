@@ -26,3 +26,4 @@ try {
   console.error("Failed to generate Prisma Client:", error.message);
   process.exit(1);
 }
+
