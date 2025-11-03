@@ -111,5 +111,53 @@ export const authValidations = {
         'any.required': 'Password is required',
       }),
   }),
+
+  changePassword: Joi.object({
+    currentPassword: Joi.string().required().messages({
+      'any.required': 'Current password is required',
+    }),
+    newPassword: Joi.string()
+      .min(8)
+      .pattern(passwordRegex)
+      .required()
+      .messages({
+        'string.min': 'Password must be at least 8 characters long',
+        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'any.required': 'New password is required',
+      }),
+  }),
+
+  requestEmailVerification: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+  }),
+
+  confirmEmailVerification: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+    code: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+      'string.length': 'Verification code must be 6 digits',
+      'string.pattern.base': 'Verification code must contain only digits',
+      'any.required': 'Verification code is required',
+    }),
+  }),
+
+  updateProfile: Joi.object({
+    firstName: Joi.string().trim().min(1).max(100).optional().messages({
+      'string.max': 'First name must not exceed 100 characters',
+    }),
+    lastName: Joi.string().trim().min(1).max(100).optional().messages({
+      'string.max': 'Last name must not exceed 100 characters',
+    }),
+    phoneNumber: Joi.string().trim().optional().allow(null, ''),
+    organizationName: Joi.string().trim().min(1).max(200).optional().allow(null, ''),
+    businessEmail: Joi.string().email().optional().allow(null, '').messages({
+      'string.email': 'Please provide a valid business email address',
+    }),
+  }),
 };
 

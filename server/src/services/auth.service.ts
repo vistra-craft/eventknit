@@ -454,5 +454,77 @@ export class AuthService {
       },
     });
   }
+
+  /**
+   * Change password (for authenticated users)
+   */
+  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      throw new ValidationError('Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    logger.info(`Password changed for user: ${user.email}`);
+  }
+
+  /**
+   * Request email verification code (alternative to token-based)
+   */
+  static async requestEmailVerificationCode(email: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new ValidationError('Email is already verified');
+    }
+
+    // Generate verification token (same as registration)
+    await this.generateEmailVerificationToken(user.id);
+
+    logger.info(`Email verification code requested for user: ${user.email}`);
+  }
+
+  /**
+   * Verify email with code (alternative to token-based)
+   */
+  static async verifyEmailWithCode(email: string, code: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // For now, we'll use the token-based verification
+    // In a full implementation, we'd store codes similar to phone verification
+    // This is a placeholder that shows the interface
+    throw new ValidationError('Code-based email verification not yet implemented. Use token-based verification.');
+  }
 }
 
