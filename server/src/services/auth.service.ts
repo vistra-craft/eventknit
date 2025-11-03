@@ -512,7 +512,7 @@ export class AuthService {
   /**
    * Verify email with code (alternative to token-based)
    */
-  static async verifyEmailWithCode(email: string, code: string): Promise<void> {
+  static async verifyEmailWithCode(email: string, _code: string): Promise<void> {
     const user = await prisma.user.findUnique({
       where: { email },
     });
