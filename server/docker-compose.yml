@@ -8,18 +8,29 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=3001
-      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/eventknit}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://eventknit:eventknit123@postgres:5432/eventknit?schema=public}
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-key}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev-refresh-secret-key}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
       - BCRYPT_ROUNDS=${BCRYPT_ROUNDS:-12}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
-      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+      - AUTH_RATE_LIMIT_WINDOW_MS=${AUTH_RATE_LIMIT_WINDOW_MS:-900000}
+      - AUTH_RATE_LIMIT_MAX=${AUTH_RATE_LIMIT_MAX:-5}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173}
       - CORS_CREDENTIALS=${CORS_CREDENTIALS:-true}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@eventknit.com}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
     depends_on:
-      - mongodb
+      - postgres
       - redis
     volumes:
       # Only mount source in development for hot reload
@@ -44,28 +55,26 @@ services:
       retries: 3
       start_period: 40s
 
-  mongodb:
-    image: mongo:7.0
+  postgres:
+    image: postgres:15-alpine
+    container_name: eventknit-postgres
     ports:
-      - "${MONGODB_PORT:-27017}:27017"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD:-password}
-      - MONGO_INITDB_DATABASE=${MONGO_DATABASE:-eventknit}
+      - POSTGRES_USER=${POSTGRES_USER:-eventknit}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-eventknit123}
+      - POSTGRES_DB=${POSTGRES_DB:-eventknit}
+      - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      - mongodb_data:/data/db
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - eventknit-network
-    restart: ${RESTART_POLICY:-no}
-    deploy:
-      resources:
-        limits:
-          memory: ${MONGODB_MEMORY_LIMIT:-1G}
-          cpus: '${MONGODB_CPU_LIMIT:-1.0}'
-        reservations:
-          memory: ${MONGODB_MEMORY_RESERVATION:-512M}
-          cpus: '${MONGODB_CPU_RESERVATION:-0.5}'
+    restart: ${RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eventknit} -d ${POSTGRES_DB:-eventknit}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -76,7 +85,7 @@ services:
       - redis_data:/data
     networks:
       - eventknit-network
-    restart: ${RESTART_POLICY:-no}
+    restart: ${RESTART_POLICY:-unless-stopped}
     deploy:
       resources:
         limits:
@@ -86,17 +95,18 @@ services:
           memory: ${REDIS_MEMORY_RESERVATION:-128M}
           cpus: '${REDIS_CPU_RESERVATION:-0.1}'
 
-  # Only include mongo-express in development
-  mongo-express:
-    image: mongo-express:1.0.0
+  # Only include pgadmin in development
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: eventknit-pgadmin
     ports:
-      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+      - "${PGADMIN_PORT:-8080}:80"
     environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USERNAME:-admin}
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASSWORD:-password}
-      - ME_CONFIG_MONGODB_URL=mongodb://mongodb:27017/
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@eventknit.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+      - PGADMIN_CONFIG_SERVER_MODE=False
     depends_on:
-      - mongodb
+      - postgres
     networks:
       - eventknit-network
     restart: ${RESTART_POLICY:-no}
@@ -104,7 +114,7 @@ services:
       - dev
 
 volumes:
-  mongodb_data:
+  postgres_data:
   redis_data:
 
 networks:

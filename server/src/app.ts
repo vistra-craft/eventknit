@@ -1,7 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import morgan from 'morgan';
 import { config } from './config';
+import { logger, stream } from './utils/logger';
+import authRoutes from './routes/auth.routes';
+import { errorHandler } from './middleware/error.middleware';
+import { rateLimiter } from './middleware/rateLimiter.middleware';
 
 const app = express();
 
@@ -19,9 +24,19 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
+// Logging
+if (config.env === 'development') {
+  app.use(morgan('dev', { stream }));
+} else {
+  app.use(morgan('combined', { stream }));
+}
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Global rate limiter
+app.use('/api', rateLimiter);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
@@ -50,16 +65,13 @@ app.get('/api/v1/status', (_req, res) => {
   });
 });
 
-// Basic error handler
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    message: config.env === 'production' ? 'Internal server error' : err.message,
-  });
-});
+// API routes
+app.use('/api/v1/auth', authRoutes);
 
-// 404 handler
+// Error handler middleware (must be last)
+app.use(errorHandler);
+
+// 404 handler (must be after all routes)
 app.use((_req, res) => {
   res.status(404).json({
     success: false,
@@ -68,4 +80,3 @@ app.use((_req, res) => {
 });
 
 export default app;
-

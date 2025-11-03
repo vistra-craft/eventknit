@@ -38,7 +38,7 @@ export default [
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "@typescript-eslint/no-inferrable-types": "off",
-        "prefer-const": "error",
+      "prefer-const": "error",
       "@typescript-eslint/no-var-requires": "error",
 
       // General rules
@@ -76,7 +76,12 @@ export default [
     },
   },
   {
-    files: ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*.ts"],
+    files: [
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/__tests__/**/*.ts",
+      "tests/**/*.ts",
+    ],
     languageOptions: {
       globals: {
         process: "readonly",
