@@ -7,6 +7,7 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: env("DATABASE_URL"),
+    // DATABASE_URL is optional for generation, only required for migrations
+    url: env("DATABASE_URL", { optional: true }) || "postgresql://placeholder:placeholder@localhost:5432/placeholder",
   },
 });
