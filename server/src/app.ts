@@ -7,6 +7,7 @@ import { logger, stream } from './utils/logger';
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
 import organizerRoutes from './routes/organizer.routes';
+import eventRoutes from './routes/event.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { rateLimiter } from './middleware/rateLimiter.middleware';
 
@@ -71,6 +72,7 @@ app.get('/api/v1/status', (_req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/organizer', organizerRoutes);
+app.use('/api/v1/events', eventRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

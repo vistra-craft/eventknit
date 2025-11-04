@@ -20,9 +20,9 @@ enum UserRole {
 }
 
 enum UserStatus {
-  ACTIVE         // User account is active and can use the platform fully
-  SUSPENDED      // Admin action: User is banned (punitive) - cannot login or use platform
-  DEACTIVATED    // User self-deactivated or admin soft-deleted (non-punitive) - can login but cannot perform actions, can be reactivated
+  ACTIVE // User account is active and can use the platform fully
+  SUSPENDED // Admin action: User is banned (punitive) - cannot login or use platform
+  DEACTIVATED // User self-deactivated or admin soft-deleted (non-punitive) - can login but cannot perform actions, can be reactivated
 }
 
 enum KYCStatus {
@@ -37,53 +37,74 @@ enum TokenType {
   REFRESH_TOKEN
 }
 
+enum EventStatus {
+  PENDING // Waiting for admin approval
+  APPROVED // Approved by admin, visible to public
+  REJECTED // Rejected by admin
+  CANCELLED // Cancelled by organizer
+  COMPLETED // Event has ended
+}
+
+enum EventType {
+  PUBLIC // Public event, visible to all
+  PRIVATE // Private event, invite-only
+}
+
+enum RegistrationStatus {
+  PENDING // Registration pending (no payment yet)
+  CONFIRMED // Registration confirmed (payment completed or free event)
+  CANCELLED // Registration cancelled
+}
+
 model User {
-  id                String    @id @default(uuid())
-  email             String    @unique
-  password          String
-  firstName         String
-  lastName          String
-  otherName         String?   // Middle name or other names
+  id                 String     @id @default(uuid())
+  email              String     @unique
+  password           String
+  firstName          String
+  lastName           String
+  otherName          String? // Middle name or other names
   phoneNumber        String?
-  companyAffiliation String?   // Company or institutional affiliation
-  role               UserRole  @default(ATTENDEE)
+  companyAffiliation String? // Company or institutional affiliation
+  role               UserRole   @default(ATTENDEE)
   status             UserStatus @default(ACTIVE)
-  isEmailVerified    Boolean   @default(false)
+  isEmailVerified    Boolean    @default(false)
   emailVerifiedAt    DateTime?
-  
+
   // Organizer-specific fields (optional - can be added later)
-  organizationName   String?
-  businessEmail      String?
-  
+  organizationName String?
+  businessEmail    String?
+
   // Organization relationship (Option A: managedBy field)
-  managedBy          String?  // User ID of organizer/admin who manages this user
-  managedByUser      User?    @relation("ManagedUsers", fields: [managedBy], references: [id], onDelete: SetNull)
-  managedUsers       User[]   @relation("ManagedUsers")
-  
+  managedBy     String? // User ID of organizer/admin who manages this user
+  managedByUser User?   @relation("ManagedUsers", fields: [managedBy], references: [id], onDelete: SetNull)
+  managedUsers  User[]  @relation("ManagedUsers")
+
   // KYC fields (for organizers)
-  kycStatus          KYCStatus?
-  kycSubmittedAt     DateTime?
-  kycApprovedAt      DateTime?
-  
+  kycStatus      KYCStatus?
+  kycSubmittedAt DateTime?
+  kycApprovedAt  DateTime?
+
   // Security fields
-  failedLoginAttempts Int      @default(0)
+  failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
   lastLoginAt         DateTime?
-  
+
   // Audit fields
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  createdBy          String?
-  updatedBy          String?
-  deletedAt          DateTime?
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+
   // Relations
   refreshTokens      RefreshToken[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
   kycDocuments       KYCDocument[]
   auditLogs          AuditLog[]
-  
+  eventsCreated      Event[]             @relation("EventOrganizer")
+  eventRegistrations EventRegistration[]
+
   @@index([email])
   @@index([role])
   @@index([status])
@@ -93,51 +114,51 @@ model User {
 }
 
 model RefreshToken {
-  id          String   @id @default(uuid())
-  token       String   @unique
-  userId      String
-  userAgent   String?
-  ipAddress   String?
-  expiresAt   DateTime
-  revoked     Boolean  @default(false)
-  revokedAt   DateTime?
+  id            String    @id @default(uuid())
+  token         String    @unique
+  userId        String
+  userAgent     String?
+  ipAddress     String?
+  expiresAt     DateTime
+  revoked       Boolean   @default(false)
+  revokedAt     DateTime?
   revokedReason String?
-  createdAt   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
 }
 
 model EmailVerification {
-  id          String   @id @default(uuid())
-  userId      String
-  token       String   @unique
-  expiresAt   DateTime
-  verified    Boolean  @default(false)
-  verifiedAt  DateTime?
-  createdAt   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id         String    @id @default(uuid())
+  userId     String
+  token      String    @unique
+  expiresAt  DateTime
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
 }
 
 model PasswordReset {
-  id          String   @id @default(uuid())
-  userId      String
-  token       String   @unique
-  expiresAt   DateTime
-  used        Boolean  @default(false)
-  usedAt      DateTime?
-  createdAt   DateTime @default(now())
-  
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
@@ -146,7 +167,7 @@ model PasswordReset {
 model KYCDocument {
   id              String    @id @default(uuid())
   userId          String
-  documentType    String    // BUSINESS_LICENSE, TAX_ID, etc.
+  documentType    String // BUSINESS_LICENSE, TAX_ID, etc.
   documentNumber  String?
   documentUrl     String?
   status          KYCStatus @default(PENDING)
@@ -155,29 +176,144 @@ model KYCDocument {
   reviewedAt      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([status])
 }
 
 model AuditLog {
-  id          String   @id @default(uuid())
-  userId      String?
-  action      String
-  entity      String?  // User, Event, etc.
-  entityId    String?
-  metadata    Json?    // Additional data
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String? // User, Event, etc.
+  entityId  String?
+  metadata  Json? // Additional data
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([userId])
   @@index([action])
   @@index([entity])
   @@index([createdAt])
 }
 
+model Event {
+  id              String   @id @default(uuid())
+  title           String
+  description     String   @db.Text
+  fullDescription String?  @db.Text
+  category        String?
+  tags            String[] // Array of tags
+
+  // Dates and times
+  startDate            DateTime
+  endDate              DateTime?
+  startTime            String? // Time string (e.g., "09:00 AM")
+  endTime              String? // Time string (e.g., "05:00 PM")
+  registrationDeadline DateTime?
+
+  // Location
+  venue       String?
+  location    String // City, State or full address
+  address     String? // Full street address
+  isOnline    Boolean @default(false)
+  onlineLink  String?
+  coordinates Json? // { lat: number, lng: number }
+
+  // Pricing
+  isFree      Boolean  @default(false)
+  price       Decimal? @db.Decimal(10, 2) // Single price for simple events
+  ticketTypes Json? // Array of ticket types with prices
+
+  // Capacity
+  capacity       Int? // Total capacity (null = unlimited)
+  availableSlots Int? // Calculated available slots
+
+  // Media
+  image  String? // Image URL
+  images String[] // Array of image URLs
+
+  // Event details
+  type           EventType   @default(PUBLIC)
+  status         EventStatus @default(PENDING)
+  requirements   String[] // Array of requirements
+  ageRestriction String? // e.g., "18+", "All Ages"
+  duration       String? // e.g., "8 hours", "3 days"
+
+  // Additional content
+  speakers           Json? // Array of speakers
+  sponsors           Json? // Array of sponsors
+  faqs               Json? // Array of FAQs
+  registrationFields Json? // Custom registration form fields
+
+  // Organizer
+  organizerId String
+  organizer   User   @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  // Admin approval
+  approvedBy      String? // Admin user ID who approved
+  approvedAt      DateTime?
+  rejectedBy      String? // Admin user ID who rejected
+  rejectedAt      DateTime?
+  rejectionReason String?   @db.Text
+
+  // Audit fields
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  createdBy String?
+  updatedBy String?
+  deletedAt DateTime?
+
+  // Relations
+  registrations EventRegistration[]
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([category])
+  @@index([startDate])
+  @@index([isFree])
+  @@index([deletedAt])
+  @@index([createdAt])
+}
+
+model EventRegistration {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  attendeeId String
+  attendee   User   @relation(fields: [attendeeId], references: [id], onDelete: Cascade)
+
+  // Registration details
+  ticketType  String? // Ticket type name if multiple ticket types
+  quantity    Int     @default(1)
+  totalAmount Decimal @db.Decimal(10, 2) // Total amount paid (0 for free events)
+
+  // Registration form data
+  registrationData Json? // Custom form data submitted by attendee
+
+  // Status
+  status RegistrationStatus @default(PENDING)
+
+  // Payment (for future implementation)
+  paymentStatus        String? // PENDING, COMPLETED, FAILED, REFUNDED
+  paymentMethod        String? // STRIPE, PAYPAL, etc.
+  paymentTransactionId String?
+
+  // Audit fields
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  cancelledAt DateTime?
+  cancelledBy String?
+
+  @@unique([eventId, attendeeId]) // One registration per attendee per event
+  @@index([eventId])
+  @@index([attendeeId])
+  @@index([status])
+  @@index([createdAt])
+}
