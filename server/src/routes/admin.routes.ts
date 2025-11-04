@@ -54,6 +54,34 @@ router.delete('/users/:id', AdminController.deleteUser);
  */
 router.post('/users/:id/password', AdminController.forcePasswordReset);
 
+/**
+ * @route   GET /api/v1/admin/dashboard/stats
+ * @desc    Get admin dashboard stats
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/dashboard/stats', AdminController.getDashboardStats);
+
+/**
+ * @route   GET /api/v1/admin/dashboard/events
+ * @desc    Get recent events for admin dashboard
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/dashboard/events', AdminController.getRecentEvents);
+
+/**
+ * @route   GET /api/v1/admin/dashboard/activity
+ * @desc    Get recent activity for admin dashboard
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/dashboard/activity', AdminController.getRecentActivity);
+
+/**
+ * @route   GET /api/v1/admin/dashboard/alerts
+ * @desc    Get system alerts for admin dashboard
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/dashboard/alerts', AdminController.getSystemAlerts);
+
 export default router;
 
 

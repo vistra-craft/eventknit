@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar,
@@ -12,17 +12,16 @@ import {
   Building2,
 } from "lucide-react";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
+import { getOrganizerDashboardStats, getOrganizerDashboardEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 
 const EnhancedDashboard = () => {
   const [timeRange, setTimeRange] = useState("30d");
-
-  // Mock data - in a real app, this would come from your API
-  const stats = [
+  const [stats, setStats] = useState([
     {
       title: "Total Events",
-      value: "24",
-      change: "+12%",
-      changeType: "positive",
+      value: "0",
+      change: "+0%",
+      changeType: "positive" as const,
       icon: Calendar,
       color: "text-accent-electric",
       bgColor: "bg-accent-electric/10",
@@ -30,9 +29,9 @@ const EnhancedDashboard = () => {
     },
     {
       title: "Speakers",
-      value: "156",
-      change: "+8%",
-      changeType: "positive",
+      value: "0",
+      change: "+0%",
+      changeType: "positive" as const,
       icon: Mic,
       color: "text-accent-neon",
       bgColor: "bg-accent-neon/10",
@@ -40,9 +39,9 @@ const EnhancedDashboard = () => {
     },
     {
       title: "Exhibitors",
-      value: "89",
-      change: "+15%",
-      changeType: "positive",
+      value: "0",
+      change: "+0%",
+      changeType: "positive" as const,
       icon: Building2,
       color: "text-accent-coral",
       bgColor: "bg-accent-coral/10",
@@ -50,9 +49,9 @@ const EnhancedDashboard = () => {
     },
     {
       title: "Active Attendees",
-      value: "4,247",
-      change: "+18%",
-      changeType: "positive",
+      value: "0",
+      change: "+0%",
+      changeType: "positive" as const,
       icon: Users,
       color: "text-primary",
       bgColor: "bg-primary/10",
@@ -60,148 +59,96 @@ const EnhancedDashboard = () => {
     },
     {
       title: "Total Revenue",
-      value: "$127,450",
-      change: "+24%",
-      changeType: "positive",
+      value: "$0",
+      change: "+0%",
+      changeType: "positive" as const,
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-100",
       borderColor: "border-green-200",
     },
-  ];
+  ]);
+  const [recentEvents, setRecentEvents] = useState<OrganizerDashboardEvent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentEvents = [
-    {
-      id: "1",
-      title: "Tech Innovation Summit 2024",
-      date: "March 15-17, 2024",
-      time: "9:00 AM - 5:00 PM",
-      location: "San Francisco, CA",
-      venue: "Moscone Center",
-      status: "active",
-      attendees: 485,
-      capacity: 500,
-      revenue: 145200,
-      views: 3250,
-      conversion: 14.9,
-      speakers: 24,
-      exhibitors: 18,
-      sponsors: 12,
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-      description: "Explore the latest in technology innovation and digital transformation.",
-      category: "Technology",
-      organizer: "Tech Events Inc.",
-      price: "$299",
-      rating: 4.8,
-      fullDescription: "Join us for the most comprehensive technology innovation summit of the year. Featuring keynote speakers, hands-on workshops, and networking opportunities.",
-      duration: "3 days",
-      ageRestriction: "18+"
-    },
-    {
-      id: "2",
-      title: "Business Leadership Workshop",
-      date: "April 2, 2024",
-      time: "10:00 AM - 3:00 PM",
-      location: "New York, NY",
-      venue: "Manhattan Center",
-      status: "upcoming",
-      attendees: 78,
-      capacity: 100,
-      revenue: 15600,
-      views: 890,
-      conversion: 8.8,
-      speakers: 8,
-      exhibitors: 5,
-      sponsors: 3,
-      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop",
-      description: "Master leadership skills for the modern business landscape.",
-      category: "Business",
-      organizer: "Business Academy",
-      price: "$199",
-      rating: 4.6,
-      fullDescription: "A comprehensive workshop designed to enhance your leadership capabilities and strategic thinking.",
-      duration: "5 hours",
-      ageRestriction: "16+"
-    },
-    {
-      id: "3",
-      title: "Food & Wine Expo",
-      date: "February 10, 2024",
-      time: "11:00 AM - 8:00 PM",
-      location: "Los Angeles, CA",
-      venue: "Convention Center",
-      status: "completed",
-      attendees: 320,
-      capacity: 350,
-      revenue: 25600,
-      views: 1890,
-      conversion: 16.9,
-      speakers: 15,
-      exhibitors: 45,
-      sponsors: 8,
-      image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop",
-      description: "Discover the finest culinary experiences and wine tastings.",
-      category: "Food & Drink",
-      organizer: "Culinary Events Co.",
-      price: "$89",
-      rating: 4.9,
-      fullDescription: "An exclusive expo featuring world-class chefs, sommeliers, and culinary experts showcasing the best in food and wine.",
-      duration: "9 hours",
-      ageRestriction: "21+"
-    },
-    {
-      id: "4",
-      title: "Digital Marketing Conference",
-      date: "January 20, 2024",
-      time: "8:30 AM - 6:00 PM",
-      location: "Chicago, IL",
-      venue: "McCormick Place",
-      status: "completed",
-      attendees: 450,
-      capacity: 500,
-      revenue: 67500,
-      views: 2100,
-      conversion: 21.4,
-      speakers: 32,
-      exhibitors: 28,
-      sponsors: 15,
-      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=400&h=300&fit=crop",
-      description: "Learn cutting-edge digital marketing strategies and tools.",
-      category: "Marketing",
-      organizer: "Marketing Pro",
-      price: "$149",
-      rating: 4.5,
-      fullDescription: "A comprehensive conference covering the latest trends and strategies in digital marketing.",
-      duration: "9.5 hours",
-      ageRestriction: "18+"
-    },
-    {
-      id: "5",
-      title: "Startup Pitch Competition",
-      date: "May 15, 2024",
-      time: "2:00 PM - 8:00 PM",
-      location: "Austin, TX",
-      venue: "Austin Convention Center",
-      status: "upcoming",
-      attendees: 25,
-      capacity: 200,
-      revenue: 3750,
-      views: 450,
-      conversion: 5.6,
-      speakers: 12,
-      exhibitors: 8,
-      sponsors: 5,
-      image: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=300&fit=crop",
-      description: "Watch innovative startups pitch their ideas to investors.",
-      category: "Startup",
-      organizer: "Startup Hub",
-      price: "$79",
-      rating: 4.7,
-      fullDescription: "An exciting competition where innovative startups present their ideas to a panel of investors.",
-      duration: "6 hours",
-      ageRestriction: "16+"
-    },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [statsResponse, eventsResponse] = await Promise.all([
+          getOrganizerDashboardStats(),
+          getOrganizerDashboardEvents(3),
+        ]);
+
+        if (statsResponse.success && statsResponse.data.stats) {
+          const dashboardStats = statsResponse.data.stats;
+          setStats([
+            {
+              title: "Total Events",
+              value: dashboardStats.totalEvents.toString(),
+              change: "+0%", // TODO: Calculate change from previous period
+              changeType: "positive",
+              icon: Calendar,
+              color: "text-accent-electric",
+              bgColor: "bg-accent-electric/10",
+              borderColor: "border-accent-electric/20",
+            },
+            {
+              title: "Speakers",
+              value: dashboardStats.totalSpeakers.toString(),
+              change: "+0%",
+              changeType: "positive",
+              icon: Mic,
+              color: "text-accent-neon",
+              bgColor: "bg-accent-neon/10",
+              borderColor: "border-accent-neon/20",
+            },
+            {
+              title: "Exhibitors",
+              value: dashboardStats.totalExhibitors.toString(),
+              change: "+0%",
+              changeType: "positive",
+              icon: Building2,
+              color: "text-accent-coral",
+              bgColor: "bg-accent-coral/10",
+              borderColor: "border-accent-coral/20",
+            },
+            {
+              title: "Active Attendees",
+              value: dashboardStats.totalAttendees.toLocaleString(),
+              change: "+0%",
+              changeType: "positive",
+              icon: Users,
+              color: "text-primary",
+              bgColor: "bg-primary/10",
+              borderColor: "border-primary/20",
+            },
+            {
+              title: "Total Revenue",
+              value: `$${dashboardStats.totalRevenue.toLocaleString()}`,
+              change: "+0%",
+              changeType: "positive",
+              icon: DollarSign,
+              color: "text-green-600",
+              bgColor: "bg-green-100",
+              borderColor: "border-green-200",
+            },
+          ]);
+        }
+
+        if (eventsResponse.success && eventsResponse.data.events) {
+          setRecentEvents(eventsResponse.data.events);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8">
@@ -290,11 +237,21 @@ const EnhancedDashboard = () => {
             </div>
 
             {/* Events Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentEvents.slice(0, 3).map((event) => (
-                <OrganizerEventCard key={event.id} event={event} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading events...</p>
+              </div>
+            ) : recentEvents.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recentEvents.map((event) => (
+                  <OrganizerEventCard key={event.id} event={event} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No events yet. Create your first event to get started!</p>
+              </div>
+            )}
           </div>
 
           {/* Insights Cards Row */}

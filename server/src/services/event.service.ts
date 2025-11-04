@@ -1,5 +1,5 @@
 import { prisma } from '../config/database';
-import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma } from '@prisma/client';
+import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType } from '@prisma/client';
 import {
   NotFoundError,
   ConflictError,
@@ -9,6 +9,8 @@ import {
 import { createAuditLog, AuditActions } from '../utils/audit';
 import { logger } from '../utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
+import { hashPassword } from '../utils/password';
+import crypto from 'crypto';
 
 export interface CreateEventData {
   title: string;
@@ -180,6 +182,36 @@ export class EventService {
     });
 
     logger.info(`Event created: ${event.id} by organizer: ${organizerId}`);
+
+    // Auto-generate default invitation links for the event
+    try {
+      const { InvitationService } = await import('./invitation.service');
+      
+      // Generate default links for different invite types
+      const defaultInviteTypes: InviteType[] = [InviteType.ATTENDEE, InviteType.SPEAKER, InviteType.EXHIBITOR];
+      
+      for (const inviteType of defaultInviteTypes) {
+        try {
+          await InvitationService.createInvitation(
+            event.id,
+            {
+              inviteType,
+              title: `${inviteType.charAt(0) + inviteType.slice(1).toLowerCase()} Registration`,
+            },
+            organizerId,
+            organizerRole,
+            ipAddress,
+            userAgent,
+          );
+        } catch (error) {
+          // Log but don't fail event creation if invitation creation fails
+          logger.warn(`Failed to create default ${inviteType} invitation for event ${event.id}:`, error);
+        }
+      }
+    } catch (error) {
+      // Log but don't fail event creation if invitation creation fails
+      logger.warn(`Failed to create default invitations for event ${event.id}:`, error);
+    }
 
     return event;
   }
@@ -959,6 +991,336 @@ export class EventService {
     });
 
     logger.info(`Registration cancelled: ${registrationId} by attendee: ${attendeeId}`);
+  }
+
+  /**
+   * Get user's registered events (for user dashboard)
+   */
+  static async getUserRegisteredEvents(attendeeId: string) {
+    const registrations = await prisma.eventRegistration.findMany({
+      where: {
+        attendeeId,
+        status: {
+          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+        },
+      },
+      include: {
+        event: {
+          include: {
+            organizer: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                organizationName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Transform registrations to dashboard format
+    const userEvents = registrations.map(registration => {
+      const event = registration.event;
+      const now = new Date();
+      let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
+      
+      if (event.status === EventStatus.COMPLETED || (event.endDate && new Date(event.endDate) < now)) {
+        status = 'completed';
+      } else if (event.startDate && new Date(event.startDate) <= now) {
+        status = 'ongoing';
+      }
+
+      // Format date range
+      let dateString = '';
+      if (event.startDate) {
+        const startDate = new Date(event.startDate);
+        if (event.endDate) {
+          const endDate = new Date(event.endDate);
+          if (startDate.toDateString() === endDate.toDateString()) {
+            dateString = startDate.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+            });
+          } else {
+            dateString = `${startDate.toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric',
+              year: 'numeric',
+            })} - ${endDate.toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric',
+              year: 'numeric',
+            })}`;
+          }
+        } else {
+          dateString = startDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+          });
+        }
+      }
+
+      return {
+        id: event.id,
+        title: event.title,
+        date: dateString,
+        location: event.location,
+        type: event.isOnline ? 'Online' : 'In-Person',
+        image: event.image || '',
+        registrationDate: registration.createdAt.toISOString().split('T')[0],
+        venue: event.venue || '',
+        description: event.description,
+        status,
+        category: event.category || '',
+      };
+    });
+
+    return userEvents;
+  }
+
+  /**
+   * Register for an event via invitation link (public - no auth required)
+   */
+  static async registerViaInvitation(
+    token: string,
+    registrationData: Record<string, unknown>,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Import InvitationService here to avoid circular dependency
+    const { InvitationService } = await import('./invitation.service');
+    
+    // Get and validate invitation
+    const invitation = await InvitationService.getInvitationByToken(token);
+    const eventId = invitation.event.id;
+
+    // Extract email from registration data (required field)
+    const email = registrationData.email as string;
+    if (!email || typeof email !== 'string') {
+      throw new ValidationError('Email is required for registration');
+    }
+
+    // Extract other required fields from registration data
+    const firstName = registrationData.firstName as string;
+    const lastName = registrationData.lastName as string;
+    if (!firstName || !lastName) {
+      throw new ValidationError('First name and last name are required');
+    }
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    // Create user account if doesn't exist (with temporary password)
+    if (!user) {
+      // Generate a random password (user can reset it later)
+      const tempPassword = crypto.randomBytes(16).toString('hex');
+      const hashedPassword = await hashPassword(tempPassword);
+
+      user = await prisma.user.create({
+        data: {
+          email: email.toLowerCase().trim(),
+          password: hashedPassword,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          otherName: registrationData.otherName as string | undefined,
+          phoneNumber: registrationData.phoneNumber as string | undefined,
+          companyAffiliation: registrationData.companyAffiliation as string | undefined,
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: false, // Email verification can be done later
+        },
+      });
+
+      // TODO: Send welcome email with password reset link
+      logger.info(`User created via invitation: ${user.id} for event: ${eventId}`);
+    }
+
+    // Check if already registered
+    const existingRegistration = await prisma.eventRegistration.findUnique({
+      where: {
+        eventId_attendeeId: {
+          eventId,
+          attendeeId: user.id,
+        },
+      },
+    });
+
+    if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
+      throw new ConflictError('You are already registered for this event');
+    }
+
+    // Get event details for validation
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        isFree: true,
+        price: true,
+        ticketTypes: true,
+        capacity: true,
+        availableSlots: true,
+        registrationDeadline: true,
+        startDate: true,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Validate event status
+    if (event.status !== EventStatus.APPROVED) {
+      throw new ValidationError('Event is not available for registration');
+    }
+
+    // Check registration deadline
+    if (event.registrationDeadline && new Date(event.registrationDeadline) < new Date()) {
+      throw new ValidationError('Registration deadline has passed');
+    }
+
+    // Check if event has started
+    if (new Date(event.startDate) < new Date()) {
+      throw new ValidationError('Event has already started');
+    }
+
+    // Calculate total amount (default to free or check ticket type)
+    const quantity = (registrationData.quantity as number) || 1;
+    let totalAmount = new Decimal(0);
+
+    if (!event.isFree) {
+      const ticketType = registrationData.ticketType as string | undefined;
+      if (ticketType && event.ticketTypes) {
+        const ticketTypes = event.ticketTypes as Array<{ name: string; price: number }>;
+        const selectedTicket = ticketTypes.find(t => t.name === ticketType);
+        if (!selectedTicket) {
+          throw new ValidationError('Invalid ticket type');
+        }
+        totalAmount = new Decimal(Number(selectedTicket.price) * quantity);
+      } else if (event.price) {
+        totalAmount = new Decimal(Number(event.price) * quantity);
+      } else {
+        throw new ValidationError('Ticket type is required for this event');
+      }
+    }
+
+    // Check capacity
+    if (event.capacity !== null) {
+      const currentRegistrations = await prisma.eventRegistration.count({
+        where: {
+          eventId,
+          status: {
+            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          },
+        },
+      });
+
+      if (currentRegistrations + quantity > event.capacity) {
+        throw new ValidationError('Event is sold out or insufficient capacity');
+      }
+    }
+
+    // Create registration
+    const registrationStatus = event.isFree
+      ? RegistrationStatus.CONFIRMED
+      : RegistrationStatus.PENDING;
+
+    const registration = await prisma.eventRegistration.create({
+      data: {
+        eventId,
+        attendeeId: user.id,
+        invitationId: invitation.id,
+        ticketType: registrationData.ticketType as string | undefined || null,
+        quantity,
+        totalAmount,
+        registrationData: registrationData as Prisma.InputJsonValue,
+        status: registrationStatus,
+        paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            venue: true,
+            location: true,
+          },
+        },
+        attendee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Update invitation used count
+    await prisma.eventInvitation.update({
+      where: { id: invitation.id },
+      data: {
+        usedCount: {
+          increment: 1,
+        },
+      },
+    });
+
+    // Update available slots if capacity exists
+    if (event.capacity !== null) {
+      const newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
+      await prisma.event.update({
+        where: { id: eventId },
+        data: {
+          availableSlots: Math.max(0, newAvailableSlots),
+        },
+      });
+    }
+
+    // Audit log
+    await createAuditLog({
+      userId: user.id,
+      action: AuditActions.REGISTRATION_VIA_INVITATION,
+      entity: 'EventRegistration',
+      entityId: registration.id,
+      metadata: {
+        eventId,
+        eventTitle: event.title,
+        invitationId: invitation.id,
+        inviteType: invitation.inviteType,
+        quantity,
+        totalAmount: totalAmount.toString(),
+        isFree: event.isFree,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`Registration via invitation: ${registration.id} for event: ${eventId} by user: ${user.id}`);
+
+    return {
+      registration,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isNewUser: !user.isEmailVerified, // Indicate if this is a new user
+      },
+    };
   }
 }
 

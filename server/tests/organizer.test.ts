@@ -45,7 +45,8 @@ describe('Organizer Staff Management', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    // Note: Event/Ticket tables removed for now - focusing on auth first
+    await prisma.eventRegistration.deleteMany();
+    await prisma.event.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();
     await prisma.passwordReset.deleteMany();
@@ -255,6 +256,364 @@ describe('Organizer Staff Management', () => {
         where: { id: staffId },
       });
       expect(staff?.deletedAt).toBeDefined();
+    });
+  });
+
+  describe('GET /api/v1/organizer/dashboard/stats', () => {
+    let organizerId: string;
+    let attendeeId: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+
+      // Get organizer ID
+      const organizer = await prisma.user.findUnique({
+        where: { email: 'organizer@test.com' },
+      });
+      organizerId = organizer!.id;
+
+      // Get attendee ID
+      const attendee = await prisma.user.findUnique({
+        where: { email: 'attendee@test.com' },
+      });
+      attendeeId = attendee!.id;
+
+      // Create test events with speakers and sponsors
+      const event1 = await prisma.event.create({
+        data: {
+          title: 'Test Event 1',
+          description: 'Test Description 1',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location 1',
+          isFree: true,
+          organizerId,
+          status: 'APPROVED',
+          speakers: [
+            { name: 'Speaker 1', title: 'CEO', bio: 'Bio 1' },
+            { name: 'Speaker 2', title: 'CTO', bio: 'Bio 2' },
+          ],
+          sponsors: [
+            { name: 'Sponsor 1', level: 'gold', logo: 'logo1.png' },
+            { name: 'Sponsor 2', level: 'silver', logo: 'logo2.png' },
+          ],
+        },
+      });
+
+      const event2 = await prisma.event.create({
+        data: {
+          title: 'Test Event 2',
+          description: 'Test Description 2',
+          startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          location: 'Test Location 2',
+          isFree: false,
+          price: 50,
+          organizerId,
+          status: 'APPROVED',
+          speakers: [
+            { name: 'Speaker 3', title: 'CFO', bio: 'Bio 3' },
+          ],
+          sponsors: [
+            { name: 'Sponsor 3', level: 'bronze', logo: 'logo3.png' },
+          ],
+        },
+      });
+
+      // Create registrations
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event1.id,
+          attendeeId,
+          quantity: 2,
+          totalAmount: 0,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event2.id,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 50,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+    });
+
+    it('should get organizer dashboard stats successfully', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/stats')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.stats).toBeDefined();
+      expect(response.body.data.stats.totalEvents).toBe(2);
+      expect(response.body.data.stats.totalSpeakers).toBe(3); // 2 + 1
+      expect(response.body.data.stats.totalExhibitors).toBe(3); // 2 + 1 (sponsors)
+      expect(response.body.data.stats.totalAttendees).toBe(3); // 2 + 1
+      expect(response.body.data.stats.totalRevenue).toBe(50); // Only from paid event
+    });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/dashboard/stats')
+        .expect(401);
+    });
+
+    it('should fail for non-organizer user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/dashboard/stats')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(403);
+    });
+
+    it('should return zero stats for organizer with no events', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a new organizer with no events
+      const newOrganizerPassword = await hashPassword('NewOrg123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'neworganizer@test.com',
+          password: newOrganizerPassword,
+          firstName: 'New',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          organizationName: 'New Events Inc',
+        },
+      });
+
+      const newOrgLogin = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'neworganizer@test.com',
+          password: 'NewOrg123!@#',
+        });
+
+      const newOrgToken = newOrgLogin.body.data.accessToken;
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/stats')
+        .set('Authorization', `Bearer ${newOrgToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.stats.totalEvents).toBe(0);
+      expect(response.body.data.stats.totalSpeakers).toBe(0);
+      expect(response.body.data.stats.totalExhibitors).toBe(0);
+      expect(response.body.data.stats.totalAttendees).toBe(0);
+      expect(response.body.data.stats.totalRevenue).toBe(0);
+    });
+  });
+
+  describe('GET /api/v1/organizer/dashboard/events', () => {
+    let organizerId: string;
+    let attendeeId: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+
+      // Get organizer ID
+      const organizer = await prisma.user.findUnique({
+        where: { email: 'organizer@test.com' },
+      });
+      organizerId = organizer!.id;
+
+      // Get attendee ID
+      const attendee = await prisma.user.findUnique({
+        where: { email: 'attendee@test.com' },
+      });
+      attendeeId = attendee!.id;
+
+      // Create test events
+      const event1 = await prisma.event.create({
+        data: {
+          title: 'Event 1',
+          description: 'Description 1',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location 1',
+          venue: 'Venue 1',
+          startTime: '09:00',
+          endTime: '17:00',
+          isFree: true,
+          capacity: 100,
+          organizerId,
+          status: 'APPROVED',
+          speakers: [
+            { name: 'Speaker 1', title: 'CEO', bio: 'Bio 1' },
+            { name: 'Speaker 2', title: 'CTO', bio: 'Bio 2' },
+          ],
+          sponsors: [
+            { name: 'Sponsor 1', level: 'gold', logo: 'logo1.png' },
+          ],
+        },
+      });
+
+      const event2 = await prisma.event.create({
+        data: {
+          title: 'Event 2',
+          description: 'Description 2',
+          startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          location: 'Location 2',
+          venue: 'Venue 2',
+          isFree: false,
+          price: 50,
+          capacity: 50,
+          organizerId,
+          status: 'APPROVED',
+          speakers: [
+            { name: 'Speaker 3', title: 'CFO', bio: 'Bio 3' },
+          ],
+          sponsors: [
+            { name: 'Sponsor 2', level: 'silver', logo: 'logo2.png' },
+            { name: 'Sponsor 3', level: 'bronze', logo: 'logo3.png' },
+          ],
+        },
+      });
+
+      // Create registrations
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event1.id,
+          attendeeId,
+          quantity: 2,
+          totalAmount: 0,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event2.id,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 50,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+    });
+
+    it('should get organizer dashboard events successfully', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.events).toBeDefined();
+      expect(Array.isArray(response.body.data.events)).toBe(true);
+      expect(response.body.data.events.length).toBeGreaterThan(0);
+
+      const event = response.body.data.events[0];
+      expect(event).toHaveProperty('id');
+      expect(event).toHaveProperty('title');
+      expect(event).toHaveProperty('date');
+      expect(event).toHaveProperty('attendees');
+      expect(event).toHaveProperty('capacity');
+      expect(event).toHaveProperty('revenue');
+      expect(event).toHaveProperty('speakers');
+      expect(event).toHaveProperty('exhibitors');
+      expect(event).toHaveProperty('sponsors');
+    });
+
+    it('should respect limit parameter', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/events?limit=1')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.events.length).toBeLessThanOrEqual(1);
+    });
+
+    it('should calculate event stats correctly', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      const events = response.body.data.events;
+      
+      // Find event 1 (free event with 2 attendees)
+      const event1 = events.find((e: any) => e.title === 'Event 1');
+      if (event1) {
+        expect(event1.attendees).toBe(2);
+        expect(event1.revenue).toBe(0);
+        expect(event1.speakers).toBe(2);
+        expect(event1.exhibitors).toBe(1);
+      }
+
+      // Find event 2 (paid event with 1 attendee)
+      const event2 = events.find((e: any) => e.title === 'Event 2');
+      if (event2) {
+        expect(event2.attendees).toBe(1);
+        expect(event2.revenue).toBe(50);
+        expect(event2.speakers).toBe(1);
+        expect(event2.exhibitors).toBe(2);
+      }
+    });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/dashboard/events')
+        .expect(401);
+    });
+
+    it('should fail for non-organizer user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/dashboard/events')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(403);
     });
   });
 });

@@ -179,5 +179,72 @@ export class AdminController {
       next(error);
     }
   }
+
+  /**
+   * Get admin dashboard stats
+   */
+  static async getDashboardStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const timeRange = (req.query.timeRange as '7d' | '30d' | '90d' | '1y') || '30d';
+      const stats = await AdminService.getDashboardStats(timeRange);
+
+      res.status(200).json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get recent events for admin dashboard
+   */
+  static async getRecentEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const events = await AdminService.getRecentEvents(limit);
+
+      res.status(200).json({
+        success: true,
+        data: { events },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get recent activity for admin dashboard
+   */
+  static async getRecentActivity(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const activities = await AdminService.getRecentActivity(limit);
+
+      res.status(200).json({
+        success: true,
+        data: { activities },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get system alerts for admin dashboard
+   */
+  static async getSystemAlerts(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const alerts = await AdminService.getSystemAlerts();
+
+      res.status(200).json({
+        success: true,
+        data: { alerts },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

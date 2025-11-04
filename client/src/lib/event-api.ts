@@ -287,3 +287,29 @@ export const rejectEvent = async (
   return apiPost<EventResponse>(`/events/${eventId}/reject`, { rejectionReason });
 };
 
+/**
+ * Get user's registered events (for user dashboard)
+ */
+export interface UserRegisteredEventsResponse {
+  success: boolean;
+  data: {
+    events: Array<{
+      id: string;
+      title: string;
+      date: string;
+      location: string;
+      type: string;
+      image: string;
+      registrationDate: string;
+      venue?: string;
+      description?: string;
+      status?: 'upcoming' | 'ongoing' | 'completed';
+      category?: string;
+    }>;
+  };
+}
+
+export const getUserRegisteredEvents = async (): Promise<UserRegisteredEventsResponse> => {
+  return apiGet<UserRegisteredEventsResponse>('/events/user/registered');
+};
+

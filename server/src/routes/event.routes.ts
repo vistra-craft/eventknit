@@ -114,5 +114,12 @@ router.post(
   EventController.rejectEvent,
 );
 
+/**
+ * @route   GET /api/v1/events/user/registered
+ * @desc    Get user's registered events (for user dashboard)
+ * @access  Private (ATTENDEE+)
+ */
+router.get('/user/registered', EventController.getUserRegisteredEvents);
+
 export default router;
 

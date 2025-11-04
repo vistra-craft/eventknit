@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar,
@@ -16,12 +16,17 @@ import {
   UserCheck,
   Clock,
 } from "lucide-react";
+import {
+  getAdminDashboardStats,
+  getAdminRecentEvents,
+  getAdminRecentActivity,
+  getAdminSystemAlerts,
+} from "../../lib/admin-api";
 
 const AdminEnhancedDashboard = () => {
-  const [timeRange, setTimeRange] = useState("30d");
-
-  // Mock data - in a real app, this would come from your API
-  const stats = [
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d");
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState([
     {
       title: "Total Events",
       value: "1,247",
@@ -72,9 +77,8 @@ const AdminEnhancedDashboard = () => {
       bgColor: "bg-card",
       borderColor: "border-border",
     },
-  ];
-
-  const recentEvents = [
+  ]);
+  const [recentEvents, setRecentEvents] = useState([
     {
       id: "1",
       title: "Tech Conference 2024",
@@ -115,9 +119,8 @@ const AdminEnhancedDashboard = () => {
       revenue: "$28,000",
       category: "Health",
     },
-  ];
-
-  const systemAlerts = [
+  ]);
+  const [systemAlerts, setSystemAlerts] = useState([
     {
       id: 1,
       type: "warning",
@@ -142,9 +145,8 @@ const AdminEnhancedDashboard = () => {
       icon: CheckCircle,
       color: "text-green-600",
     },
-  ];
-
-  const recentActivity = [
+  ]);
+  const [recentActivity, setRecentActivity] = useState([
     {
       id: 1,
       type: "staff_registration",
@@ -185,7 +187,150 @@ const AdminEnhancedDashboard = () => {
       icon: Shield,
       color: "text-yellow-600",
     },
-  ];
+  ]);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [statsResponse, eventsResponse, activityResponse, alertsResponse] = await Promise.all([
+          getAdminDashboardStats(timeRange),
+          getAdminRecentEvents(10),
+          getAdminRecentActivity(10),
+          getAdminSystemAlerts(),
+        ]);
+
+        // Update stats
+        if (statsResponse.success && statsResponse.data.stats) {
+          const dashboardStats = statsResponse.data.stats;
+          setStats([
+            {
+              title: "Total Events",
+              value: dashboardStats.totalEvents.value,
+              change: dashboardStats.totalEvents.change,
+              changeType: dashboardStats.totalEvents.changeType,
+              icon: Calendar,
+              color: "text-primary",
+              bgColor: "bg-card",
+              borderColor: "border-border",
+            },
+            {
+              title: "Active Staff",
+              value: dashboardStats.activeStaff.value,
+              change: dashboardStats.activeStaff.change,
+              changeType: dashboardStats.activeStaff.changeType,
+              icon: Users,
+              color: "text-primary",
+              bgColor: "bg-card",
+              borderColor: "border-border",
+            },
+            {
+              title: "Organizers",
+              value: dashboardStats.organizers.value,
+              change: dashboardStats.organizers.change,
+              changeType: dashboardStats.organizers.changeType,
+              icon: Building2,
+              color: "text-primary",
+              bgColor: "bg-card",
+              borderColor: "border-border",
+            },
+            {
+              title: "Platform Revenue",
+              value: dashboardStats.platformRevenue.value,
+              change: dashboardStats.platformRevenue.change,
+              changeType: dashboardStats.platformRevenue.changeType,
+              icon: DollarSign,
+              color: "text-primary",
+              bgColor: "bg-card",
+              borderColor: "border-border",
+            },
+            {
+              title: "System Health",
+              value: dashboardStats.systemHealth.value,
+              change: dashboardStats.systemHealth.change,
+              changeType: dashboardStats.systemHealth.changeType,
+              icon: Activity,
+              color: "text-primary",
+              bgColor: "bg-card",
+              borderColor: "border-border",
+            },
+          ]);
+        }
+
+        // Update recent events
+        if (eventsResponse.success && eventsResponse.data.events) {
+          setRecentEvents(eventsResponse.data.events);
+        }
+
+        // Update system alerts
+        if (alertsResponse.success && alertsResponse.data.alerts) {
+          const alertsWithIcons = alertsResponse.data.alerts.map((alert) => {
+            let icon = Clock;
+            let color = "text-blue-600";
+            if (alert.type === "warning") {
+              icon = AlertTriangle;
+              color = "text-yellow-600";
+            } else if (alert.type === "success") {
+              icon = CheckCircle;
+              color = "text-green-600";
+            }
+            return {
+              id: alert.id,
+              type: alert.type,
+              message: alert.message,
+              time: alert.time,
+              icon,
+              color,
+            };
+          });
+          setSystemAlerts(alertsWithIcons);
+        }
+
+        // Update recent activity
+        if (activityResponse.success && activityResponse.data.activities) {
+          const activitiesWithIcons = activityResponse.data.activities.map((activity) => {
+            let icon = Activity;
+            let color = "text-primary";
+            if (activity.icon === "CHECK") {
+              icon = CheckCircle;
+              color = "text-green-600";
+            } else if (activity.icon === "ALERT") {
+              icon = AlertTriangle;
+              color = "text-yellow-600";
+            } else if (activity.icon === "USER") {
+              icon = UserCheck;
+              color = "text-primary";
+            } else if (activity.icon === "REGISTRATION") {
+              icon = Users;
+              color = "text-green-600";
+            } else if (activity.icon === "EVENT") {
+              icon = Calendar;
+              color = "text-blue-600";
+            } else if (activity.icon === "SYSTEM") {
+              icon = Database;
+              color = "text-blue-600";
+            }
+            return {
+              id: activity.id,
+              type: activity.type,
+              message: activity.message,
+              time: activity.time,
+              icon,
+              color,
+            };
+          });
+          setRecentActivity(activitiesWithIcons);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [timeRange]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -217,7 +362,7 @@ const AdminEnhancedDashboard = () => {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
+              onChange={(e) => setTimeRange(e.target.value as "7d" | "30d" | "90d" | "1y")}
               className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
             >
               <option value="7d">Last 7 days</option>
@@ -236,8 +381,14 @@ const AdminEnhancedDashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          {stats.map((stat, index) => (
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading dashboard data...</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+              {stats.map((stat, index) => (
             <div
               key={index}
               className="p-6 rounded-xl border border-border bg-card transition-all duration-200 hover:shadow-lg"
@@ -372,6 +523,8 @@ const AdminEnhancedDashboard = () => {
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

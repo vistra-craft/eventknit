@@ -59,5 +59,19 @@ router.delete('/staff/:id', canManageStaffMiddleware, OrganizerController.delete
  */
 router.post('/staff/:id/deactivate', canManageStaffMiddleware, OrganizerController.deactivateStaff);
 
+/**
+ * @route   GET /api/v1/organizer/dashboard/stats
+ * @desc    Get organizer dashboard stats
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/dashboard/stats', OrganizerController.getDashboardStats);
+
+/**
+ * @route   GET /api/v1/organizer/dashboard/events
+ * @desc    Get organizer dashboard events
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/dashboard/events', OrganizerController.getDashboardEvents);
+
 export default router;
 

@@ -468,5 +468,175 @@ export class OrganizerService {
       userAgent,
     });
   }
+
+  /**
+   * Get organizer dashboard stats
+   */
+  static async getDashboardStats(organizerId: string, organizerRole: UserRole) {
+    // Validate organizer can view dashboard
+    if (organizerRole !== UserRole.ORGANIZER &&
+        organizerRole !== UserRole.SUPERADMIN &&
+        organizerRole !== UserRole.ADMIN_STAFF) {
+      throw new AuthorizationError('Only organizers can view dashboard');
+    }
+
+    // Get organizer's events
+    const events = await prisma.event.findMany({
+      where: {
+        organizerId,
+        deletedAt: null,
+      },
+      include: {
+        registrations: {
+          where: {
+            status: {
+              in: ['CONFIRMED', 'PENDING'],
+            },
+          },
+        },
+      },
+    });
+
+    // Calculate stats
+    const totalEvents = events.length;
+    
+    // Count speakers, exhibitors (sponsors) from all events
+    let totalSpeakers = 0;
+    let totalExhibitors = 0;
+    let totalAttendees = 0;
+    let totalRevenue = 0;
+
+    events.forEach(event => {
+      // Count speakers
+      if (event.speakers) {
+        const speakers = event.speakers as Array<{ name: string; title: string; bio: string }>;
+        totalSpeakers += speakers.length;
+      }
+
+      // Count exhibitors/sponsors
+      if (event.sponsors) {
+        const sponsors = event.sponsors as Array<{ name: string; level: string; logo: string }>;
+        totalExhibitors += sponsors.length;
+      }
+
+      // Count attendees (confirmed registrations)
+      const confirmedRegistrations = event.registrations.filter(r => r.status === 'CONFIRMED');
+      totalAttendees += confirmedRegistrations.reduce((sum, reg) => sum + reg.quantity, 0);
+
+      // Calculate revenue (sum of totalAmount from confirmed registrations)
+      totalRevenue += confirmedRegistrations.reduce((sum, reg) => {
+        return sum + Number(reg.totalAmount);
+      }, 0);
+    });
+
+    return {
+      totalEvents,
+      totalSpeakers,
+      totalExhibitors,
+      totalAttendees,
+      totalRevenue,
+    };
+  }
+
+  /**
+   * Get organizer events with dashboard data
+   */
+  static async getDashboardEvents(organizerId: string, organizerRole: UserRole, limit: number = 10) {
+    // Validate organizer can view dashboard
+    if (organizerRole !== UserRole.ORGANIZER &&
+        organizerRole !== UserRole.SUPERADMIN &&
+        organizerRole !== UserRole.ADMIN_STAFF) {
+      throw new AuthorizationError('Only organizers can view dashboard');
+    }
+
+    const events = await prisma.event.findMany({
+      where: {
+        organizerId,
+        deletedAt: null,
+      },
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            organizationName: true,
+          },
+        },
+        registrations: {
+          where: {
+            status: {
+              in: ['CONFIRMED', 'PENDING'],
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+    });
+
+    // Transform events with dashboard data
+    const dashboardEvents = events.map(event => {
+      const speakers = (event.speakers as Array<{ name: string; title: string; bio: string }>) || [];
+      const sponsors = (event.sponsors as Array<{ name: string; level: string; logo: string }>) || [];
+      const confirmedRegistrations = event.registrations.filter(r => r.status === 'CONFIRMED');
+      const attendees = confirmedRegistrations.reduce((sum, reg) => sum + reg.quantity, 0);
+      const revenue = confirmedRegistrations.reduce((sum, reg) => sum + Number(reg.totalAmount), 0);
+
+      // Determine status based on dates
+      let status = 'upcoming';
+      const now = new Date();
+      if (event.status === 'COMPLETED') {
+        status = 'completed';
+      } else if (event.endDate && new Date(event.endDate) < now) {
+        status = 'completed';
+      } else if (event.startDate && new Date(event.startDate) <= now) {
+        status = 'active';
+      } else if (event.status === 'APPROVED') {
+        status = 'active';
+      } else if (event.status === 'PENDING') {
+        status = 'pending';
+      }
+
+      return {
+        id: event.id,
+        title: event.title,
+        date: event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+        }) : '',
+        time: event.startTime && event.endTime 
+          ? `${event.startTime} - ${event.endTime}`
+          : event.startTime || '',
+        location: event.location,
+        venue: event.venue || '',
+        status,
+        attendees,
+        capacity: event.capacity || 0,
+        revenue,
+        views: 0, // TODO: Add view tracking
+        conversion: event.capacity && event.capacity > 0 
+          ? ((attendees / event.capacity) * 100).toFixed(1)
+          : '0',
+        speakers: speakers.length,
+        exhibitors: sponsors.length,
+        sponsors: sponsors.length,
+        image: event.image || '',
+        description: event.description,
+        category: event.category || '',
+        organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
+        price: event.isFree ? 'Free' : event.price ? `$${Number(event.price)}` : 'N/A',
+        rating: 0, // TODO: Add rating system
+        fullDescription: event.fullDescription || event.description,
+        duration: event.duration || '',
+        ageRestriction: event.ageRestriction || '',
+      };
+    });
+
+    return dashboardEvents;
+  }
 }
 

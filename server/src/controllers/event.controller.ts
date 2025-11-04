@@ -344,5 +344,73 @@ export class EventController {
       next(error);
     }
   }
+
+  /**
+   * Get user's registered events (for user dashboard)
+   */
+  static async getUserRegisteredEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const events = await EventService.getUserRegisteredEvents(req.user.id);
+
+      res.status(200).json({
+        success: true,
+        data: { events },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get invitation by token (public - for registration form)
+   */
+  static async getInvitationByToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { InvitationService } = await import('../services/invitation.service');
+      const invitation = await InvitationService.getInvitationByToken(req.params.token);
+
+      res.status(200).json({
+        success: true,
+        data: { invitation },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Register for event via invitation link (public - no auth required)
+   */
+  static async registerViaInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await EventService.registerViaInvitation(
+        req.params.token,
+        req.body,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: result.registration.status === 'CONFIRMED'
+          ? 'Registration successful'
+          : 'Registration pending. Payment will be processed when payment system is implemented.',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
