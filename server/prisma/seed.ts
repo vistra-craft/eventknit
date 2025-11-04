@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { logger } from '../src/utils/logger';
 
 // Load environment variables
 const env = process.env.NODE_ENV || 'development';
@@ -28,7 +29,7 @@ const prisma = new PrismaClient();
  */
 const createSuperuser = async (): Promise<void> => {
   try {
-    console.log('Checking for existing superuser...');
+    logger.info('Checking for existing superuser...');
 
     // Check if superuser already exists
     const existingUser = await prisma.user.findUnique({
@@ -36,7 +37,7 @@ const createSuperuser = async (): Promise<void> => {
     });
 
     if (existingUser) {
-      console.log(`User with email ${SUPERVISOR_CREDENTIALS.email} already exists`);
+      logger.info(`User with email ${SUPERVISOR_CREDENTIALS.email} already exists`);
 
       // Update to SUPERADMIN if not already
       if (existingUser.role !== UserRole.SUPERADMIN) {
@@ -49,9 +50,9 @@ const createSuperuser = async (): Promise<void> => {
             emailVerifiedAt: new Date(),
           },
         });
-        console.log('Updated existing user to SUPERADMIN role');
+        logger.info('Updated existing user to SUPERADMIN role');
       } else {
-        console.log('User is already a SUPERADMIN');
+        logger.info('User is already a SUPERADMIN');
       }
 
       // Update password if needed (for security, you might want to skip this)
@@ -60,10 +61,10 @@ const createSuperuser = async (): Promise<void> => {
       //   where: { id: existingUser.id },
       //   data: { password: hashedPassword },
       // });
-      console.log('Skipping password update for existing user');
+      logger.info('Skipping password update for existing user');
     } else {
       // Create new superuser
-      console.log('Creating new superuser...');
+      logger.info('Creating new superuser...');
       const hashedPassword = await hashPassword(SUPERVISOR_CREDENTIALS.password);
 
       const superuser = await prisma.user.create({
@@ -79,12 +80,12 @@ const createSuperuser = async (): Promise<void> => {
         },
       });
 
-      console.log(`Superuser created successfully with email: ${SUPERVISOR_CREDENTIALS.email}`);
-      console.log('📧 Email:', SUPERVISOR_CREDENTIALS.email);
-      console.log('🔑 Password:', SUPERVISOR_CREDENTIALS.password);
+      logger.info(`Superuser created successfully with email: ${SUPERVISOR_CREDENTIALS.email}`);
+      logger.info('📧 Email:', SUPERVISOR_CREDENTIALS.email);
+      logger.info('🔑 Password:', SUPERVISOR_CREDENTIALS.password);
     }
   } catch (error) {
-    console.error('Failed to create superuser:', error);
+    logger.error('Failed to create superuser:', error);
     throw error;
   }
 };
@@ -94,18 +95,18 @@ const createSuperuser = async (): Promise<void> => {
  */
 async function main(): Promise<void> {
   try {
-    console.log('🌱 Seeding database...');
+    logger.info('🌱 Seeding database...');
     await createSuperuser();
-    console.log('✅ Script completed successfully');
+    logger.info('✅ Script completed successfully');
   } catch (error) {
-    console.error('❌ Script failed:', error);
+    logger.error('❌ Script failed:', error);
     throw error;
   }
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    logger.error('❌ Seeding failed:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -1,25 +1,21 @@
 module.exports = {
-  preset: "ts-jest",
+  preset: "ts-jest/presets/default-esm",
   testEnvironment: "node",
-  roots: ["<rootDir>/src", "<rootDir>/tests"],
-  testMatch: ["**/__tests__/**/*.ts", "**/?(*.)+(spec|test).ts"],
+  extensionsToTreatAsEsm: [".ts"],
+  moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+  },
   transform: {
-    "^.+\\.ts$": "ts-jest",
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        useESM: true,
+        tsconfig: {
+          module: "ESNext",
+        },
+      },
+    ],
   },
-  collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts", "!src/server.ts"],
-  coverageDirectory: "coverage",
-  coverageReporters: ["text", "lcov", "html"],
-  coverageThreshold: {
-    global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0,
-    },
-  },
-  setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
-  testTimeout: 30000,
-  verbose: true,
-  maxWorkers: 1, // Run tests with single worker to avoid database connection issues
+  testMatch: ["**/tests/**/*.test.ts", "**/tests/**/*.spec.ts"],
+  collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts"],
 };
-

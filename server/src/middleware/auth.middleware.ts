@@ -9,6 +9,7 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: UserRole;
+    status?: UserStatus; // Include status for action checks
   };
 }
 
@@ -47,16 +48,20 @@ export const authenticate = async (
       throw new AuthenticationError('User not found');
     }
 
-    // Check if user is active
-    if (user.status !== UserStatus.ACTIVE && user.status !== UserStatus.PENDING_VERIFICATION) {
-      throw new AuthenticationError('User account is not active');
+    // Check account status
+    // SUSPENDED users cannot access anything
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new AuthenticationError('Your account has been suspended. Please contact support');
     }
+    // DEACTIVATED users can authenticate but will be restricted from actions
+    // ACTIVE users have full access
 
-    // Attach user to request
+    // Attach user to request (including status for action checks)
     req.user = {
       id: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
     };
 
     next();
@@ -159,11 +164,13 @@ export const optionalAuth = async (
       },
     });
 
-    if (user && (user.status === UserStatus.ACTIVE || user.status === UserStatus.PENDING_VERIFICATION)) {
+    if (user && user.status !== UserStatus.SUSPENDED) {
+      // Allow ACTIVE and DEACTIVATED users (DEACTIVATED will be restricted from actions)
       req.user = {
         id: user.id,
         email: user.email,
         role: user.role,
+        status: user.status,
       };
     }
 

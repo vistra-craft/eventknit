@@ -227,5 +227,144 @@ export class AuthController {
       next(error);
     }
   }
+
+  /**
+   * Update user profile
+   */
+  static async updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, email } = req.body;
+
+      // Email cannot be changed once registered (immutability requirement)
+      if (email !== undefined && email !== req.user.email) {
+        res.status(400).json({
+          success: false,
+          message: 'Email address cannot be changed once registered',
+        });
+        return;
+      }
+
+      const updateData: {
+        firstName?: string;
+        lastName?: string;
+        otherName?: string | null;
+        phoneNumber?: string | null;
+        companyAffiliation?: string | null;
+        organizationName?: string | null;
+        businessEmail?: string | null;
+      } = {};
+
+      if (firstName !== undefined) updateData.firstName = firstName.trim();
+      if (lastName !== undefined) updateData.lastName = lastName.trim();
+      if (otherName !== undefined) {
+        updateData.otherName = otherName && otherName.trim() !== '' ? otherName.trim() : null;
+      }
+      if (phoneNumber !== undefined) {
+        updateData.phoneNumber = phoneNumber && phoneNumber.trim() !== '' ? phoneNumber.trim() : null;
+      }
+      if (companyAffiliation !== undefined) {
+        updateData.companyAffiliation = companyAffiliation && companyAffiliation.trim() !== '' ? companyAffiliation.trim() : null;
+      }
+      if (organizationName !== undefined) {
+        updateData.organizationName = organizationName && organizationName.trim() !== '' ? organizationName.trim() : null;
+      }
+      if (businessEmail !== undefined) {
+        updateData.businessEmail = businessEmail && businessEmail.trim() !== '' ? businessEmail.trim() : null;
+      }
+
+      const user = await prisma.user.update({
+        where: { id: req.user.id },
+        data: updateData,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          role: true,
+          status: true,
+          isEmailVerified: true,
+          organizationName: true,
+          businessEmail: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Change password
+   */
+  static async changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      await AuthService.changePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+
+      res.status(200).json({
+        success: true,
+        message: 'Password changed successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Request email verification code
+   */
+  static async requestEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.requestEmailVerificationCode(req.body.email);
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code sent to your email',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Confirm email verification with code
+   */
+  static async confirmEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // For now, this will throw an error since code-based verification isn't fully implemented
+      // In production, you'd implement it similar to phone verification
+      await AuthService.verifyEmailWithCode(req.body.email, req.body.code);
+
+      res.status(200).json({
+        success: true,
+        message: 'Email verified successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

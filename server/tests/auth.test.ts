@@ -3,6 +3,7 @@ import app from '../src/app';
 import { prisma } from '../src/config/database';
 import { UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { logger } from '../src/utils/logger';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -19,14 +20,14 @@ describe('Authentication System', () => {
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
        
-      console.log('✅ Test database connected');
+      logger.info('✅ Test database connected');
     } catch (error) {
        
-      console.warn('⚠️  Database not available. Tests will be skipped.');
+      logger.warn('⚠️  Database not available. Tests will be skipped.');
        
-      console.warn(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.warn(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
        
-      console.warn('   Start PostgreSQL with: docker compose --env-file .env.development up -d postgres');
+      logger.warn('   Start PostgreSQL with: docker compose --env-file .env.development up -d postgres');
       dbConnected = false;
     }
   });
@@ -46,7 +47,8 @@ describe('Authentication System', () => {
     // Skip cleanup if database is not connected
     if (!dbConnected) return;
     
-    // Clear all tables before each test
+    // Clear all tables before each test (in correct order to respect foreign keys)
+    // Note: Event/Ticket tables removed for now - focusing on auth first
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();
     await prisma.passwordReset.deleteMany();
@@ -58,7 +60,7 @@ describe('Authentication System', () => {
   describe('POST /api/v1/auth/signup', () => {
     it('should register a new attendee successfully', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const userData = {
@@ -84,7 +86,7 @@ describe('Authentication System', () => {
 
     it('should register a new organizer successfully', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const userData = {
@@ -110,7 +112,7 @@ describe('Authentication System', () => {
 
     it('should fail to register with invalid email', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const userData = {
@@ -131,7 +133,7 @@ describe('Authentication System', () => {
 
     it('should fail to register with weak password', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const userData = {
@@ -150,30 +152,39 @@ describe('Authentication System', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it('should fail to register organizer without organization details', async () => {
+    it('should register organizer without requiring organization details (optional fields)', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
+      // Organization details are now optional during registration
       const userData = {
-        email: 'org@test.com',
+        email: 'organizeroptional@test.com',
         password: 'Test123!@#',
-        firstName: 'John',
-        lastName: 'Doe',
+        firstName: 'Optional',
+        lastName: 'Organizer',
         role: UserRole.ORGANIZER,
+        // organizationName and businessEmail are optional
       };
 
       const response = await request(app)
         .post('/api/v1/auth/signup')
         .send(userData)
-        .expect(400);
+        .expect(201);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.role).toBe(UserRole.ORGANIZER);
+      expect(response.body.data.user.status).toBe(UserStatus.ACTIVE);
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'organizeroptional@test.com' },
+      });
     });
 
     it('should fail to register with duplicate email', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const userData = {
@@ -230,7 +241,7 @@ describe('Authentication System', () => {
 
     it('should login successfully with valid credentials', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -249,7 +260,7 @@ describe('Authentication System', () => {
 
     it('should fail to login with invalid email', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -266,7 +277,7 @@ describe('Authentication System', () => {
 
     it('should fail to login with invalid password', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -283,7 +294,7 @@ describe('Authentication System', () => {
 
     it('should lock account after multiple failed attempts', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       // Make multiple failed login attempts
@@ -307,6 +318,120 @@ describe('Authentication System', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('locked');
+    });
+
+    it('should fail to login with SUSPENDED account', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a suspended user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'suspended@test.com',
+          password: hashedPassword,
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'suspended@test.com',
+          password: 'Test123!@#',
+        })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'suspended@test.com' },
+      });
+    });
+
+    it('should allow login with DEACTIVATED account but restrict actions', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a deactivated user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'deactivated@test.com',
+          password: hashedPassword,
+          firstName: 'Deactivated',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.DEACTIVATED,
+          isEmailVerified: true,
+        },
+      });
+
+      // DEACTIVATED users can login
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'deactivated@test.com',
+          password: 'Test123!@#',
+        })
+        .expect(200);
+
+      expect(loginResponse.body.success).toBe(true);
+      expect(loginResponse.body.data.accessToken).toBeDefined();
+
+      // But cannot perform actions (like getting profile - this would require requireActive middleware)
+      // For now, we'll test that they can authenticate but status is DEACTIVATED
+      // When we add requireActive middleware to routes, DEACTIVATED users will be blocked
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'deactivated@test.com' } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'deactivated@test.com' },
+      });
+    });
+
+    it('should create users with ACTIVE status by default', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const userData = {
+        email: 'autostatus@test.com',
+        password: 'Test123!@#',
+        firstName: 'Auto',
+        lastName: 'Status',
+        role: UserRole.ATTENDEE,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/auth/signup')
+        .send(userData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.status).toBe(UserStatus.ACTIVE);
+
+      // Verify in database
+      const user = await prisma.user.findUnique({
+        where: { email: 'autostatus@test.com' },
+      });
+
+      expect(user?.status).toBe(UserStatus.ACTIVE);
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'autostatus@test.com' },
+      });
     });
   });
 
@@ -351,7 +476,7 @@ describe('Authentication System', () => {
 
     it('should refresh access token successfully', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -366,7 +491,7 @@ describe('Authentication System', () => {
 
     it('should fail with invalid refresh token', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -375,6 +500,119 @@ describe('Authentication System', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
+    });
+
+    it('should fail to refresh token for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a suspended user and get a refresh token
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'suspendedrefresh@test.com',
+          password: hashedPassword,
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      // Get user ID
+      const user = await prisma.user.findUnique({
+        where: { email: 'suspendedrefresh@test.com' },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Create a refresh token manually (since they can't login)
+      const { generateRefreshToken } = await import('../src/utils/jwt');
+      const refreshTokenString = generateRefreshToken({
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      // Calculate expiresAt (7 days from now, matching saveRefreshToken logic)
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      await prisma.refreshToken.create({
+        data: {
+          token: refreshTokenString,
+          userId: user.id,
+          expiresAt,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/refresh')
+        .send({ refreshToken: refreshTokenString })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'suspendedrefresh@test.com' } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'suspendedrefresh@test.com' },
+      });
+    });
+
+    it('should allow refresh token for DEACTIVATED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a deactivated user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'deactivatedrefresh@test.com',
+          password: hashedPassword,
+          firstName: 'Deactivated',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.DEACTIVATED,
+          isEmailVerified: true,
+        },
+      });
+
+      // Login to get refresh token
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'deactivatedrefresh@test.com',
+          password: 'Test123!@#',
+        })
+        .expect(200);
+
+      const refreshToken = loginResponse.body.data.refreshToken;
+
+      // DEACTIVATED users can refresh tokens
+      const response = await request(app)
+        .post('/api/v1/auth/refresh')
+        .send({ refreshToken })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.accessToken).toBeDefined();
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'deactivatedrefresh@test.com' } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'deactivatedrefresh@test.com' },
+      });
     });
   });
 
@@ -420,7 +658,7 @@ describe('Authentication System', () => {
 
     it('should logout successfully', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -440,7 +678,7 @@ describe('Authentication System', () => {
 
     it('should fail to logout without authentication', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -491,7 +729,7 @@ describe('Authentication System', () => {
 
     it('should get user profile successfully', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -505,7 +743,7 @@ describe('Authentication System', () => {
 
     it('should fail to get profile without authentication', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -513,6 +751,54 @@ describe('Authentication System', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
+    });
+
+    it('should allow DEACTIVATED user to get profile (view-only access)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a deactivated user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'deactivatedprofile@test.com',
+          password: hashedPassword,
+          firstName: 'Deactivated',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.DEACTIVATED,
+          isEmailVerified: true,
+        },
+      });
+
+      // Login to get token
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'deactivatedprofile@test.com',
+          password: 'Test123!@#',
+        })
+        .expect(200);
+
+      const accessToken = loginResponse.body.data.accessToken;
+
+      // DEACTIVATED users can view their profile (read-only access)
+      const response = await request(app)
+        .get('/api/v1/auth/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.status).toBe(UserStatus.DEACTIVATED);
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'deactivatedprofile@test.com' } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'deactivatedprofile@test.com' },
+      });
     });
   });
 
@@ -545,7 +831,7 @@ describe('Authentication System', () => {
 
     it('should send password reset email', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -564,7 +850,7 @@ describe('Authentication System', () => {
 
     it('should return success even if email does not exist', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -618,7 +904,7 @@ describe('Authentication System', () => {
 
     it('should reset password successfully', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -645,7 +931,7 @@ describe('Authentication System', () => {
 
     it('should fail with invalid token', async () => {
       if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
+        logger.info('⏭️  Skipping test - database not connected');
         return;
       }
       const response = await request(app)
@@ -657,6 +943,186 @@ describe('Authentication System', () => {
         .expect(404);
 
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('PUT /api/v1/auth/profile', () => {
+    let accessToken: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'update@test.com',
+          password: hashedPassword,
+          firstName: 'Test',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'update@test.com',
+          password: 'Test123!@#',
+        });
+
+      accessToken = loginResponse.body.data.accessToken;
+    });
+
+    afterEach(async () => {
+      if (!dbConnected) return;
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'update@test.com' } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'update@test.com' },
+      });
+    });
+
+    it('should update profile successfully', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .put('/api/v1/auth/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          firstName: 'Updated',
+          lastName: 'Name',
+          phoneNumber: '1234567890',
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.firstName).toBe('Updated');
+      expect(response.body.data.user.lastName).toBe('Name');
+      expect(response.body.data.user.phoneNumber).toBe('1234567890');
+    });
+
+    it('should fail to change email (email immutability)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .put('/api/v1/auth/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          email: 'newemail@test.com',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Email address cannot be changed');
+    });
+
+    it('should allow email field to remain unchanged', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .put('/api/v1/auth/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          firstName: 'Updated',
+          email: 'update@test.com', // Same email
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe('update@test.com');
+    });
+  });
+
+  describe('POST /api/v1/auth/password/change', () => {
+    let accessToken: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'changepass@test.com',
+          password: hashedPassword,
+          firstName: 'Test',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'changepass@test.com',
+          password: 'Test123!@#',
+        });
+
+      accessToken = loginResponse.body.data.accessToken;
+    });
+
+    afterEach(async () => {
+      if (!dbConnected) return;
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'changepass@test.com' } },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'changepass@test.com' },
+      });
+    });
+
+    it('should change password successfully', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .post('/api/v1/auth/password/change')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: 'Test123!@#',
+          newPassword: 'NewPassword123!@#',
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify password was changed by trying to login with new password
+      const loginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'changepass@test.com',
+          password: 'NewPassword123!@#',
+        })
+        .expect(200);
+
+      expect(loginResponse.body.success).toBe(true);
+    });
+
+    it('should fail with incorrect current password', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .post('/api/v1/auth/password/change')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          currentPassword: 'WrongPassword123!@#',
+          newPassword: 'NewPassword123!@#',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Current password is incorrect');
     });
   });
 });

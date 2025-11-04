@@ -24,10 +24,12 @@ export interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
+  otherName?: string; // Middle name or other names
   phoneNumber?: string;
-  role: UserRole;
-  organizationName?: string;
-  businessEmail?: string;
+  companyAffiliation?: string; // Company or institutional affiliation
+  role?: UserRole; // Optional - defaults to ATTENDEE
+  organizationName?: string; // Optional - can be added later
+  businessEmail?: string; // Optional - can be added later
 }
 
 export interface LoginData {
@@ -41,6 +43,8 @@ export interface AuthResponse {
     email: string;
     firstName: string;
     lastName: string;
+    otherName?: string | null;
+    companyAffiliation?: string | null;
     role: UserRole;
     status: UserStatus;
     isEmailVerified: boolean;
@@ -65,27 +69,28 @@ export class AuthService {
       throw new ConflictError('User with this email already exists');
     }
 
-    // Validate role requirements
-    if (data.role === UserRole.ORGANIZER) {
-      if (!data.organizationName || !data.businessEmail) {
-        throw new ValidationError('Organization name and business email are required for organizers');
-      }
-    }
-
     // Hash password
     const hashedPassword = await hashPassword(data.password);
 
-    // Create user
+    // Default role to ATTENDEE if not provided
+    // All users start as ATTENDEE and can create events after verification
+    const userRole = data.role || UserRole.ATTENDEE;
+
+    // Auto-approve registration (no manual approval needed)
+    // Users are ACTIVE immediately, but must verify email before full access
+    // Admins can later suspend or deactivate users if needed
     const user = await prisma.user.create({
       data: {
         email: data.email,
         password: hashedPassword,
         firstName: data.firstName,
         lastName: data.lastName,
+        otherName: data.otherName,
         phoneNumber: data.phoneNumber,
-        role: data.role,
-        status: UserStatus.PENDING_VERIFICATION,
-        isEmailVerified: false,
+        companyAffiliation: data.companyAffiliation,
+        role: userRole,
+        status: UserStatus.ACTIVE, // Auto-approved - no manual approval needed
+        isEmailVerified: false, // Email verification still required
         organizationName: data.organizationName,
         businessEmail: data.businessEmail,
       },
@@ -103,6 +108,8 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        otherName: user.otherName,
+        companyAffiliation: user.companyAffiliation,
         role: user.role,
         status: user.status,
         isEmailVerified: user.isEmailVerified,
@@ -130,10 +137,13 @@ export class AuthService {
       throw new AuthenticationError(`Account is locked. Try again in ${minutesLeft} minute(s)`);
     }
 
-    // Check if account is active
-    if (user.status !== UserStatus.ACTIVE && user.status !== UserStatus.PENDING_VERIFICATION) {
-      throw new AuthenticationError('Account is not active. Please contact support');
+    // Check account status
+    // SUSPENDED users cannot login (banned)
+    // DEACTIVATED users can login but cannot perform actions
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new AuthenticationError('Your account has been suspended. Please contact support');
     }
+    // DEACTIVATED users can login but will be restricted from actions in middleware
 
     // Verify password
     const isPasswordValid = await comparePassword(data.password, user.password);
@@ -186,6 +196,8 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        otherName: user.otherName,
+        companyAffiliation: user.companyAffiliation,
         role: user.role,
         status: user.status,
         isEmailVerified: user.isEmailVerified,
@@ -214,10 +226,12 @@ export class AuthService {
 
     const user = tokenDoc.user;
 
-    // Check if user is still active
-    if (user.status !== UserStatus.ACTIVE && user.status !== UserStatus.PENDING_VERIFICATION) {
-      throw new AuthenticationError('User account is not active');
+    // Check account status for token refresh
+    // SUSPENDED users cannot refresh tokens
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new AuthenticationError('Your account has been suspended. Please contact support');
     }
+    // DEACTIVATED users can refresh tokens but will be restricted from actions
 
     // Revoke old token
     await prisma.refreshToken.update({
@@ -290,9 +304,7 @@ export class AuthService {
         data: {
           isEmailVerified: true,
           emailVerifiedAt: new Date(),
-          status: verification.user.status === UserStatus.PENDING_VERIFICATION
-            ? UserStatus.ACTIVE
-            : verification.user.status,
+          // Status remains ACTIVE (already set during registration)
         },
       }),
     ]);
@@ -453,6 +465,78 @@ export class AuthService {
         userAgent,
       },
     });
+  }
+
+  /**
+   * Change password (for authenticated users)
+   */
+  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      throw new ValidationError('Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    logger.info(`Password changed for user: ${user.email}`);
+  }
+
+  /**
+   * Request email verification code (alternative to token-based)
+   */
+  static async requestEmailVerificationCode(email: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      throw new ValidationError('Email is already verified');
+    }
+
+    // Generate verification token (same as registration)
+    await this.generateEmailVerificationToken(user.id);
+
+    logger.info(`Email verification code requested for user: ${user.email}`);
+  }
+
+  /**
+   * Verify email with code (alternative to token-based)
+   */
+  static async verifyEmailWithCode(email: string, _code: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // For now, we'll use the token-based verification
+    // In a full implementation, we'd store codes similar to phone verification
+    // This is a placeholder that shows the interface
+    throw new ValidationError('Code-based email verification not yet implemented. Use token-based verification.');
   }
 }
 

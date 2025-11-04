@@ -20,10 +20,9 @@ enum UserRole {
 }
 
 enum UserStatus {
-  ACTIVE
-  INACTIVE
-  PENDING_VERIFICATION
-  SUSPENDED
+  ACTIVE         // User account is active and can use the platform fully
+  SUSPENDED      // Admin action: User is banned (punitive) - cannot login or use platform
+  DEACTIVATED    // User self-deactivated or admin soft-deleted (non-punitive) - can login but cannot perform actions, can be reactivated
 }
 
 enum KYCStatus {
@@ -43,16 +42,23 @@ model User {
   email             String    @unique
   password          String
   firstName         String
-  lastName           String
+  lastName          String
+  otherName         String?   // Middle name or other names
   phoneNumber        String?
+  companyAffiliation String?   // Company or institutional affiliation
   role               UserRole  @default(ATTENDEE)
-  status             UserStatus @default(PENDING_VERIFICATION)
+  status             UserStatus @default(ACTIVE)
   isEmailVerified    Boolean   @default(false)
   emailVerifiedAt    DateTime?
   
-  // Organizer-specific fields
+  // Organizer-specific fields (optional - can be added later)
   organizationName   String?
   businessEmail      String?
+  
+  // Organization relationship (Option A: managedBy field)
+  managedBy          String?  // User ID of organizer/admin who manages this user
+  managedByUser      User?    @relation("ManagedUsers", fields: [managedBy], references: [id], onDelete: SetNull)
+  managedUsers       User[]   @relation("ManagedUsers")
   
   // KYC fields (for organizers)
   kycStatus          KYCStatus?
@@ -82,6 +88,8 @@ model User {
   @@index([role])
   @@index([status])
   @@index([deletedAt])
+  @@index([managedBy])
+  @@index([organizationName])
 }
 
 model RefreshToken {
@@ -172,3 +180,4 @@ model AuditLog {
   @@index([entity])
   @@index([createdAt])
 }
+

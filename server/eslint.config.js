@@ -29,10 +29,16 @@ export default [
       "@typescript-eslint": typescript,
     },
     rules: {
+      // Disable base no-unused-vars in favor of TypeScript version
+      "no-unused-vars": "off",
       // TypeScript specific rules
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_" },
+        {
+          argsIgnorePattern: "^_", // Ignore unused function args starting with _
+          varsIgnorePattern: "^_", // Ignore unused variables starting with _
+          caughtErrorsIgnorePattern: "^_", // Ignore unused catch clause variables starting with _
+        },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/explicit-function-return-type": "off",

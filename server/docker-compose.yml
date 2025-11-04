@@ -1,91 +1,69 @@
-version: '3.8'
-
 services:
-  eventknit-server:
-    build: .
-    ports:
-      - "${PORT:-3001}:3001"
-    environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - PORT=3001
-      - DATABASE_URL=${DATABASE_URL:-postgresql://eventknit:eventknit123@postgres:5432/eventknit?schema=public}
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-key}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev-refresh-secret-key}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
-      - BCRYPT_ROUNDS=${BCRYPT_ROUNDS:-12}
-      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
-      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
-      - AUTH_RATE_LIMIT_WINDOW_MS=${AUTH_RATE_LIMIT_WINDOW_MS:-900000}
-      - AUTH_RATE_LIMIT_MAX=${AUTH_RATE_LIMIT_MAX:-5}
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173}
-      - CORS_CREDENTIALS=${CORS_CREDENTIALS:-true}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
-      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_SECURE=${SMTP_SECURE:-false}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-      - EMAIL_FROM=${EMAIL_FROM:-noreply@eventknit.com}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
-      - LOG_LEVEL=${LOG_LEVEL:-debug}
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      # Only mount source in development for hot reload
-      - ${VOLUME_MOUNT_SRC:-./src}:/app/src
-      - ./logs:/app/logs
-    networks:
-      - eventknit-network
-    restart: ${RESTART_POLICY:-no}
-    deploy:
-      replicas: ${SERVER_REPLICAS:-1}
-      resources:
-        limits:
-          memory: ${SERVER_MEMORY_LIMIT:-512M}
-          cpus: '${SERVER_CPU_LIMIT:-0.5}'
-        reservations:
-          memory: ${SERVER_MEMORY_RESERVATION:-256M}
-          cpus: '${SERVER_CPU_RESERVATION:-0.25}'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
+  # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: eventknit-postgres
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-eventknit}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-eventknit123}
-      - POSTGRES_DB=${POSTGRES_DB:-eventknit}
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      POSTGRES_USER: ${POSTGRES_USER:-eventknit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eventknit123}
+      POSTGRES_DB: ${POSTGRES_DB:-eventknit}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     networks:
       - eventknit-network
-    restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eventknit} -d ${POSTGRES_DB:-eventknit}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    # Security: run as postgres user (default)
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: ${POSTGRES_MEMORY_LIMIT:-512M}
+          cpus: '${POSTGRES_CPU_LIMIT:-0.5}'
+        reservations:
+          memory: ${POSTGRES_MEMORY_RESERVATION:-256M}
+          cpus: '${POSTGRES_CPU_RESERVATION:-0.25}'
+    labels:
+      - "com.eventknit.service=postgres"
+      - "com.eventknit.version=1.0.0"
 
+  # Redis Cache with Authentication (Best Practice from Wheela)
   redis:
-    image: redis:7-alpine
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    command: redis-server --appendonly yes --maxmemory ${REDIS_MAX_MEMORY:-256mb} --maxmemory-policy allkeys-lru
+    image: redis:7.2-alpine
+    container_name: eventknit-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-SecureRedisPassword123!}
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-SecureRedisPassword123!}
+      --appendonly yes
+      --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
     volumes:
       - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     networks:
       - eventknit-network
-    restart: ${RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-SecureRedisPassword123!}", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    # Resource limits
     deploy:
       resources:
         limits:
@@ -94,29 +72,127 @@ services:
         reservations:
           memory: ${REDIS_MEMORY_RESERVATION:-128M}
           cpus: '${REDIS_CPU_RESERVATION:-0.1}'
+    labels:
+      - "com.eventknit.service=redis"
+      - "com.eventknit.version=1.0.0"
 
-  # Only include pgadmin in development
+  # EventKnit Application Server
+  eventknit-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-production}
+    container_name: eventknit-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      
+      # Database Configuration
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-eventknit}:${POSTGRES_PASSWORD:-eventknit123}@postgres:5432/${POSTGRES_DB:-eventknit}?schema=public}
+      
+      # Redis Configuration (with auth from wheela pattern)
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-SecureRedisPassword123!}@redis:6379}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your-super-secret-refresh-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      
+      # Security Configuration
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      AUTH_RATE_LIMIT_WINDOW_MS: ${AUTH_RATE_LIMIT_WINDOW_MS:-900000}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-5}
+      
+      # CORS Configuration
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      
+      # Email Configuration
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@eventknit.com}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${PORT:-3001}:3001"
+    networks:
+      - eventknit-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # Resource limits (from eventknit pattern)
+    deploy:
+      resources:
+        limits:
+          memory: ${SERVER_MEMORY_LIMIT:-512M}
+          cpus: '${SERVER_CPU_LIMIT:-0.5}'
+        reservations:
+          memory: ${SERVER_MEMORY_RESERVATION:-256M}
+          cpus: '${SERVER_CPU_RESERVATION:-0.25}'
+    # Security: no privileged mode, read-only root filesystem where possible
+    read_only: false  # Set to true if app doesn't need to write to root
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    labels:
+      - "com.eventknit.service=server"
+      - "com.eventknit.version=1.0.0"
+
+  # PgAdmin (Development only)
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: eventknit-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@eventknit.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      # Security: disable external connections in dev
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     ports:
       - "${PGADMIN_PORT:-8080}:80"
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@eventknit.com}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
-      - PGADMIN_CONFIG_SERVER_MODE=False
-    depends_on:
-      - postgres
     networks:
       - eventknit-network
-    restart: ${RESTART_POLICY:-no}
+    depends_on:
+      postgres:
+        condition: service_healthy
     profiles:
       - dev
-
-volumes:
-  postgres_data:
-  redis_data:
+    labels:
+      - "com.eventknit.service=pgadmin"
+      - "com.eventknit.version=1.0.0"
 
 networks:
   eventknit-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+    name: eventknit_postgres_data
+  redis_data:
+    driver: local
+    name: eventknit_redis_data

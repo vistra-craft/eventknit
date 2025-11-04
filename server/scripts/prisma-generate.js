@@ -23,6 +23,8 @@ try {
     env: process.env,
   });
 } catch (error) {
+  // Use console.error here since this script runs before TypeScript compilation
+  // and logger from src/ won't be available
   console.error("Failed to generate Prisma Client:", error.message);
   process.exit(1);
 }
