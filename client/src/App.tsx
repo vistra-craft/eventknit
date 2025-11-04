@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleViewProvider } from "./contexts/RoleViewContext";
 import { useAuth } from "./hooks/useAuth";
+import type { ReactNode } from "react";
 import Index from "./pages/index";
 import CreateEvent from "./pages/CreateEvent";
 import CreateEventStepwise from "./pages/CreateEventStepwise";
@@ -119,12 +120,21 @@ import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
 import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
 
 // Wrapper component to provide role view context with user role
-const AppContent = () => {
+// This needs to be inside BrowserRouter and AuthProvider
+const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   
   return (
     <RoleViewProvider userRole={user?.role || null}>
-      <BrowserRouter>
+      {children}
+    </RoleViewProvider>
+  );
+};
+
+const App = () => (
+  <AuthProvider>
+    <BrowserRouter>
+      <RoleViewWrapper>
         <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
@@ -247,14 +257,8 @@ const AppContent = () => {
       <Route path="/admin/workstation/templates" element={<WorkstationTemplates />} />
       <Route path="/admin/workstation/history" element={<WorkstationHistory />} />
         </Routes>
-      </BrowserRouter>
-    </RoleViewProvider>
-  );
-};
-
-const App = () => (
-  <AuthProvider>
-    <AppContent />
+      </RoleViewWrapper>
+    </BrowserRouter>
   </AuthProvider>
 );
 

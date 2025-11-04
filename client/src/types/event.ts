@@ -90,6 +90,7 @@ export interface EventData {
   rating?: number; // Placeholder
   totalSlots?: number; // Alias for capacity
   registrationDate?: string; // For user registrations
+  isPrivate?: boolean; // Computed from type === 'PRIVATE'
 }
 
 export interface PaymentSummary {

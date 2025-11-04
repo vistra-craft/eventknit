@@ -97,12 +97,19 @@ const EventDetails = () => {
           <div className="xl:col-span-1 space-y-6">
             {/* Event Image with Overlay */}
             <div className="relative overflow-hidden rounded-2xl shadow-2xl group">
-              <img
-                src={eventData.image}
-                alt={eventData.title}
-                className="w-full h-[400px] sm:h-[450px] object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="eager"
-              />
+              {eventData.image && (
+                <img
+                  src={eventData.image}
+                  alt={eventData.title}
+                  className="w-full h-[400px] sm:h-[450px] object-cover transition-transform duration-700 group-hover:scale-105"
+                  loading="eager"
+                />
+              )}
+              {!eventData.image && (
+                <div className="w-full h-[400px] sm:h-[450px] bg-muted flex items-center justify-center">
+                  <span className="text-muted-foreground">No image available</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
                 <Badge className="bg-destructive hover:bg-destructive/90 text-destructive-foreground border-0 mb-3 shadow-lg">
@@ -165,13 +172,15 @@ const EventDetails = () => {
             </Card>
 
             {/* Event Map */}
-            <div className="rounded-2xl overflow-hidden shadow-xl">
-              <EventMap 
-                venue={eventData.venue} 
-                location={eventData.location} 
-                coordinates={eventData.coordinates}
-              />
-            </div>
+            {eventData.venue && (
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <EventMap 
+                  venue={eventData.venue} 
+                  location={eventData.location} 
+                  coordinates={eventData.coordinates ?? undefined}
+                />
+              </div>
+            )}
           </div>
 
           {/* Right Column - Event Details & Tickets */}
@@ -220,7 +229,7 @@ const EventDetails = () => {
                       <Building className="w-8 h-8 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold">{eventData.organizer}</h3>
+                      <h3 className="font-semibold">{eventData.organizerName || (eventData.organizer ? `${eventData.organizer.firstName} ${eventData.organizer.lastName}` : 'Unknown Organizer')}</h3>
                       <p className="text-sm text-muted-foreground mt-1">Event Organizer</p>
                       <div className="flex gap-3 mt-3">
                         <Button variant="outline" size="sm" className="text-xs h-8 hover:bg-primary hover:text-primary-foreground">

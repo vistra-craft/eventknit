@@ -133,7 +133,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
     time,
     priceDisplay,
     organizerName,
-    totalSlots: backendEvent.capacity,
+    totalSlots: backendEvent.capacity ?? undefined,
     isPrivate: backendEvent.type === 'PRIVATE',
     // Ensure arrays are arrays
     tags: backendEvent.tags || [],
@@ -173,7 +173,15 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
       : null,
     registrationFields: backendEvent.registrationFields
       ? Array.isArray(backendEvent.registrationFields)
-        ? backendEvent.registrationFields
+        ? (backendEvent.registrationFields as Array<{
+            id: string;
+            name: string;
+            label: string;
+            type: 'text' | 'email' | 'tel' | 'select' | 'radio' | 'checkbox' | 'textarea';
+            required: boolean;
+            placeholder?: string;
+            options?: string[];
+          }>)
         : null
       : null,
     // Registration count from _count

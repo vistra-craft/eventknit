@@ -6,7 +6,7 @@
 
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import type { UserRole } from '../types/auth';
+import { UserRole } from '../types/auth';
 
 interface RoleViewContextType {
   activeViewRole: UserRole | null;

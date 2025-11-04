@@ -45,6 +45,7 @@ const EventRegistration = () => {
     const mockEvent: EventData = {
       id: eventId || '1',
       title: "Tech Innovation Summit 2024",
+      startDate: "2024-03-15T00:00:00Z",
       date: "March 15, 2024",
       time: "09:00 AM",
       endTime: "05:00 PM",
@@ -61,7 +62,12 @@ const EventRegistration = () => {
       isPrivate: false,
       availableSlots: 45,
       totalSlots: 200,
-      organizer: "Tech Innovation Corp",
+      organizer: {
+        id: '1',
+        firstName: 'Tech',
+        lastName: 'Innovation Corp',
+        organizationName: 'Tech Innovation Corp',
+      },
       coordinates: { lat: 37.7833, lng: -122.4167 },
       ticketTypes: [
         {
@@ -468,11 +474,17 @@ const EventRegistration = () => {
               <div className="flex flex-col md:flex-row">
                 {/* Event Image */}
                 <div className="md:w-2/5 w-full h-64 md:h-auto relative">
-                  <img
-                    src={event.image}
-                    alt={event.title}
-                    className="object-cover w-full h-full"
-                  />
+                  {event.image ? (
+                    <img
+                      src={event.image}
+                      alt={event.title}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <span className="text-muted-foreground">No image available</span>
+                    </div>
+                  )}
                   <Badge className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm text-foreground">
                     {event.price === 0 ? 'Free' : `$${event.price}`}
                   </Badge>
@@ -575,9 +587,11 @@ const EventRegistration = () => {
                       <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex-1">
                           <h3 className="font-semibold">{ticket.name}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {ticket.features.join(" • ")}
-                          </p>
+                          {ticket.features && ticket.features.length > 0 && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {ticket.features.join(" • ")}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold">${ticket.price}</div>
@@ -617,7 +631,7 @@ const EventRegistration = () => {
                     autoComplete="on"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {event.registrationFields.map((field) => {
+                      {event.registrationFields && event.registrationFields.length > 0 && event.registrationFields.map((field) => {
                         // Long-form fields (textarea) span both columns
                         if (field.type === "textarea") {
                           return (
@@ -713,7 +727,7 @@ const EventRegistration = () => {
                       {event.date} at {event.location}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Organized by {event.organizer}
+                      Organized by {event.organizerName || (event.organizer ? (event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`) : 'Unknown Organizer')}
                     </p>
                   </div>
                   <div className="flex gap-4 justify-center">
