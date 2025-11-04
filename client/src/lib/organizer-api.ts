@@ -2,7 +2,7 @@
  * Organizer API Functions
  */
 
-import { apiGet, type ApiResponse } from './api';
+import { apiGet } from './api';
 
 /**
  * Organizer Dashboard Stats Response

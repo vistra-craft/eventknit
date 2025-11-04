@@ -2,7 +2,7 @@
  * Admin API Functions
  */
 
-import { apiGet, type ApiResponse } from './api';
+import { apiGet } from './api';
 
 /**
  * Admin Dashboard Stats Response

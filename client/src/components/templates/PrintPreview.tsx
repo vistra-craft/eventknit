@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Printer, X, FileDown, Grid, Maximize2, Minimize2, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { Printer, X, FileDown, Grid, Maximize2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { usePDF } from 'react-to-pdf';
 import type { TemplateData, TemplateElement } from '../../lib/template-api';
@@ -40,7 +40,6 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
   attendeeData,
   eventData,
   onClose,
-  qrCodeData,
 }) => {
   const [singleTagMode, setSingleTagMode] = useState(false);
   const [paperSize, setPaperSize] = useState({
@@ -50,9 +49,6 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
     widthMm: 210,
     heightMm: 297,
   });
-
-  const printAreaRef = useRef<HTMLDivElement>(null);
-  const singleTagRef = useRef<HTMLDivElement>(null);
 
   // Calculate tag dimensions
   const tagWidthPx = (template.width || TAG_WIDTH_IN * DPI);
