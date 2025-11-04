@@ -42,9 +42,71 @@ export const formatEventDateRange = (
 };
 
 /**
+ * Backend event structure (from API response)
+ */
+interface BackendEvent {
+  id: string;
+  title: string;
+  description: string;
+  fullDescription?: string | null;
+  category?: string | null;
+  tags?: string[];
+  startDate: string;
+  endDate?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  registrationDeadline?: string | null;
+  venue?: string | null;
+  location: string;
+  address?: string | null;
+  isOnline?: boolean;
+  onlineLink?: string | null;
+  coordinates?: { lat: number; lng: number } | null;
+  isFree?: boolean;
+  price?: number | string | null;
+  ticketTypes?: Array<{
+    name: string;
+    price: number;
+    quantity?: number | null;
+    features?: string[];
+  }> | null;
+  capacity?: number | null;
+  availableSlots?: number | null;
+  image?: string | null;
+  images?: string[];
+  type?: string;
+  status?: string;
+  requirements?: string[];
+  ageRestriction?: string | null;
+  duration?: string | null;
+  speakers?: Array<{ name: string; title: string; bio: string; image?: string }> | null;
+  sponsors?: Array<{ name: string; level: string; logo: string }> | null;
+  faqs?: Array<{ question: string; answer: string }> | null;
+  registrationFields?: Array<{
+    id: string;
+    name: string;
+    label: string;
+    type: string;
+    required: boolean;
+    placeholder?: string;
+    options?: string[];
+  }> | null;
+  organizer?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    organizationName?: string | null;
+    businessEmail?: string | null;
+  };
+  _count?: {
+    registrations?: number;
+  };
+}
+
+/**
  * Transform backend event to frontend EventData format
  */
-export const transformEventData = (backendEvent: any): EventData => {
+export const transformEventData = (backendEvent: BackendEvent): EventData => {
   // Extract organizer name
   const organizerName = backendEvent.organizer
     ? backendEvent.organizer.organizationName ||
@@ -122,7 +184,7 @@ export const transformEventData = (backendEvent: any): EventData => {
 /**
  * Transform array of events
  */
-export const transformEventsData = (backendEvents: any[]): EventData[] => {
-  return backendEvents.map(transformEventData);
+export const transformEventsData = (backendEvents: BackendEvent[]): EventData[] => {
+  return backendEvents.map((event) => transformEventData(event));
 };
 

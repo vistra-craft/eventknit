@@ -34,7 +34,7 @@ export const useEvents = (initialFilters?: EventFilters): UseEventsReturn => {
     hasMore: false,
   });
 
-  const [filters, setFilters] = useState<EventFilters | undefined>(initialFilters);
+  const [filters] = useState<EventFilters | undefined>(initialFilters);
 
   const fetchEvents = useCallback(async (newFilters?: EventFilters) => {
     const activeFilters = newFilters || filters;
