@@ -1,11 +1,9 @@
 import OrganizerEventCard from "./OrganizerEventCard";
-import { events } from "@/data/events";
 import { useState } from "react";
 import { Calendar, Sparkles, TrendingUp } from "lucide-react";
 
-// events are imported from shared data source
-
 export const OrganizerEventGrid = () => {
+  const events: never[] = []; // Placeholder - will be replaced with API data
   const [selectedFilter, setSelectedFilter] = useState("today");
 
   const timeFilters = [

@@ -5,8 +5,8 @@ const SignUp = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to user type selection immediately
-    navigate('/auth/user-type', { replace: true });
+    // Redirect to email entry immediately
+    navigate('/auth/email-entry', { replace: true });
   }, [navigate]);
 
   return (

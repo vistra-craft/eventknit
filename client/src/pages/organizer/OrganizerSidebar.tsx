@@ -148,12 +148,14 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       <div className="p-4">
         <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
           {isOpen && <h2 className="text-lg font-semibold text-eventknit">EventKnit</h2>}
-          <button
-            onClick={onToggle}
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
-          >
-            <Menu className="h-5 w-5 text-muted-foreground" />
-          </button>
+          {isMobile && (
+            <button
+              onClick={onToggle}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+            >
+              <Menu className="h-5 w-5 text-muted-foreground" />
+            </button>
+          )}
         </div>
         
         

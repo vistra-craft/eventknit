@@ -4,7 +4,7 @@ import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 interface OrganizerHeaderProps {
-  onMenuToggle: () => void;
+  onMenuToggle?: () => void;
 }
 
 const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({ 
@@ -30,14 +30,16 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
     <header className="bg-card border-b border-border py-4 sticky top-0 z-40">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onMenuToggle}
-            className="lg:hidden"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          {onMenuToggle && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMenuToggle}
+              className="lg:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
             <div>
               <h1 className="text-lg sm:text-xl font-semibold text-foreground">
                 Organizer Dashboard

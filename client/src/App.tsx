@@ -108,6 +108,7 @@ import WorkstationHistory from "./pages/admin/workstation/WorkstationHistory";
 // Auth imports
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
+import EmailEntry from "./pages/auth/EmailEntry";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import UserTypeSelection from "./pages/auth/UserTypeSelection";
@@ -222,6 +223,7 @@ const App = () => (
       {/* Auth Routes */}
       <Route path="/auth/signin" element={<SignIn />} />
       <Route path="/auth/signup" element={<SignUp />} />
+      <Route path="/auth/email-entry" element={<EmailEntry />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
       <Route path="/auth/user-type" element={<UserTypeSelection />} />

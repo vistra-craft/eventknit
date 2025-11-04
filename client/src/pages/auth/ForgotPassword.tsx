@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
-import Footer from '@/components/Footer';
-import Navbar from '@/components/Navbar';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -25,8 +23,7 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10">
-      <Navbar />
-      <div className="container mx-auto px-6 py-12 pt-32">
+      <div className="container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
             {/* Left Panel - Branding */}
@@ -163,7 +160,6 @@ const ForgotPassword = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
