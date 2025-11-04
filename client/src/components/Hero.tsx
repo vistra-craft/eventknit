@@ -32,6 +32,19 @@ export const Hero = () => {
     fetchFeaturedEvents();
   }, []);
 
+  // Auto-rotation logic
+  useEffect(() => {
+    if (!isAutoPlaying || featuredEvents.length === 0) return;
+    
+    const interval = setInterval(() => {
+      setCurrentEventIndex((prevIndex) => 
+        prevIndex === featuredEvents.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000); // Change every 5 seconds
+    
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, featuredEvents.length]);
+
   // Don't render if loading or no events
   if (loading || featuredEvents.length === 0) {
     return null;
@@ -50,19 +63,6 @@ export const Hero = () => {
     };
     return date.toLocaleDateString('en-US', options);
   };
-  
-  // Auto-rotation logic
-  useEffect(() => {
-    if (!isAutoPlaying || featuredEvents.length === 0) return;
-    
-    const interval = setInterval(() => {
-      setCurrentEventIndex((prevIndex) => 
-        prevIndex === featuredEvents.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 5000); // Change every 5 seconds
-    
-    return () => clearInterval(interval);
-  }, [isAutoPlaying, featuredEvents.length]);
   
   const goToPrevious = () => {
     setIsAutoPlaying(false);
