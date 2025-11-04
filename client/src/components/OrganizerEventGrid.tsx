@@ -1,5 +1,5 @@
 import OrganizerEventCard from "./OrganizerEventCard";
-import { events } from "../data/events.js";
+import { events } from "@/data/events";
 import { useState } from "react";
 import { Calendar, Sparkles, TrendingUp } from "lucide-react";
 
