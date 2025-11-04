@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Menu, X, User, LogOut, Globe } from 'lucide-react';
+import { Calendar, Menu, X, Globe } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "./Searchbar";
-
-// Define types
-interface User {
-  name: string;
-  email?: string;
-  id?: string;
-}
+import { ProfileDropdown } from "./ProfileDropdown";
+import { useAuth } from "@/hooks/useAuth";
+import { UserRole } from "@/types/auth";
 
 interface NavItem {
   name: string;
@@ -19,9 +15,9 @@ interface NavItem {
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [user] = useState<User | null>(null); // Mock user state - replace with your auth
   const [country] = useState<string>('US'); // Default to US
 
   useEffect(() => {
@@ -60,10 +56,36 @@ const Navbar: React.FC = () => {
     { name: "Find Events", href: "/" },
   ];
 
-  const handleLogout = () => {
-    // Handle logout logic here
-    console.log('Logout clicked');
-    navigate('/');
+  const handleLogout = async () => {
+    await logout();
+    setIsMobileMenuOpen(false);
+  };
+
+  const getDashboardRoute = () => {
+    if (!user) return '/user/dashboard';
+    switch (user.role) {
+      case UserRole.ADMIN:
+      case UserRole.STAFF:
+        return '/admin/dashboard';
+      case UserRole.ORGANIZER:
+        return '/organizer/dashboard';
+      case UserRole.ATTENDEE:
+      default:
+        return '/user/dashboard';
+    }
+  };
+
+  const getProfileRoute = () => {
+    if (!user) return '/user/dashboard';
+    switch (user.role) {
+      case UserRole.ORGANIZER:
+        return '/organizer/profile';
+      case UserRole.ADMIN:
+      case UserRole.STAFF:
+        return '/admin/settings';
+      default:
+        return '/user/dashboard';
+    }
   };
 
   const handleNavigation = (item: NavItem) => {
@@ -96,21 +118,8 @@ const Navbar: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-6">
-            {user ? (
-              <>
-                <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4" />
-                  <span>{user.name || 'John Doe'}</span>
-                </div>
-                <span>|</span>
-                <button
-                  onClick={handleLogout}
-                  className="hover:text-accent-electric transition-colors duration-200 cursor-pointer flex items-center space-x-1"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
-                </button>
-              </>
+            {isAuthenticated ? (
+              <ProfileDropdown />
             ) : (
               <>
                 <button
@@ -180,6 +189,9 @@ const Navbar: React.FC = () => {
               >
                 Create Event
               </button>
+
+              {/* Profile Dropdown - Only show when authenticated */}
+              {isAuthenticated && <ProfileDropdown />}
             </div>
 
             {/* Mobile Menu Button */}
@@ -223,6 +235,36 @@ const Navbar: React.FC = () => {
                 >
                   Create Event
                 </button>
+                
+                {/* Mobile Profile Section */}
+                {isAuthenticated && user && (
+                  <div className="border-t border-border pt-4 mt-4 space-y-2">
+                    <button
+                      onClick={() => {
+                        navigate(getProfileRoute());
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
+                    >
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate(getDashboardRoute());
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
+                    >
+                      Dashboard
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-3 py-2 text-destructive hover:text-destructive/80 font-medium"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

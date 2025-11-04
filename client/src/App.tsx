@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/index";
 import CreateEvent from "./pages/CreateEvent";
 import CreateEventStepwise from "./pages/CreateEventStepwise";
@@ -116,8 +117,9 @@ import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
 import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
 
 const App = () => (
-  <BrowserRouter>
-    <Routes>
+  <AuthProvider>
+    <BrowserRouter>
+      <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -238,8 +240,9 @@ const App = () => (
       <Route path="/admin/workstation/print" element={<WorkstationPrint />} />
       <Route path="/admin/workstation/templates" element={<WorkstationTemplates />} />
       <Route path="/admin/workstation/history" element={<WorkstationHistory />} />
-    </Routes>
-  </BrowserRouter>
+      </Routes>
+    </BrowserRouter>
+  </AuthProvider>
 );
 
 export default App;
