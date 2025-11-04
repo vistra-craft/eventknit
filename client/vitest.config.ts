@@ -1,11 +1,17 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
-import viteConfig from './vite.config'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  ...viteConfig,
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
@@ -21,13 +27,6 @@ export default defineConfig({
       forks: {
         singleFork: true,
       },
-    },
-  },
-  resolve: {
-    ...viteConfig.resolve,
-    alias: {
-      ...viteConfig.resolve?.alias,
-      '@': path.resolve(__dirname, './src'),
     },
   },
   define: {
