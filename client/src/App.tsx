@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { RoleViewProvider } from "./contexts/RoleViewContext";
+import { useAuth } from "./hooks/useAuth";
 import Index from "./pages/index";
 import CreateEvent from "./pages/CreateEvent";
 import CreateEventStepwise from "./pages/CreateEventStepwise";
@@ -116,10 +118,14 @@ import UserTypeSelection from "./pages/auth/UserTypeSelection";
 import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
 import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
 
-const App = () => (
-  <AuthProvider>
-    <BrowserRouter>
-      <Routes>
+// Wrapper component to provide role view context with user role
+const AppContent = () => {
+  const { user } = useAuth();
+  
+  return (
+    <RoleViewProvider userRole={user?.role || null}>
+      <BrowserRouter>
+        <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -240,8 +246,15 @@ const App = () => (
       <Route path="/admin/workstation/print" element={<WorkstationPrint />} />
       <Route path="/admin/workstation/templates" element={<WorkstationTemplates />} />
       <Route path="/admin/workstation/history" element={<WorkstationHistory />} />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </RoleViewProvider>
+  );
+};
+
+const App = () => (
+  <AuthProvider>
+    <AppContent />
   </AuthProvider>
 );
 

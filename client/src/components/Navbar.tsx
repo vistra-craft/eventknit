@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import SearchBar from "./Searchbar";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoleView } from "@/contexts/RoleViewContext";
 import { UserRole } from "@/types/auth";
 
 interface NavItem {
@@ -16,6 +17,7 @@ interface NavItem {
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const { activeViewRole } = useRoleView();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [country] = useState<string>('US'); // Default to US
@@ -62,8 +64,12 @@ const Navbar: React.FC = () => {
   };
 
   const getDashboardRoute = () => {
-    if (!user) return '/user/dashboard';
-    switch (user.role) {
+    // Use active view role if set, otherwise use user's actual role
+    const roleToUse = activeViewRole || user?.role;
+    
+    if (!roleToUse) return '/user/dashboard';
+    
+    switch (roleToUse) {
       case UserRole.ADMIN:
       case UserRole.STAFF:
         return '/admin/dashboard';
@@ -76,8 +82,12 @@ const Navbar: React.FC = () => {
   };
 
   const getProfileRoute = () => {
-    if (!user) return '/user/dashboard';
-    switch (user.role) {
+    // Use active view role if set, otherwise use user's actual role
+    const roleToUse = activeViewRole || user?.role;
+    
+    if (!roleToUse) return '/user/dashboard';
+    
+    switch (roleToUse) {
       case UserRole.ORGANIZER:
         return '/organizer/profile';
       case UserRole.ADMIN:

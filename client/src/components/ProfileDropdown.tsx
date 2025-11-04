@@ -4,9 +4,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, Settings, LayoutDashboard, Users, RefreshCw } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
+import { useRoleView } from '@/contexts/RoleViewContext';
 import { UserRole } from '@/types/auth';
 
 interface ProfileDropdownProps {
@@ -15,6 +16,7 @@ interface ProfileDropdownProps {
 
 export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => {
   const { user, logout } = useAuth();
+  const { activeViewRole, setActiveViewRole, availableRoles, resetToDefaultRole } = useRoleView();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -45,7 +47,10 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   };
 
   const getDashboardRoute = () => {
-    switch (user.role) {
+    // Use active view role if set, otherwise use user's actual role
+    const roleToUse = activeViewRole || user?.role;
+    
+    switch (roleToUse) {
       case UserRole.ADMIN:
       case UserRole.STAFF:
         return '/admin/dashboard';
@@ -58,7 +63,10 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   };
 
   const getProfileRoute = () => {
-    switch (user.role) {
+    // Use active view role if set, otherwise use user's actual role
+    const roleToUse = activeViewRole || user?.role;
+    
+    switch (roleToUse) {
       case UserRole.ORGANIZER:
         return '/organizer/profile';
       case UserRole.ADMIN:
@@ -67,6 +75,30 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
       default:
         return '/user/dashboard';
     }
+  };
+
+  const getRoleLabel = (role: UserRole): string => {
+    switch (role) {
+      case UserRole.ADMIN:
+      case UserRole.STAFF:
+        return 'Admin';
+      case UserRole.ORGANIZER:
+        return 'Organizer';
+      case UserRole.ATTENDEE:
+        return 'Attendee';
+      default:
+        return role;
+    }
+  };
+
+  const handleRoleSwitch = (role: UserRole) => {
+    if (role === user?.role) {
+      resetToDefaultRole();
+    } else {
+      setActiveViewRole(role);
+    }
+    setIsOpen(false);
+    onClose?.();
   };
 
   const handleLogout = async () => {
@@ -123,6 +155,49 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
               <LayoutDashboard className="w-4 h-4" />
               Dashboard
             </button>
+
+            {/* Role Switcher - Only show if multiple roles available */}
+            {availableRoles.length > 1 && (
+              <>
+                <div className="border-t border-border my-1" />
+                <div className="px-4 py-2">
+                  <p className="text-xs text-muted-foreground mb-2 font-medium">Switch View</p>
+                  <div className="space-y-1">
+                    {availableRoles.map((role) => {
+                      const isActive = activeViewRole === role || (!activeViewRole && role === user?.role);
+                      return (
+                        <button
+                          key={role}
+                          onClick={() => handleRoleSwitch(role)}
+                          className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-foreground hover:bg-accent'
+                          }`}
+                        >
+                          <Users className="w-3 h-3" />
+                          {getRoleLabel(role)}
+                          {isActive && <span className="ml-auto text-xs">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {activeViewRole && activeViewRole !== user?.role && (
+                    <button
+                      onClick={() => {
+                        resetToDefaultRole();
+                        setIsOpen(false);
+                        onClose?.();
+                      }}
+                      className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-md mt-1 flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      Reset to {getRoleLabel(user?.role || UserRole.ATTENDEE)}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             <button
               onClick={() => handleNavigate(getProfileRoute())}
