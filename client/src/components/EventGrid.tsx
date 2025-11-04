@@ -1,18 +1,51 @@
 import { EventCard } from "./EventCard";
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { EventData } from "@/types/event";
+import { useEvents } from "@/hooks/useEvents";
+import { formatEventDate } from "@/lib/event-utils";
+import { EventStatus } from "@/lib/event-api";
 
 export const EventGrid = () => {
-  const events: EventData[] = []; // Placeholder - will be replaced with API data
-  const [selectedFilter, setSelectedFilter] = useState("today");
+  const [selectedFilter, setSelectedFilter] = useState("all");
+  
+  // Get events based on filter
+  const { events, isLoading, error, fetchEvents, clearError } = useEvents();
 
   const timeFilters = [
     { id: "all", label: "All" },
     { id: "weekend", label: "This Weekend" },
     { id: "month", label: "Next 30 Days" }
   ];
+
+  const handleFilterChange = useCallback(async (filterId: string) => {
+    setSelectedFilter(filterId);
+    clearError();
+
+    // Build filters based on selected filter
+    const filters: { status?: EventStatus; limit?: number } = {
+      limit: 20,
+    };
+
+    // Map filter IDs to API filters
+    if (filterId === "all") {
+      filters.status = EventStatus.APPROVED; // Only show approved events
+    } else if (filterId === "weekend") {
+      // TODO: Add date range filter when backend supports it
+      filters.status = EventStatus.APPROVED;
+    } else if (filterId === "month") {
+      // TODO: Add date range filter when backend supports it
+      filters.status = EventStatus.APPROVED;
+    }
+
+    await fetchEvents(filters);
+  }, [fetchEvents, clearError]);
+
+  // Fetch events on mount
+  useEffect(() => {
+    handleFilterChange("all");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <section className="py-16 bg-background relative overflow-hidden" data-section="events">
@@ -37,7 +70,7 @@ export const EventGrid = () => {
               {timeFilters.map((filter) => (
                 <button
                   key={filter.id}
-                  onClick={() => setSelectedFilter(filter.id)}
+                  onClick={() => handleFilterChange(filter.id)}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                     selectedFilter === filter.id
                       ? 'bg-primary text-primary-foreground shadow-sm scale-105'
@@ -61,28 +94,48 @@ export const EventGrid = () => {
                   <span className="text-sm text-muted-foreground">Live events happening now</span>
                 </div>
               </div>
-              
-              
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {events.map((event) => (
-            <EventCard 
-              key={event.id} 
-              id={event.id}
-              title={event.title}
-              image={event.image}
-              date={event.date}
-              time={event.time}
-              venue={event.venue}
-              location={event.location}
-              organizer={event.organizer}
-              price={event.price.toString()}
-              category={event.category}
-            />
-          ))}
+          {isLoading ? (
+            <div className="col-span-full text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading events...</p>
+            </div>
+          ) : error ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-destructive">{error}</p>
+              <Button
+                variant="outline"
+                onClick={() => handleFilterChange(selectedFilter)}
+                className="mt-4"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground">No events found</p>
+            </div>
+          ) : (
+            events.map((event) => (
+              <EventCard 
+                key={event.id} 
+                id={event.id}
+                title={event.title}
+                image={event.image || ''}
+                date={event.date || formatEventDate(event.startDate)}
+                time={event.time || event.startTime || ''}
+                venue={event.venue || ''}
+                location={event.location}
+                organizer={event.organizerName || event.organizer?.organizationName || ''}
+                price={event.priceDisplay?.toString() || '0'}
+                category={event.category || ''}
+              />
+            ))
+          )}
         </div>
 
         <div className="text-center mt-12">

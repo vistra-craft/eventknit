@@ -7,28 +7,42 @@ import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { EventMap } from "@/components/EventMap";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useEvent } from "@/hooks/useEvent";
 import type { EventData } from "@/types/event";
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
-  const [event, setEvent] = useState<EventData | null>(null);
   
-  useEffect(() => {
-    // TODO: Fetch event data from API using id
-    // For now, no events will be found (placeholder removed)
-    setEvent(null);
-  }, [id]);
+  // Fetch event data using hook
+  const { event, isLoading, error } = useEvent(id);
   
-  if (!event) {
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading event...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !event) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Event not found</h2>
+            <p className="text-muted-foreground mb-4">{error || 'The event you are looking for does not exist.'}</p>
             <Button onClick={() => navigate('/')}>Back to Home</Button>
           </div>
         </div>
