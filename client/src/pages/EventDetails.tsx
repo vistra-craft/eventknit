@@ -8,8 +8,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { EventMap } from "@/components/EventMap";
 import { useState, useEffect } from "react";
-import { events } from "../data/events";
-import type { EventItem } from "../data/events";
+import { events } from "../data/events.js";
+import type { EventItem } from "../data/events.js";
 
 // Create a map of event IDs to events
 const eventsById = events.reduce<Record<string, EventItem>>((acc, event) => {

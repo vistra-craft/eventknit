@@ -1,5 +1,5 @@
 import { EventCard } from "./EventCard";
-import { events } from "../data/events";
+import { events } from "../data/events.js";
 import { useState } from "react";
 import { Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
