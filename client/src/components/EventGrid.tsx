@@ -1,12 +1,10 @@
 import { EventCard } from "./EventCard";
-import { events } from "@/data/events";
 import { useState } from "react";
 import { Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// events are imported from shared data source
-
 export const EventGrid = () => {
+  const events: never[] = []; // Placeholder - will be replaced with API data
   const [selectedFilter, setSelectedFilter] = useState("today");
 
   const timeFilters = [

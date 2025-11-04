@@ -8,14 +8,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { EventMap } from "@/components/EventMap";
 import { useState, useEffect } from "react";
-import { events } from "@/data/events";
-import type { EventItem } from "@/data/events";
 
-// Create a map of event IDs to events
-const eventsById = events.reduce<Record<string, EventItem>>((acc, event) => {
-  acc[event.id] = event;
-  return acc;
-}, {});
+// Placeholder - will be replaced with API data
+interface EventItem {
+  id: string;
+  title: string;
+  [key: string]: unknown;
+}
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,9 +23,9 @@ const EventDetails = () => {
   const [event, setEvent] = useState<EventItem | null>(null);
   
   useEffect(() => {
-    if (id && eventsById[id]) {
-      setEvent(eventsById[id]);
-    }
+    // TODO: Fetch event data from API using id
+    // For now, no events will be found (placeholder removed)
+    setEvent(null);
   }, [id]);
   
   if (!event) {
