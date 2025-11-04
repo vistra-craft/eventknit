@@ -69,7 +69,19 @@ export const EventGrid = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {events.map((event) => (
-            <EventCard key={event.id} {...event} />
+            <EventCard 
+              key={event.id} 
+              id={event.id}
+              title={event.title}
+              image={event.image}
+              date={event.date}
+              time={event.time}
+              venue={event.venue}
+              location={event.location}
+              organizer={event.organizer}
+              price={event.price.toString()}
+              category={event.category}
+            />
           ))}
         </div>
 

@@ -244,7 +244,7 @@ const EventDetails = () => {
                 </Card>
 
                 {/* Important Information Card */}
-                {(event.ageRestriction || event.requirements?.length > 0) && (
+                {(eventData.ageRestriction || eventData.requirements?.length) && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Important Information</CardTitle>
