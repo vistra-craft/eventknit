@@ -37,7 +37,7 @@ const EmailEntry = () => {
         // Proceed to role selection with email
         navigate('/auth/user-type', { state: { email } });
       }
-    } catch (err) {
+    } catch {
       setError('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);

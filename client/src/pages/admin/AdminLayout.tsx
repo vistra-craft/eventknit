@@ -11,13 +11,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
 
-  const toggleSidebar = () => {
-    // Only allow manual toggle on mobile
-    if (isMobile) {
-      setSidebarOpen(!sidebarOpen);
-    }
-  };
-
   // Check if screen is mobile on mount and resize, auto-manage sidebar
   useEffect(() => {
     const checkIsMobile = () => {
