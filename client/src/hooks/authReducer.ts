@@ -2,7 +2,7 @@
  * Authentication Reducer
  */
 
-import { AuthState, User } from '../types/auth';
+import type { AuthState, User } from '../types/auth';
 
 export type AuthAction =
   | { type: 'AUTH_START' }

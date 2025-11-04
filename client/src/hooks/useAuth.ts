@@ -122,7 +122,7 @@ export const useAuth = () => {
       if (response.success && response.data) {
         dispatch({ type: 'UPDATE_USER', payload: response.data.user });
       } else {
-        throw new Error(response.message || 'Failed to fetch profile');
+        throw new Error('Failed to fetch profile');
       }
     } catch (error: unknown) {
       const errorMessage =
@@ -158,7 +158,7 @@ export const useAuth = () => {
         // Try to fetch profile to verify token
         try {
           await refreshProfile();
-        } catch (error) {
+        } catch {
           // Token is invalid, clear it
           removeAccessToken();
           dispatch({ type: 'AUTH_LOGOUT' });

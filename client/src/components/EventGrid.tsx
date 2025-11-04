@@ -2,9 +2,10 @@ import { EventCard } from "./EventCard";
 import { useState } from "react";
 import { Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { EventData } from "@/types/event";
 
 export const EventGrid = () => {
-  const events: never[] = []; // Placeholder - will be replaced with API data
+  const events: EventData[] = []; // Placeholder - will be replaced with API data
   const [selectedFilter, setSelectedFilter] = useState("today");
 
   const timeFilters = [

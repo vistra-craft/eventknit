@@ -2,9 +2,11 @@
  * Authentication Context
  */
 
-import React, { createContext, useReducer, ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useReducer } from 'react';
+import type { ReactNode } from 'react';
 import { authReducer, initialAuthState, type AuthAction } from '../hooks/authReducer';
-import { AuthState, User } from '../types/auth';
+import type { AuthState } from '../types/auth';
 
 interface AuthContextType {
   state: AuthState;

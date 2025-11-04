@@ -19,15 +19,15 @@ export interface ApiError {
 /**
  * Request queue for handling concurrent requests during token refresh
  */
-type QueuedRequest = {
-  resolve: (value: unknown) => void;
+type QueuedRequest<T = unknown> = {
+  resolve: (value: T) => void;
   reject: (error: unknown) => void;
   endpoint: string;
   options: RequestInit;
 };
 
 let isRefreshing = false;
-let refreshQueue: QueuedRequest[] = [];
+let refreshQueue: QueuedRequest<unknown>[] = [];
 
 /**
  * Process queued requests after token refresh
@@ -38,7 +38,7 @@ const processQueue = (error: unknown | null, token: string | null = null) => {
       reject(error);
     } else {
       // Retry the request with new token
-      apiRequestInternal(endpoint, options, token).then(resolve).catch(reject);
+      apiRequestInternal(endpoint, options, token).then(resolve as (value: unknown) => void).catch(reject);
     }
   });
 
@@ -89,9 +89,9 @@ const apiRequestInternal = async <T>(
   const token = tokenOverride || getAccessToken();
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
@@ -100,7 +100,7 @@ const apiRequestInternal = async <T>(
 
   const config: RequestInit = {
     ...options,
-    headers,
+    headers: headers as HeadersInit,
     credentials: 'include', // Include cookies for refresh token
   };
 
@@ -179,7 +179,12 @@ export const apiRequest = async <T>(
   // If refresh is in progress, queue this request
   if (isRefreshing) {
     return new Promise<T>((resolve, reject) => {
-      refreshQueue.push({ resolve, reject, endpoint, options });
+      refreshQueue.push({ 
+        resolve: resolve as (value: unknown) => void, 
+        reject, 
+        endpoint, 
+        options 
+      });
     });
   }
 
@@ -199,7 +204,12 @@ export const apiRequest = async <T>(
       // If already refreshing, queue this request
       if (isRefreshing) {
         return new Promise<T>((resolve, reject) => {
-          refreshQueue.push({ resolve, reject, endpoint, options });
+          refreshQueue.push({ 
+            resolve: resolve as (value: unknown) => void, 
+            reject, 
+            endpoint, 
+            options 
+          });
         });
       }
 
