@@ -432,5 +432,354 @@ export class AdminService {
 
     logger.info(`Password reset by admin for user: ${targetUser.email}`);
   }
+
+  /**
+   * Get admin dashboard stats
+   */
+  static async getDashboardStats(timeRange: '7d' | '30d' | '90d' | '1y' = '30d') {
+    // Calculate date range
+    const now = new Date();
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - days);
+
+    // Get previous period for comparison
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - days);
+
+    // Total events
+    const [totalEvents, totalEventsPrev] = await Promise.all([
+      prisma.event.count({
+        where: { deletedAt: null },
+      }),
+      prisma.event.count({
+        where: {
+          deletedAt: null,
+          createdAt: { lt: startDate },
+        },
+      }),
+    ]);
+
+    // Active staff (all admin roles)
+    const [activeStaff, activeStaffPrev] = await Promise.all([
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: {
+            in: ['ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+          },
+          status: 'ACTIVE',
+        },
+      }),
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: {
+            in: ['ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+          },
+          status: 'ACTIVE',
+          createdAt: { lt: startDate },
+        },
+      }),
+    ]);
+
+    // Organizers
+    const [organizers, organizersPrev] = await Promise.all([
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: 'ORGANIZER',
+          status: 'ACTIVE',
+        },
+      }),
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: 'ORGANIZER',
+          status: 'ACTIVE',
+          createdAt: { lt: startDate },
+        },
+      }),
+    ]);
+
+    // Platform revenue (sum of all event registrations)
+    const [revenueResult, revenueResultPrev] = await Promise.all([
+      prisma.eventRegistration.aggregate({
+        where: {
+          status: {
+            in: ['CONFIRMED', 'PENDING'],
+          },
+          createdAt: { gte: startDate },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+      }),
+      prisma.eventRegistration.aggregate({
+        where: {
+          status: {
+            in: ['CONFIRMED', 'PENDING'],
+          },
+          createdAt: {
+            gte: prevStartDate,
+            lt: startDate,
+          },
+        },
+        _sum: {
+          totalAmount: true,
+        },
+      }),
+    ]);
+
+    const totalRevenue = Number(revenueResult._sum.totalAmount || 0);
+    const totalRevenuePrev = Number(revenueResultPrev._sum.totalAmount || 0);
+
+    // Calculate percentage changes
+    const calculateChange = (current: number, previous: number): { value: string; changeType: 'positive' | 'negative' } => {
+      if (previous === 0) {
+        return { value: current > 0 ? '+100%' : '0%', changeType: current > 0 ? 'positive' : 'positive' };
+      }
+      const change = ((current - previous) / previous) * 100;
+      return {
+        value: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
+        changeType: change >= 0 ? 'positive' : 'negative',
+      };
+    };
+
+    const eventsChange = calculateChange(totalEvents, totalEventsPrev);
+    const staffChange = calculateChange(activeStaff, activeStaffPrev);
+    const organizersChange = calculateChange(organizers, organizersPrev);
+    const revenueChange = calculateChange(totalRevenue, totalRevenuePrev);
+
+    // System health (simplified - can be enhanced with actual health checks)
+    const systemHealth = 99.9; // Placeholder - can be calculated from actual system metrics
+
+    return {
+      stats: {
+        totalEvents: {
+          value: totalEvents.toLocaleString(),
+          change: eventsChange.value,
+          changeType: eventsChange.changeType,
+        },
+        activeStaff: {
+          value: activeStaff.toLocaleString(),
+          change: staffChange.value,
+          changeType: staffChange.changeType,
+        },
+        organizers: {
+          value: organizers.toLocaleString(),
+          change: organizersChange.value,
+          changeType: organizersChange.changeType,
+        },
+        platformRevenue: {
+          value: `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          change: revenueChange.value,
+          changeType: revenueChange.changeType,
+        },
+        systemHealth: {
+          value: `${systemHealth}%`,
+          change: '+0.1%',
+          changeType: 'positive' as const,
+        },
+      },
+      meta: {
+        timeRange,
+        periodStart: startDate.toISOString(),
+        periodEnd: now.toISOString(),
+      },
+    };
+  }
+
+  /**
+   * Get recent events for admin dashboard
+   */
+  static async getRecentEvents(limit: number = 10) {
+    const events = await prisma.event.findMany({
+      where: {
+        deletedAt: null,
+      },
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            organizationName: true,
+          },
+        },
+        _count: {
+          select: {
+            registrations: {
+              where: {
+                status: {
+                  in: ['CONFIRMED', 'PENDING'],
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+    });
+
+    // Calculate revenue per event
+    const eventsWithRevenue = await Promise.all(
+      events.map(async (event) => {
+        const revenueResult = await prisma.eventRegistration.aggregate({
+          where: {
+            eventId: event.id,
+            status: {
+              in: ['CONFIRMED', 'PENDING'],
+            },
+          },
+          _sum: {
+            totalAmount: true,
+          },
+        });
+
+        const revenue = Number(revenueResult._sum.totalAmount || 0);
+
+        return {
+          id: event.id,
+          title: event.title,
+          organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
+          date: event.startDate.toISOString().split('T')[0],
+          attendees: event._count.registrations,
+          status: event.status.toLowerCase(),
+          revenue: `$${revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          category: event.category || 'Uncategorized',
+        };
+      }),
+    );
+
+    return eventsWithRevenue;
+  }
+
+  /**
+   * Get recent activity logs for admin dashboard
+   */
+  static async getRecentActivity(limit: number = 10) {
+    const activities = await prisma.auditLog.findMany({
+      where: {
+        action: {
+          in: [
+            'EVENT_CREATED',
+            'EVENT_APPROVED',
+            'EVENT_REJECTED',
+            'USER_CREATED',
+            'ADMIN_USER_CREATED',
+            'EVENT_UPDATED',
+            'REGISTRATION_VIA_INVITATION',
+          ],
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+    });
+
+    // Transform activities to dashboard format
+    const formattedActivities = activities.map((activity) => {
+      const getUserDisplayName = () => {
+        if (activity.user) {
+          return `${activity.user.firstName} ${activity.user.lastName}`;
+        }
+        return 'System';
+      };
+
+      const getActivityMessage = () => {
+        switch (activity.action) {
+        case 'EVENT_CREATED':
+          return `Event "${(activity.metadata as Record<string, unknown>)?.title || 'Unknown'}" created`;
+        case 'EVENT_APPROVED':
+          return `Event "${(activity.metadata as Record<string, unknown>)?.title || 'Unknown'}" approved`;
+        case 'EVENT_REJECTED':
+          return `Event "${(activity.metadata as Record<string, unknown>)?.title || 'Unknown'}" rejected`;
+        case 'USER_CREATED':
+        case 'ADMIN_USER_CREATED':
+          return `New user registered: ${(activity.metadata as Record<string, unknown>)?.createdUserEmail || 'Unknown'}`;
+        case 'EVENT_UPDATED':
+          return `Event "${(activity.metadata as Record<string, unknown>)?.title || 'Unknown'}" updated`;
+        case 'REGISTRATION_VIA_INVITATION':
+          return `Registration via invitation for "${(activity.metadata as Record<string, unknown>)?.eventTitle || 'Unknown'}"`;
+        default:
+          return activity.action.replace(/_/g, ' ').toLowerCase();
+        }
+      };
+
+      const getActivityIcon = () => {
+        switch (activity.action) {
+        case 'EVENT_CREATED':
+        case 'EVENT_UPDATED':
+          return 'EVENT';
+        case 'EVENT_APPROVED':
+          return 'CHECK';
+        case 'EVENT_REJECTED':
+          return 'ALERT';
+        case 'USER_CREATED':
+        case 'ADMIN_USER_CREATED':
+          return 'USER';
+        case 'REGISTRATION_VIA_INVITATION':
+          return 'REGISTRATION';
+        default:
+          return 'ACTIVITY';
+        }
+      };
+
+      const getTimeAgo = (date: Date) => {
+        const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+        if (seconds < 60) return `${seconds} seconds ago`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+        const days = Math.floor(hours / 24);
+        return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+      };
+
+      return {
+        id: activity.id,
+        type: activity.action.toLowerCase(),
+        message: getActivityMessage(),
+        time: getTimeAgo(activity.createdAt),
+        icon: getActivityIcon(),
+        user: getUserDisplayName(),
+        createdAt: activity.createdAt.toISOString(),
+      };
+    });
+
+    return formattedActivities;
+  }
+
+  /**
+   * Get system alerts (placeholder - can be enhanced with actual system monitoring)
+   */
+  static async getSystemAlerts() {
+    // Placeholder - can be enhanced with actual system health checks
+    // For now, return empty array or basic alerts
+    return [
+      {
+        id: '1',
+        type: 'info',
+        message: 'System operating normally',
+        time: 'Just now',
+        severity: 'info',
+      },
+    ];
+  }
 }
 

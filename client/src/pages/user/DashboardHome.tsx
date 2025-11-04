@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calendar,
   MapPin,
@@ -15,9 +15,10 @@ import {
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { getUserRegisteredEvents } from "../../lib/event-api";
 
 interface EventData {
-  id: number;
+  id: string;
   title: string;
   date: string;
   location: string;
@@ -42,56 +43,45 @@ interface Registration {
 }
 
 interface DashboardHomeProps {
-  eventData: EventData;
+  eventData?: EventData;
   user: User;
   registration?: Registration;
 }
 
 const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+  const [userEvents, setUserEvents] = useState<EventData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for user's events
-  const userEvents: EventData[] = [
-    {
-      id: 1,
-      title: "Seamless East Africa 2025",
-      date: "July 2-3, 2025",
-      location: "Nairobi, Kenya",
-      type: "Conference",
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-      registrationDate: "2024-01-15",
-      venue: "Kenyatta International Convention Centre",
-      description: "The region's most exciting event bringing together leaders in fintech, payments, retail, and e-commerce.",
-      status: "upcoming",
-      category: "Technology"
-    },
-    {
-      id: 2,
-      title: "Tech Innovation Summit 2024",
-      date: "March 15-17, 2024",
-      location: "San Francisco, CA",
-      type: "Conference",
-      image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=300&fit=crop",
-      registrationDate: "2024-01-10",
-      venue: "Moscone Center",
-      description: "Explore the latest in technology innovation and digital transformation.",
-      status: "completed",
-      category: "Technology"
-    },
-    {
-      id: 3,
-      title: "Digital Marketing Workshop",
-      date: "February 28, 2024",
-      location: "London, UK",
-      type: "Workshop",
-      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop",
-      registrationDate: "2024-02-01",
-      venue: "London Business School",
-      description: "Master digital marketing strategies for the modern business landscape.",
-      status: "completed",
-      category: "Marketing"
-    }
-  ];
+  useEffect(() => {
+    const fetchUserEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await getUserRegisteredEvents();
+        if (response.success && response.data.events) {
+          setUserEvents(response.data.events.map(event => ({
+            id: event.id,
+            title: event.title,
+            date: event.date,
+            location: event.location,
+            type: event.type,
+            image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+            registrationDate: event.registrationDate,
+            venue: event.venue,
+            description: event.description,
+            status: event.status,
+            category: event.category,
+          })));
+        }
+      } catch (error) {
+        console.error("Error fetching user events:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserEvents();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -140,8 +130,9 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                   </div>
                   
                   <h3 className="text-lg font-bold text-foreground mb-1">{user.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-1">Software Engineer</p>
-                  <p className="text-sm text-muted-foreground">Dukapaq Ltd.</p>
+                  {/* Note: User profile details (job title, company) not yet implemented - will be fetched from user profile API */}
+                  <p className="text-sm text-muted-foreground mb-1">—</p>
+                  <p className="text-sm text-muted-foreground">—</p>
                 </div>
               </div>
             </div>
@@ -222,19 +213,20 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               </div>
 
               {/* Sponsors Section */}
-              <div className="bg-card rounded-xl p-6 shadow-sm border border-border mb-8">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Silver Sponsor</h3>
-                <div className="flex items-center gap-6">
-                  <div className="text-primary font-semibold">tietoevry</div>
-                  <div className="flex items-center gap-2 text-primary">
-                    <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-primary-foreground text-xs">✓</span>
+              {selectedEvent && (() => {
+                // Fetch sponsors from event data - this will be implemented when event details API is available
+                // For now, show placeholder
+                return (
+                  <div className="bg-card rounded-xl p-6 shadow-sm border border-border mb-8">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Sponsors</h3>
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">
+                        Sponsor information will be displayed here when available.
+                      </p>
                     </div>
-                    <span className="font-medium">vernost</span>
                   </div>
-                  <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Event Details Section */}
               <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
@@ -337,8 +329,13 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
             </div>
 
             {/* Events Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {userEvents.map((event) => (
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading your events...</p>
+              </div>
+            ) : userEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {userEvents.map((event) => (
                 <Card 
                   key={event.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
@@ -403,11 +400,9 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-
-            {/* Empty State (if no events) */}
-            {userEvents.length === 0 && (
+                ))}
+              </div>
+            ) : (
               <div className="text-center py-12">
                 <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-foreground mb-2">No Events Yet</h3>

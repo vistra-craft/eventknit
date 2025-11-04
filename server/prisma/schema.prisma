@@ -56,6 +56,13 @@ enum RegistrationStatus {
   CANCELLED // Registration cancelled
 }
 
+enum InviteType {
+  ATTENDEE // General attendee registration
+  SPEAKER // Speaker registration/invitation
+  EXHIBITOR // Exhibitor registration/invitation
+  GUEST // Guest/VIP invitation
+}
+
 model User {
   id                 String     @id @default(uuid())
   email              String     @unique
@@ -104,6 +111,9 @@ model User {
   auditLogs          AuditLog[]
   eventsCreated      Event[]             @relation("EventOrganizer")
   eventRegistrations EventRegistration[]
+  invitationsCreated EventInvitation[]  @relation("InvitationCreator")
+  templatesCreated   TicketTemplate[]   @relation("TemplateCreator")
+  featuredEventsCreated FeaturedEvent[]  @relation("FeaturedEventCreator")
 
   @@index([email])
   @@index([role])
@@ -271,6 +281,9 @@ model Event {
 
   // Relations
   registrations EventRegistration[]
+  invitations    EventInvitation[]
+  ticketTemplates TicketTemplate[]
+  featuredEvents FeaturedEvent[]
 
   @@index([organizerId])
   @@index([status])
@@ -288,6 +301,10 @@ model EventRegistration {
 
   attendeeId String
   attendee   User   @relation(fields: [attendeeId], references: [id], onDelete: Cascade)
+
+  // Registration link tracking
+  invitationId String? // Link used for registration (if registered via invitation link)
+  invitation   EventInvitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
 
   // Registration details
   ticketType  String? // Ticket type name if multiple ticket types
@@ -315,5 +332,112 @@ model EventRegistration {
   @@index([eventId])
   @@index([attendeeId])
   @@index([status])
+  @@index([createdAt])
+}
+
+model EventInvitation {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Invitation details
+  inviteType InviteType // Type of invitation (ATTENDEE, SPEAKER, EXHIBITOR, GUEST)
+  token      String     @unique // Unique shareable token for the registration link
+  title      String? // Optional custom title for the link
+  description String? @db.Text // Optional description
+
+  // Link settings
+  expiresAt DateTime? // Optional expiration date
+  maxUses   Int? // Optional maximum number of uses (null = unlimited)
+  usedCount Int  @default(0) // Track how many times the link has been used
+  isActive  Boolean @default(true) // Whether the link is active
+
+  // Organizer who created this invitation
+  createdBy String
+  creator   User   @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  revokedAt DateTime?
+  revokedBy String?
+
+  // Relations
+  registrations EventRegistration[]
+
+  @@index([eventId])
+  @@index([token])
+  @@index([inviteType])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+model TicketTemplate {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Template metadata
+  name        String   // Template name
+  description String?  @db.Text
+  isDefault   Boolean  @default(false) // Whether this is the default template for the event
+
+  // Template design
+  backgroundUrl String? // Background image URL
+  width        Int?    // Template width in pixels
+  height       Int?    // Template height in pixels
+  unit         String? // Unit: 'px', 'mm', 'in' (default: 'px')
+
+  // Template elements (JSON array of elements)
+  elements     Json?   // Array of template elements (text, image, QR code, etc.)
+
+  // Created by
+  createdBy    String
+  creator      User    @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  // Audit fields
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  @@index([eventId])
+  @@index([createdBy])
+  @@index([isDefault])
+  @@index([createdAt])
+}
+
+model FeaturedEvent {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Display customization
+  customTitle    String? // Optional custom title (defaults to event.title)
+  customImage    String? // Optional custom hero image (defaults to event.image)
+  customCategory String? // Optional custom category (defaults to event.category)
+  
+  // Display dates - when this featured event should be shown
+  displayStartDate DateTime? // When to start showing this featured event
+  displayEndDate   DateTime? // When to stop showing this featured event
+
+  // Display order
+  displayOrder Int     @default(0) // Lower numbers appear first
+  isActive     Boolean @default(true) // Whether this featured event is active
+
+  // Admin who created this featured event
+  createdBy String
+  creator   User   @relation("FeaturedEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([eventId])
+  @@index([createdBy])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([displayStartDate])
+  @@index([displayEndDate])
   @@index([createdAt])
 }

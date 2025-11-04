@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar, MapPin, Users, ArrowLeft, X, Clock, Users2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { speakers, type Speaker } from "../../data/speakers";
+import { getEventById } from "../../lib/event-api";
 import { SocialConnections } from "../../components/SocialConnections";
 
 interface EventData {
-  id: number;
+  id: string;
   title: string;
   date: string;
   location: string;
@@ -18,6 +18,38 @@ interface EventData {
   description?: string;
   status?: 'upcoming' | 'ongoing' | 'completed';
   category?: string;
+}
+
+interface Speaker {
+  id: string;
+  name: string;
+  title: string;
+  bio: string;
+  image?: string;
+  company?: string;
+  country?: string;
+  detailedBio?: string;
+  jobFunction?: string;
+  interests?: string[];
+  businessAge?: string;
+  purchasingRole?: string;
+  companySize?: string;
+  socialLinks?: {
+    linkedin?: string;
+    twitter?: string;
+    website?: string;
+  };
+  contactDetails?: {
+    email?: string;
+    phone?: string;
+  };
+  speakingAt?: Array<{
+    session: string;
+    date: string;
+    time: string;
+    stage: string;
+    panelists?: string[];
+  }>;
 }
 
 interface DashboardSpeakersProps {
@@ -34,7 +66,7 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onClick: () => void }> = ({ spea
         <div className="text-center">
           <div className="relative mb-4">
             <img 
-              src={speaker.avatar}
+              src={speaker.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(speaker.name)}&background=random`}
               alt={speaker.name}
               className="w-20 h-20 rounded-full mx-auto object-cover border-4 border-primary/10 group-hover:border-primary/30 transition-colors"
             />
@@ -48,12 +80,14 @@ const SpeakerCard: React.FC<{ speaker: Speaker; onClick: () => void }> = ({ spea
           </h3>
           
           <p className="text-sm font-medium text-primary mb-1">
-            {speaker.position}
+            {speaker.title}
           </p>
           
-          <p className="text-sm text-muted-foreground">
-            {speaker.company}
-          </p>
+          {speaker.company && (
+            <p className="text-sm text-muted-foreground">
+              {speaker.company}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -64,7 +98,7 @@ const SpeakerModal: React.FC<{ speaker: Speaker; onClose: () => void }> = ({ spe
   const [showFullBio, setShowFullBio] = useState(false);
   
   const bioText = speaker.detailedBio || speaker.bio;
-  const shouldTruncate = bioText.length > 200;
+  const shouldTruncate = bioText && bioText.length > 200;
   const displayBio = shouldTruncate && !showFullBio ? bioText.substring(0, 200) + "..." : bioText;
 
   return (
@@ -83,21 +117,23 @@ const SpeakerModal: React.FC<{ speaker: Speaker; onClose: () => void }> = ({ spe
         <div className="p-8 pb-12">
           {/* Header */}
           <div className="flex justify-between items-start mb-6">
-            <div className="flex items-center gap-6">
-              <img 
-                src={speaker.avatar}
-                alt={speaker.name}
-                className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
-              />
-              <div>
-                <h2 className="text-2xl font-bold text-foreground mb-1">{speaker.name}</h2>
-                <p className="text-lg font-medium text-primary mb-1">{speaker.position}</p>
-                {speaker.country && (
-                  <p className="text-sm text-muted-foreground mb-1">{speaker.country}</p>
-                )}
-                <p className="text-muted-foreground">{speaker.company}</p>
+              <div className="flex items-center gap-6">
+                <img 
+                  src={speaker.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(speaker.name)}&background=random`}
+                  alt={speaker.name}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
+                />
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground mb-1">{speaker.name}</h2>
+                  <p className="text-lg font-medium text-primary mb-1">{speaker.title}</p>
+                  {speaker.country && (
+                    <p className="text-sm text-muted-foreground mb-1">{speaker.country}</p>
+                  )}
+                  {speaker.company && (
+                    <p className="text-muted-foreground">{speaker.company}</p>
+                  )}
+                </div>
               </div>
-            </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="w-4 h-4" />
@@ -109,21 +145,23 @@ const SpeakerModal: React.FC<{ speaker: Speaker; onClose: () => void }> = ({ spe
           <div className="border-t border-border mb-6"></div>
 
           {/* About Section */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-foreground mb-3">About me</h3>
-            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-              {displayBio}
-            </p>
-            {shouldTruncate && (
-              <Button 
-                variant="link" 
-                className="p-0 h-auto text-primary mt-2"
-                onClick={() => setShowFullBio(!showFullBio)}
-              >
-                {showFullBio ? "See less" : "See more"}
-              </Button>
-            )}
-          </div>
+          {bioText && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-3">About me</h3>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                {displayBio}
+              </p>
+              {shouldTruncate && (
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-primary mt-2"
+                  onClick={() => setShowFullBio(!showFullBio)}
+                >
+                  {showFullBio ? "See less" : "See more"}
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* Additional Details */}
           {speaker.jobFunction && (
@@ -226,6 +264,34 @@ const SpeakerModal: React.FC<{ speaker: Speaker; onClose: () => void }> = ({ spe
 
 const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
   const [selectedSpeaker, setSelectedSpeaker] = useState<Speaker | null>(null);
+  const [speakers, setSpeakers] = useState<Speaker[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSpeakers = async () => {
+      try {
+        setLoading(true);
+        const response = await getEventById(eventData.id);
+        if (response.success && response.data?.event?.speakers) {
+          // Transform speakers data to match our Speaker interface
+          const eventSpeakers = response.data.event.speakers.map((speaker, index) => ({
+            id: `speaker-${index}`,
+            name: speaker.name,
+            title: speaker.title,
+            bio: speaker.bio,
+            image: speaker.image,
+          }));
+          setSpeakers(eventSpeakers);
+        }
+      } catch (error) {
+        console.error("Error fetching speakers:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpeakers();
+  }, [eventData.id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -301,18 +367,21 @@ const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
             </div>
 
             {/* Speakers Grid - 4 per row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              {speakers.map((speaker) => (
-                <SpeakerCard 
-                  key={speaker.id} 
-                  speaker={speaker} 
-                  onClick={() => setSelectedSpeaker(speaker)}
-                />
-              ))}
-            </div>
-
-            {/* Empty State (if no speakers) */}
-            {speakers.length === 0 && (
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading speakers...</p>
+              </div>
+            ) : speakers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                {speakers.map((speaker, index) => (
+                  <SpeakerCard 
+                    key={speaker.id || `speaker-${index}`} 
+                    speaker={speaker} 
+                    onClick={() => setSelectedSpeaker(speaker)}
+                  />
+                ))}
+              </div>
+            ) : (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-foreground mb-2">No Speakers Yet</h3>

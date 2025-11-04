@@ -1,12 +1,12 @@
-import { Response, NextFunction } from 'express';
-import { OrganizerService } from '../services/organizer.service';
+import { Request, Response, NextFunction } from 'express';
+import { TemplateService } from '../services/template.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
-export class OrganizerController {
+export class TemplateController {
   /**
-   * Create staff member
+   * Create a new template
    */
-  static async createStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async createTemplate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -19,7 +19,8 @@ export class OrganizerController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
-      const staff = await OrganizerService.createStaff(
+      const template = await TemplateService.createTemplate(
+        req.params.eventId,
         req.body,
         req.user.id,
         req.user.role,
@@ -29,8 +30,8 @@ export class OrganizerController {
 
       res.status(201).json({
         success: true,
-        message: 'Staff member created successfully',
-        data: { staff },
+        message: 'Template created successfully',
+        data: { template },
       });
     } catch (error) {
       next(error);
@@ -38,9 +39,9 @@ export class OrganizerController {
   }
 
   /**
-   * Get all staff members
+   * Get all templates for an event
    */
-  static async getStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getEventTemplates(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -50,11 +51,15 @@ export class OrganizerController {
         return;
       }
 
-      const staff = await OrganizerService.getStaff(req.user.id, req.user.role);
+      const templates = await TemplateService.getEventTemplates(
+        req.params.eventId,
+        req.user.id,
+        req.user.role,
+      );
 
       res.status(200).json({
         success: true,
-        data: { staff },
+        data: { templates },
       });
     } catch (error) {
       next(error);
@@ -62,9 +67,9 @@ export class OrganizerController {
   }
 
   /**
-   * Get staff member by ID
+   * Get template by ID
    */
-  static async getStaffById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getTemplateById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -74,7 +79,7 @@ export class OrganizerController {
         return;
       }
 
-      const staff = await OrganizerService.getStaffById(
+      const template = await TemplateService.getTemplateById(
         req.params.id,
         req.user.id,
         req.user.role,
@@ -82,7 +87,7 @@ export class OrganizerController {
 
       res.status(200).json({
         success: true,
-        data: { staff },
+        data: { template },
       });
     } catch (error) {
       next(error);
@@ -90,9 +95,33 @@ export class OrganizerController {
   }
 
   /**
-   * Update staff member
+   * Get default template for an event (public - for printing)
    */
-  static async updateStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getDefaultTemplate(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const template = await TemplateService.getDefaultTemplate(req.params.eventId);
+
+      if (!template) {
+        res.status(404).json({
+          success: false,
+          message: 'No default template found for this event',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: { template },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update template
+   */
+  static async updateTemplate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -105,7 +134,7 @@ export class OrganizerController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
-      const staff = await OrganizerService.updateStaff(
+      const template = await TemplateService.updateTemplate(
         req.params.id,
         req.body,
         req.user.id,
@@ -116,8 +145,8 @@ export class OrganizerController {
 
       res.status(200).json({
         success: true,
-        message: 'Staff member updated successfully',
-        data: { staff },
+        message: 'Template updated successfully',
+        data: { template },
       });
     } catch (error) {
       next(error);
@@ -125,9 +154,9 @@ export class OrganizerController {
   }
 
   /**
-   * Delete staff member
+   * Delete template
    */
-  static async deleteStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async deleteTemplate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -140,7 +169,7 @@ export class OrganizerController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
-      await OrganizerService.deleteStaff(
+      await TemplateService.deleteTemplate(
         req.params.id,
         req.user.id,
         req.user.role,
@@ -150,7 +179,7 @@ export class OrganizerController {
 
       res.status(200).json({
         success: true,
-        message: 'Staff member deleted successfully',
+        message: 'Template deleted successfully',
       });
     } catch (error) {
       next(error);
@@ -158,9 +187,9 @@ export class OrganizerController {
   }
 
   /**
-   * Deactivate staff member
+   * Duplicate template
    */
-  static async deactivateStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async duplicateTemplate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -173,66 +202,28 @@ export class OrganizerController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
-      await OrganizerService.deactivateStaff(
+      const { name } = req.body;
+      if (!name || typeof name !== 'string') {
+        res.status(400).json({
+          success: false,
+          message: 'Template name is required',
+        });
+        return;
+      }
+
+      const template = await TemplateService.duplicateTemplate(
         req.params.id,
+        name,
         req.user.id,
         req.user.role,
         ipAddress,
         userAgent,
       );
 
-      res.status(200).json({
+      res.status(201).json({
         success: true,
-        message: 'Staff member deactivated successfully',
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Get organizer dashboard stats
-   */
-  static async getDashboardStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) {
-        res.status(401).json({
-          success: false,
-          message: 'Authentication required',
-        });
-        return;
-      }
-
-      const stats = await OrganizerService.getDashboardStats(req.user.id, req.user.role);
-
-      res.status(200).json({
-        success: true,
-        data: { stats },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Get organizer dashboard events
-   */
-  static async getDashboardEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      if (!req.user) {
-        res.status(401).json({
-          success: false,
-          message: 'Authentication required',
-        });
-        return;
-      }
-
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-      const events = await OrganizerService.getDashboardEvents(req.user.id, req.user.role, limit);
-
-      res.status(200).json({
-        success: true,
-        data: { events },
+        message: 'Template duplicated successfully',
+        data: { template },
       });
     } catch (error) {
       next(error);

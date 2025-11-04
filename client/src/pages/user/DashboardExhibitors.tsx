@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Building2, MapPin, Mail, Globe } from 'lucide-react';
 import ExhibitorDetailsModal from '../../components/ExhibitorDetailsModal';
+import { getEventById } from '../../lib/event-api';
 
 interface EventData {
   id: number;
@@ -15,23 +16,8 @@ interface EventData {
   registrationDate: string;
 }
 
-interface User {
-  name: string;
-  email: string;
-  initials: string;
-  company?: string;
-  designation?: string;
-}
-
-interface Registration {
-  ticketId?: string;
-  status?: string;
-}
-
 interface DashboardExhibitorsProps {
   eventData: EventData;
-  user: User;
-  registration?: Registration;
 }
 
 interface Exhibitor {
@@ -57,6 +43,42 @@ interface Exhibitor {
 const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) => {
   const [selectedExhibitor, setSelectedExhibitor] = useState<Exhibitor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [exhibitors, setExhibitors] = useState<Exhibitor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchExhibitors = async () => {
+      try {
+        setLoading(true);
+        const response = await getEventById(eventData.id.toString());
+        if (response.success && response.data?.event?.sponsors) {
+          // Transform sponsors data to exhibitors format
+          const eventExhibitors = response.data.event.sponsors.map((sponsor, index) => ({
+            id: index + 1,
+            name: sponsor.name,
+            logo: sponsor.logo || '/api/placeholder/200/100',
+            category: 'Sponsor',
+            sponsorType: (sponsor.level?.toLowerCase() as 'platinum' | 'gold' | 'silver' | 'bronze' | 'partner') || 'partner',
+            booth: '', // Not available in sponsor data
+            description: `${sponsor.name} - ${sponsor.level} sponsor`,
+            website: undefined,
+            email: undefined,
+            phone: undefined,
+            location: undefined,
+            products: [],
+            representatives: [],
+          }));
+          setExhibitors(eventExhibitors);
+        }
+      } catch (error) {
+        console.error("Error fetching exhibitors:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExhibitors();
+  }, [eventData.id]);
 
   const handleExhibitorClick = (exhibitor: Exhibitor) => {
     setSelectedExhibitor(exhibitor);
@@ -67,187 +89,6 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
     setIsModalOpen(false);
     setSelectedExhibitor(null);
   };
-
-  // Mock exhibitors data
-  const exhibitors: Exhibitor[] = [
-    {
-      id: 1,
-      name: 'TechCorp Solutions',
-      logo: '/api/placeholder/200/100',
-      category: 'Technology',
-      sponsorType: 'gold',
-      booth: 'A-15',
-      description: 'Leading provider of enterprise software solutions and digital transformation services.',
-      website: 'https://techcorp.com',
-      email: 'info@techcorp.com',
-      phone: '+1 (555) 123-4567',
-      location: 'San Francisco, CA',
-      products: [
-        'Enterprise Resource Planning (ERP)',
-        'Customer Relationship Management (CRM)',
-        'Business Intelligence & Analytics',
-        'Cloud Migration Services',
-        'Digital Transformation Consulting'
-      ],
-      representatives: [
-        {
-          name: 'Sarah Johnson',
-          position: 'Sales Director',
-          avatar: '/api/placeholder/40/40'
-        },
-        {
-          name: 'Michael Chen',
-          position: 'Technical Lead',
-          avatar: '/api/placeholder/40/40'
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'DataFlow Inc.',
-      logo: '/api/placeholder/200/100',
-      category: 'Technology',
-      sponsorType: 'silver',
-      booth: 'B-22',
-      description: 'Advanced data analytics and business intelligence solutions for modern enterprises.',
-      website: 'https://dataflow.com',
-      email: 'contact@dataflow.com',
-      phone: '+1 (555) 234-5678',
-      location: 'New York, NY',
-      products: [
-        'Data Analytics Platform',
-        'Business Intelligence Tools',
-        'Machine Learning Solutions',
-        'Data Visualization',
-        'Predictive Analytics'
-      ],
-      representatives: [
-        {
-          name: 'Emily Rodriguez',
-          position: 'Data Scientist',
-          avatar: '/api/placeholder/40/40'
-        }
-      ]
-    },
-    {
-      id: 3,
-      name: 'CloudTech Systems',
-      logo: '/api/placeholder/200/100',
-      category: 'Technology',
-      sponsorType: 'bronze',
-      booth: 'C-08',
-      description: 'Cloud infrastructure and migration services for scalable business operations.',
-      website: 'https://cloudtech.com',
-      email: 'hello@cloudtech.com',
-      phone: '+1 (555) 345-6789',
-      location: 'Austin, TX',
-      products: [
-        'Cloud Migration Services',
-        'Infrastructure as a Service',
-        'DevOps Solutions',
-        'Container Orchestration',
-        'Cloud Security'
-      ],
-      representatives: [
-        {
-          name: 'David Kim',
-          position: 'Cloud Architect',
-          avatar: '/api/placeholder/40/40'
-        },
-        {
-          name: 'Lisa Wang',
-          position: 'DevOps Engineer',
-          avatar: '/api/placeholder/40/40'
-        }
-      ]
-    },
-    {
-      id: 4,
-      name: 'InnovateLab',
-      logo: '/api/placeholder/200/100',
-      category: 'Technology',
-      sponsorType: 'partner',
-      booth: 'D-12',
-      description: 'Innovation consulting and digital transformation solutions.',
-      website: 'https://innovatelab.com',
-      email: 'info@innovatelab.com',
-      phone: '+1 (555) 456-7890',
-      location: 'Seattle, WA',
-      products: [
-        'Digital Transformation Consulting',
-        'Innovation Strategy',
-        'Product Development',
-        'Technology Assessment',
-        'Change Management'
-      ],
-      representatives: [
-        {
-          name: 'Alex Thompson',
-          position: 'Innovation Consultant',
-          avatar: '/api/placeholder/40/40'
-        }
-      ]
-    },
-    {
-      id: 5,
-      name: 'SecureNet Pro',
-      logo: '/api/placeholder/200/100',
-      category: 'Security',
-      sponsorType: 'gold',
-      booth: 'A-20',
-      description: 'Enterprise cybersecurity solutions and threat protection services.',
-      website: 'https://securenetpro.com',
-      email: 'security@securenetpro.com',
-      phone: '+1 (555) 567-8901',
-      location: 'Boston, MA',
-      products: [
-        'Cybersecurity Solutions',
-        'Threat Detection',
-        'Security Monitoring',
-        'Incident Response',
-        'Security Training'
-      ],
-      representatives: [
-        {
-          name: 'Rachel Green',
-          position: 'Security Specialist',
-          avatar: '/api/placeholder/40/40'
-        },
-        {
-          name: 'James Wilson',
-          position: 'Threat Analyst',
-          avatar: '/api/placeholder/40/40'
-        }
-      ]
-    },
-    {
-      id: 6,
-      name: 'MobileFirst',
-      logo: '/api/placeholder/200/100',
-      category: 'Mobile',
-      sponsorType: 'silver',
-      booth: 'B-15',
-      description: 'Mobile app development and cross-platform solutions.',
-      website: 'https://mobilefirst.com',
-      email: 'dev@mobilefirst.com',
-      phone: '+1 (555) 678-9012',
-      location: 'Los Angeles, CA',
-      products: [
-        'Mobile App Development',
-        'Cross-Platform Solutions',
-        'UI/UX Design',
-        'App Testing',
-        'App Store Optimization'
-      ],
-      representatives: [
-        {
-          name: 'Maria Garcia',
-          position: 'Mobile Developer',
-          avatar: '/api/placeholder/40/40'
-        }
-      ]
-    }
-  ];
 
   const getSponsorTypeColor = (type: string) => {
     switch (type) {
@@ -307,85 +148,96 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {exhibitors.map((exhibitor) => (
-                    <Card 
-                      key={exhibitor.id} 
-                      className="bg-muted/30 border border-border hover:shadow-lg transition-all duration-200 cursor-pointer"
-                      onClick={() => handleExhibitorClick(exhibitor)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="space-y-4">
-                          {/* Logo and Basic Info */}
-                          <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Building2 className="w-6 h-6 text-muted-foreground" />
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading exhibitors...</p>
+                  </div>
+                ) : exhibitors.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {exhibitors.map((exhibitor) => (
+                      <Card 
+                        key={exhibitor.id} 
+                        className="bg-muted/30 border border-border hover:shadow-lg transition-all duration-200 cursor-pointer"
+                        onClick={() => handleExhibitorClick(exhibitor)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="space-y-4">
+                            {/* Logo and Basic Info */}
+                            <div className="flex items-start gap-3">
+                              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                                {exhibitor.logo && exhibitor.logo !== '/api/placeholder/200/100' ? (
+                                  <img src={exhibitor.logo} alt={exhibitor.name} className="w-full h-full object-cover rounded-lg" />
+                                ) : (
+                                  <Building2 className="w-6 h-6 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-foreground text-sm truncate">
+                                  {exhibitor.name}
+                                </h3>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {exhibitor.description}
+                                </p>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-foreground text-sm truncate">
-                                {exhibitor.name}
-                              </h3>
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {exhibitor.description}
-                              </p>
+
+                            {/* Badges */}
+                            <div className="flex flex-wrap gap-2">
+                              <Badge className={getSponsorTypeColor(exhibitor.sponsorType)}>
+                                {exhibitor.sponsorType.toUpperCase()}
+                              </Badge>
+                              <Badge className={getCategoryColor(exhibitor.category)}>
+                                {exhibitor.category}
+                              </Badge>
                             </div>
-                          </div>
 
-                          {/* Badges */}
-                          <div className="flex flex-wrap gap-2">
-                            <Badge className={getSponsorTypeColor(exhibitor.sponsorType)}>
-                              {exhibitor.sponsorType.toUpperCase()}
-                            </Badge>
-                            <Badge className={getCategoryColor(exhibitor.category)}>
-                              {exhibitor.category}
-                            </Badge>
-                          </div>
+                            {/* Booth Info */}
+                            {exhibitor.booth && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <MapPin className="w-3 h-3" />
+                                <span>Booth {exhibitor.booth}</span>
+                              </div>
+                            )}
 
-                          {/* Booth Info */}
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <MapPin className="w-3 h-3" />
-                            <span>Booth {exhibitor.booth}</span>
+                            {/* Contact Actions */}
+                            {(exhibitor.website || exhibitor.email) && (
+                              <div className="flex gap-2">
+                                {exhibitor.website && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(exhibitor.website, '_blank');
+                                    }}
+                                  >
+                                    <Globe className="w-3 h-3 mr-1" />
+                                    Website
+                                  </Button>
+                                )}
+                                {exhibitor.email && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.location.href = `mailto:${exhibitor.email}`;
+                                    }}
+                                  >
+                                    <Mail className="w-3 h-3 mr-1" />
+                                    Contact
+                                  </Button>
+                                )}
+                              </div>
+                            )}
                           </div>
-
-                          {/* Contact Actions */}
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (exhibitor.website) {
-                                  window.open(exhibitor.website, '_blank');
-                                }
-                              }}
-                            >
-                              <Globe className="w-3 h-3 mr-1" />
-                              Website
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (exhibitor.email) {
-                                  window.location.href = `mailto:${exhibitor.email}`;
-                                }
-                              }}
-                            >
-                              <Mail className="w-3 h-3 mr-1" />
-                              Contact
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                {/* Empty State */}
-                {exhibitors.length === 0 && (
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
                   <div className="text-center py-12">
                     <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-foreground mb-2">No Exhibitors Yet</h3>

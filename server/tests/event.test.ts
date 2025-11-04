@@ -45,7 +45,10 @@ describe('Event System', () => {
     if (!dbConnected) return;
 
     // Clear all tables
+    await prisma.featuredEvent.deleteMany();
     await prisma.eventRegistration.deleteMany();
+    await prisma.eventInvitation.deleteMany();
+    await prisma.ticketTemplate.deleteMany();
     await prisma.event.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();
@@ -452,6 +455,247 @@ describe('Event System', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.event.status).toBe(EventStatus.REJECTED);
       expect(response.body.data.event.rejectionReason).toBe('Event does not meet our guidelines');
+    });
+  });
+
+  describe('GET /api/v1/events/user/registered', () => {
+    let attendeeId: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+
+      // Get attendee ID
+      const attendee = await prisma.user.findUnique({
+        where: { email: 'attendee@test.com' },
+      });
+      attendeeId = attendee!.id;
+
+      // Create test events
+      const event1 = await prisma.event.create({
+        data: {
+          title: 'Upcoming Event',
+          description: 'This is an upcoming event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          endDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+          location: 'Test Location 1',
+          venue: 'Test Venue 1',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+          category: 'Technology',
+        },
+      });
+
+      const event2 = await prisma.event.create({
+        data: {
+          title: 'Past Event',
+          description: 'This is a past event',
+          startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          endDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+          location: 'Test Location 2',
+          venue: 'Test Venue 2',
+          isFree: false,
+          price: 100,
+          organizerId,
+          status: EventStatus.COMPLETED,
+          category: 'Business',
+        },
+      });
+
+      const event3 = await prisma.event.create({
+        data: {
+          title: 'Ongoing Event',
+          description: 'This is an ongoing event',
+          startDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+          endDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
+          location: 'Test Location 3',
+          venue: 'Test Venue 3',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+          category: 'Education',
+        },
+      });
+
+      // Create registrations for attendee
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event1.id,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 0,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event2.id,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 100,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event3.id,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 0,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+    });
+
+    it('should get user registered events successfully', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/events/user/registered')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.events).toBeDefined();
+      expect(Array.isArray(response.body.data.events)).toBe(true);
+      expect(response.body.data.events.length).toBeGreaterThanOrEqual(3);
+
+      const event = response.body.data.events[0];
+      expect(event).toHaveProperty('id');
+      expect(event).toHaveProperty('title');
+      expect(event).toHaveProperty('date');
+      expect(event).toHaveProperty('location');
+      expect(event).toHaveProperty('type');
+      expect(event).toHaveProperty('image');
+      expect(event).toHaveProperty('registrationDate');
+      expect(event).toHaveProperty('status');
+    });
+
+    it('should correctly determine event status', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/events/user/registered')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(200);
+
+      const events = response.body.data.events;
+      
+      // Find events by title
+      const upcomingEvent = events.find((e: any) => e.title === 'Upcoming Event');
+      const pastEvent = events.find((e: any) => e.title === 'Past Event');
+      const ongoingEvent = events.find((e: any) => e.title === 'Ongoing Event');
+
+      if (upcomingEvent) {
+        expect(upcomingEvent.status).toBe('upcoming');
+      }
+
+      if (pastEvent) {
+        expect(pastEvent.status).toBe('completed');
+      }
+
+      if (ongoingEvent) {
+        expect(ongoingEvent.status).toBe('ongoing');
+      }
+    });
+
+    it('should format dates correctly', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/events/user/registered')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(200);
+
+      const events = response.body.data.events;
+      
+      events.forEach((event: any) => {
+        expect(event.date).toBeDefined();
+        expect(typeof event.date).toBe('string');
+        expect(event.date.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('should include event details', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/events/user/registered')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(200);
+
+      const events = response.body.data.events;
+      
+      events.forEach((event: any) => {
+        expect(event).toHaveProperty('venue');
+        expect(event).toHaveProperty('description');
+        expect(event).toHaveProperty('category');
+      });
+    });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/events/user/registered')
+        .expect(401);
+    });
+
+    it('should return empty array for user with no registrations', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a new attendee with no registrations
+      const newAttendeePassword = await hashPassword('NewAttendee123!@#');
+      const newAttendee = await prisma.user.create({
+        data: {
+          email: 'newattendee@test.com',
+          password: newAttendeePassword,
+          firstName: 'New',
+          lastName: 'Attendee',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const newAttendeeToken = generateAccessToken({
+        userId: newAttendee.id,
+        email: newAttendee.email,
+        role: newAttendee.role,
+      });
+
+      const response = await request(app)
+        .get('/api/v1/events/user/registered')
+        .set('Authorization', `Bearer ${newAttendeeToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.events).toBeDefined();
+      expect(Array.isArray(response.body.data.events)).toBe(true);
+      expect(response.body.data.events.length).toBe(0);
     });
   });
 });
