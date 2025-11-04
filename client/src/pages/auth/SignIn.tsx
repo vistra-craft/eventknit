@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Mail, Lock, Calendar } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const SignIn = () => {
-  const navigate = useNavigate();
+  const { login, isLoading, error: authError, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -17,62 +16,14 @@ const SignIn = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    clearError();
     
     try {
-      // TODO: Replace with actual API call
-      // For now, we'll simulate the authentication and role detection
-      const mockUserData = {
-        email: formData.email,
-        role: getUserRole(formData.email), // This would come from the API
-        name: 'John Doe' // This would come from the API
-      };
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Redirect based on user role
-      redirectBasedOnRole(mockUserData.role);
-      
+      await login(formData.email, formData.password);
+      // Navigation is handled by the useAuth hook
     } catch (error) {
+      // Error is handled by the auth context
       console.error('Sign in error:', error);
-      setError('Invalid email or password. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Mock function to determine user role based on email
-  // In real implementation, this would be handled by the backend
-  const getUserRole = (email: string): 'admin' | 'staff' | 'organizer' | 'attendee' => {
-    // Mock logic - in real app, this would be determined by the backend
-    if (email.includes('admin') || email.includes('@eventknit.com')) {
-      return 'admin';
-    } else if (email.includes('staff')) {
-      return 'staff';
-    } else if (email.includes('organizer')) {
-      return 'organizer';
-    } else {
-      return 'attendee';
-    }
-  };
-
-  // Redirect user based on their role
-  const redirectBasedOnRole = (role: 'admin' | 'staff' | 'organizer' | 'attendee') => {
-    switch (role) {
-      case 'admin':
-      case 'staff':
-        navigate('/admin/dashboard');
-        break;
-      case 'organizer':
-        navigate('/organizer/dashboard');
-        break;
-      case 'attendee':
-        navigate('/user/dashboard');
-        break;
-      default:
-        navigate('/user/dashboard');
     }
   };
 
@@ -196,9 +147,9 @@ const SignIn = () => {
 
                 {/* Sign In Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {error && (
+                  {authError && (
                     <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-                      {error}
+                      {authError}
                     </div>
                   )}
                   

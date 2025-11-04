@@ -7,40 +7,51 @@ import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { EventMap } from "@/components/EventMap";
-import { useState, useEffect } from "react";
-
-// Placeholder - will be replaced with API data
-interface EventItem {
-  id: string;
-  title: string;
-  [key: string]: unknown;
-}
+import { useState } from "react";
+import { useEvent } from "@/hooks/useEvent";
+import type { EventData } from "@/types/event";
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
-  const [event, setEvent] = useState<EventItem | null>(null);
   
-  useEffect(() => {
-    // TODO: Fetch event data from API using id
-    // For now, no events will be found (placeholder removed)
-    setEvent(null);
-  }, [id]);
+  // Fetch event data using hook
+  const { event, isLoading, error } = useEvent(id);
   
-  if (!event) {
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading event...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !event) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Event not found</h2>
+            <p className="text-muted-foreground mb-4">{error || 'The event you are looking for does not exist.'}</p>
             <Button onClick={() => navigate('/')}>Back to Home</Button>
           </div>
         </div>
       </div>
     );
   }
+
+  // TypeScript now knows event is EventData (not null)
+  const eventData: EventData = event;
 
   const updateQuantity = (ticketName: string, change: number) => {
     setTicketQuantities(prev => ({
@@ -58,8 +69,8 @@ const EventDetails = () => {
     // Navigate to user dashboard with the specific section
     navigate(`/user/dashboard?section=${section}`, {
       state: {
-        eventData: event,
-        message: `Welcome to ${event?.title} - ${section.charAt(0).toUpperCase() + section.slice(1)}`
+        eventData: eventData,
+        message: `Welcome to ${eventData.title} - ${section.charAt(0).toUpperCase() + section.slice(1)}`
       }
     });
   };
@@ -86,26 +97,33 @@ const EventDetails = () => {
           <div className="xl:col-span-1 space-y-6">
             {/* Event Image with Overlay */}
             <div className="relative overflow-hidden rounded-2xl shadow-2xl group">
-              <img 
-                src={event.image} 
-                alt={event.title}
-                className="w-full h-[400px] sm:h-[450px] object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="eager"
-              />
+              {eventData.image && (
+                <img
+                  src={eventData.image}
+                  alt={eventData.title}
+                  className="w-full h-[400px] sm:h-[450px] object-cover transition-transform duration-700 group-hover:scale-105"
+                  loading="eager"
+                />
+              )}
+              {!eventData.image && (
+                <div className="w-full h-[400px] sm:h-[450px] bg-muted flex items-center justify-center">
+                  <span className="text-muted-foreground">No image available</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white">
                 <Badge className="bg-destructive hover:bg-destructive/90 text-destructive-foreground border-0 mb-3 shadow-lg">
-                  {event.category}
+                  {eventData.category}
                 </Badge>
-                <h2 className="text-2xl font-bold mb-2 drop-shadow-lg">{event.title}</h2>
+                <h2 className="text-2xl font-bold mb-2 drop-shadow-lg">{eventData.title}</h2>
                 <div className="flex items-center gap-4 text-sm opacity-90">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {event.date}
+                    {eventData.date}
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {event.time}
+                    {eventData.time}
                   </div>
                 </div>
               </div>
@@ -122,7 +140,7 @@ const EventDetails = () => {
                   <div>
                     <p className="text-sm font-medium">When</p>
                     <p className="text-sm text-muted-foreground">
-                      {event.date} • {event.time}
+                      {eventData.date} • {eventData.time}
                       <span className="block text-xs mt-0.5 text-amber-500">Duration: 3 hours</span>
                     </p>
                   </div>
@@ -136,8 +154,8 @@ const EventDetails = () => {
                   <div>
                     <p className="text-sm font-medium">Where</p>
                     <p className="text-sm text-muted-foreground">
-                      {event.venue}
-                      <span className="block text-muted-foreground/80">{event.location}</span>
+                      {eventData.venue}
+                      <span className="block text-muted-foreground/80">{eventData.location}</span>
                     </p>
                   </div>
                 </div>
@@ -154,13 +172,15 @@ const EventDetails = () => {
             </Card>
 
             {/* Event Map */}
-            <div className="rounded-2xl overflow-hidden shadow-xl">
-              <EventMap 
-                venue={event.venue} 
-                location={event.location} 
-                coordinates={event.coordinates}
-              />
-            </div>
+            {eventData.venue && (
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <EventMap 
+                  venue={eventData.venue} 
+                  location={eventData.location} 
+                  coordinates={eventData.coordinates ?? undefined}
+                />
+              </div>
+            )}
           </div>
 
           {/* Right Column - Event Details & Tickets */}
@@ -169,24 +189,26 @@ const EventDetails = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Badge className="bg-destructive text-destructive-foreground border-0">
-                  {event.category}
+                  {eventData.category}
                 </Badge>
-                <Badge variant="outline" className="border-primary text-primary bg-primary/10">
-                  <Users className="w-3 h-3 mr-1" />
-                  {event.ageRestriction}
-                </Badge>
+                {eventData.ageRestriction && (
+                  <Badge variant="outline" className="border-primary text-primary bg-primary/10">
+                    <Users className="w-3 h-3 mr-1" />
+                    {eventData.ageRestriction}
+                  </Badge>
+                )}
               </div>
               
-              <h1 className="text-3xl font-bold">{event.title}</h1>
+              <h1 className="text-3xl font-bold">{eventData.title}</h1>
               
               <div className="space-y-2 text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span>{event.date}</span>
+                  <span>{eventData.date}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  <span>{event.time}</span>
+                  <span>{eventData.time}</span>
                 </div>
                 <div className="text-sm text-orange-600 font-medium">
                   Doors: 5:30 PM CDT
@@ -207,7 +229,7 @@ const EventDetails = () => {
                       <Building className="w-8 h-8 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold">{event.organizer}</h3>
+                      <h3 className="font-semibold">{eventData.organizerName || (eventData.organizer ? `${eventData.organizer.firstName} ${eventData.organizer.lastName}` : 'Unknown Organizer')}</h3>
                       <p className="text-sm text-muted-foreground mt-1">Event Organizer</p>
                       <div className="flex gap-3 mt-3">
                         <Button variant="outline" size="sm" className="text-xs h-8 hover:bg-primary hover:text-primary-foreground">
@@ -238,29 +260,29 @@ const EventDetails = () => {
                   <CardContent>
                     <div className="prose prose-sm max-w-none">
                       <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
-                        {event.fullDescription}
+                        {eventData.fullDescription}
                       </p>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Important Information Card */}
-                {(event.ageRestriction || event.requirements?.length > 0) && (
+                {(eventData.ageRestriction || eventData.requirements?.length) && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Important Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {event.ageRestriction && (
+                      {eventData.ageRestriction && (
                         <div className="flex items-start gap-3">
                           <Users className="w-5 h-5 mt-0.5 text-muted-foreground" />
                           <div>
                             <p className="font-semibold">Age Restriction</p>
-                            <p className="text-muted-foreground text-sm">{event.ageRestriction}</p>
+                            <p className="text-muted-foreground text-sm">{eventData.ageRestriction}</p>
                           </div>
                         </div>
                       )}
-                      {event.requirements?.map((req, i) => (
+                      {eventData.requirements?.map((req, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <CheckCircle className="w-5 h-5 mt-0.5 text-muted-foreground" />
                           <div>
@@ -276,7 +298,7 @@ const EventDetails = () => {
                 {/* Additional Information Section */}
                 <div className="space-y-6">
                   {/* FAQs */}
-                  {event.faqs && event.faqs.length > 0 && (
+                  {eventData.faqs && eventData.faqs.length > 0 && (
                     <Card variant="minimal">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -286,7 +308,7 @@ const EventDetails = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {event.faqs.map((faq, index) => (
+                          {eventData.faqs.map((faq, index) => (
                             <div key={index} className="border-b pb-3 last:border-b-0 last:pb-0">
                               <h4 className="font-medium text-foreground">{faq.question}</h4>
                               <p className="text-sm text-muted-foreground mt-1">{faq.answer}</p>
@@ -298,7 +320,7 @@ const EventDetails = () => {
                   )}
 
                   {/* Speakers */}
-                  {event.speakers && event.speakers.length > 0 && (
+                  {eventData.speakers && eventData.speakers.length > 0 && (
                     <Card variant="minimal">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg flex items-center gap-2">
@@ -308,7 +330,7 @@ const EventDetails = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {event.speakers.map((speaker) => (
+                          {eventData.speakers.map((speaker) => (
                             <div key={speaker.name} className="flex items-start gap-3 p-3 rounded-lg bg-muted/20">
                               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                                 <User className="w-5 h-5 text-primary" />
@@ -341,19 +363,19 @@ const EventDetails = () => {
                         <div>
                           <h4 className="font-medium">Event Type</h4>
                           <p className="text-sm text-muted-foreground">
-                            {event.isPrivate ? 'Private Event' : 'Public Event'}
+                            {eventData.isPrivate ? 'Private Event' : 'Public Event'}
                           </p>
                         </div>
-                        <Badge variant={event.isPrivate ? 'secondary' : 'default'}> 
-                          {event.isPrivate ? 'Private' : 'Public'}
+                        <Badge variant={eventData.isPrivate ? 'secondary' : 'default'}> 
+                          {eventData.isPrivate ? 'Private' : 'Public'}
                         </Badge>
                       </div>
 
-                      {event.registrationDeadline && (
+                      {eventData.registrationDeadline && (
                         <div>
                           <h4 className="font-medium">Registration Deadline</h4>
                           <p className="text-sm text-muted-foreground">
-                            {event.registrationDeadline}
+                            {eventData.registrationDeadline}
                           </p>
                         </div>
                       )}
@@ -361,15 +383,15 @@ const EventDetails = () => {
                       <div>
                         <h4 className="font-medium">Age Restriction</h4>
                         <p className="text-sm text-muted-foreground">
-                          {event.ageRestriction}
+                          {eventData.ageRestriction}
                         </p>
                       </div>
 
-                      {event.requirements && event.requirements.length > 0 && (
+                      {eventData.requirements && eventData.requirements.length > 0 && (
                         <div>
                           <h4 className="font-medium mb-2">Requirements</h4>
                           <ul className="space-y-2 text-sm text-muted-foreground">
-                            {event.requirements.map((req, i) => (
+                            {eventData.requirements.map((req, i) => (
                               <li key={i} className="flex items-start gap-2">
                                 <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                                 <span>{req}</span>
@@ -494,7 +516,7 @@ const EventDetails = () => {
             <div className="w-full max-w-[280px] space-y-2">
               <h2 className="text-sm font-semibold text-foreground">Tickets</h2>
               
-              {event.ticketTypes.map((ticket, index) => {
+              {eventData.ticketTypes?.map((ticket, index) => {
                 const quantity = ticketQuantities[ticket.name] || 0;
                 const isSelected = quantity > 0;
                 
