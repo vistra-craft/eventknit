@@ -237,3 +237,4 @@ export const getRegistrationLinkUrl = (token: string): string => {
   return `${frontendUrl}/register/${token}`;
 };
 
+

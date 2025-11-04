@@ -45,7 +45,10 @@ describe('Event System', () => {
     if (!dbConnected) return;
 
     // Clear all tables
+    await prisma.featuredEvent.deleteMany();
     await prisma.eventRegistration.deleteMany();
+    await prisma.eventInvitation.deleteMany();
+    await prisma.ticketTemplate.deleteMany();
     await prisma.event.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();

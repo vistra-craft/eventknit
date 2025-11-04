@@ -113,6 +113,7 @@ model User {
   eventRegistrations EventRegistration[]
   invitationsCreated EventInvitation[]  @relation("InvitationCreator")
   templatesCreated   TicketTemplate[]   @relation("TemplateCreator")
+  featuredEventsCreated FeaturedEvent[]  @relation("FeaturedEventCreator")
 
   @@index([email])
   @@index([role])
@@ -282,6 +283,7 @@ model Event {
   registrations EventRegistration[]
   invitations    EventInvitation[]
   ticketTemplates TicketTemplate[]
+  featuredEvents FeaturedEvent[]
 
   @@index([organizerId])
   @@index([status])
@@ -401,5 +403,41 @@ model TicketTemplate {
   @@index([eventId])
   @@index([createdBy])
   @@index([isDefault])
+  @@index([createdAt])
+}
+
+model FeaturedEvent {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Display customization
+  customTitle    String? // Optional custom title (defaults to event.title)
+  customImage    String? // Optional custom hero image (defaults to event.image)
+  customCategory String? // Optional custom category (defaults to event.category)
+  
+  // Display dates - when this featured event should be shown
+  displayStartDate DateTime? // When to start showing this featured event
+  displayEndDate   DateTime? // When to stop showing this featured event
+
+  // Display order
+  displayOrder Int     @default(0) // Lower numbers appear first
+  isActive     Boolean @default(true) // Whether this featured event is active
+
+  // Admin who created this featured event
+  createdBy String
+  creator   User   @relation("FeaturedEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@index([eventId])
+  @@index([createdBy])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([displayStartDate])
+  @@index([displayEndDate])
   @@index([createdAt])
 }

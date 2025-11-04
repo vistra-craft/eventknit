@@ -10,6 +10,7 @@ import organizerRoutes from './routes/organizer.routes';
 import eventRoutes from './routes/event.routes';
 import invitationRoutes from './routes/invitation.routes';
 import templateRoutes from './routes/template.routes';
+import featuredEventRoutes from './routes/featured-event.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { rateLimiter } from './middleware/rateLimiter.middleware';
 
@@ -77,6 +78,7 @@ app.use('/api/v1/organizer', organizerRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/invitations', invitationRoutes);
 app.use('/api/v1/templates', templateRoutes);
+app.use('/api/v1/featured-events', featuredEventRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

@@ -3,91 +3,78 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-// Placeholder event data for hero section
-const heroEvents = [
-  {
-    id: "1",
-    title: "Summer Music Festival 2025",
-    image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1920&h=1080&fit=crop",
-    category: "Music",
-    date: "Tuesday, July 15, 2025",
-    time: "6:00 PM",
-    venue: "Riverside Park Amphitheater",
-    location: "123 River Road, Downtown, City 12345",
-    interested: 132,
-    price: "From $45"
-  },
-  {
-    id: "2",
-    title: "Tech Innovation Summit 2024",
-    image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1920&h=1080&fit=crop",
-    category: "Technology",
-    date: "Friday, March 15, 2024",
-    time: "9:00 AM",
-    venue: "Moscone Center",
-    location: "San Francisco, CA",
-    interested: 89,
-    price: "From $299"
-  },
-  {
-    id: "3",
-    title: "Art & Wine Festival",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1920&h=1080&fit=crop",
-    category: "Arts & Culture",
-    date: "Saturday, June 8, 2024",
-    time: "2:00 PM",
-    venue: "Central Park Pavilion",
-    location: "New York, NY",
-    interested: 156,
-    price: "From $25"
-  },
-  {
-    id: "4",
-    title: "Food & Drink Expo",
-    image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1920&h=1080&fit=crop",
-    category: "Food & Drink",
-    date: "Sunday, April 21, 2024",
-    time: "11:00 AM",
-    venue: "Convention Center",
-    location: "Chicago, IL",
-    interested: 203,
-    price: "From $35"
-  }
-];
+import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
 
 export const Hero = () => {
   const navigate = useNavigate();
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [featuredEvents, setFeaturedEvents] = useState<ActiveFeaturedEvent[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const currentEvent = heroEvents[currentEventIndex];
+  // Fetch featured events on mount
+  useEffect(() => {
+    const fetchFeaturedEvents = async () => {
+      try {
+        const events = await getActiveFeaturedEvents();
+        setFeaturedEvents(events);
+        if (events.length > 0) {
+          setCurrentEventIndex(0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured events:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedEvents();
+  }, []);
+
+  // Don't render if loading or no events
+  if (loading || featuredEvents.length === 0) {
+    return null;
+  }
+  
+  const currentEvent = featuredEvents[currentEventIndex];
+  
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return date.toLocaleDateString('en-US', options);
+  };
   
   // Auto-rotation logic
   useEffect(() => {
-    if (!isAutoPlaying) return;
+    if (!isAutoPlaying || featuredEvents.length === 0) return;
     
     const interval = setInterval(() => {
       setCurrentEventIndex((prevIndex) => 
-        prevIndex === heroEvents.length - 1 ? 0 : prevIndex + 1
+        prevIndex === featuredEvents.length - 1 ? 0 : prevIndex + 1
       );
     }, 5000); // Change every 5 seconds
     
     return () => clearInterval(interval);
-  }, [isAutoPlaying]);
+  }, [isAutoPlaying, featuredEvents.length]);
   
   const goToPrevious = () => {
     setIsAutoPlaying(false);
     setCurrentEventIndex((prevIndex) => 
-      prevIndex === 0 ? heroEvents.length - 1 : prevIndex - 1
+      prevIndex === 0 ? featuredEvents.length - 1 : prevIndex - 1
     );
   };
   
   const goToNext = () => {
     setIsAutoPlaying(false);
     setCurrentEventIndex((prevIndex) => 
-      prevIndex === heroEvents.length - 1 ? 0 : prevIndex + 1
+      prevIndex === featuredEvents.length - 1 ? 0 : prevIndex + 1
     );
   };
   
@@ -97,16 +84,16 @@ export const Hero = () => {
   };
 
   const handleImageClick = () => {
-    navigate(`/event/${currentEvent.id}`);
+    navigate(`/event/${currentEvent.eventId}`);
   };
   
   return (
     <div className="relative">
       <div 
-        className="w-full h-[60vh] object-cover transition-opacity duration-500 cursor-pointer hover:opacity-90 relative"
+        className="w-full h-[60vh] object-cover transition-opacity duration-500 cursor-pointer hover:opacity-90 relative bg-muted"
         onClick={handleImageClick}
         style={{
-          backgroundImage: `url(${currentEvent.image})`,
+          backgroundImage: currentEvent.image ? `url(${currentEvent.image})` : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -121,12 +108,14 @@ export const Hero = () => {
           <div className="flex flex-col lg:flex-row lg:items-end gap-6">
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
-                <Badge variant="secondary" className="bg-primary text-primary-foreground">
-                  {currentEvent.category}
-                </Badge>
+                {currentEvent.category && (
+                  <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                    {currentEvent.category}
+                  </Badge>
+                )}
                 <div className="flex items-center gap-2 text-sm">
                   <Eye className="w-4 h-4" />
-                  <span>{currentEvent.interested} interested</span>
+                  <span>Featured Event</span>
                 </div>
               </div>
               
@@ -138,20 +127,27 @@ export const Hero = () => {
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
                   <div>
-                    <div className="font-semibold">{currentEvent.date}</div>
+                    <div className="font-semibold">{formatDate(currentEvent.date)}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  <span className="font-medium">{currentEvent.time}</span>
-                </div>
+                {currentEvent.time && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    <span className="font-medium">{currentEvent.time}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5" />
                   <div>
-                    <div className="font-semibold">{currentEvent.venue}</div>
+                    {currentEvent.venue && (
+                      <div className="font-semibold">{currentEvent.venue}</div>
+                    )}
                     <div className="text-sm">{currentEvent.location}</div>
                   </div>
                 </div>
+                {currentEvent.price && (
+                  <div className="text-lg font-semibold">{currentEvent.price}</div>
+                )}
               </div>
             </div>
             
@@ -179,44 +175,48 @@ export const Hero = () => {
       </div>
       
       {/* Navigation Controls */}
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-30">
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={goToPrevious}
-          className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-      </div>
-      
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-30">
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={goToNext}
-          className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </Button>
-      </div>
-      
-      {/* Event Indicators */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-30">
-        <div className="flex gap-2">
-          {heroEvents.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToEvent(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                index === currentEventIndex
-                  ? 'bg-eventknit scale-125'
-                  : 'bg-eventknit/30 hover:bg-eventknit/50'
-              }`}
-            />
-          ))}
-        </div>
-      </div>
+      {featuredEvents.length > 1 && (
+        <>
+          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-30">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={goToPrevious}
+              className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-30">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={goToNext}
+              className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          {/* Event Indicators */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-30">
+            <div className="flex gap-2">
+              {featuredEvents.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToEvent(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                    index === currentEventIndex
+                      ? 'bg-eventknit scale-125'
+                      : 'bg-eventknit/30 hover:bg-eventknit/50'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

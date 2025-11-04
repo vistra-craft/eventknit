@@ -130,8 +130,9 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                   </div>
                   
                   <h3 className="text-lg font-bold text-foreground mb-1">{user.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-1">Software Engineer</p>
-                  <p className="text-sm text-muted-foreground">Dukapaq Ltd.</p>
+                  {/* Note: User profile details (job title, company) not yet implemented - will be fetched from user profile API */}
+                  <p className="text-sm text-muted-foreground mb-1">—</p>
+                  <p className="text-sm text-muted-foreground">—</p>
                 </div>
               </div>
             </div>
@@ -212,19 +213,20 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               </div>
 
               {/* Sponsors Section */}
-              <div className="bg-card rounded-xl p-6 shadow-sm border border-border mb-8">
-                <h3 className="text-lg font-semibold text-foreground mb-4">Silver Sponsor</h3>
-                <div className="flex items-center gap-6">
-                  <div className="text-primary font-semibold">tietoevry</div>
-                  <div className="flex items-center gap-2 text-primary">
-                    <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-primary-foreground text-xs">✓</span>
+              {selectedEvent && (() => {
+                // Fetch sponsors from event data - this will be implemented when event details API is available
+                // For now, show placeholder
+                return (
+                  <div className="bg-card rounded-xl p-6 shadow-sm border border-border mb-8">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Sponsors</h3>
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">
+                        Sponsor information will be displayed here when available.
+                      </p>
                     </div>
-                    <span className="font-medium">vernost</span>
                   </div>
-                  <div className="w-8 h-8 bg-primary/20 rounded-full"></div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Event Details Section */}
               <div className="bg-card rounded-xl p-6 shadow-sm border border-border">

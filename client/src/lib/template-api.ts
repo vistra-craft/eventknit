@@ -178,3 +178,4 @@ export const duplicateTemplate = async (
   return apiPost<TemplateResponse>(`/templates/${templateId}/duplicate`, { name });
 };
 
+

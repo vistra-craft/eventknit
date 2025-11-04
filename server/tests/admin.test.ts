@@ -45,6 +45,7 @@ describe('Admin User Management', () => {
 
     // Clear all tables
     // Note: Event/Ticket tables removed for now - focusing on auth first
+    await prisma.featuredEvent.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();
     await prisma.passwordReset.deleteMany();
