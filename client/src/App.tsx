@@ -19,6 +19,7 @@ import PublicEventForm from "./pages/PublicEventForm";
 // User Dashboard imports
 import UserDashboard from "./pages/user/UserDashboard";
 import ExhibitorDetails from "./pages/user/ExhibitorDetails";
+import UserProfilePage from "./pages/user/UserProfilePage";
 // Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import EventManagement from "./pages/organizer/EventManagement";
@@ -152,6 +153,7 @@ const App = () => (
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
       {/* User Dashboard Routes */}
       <Route path="/user/dashboard" element={<UserDashboard />} />
+      <Route path="/user/profile" element={<UserProfilePage />} />
       <Route path="/exhibitors/:id" element={<ExhibitorDetails />} />
       {/* Organizer Dashboard Routes */}
       <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />

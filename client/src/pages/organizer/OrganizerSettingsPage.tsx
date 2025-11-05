@@ -25,6 +25,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OrganizerLayout from "./OrganizerLayout";
+import { useAuth } from "@/hooks/useAuth";
+import * as authApi from "@/lib/auth-api";
 
 interface OrganizerSettingsData {
   // Profile Settings
@@ -61,9 +63,22 @@ interface OrganizerSettingsData {
 
 const OrganizerSettingsPage = () => {
   const location = useLocation();
+  const { user, refreshProfile } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [saveMessage, setSaveMessage] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Password change form state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -81,25 +96,61 @@ const OrganizerSettingsPage = () => {
   useEffect(() => {
     setActiveTab(getActiveTabFromUrl());
   }, [getActiveTabFromUrl]);
+
+  // Load user profile data from API
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await authApi.getProfile();
+        if (response.success && response.data?.user) {
+          const userData = response.data.user;
+          setSettings(prev => ({
+            ...prev,
+            firstName: userData.firstName || "",
+            lastName: userData.lastName || "",
+            email: userData.email || "",
+            phone: userData.phoneNumber || "",
+            company: userData.organizationName || "",
+            bio: "", // Bio not in user model yet
+            // Keep other settings as they are (notifications, appearance, etc.)
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+        setSaveStatus("error");
+        setSaveMessage("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [user]);
   
-  // Mock settings data - in a real app, this would come from your API
+  // Settings state - initialized with user data
   const [settings, setSettings] = useState<OrganizerSettingsData>({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    company: "EventKnit Solutions",
-    position: "Event Manager",
-    location: "San Francisco, CA",
-    bio: "Experienced event manager with 5+ years in the industry, specializing in tech conferences and corporate events.",
-    avatar: "/api/placeholder/96/96",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    company: "",
+    position: "",
+    location: "",
+    bio: "",
+    avatar: "",
     emailNotifications: true,
     eventUpdates: true,
     attendeeRegistrations: true,
     paymentNotifications: true,
     marketingEmails: false,
     weeklyDigest: true,
-    notificationEmail: "john.doe@example.com",
+    notificationEmail: "",
     theme: "system",
     dashboardLayout: "spacious",
     showMetrics: true,
@@ -116,18 +167,128 @@ const OrganizerSettingsPage = () => {
     { id: "security", label: "Security", icon: Shield },
   ];
 
-  const handleSave = async () => {
+  // Validate password change form
+  const validatePasswordForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!passwordData.currentPassword.trim()) {
+      errors.currentPassword = "Current password is required";
+    }
+    
+    if (!passwordData.newPassword.trim()) {
+      errors.newPassword = "New password is required";
+    } else if (passwordData.newPassword.length < 8) {
+      errors.newPassword = "Password must be at least 8 characters";
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(passwordData.newPassword)) {
+      errors.newPassword = "Password must contain uppercase, lowercase, number, and special character";
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+    
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle password change
+  const handlePasswordChange = async () => {
+    if (!validatePasswordForm()) {
+      setSaveStatus("error");
+      setSaveMessage("Please fix the errors in the form");
+      return;
+    }
+
     setIsSaving(true);
     setSaveStatus("idle");
-    
+    setSaveMessage("");
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await authApi.changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
+      
       setSaveStatus("success");
-      setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch {
+      setSaveMessage("Password changed successfully");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setPasswordErrors({});
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 3000);
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? (error.message as string)
+        : 'Failed to change password';
       setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      setSaveMessage(errorMessage);
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 5000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle profile save
+  const handleSave = async () => {
+    if (activeTab === "security") {
+      // Password change is handled separately
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveStatus("idle");
+    setSaveMessage("");
+
+    try {
+      if (activeTab === "profile") {
+        // Update profile
+        const profileData: Partial<authApi.RegisterData> = {
+          firstName: settings.firstName,
+          lastName: settings.lastName,
+          phoneNumber: settings.phone || undefined,
+          organizationName: settings.company || undefined,
+        };
+
+        const response = await authApi.updateProfile(profileData);
+        
+        if (response.success) {
+          // Refresh user profile in context
+          await refreshProfile();
+          setSaveStatus("success");
+          setSaveMessage("Profile updated successfully");
+        } else {
+          throw new Error(response.message || "Failed to update profile");
+        }
+      } else {
+        // Other settings (notifications, appearance) - save locally for now
+        // TODO: Implement API endpoints for these settings
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setSaveStatus("success");
+        setSaveMessage("Settings saved successfully");
+      }
+      
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 3000);
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? (error.message as string)
+        : 'Failed to save settings';
+      setSaveStatus("error");
+      setSaveMessage(errorMessage);
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 5000);
     } finally {
       setIsSaving(false);
     }
@@ -198,9 +359,13 @@ const OrganizerSettingsPage = () => {
           id="email"
           type="email"
           value={settings.email}
-          onChange={(e) => updateSetting("email", e.target.value)}
-          placeholder="Enter email address"
+          disabled
+          placeholder="Email address cannot be changed"
+          className="bg-muted cursor-not-allowed"
         />
+        <p className="text-sm text-muted-foreground mt-1">
+          Email address cannot be changed for security reasons
+        </p>
       </div>
 
       <div>
@@ -475,6 +640,14 @@ const OrganizerSettingsPage = () => {
               id="currentPassword"
               type={showPassword ? "text" : "password"}
               placeholder="Enter current password"
+              value={passwordData.currentPassword}
+              onChange={(e) => {
+                setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }));
+                if (passwordErrors.currentPassword) {
+                  setPasswordErrors(prev => ({ ...prev, currentPassword: "" }));
+                }
+              }}
+              disabled={isSaving}
             />
             <Button
               type="button"
@@ -490,29 +663,95 @@ const OrganizerSettingsPage = () => {
               )}
             </Button>
           </div>
+          {passwordErrors.currentPassword && (
+            <p className="text-sm text-destructive mt-1">{passwordErrors.currentPassword}</p>
+          )}
         </div>
 
         <div>
           <Label htmlFor="newPassword">New Password</Label>
-          <Input
-            id="newPassword"
-            type="password"
-            placeholder="Enter new password"
-          />
+          <div className="relative">
+            <Input
+              id="newPassword"
+              type={showNewPassword ? "text" : "password"}
+              placeholder="Enter new password"
+              value={passwordData.newPassword}
+              onChange={(e) => {
+                setPasswordData(prev => ({ ...prev, newPassword: e.target.value }));
+                if (passwordErrors.newPassword) {
+                  setPasswordErrors(prev => ({ ...prev, newPassword: "" }));
+                }
+              }}
+              disabled={isSaving}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+            >
+              {showNewPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {passwordErrors.newPassword && (
+            <p className="text-sm text-destructive mt-1">{passwordErrors.newPassword}</p>
+          )}
+          <p className="text-sm text-muted-foreground mt-1">
+            Must be at least 8 characters with uppercase, lowercase, number, and special character
+          </p>
         </div>
 
         <div>
           <Label htmlFor="confirmPassword">Confirm New Password</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            placeholder="Confirm new password"
-          />
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm new password"
+              value={passwordData.confirmPassword}
+              onChange={(e) => {
+                setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                if (passwordErrors.confirmPassword) {
+                  setPasswordErrors(prev => ({ ...prev, confirmPassword: "" }));
+                }
+              }}
+              disabled={isSaving}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {passwordErrors.confirmPassword && (
+            <p className="text-sm text-destructive mt-1">{passwordErrors.confirmPassword}</p>
+          )}
         </div>
 
-        <Button variant="outline">
-          <Key className="h-4 w-4 mr-2" />
-          Change Password
+        <Button 
+          variant="outline" 
+          onClick={handlePasswordChange}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Key className="h-4 w-4 mr-2" />
+          )}
+          {isSaving ? "Changing Password..." : "Change Password"}
         </Button>
       </div>
 
@@ -560,18 +799,22 @@ const OrganizerSettingsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={handleReset}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
+            {activeTab !== "security" && (
+              <>
+                <Button variant="outline" onClick={handleReset}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reset
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving || isLoading}>
+                  {isSaving ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -580,7 +823,7 @@ const OrganizerSettingsPage = () => {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center">
               <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <span className="text-green-800">Settings saved successfully!</span>
+              <span className="text-green-800">{saveMessage || "Settings saved successfully!"}</span>
             </div>
           </div>
         )}
@@ -589,7 +832,7 @@ const OrganizerSettingsPage = () => {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <span className="text-red-800">Failed to save settings. Please try again.</span>
+              <span className="text-red-800">{saveMessage || "Failed to save settings. Please try again."}</span>
             </div>
           </div>
         )}
@@ -609,7 +852,14 @@ const OrganizerSettingsPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {renderTabContent()}
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-muted-foreground">Loading profile...</span>
+                  </div>
+                ) : (
+                  renderTabContent()
+                )}
               </CardContent>
             </Card>
           </div>
