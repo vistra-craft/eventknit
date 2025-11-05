@@ -22,6 +22,13 @@ const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [country] = useState<string>('US'); // Default to US
 
+  // Force close mobile menu when user logs out
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isAuthenticated, user]);
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
@@ -58,9 +65,10 @@ const Navbar: React.FC = () => {
     { name: "Find Events", href: "/" },
   ];
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
     setIsMobileMenuOpen(false);
+    // Logout is now synchronous - no need to await
+    logout();
   };
 
   const getDashboardRoute = () => {
@@ -69,16 +77,23 @@ const Navbar: React.FC = () => {
     
     if (!roleToUse) return '/user/dashboard';
     
-    switch (roleToUse) {
-      case UserRole.ADMIN:
-      case UserRole.STAFF:
-        return '/admin/dashboard';
-      case UserRole.ORGANIZER:
-        return '/organizer/dashboard';
-      case UserRole.ATTENDEE:
-      default:
-        return '/user/dashboard';
-    }
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(roleToUse);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(roleToUse);
+    
+    if (isAdminRole) return '/admin/dashboard';
+    if (isOrganizerRole) return '/organizer/dashboard';
+    return '/user/dashboard';
   };
 
   const getProfileRoute = () => {
@@ -87,15 +102,23 @@ const Navbar: React.FC = () => {
     
     if (!roleToUse) return '/user/dashboard';
     
-    switch (roleToUse) {
-      case UserRole.ORGANIZER:
-        return '/organizer/profile';
-      case UserRole.ADMIN:
-      case UserRole.STAFF:
-        return '/admin/settings';
-      default:
-        return '/user/dashboard';
-    }
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(roleToUse);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(roleToUse);
+    
+    if (isOrganizerRole) return '/organizer/profile';
+    if (isAdminRole) return '/admin/settings';
+    return '/user/dashboard';
   };
 
   const handleNavigation = (item: NavItem) => {
@@ -128,9 +151,7 @@ const Navbar: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-6">
-            {isAuthenticated ? (
-              <ProfileDropdown />
-            ) : (
+            {!isAuthenticated && (
               <>
                 <button
                   onClick={() => navigate('/auth/signin')}
@@ -200,8 +221,11 @@ const Navbar: React.FC = () => {
                 Create Event
               </button>
 
-              {/* Profile Dropdown - Only show when authenticated */}
-              {isAuthenticated && <ProfileDropdown />}
+              {/* Profile Dropdown - Only show when authenticated and user exists */}
+              {/* Rely on auth context state (isAuthenticated, user) for immediate updates */}
+              {isAuthenticated && user ? (
+                <ProfileDropdown key={`profile-${user.id}`} />
+              ) : null}
             </div>
 
             {/* Mobile Menu Button */}

@@ -46,3 +46,15 @@ export class ConflictError extends AppError {
   }
 }
 
+export class DatabaseError extends AppError {
+  constructor(message: string = 'Database connection error. Please try again later', code?: string) {
+    super(message, 503, code || 'DATABASE_ERROR');
+  }
+}
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message: string = 'Service temporarily unavailable. Please try again later', code?: string) {
+    super(message, 503, code || 'SERVICE_UNAVAILABLE');
+  }
+}
+

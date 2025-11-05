@@ -41,12 +41,25 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check role-based access if specified
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     // Redirect to appropriate dashboard based on user role
-    const dashboardRoute =
-      user.role === UserRole.ADMIN || user.role === UserRole.STAFF
-        ? '/admin/dashboard'
-        : user.role === UserRole.ORGANIZER
-        ? '/organizer/dashboard'
-        : '/user/dashboard';
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(user.role);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(user.role);
+    
+    const dashboardRoute = isAdminRole
+      ? '/admin/dashboard'
+      : isOrganizerRole
+      ? '/organizer/dashboard'
+      : '/user/dashboard';
 
     return <Navigate to={dashboardRoute} replace />;
   }

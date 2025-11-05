@@ -52,6 +52,7 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
       return {
         ...state,
         error: null,
+        isLoading: false, // Also clear loading state when clearing error
       };
 
     case 'UPDATE_USER':
@@ -71,4 +72,5 @@ export const initialAuthState: AuthState = {
   isLoading: false,
   error: null,
 };
+
 

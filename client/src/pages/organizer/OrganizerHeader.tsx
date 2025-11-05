@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Bell, Menu, User, ChevronDown, LogOut, Building2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
 interface OrganizerHeaderProps {
   onMenuToggle?: () => void;
@@ -11,6 +12,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
   onMenuToggle
 }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Mock user data - replace with actual user data
@@ -22,8 +24,8 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
   };
 
   const handleLogout = () => {
-    // Add logout logic here
-    navigate('/');
+    // Use proper logout function from useAuth
+    logout();
   };
 
   return (

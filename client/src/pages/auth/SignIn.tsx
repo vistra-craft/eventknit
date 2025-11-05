@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +7,37 @@ import { Eye, EyeOff, Mail, Lock, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const SignIn = () => {
-  const { login, isLoading, error: authError, clearError } = useAuth();
+  const { login, isLoading, error: authError, clearError, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
+  // Clear loading state and reset form when component mounts or when navigating to login
+  // This ensures the form is immediately accessible after logout
+  useEffect(() => {
+    // Always clear loading state and error when component mounts
+    // This ensures fresh state when navigating back to login page
+    clearError();
+    
+    // Reset form data to ensure clean state
+    setFormData({
+      email: '',
+      password: ''
+    });
+  }, []); // Run once on mount
+
+  // Watch for auth state changes and ensure form is accessible
+  useEffect(() => {
+    // If we're not authenticated, ensure we're not in loading state
+    // This fixes the issue where form stays disabled after logout
+    if (!isAuthenticated) {
+      if (isLoading) {
+        clearError(); // clearError also clears isLoading in reducer
+      }
+    }
+  }, [isAuthenticated, isLoading, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

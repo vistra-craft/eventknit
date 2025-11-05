@@ -39,3 +39,4 @@ export const disconnectDB = async (): Promise<void> => {
     logger.warn('⚠️  Error disconnecting from PostgreSQL:', error);
   }
 };
+

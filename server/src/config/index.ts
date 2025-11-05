@@ -7,13 +7,30 @@ const envPath = path.resolve(process.cwd(), `.env.${env}`);
 dotenv.config({ path: envPath });
 dotenv.config(); // Also load .env for fallback
 
+// Determine database host - defaults to localhost for local dev, 'postgres' for Docker
+const getDatabaseHost = (): string => {
+  // If DATABASE_URL is explicitly set, use it as-is
+  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('${')) {
+    return process.env.DATABASE_URL;
+  }
+  
+  // Check if DB_HOST is set (for Docker/localhost switching)
+  const dbHost = process.env.DB_HOST || 'localhost';
+  const dbUser = process.env.DB_USER || process.env.POSTGRES_USER || 'eventknit';
+  const dbPassword = process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'eventknit123';
+  const dbName = process.env.DB_NAME || process.env.POSTGRES_DB || 'eventknit';
+  const dbPort = process.env.DB_PORT || process.env.POSTGRES_PORT || '5432';
+  
+  return `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}?schema=public`;
+};
+
 export const config = {
   env,
-  port: parseInt(process.env.PORT || '3001', 10),
+  port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
   
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/eventknit',
+    url: getDatabaseHost(),
   },
   
   jwt: {
@@ -75,3 +92,4 @@ if (config.env === 'production') {
     throw new Error('JWT_REFRESH_SECRET must be at least 32 characters long in production');
   }
 }
+

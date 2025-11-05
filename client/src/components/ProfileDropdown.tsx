@@ -15,7 +15,7 @@ interface ProfileDropdownProps {
 }
 
 export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { activeViewRole, setActiveViewRole, availableRoles, resetToDefaultRole } = useRoleView();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -38,7 +38,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     };
   }, [isOpen, onClose]);
 
-  if (!user) return null;
+  // Close dropdown if user logs out
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      setIsOpen(false);
+    }
+  }, [isAuthenticated, user]);
+
+  if (!isAuthenticated || !user) return null;
 
   const getInitials = () => {
     const first = user.firstName?.[0] || '';
@@ -50,45 +57,67 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     // Use active view role if set, otherwise use user's actual role
     const roleToUse = activeViewRole || user?.role;
     
-    switch (roleToUse) {
-      case UserRole.ADMIN:
-      case UserRole.STAFF:
-        return '/admin/dashboard';
-      case UserRole.ORGANIZER:
-        return '/organizer/dashboard';
-      case UserRole.ATTENDEE:
-      default:
-        return '/user/dashboard';
-    }
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(roleToUse);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(roleToUse);
+    
+    if (isAdminRole) return '/admin/dashboard';
+    if (isOrganizerRole) return '/organizer/dashboard';
+    return '/user/dashboard';
   };
 
   const getProfileRoute = () => {
     // Use active view role if set, otherwise use user's actual role
     const roleToUse = activeViewRole || user?.role;
     
-    switch (roleToUse) {
-      case UserRole.ORGANIZER:
-        return '/organizer/profile';
-      case UserRole.ADMIN:
-      case UserRole.STAFF:
-        return '/admin/settings';
-      default:
-        return '/user/dashboard';
-    }
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(roleToUse);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(roleToUse);
+    
+    if (isOrganizerRole) return '/organizer/profile';
+    if (isAdminRole) return '/admin/settings';
+    return '/user/dashboard';
   };
 
   const getRoleLabel = (role: UserRole): string => {
-    switch (role) {
-      case UserRole.ADMIN:
-      case UserRole.STAFF:
-        return 'Admin';
-      case UserRole.ORGANIZER:
-        return 'Organizer';
-      case UserRole.ATTENDEE:
-        return 'Attendee';
-      default:
-        return role;
-    }
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(role);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(role);
+    
+    if (isAdminRole) return 'Admin';
+    if (isOrganizerRole) return 'Organizer';
+    if (role === UserRole.ATTENDEE) return 'Attendee';
+    return role;
   };
 
   const handleRoleSwitch = (role: UserRole) => {
@@ -101,9 +130,10 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     onClose?.();
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setIsOpen(false);
-    await logout();
+    // Logout is now synchronous - no need to await
+    logout();
   };
 
   const handleNavigate = (path: string) => {

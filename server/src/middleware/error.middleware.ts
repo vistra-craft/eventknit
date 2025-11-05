@@ -1,7 +1,76 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '../utils/errors';
+import { AppError, DatabaseError, ServiceUnavailableError } from '../utils/errors';
 import { config } from '../config';
 import { logger } from '../utils/logger';
+
+/**
+ * Check if error is a Prisma database connection error
+ */
+const isPrismaConnectionError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  
+  const errorMessage = error.message.toLowerCase();
+  const errorName = error.constructor.name;
+  
+  return (
+    errorName.includes('Prisma') ||
+    errorMessage.includes('prisma') ||
+    errorMessage.includes('denied access') ||
+    errorMessage.includes('database') ||
+    errorMessage.includes('connection') ||
+    errorMessage.includes('connect econnrefused')
+  );
+};
+
+/**
+ * Convert Prisma errors to user-friendly messages
+ */
+const handlePrismaError = (error: unknown): AppError => {
+  if (!(error instanceof Error)) {
+    return new AppError('An unexpected error occurred', 500);
+  }
+
+  const errorMessage = error.message.toLowerCase();
+  const errorName = error.constructor.name;
+
+  // Database connection errors
+  if (isPrismaConnectionError(error)) {
+    if (errorMessage.includes('denied access') || errorMessage.includes('connection')) {
+      return new ServiceUnavailableError(
+        'Database connection failed. Please ensure PostgreSQL is running and configured correctly.'
+      );
+    }
+    if (errorMessage.includes('findunique') || errorMessage.includes('prisma.user')) {
+      return new ServiceUnavailableError(
+        'Database connection error. Please ensure PostgreSQL is running.'
+      );
+    }
+    return new DatabaseError('Database connection error. Please contact support if this persists.');
+  }
+
+  // Handle known Prisma error codes if available
+  if (errorName.includes('Prisma') && 'code' in error) {
+    const prismaError = error as Error & { code?: string };
+    // Unique constraint violations
+    if (prismaError.code === 'P2002') {
+      return new AppError('This record already exists', 409, 'DUPLICATE_RECORD');
+    }
+    // Record not found
+    if (prismaError.code === 'P2025') {
+      return new AppError('Record not found', 404, 'NOT_FOUND');
+    }
+  }
+
+  // Generic Prisma error
+  if (errorName.includes('Prisma')) {
+    return new DatabaseError('Database error occurred. Please try again later.');
+  }
+
+  // Not a Prisma error, return as generic error
+  return error instanceof AppError 
+    ? error 
+    : new AppError('An unexpected error occurred', 500);
+};
 
 /**
  * Global error handler middleware
@@ -17,30 +86,27 @@ export const errorHandler = (
     return next(err);
   }
 
-  // Log error
+  // Convert Prisma errors to user-friendly errors
+  const appError = handlePrismaError(err);
+
+  // Log error (log original error for debugging)
   logger.error('Error:', {
     message: err.message,
     stack: config.env === 'development' ? err.stack : undefined,
     path: req.path,
     method: req.method,
+    userMessage: appError.message,
   });
 
-  // Handle known AppError instances
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({
-      success: false,
-      message: err.message,
-      code: err.code,
-      ...(config.env === 'development' && { stack: err.stack }),
-    });
-    return;
-  }
-
-  // Handle unknown errors
-  res.status(500).json({
+  // Send user-friendly error response
+  res.status(appError.statusCode).json({
     success: false,
-    message: config.env === 'production' ? 'Internal server error' : err.message,
-    ...(config.env === 'development' && { stack: err.stack }),
+    message: appError.message,
+    code: appError.code,
+    ...(config.env === 'development' && { 
+      originalError: err.message,
+      stack: err.stack 
+    }),
   });
 };
 
