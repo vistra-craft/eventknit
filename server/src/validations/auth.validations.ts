@@ -74,10 +74,10 @@ export const authValidations = {
   }),
 
   refreshToken: Joi.object({
-    refreshToken: Joi.string().required().messages({
-      'any.required': 'Refresh token is required',
+    refreshToken: Joi.string().optional().allow(null, '').messages({
+      'string.base': 'Refresh token must be a string',
     }),
-  }),
+  }).unknown(true), // Allow empty body since token comes from cookie (cookie is primary source)
 
   verifyEmail: Joi.object({
     token: Joi.string().required().messages({
