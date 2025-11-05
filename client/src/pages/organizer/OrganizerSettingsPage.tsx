@@ -265,7 +265,7 @@ const OrganizerSettingsPage = () => {
           setSaveStatus("success");
           setSaveMessage("Profile updated successfully");
         } else {
-          throw new Error(response.message || "Failed to update profile");
+          throw new Error("Failed to update profile");
         }
       } else {
         // Other settings (notifications, appearance) - save locally for now

@@ -17,7 +17,7 @@ import {
   type FeaturedEventData,
   type CreateFeaturedEventData,
 } from "../../../lib/featured-event-api";
-import { getEvents, type EventData } from "../../../lib/event-api";
+import { getEvents, EventStatus, type EventData } from "../../../lib/event-api";
 
 const FeaturedEventsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,7 +59,7 @@ const FeaturedEventsPage = () => {
 
   const fetchAvailableEvents = async () => {
     try {
-      const response = await getEvents({ status: "APPROVED", limit: 100 });
+      const response = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
       setAvailableEvents(response.data.events);
     } catch (error) {
       console.error("Failed to fetch available events:", error);

@@ -172,7 +172,7 @@ const UserProfilePage = () => {
         setSaveStatus("success");
         setSaveMessage("Profile updated successfully");
       } else {
-        throw new Error(response.message || "Failed to update profile");
+        throw new Error("Failed to update profile");
       }
 
       setTimeout(() => {
@@ -209,7 +209,14 @@ const UserProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardNavbar />
+      <DashboardNavbar 
+        user={{
+          name: `${profileData.firstName} ${profileData.lastName}`,
+          email: profileData.email,
+          initials: getInitials(),
+        }}
+        activeSection="profile"
+      />
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

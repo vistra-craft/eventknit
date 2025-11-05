@@ -276,7 +276,7 @@ const AdminEnhancedDashboard = () => {
               color = "text-green-600";
             }
             return {
-              id: alert.id,
+              id: typeof alert.id === 'string' ? parseInt(alert.id, 10) || Date.now() : alert.id,
               type: alert.type,
               message: alert.message,
               time: alert.time,
@@ -312,7 +312,7 @@ const AdminEnhancedDashboard = () => {
               color = "text-blue-600";
             }
             return {
-              id: activity.id,
+              id: typeof activity.id === 'string' ? parseInt(activity.id, 10) || Date.now() : activity.id,
               type: activity.type,
               message: activity.message,
               time: activity.time,

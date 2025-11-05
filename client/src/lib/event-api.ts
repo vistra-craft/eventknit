@@ -6,6 +6,9 @@ import { apiPost, apiGet, apiPut, apiDelete, type ApiResponse } from './api';
 import type { EventData } from '../types/event';
 import { transformEventData, transformEventsData } from './event-utils';
 
+// Re-export EventData for use in other modules
+export type { EventData } from '../types/event';
+
 /**
  * Event Status enum (matches backend)
  */

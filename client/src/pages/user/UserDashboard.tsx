@@ -47,7 +47,7 @@ const UserDashboard = () => {
       case "speakers":
         return <DashboardSpeakers eventData={eventData} />;
       case "exhibitors":
-        return <DashboardExhibitors eventData={eventData} user={user} />;
+        return <DashboardExhibitors eventData={eventData} />;
       case "attendees":
         return <DashboardAttendees />;
       case "agenda":

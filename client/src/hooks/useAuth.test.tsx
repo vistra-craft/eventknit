@@ -12,7 +12,14 @@ import { removeAccessToken, setAccessToken } from '../lib/api';
 import type { ReactNode } from 'react';
 
 // Mock dependencies
-vi.mock('../lib/auth-api');
+vi.mock('../lib/auth-api', () => ({
+  logout: vi.fn(() => Promise.resolve({ success: true })),
+  login: vi.fn(),
+  getProfile: vi.fn(),
+  updateProfile: vi.fn(),
+  changePassword: vi.fn(),
+}));
+
 vi.mock('../lib/api', () => ({
   setAccessToken: vi.fn(),
   removeAccessToken: vi.fn(),
@@ -107,7 +114,7 @@ describe('useAuth', () => {
     it('should call logout API (fire-and-forget)', async () => {
       const mockLogoutApi = vi.spyOn(authApi, 'logout').mockResolvedValue({
         success: true,
-      } as any);
+      } as authApi.ApiResponse<void>);
 
       const { result } = renderHook(() => useAuth(), {
         wrapper: TestWrapper,
@@ -187,13 +194,14 @@ describe('useAuth', () => {
 
   describe('login', () => {
     it('should set loading state during login', async () => {
-      const mockLogin = vi.spyOn(authApi, 'login').mockImplementation(
+      vi.spyOn(authApi, 'login').mockImplementation(
         () =>
-          new Promise((resolve) => {
+          new Promise<authApi.LoginResponse>((resolve) => {
             setTimeout(
               () =>
                 resolve({
                   success: true,
+                  message: 'Login successful',
                   data: {
                     user: {
                       id: '1',
@@ -209,7 +217,7 @@ describe('useAuth', () => {
                     accessToken: 'token123',
                     expiresIn: 3600,
                   },
-                } as any),
+                }),
               100
             );
           })
@@ -234,9 +242,7 @@ describe('useAuth', () => {
     });
 
     it('should handle login errors', async () => {
-      const mockLogin = vi
-        .spyOn(authApi, 'login')
-        .mockRejectedValue(new Error('Invalid credentials'));
+      vi.spyOn(authApi, 'login').mockRejectedValue(new Error('Invalid credentials'));
 
       const { result } = renderHook(() => useAuth(), {
         wrapper: TestWrapper,
@@ -245,8 +251,8 @@ describe('useAuth', () => {
       await act(async () => {
         try {
           await result.current.login('test@example.com', 'wrong');
-        } catch (error) {
-          // Expected
+        } catch {
+          // Expected - error is caught and handled
         }
       });
 
@@ -257,18 +263,26 @@ describe('useAuth', () => {
   });
 
   describe('clearError', () => {
-    it('should clear error and loading state', () => {
+    it('should clear error and loading state', async () => {
+      vi.spyOn(authApi, 'login').mockRejectedValue(new Error('Test error'));
+
       const { result } = renderHook(() => useAuth(), {
         wrapper: TestWrapper,
       });
 
-      // Set error state first
-      act(() => {
-        result.current.dispatch({ type: 'AUTH_FAILURE', payload: 'Test error' });
+      // Trigger an error by attempting login with invalid credentials
+      await act(async () => {
+        try {
+          await result.current.login('test@example.com', 'wrong');
+        } catch {
+          // Expected to fail
+        }
       });
 
+      // Verify error was set
       expect(result.current.error).toBe('Test error');
 
+      // Clear the error
       act(() => {
         result.current.clearError();
       });
