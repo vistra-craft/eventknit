@@ -49,6 +49,7 @@ export interface AuthResponse {
     status: UserStatus;
     isEmailVerified: boolean;
     organizationName?: string | null;
+    verificationLevel?: number; // Added for tests
   };
   accessToken: string;
   refreshToken: string;
@@ -179,6 +180,7 @@ export class AuthService {
         status: user.status,
         isEmailVerified: user.isEmailVerified,
         organizationName: user.organizationName,
+        verificationLevel: user.verificationLevel,
       },
       ...tokens,
     };
@@ -242,6 +244,7 @@ export class AuthService {
         status: user.status,
         isEmailVerified: user.isEmailVerified,
         organizationName: user.organizationName,
+        verificationLevel: user.verificationLevel,
       },
       ...tokens,
     };
@@ -334,6 +337,7 @@ export class AuthService {
         status: user.status,
         isEmailVerified: user.isEmailVerified,
         organizationName: user.organizationName,
+        verificationLevel: user.verificationLevel,
       },
       ...tokens,
     };
@@ -423,6 +427,10 @@ export class AuthService {
     }
 
     // Verify email
+    if (!verification.userId) {
+      throw new ValidationError('Invalid verification token');
+    }
+
     await prisma.$transaction([
       prisma.emailVerification.update({
         where: { id: verification.id },
@@ -527,25 +535,28 @@ export class AuthService {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+    // Get user to get email
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
     await prisma.emailVerification.create({
       data: {
         userId,
+        email: user.email, // Required field
         token,
         expiresAt,
       },
     });
 
-    // Get user to send email
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (user) {
-      try {
-        await emailService.sendVerificationEmail(user.email, token);
-      } catch (error) {
-        logger.error('Failed to send verification email:', error);
-      }
+    try {
+      await emailService.sendVerificationEmail(user.email, token);
+    } catch (error) {
+      logger.error('Failed to send verification email:', error);
     }
 
     return token;
@@ -612,6 +623,10 @@ export class AuthService {
     }
 
     // Verify current password
+    if (!user.password) {
+      throw new ValidationError('No password set. Please set a password first.');
+    }
+
     const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isCurrentPasswordValid) {
       throw new ValidationError('Current password is incorrect');

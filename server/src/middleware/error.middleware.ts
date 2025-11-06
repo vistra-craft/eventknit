@@ -37,12 +37,12 @@ const handlePrismaError = (error: unknown): AppError => {
   if (isPrismaConnectionError(error)) {
     if (errorMessage.includes('denied access') || errorMessage.includes('connection')) {
       return new ServiceUnavailableError(
-        'Database connection failed. Please ensure PostgreSQL is running and configured correctly.'
+        'Database connection failed. Please ensure PostgreSQL is running and configured correctly.',
       );
     }
     if (errorMessage.includes('findunique') || errorMessage.includes('prisma.user')) {
       return new ServiceUnavailableError(
-        'Database connection error. Please ensure PostgreSQL is running.'
+        'Database connection error. Please ensure PostgreSQL is running.',
       );
     }
     return new DatabaseError('Database connection error. Please contact support if this persists.');
@@ -105,7 +105,7 @@ export const errorHandler = (
     code: appError.code,
     ...(config.env === 'development' && { 
       originalError: err.message,
-      stack: err.stack 
+      stack: err.stack, 
     }),
   });
 };

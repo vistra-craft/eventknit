@@ -108,18 +108,19 @@ export class EventService {
       // Check if organizer has identity verification (Level 2)
       if (!organizer.isIdentityVerified) {
         throw new ValidationError(
-          'Identity verification is required to create paid events. Please verify your identity in your profile settings.'
+          'Identity verification is required to create paid events. Please verify your identity in your profile settings.',
         );
       }
 
       // Calculate total event value
       let totalEventValue = 0;
       if (data.price) {
-        totalEventValue = Number(data.price) * (data.capacity || 1);
+        const capacity = data.capacity ? Number(data.capacity) : 1;
+        totalEventValue = Number(data.price) * capacity;
       } else if (data.ticketTypes && data.ticketTypes.length > 0) {
         totalEventValue = data.ticketTypes.reduce((sum, ticket) => {
           const price = Number(ticket.price);
-          const quantity = ticket.quantity ? Number(ticket.quantity) : (data.capacity || 1);
+          const quantity = ticket.quantity ? Number(ticket.quantity) : (data.capacity ? Number(data.capacity) : 1);
           return sum + (price * quantity);
         }, 0);
       }
@@ -129,7 +130,7 @@ export class EventService {
         const limit = Number(organizer.payoutLimit);
         if (totalEventValue > limit) {
           throw new ValidationError(
-            `This event exceeds your current payout limit of $${limit.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`
+            `This event exceeds your current payout limit of $${limit.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`,
           );
         }
       }
@@ -169,7 +170,7 @@ export class EventService {
         const limit = Number(organizer.payoutLimit);
         if (currentMonthValue + totalEventValue > limit) {
           throw new ValidationError(
-            `This event would exceed your monthly payout limit of $${limit.toFixed(2)}. Current month total: $${currentMonthValue.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`
+            `This event would exceed your monthly payout limit of $${limit.toFixed(2)}. Current month total: $${currentMonthValue.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`,
           );
         }
       }

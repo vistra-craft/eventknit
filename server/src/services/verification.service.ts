@@ -170,21 +170,6 @@ export class VerificationService {
   static async getVerificationStatus(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        isEmailVerified: true,
-        isIdentityVerified: true,
-        identityVerifiedAt: true,
-        verificationLevel: true,
-        payoutLimit: true,
-        kycStatus: true,
-        kycSubmittedAt: true,
-        kycApprovedAt: true,
-        firstName: true,
-        lastName: true,
-        organizationName: true,
-      },
       include: {
         kycDocuments: {
           select: {

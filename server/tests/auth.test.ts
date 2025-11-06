@@ -82,6 +82,8 @@ describe('Authentication System', () => {
       expect(response.body.data.accessToken).toBeDefined();
       expect(response.body.data.refreshToken).toBeDefined();
       expect(response.body.data.user.password).toBeUndefined(); // Password should not be returned
+      // Check verification level defaults to 1
+      expect(response.body.data.user.verificationLevel).toBe(1);
     });
 
     it('should register a new organizer successfully', async () => {
@@ -150,6 +152,43 @@ describe('Authentication System', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
+    });
+
+    it('should register with email-only (new flow)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Request verification code
+      const codeResponse = await request(app)
+        .post('/api/v1/auth/register-code/request')
+        .send({ email: 'emailonly@test.com' })
+        .expect(200);
+
+      expect(codeResponse.body.success).toBe(true);
+
+      // Get the code from database (in real scenario, user receives via email)
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'emailonly@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(verification).toBeDefined();
+      expect(verification?.code).toBeDefined();
+
+      // Verify code and create account
+      const verifyResponse = await request(app)
+        .post('/api/v1/auth/register-code/verify')
+        .send({
+          email: 'emailonly@test.com',
+          code: verification?.code,
+        })
+        .expect(200);
+
+      expect(verifyResponse.body.success).toBe(true);
+      expect(verifyResponse.body.data.user.email).toBe('emailonly@test.com');
+      expect(verifyResponse.body.data.user.verificationLevel).toBe(1);
+      expect(verifyResponse.body.data.accessToken).toBeDefined();
     });
 
     it('should register organizer without requiring organization details (optional fields)', async () => {
@@ -290,6 +329,39 @@ describe('Authentication System', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Invalid email or password');
+    });
+
+    it('should fail to login for user without password (email-only registration)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create user without password (email-only registration)
+      await prisma.user.create({
+        data: {
+          email: 'nopassword@test.com',
+          password: null, // No password set
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'nopassword@test.com',
+          password: 'AnyPassword',
+        })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('No password set');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'nopassword@test.com' },
+      });
     });
 
     it('should lock account after multiple failed attempts', async () => {

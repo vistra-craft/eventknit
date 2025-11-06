@@ -25,9 +25,6 @@ export class AuthController {
    */
   static async verifyRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const ipAddress = req.ip || req.socket.remoteAddress;
-      const userAgent = req.get('user-agent');
-
       const result = await AuthService.verifyRegistrationCode(req.body.email, req.body.code);
 
       // Set refresh token as HttpOnly cookie

@@ -60,7 +60,7 @@ describe('Event System', () => {
     // Create test users
     const hashedPassword = await hashPassword('Test123!@#');
 
-    // Create organizer
+    // Create organizer with identity verification (for paid events)
     const organizer = await prisma.user.create({
       data: {
         email: 'organizer@test.com',
@@ -70,6 +70,10 @@ describe('Event System', () => {
         role: UserRole.ORGANIZER,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
+        isIdentityVerified: true, // Required for paid events
+        identityVerifiedAt: new Date(),
+        verificationLevel: 2, // Identity verified
+        payoutLimit: null, // No limit for testing
         organizationName: 'Test Events Inc',
       },
     });
@@ -145,7 +149,7 @@ describe('Event System', () => {
       expect(response.body.data.event.isFree).toBe(true);
     });
 
-    it('should create a paid event successfully', async () => {
+    it('should create a paid event successfully (with identity verification)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -170,6 +174,53 @@ describe('Event System', () => {
       expect(response.body.data.event.title).toBe(eventData.title);
       expect(response.body.data.event.isFree).toBe(false);
       expect(Number(response.body.data.event.price)).toBe(50.00);
+    });
+
+    it('should fail to create paid event without identity verification', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create organizer without identity verification
+      const unverifiedPassword = await hashPassword('Test123!@#');
+      const unverifiedOrganizer = await prisma.user.create({
+        data: {
+          email: 'unverified@test.com',
+          password: unverifiedPassword,
+          firstName: 'Unverified',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          isIdentityVerified: false,
+          verificationLevel: 1,
+        },
+      });
+
+      const unverifiedToken = generateAccessToken({
+        userId: unverifiedOrganizer.id,
+        email: unverifiedOrganizer.email,
+        role: unverifiedOrganizer.role,
+      });
+
+      const eventData = {
+        title: 'Test Paid Event',
+        description: 'This is a test paid event',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        price: 50.00,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${unverifiedToken}`)
+        .send(eventData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Identity verification is required');
     });
 
     it('should fail to create event without authentication', async () => {

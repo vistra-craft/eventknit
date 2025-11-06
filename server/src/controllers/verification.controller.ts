@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { VerificationService } from '../services/verification.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 

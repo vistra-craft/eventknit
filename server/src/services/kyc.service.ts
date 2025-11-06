@@ -102,7 +102,7 @@ export class KYCService {
   static async updateKYCDocument(
     documentId: string,
     userId: string,
-    data: UpdateKYCDocumentData
+    data: UpdateKYCDocumentData,
   ) {
     const document = await this.getKYCDocument(documentId, userId);
 
@@ -152,7 +152,7 @@ export class KYCService {
     }
 
     const pendingDocuments = user.kycDocuments.filter(
-      (doc) => doc.status === KYCStatus.PENDING
+      (doc) => doc.status === KYCStatus.PENDING,
     );
 
     if (pendingDocuments.length === 0) {
