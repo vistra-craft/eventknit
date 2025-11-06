@@ -15,6 +15,8 @@ import {
   Moon,
   Sun,
   Monitor,
+  Mail,
+  Building2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,18 +29,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OrganizerLayout from "./OrganizerLayout";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
+import RoleSwitcher from "@/components/RoleSwitcher";
+import { Badge } from "@/components/ui/badge";
+import { UserStatus, UserRole } from "@/types/auth";
 
 interface OrganizerSettingsData {
   // Profile Settings
   firstName: string;
   lastName: string;
+  otherName: string;
   email: string;
   phone: string;
+  companyAffiliation: string;
   company: string;
   position: string;
   location: string;
   bio: string;
   avatar: string;
+  // Organizer-specific
+  organizationName: string;
+  businessEmail: string;
+  kycStatus: string | null;
   
   // Notification Settings
   emailNotifications: boolean;
@@ -114,12 +125,28 @@ const OrganizerSettingsPage = () => {
             ...prev,
             firstName: userData.firstName || "",
             lastName: userData.lastName || "",
+            otherName: userData.otherName || "",
             email: userData.email || "",
             phone: userData.phoneNumber || "",
+            companyAffiliation: "", // Not in User interface yet
             company: userData.organizationName || "",
-            bio: "", // Bio not in user model yet
+            organizationName: userData.organizationName || "",
+            businessEmail: userData.businessEmail || "",
+            kycStatus: userData.kycStatus || null,
             // Keep other settings as they are (notifications, appearance, etc.)
           }));
+          setAccountInfo({
+            role: userData.role,
+            status: userData.status,
+            isEmailVerified: userData.isEmailVerified || false,
+            emailVerifiedAt: userData.emailVerifiedAt || null,
+            lastLoginAt: userData.lastLoginAt || null,
+            createdAt: userData.createdAt || "",
+            updatedAt: userData.updatedAt || "",
+            kycStatus: userData.kycStatus || null,
+            kycSubmittedAt: null, // Not in User interface yet
+            kycApprovedAt: null, // Not in User interface yet
+          });
         }
       } catch (error) {
         console.error("Failed to load profile:", error);
@@ -133,17 +160,36 @@ const OrganizerSettingsPage = () => {
     loadProfile();
   }, [user]);
   
+  // Account info (read-only)
+  const [accountInfo, setAccountInfo] = useState({
+    role: "" as UserRole | "",
+    status: "" as UserStatus | "",
+    isEmailVerified: false,
+    emailVerifiedAt: null as string | null,
+    lastLoginAt: null as string | null,
+    createdAt: "",
+    updatedAt: "",
+    kycStatus: null as string | null,
+    kycSubmittedAt: null as string | null,
+    kycApprovedAt: null as string | null,
+  });
+
   // Settings state - initialized with user data
   const [settings, setSettings] = useState<OrganizerSettingsData>({
     firstName: "",
     lastName: "",
+    otherName: "",
     email: "",
     phone: "",
+    companyAffiliation: "",
     company: "",
     position: "",
     location: "",
     bio: "",
     avatar: "",
+    organizationName: "",
+    businessEmail: "",
+    kycStatus: null,
     emailNotifications: true,
     eventUpdates: true,
     attendeeRegistrations: true,
@@ -253,8 +299,11 @@ const OrganizerSettingsPage = () => {
         const profileData: Partial<authApi.RegisterData> = {
           firstName: settings.firstName,
           lastName: settings.lastName,
+          otherName: settings.otherName || undefined,
           phoneNumber: settings.phone || undefined,
-          organizationName: settings.company || undefined,
+          companyAffiliation: settings.companyAffiliation || undefined,
+          organizationName: settings.organizationName || undefined,
+          businessEmail: settings.businessEmail || undefined,
         };
 
         const response = await authApi.updateProfile(profileData);
@@ -369,6 +418,16 @@ const OrganizerSettingsPage = () => {
       </div>
 
       <div>
+        <Label htmlFor="otherName">Other Name (Optional)</Label>
+        <Input
+          id="otherName"
+          value={settings.otherName}
+          onChange={(e) => updateSetting("otherName", e.target.value)}
+          placeholder="Middle name or other names"
+        />
+      </div>
+
+      <div>
         <Label htmlFor="phone">Phone Number</Label>
         <Input
           id="phone"
@@ -380,46 +439,127 @@ const OrganizerSettingsPage = () => {
       </div>
 
       <div>
-        <Label htmlFor="location">Location</Label>
+        <Label htmlFor="companyAffiliation">Company Affiliation</Label>
         <Input
-          id="location"
-          value={settings.location}
-          onChange={(e) => updateSetting("location", e.target.value)}
-          placeholder="Enter location"
+          id="companyAffiliation"
+          value={settings.companyAffiliation}
+          onChange={(e) => updateSetting("companyAffiliation", e.target.value)}
+          placeholder="Enter company or institutional affiliation"
         />
       </div>
 
-      {/* Professional Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Organizer-Specific Information */}
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Organizer Information</h3>
+        
         <div>
-          <Label htmlFor="company">Company</Label>
+          <Label htmlFor="organizationName">Organization Name</Label>
           <Input
-            id="company"
-            value={settings.company}
-            onChange={(e) => updateSetting("company", e.target.value)}
-            placeholder="Enter company name"
+            id="organizationName"
+            value={settings.organizationName}
+            onChange={(e) => updateSetting("organizationName", e.target.value)}
+            placeholder="Enter organization name"
           />
         </div>
-        <div>
-          <Label htmlFor="position">Position/Title</Label>
+
+        <div className="mt-4">
+          <Label htmlFor="businessEmail">Business Email</Label>
           <Input
-            id="position"
-            value={settings.position}
-            onChange={(e) => updateSetting("position", e.target.value)}
-            placeholder="Enter position"
+            id="businessEmail"
+            type="email"
+            value={settings.businessEmail}
+            onChange={(e) => updateSetting("businessEmail", e.target.value)}
+            placeholder="Enter business email address"
           />
+        </div>
+
+        <div className="mt-4">
+          <Label>KYC Status</Label>
+          <div className="mt-1">
+            {accountInfo.kycStatus ? (
+              <Badge variant={
+                accountInfo.kycStatus === 'APPROVED' ? 'default' :
+                accountInfo.kycStatus === 'PENDING' ? 'secondary' :
+                'destructive'
+              }>
+                {accountInfo.kycStatus}
+              </Badge>
+            ) : (
+              <span className="text-sm text-muted-foreground">Not submitted</span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="bio">Bio</Label>
-        <Textarea
-          id="bio"
-          value={settings.bio}
-          onChange={(e) => updateSetting("bio", e.target.value)}
-          placeholder="Tell us about yourself..."
-          rows={4}
-        />
+      {/* Account Information */}
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Account Information</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Label>Role</Label>
+            <div className="mt-1">
+              <Badge variant="outline" className="text-sm">
+                {accountInfo.role ? (
+                  ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(accountInfo.role) 
+                    ? 'Organizer' 
+                    : accountInfo.role
+                ) : "Loading..."}
+              </Badge>
+            </div>
+          </div>
+          <div>
+            <Label>Account Status</Label>
+            <div className="mt-1">
+              {accountInfo.status === UserStatus.ACTIVE ? (
+                <Badge className="bg-green-500">Active</Badge>
+              ) : accountInfo.status === UserStatus.SUSPENDED ? (
+                <Badge variant="destructive">Suspended</Badge>
+              ) : accountInfo.status === UserStatus.DEACTIVATED ? (
+                <Badge variant="secondary">Deactivated</Badge>
+              ) : (
+                <span className="text-sm">{accountInfo.status || "Loading..."}</span>
+              )}
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Email Verification
+            </Label>
+            <div className="mt-1 flex items-center gap-2">
+              {accountInfo.isEmailVerified ? (
+                <>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Verified</span>
+                  {accountInfo.emailVerifiedAt && (
+                    <span className="text-xs text-muted-foreground">
+                      ({new Date(accountInfo.emailVerifiedAt).toLocaleDateString()})
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="text-sm">Not Verified</span>
+                </>
+              )}
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Last Login
+            </Label>
+            <div className="mt-1">
+              <span className="text-sm">
+                {accountInfo.lastLoginAt
+                  ? new Date(accountInfo.lastLoginAt).toLocaleString()
+                  : "Never"}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -839,7 +979,7 @@ const OrganizerSettingsPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Content */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-3">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -862,6 +1002,11 @@ const OrganizerSettingsPage = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {activeTab === "profile" && <RoleSwitcher />}
           </div>
         </div>
       </div>

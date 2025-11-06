@@ -5,7 +5,55 @@ import { prisma } from '../config/database';
 
 export class AuthController {
   /**
-   * Register new user
+   * Request registration verification code (email-only registration)
+   */
+  static async requestRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.requestRegistrationCode(req.body.email);
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code sent to your email',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify registration code and create account
+   */
+  static async verifyRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await AuthService.verifyRegistrationCode(req.body.email, req.body.code);
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Registration successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Register new user (legacy endpoint - kept for backward compatibility)
    */
   static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

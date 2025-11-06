@@ -7,11 +7,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Users } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const AttendeeRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { register } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   
   // Get email from previous step
   const emailFromPrevious = location.state?.email || '';
@@ -85,13 +89,103 @@ const AttendeeRegistration = () => {
     }));
   };
 
-  const handleNext = () => {
+  // Password validation
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long';
+    }
+    if (!/[a-z]/.test(password)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+    if (!/[A-Z]/.test(password)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    if (!/\d/.test(password)) {
+      return 'Password must contain at least one number';
+    }
+    if (!/[@$!%*?&]/.test(password)) {
+      return 'Password must contain at least one special character (@$!%*?&)';
+    }
+    return null;
+  };
+
+  const handleNext = async () => {
     if (currentStep < 3) {
+      // Validate current step before proceeding
+      if (currentStep === 1) {
+        // Validate step 1 fields
+        if (!formData.firstName.trim()) {
+          setError('First name is required');
+          return;
+        }
+        if (!formData.lastName.trim()) {
+          setError('Last name is required');
+          return;
+        }
+        if (!formData.email.trim()) {
+          setError('Email is required');
+          return;
+        }
+        if (!formData.password) {
+          setError('Password is required');
+          return;
+        }
+        const passwordError = validatePassword(formData.password);
+        if (passwordError) {
+          setError(passwordError);
+          return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+        setError('');
+      }
       setCurrentStep(currentStep + 1);
     } else {
-      // Mock registration completion
-      console.log('Attendee registration:', formData);
-      navigate('/user/dashboard');
+      // Final step - submit registration
+      setIsLoading(true);
+      setError('');
+      
+      try {
+        // Validate final step
+        if (formData.interests.length === 0) {
+          setError('Please select at least one interest');
+          setIsLoading(false);
+          return;
+        }
+        if (formData.eventTypes.length === 0) {
+          setError('Please select at least one event type');
+          setIsLoading(false);
+          return;
+        }
+        if (!formData.location.trim()) {
+          setError('Location is required');
+          setIsLoading(false);
+          return;
+        }
+
+        // Prepare registration data
+        const registrationData = {
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phoneNumber: formData.phoneNumber || undefined,
+          role: 'ATTENDEE' as const,
+        };
+
+        // Call registration API
+        await register(registrationData);
+        // Navigation will happen automatically via useAuth hook
+      } catch (err: unknown) {
+        const errorMessage =
+          err && typeof err === 'object' && 'message' in err
+            ? (err.message as string)
+            : 'Registration failed. Please try again.';
+        setError(errorMessage);
+        setIsLoading(false);
+      }
     }
   };
 
@@ -156,10 +250,18 @@ const AttendeeRegistration = () => {
             id="password"
             type="password"
             value={formData.password}
-            onChange={(e) => handleInputChange('password', e.target.value)}
+            onChange={(e) => {
+              handleInputChange('password', e.target.value);
+              setError('');
+            }}
             placeholder="Create a password"
             required
           />
+          {formData.password && (
+            <p className="text-xs text-muted-foreground">
+              Must contain: uppercase, lowercase, number, special character (@$!%*?&), min 8 chars
+            </p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirmPassword">Confirm Password *</Label>
@@ -167,12 +269,18 @@ const AttendeeRegistration = () => {
             id="confirmPassword"
             type="password"
             value={formData.confirmPassword}
-            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+            onChange={(e) => {
+              handleInputChange('confirmPassword', e.target.value);
+              setError('');
+            }}
             placeholder="Confirm your password"
             required
           />
         </div>
       </div>
+      {error && currentStep === 1 && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="phoneNumber">Phone Number</Label>
@@ -391,20 +499,33 @@ const AttendeeRegistration = () => {
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
 
+            {/* Error Message */}
+            {error && (
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-8">
               <Button
                 variant="outline"
                 onClick={handleBack}
                 className="px-6"
+                disabled={isLoading}
               >
                 Back
               </Button>
               <Button
                 onClick={handleNext}
                 className="px-6 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+                disabled={isLoading}
               >
-                {currentStep === 3 ? 'Complete Registration' : 'Continue'}
+                {isLoading
+                  ? 'Registering...'
+                  : currentStep === 3
+                  ? 'Complete Registration'
+                  : 'Continue'}
               </Button>
             </div>
           </CardContent>

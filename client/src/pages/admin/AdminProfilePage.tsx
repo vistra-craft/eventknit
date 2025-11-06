@@ -12,24 +12,26 @@ import {
   ArrowLeft,
   Shield,
   Mail,
-  Clock,
+  Phone,
+  Building2,
   Calendar,
   CheckCircle2,
   XCircle,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
-import DashboardNavbar from "./DashboardNavbar";
+import AdminLayout from "./AdminLayout";
 import RoleSwitcher from "@/components/RoleSwitcher";
-import { Badge } from "@/components/ui/badge";
-import { UserStatus, UserRole } from "@/types/auth";
+import { UserRole, UserStatus } from "@/types/auth";
 
-const UserProfilePage = () => {
+const AdminProfilePage = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
@@ -50,6 +52,14 @@ const UserProfilePage = () => {
     companyAffiliation: "",
   });
 
+  // Password change form state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+
   // Account info (read-only)
   const [accountInfo, setAccountInfo] = useState({
     role: "" as UserRole | "",
@@ -60,14 +70,6 @@ const UserProfilePage = () => {
     createdAt: "",
     updatedAt: "",
   });
-
-  // Password change form state
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
 
   // Load user profile data from API
   useEffect(() => {
@@ -234,25 +236,47 @@ const UserProfilePage = () => {
     return `${profileData.firstName[0] || ""}${profileData.lastName[0] || ""}`.toUpperCase();
   };
 
+  const getStatusBadge = (status: UserStatus) => {
+    switch (status) {
+      case UserStatus.ACTIVE:
+        return <Badge className="bg-green-500">Active</Badge>;
+      case UserStatus.SUSPENDED:
+        return <Badge variant="destructive">Suspended</Badge>;
+      case UserStatus.DEACTIVATED:
+        return <Badge variant="secondary">Deactivated</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const getRoleLabel = (role: UserRole) => {
+    const roleLabels: Record<UserRole, string> = {
+      [UserRole.SUPERADMIN]: "Super Admin",
+      [UserRole.ADMIN_STAFF]: "Admin Staff",
+      [UserRole.MARKETER]: "Marketer",
+      [UserRole.SUPPORT]: "Support",
+      [UserRole.TELLER]: "Teller",
+      [UserRole.ORGANIZER]: "Organizer",
+      [UserRole.ORGANIZER_STAFF]: "Organizer Staff",
+      [UserRole.ORGANIZER_TELLER]: "Organizer Teller",
+      [UserRole.ATTENDEE]: "Attendee",
+    };
+    return roleLabels[role] || role;
+  };
+
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardNavbar 
-        user={{
-          name: `${profileData.firstName} ${profileData.lastName}`,
-          email: profileData.email,
-          initials: getInitials(),
-        }}
-        activeSection="profile"
-      />
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <AdminLayout>
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -262,7 +286,7 @@ const UserProfilePage = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Profile</h1>
-              <p className="text-muted-foreground mt-1">Manage your personal information</p>
+              <p className="text-muted-foreground mt-1">Manage your personal information and account settings</p>
             </div>
           </div>
         </div>
@@ -289,7 +313,7 @@ const UserProfilePage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Profile Information */}
+            {/* Personal Information */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -433,22 +457,14 @@ const UserProfilePage = () => {
                     <Label>Role</Label>
                     <div className="mt-1">
                       <Badge variant="outline" className="text-sm">
-                        {accountInfo.role === UserRole.ATTENDEE ? "Attendee" : accountInfo.role || "Loading..."}
+                        {accountInfo.role ? getRoleLabel(accountInfo.role) : "Loading..."}
                       </Badge>
                     </div>
                   </div>
                   <div>
                     <Label>Account Status</Label>
                     <div className="mt-1">
-                      {accountInfo.status === UserStatus.ACTIVE ? (
-                        <Badge className="bg-green-500">Active</Badge>
-                      ) : accountInfo.status === UserStatus.SUSPENDED ? (
-                        <Badge variant="destructive">Suspended</Badge>
-                      ) : accountInfo.status === UserStatus.DEACTIVATED ? (
-                        <Badge variant="secondary">Deactivated</Badge>
-                      ) : (
-                        <span className="text-sm">{accountInfo.status || "Loading..."}</span>
-                      )}
+                      {accountInfo.status ? getStatusBadge(accountInfo.status) : "Loading..."}
                     </div>
                   </div>
                   <div>
@@ -518,144 +534,144 @@ const UserProfilePage = () => {
               </CardContent>
             </Card>
 
-        {/* Password Change */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Key className="h-5 w-5 mr-2" />
-              Change Password
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter current password"
-                    value={passwordData.currentPassword}
-                    onChange={(e) => {
-                      setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }));
-                      if (passwordErrors.currentPassword) {
-                        setPasswordErrors((prev) => ({ ...prev, currentPassword: "" }));
-                      }
-                    }}
-                    disabled={isSaving}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
+            {/* Password Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Key className="h-5 w-5 mr-2" />
+                  Change Password
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="currentPassword"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter current password"
+                        value={passwordData.currentPassword}
+                        onChange={(e) => {
+                          setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }));
+                          if (passwordErrors.currentPassword) {
+                            setPasswordErrors((prev) => ({ ...prev, currentPassword: "" }));
+                          }
+                        }}
+                        disabled={isSaving}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {passwordErrors.currentPassword && (
+                      <p className="text-sm text-destructive mt-1">
+                        {passwordErrors.currentPassword}
+                      </p>
                     )}
-                  </Button>
-                </div>
-                {passwordErrors.currentPassword && (
-                  <p className="text-sm text-destructive mt-1">
-                    {passwordErrors.currentPassword}
-                  </p>
-                )}
-              </div>
+                  </div>
 
-              <div>
-                <Label htmlFor="newPassword">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    type={showNewPassword ? "text" : "password"}
-                    placeholder="Enter new password"
-                    value={passwordData.newPassword}
-                    onChange={(e) => {
-                      setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }));
-                      if (passwordErrors.newPassword) {
-                        setPasswordErrors((prev) => ({ ...prev, newPassword: "" }));
-                      }
-                    }}
-                    disabled={isSaving}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    {showNewPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
+                  <div>
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder="Enter new password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => {
+                          setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }));
+                          if (passwordErrors.newPassword) {
+                            setPasswordErrors((prev) => ({ ...prev, newPassword: "" }));
+                          }
+                        }}
+                        disabled={isSaving}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {passwordErrors.newPassword && (
+                      <p className="text-sm text-destructive mt-1">
+                        {passwordErrors.newPassword}
+                      </p>
                     )}
-                  </Button>
-                </div>
-                {passwordErrors.newPassword && (
-                  <p className="text-sm text-destructive mt-1">
-                    {passwordErrors.newPassword}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground mt-1">
-                  Must be at least 8 characters with uppercase, lowercase, number, and special
-                  character
-                </p>
-              </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Must be at least 8 characters with uppercase, lowercase, number, and special
+                      character
+                    </p>
+                  </div>
 
-              <div>
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm new password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => {
-                      setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }));
-                      if (passwordErrors.confirmPassword) {
-                        setPasswordErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                      }
-                    }}
-                    disabled={isSaving}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
+                  <div>
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm new password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => {
+                          setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }));
+                          if (passwordErrors.confirmPassword) {
+                            setPasswordErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                          }
+                        }}
+                        disabled={isSaving}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    {passwordErrors.confirmPassword && (
+                      <p className="text-sm text-destructive mt-1">
+                        {passwordErrors.confirmPassword}
+                      </p>
                     )}
-                  </Button>
-                </div>
-                {passwordErrors.confirmPassword && (
-                  <p className="text-sm text-destructive mt-1">
-                    {passwordErrors.confirmPassword}
-                  </p>
-                )}
-              </div>
+                  </div>
 
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={handlePasswordChange} disabled={isSaving}>
-                  {isSaving ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Key className="h-4 w-4 mr-2" />
-                  )}
-                  {isSaving ? "Changing Password..." : "Change Password"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  <div className="flex justify-end">
+                    <Button variant="outline" onClick={handlePasswordChange} disabled={isSaving}>
+                      {isSaving ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Key className="h-4 w-4 mr-2" />
+                      )}
+                      {isSaving ? "Changing Password..." : "Change Password"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
@@ -664,9 +680,9 @@ const UserProfilePage = () => {
           </div>
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 
-export default UserProfilePage;
+export default AdminProfilePage;
 

@@ -86,14 +86,93 @@ export class EventService {
       throw new AuthorizationError('Only organizers can create events');
     }
 
-    // Verify organizer exists
+    // Verify organizer exists and get verification status
     const organizer = await prisma.user.findUnique({
       where: { id: organizerId },
-      select: { id: true, role: true },
+      select: {
+        id: true,
+        role: true,
+        isIdentityVerified: true,
+        verificationLevel: true,
+        payoutLimit: true,
+        kycStatus: true,
+      },
     });
 
     if (!organizer) {
       throw new NotFoundError('Organizer not found');
+    }
+
+    // Progressive verification check for paid events
+    if (!data.isFree) {
+      // Check if organizer has identity verification (Level 2)
+      if (!organizer.isIdentityVerified) {
+        throw new ValidationError(
+          'Identity verification is required to create paid events. Please verify your identity in your profile settings.'
+        );
+      }
+
+      // Calculate total event value
+      let totalEventValue = 0;
+      if (data.price) {
+        totalEventValue = Number(data.price) * (data.capacity || 1);
+      } else if (data.ticketTypes && data.ticketTypes.length > 0) {
+        totalEventValue = data.ticketTypes.reduce((sum, ticket) => {
+          const price = Number(ticket.price);
+          const quantity = ticket.quantity ? Number(ticket.quantity) : (data.capacity || 1);
+          return sum + (price * quantity);
+        }, 0);
+      }
+
+      // Check payout limit for Level 2 users (identity verified but not full KYC)
+      if (organizer.verificationLevel === 2 && organizer.payoutLimit) {
+        const limit = Number(organizer.payoutLimit);
+        if (totalEventValue > limit) {
+          throw new ValidationError(
+            `This event exceeds your current payout limit of $${limit.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`
+          );
+        }
+      }
+
+      // Check monthly limit (calculate current month's events value)
+      if (organizer.verificationLevel === 2 && organizer.payoutLimit) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const currentMonthEvents = await prisma.event.findMany({
+          where: {
+            organizerId,
+            isFree: false,
+            createdAt: { gte: startOfMonth },
+            status: { not: EventStatus.CANCELLED },
+          },
+          select: {
+            price: true,
+            ticketTypes: true,
+            capacity: true,
+          },
+        });
+
+        const currentMonthValue = currentMonthEvents.reduce((sum, event) => {
+          let eventValue = 0;
+          if (event.price) {
+            eventValue = Number(event.price) * (event.capacity || 1);
+          } else if (event.ticketTypes) {
+            const ticketTypes = event.ticketTypes as Array<{ price: number; quantity?: number }>;
+            eventValue = ticketTypes.reduce((ticketSum, ticket) => {
+              return ticketSum + (ticket.price * (ticket.quantity || event.capacity || 1));
+            }, 0);
+          }
+          return sum + eventValue;
+        }, 0);
+
+        const limit = Number(organizer.payoutLimit);
+        if (currentMonthValue + totalEventValue > limit) {
+          throw new ValidationError(
+            `This event would exceed your monthly payout limit of $${limit.toFixed(2)}. Current month total: $${currentMonthValue.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`
+          );
+        }
+      }
     }
 
     // Validate pricing

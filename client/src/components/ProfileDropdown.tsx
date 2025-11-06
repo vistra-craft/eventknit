@@ -94,9 +94,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     
-    if (isOrganizerRole) return '/organizer/profile';
-    if (isAdminRole) return '/admin/settings';
-    return '/user/dashboard';
+    if (isOrganizerRole) return '/organizer/settings';
+    if (isAdminRole) return '/admin/profile';
+    return '/user/profile';
   };
 
   const getRoleLabel = (role: UserRole): string => {

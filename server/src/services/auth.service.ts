@@ -57,7 +57,135 @@ export interface AuthResponse {
 
 export class AuthService {
   /**
-   * Register a new user
+   * Request registration verification code (email-only registration)
+   */
+  static async requestRegistrationCode(email: string): Promise<void> {
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new ConflictError('User with this email already exists');
+    }
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Delete any existing unverified codes for this email
+    await prisma.emailVerification.deleteMany({
+      where: {
+        email,
+        verified: false,
+        expiresAt: { lt: new Date() },
+      },
+    });
+
+    // Delete any existing unverified codes for this email
+    await prisma.emailVerification.deleteMany({
+      where: {
+        email,
+        verified: false,
+      },
+    });
+
+    // Create new verification record
+    await prisma.emailVerification.create({
+      data: {
+        email,
+        code,
+        expiresAt,
+      },
+    });
+
+    // Send verification code email
+    await emailService.sendVerificationCode(email, code);
+
+    logger.info(`Registration code sent to: ${email}`);
+  }
+
+  /**
+   * Verify registration code and create user account
+   */
+  static async verifyRegistrationCode(email: string, code: string): Promise<AuthResponse> {
+    // Find verification record
+    const verification = await prisma.emailVerification.findFirst({
+      where: {
+        email,
+        code,
+        verified: false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!verification) {
+      throw new ValidationError('Invalid verification code');
+    }
+
+    if (verification.expiresAt < new Date()) {
+      throw new ValidationError('Verification code has expired');
+    }
+
+    // Check if user already exists (race condition check)
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new ConflictError('User with this email already exists');
+    }
+
+    // Create user account
+    const user = await prisma.user.create({
+      data: {
+        email,
+        role: UserRole.ATTENDEE, // Default to ATTENDEE, can be changed later
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+    });
+
+    // Mark verification as verified
+    await prisma.emailVerification.update({
+      where: { id: verification.id },
+      data: {
+        verified: true,
+        verifiedAt: new Date(),
+        userId: user.id,
+      },
+    });
+
+    // Generate tokens
+    const tokens = await this.generateTokens(user);
+
+    // Save refresh token
+    await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    logger.info(`User registered via code: ${email}`);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        otherName: user.otherName,
+        companyAffiliation: user.companyAffiliation,
+        role: user.role,
+        status: user.status,
+        isEmailVerified: user.isEmailVerified,
+        organizationName: user.organizationName,
+      },
+      ...tokens,
+    };
+  }
+
+  /**
+   * Register a new user (legacy method - kept for backward compatibility)
    */
   static async register(data: RegisterData): Promise<AuthResponse> {
     // Check if user already exists
@@ -106,8 +234,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
         otherName: user.otherName,
         companyAffiliation: user.companyAffiliation,
         role: user.role,
@@ -146,6 +274,10 @@ export class AuthService {
     // DEACTIVATED users can login but will be restricted from actions in middleware
 
     // Verify password
+    if (!user.password) {
+      throw new AuthenticationError('No password set. Please set a password in your profile or use email verification to login.');
+    }
+
     const isPasswordValid = await comparePassword(data.password, user.password);
     if (!isPasswordValid) {
       // Increment failed login attempts
@@ -194,8 +326,8 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
         otherName: user.otherName,
         companyAffiliation: user.companyAffiliation,
         role: user.role,

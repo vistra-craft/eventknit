@@ -71,6 +71,23 @@ export interface ProfileResponse {
 }
 
 /**
+ * Request registration verification code (email-only registration)
+ */
+export const requestRegistrationCode = async (email: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/register-code/request', { email });
+};
+
+/**
+ * Verify registration code and create account
+ */
+export const verifyRegistrationCode = async (
+  email: string,
+  code: string
+): Promise<RegisterResponse> => {
+  return apiPost<RegisterResponse>('/auth/register-code/verify', { email, code });
+};
+
+/**
  * Login user
  */
 export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {

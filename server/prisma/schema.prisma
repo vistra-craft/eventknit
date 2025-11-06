@@ -66,9 +66,9 @@ enum InviteType {
 model User {
   id                 String     @id @default(uuid())
   email              String     @unique
-  password           String
-  firstName          String
-  lastName           String
+  password           String? // Optional - users can set password later in profile
+  firstName          String? // Optional - can be added in profile
+  lastName           String? // Optional - can be added in profile
   otherName          String? // Middle name or other names
   phoneNumber        String?
   companyAffiliation String? // Company or institutional affiliation
@@ -90,6 +90,12 @@ model User {
   kycStatus      KYCStatus?
   kycSubmittedAt DateTime?
   kycApprovedAt  DateTime?
+
+  // Verification levels (progressive verification system)
+  isIdentityVerified Boolean   @default(false) // Level 2: Identity verified (can create paid events with limits)
+  identityVerifiedAt DateTime?
+  payoutLimit        Decimal?  @db.Decimal(10, 2) // Monthly payout limit (null = unlimited, requires full KYC)
+  verificationLevel   Int       @default(1) // 1=Basic, 2=Identity Verified, 3=Full KYC
 
   // Security fields
   failedLoginAttempts Int       @default(0)
@@ -144,15 +150,19 @@ model RefreshToken {
 
 model EmailVerification {
   id         String    @id @default(uuid())
-  userId     String
-  token      String    @unique
+  userId     String?
+  email      String    // Store email for code-based verification before user creation
+  code       String?   // 6-digit verification code
+  token      String?   @unique // Token for link-based verification (backward compatibility)
   expiresAt  DateTime
   verified   Boolean   @default(false)
   verifiedAt DateTime?
   createdAt  DateTime  @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([code])
+  @@index([email])
   @@index([token])
   @@index([userId])
   @@index([expiresAt])

@@ -71,6 +71,39 @@ class EmailService {
     });
   }
 
+  async sendVerificationCode(email: string, code: string): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Verify Your Email</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Welcome to EventKnit!</h1>
+            <p>Thank you for signing up. Please use the verification code below to complete your registration:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <div style="background-color: #f5f5f5; border: 2px dashed #4a6cf7; border-radius: 8px; padding: 20px; display: inline-block;">
+                <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4a6cf7; margin: 0;">${code}</p>
+              </div>
+            </div>
+            <p style="text-align: center;"><strong>This verification code expires in 10 minutes.</strong></p>
+            <p>If you didn't create an account, you can safely ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message, please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    await this.sendEmail({
+      to: email,
+      subject: 'Your EventKnit Verification Code',
+      html,
+    });
+  }
+
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
     const resetUrl = `${config.frontend.url}/auth/reset-password?token=${token}`;
     

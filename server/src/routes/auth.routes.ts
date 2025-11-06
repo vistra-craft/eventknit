@@ -12,8 +12,32 @@ const router = Router();
 router.use(cookieParser());
 
 /**
+ * @route   POST /api/v1/auth/register-code/request
+ * @desc    Request registration verification code (email-only registration)
+ * @access  Public
+ */
+router.post(
+  '/register-code/request',
+  authRateLimiter,
+  validate(authValidations.requestRegistrationCode),
+  AuthController.requestRegistrationCode,
+);
+
+/**
+ * @route   POST /api/v1/auth/register-code/verify
+ * @desc    Verify registration code and create account
+ * @access  Public
+ */
+router.post(
+  '/register-code/verify',
+  authRateLimiter,
+  validate(authValidations.verifyRegistrationCode),
+  AuthController.verifyRegistrationCode,
+);
+
+/**
  * @route   POST /api/v1/auth/register
- * @desc    Register a new user
+ * @desc    Register a new user (legacy endpoint)
  * @access  Public
  */
 router.post(

@@ -17,6 +17,25 @@ const UserRoleValues = [
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 export const authValidations = {
+  requestRegistrationCode: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+  }),
+
+  verifyRegistrationCode: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+    code: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+      'string.length': 'Verification code must be 6 digits',
+      'string.pattern.base': 'Verification code must contain only digits',
+      'any.required': 'Verification code is required',
+    }),
+  }),
+
   register: Joi.object({
     email: Joi.string().email().required().messages({
       'string.email': 'Please provide a valid email address',
