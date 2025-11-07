@@ -502,5 +502,63 @@ export class AuthController {
       next(error);
     }
   }
+
+  /**
+   * Request magic link login (send email with login link)
+   */
+  static async requestMagicLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.requestMagicLink(req.body.email);
+
+      res.status(200).json({
+        success: true,
+        message: 'Magic link sent to your email',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify magic link token and auto-login user
+   */
+  static async verifyMagicLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const token = req.query.token as string || req.body.token;
+      
+      if (!token) {
+        res.status(400).json({
+          success: false,
+          message: 'Token is required',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await AuthService.verifyMagicLink(token, ipAddress, userAgent);
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

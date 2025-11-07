@@ -387,6 +387,36 @@ export class EventController {
   }
 
   /**
+   * Register for event as guest (public - no auth required)
+   */
+  static async registerAsGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const eventId = req.params.eventId;
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await EventService.registerAsGuest(
+        eventId,
+        req.body,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful. Check your email for confirmation and access link.',
+        data: {
+          registration: result.registration,
+          user: result.user,
+          // Don't return magicLinkToken in response for security (it's in email)
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Register for event via invitation link (public - no auth required)
    */
   static async registerViaInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {

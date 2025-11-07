@@ -185,6 +185,29 @@ router.post(
   AuthController.resetPassword,
 );
 
+/**
+ * @route   POST /api/v1/auth/magic-link/request
+ * @desc    Request magic link login (send email with login link)
+ * @access  Public
+ */
+router.post(
+  '/magic-link/request',
+  authRateLimiter,
+  validate(authValidations.requestMagicLink),
+  AuthController.requestMagicLink,
+);
+
+/**
+ * @route   GET /api/v1/auth/magic-link/verify
+ * @desc    Verify magic link token and auto-login user
+ * @access  Public
+ */
+router.get(
+  '/magic-link/verify',
+  authRateLimiter,
+  AuthController.verifyMagicLink,
+);
+
 // Protected routes
 router.use(authenticate);
 

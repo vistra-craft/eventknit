@@ -118,6 +118,7 @@ import SimpleRegistration from "./pages/auth/SimpleRegistration";
 import EmailEntry from "./pages/auth/EmailEntry";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import MagicLinkVerify from "./pages/auth/MagicLinkVerify";
 import UserTypeSelection from "./pages/auth/UserTypeSelection";
 import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
 import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
@@ -254,6 +255,7 @@ const App = () => (
       <Route path="/auth/register/attendee" element={<SimpleRegistration />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
+      <Route path="/auth/magic-link/verify" element={<MagicLinkVerify />} />
       <Route path="*" element={<NotFound />} />
       {/* Admin Workstation Routes */}
       <Route path="/admin/workstation" element={<WorkstationOverview />} />

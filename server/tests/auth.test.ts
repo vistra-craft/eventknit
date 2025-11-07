@@ -51,6 +51,7 @@ describe('Authentication System', () => {
     // Note: Event/Ticket tables removed for now - focusing on auth first
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();
+    await prisma.magicLinkToken.deleteMany();
     await prisma.passwordReset.deleteMany();
     await prisma.emailVerification.deleteMany();
     await prisma.kYCDocument.deleteMany();
@@ -1492,6 +1493,287 @@ describe('Authentication System', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Current password is incorrect');
+    });
+  });
+
+  describe('POST /api/v1/auth/magic-link/request', () => {
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'magiclink@test.com',
+          password: hashedPassword,
+          firstName: 'Magic',
+          lastName: 'Link',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+    });
+
+    afterEach(async () => {
+      if (!dbConnected) return;
+      await prisma.magicLinkToken.deleteMany();
+      await prisma.user.deleteMany({
+        where: { email: 'magiclink@test.com' },
+      });
+    });
+
+    it('should send magic link to existing user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/auth/magic-link/request')
+        .send({ email: 'magiclink@test.com' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('Magic link sent');
+
+      // Verify token was created
+      const token = await prisma.magicLinkToken.findFirst({
+        where: { user: { email: 'magiclink@test.com' } },
+      });
+
+      expect(token).toBeDefined();
+      expect(token?.used).toBe(false);
+      expect(token?.expiresAt).toBeDefined();
+    });
+
+    it('should fail for non-existent user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/auth/magic-link/request')
+        .send({ email: 'nonexistent@test.com' })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('User not found');
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create suspended user
+      await prisma.user.create({
+        data: {
+          email: 'suspendedmagic@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/magic-link/request')
+        .send({ email: 'suspendedmagic@test.com' })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'suspendedmagic@test.com' },
+      });
+    });
+  });
+
+  describe('GET /api/v1/auth/magic-link/verify', () => {
+    let user: { id: string; email: string };
+    let magicLinkToken: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      const hashedPassword = await hashPassword('Test123!@#');
+      user = await prisma.user.create({
+        data: {
+          email: 'verifylink@test.com',
+          password: hashedPassword,
+          firstName: 'Verify',
+          lastName: 'Link',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Create magic link token
+      const token = await prisma.magicLinkToken.create({
+        data: {
+          userId: user.id,
+          token: 'test-magic-link-token-123',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+          used: false,
+        },
+      });
+
+      magicLinkToken = token.token;
+    });
+
+    afterEach(async () => {
+      if (!dbConnected) return;
+      await prisma.magicLinkToken.deleteMany();
+      await prisma.refreshToken.deleteMany();
+      await prisma.user.deleteMany({
+        where: { email: 'verifylink@test.com' },
+      });
+    });
+
+    it('should verify magic link and auto-login user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${magicLinkToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe(user.email);
+      expect(response.body.data.accessToken).toBeDefined();
+      expect(response.body.data.expiresIn).toBeDefined();
+
+      // Verify token was marked as used
+      const token = await prisma.magicLinkToken.findUnique({
+        where: { token: magicLinkToken },
+      });
+
+      expect(token?.used).toBe(true);
+      expect(token?.usedAt).toBeDefined();
+    });
+
+    it('should fail with invalid token', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/auth/magic-link/verify?token=invalid-token-123')
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid magic link');
+    });
+
+    it('should fail with expired token', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create expired token
+      const expiredToken = await prisma.magicLinkToken.create({
+        data: {
+          userId: user.id,
+          token: 'expired-token-123',
+          expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
+          used: false,
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${expiredToken.token}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('expired');
+
+      // Cleanup
+      await prisma.magicLinkToken.delete({
+        where: { id: expiredToken.id },
+      });
+    });
+
+    it('should fail with already used token', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create used token
+      const usedToken = await prisma.magicLinkToken.create({
+        data: {
+          userId: user.id,
+          token: 'used-token-123',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+          used: true,
+          usedAt: new Date(),
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${usedToken.token}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('already been used');
+
+      // Cleanup
+      await prisma.magicLinkToken.delete({
+        where: { id: usedToken.id },
+      });
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create suspended user
+      const suspendedUser = await prisma.user.create({
+        data: {
+          email: 'suspendedverify@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const suspendedToken = await prisma.magicLinkToken.create({
+        data: {
+          userId: suspendedUser.id,
+          token: 'suspended-token-123',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+          used: false,
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${suspendedToken.token}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.magicLinkToken.delete({
+        where: { id: suspendedToken.id },
+      });
+      await prisma.user.delete({
+        where: { id: suspendedUser.id },
+      });
     });
   });
 });

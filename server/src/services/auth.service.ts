@@ -14,6 +14,7 @@ import {
   ValidationError,
   NotFoundError,
   ConflictError,
+  ServiceUnavailableError,
 } from '../utils/errors';
 import { emailService } from './email.service';
 import { UserRole, UserStatus } from '@prisma/client';
@@ -953,6 +954,129 @@ export class AuthService {
     // In a full implementation, we'd store codes similar to phone verification
     // This is a placeholder that shows the interface
     throw new ValidationError('Code-based email verification not yet implemented. Use token-based verification.');
+  }
+
+  /**
+   * Request magic link login (send email with login link)
+   */
+  static async requestMagicLink(email: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Check user status
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new AuthenticationError('This account has been suspended. Please contact support.');
+    }
+
+    // Generate secure token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Delete any existing unused magic link tokens for this user
+    await prisma.magicLinkToken.deleteMany({
+      where: {
+        userId: user.id,
+        used: false,
+        expiresAt: { lt: new Date() },
+      },
+    });
+
+    // Create new magic link token
+    await prisma.magicLinkToken.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+      },
+    });
+
+    // Send magic link email
+    try {
+      await emailService.sendMagicLinkEmail(user.email, token);
+      logger.info(`Magic link sent to: ${user.email}`);
+    } catch (error) {
+      logger.error('Failed to send magic link email:', error);
+      throw new ServiceUnavailableError('Failed to send magic link email. Please try again later.');
+    }
+  }
+
+  /**
+   * Verify magic link token and auto-login user
+   */
+  static async verifyMagicLink(token: string, ipAddress?: string, userAgent?: string): Promise<AuthResponse> {
+    const magicLink = await prisma.magicLinkToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!magicLink) {
+      throw new AuthenticationError('Invalid magic link');
+    }
+
+    // Check if already used
+    if (magicLink.used) {
+      throw new AuthenticationError('This magic link has already been used');
+    }
+
+    // Check if expired
+    if (magicLink.expiresAt < new Date()) {
+      throw new AuthenticationError('Magic link has expired. Please request a new one.');
+    }
+
+    const user = magicLink.user;
+
+    // Check user status
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new AuthenticationError('This account has been suspended. Please contact support.');
+    }
+
+    // Mark token as used
+    await prisma.magicLinkToken.update({
+      where: { id: magicLink.id },
+      data: {
+        used: true,
+        usedAt: new Date(),
+        ipAddress,
+        userAgent,
+      },
+    });
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        lastLoginAt: new Date(),
+        failedLoginAttempts: 0, // Reset failed attempts on successful login
+      },
+    });
+
+    // Generate tokens
+    const tokens = await this.generateTokens(user);
+    await this.saveRefreshToken(user.id, tokens.refreshToken, ipAddress, userAgent);
+
+    logger.info(`Magic link login successful for user: ${user.email}`);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        otherName: user.otherName,
+        companyAffiliation: user.companyAffiliation,
+        role: user.role,
+        status: user.status,
+        isEmailVerified: user.isEmailVerified,
+      },
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
+    };
   }
 }
 

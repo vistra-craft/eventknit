@@ -52,6 +52,7 @@ describe('Event System', () => {
     await prisma.event.deleteMany();
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();
+    await prisma.magicLinkToken.deleteMany();
     await prisma.passwordReset.deleteMany();
     await prisma.emailVerification.deleteMany();
     await prisma.kYCDocument.deleteMany();
@@ -420,6 +421,340 @@ describe('Event System', () => {
         .post(`/api/v1/events/${event.id}/register`)
         .set('Authorization', `Bearer ${attendeeToken}`)
         .send({ quantity: 1 })
+        .expect(400);
+    });
+  });
+
+  describe('POST /api/v1/events/:id/register-guest', () => {
+    it('should register guest for free event and create account', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Free Guest Event',
+          description: 'Free Event for Guest Registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const guestData = {
+        email: 'guest@test.com',
+        firstName: 'Guest',
+        lastName: 'User',
+        phoneNumber: '+1234567890',
+        quantity: 1,
+      };
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send(guestData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.registration).toBeDefined();
+      expect(response.body.data.user).toBeDefined();
+      expect(response.body.data.user.email).toBe(guestData.email);
+      expect(response.body.data.user.isNewUser).toBe(true);
+
+      // Verify user was created (passwordless)
+      const user = await prisma.user.findUnique({
+        where: { email: guestData.email },
+      });
+
+      expect(user).toBeDefined();
+      expect(user?.password).toBeNull(); // Passwordless account
+      expect(user?.isEmailVerified).toBe(true);
+      expect(user?.status).toBe(UserStatus.ACTIVE);
+
+      // Verify magic link token was created
+      const magicLink = await prisma.magicLinkToken.findFirst({
+        where: { userId: user!.id },
+      });
+
+      expect(magicLink).toBeDefined();
+      expect(magicLink?.used).toBe(false);
+
+      // Verify password setup token was created
+      const passwordSetup = await prisma.emailVerification.findFirst({
+        where: { userId: user!.id, verified: false },
+      });
+
+      expect(passwordSetup).toBeDefined();
+      expect(passwordSetup?.token).toBeDefined();
+
+      // Verify registration was created
+      const registration = await prisma.eventRegistration.findFirst({
+        where: {
+          eventId: event.id,
+          attendeeId: user!.id,
+        },
+      });
+
+      expect(registration).toBeDefined();
+      expect(registration?.status).toBe('CONFIRMED'); // Free event
+    });
+
+    it('should register existing user as guest', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create existing user
+      const existingUser = await prisma.user.create({
+        data: {
+          email: 'existingguest@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Existing',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Free Guest Event',
+          description: 'Free Event for Guest Registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const guestData = {
+        email: 'existingguest@test.com',
+        firstName: 'Existing',
+        lastName: 'User',
+        quantity: 1,
+      };
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send(guestData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.isNewUser).toBe(false);
+
+      // Verify magic link was still created
+      const magicLink = await prisma.magicLinkToken.findFirst({
+        where: { userId: existingUser.id },
+      });
+
+      expect(magicLink).toBeDefined();
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create suspended user
+      await prisma.user.create({
+        data: {
+          email: 'suspendedguest@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Free Guest Event',
+          description: 'Free Event for Guest Registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'suspendedguest@test.com',
+          firstName: 'Suspended',
+          lastName: 'User',
+        })
+        .expect(409);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+    });
+
+    it('should fail for DEACTIVATED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create deactivated user
+      await prisma.user.create({
+        data: {
+          email: 'deactivatedguest@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Deactivated',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.DEACTIVATED,
+          isEmailVerified: true,
+        },
+      });
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Free Guest Event',
+          description: 'Free Event for Guest Registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'deactivatedguest@test.com',
+          firstName: 'Deactivated',
+          lastName: 'User',
+        })
+        .expect(409);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('deactivated');
+    });
+
+    it('should fail with missing required fields', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Free Guest Event',
+          description: 'Free Event for Guest Registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      // Missing email
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          firstName: 'Guest',
+          lastName: 'User',
+        })
+        .expect(400);
+
+      // Missing firstName
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'guest@test.com',
+          lastName: 'User',
+        })
+        .expect(400);
+
+      // Missing lastName
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'guest@test.com',
+          firstName: 'Guest',
+        })
+        .expect(400);
+    });
+
+    it('should fail for non-approved event', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Pending Event',
+          description: 'Pending Event Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+        },
+      });
+
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'guest@test.com',
+          firstName: 'Guest',
+          lastName: 'User',
+        })
+        .expect(400);
+    });
+
+    it('should fail for sold out event', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Limited Event',
+          description: 'Event with limited capacity',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: true,
+          capacity: 1,
+          availableSlots: 1,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      // Register first guest (fills capacity)
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'firstguest@test.com',
+          firstName: 'First',
+          lastName: 'Guest',
+        })
+        .expect(201);
+
+      // Try to register second guest (should fail)
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'secondguest@test.com',
+          firstName: 'Second',
+          lastName: 'Guest',
+        })
         .expect(400);
     });
   });

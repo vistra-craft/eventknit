@@ -265,6 +265,33 @@ export const eventValidations = {
     registrationData: Joi.object().optional().allow(null),
   }),
 
+  registerAsGuest: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+    firstName: Joi.string().trim().min(1).max(100).required().messages({
+      'string.empty': 'First name is required',
+      'string.max': 'First name must not exceed 100 characters',
+      'any.required': 'First name is required',
+    }),
+    lastName: Joi.string().trim().min(1).max(100).required().messages({
+      'string.empty': 'Last name is required',
+      'string.max': 'Last name must not exceed 100 characters',
+      'any.required': 'Last name is required',
+    }),
+    phoneNumber: Joi.string().trim().optional().allow('', null),
+    ticketType: Joi.string().trim().max(100).optional().allow('', null).messages({
+      'string.max': 'Ticket type must not exceed 100 characters',
+    }),
+    quantity: Joi.number().integer().min(1).max(100).optional().default(1).messages({
+      'number.min': 'Quantity must be at least 1',
+      'number.max': 'Quantity must not exceed 100',
+      'number.base': 'Quantity must be a valid number',
+    }),
+    registrationData: Joi.object().optional().allow(null),
+  }),
+
   rejectEvent: Joi.object({
     rejectionReason: Joi.string().trim().min(10).max(1000).required().messages({
       'string.min': 'Rejection reason must be at least 10 characters long',

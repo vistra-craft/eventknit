@@ -10,8 +10,6 @@ import {
 import {
   AuthenticationError,
   ValidationError,
-  NotFoundError,
-  ConflictError,
 } from '../utils/errors';
 import { UserRole, UserStatus } from '@prisma/client';
 import { config } from '../config';

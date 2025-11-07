@@ -234,5 +234,18 @@ export const authValidations = {
       'string.email': 'Please provide a valid business email address',
     }),
   }),
+
+  requestMagicLink: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+  }),
+
+  verifyMagicLink: Joi.object({
+    token: Joi.string().required().messages({
+      'any.required': 'Token is required',
+    }),
+  }),
 };
 

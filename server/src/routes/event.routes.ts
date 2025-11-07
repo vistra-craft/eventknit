@@ -60,6 +60,17 @@ router.delete(
 );
 
 /**
+ * @route   POST /api/v1/events/:id/register-guest
+ * @desc    Register for an event as guest (public - no auth required)
+ * @access  Public
+ */
+router.post(
+  '/:id/register-guest',
+  validate(eventValidations.registerAsGuest),
+  EventController.registerAsGuest,
+);
+
+/**
  * @route   POST /api/v1/events/:id/register
  * @desc    Register for an event (purchase/register)
  * @access  Private (ATTENDEE+)

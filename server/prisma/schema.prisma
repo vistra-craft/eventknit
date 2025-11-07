@@ -113,6 +113,7 @@ model User {
   refreshTokens      RefreshToken[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
+  magicLinkTokens    MagicLinkToken[]
   kycDocuments       KYCDocument[]
   auditLogs          AuditLog[]
   eventsCreated      Event[]             @relation("EventOrganizer")
@@ -183,6 +184,25 @@ model PasswordReset {
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
+}
+
+model MagicLinkToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([used])
 }
 
 model KYCDocument {

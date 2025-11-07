@@ -183,4 +183,18 @@ export const changePassword = async (
   });
 };
 
+/**
+ * Request magic link login (send email with login link)
+ */
+export const requestMagicLink = async (email: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/magic-link/request', { email });
+};
+
+/**
+ * Verify magic link token and auto-login user
+ */
+export const verifyMagicLink = async (token: string): Promise<LoginResponse> => {
+  return apiGet<LoginResponse>(`/auth/magic-link/verify?token=${token}`);
+};
+
 

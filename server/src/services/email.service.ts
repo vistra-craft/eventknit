@@ -139,6 +139,41 @@ class EmailService {
       html,
     });
   }
+
+  async sendMagicLinkEmail(email: string, token: string): Promise<void> {
+    const magicLinkUrl = `${config.frontend.url}/auth/magic-link/verify?token=${token}`;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Login to EventKnit</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Login to EventKnit</h1>
+            <p>Click the button below to securely log in to your EventKnit account:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${magicLinkUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Login to EventKnit</a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #4a6cf7;">${magicLinkUrl}</p>
+            <p><strong>This login link expires in 15 minutes and can only be used once.</strong></p>
+            <p>If you didn't request this login link, you can safely ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message, please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    await this.sendEmail({
+      to: email,
+      subject: 'Login to EventKnit',
+      html,
+    });
+  }
 }
 
 export const emailService = new EmailService();
