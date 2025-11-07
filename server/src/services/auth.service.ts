@@ -60,14 +60,33 @@ export class AuthService {
   /**
    * Request registration verification code (email-only registration)
    */
-  static async requestRegistrationCode(email: string): Promise<void> {
+  static async requestRegistrationCode(email: string, role?: UserRole): Promise<void> {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      throw new ConflictError('User with this email already exists');
+      // SUSPENDED users are permanently banned - cannot re-register
+      if (existingUser.status === UserStatus.SUSPENDED) {
+        throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
+      }
+      
+      // DEACTIVATED users are temporarily banned - cannot re-register until appeal/expiration
+      if (existingUser.status === UserStatus.DEACTIVATED) {
+        throw new ConflictError('This account has been deactivated. Please contact support to appeal or wait for the deactivation period to end.');
+      }
+      
+      // ACTIVE users cannot re-register
+      if (existingUser.status === UserStatus.ACTIVE) {
+        throw new ConflictError('User with this email already exists');
+      }
+    }
+
+    // Validate role - only allow ATTENDEE or ORGANIZER for new registrations
+    const selectedRole = role || UserRole.ATTENDEE;
+    if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
+      throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
     }
 
     // Generate 6-digit verification code
@@ -91,11 +110,12 @@ export class AuthService {
       },
     });
 
-    // Create new verification record
+    // Create new verification record with role
     await prisma.emailVerification.create({
       data: {
         email,
         code,
+        role: selectedRole,
         expiresAt,
       },
     });
@@ -103,13 +123,14 @@ export class AuthService {
     // Send verification code email
     await emailService.sendVerificationCode(email, code);
 
-    logger.info(`Registration code sent to: ${email}`);
+    logger.info(`Registration code sent to: ${email} for role: ${selectedRole}`);
   }
 
   /**
    * Verify registration code and create user account
+   * Now requires password (traditional registration)
    */
-  static async verifyRegistrationCode(email: string, code: string): Promise<AuthResponse> {
+  static async verifyRegistrationCode(email: string, code: string, password: string): Promise<AuthResponse> {
     // Find verification record
     const verification = await prisma.emailVerification.findFirst({
       where: {
@@ -136,19 +157,41 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictError('User with this email already exists');
+      // SUSPENDED users are permanently banned - cannot re-register
+      if (existingUser.status === UserStatus.SUSPENDED) {
+        throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
+      }
+      
+      // DEACTIVATED users are temporarily banned - cannot re-register until appeal/expiration
+      if (existingUser.status === UserStatus.DEACTIVATED) {
+        throw new ConflictError('This account has been deactivated. Please contact support to appeal or wait for the deactivation period to end.');
+      }
+      
+      // ACTIVE users cannot re-register
+      if (existingUser.status === UserStatus.ACTIVE) {
+        throw new ConflictError('User with this email already exists');
+      }
     }
 
-    // Create user account
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Use role from verification record, default to ATTENDEE if not set
+    const userRole = verification.role || UserRole.ATTENDEE;
+
+    // Create new user account with selected role and password
     const user = await prisma.user.create({
       data: {
         email,
-        role: UserRole.ATTENDEE, // Default to ATTENDEE, can be changed later
+        password: hashedPassword,
+        role: userRole,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
       },
     });
+
+    logger.info(`Created new user via code: ${email}`);
 
     // Mark verification as verified
     await prisma.emailVerification.update({
@@ -165,8 +208,6 @@ export class AuthService {
 
     // Save refresh token
     await this.saveRefreshToken(user.id, tokens.refreshToken);
-
-    logger.info(`User registered via code: ${email}`);
 
     return {
       user: {
@@ -251,7 +292,189 @@ export class AuthService {
   }
 
   /**
-   * Login user
+   * Request Email OAuth code (code-based passwordless login/registration)
+   * Works for both new and existing users - sends code to email
+   */
+  static async requestEmailOAuthCode(email: string, role?: UserRole): Promise<void> {
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      // SUSPENDED users are permanently banned - cannot use Email OAuth
+      if (existingUser.status === UserStatus.SUSPENDED) {
+        throw new AuthenticationError('Your account has been suspended. Please contact support');
+      }
+      
+      // DEACTIVATED users can use Email OAuth (they can login but actions restricted)
+      // No need to block them here
+    }
+
+    // Validate role if provided (only for new users)
+    const selectedRole = role || UserRole.ATTENDEE;
+    if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
+      throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed.');
+    }
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Delete any existing unverified codes for this email
+    await prisma.emailVerification.deleteMany({
+      where: {
+        email,
+        verified: false,
+      },
+    });
+
+    // Create verification record
+    // Store role for new user creation if user doesn't exist
+    await prisma.emailVerification.create({
+      data: {
+        email,
+        code,
+        role: existingUser ? null : selectedRole, // Only store role for new users
+        expiresAt,
+      },
+    });
+
+    // Send verification code email
+    await emailService.sendVerificationCode(email, code);
+
+    logger.info(`Email OAuth code sent to: ${email}`);
+  }
+
+  /**
+   * Verify Email OAuth code and authenticate user (passwordless login/registration)
+   * Creates account if new, logs in if existing (like Facebook OAuth)
+   */
+  static async verifyEmailOAuthCode(
+    email: string,
+    code: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<AuthResponse> {
+    // Find verification record
+    const verification = await prisma.emailVerification.findFirst({
+      where: {
+        email,
+        code,
+        verified: false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!verification) {
+      throw new ValidationError('Invalid verification code');
+    }
+
+    if (verification.expiresAt < new Date()) {
+      throw new ValidationError('Verification code has expired');
+    }
+
+    // Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      // Existing user - log them in
+      // Check account status
+      if (user.status === UserStatus.SUSPENDED) {
+        throw new AuthenticationError('Your account has been suspended. Please contact support');
+      }
+      // DEACTIVATED users can login but will be restricted from actions
+
+      // Mark verification as verified
+      await prisma.emailVerification.update({
+        where: { id: verification.id },
+        data: {
+          verified: true,
+          verifiedAt: new Date(),
+          userId: user.id,
+        },
+      });
+
+      // Update user email verification status if not already verified
+      if (!user.isEmailVerified) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            isEmailVerified: true,
+            emailVerifiedAt: new Date(),
+          },
+        });
+      }
+
+      // Update last login
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginAt: new Date(),
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        },
+      });
+
+      logger.info(`User logged in via Email OAuth: ${user.email}`);
+    } else {
+      // New user - create account (like Facebook OAuth)
+      const userRole = verification.role || UserRole.ATTENDEE;
+
+      // Create new user account
+      user = await prisma.user.create({
+        data: {
+          email,
+          role: userRole,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          emailVerifiedAt: new Date(),
+        },
+      });
+
+      logger.info(`Created new user via Email OAuth: ${email}`);
+
+      // Mark verification as verified
+      await prisma.emailVerification.update({
+        where: { id: verification.id },
+        data: {
+          verified: true,
+          verifiedAt: new Date(),
+          userId: user.id,
+        },
+      });
+    }
+
+    // Generate tokens
+    const tokens = await this.generateTokens(user);
+
+    // Save refresh token
+    await this.saveRefreshToken(user.id, tokens.refreshToken, ipAddress, userAgent);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        otherName: user.otherName,
+        companyAffiliation: user.companyAffiliation,
+        role: user.role,
+        status: user.status,
+        isEmailVerified: user.isEmailVerified,
+        organizationName: user.organizationName,
+        verificationLevel: user.verificationLevel,
+      },
+      ...tokens,
+    };
+  }
+
+  /**
+   * Login user with email and password (traditional login)
    */
   static async login(data: LoginData, ipAddress?: string, userAgent?: string): Promise<AuthResponse> {
     const user = await prisma.user.findUnique({
@@ -276,9 +499,9 @@ export class AuthService {
     }
     // DEACTIVATED users can login but will be restricted from actions in middleware
 
-    // Verify password
+    // Verify password - password is now required
     if (!user.password) {
-      throw new AuthenticationError('No password set. Please set a password in your profile or use email verification to login.');
+      throw new AuthenticationError('Invalid email or password');
     }
 
     const isPasswordValid = await comparePassword(data.password, user.password);
@@ -612,6 +835,7 @@ export class AuthService {
 
   /**
    * Change password (for authenticated users)
+   * If user has no password, this sets their initial password
    */
   static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await prisma.user.findUnique({
@@ -622,11 +846,25 @@ export class AuthService {
       throw new NotFoundError('User not found');
     }
 
-    // Verify current password
+    // If user has no password, allow setting initial password (currentPassword can be empty)
     if (!user.password) {
-      throw new ValidationError('No password set. Please set a password first.');
+      // For initial password setup, we can skip current password verification
+      // But we should validate that currentPassword is provided (even if empty string)
+      // In practice, frontend should call setPassword for initial setup
+      const hashedPassword = await hashPassword(newPassword);
+      
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          password: hashedPassword,
+        },
+      });
+
+      logger.info(`Initial password set for user: ${user.email}`);
+      return;
     }
 
+    // User has existing password - verify current password
     const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isCurrentPasswordValid) {
       throw new ValidationError('Current password is incorrect');
@@ -644,6 +882,37 @@ export class AuthService {
     });
 
     logger.info(`Password changed for user: ${user.email}`);
+  }
+
+  /**
+   * Set initial password (for users who registered without a password)
+   */
+  static async setPassword(userId: string, newPassword: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Check if password already exists
+    if (user.password) {
+      throw new ValidationError('Password already set. Use change password to update it.');
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Set password
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    logger.info(`Password set for user: ${user.email}`);
   }
 
   /**

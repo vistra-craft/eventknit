@@ -22,6 +22,13 @@ export const authValidations = {
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
+    role: Joi.string()
+      .valid('ATTENDEE', 'ORGANIZER')
+      .optional()
+      .default('ATTENDEE')
+      .messages({
+        'any.only': 'Role must be either ATTENDEE or ORGANIZER',
+      }),
   }),
 
   verifyRegistrationCode: Joi.object({
@@ -34,6 +41,15 @@ export const authValidations = {
       'string.pattern.base': 'Verification code must contain only digits',
       'any.required': 'Verification code is required',
     }),
+    password: Joi.string()
+      .min(8)
+      .pattern(passwordRegex)
+      .required()
+      .messages({
+        'string.min': 'Password must be at least 8 characters long',
+        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'any.required': 'Password is required',
+      }),
   }),
 
   register: Joi.object({
@@ -80,6 +96,45 @@ export const authValidations = {
     businessEmail: Joi.string().email().optional().allow('', null).messages({
       'string.email': 'Please provide a valid business email address',
     }),
+  }),
+
+  requestEmailOAuthCode: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+    role: Joi.string()
+      .valid('ATTENDEE', 'ORGANIZER')
+      .optional()
+      .default('ATTENDEE')
+      .messages({
+        'any.only': 'Role must be either ATTENDEE or ORGANIZER',
+      }),
+  }),
+
+  verifyEmailOAuthCode: Joi.object({
+    email: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'Email is required',
+    }),
+    code: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+      'string.length': 'Verification code must be 6 digits',
+      'string.pattern.base': 'Verification code must contain only digits',
+      'any.required': 'Verification code is required',
+    }),
+  }),
+
+  facebookAuth: Joi.object({
+    accessToken: Joi.string().required().messages({
+      'any.required': 'Facebook access token is required',
+    }),
+    role: Joi.string()
+      .valid('ATTENDEE', 'ORGANIZER')
+      .optional()
+      .default('ATTENDEE')
+      .messages({
+        'any.only': 'Role must be either ATTENDEE or ORGANIZER',
+      }),
   }),
 
   login: Joi.object({

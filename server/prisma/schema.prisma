@@ -154,6 +154,7 @@ model EmailVerification {
   email      String    // Store email for code-based verification before user creation
   code       String?   // 6-digit verification code
   token      String?   @unique // Token for link-based verification (backward compatibility)
+  role       UserRole? // Store selected role during registration
   expiresAt  DateTime
   verified   Boolean   @default(false)
   verifiedAt DateTime?

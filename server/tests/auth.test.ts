@@ -154,7 +154,7 @@ describe('Authentication System', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it('should register with email-only (new flow)', async () => {
+    it('should register with email code verification (requires password)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -162,31 +162,32 @@ describe('Authentication System', () => {
       // Request verification code
       const codeResponse = await request(app)
         .post('/api/v1/auth/register-code/request')
-        .send({ email: 'emailonly@test.com' })
+        .send({ email: 'emailcode@test.com', role: 'ATTENDEE' })
         .expect(200);
 
       expect(codeResponse.body.success).toBe(true);
 
       // Get the code from database (in real scenario, user receives via email)
       const verification = await prisma.emailVerification.findFirst({
-        where: { email: 'emailonly@test.com' },
+        where: { email: 'emailcode@test.com' },
         orderBy: { createdAt: 'desc' },
       });
 
       expect(verification).toBeDefined();
       expect(verification?.code).toBeDefined();
 
-      // Verify code and create account
+      // Verify code and create account (now requires password)
       const verifyResponse = await request(app)
         .post('/api/v1/auth/register-code/verify')
         .send({
-          email: 'emailonly@test.com',
+          email: 'emailcode@test.com',
           code: verification?.code,
+          password: 'Test123!@#',
         })
         .expect(200);
 
       expect(verifyResponse.body.success).toBe(true);
-      expect(verifyResponse.body.data.user.email).toBe('emailonly@test.com');
+      expect(verifyResponse.body.data.user.email).toBe('emailcode@test.com');
       expect(verifyResponse.body.data.user.verificationLevel).toBe(1);
       expect(verifyResponse.body.data.accessToken).toBeDefined();
     });
@@ -331,12 +332,12 @@ describe('Authentication System', () => {
       expect(response.body.message).toContain('Invalid email or password');
     });
 
-    it('should fail to login for user without password (email-only registration)', async () => {
+    it('should fail to login for user without password (password now required)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
       }
-      // Create user without password (email-only registration)
+      // Create user without password (should not exist in normal flow, but testing edge case)
       await prisma.user.create({
         data: {
           email: 'nopassword@test.com',
@@ -356,7 +357,7 @@ describe('Authentication System', () => {
         .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('No password set');
+      expect(response.body.message).toContain('Invalid email or password');
 
       // Cleanup
       await prisma.user.deleteMany({
@@ -1110,6 +1111,302 @@ describe('Authentication System', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.user.email).toBe('update@test.com');
+    });
+  });
+
+  describe('POST /api/v1/auth/email-oauth/request', () => {
+    it('should send Email OAuth code to existing user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create an existing user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'existing@test.com',
+          password: hashedPassword,
+          firstName: 'Existing',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'existing@test.com' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('Verification code');
+
+      // Verify code was created
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'existing@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(verification).toBeDefined();
+      expect(verification?.code).toBeDefined();
+
+      // Cleanup
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'existing@test.com' },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'existing@test.com' },
+      });
+    });
+
+    it('should send Email OAuth code to new user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'newuser@test.com', role: 'ORGANIZER' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify code was created with role
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'newuser@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(verification).toBeDefined();
+      expect(verification?.code).toBeDefined();
+      expect(verification?.role).toBe(UserRole.ORGANIZER);
+
+      // Cleanup
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'newuser@test.com' },
+      });
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a suspended user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'suspendedoauth@test.com',
+          password: hashedPassword,
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'suspendedoauth@test.com' })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'suspendedoauth@test.com' },
+      });
+    });
+  });
+
+  describe('POST /api/v1/auth/email-oauth/verify', () => {
+    it('should login existing user with Email OAuth code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create an existing user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'emaillogin@test.com',
+          password: hashedPassword,
+          firstName: 'Email',
+          lastName: 'Login',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Request code
+      await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'emaillogin@test.com' })
+        .expect(200);
+
+      // Get code from database
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'emaillogin@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Verify code and login
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'emaillogin@test.com',
+          code: verification?.code,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe('emaillogin@test.com');
+      expect(response.body.data.accessToken).toBeDefined();
+      expect(response.headers['set-cookie']).toBeDefined(); // Refresh token cookie
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'emaillogin@test.com' } },
+      });
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'emaillogin@test.com' },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'emaillogin@test.com' },
+      });
+    });
+
+    it('should create new user account with Email OAuth code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Request code for new user
+      await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'newemailoauth@test.com', role: 'ORGANIZER' })
+        .expect(200);
+
+      // Get code from database
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'newemailoauth@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Verify code and create account (like Facebook OAuth)
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'newemailoauth@test.com',
+          code: verification?.code,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe('newemailoauth@test.com');
+      expect(response.body.data.user.role).toBe(UserRole.ORGANIZER);
+      expect(response.body.data.user.status).toBe(UserStatus.ACTIVE);
+      expect(response.body.data.user.isEmailVerified).toBe(true);
+      expect(response.body.data.accessToken).toBeDefined();
+
+      // Verify user was created in database
+      const user = await prisma.user.findUnique({
+        where: { email: 'newemailoauth@test.com' },
+      });
+      expect(user).toBeDefined();
+      expect(user?.role).toBe(UserRole.ORGANIZER);
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'newemailoauth@test.com' } },
+      });
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'newemailoauth@test.com' },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'newemailoauth@test.com' },
+      });
+    });
+
+    it('should fail with invalid code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'invalidcode@test.com',
+          code: '000000',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid verification code');
+    });
+
+    it('should fail with expired code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create an expired verification record
+      await prisma.emailVerification.create({
+        data: {
+          email: 'expiredcode@test.com',
+          code: '123456',
+          expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'expiredcode@test.com',
+          code: '123456',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('expired');
+
+      // Cleanup
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'expiredcode@test.com' },
+      });
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a suspended user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'suspendedverify@test.com',
+          password: hashedPassword,
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      // Request code
+      await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'suspendedverify@test.com' })
+        .expect(401); // Should fail at request stage
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'suspendedverify@test.com' },
+      });
     });
   });
 

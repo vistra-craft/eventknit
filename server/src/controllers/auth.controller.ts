@@ -9,7 +9,7 @@ export class AuthController {
    */
   static async requestRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await AuthService.requestRegistrationCode(req.body.email);
+      await AuthService.requestRegistrationCode(req.body.email, req.body.role);
 
       res.status(200).json({
         success: true,
@@ -25,7 +25,7 @@ export class AuthController {
    */
   static async verifyRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await AuthService.verifyRegistrationCode(req.body.email, req.body.code);
+      const result = await AuthService.verifyRegistrationCode(req.body.email, req.body.code, req.body.password);
 
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
@@ -348,6 +348,97 @@ export class AuthController {
         success: true,
         message: 'Profile updated successfully',
         data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Request Email OAuth code (code-based passwordless login/registration)
+   */
+  static async requestEmailOAuthCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.requestEmailOAuthCode(req.body.email, req.body.role);
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code has been sent to your email.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify Email OAuth code and authenticate user (creates account if new, logs in if existing)
+   */
+  static async verifyEmailOAuthCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await AuthService.verifyEmailOAuthCode(
+        req.body.email,
+        req.body.code,
+        ipAddress,
+        userAgent,
+      );
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Authentication successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Facebook OAuth login/registration
+   */
+  static async facebookAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const { FacebookAuthService } = await import('../services/facebook-auth.service');
+      const result = await FacebookAuthService.authenticateWithFacebook(
+        req.body.accessToken,
+        req.body.role,
+        ipAddress,
+        userAgent,
+      );
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Facebook authentication successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
       });
     } catch (error) {
       next(error);

@@ -73,8 +73,11 @@ export interface ProfileResponse {
 /**
  * Request registration verification code (email-only registration)
  */
-export const requestRegistrationCode = async (email: string): Promise<ApiResponse<void>> => {
-  return apiPost<ApiResponse<void>>('/auth/register-code/request', { email });
+export const requestRegistrationCode = async (
+  email: string,
+  role?: 'ATTENDEE' | 'ORGANIZER'
+): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/register-code/request', { email, role });
 };
 
 /**
@@ -82,9 +85,40 @@ export const requestRegistrationCode = async (email: string): Promise<ApiRespons
  */
 export const verifyRegistrationCode = async (
   email: string,
-  code: string
+  code: string,
+  password: string
 ): Promise<RegisterResponse> => {
-  return apiPost<RegisterResponse>('/auth/register-code/verify', { email, code });
+  return apiPost<RegisterResponse>('/auth/register-code/verify', { email, code, password });
+};
+
+/**
+ * Request Email OAuth code (code-based passwordless login/registration)
+ */
+export const requestEmailOAuthCode = async (
+  email: string,
+  role?: 'ATTENDEE' | 'ORGANIZER'
+): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/email-oauth/request', { email, role });
+};
+
+/**
+ * Verify Email OAuth code and authenticate user (creates account if new, logs in if existing)
+ */
+export const verifyEmailOAuthCode = async (
+  email: string,
+  code: string
+): Promise<LoginResponse> => {
+  return apiPost<LoginResponse>('/auth/email-oauth/verify', { email, code });
+};
+
+/**
+ * Facebook OAuth login/registration
+ */
+export const facebookAuth = async (
+  accessToken: string,
+  role?: 'ATTENDEE' | 'ORGANIZER'
+): Promise<LoginResponse> => {
+  return apiPost<LoginResponse>('/auth/facebook', { accessToken, role });
 };
 
 /**

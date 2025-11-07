@@ -56,6 +56,42 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/auth/email-oauth/request
+ * @desc    Request Email OAuth code (code-based passwordless login/registration)
+ * @access  Public
+ */
+router.post(
+  '/email-oauth/request',
+  authRateLimiter,
+  validate(authValidations.requestEmailOAuthCode),
+  AuthController.requestEmailOAuthCode,
+);
+
+/**
+ * @route   POST /api/v1/auth/email-oauth/verify
+ * @desc    Verify Email OAuth code and authenticate user (creates account if new, logs in if existing)
+ * @access  Public
+ */
+router.post(
+  '/email-oauth/verify',
+  authRateLimiter,
+  validate(authValidations.verifyEmailOAuthCode),
+  AuthController.verifyEmailOAuthCode,
+);
+
+/**
+ * @route   POST /api/v1/auth/facebook
+ * @desc    Facebook OAuth login/registration
+ * @access  Public
+ */
+router.post(
+  '/facebook',
+  authRateLimiter,
+  validate(authValidations.facebookAuth),
+  AuthController.facebookAuth,
+);
+
+/**
  * @route   POST /api/v1/auth/login
  * @desc    Login user
  * @access  Public
