@@ -76,6 +76,11 @@ export const config = {
     appSecret: process.env.FACEBOOK_APP_SECRET || '',
   },
 
+  paystack: {
+    secretKey: process.env.PAYSTACK_SECRET_KEY || '',
+    publicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
+  },
+
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },

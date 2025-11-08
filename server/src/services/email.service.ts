@@ -2,11 +2,18 @@ import nodemailer from 'nodemailer';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer | string;
+  contentType?: string;
+}
+
 export interface EmailOptions {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  attachments?: EmailAttachment[];
 }
 
 class EmailService {
@@ -26,10 +33,24 @@ class EmailService {
 
   async sendEmail(options: EmailOptions): Promise<void> {
     try {
-      await this.transporter.sendMail({
+      const mailOptions: nodemailer.SendMailOptions = {
         from: config.email.from,
-        ...options,
-      });
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      };
+
+      // Add attachments if provided
+      if (options.attachments && options.attachments.length > 0) {
+        mailOptions.attachments = options.attachments.map(att => ({
+          filename: att.filename,
+          content: att.content,
+          contentType: att.contentType,
+        }));
+      }
+
+      await this.transporter.sendMail(mailOptions);
     } catch (error) {
       logger.error('Failed to send email:', error);
       throw new Error('Failed to send email');
