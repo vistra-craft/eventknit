@@ -4,13 +4,17 @@ import { Button } from "../../components/ui/button";
 import { Download, QrCode } from "lucide-react";
 
 interface EventData {
-  id: number;
+  id: string;
   title: string;
   date: string;
   location: string;
   type: string;
   image: string;
   registrationDate: string;
+  venue?: string;
+  description?: string;
+  status?: 'upcoming' | 'ongoing' | 'completed';
+  category?: string;
 }
 
 interface User {
@@ -25,19 +29,19 @@ interface Registration {
 }
 
 interface DashboardMyBadgeProps {
-  eventData: EventData;
+  eventData?: EventData;
   user: User;
   registration?: Registration;
 }
 
 const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) => {
-  // Generate placeholder data
+  // Generate placeholder data (will be replaced with real ticket/registration data when API is available)
   const badgeData = {
-    eventName: eventData.title || "Tech Conference 2024",
-    attendeeName: user.name || "John Doe",
-    company: "Dukapaq Ltd.",
-    qrCode: "QR123456789",
-    alternativeCode: "ALT789456123"
+    eventName: eventData?.title || "Event",
+    attendeeName: user.name || "User",
+    company: "Company", // TODO: Get from user profile
+    qrCode: "QR123456789", // TODO: Get from registration/ticket
+    alternativeCode: "ALT789456123" // TODO: Get from registration/ticket
   };
 
   const handleDownload = () => {
@@ -56,7 +60,7 @@ const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) 
               {/* Badge Header */}
               <div className="bg-white border-b border-gray-200 p-4 rounded-t-xl">
                 <h2 className="text-lg font-bold text-center text-gray-900">{badgeData.eventName}</h2>
-                <p className="text-sm text-center text-gray-600 mt-1">{eventData.date}</p>
+                <p className="text-sm text-center text-gray-600 mt-1">{eventData?.date || 'Date TBD'}</p>
               </div>
               
               {/* Badge Content */}

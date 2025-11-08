@@ -69,3 +69,4 @@ export const getPaymentStatus = async (registrationId: string): Promise<PaymentS
   return apiGet<PaymentStatusResponse>(`/payments/status/${registrationId}`);
 };
 
+

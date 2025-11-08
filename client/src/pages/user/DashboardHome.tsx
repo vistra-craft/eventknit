@@ -58,19 +58,20 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
       try {
         setLoading(true);
         const response = await getUserRegisteredEvents();
-        if (response.success && response.data.events) {
+        if (response.success && response.data?.events) {
+          // API already returns data in the correct format
           setUserEvents(response.data.events.map(event => ({
             id: event.id,
             title: event.title,
             date: event.date,
             location: event.location,
-            type: event.type,
+            type: event.type || 'In-Person',
             image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
             registrationDate: event.registrationDate,
-            venue: event.venue,
-            description: event.description,
-            status: event.status,
-            category: event.category,
+            venue: event.venue || event.location,
+            description: event.description || '',
+            status: event.status || 'upcoming',
+            category: event.category || '',
           })));
         }
       } catch (error) {
