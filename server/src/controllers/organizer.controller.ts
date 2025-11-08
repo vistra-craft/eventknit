@@ -238,5 +238,47 @@ export class OrganizerController {
       next(error);
     }
   }
+
+  /**
+   * Get all organizer events (with filters)
+   */
+  static async getOrganizerEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const filters: {
+        status?: string;
+        category?: string;
+        search?: string;
+        limit?: number;
+        offset?: number;
+        upcoming?: boolean;
+      } = {};
+
+      if (req.query.status) filters.status = req.query.status as string;
+      if (req.query.category) filters.category = req.query.category as string;
+      if (req.query.search) filters.search = req.query.search as string;
+      if (req.query.limit) filters.limit = parseInt(req.query.limit as string, 10);
+      if (req.query.offset) filters.offset = parseInt(req.query.offset as string, 10);
+      if (req.query.upcoming !== undefined) {
+        filters.upcoming = req.query.upcoming === 'true' || req.query.upcoming === '1';
+      }
+
+      const result = await OrganizerService.getOrganizerEvents(req.user.id, req.user.role, filters);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
