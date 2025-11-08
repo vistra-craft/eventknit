@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User } from "lucide-react";
-// import dayjs from "dayjs";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -11,14 +10,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-// import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 
 // App Components
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-// Types
+// Hooks & API
+import { useEvent } from "@/hooks/useEvent";
+import { useAuth } from "@/hooks/useAuth";
+import { registerForEvent } from "@/lib/event-api";
 import type { EventData, RegistrationField } from "@/types/event";
 
 interface FormData {
@@ -32,157 +33,41 @@ interface FormErrors {
 const EventRegistration = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const { event, isLoading, error: eventError, fetchEvent } = useEvent();
   const [currentStep, setCurrentStep] = useState<'registration' | 'confirmation'>('registration');
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<FormErrors>({});
-  const [event, setEvent] = useState<EventData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [selectedTicketType, setSelectedTicketType] = useState<string>('');
+  const [ticketQuantity, setTicketQuantity] = useState<number>(1);
 
-  // Use mock data directly - no async fetching
+  // Fetch event data
   useEffect(() => {
-    // Mock data for development
-    const mockEvent: EventData = {
-      id: eventId || '1',
-      title: "Tech Innovation Summit 2024",
-      startDate: "2024-03-15T00:00:00Z",
-      date: "March 15, 2024",
-      time: "09:00 AM",
-      endTime: "05:00 PM",
-      venue: "Moscone Center",
-      location: "San Francisco, CA",
-      description: "Join industry leaders discussing the future of technology and innovation.",
-      fullDescription: "This full-day conference will feature keynote speakers, panel discussions, and workshops on the latest trends in technology and innovation. Network with industry professionals and gain insights into the future of tech.",
-      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      price: 299,
-      category: "Technology",
-      rating: 4.8,
-      duration: "8 hours",
-      ageRestriction: "18+",
-      isPrivate: false,
-      availableSlots: 45,
-      totalSlots: 200,
-      organizer: {
-        id: '1',
-        firstName: 'Tech',
-        lastName: 'Innovation Corp',
-        organizationName: 'Tech Innovation Corp',
-      },
-      coordinates: { lat: 37.7833, lng: -122.4167 },
-      ticketTypes: [
-        {
-          name: "General Admission",
-          price: 299,
-          features: ["Access to all sessions", "Lunch included", "Conference swag"]
-        },
-        {
-          name: "VIP",
-          price: 599,
-          features: ["VIP seating", "Access to VIP lounge", "Meet & greet with speakers"]
-        }
-      ],
-      faqs: [
-        {
-          question: "What's included in the ticket?",
-          answer: "Your ticket includes access to all sessions, lunch, and conference materials."
-        }
-      ],
-      registrationFields: [
-        {
-          id: "firstName",
-          name: "firstName",
-          type: "text",
-          label: "First Name",
-          required: true,
-          placeholder: "Enter your first name",
-        },
-        {
-          id: "lastName",
-          name: "lastName",
-          type: "text",
-          label: "Last Name",
-          required: true,
-          placeholder: "Enter your last name",
-        },
-        {
-          id: "email",
-          name: "email",
-          type: "email",
-          label: "Email Address",
-          required: true,
-          placeholder: "your.email@example.com",
-        },
-        {
-          id: "phone",
-          name: "phone",
-          type: "tel",
-          label: "Phone Number",
-          required: true,
-          placeholder: "+1 (555) 123-4567",
-        },
-        {
-          id: "company",
-          name: "company",
-          type: "text",
-          label: "Company",
-          required: false,
-          placeholder: "Your company name",
-        },
-        {
-          id: "jobTitle",
-          name: "jobTitle",
-          type: "text",
-          label: "Job Title",
-          required: false,
-          placeholder: "Your job title",
-        },
-        {
-          id: "experience",
-          name: "experience",
-          type: "select",
-          label: "Years of Experience",
-          required: true,
-          options: ["0-2 years", "3-5 years", "6-10 years", "10+ years"],
-        },
-        {
-          id: "dietaryRestrictions",
-          name: "dietaryRestrictions",
-          type: "textarea",
-          label: "Dietary Restrictions",
-          required: false,
-          placeholder: "Please specify any dietary restrictions...",
-        },
-        {
-          id: "emergencyContact",
-          name: "emergencyContact",
-          type: "tel",
-          label: "Emergency Contact Number",
-          required: true,
-          placeholder: "+1 (555) 123-4567",
-        },
-        {
-          id: "accessibilityNeeds",
-          name: "accessibilityNeeds",
-          type: "textarea",
-          label: "Accessibility Requirements",
-          required: false,
-          placeholder: "Please let us know if you have any accessibility requirements...",
-        },
-        {
-          id: "marketingConsent",
-          name: "marketingConsent",
-          type: "checkbox",
-          label: "Marketing Communications",
-          required: false,
-          options: ["I agree to receive marketing emails about future events"],
-        },
-      ],
-    };
+    if (eventId) {
+      fetchEvent(eventId);
+    }
+  }, [eventId, fetchEvent]);
 
-    setEvent(mockEvent);
-    setLoading(false);
-    setError(null);
-  }, [eventId]);
+  // Check authentication
+  useEffect(() => {
+    if (!isAuthenticated && eventId) {
+      // Redirect to login with return URL
+      navigate(`/auth/signin?redirect=/event/${eventId}/register`);
+    }
+  }, [isAuthenticated, eventId, navigate]);
+
+  // Set default ticket type
+  useEffect(() => {
+    if (event?.ticketTypes && event.ticketTypes.length > 0 && !selectedTicketType) {
+      setSelectedTicketType(event.ticketTypes[0].name);
+    }
+  }, [event, selectedTicketType]);
+
+  // Get error from event fetch or submit
+  const error = eventError || submitError;
+  const loading = isLoading;
 
   const handleInputChange = (fieldId: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -200,42 +85,75 @@ const EventRegistration = () => {
   };
 
 
-  const handleRegistrationSubmit = (e: React.FormEvent) => {
+  const handleRegistrationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+    setSubmitting(true);
 
-    // Skip validation for now - allow proceeding without filling all fields
-    // if (!validateForm()) {
-    //   return;
-    // }
-
-    if (event?.price === 0) {
-      // Free event - go directly to confirmation
-      handleFreeEventSubmission();
-    } else {
-      // Paid event - navigate to separate payment page
-      navigate(`/event/${eventId}/payment`, {
-        state: {
-          eventId: eventId,
-          eventTitle: event?.title,
-          registrationData: formData,
-          tickets: event?.ticketTypes?.map(t => ({
-            name: t.name,
-            quantity: 1, // Default quantity
-            price: t.price
-          })) || [],
-          totalPrice: event?.price || 0
-        }
-      });
+    if (!event || !eventId) {
+      setSubmitError('Event not found');
+      setSubmitting(false);
+      return;
     }
-  };
 
-  const handleFreeEventSubmission = () => {
-    // Handle free event registration
-    console.log("Free event registration:", {
-      event: event?.title,
-      data: formData,
-    });
-    setCurrentStep("confirmation");
+    try {
+      // Prepare registration data
+      const registrationData: Record<string, unknown> = {
+        ...formData,
+      };
+
+      // Determine ticket type and quantity
+      const ticketType = selectedTicketType || (event.ticketTypes && event.ticketTypes.length > 0 ? event.ticketTypes[0].name : undefined);
+      const quantity = ticketQuantity || 1;
+
+      // Register for event
+      const response = await registerForEvent(eventId, {
+        ticketType,
+        quantity,
+        registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
+      });
+
+      if (response.success && response.data) {
+        const registration = response.data.registration;
+
+        // Check if event is free
+        const isFree = event.isFree || event.price === 0;
+
+        if (isFree) {
+          // Free event - go directly to confirmation
+          setCurrentStep('confirmation');
+        } else {
+          // Calculate total price
+          const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
+          const ticketPrice = selectedTicket?.price || event.price || 0;
+          const totalPrice = ticketPrice * quantity;
+
+          // Paid event - navigate to payment page with registration ID
+          navigate(`/event/${eventId}/payment`, {
+            state: {
+              registrationId: registration.id,
+              eventId: eventId,
+              eventTitle: event.title,
+              tickets: event.ticketTypes?.map(t => ({
+                name: t.name,
+                quantity: t.name === ticketType ? quantity : 0,
+                price: t.price
+              })).filter(t => t.quantity > 0) || [],
+              totalPrice: totalPrice,
+            }
+          });
+        }
+      } else {
+        throw new Error(response.message || 'Failed to register for event');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to register for event. Please try again.';
+      setSubmitError(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
 
@@ -570,49 +488,92 @@ const EventRegistration = () => {
           </div>
 
           {/* Ticket Selection Section */}
-          <div className="mb-10">
-            {currentStep === "registration" && (
-              <Card variant="default" className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                    </svg>
-                    Select Tickets
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {event.ticketTypes?.map((ticket, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{ticket.name}</h3>
-                          {ticket.features && ticket.features.length > 0 && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {ticket.features.join(" • ")}
-                            </p>
-                          )}
+          {event.ticketTypes && event.ticketTypes.length > 0 && (
+            <div className="mb-10">
+              {currentStep === "registration" && (
+                <Card variant="default" className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                      </svg>
+                      Select Tickets
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {event.ticketTypes.map((ticket, index) => (
+                        <div 
+                          key={index} 
+                          className={`flex items-center justify-between p-4 border rounded-lg transition-colors cursor-pointer ${
+                            selectedTicketType === ticket.name 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:bg-muted/50'
+                          }`}
+                          onClick={() => setSelectedTicketType(ticket.name)}
+                        >
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{ticket.name}</h3>
+                            {ticket.features && ticket.features.length > 0 && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {ticket.features.join(" • ")}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold">${ticket.price}</div>
+                            <div className="text-sm text-muted-foreground">per ticket</div>
+                          </div>
+                          <div className="ml-4">
+                            <input
+                              type="radio"
+                              name="selectedTicket"
+                              value={ticket.name}
+                              checked={selectedTicketType === ticket.name}
+                              onChange={() => setSelectedTicketType(ticket.name)}
+                              className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                            />
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold">${ticket.price}</div>
-                          <div className="text-sm text-muted-foreground">per ticket</div>
-                        </div>
-                        <div className="ml-4">
-                          <input
-                            type="radio"
-                            name="selectedTicket"
-                            value={ticket.name}
-                            defaultChecked={index === 0}
-                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                      ))}
+                    </div>
+                    {selectedTicketType && (
+                      <div className="mt-4 pt-4 border-t">
+                        <Label htmlFor="quantity">Quantity</Label>
+                        <div className="flex items-center gap-4 mt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+                            disabled={ticketQuantity <= 1}
+                          >
+                            -
+                          </Button>
+                          <Input
+                            id="quantity"
+                            type="number"
+                            min="1"
+                            value={ticketQuantity}
+                            onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-20 text-center"
                           />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setTicketQuantity(ticketQuantity + 1)}
+                          >
+                            +
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           {/* Registration Form Section */}
           <div className="mb-10">
@@ -682,6 +643,12 @@ const EventRegistration = () => {
                       </div>
                     </div>
                     
+                    {submitError && (
+                      <Alert variant="destructive" className="mt-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{submitError}</AlertDescription>
+                      </Alert>
+                    )}
                     <div className="flex flex-col sm:flex-row justify-between pt-6 border-t gap-4">
                       <Link
                         to={`/event/${eventId}`}
@@ -692,12 +659,19 @@ const EventRegistration = () => {
                       <Button
                         type="submit"
                         className="bg-primary hover:bg-primary/90 px-8"
-                        disabled={loading}
+                        disabled={submitting || loading}
                         autoFocus
                       >
-                        {event?.price === 0
-                          ? "Complete Registration"
-                          : "Continue to Payment"}
+                        {submitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          event?.isFree || event?.price === 0
+                            ? "Complete Registration"
+                            : "Continue to Payment"
+                        )}
                       </Button>
                     </div>
                   </form>
