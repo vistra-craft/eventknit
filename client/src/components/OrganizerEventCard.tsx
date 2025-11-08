@@ -26,20 +26,28 @@ interface EventCardProps {
     fullDescription: string;
     duration: string;
     ageRestriction: string;
+    attendees?: number;
+    capacity?: number;
+    revenue?: number;
+    views?: number;
+    conversion?: string | number;
+    speakers?: number;
+    exhibitors?: number;
+    sponsors?: number;
   };
 }
 
 const OrganizerEventCard = ({ event }: EventCardProps) => {
-  // Generate mock data for organizer dashboard metrics
-  const mockMetrics = {
-    attendees: Math.floor(Math.random() * 500) + 50,
-    capacity: Math.floor(Math.random() * 200) + 300,
-    revenue: Math.floor(Math.random() * 50000) + 10000,
-    views: Math.floor(Math.random() * 1000) + 200,
-    conversion: Math.floor(Math.random() * 20) + 5,
-    speakers: Math.floor(Math.random() * 10) + 1,
-    exhibitors: Math.floor(Math.random() * 15) + 2,
-    sponsors: Math.floor(Math.random() * 8) + 1,
+  // Use real event data for metrics
+  const metrics = {
+    attendees: typeof event.attendees === 'number' ? event.attendees : 0,
+    capacity: typeof event.capacity === 'number' ? event.capacity : 0,
+    revenue: typeof event.revenue === 'number' ? event.revenue : 0,
+    views: typeof event.views === 'number' ? event.views : 0,
+    conversion: typeof event.conversion === 'string' ? parseFloat(event.conversion) : (typeof event.conversion === 'number' ? event.conversion : 0),
+    speakers: typeof event.speakers === 'number' ? event.speakers : 0,
+    exhibitors: typeof event.exhibitors === 'number' ? event.exhibitors : 0,
+    sponsors: typeof event.sponsors === 'number' ? event.sponsors : 0,
   };
 
   const getStatusColor = (category: string) => {
@@ -101,7 +109,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />
-            <span>{mockMetrics.attendees}/{mockMetrics.capacity} attendees</span>
+            <span>{metrics.attendees}/{metrics.capacity || '∞'} attendees</span>
           </div>
         </div>
         
@@ -113,21 +121,21 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
         <div className="grid grid-cols-3 gap-4 mb-4 text-center">
           <div>
             <p className="text-xs text-muted-foreground">Speakers</p>
-            <p className="font-semibold text-foreground">{mockMetrics.speakers}</p>
+            <p className="font-semibold text-foreground">{metrics.speakers}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Exhibitors</p>
-            <p className="font-semibold text-foreground">{mockMetrics.exhibitors}</p>
+            <p className="font-semibold text-foreground">{metrics.exhibitors}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Revenue</p>
-            <p className="font-semibold text-foreground">${mockMetrics.revenue.toLocaleString()}</p>
+            <p className="font-semibold text-foreground">${metrics.revenue.toLocaleString()}</p>
           </div>
         </div>
         
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {mockMetrics.conversion}% conversion
+            {metrics.conversion.toFixed(1)}% conversion
           </span>
           <Button 
             variant="outline" 
