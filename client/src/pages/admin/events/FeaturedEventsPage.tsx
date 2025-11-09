@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, Upload, Camera, X, Loader2 } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -39,11 +39,53 @@ const FeaturedEventsPage = () => {
     displayOrder: 0,
     isActive: true,
   });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchFeaturedEvents();
     fetchAvailableEvents();
   }, []);
+
+  // Handle image upload
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      // Convert to base64 for now (in production, upload to cloud storage)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        setFormData(prev => ({ ...prev, customImage: base64String }));
+        setIsUploadingImage(false);
+      };
+      reader.onerror = () => {
+        alert('Failed to read image file');
+        setIsUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      alert('Failed to upload image');
+      setIsUploadingImage(false);
+    }
+  };
 
   const fetchFeaturedEvents = async () => {
     try {
@@ -79,6 +121,21 @@ const FeaturedEventsPage = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  const resetForm = () => {
+    setFormData({
+      eventId: "",
+      customTitle: "",
+      customImage: "",
+      customCategory: "",
+      displayStartDate: "",
+      displayEndDate: "",
+      displayOrder: 0,
+      isActive: true,
+    });
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleAddFeaturedEvent = async () => {
     if (!formData.eventId) {
       alert("Please select an event");
@@ -89,16 +146,7 @@ const FeaturedEventsPage = () => {
       await createFeaturedEvent(formData);
       alert("Featured event created successfully");
       setShowAddDialog(false);
-      setFormData({
-        eventId: "",
-        customTitle: "",
-        customImage: "",
-        customCategory: "",
-        displayStartDate: "",
-        displayEndDate: "",
-        displayOrder: 0,
-        isActive: true,
-      });
+      resetForm();
       fetchFeaturedEvents();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create featured event";
@@ -395,17 +443,80 @@ const FeaturedEventsPage = () => {
                 </p>
               </div>
 
-              <div>
-                <Label htmlFor="customImage">Custom Image URL (optional)</Label>
-                <Input
-                  id="customImage"
-                  placeholder="Leave empty to use event image"
-                  value={formData.customImage}
-                  onChange={(e) => setFormData({ ...formData, customImage: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  If empty, the event image will be used
-                </p>
+              <div className="space-y-4">
+                <Label>Custom Image (optional)</Label>
+                <div className="space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  {imagePreview || formData.customImage ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview || formData.customImage}
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setFormData(prev => ({ ...prev, customImage: '' }));
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                      <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground mb-2">Upload an image or enter URL</p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploadingImage}
+                        >
+                          {isUploadingImage ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Upload Image
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="customImageUrl">Or enter image URL</Label>
+                  <Input
+                    id="customImageUrl"
+                    placeholder="https://example.com/image.jpg"
+                    value={formData.customImage && !imagePreview ? formData.customImage : ''}
+                    onChange={(e) => {
+                      setFormData({ ...formData, customImage: e.target.value });
+                      setImagePreview(null);
+                    }}
+                    disabled={!!imagePreview}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    If empty, the event image will be used
+                  </p>
+                </div>
               </div>
 
               <div>

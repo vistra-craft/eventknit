@@ -46,6 +46,7 @@ const PendingApprovalPage = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
 
   // Fetch pending events
   useEffect(() => {
@@ -323,9 +324,9 @@ const PendingApprovalPage = () => {
                     <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setPreviewEvent(event)}>
                       <Eye className="h-4 w-4 mr-1" />
-                      Review
+                      Preview
                     </Button>
                     <Button 
                       variant="default" 
@@ -368,6 +369,104 @@ const PendingApprovalPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Event Preview Dialog */}
+        <Dialog open={!!previewEvent} onOpenChange={() => setPreviewEvent(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Event Preview</DialogTitle>
+              <DialogDescription>
+                Review the event details before approval
+              </DialogDescription>
+            </DialogHeader>
+            {previewEvent && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold">{previewEvent.title}</h2>
+                  <p className="text-muted-foreground mt-1">by {previewEvent.organizer}</p>
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                    Pending Approval
+                  </Badge>
+                  <Badge className={getTypeBadge(previewEvent.type)}>
+                    {previewEvent.type}
+                  </Badge>
+                  <Badge className={getPriceBadge(previewEvent.isFree ? 'free' : 'paid')}>
+                    {previewEvent.isFree ? 'Free' : 'Paid'}
+                  </Badge>
+                  <Badge variant="outline">{previewEvent.category}</Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{previewEvent.date}</p>
+                      {previewEvent.startTime && (
+                        <p className="text-sm text-muted-foreground">{previewEvent.startTime}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{previewEvent.venue || previewEvent.location}</p>
+                      {previewEvent.venue && previewEvent.location && (
+                        <p className="text-sm text-muted-foreground">{previewEvent.location}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <p className="font-medium">{previewEvent.attendees} attendees</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Submitted {getDaysSinceSubmission(previewEvent.submittedDate)} days ago
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{previewEvent.description}</p>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPreviewEvent(null)}>
+                    Close
+                  </Button>
+                  <Button 
+                    variant="default"
+                    onClick={() => {
+                      if (previewEvent) {
+                        setPreviewEvent(null);
+                        handleApprove(previewEvent.id);
+                      }
+                    }}
+                    disabled={processing === previewEvent?.id}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {processing === previewEvent?.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Approving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Approve Event
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Reject Dialog */}
         <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
