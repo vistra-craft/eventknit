@@ -2,7 +2,7 @@
  * Payment API Functions
  */
 
-import { apiPost, apiGet, type ApiResponse } from './api';
+import { apiPost, apiGet } from './api';
 
 /**
  * Initialize payment response

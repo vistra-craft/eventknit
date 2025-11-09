@@ -332,7 +332,10 @@ describe('Event System', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.events.every((e: any) => e.status === EventStatus.PENDING)).toBe(true);
+      interface EventItem {
+        status: string;
+      }
+      expect(response.body.data.events.every((e: EventItem) => e.status === EventStatus.PENDING)).toBe(true);
     });
   });
 
@@ -979,9 +982,13 @@ describe('Event System', () => {
       const events = response.body.data.events;
       
       // Find events by title
-      const upcomingEvent = events.find((e: any) => e.title === 'Upcoming Event');
-      const pastEvent = events.find((e: any) => e.title === 'Past Event');
-      const ongoingEvent = events.find((e: any) => e.title === 'Ongoing Event');
+      interface EventItem {
+        title: string;
+        status?: string;
+      }
+      const upcomingEvent = events.find((e: EventItem) => e.title === 'Upcoming Event');
+      const pastEvent = events.find((e: EventItem) => e.title === 'Past Event');
+      const ongoingEvent = events.find((e: EventItem) => e.title === 'Ongoing Event');
 
       if (upcomingEvent) {
         expect(upcomingEvent.status).toBe('upcoming');
@@ -1009,10 +1016,15 @@ describe('Event System', () => {
 
       const events = response.body.data.events;
       
-      events.forEach((event: any) => {
+      interface EventItem {
+        date?: string;
+      }
+      events.forEach((event: EventItem) => {
         expect(event.date).toBeDefined();
-        expect(typeof event.date).toBe('string');
-        expect(event.date.length).toBeGreaterThan(0);
+        if (event.date) {
+          expect(typeof event.date).toBe('string');
+          expect(event.date.length).toBeGreaterThan(0);
+        }
       });
     });
 
@@ -1029,7 +1041,11 @@ describe('Event System', () => {
 
       const events = response.body.data.events;
       
-      events.forEach((event: any) => {
+      interface EventItem {
+        venue?: string;
+        description?: string;
+      }
+      events.forEach((event: EventItem) => {
         expect(event).toHaveProperty('venue');
         expect(event).toHaveProperty('description');
         expect(event).toHaveProperty('category');

@@ -43,7 +43,7 @@ const UpcomingEvents = () => {
         const response = await getOrganizerUpcomingEvents(filters);
 
         if (response.success && response.data) {
-          setUpcomingEvents(response.data.events as OrganizerDashboardEvent[]);
+          setUpcomingEvents(response.data.events as unknown as OrganizerDashboardEvent[]);
         } else {
           throw new Error(response.message || 'Failed to fetch upcoming events');
         }

@@ -1,121 +1,104 @@
-import { useState } from "react";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import { Textarea } from "../../../components/ui/textarea";
 import AdminLayout from "../AdminLayout";
+import { getEvents, EventStatus } from "../../../lib/event-api";
+import { approveEvent, rejectEvent } from "../../../lib/admin-api";
+import { useToast } from "../../../hooks/use-toast";
 
 interface Event {
   id: string;
   title: string;
   organizer: string;
+  organizerName?: string;
   date: string;
-  time: string;
+  startDate?: string;
+  startTime?: string;
   location: string;
+  venue?: string;
   attendees: number;
-  status: "pending";
+  status: string;
   category: string;
   type: "public" | "private";
-  price: "free" | "paid";
+  isFree: boolean;
   submittedDate: string;
+  createdAt: string;
   description: string;
 }
 
-const mockPendingEvents: Event[] = [
-  {
-    id: "1",
-    title: "Tech Conference 2024",
-    organizer: "TechCorp Inc.",
-    date: "2024-03-15",
-    time: "09:00",
-    location: "San Francisco, CA",
-    attendees: 250,
-    status: "pending",
-    category: "Technology",
-    type: "public",
-    price: "paid",
-    submittedDate: "2024-01-15",
-    description: "Annual technology conference featuring the latest innovations in AI, blockchain, and cloud computing."
-  },
-  {
-    id: "2",
-    title: "Music Festival",
-    organizer: "Music Events LLC",
-    date: "2024-04-20",
-    time: "18:00",
-    location: "Austin, TX",
-    attendees: 5000,
-    status: "pending",
-    category: "Music",
-    type: "public",
-    price: "paid",
-    submittedDate: "2024-01-20",
-    description: "Three-day music festival featuring indie and mainstream artists."
-  },
-  {
-    id: "3",
-    title: "Business Workshop",
-    organizer: "Business Academy",
-    date: "2024-03-10",
-    time: "14:00",
-    location: "New York, NY",
-    attendees: 45,
-    status: "pending",
-    category: "Business",
-    type: "private",
-    price: "free",
-    submittedDate: "2024-01-18",
-    description: "Interactive workshop on modern business strategies and leadership."
-  },
-  {
-    id: "4",
-    title: "Art Exhibition",
-    organizer: "Modern Art Gallery",
-    date: "2024-02-28",
-    time: "10:00",
-    location: "Los Angeles, CA",
-    attendees: 120,
-    status: "pending",
-    category: "Art",
-    type: "public",
-    price: "free",
-    submittedDate: "2024-01-22",
-    description: "Contemporary art exhibition showcasing emerging artists."
-  },
-  {
-    id: "5",
-    title: "Sports Tournament",
-    organizer: "Sports Club",
-    date: "2024-05-15",
-    time: "08:00",
-    location: "Chicago, IL",
-    attendees: 300,
-    status: "pending",
-    category: "Sports",
-    type: "public",
-    price: "paid",
-    submittedDate: "2024-01-25",
-    description: "Annual basketball tournament for amateur teams."
-  }
-];
-
 const PendingApprovalPage = () => {
+  const { toast } = useToast();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [processing, setProcessing] = useState<string | null>(null);
 
-  const filteredEvents = mockPendingEvents.filter(event => {
+  // Fetch pending events
+  useEffect(() => {
+    const fetchPendingEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getEvents({ status: EventStatus.PENDING });
+        if (response.success && response.data?.events) {
+          const pendingEvents = response.data.events.map(event => ({
+            id: event.id,
+            title: event.title,
+            organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+            organizerName: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+            date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
+            startDate: event.startDate,
+            startTime: event.startTime || '',
+            location: event.location || event.venue || 'TBD',
+            venue: event.venue || undefined,
+            attendees: event.attendees || 0,
+            status: event.status || 'PENDING',
+            category: event.category || 'Uncategorized',
+            type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
+            isFree: event.isFree || false,
+            submittedDate: event.createdAt || new Date().toISOString(),
+            createdAt: event.createdAt || new Date().toISOString(),
+            description: event.description || '',
+          }));
+          setEvents(pendingEvents);
+        }
+      } catch (err) {
+        console.error('Error fetching pending events:', err);
+        setError('Failed to load pending events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPendingEvents();
+  }, []);
+
+  const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
     const matchesType = typeFilter === "all" || event.type === typeFilter;
-    const matchesPrice = priceFilter === "all" || event.price === priceFilter;
+    const matchesPrice = priceFilter === "all" || (priceFilter === "free" && event.isFree) || (priceFilter === "paid" && !event.isFree);
     
     return matchesSearch && matchesCategory && matchesType && matchesPrice;
   });
+
+  // Get unique categories from events
+  const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
@@ -129,14 +112,80 @@ const PendingApprovalPage = () => {
       : "bg-orange-100 text-orange-800 border-orange-200";
   };
 
-  const handleApprove = (eventId: string) => {
-    console.log("Approving event:", eventId);
-    // TODO: Implement approval logic
+  const handleApprove = async (eventId: string) => {
+    try {
+      setProcessing(eventId);
+      const response = await approveEvent(eventId);
+      if (response.success) {
+        toast({
+          title: "Event Approved",
+          description: "The event has been approved successfully.",
+        });
+        // Remove event from list
+        setEvents(events.filter(e => e.id !== eventId));
+      } else {
+        throw new Error(response.message || 'Failed to approve event');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to approve event. Please try again.';
+      console.error('Error approving event:', err);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const handleDecline = (eventId: string) => {
-    console.log("Declining event:", eventId);
-    // TODO: Implement decline logic
+    setSelectedEventId(eventId);
+    setRejectionReason("");
+    setRejectDialogOpen(true);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!selectedEventId || !rejectionReason.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a rejection reason.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setProcessing(selectedEventId);
+      const response = await rejectEvent(selectedEventId, rejectionReason);
+      if (response.success) {
+        toast({
+          title: "Event Rejected",
+          description: "The event has been rejected successfully.",
+        });
+        // Remove event from list
+        setEvents(events.filter(e => e.id !== selectedEventId));
+        setRejectDialogOpen(false);
+        setSelectedEventId(null);
+        setRejectionReason("");
+      } else {
+        throw new Error(response.message || 'Failed to reject event');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to reject event. Please try again.';
+      console.error('Error rejecting event:', err);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const getDaysSinceSubmission = (submittedDate: string) => {
@@ -146,6 +195,28 @@ const PendingApprovalPage = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading pending events...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -157,7 +228,7 @@ const PendingApprovalPage = () => {
             <p className="text-gray-600">Review and approve events waiting for platform approval</p>
           </div>
           <div className="text-sm text-gray-500">
-            {filteredEvents.length} of {mockPendingEvents.length} events pending
+            {filteredEvents.length} of {events.length} events pending
           </div>
         </div>
 
@@ -182,13 +253,9 @@ const PendingApprovalPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Technology">Technology</SelectItem>
-                  <SelectItem value="Music">Music</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="Art">Art</SelectItem>
-                  <SelectItem value="Sports">Sports</SelectItem>
-                  <SelectItem value="Comedy">Comedy</SelectItem>
-                  <SelectItem value="Theatre">Theatre</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -230,14 +297,14 @@ const PendingApprovalPage = () => {
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
                         {event.type}
                       </Badge>
-                      <Badge className={`text-xs ${getPriceBadge(event.price)}`}>
-                        {event.price}
+                      <Badge className={`text-xs ${getPriceBadge(event.isFree ? 'free' : 'paid')}`}>
+                        {event.isFree ? 'free' : 'paid'}
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.date).toLocaleDateString()} at {event.time}</span>
+                        <span>{event.date} {event.startTime && `at ${event.startTime}`}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" />
@@ -264,15 +331,21 @@ const PendingApprovalPage = () => {
                       variant="default" 
                       size="sm"
                       onClick={() => handleApprove(event.id)}
+                      disabled={processing === event.id}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      <Check className="h-4 w-4 mr-1" />
+                      {processing === event.id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-1" />
+                      )}
                       Approve
                     </Button>
                     <Button 
                       variant="destructive" 
                       size="sm"
                       onClick={() => handleDecline(event.id)}
+                      disabled={processing === event.id}
                     >
                       <X className="h-4 w-4 mr-1" />
                       Decline
@@ -295,6 +368,45 @@ const PendingApprovalPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Reject Dialog */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reject Event</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for rejecting this event. This will be sent to the organizer.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Enter rejection reason..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleConfirmReject}
+                disabled={!rejectionReason.trim() || processing === selectedEventId}
+              >
+                {processing === selectedEventId ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Rejecting...
+                  </>
+                ) : (
+                  'Reject Event'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

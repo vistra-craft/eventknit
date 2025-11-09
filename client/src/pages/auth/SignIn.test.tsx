@@ -54,8 +54,9 @@ describe('SignIn', () => {
       </TestWrapper>
     );
 
-    const emailInput = screen.getByPlaceholderText(/enter your email/i);
-    const passwordInput = screen.getByPlaceholderText(/enter your password/i);
+    // Use getByLabelText for the main form fields (more specific)
+    const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/password/i);
 
     expect(emailInput).not.toBeDisabled();
     expect(passwordInput).not.toBeDisabled();

@@ -210,7 +210,10 @@ describe('Organizer Staff Management', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.staff.length).toBeGreaterThan(0);
-      response.body.data.staff.forEach((staff: any) => {
+      interface StaffItem {
+        organizationName?: string;
+      }
+      response.body.data.staff.forEach((staff: StaffItem) => {
         // Note: managedBy will be available after Prisma migration
         expect(staff.organizationName).toBeDefined();
       });
@@ -575,7 +578,11 @@ describe('Organizer Staff Management', () => {
       const events = response.body.data.events;
       
       // Find event 1 (free event with 2 attendees)
-      const event1 = events.find((e: any) => e.title === 'Event 1');
+      interface EventItem {
+        title: string;
+        attendees?: number;
+      }
+      const event1 = events.find((e: EventItem) => e.title === 'Event 1');
       if (event1) {
         expect(event1.attendees).toBe(2);
         expect(event1.revenue).toBe(0);
@@ -584,7 +591,7 @@ describe('Organizer Staff Management', () => {
       }
 
       // Find event 2 (paid event with 1 attendee)
-      const event2 = events.find((e: any) => e.title === 'Event 2');
+      const event2 = events.find((e: EventItem) => e.title === 'Event 2');
       if (event2) {
         expect(event2.attendees).toBe(1);
         expect(event2.revenue).toBe(50);

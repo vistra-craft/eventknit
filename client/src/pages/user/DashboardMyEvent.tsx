@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Users, Ticket, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -38,7 +38,7 @@ interface DashboardMyEventProps {
   user: User;
 }
 
-const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEventData, user }) => {
+const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEventData }) => {
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
   const [eventData, setEventData] = useState<EventData | null>(propEventData || null);
@@ -63,7 +63,7 @@ const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEven
           } else {
             setError('No events found');
           }
-        } catch (err) {
+        } catch {
           setError('Failed to load event');
         } finally {
           setLoading(false);
@@ -83,7 +83,7 @@ const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEven
             setError('Event not found');
           }
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load event');
       } finally {
         setLoading(false);

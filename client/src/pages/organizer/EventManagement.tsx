@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -71,15 +72,31 @@ const EventManagement = () => {
         const registrationsResponse = await getEventRegistrations(eventId);
         if (registrationsResponse.success && registrationsResponse.data) {
           // Transform registrations to attendees format
-          const transformedAttendees = registrationsResponse.data.registrations.map((reg: any) => ({
+          // Backend already filters based on access level
+          interface Registration {
+            id: string;
+            attendee?: { firstName?: string; lastName?: string; email?: string };
+            user?: { firstName?: string; lastName?: string; email?: string };
+            ticketType?: string | null;
+            status?: string;
+            createdAt?: string;
+            quantity?: number;
+            totalAmount?: number | string;
+            paymentStatus?: string | null;
+            paymentMethod?: string | null;
+          }
+          const transformedAttendees = registrationsResponse.data.registrations.map((reg: Registration) => ({
             id: reg.id,
-            name: `${reg.user?.firstName || ''} ${reg.user?.lastName || ''}`.trim() || 'Guest',
-            email: reg.user?.email || reg.email || 'N/A',
+            name: `${reg.attendee?.firstName || reg.user?.firstName || ''} ${reg.attendee?.lastName || reg.user?.lastName || ''}`.trim() || 'Guest',
+            email: reg.attendee?.email || reg.user?.email || 'N/A',
             ticketType: reg.ticketType || 'Standard',
             status: reg.status?.toLowerCase() || 'pending',
             registeredDate: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A',
             quantity: reg.quantity || 1,
-            totalAmount: reg.totalAmount || 0,
+            totalAmount: reg.totalAmount || 0, // May be undefined if RESTRICTED
+            paymentStatus: reg.paymentStatus || undefined,
+            paymentMethod: reg.paymentMethod || undefined,
+            // paymentTransactionId is never included for organizers
           }));
           setAttendees(transformedAttendees);
         }
@@ -123,10 +140,27 @@ const EventManagement = () => {
     );
   }
 
+  // Get access level from event data (if available)
+  const accessLevel = (eventData as { organizerDataAccess?: string })?.organizerDataAccess || 'RESTRICTED';
+  const hasAttendeeListAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
+  const hasPaymentDetailsAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
+  
+  // Calculate summary stats (always available)
+  const totalAttendees = attendees.length;
+  interface Attendee {
+    status?: string;
+    totalAmount?: number | string;
+  }
+  const confirmedAttendees = attendees.filter((a: Attendee) => a.status === 'confirmed' || a.status === 'CONFIRMED').length;
+  const pendingAttendees = attendees.filter((a: Attendee) => a.status === 'pending' || a.status === 'PENDING').length;
+  const totalRevenue = hasPaymentDetailsAccess 
+    ? attendees.reduce((sum: number, a: Attendee) => sum + (Number(a.totalAmount) || 0), 0)
+    : 0;
+
   // Mock data for sections that don't have APIs yet (speakers, exhibitors, sponsors, sessions, abstracts)
   // These can be added later when those features are implemented
   const mockData = {
-    // Use real attendees data from API
+    // Use real attendees data from API (already filtered by backend based on access level)
     attendees: attendees,
 
     speakers: eventData.speakers ? (Array.isArray(eventData.speakers) ? eventData.speakers : []) : [
@@ -243,7 +277,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Attendees</p>
-                      <p className="text-2xl font-bold">{mockData.attendees.length}</p>
+                      <p className="text-2xl font-bold">{totalAttendees}</p>
                     </div>
                     <Users className="w-8 h-8 text-primary" />
                   </div>
@@ -254,7 +288,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{mockData.attendees.filter((a: any) => a.status === 'confirmed' || a.status === 'CONFIRMED').length}</p>
+                      <p className="text-2xl font-bold">{confirmedAttendees}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -265,7 +299,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold">{mockData.attendees.filter((a: any) => a.status === 'pending' || a.status === 'PENDING').length}</p>
+                      <p className="text-2xl font-bold">{pendingAttendees}</p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -273,37 +307,58 @@ const EventManagement = () => {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendees List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockData.attendees.map((attendee: any) => (
-                    <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {attendee.name.split(' ').map((n: string) => n[0]).join('')}
-                          </span>
+            {!hasAttendeeListAccess && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Your data access is currently restricted. Contact an administrator to request access to attendee details.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {hasAttendeeListAccess && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendees List</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {mockData.attendees.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No attendees registered yet</p>
+                    ) : (
+                      mockData.attendees.map((attendee: any) => (
+                        <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-primary">
+                                {attendee.name.split(' ').map((n: string) => n[0]).join('')}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium">{attendee.name}</p>
+                              <p className="text-sm text-muted-foreground">{attendee.email}</p>
+                              {hasPaymentDetailsAccess && attendee.totalAmount && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Amount: ${Number(attendee.totalAmount).toFixed(2)} | 
+                                  Status: {attendee.paymentStatus || 'N/A'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <Badge variant="secondary">{attendee.ticketType}</Badge>
+                            <Badge className={getStatusColor(attendee.status)}>
+                              {attendee.status}
+                            </Badge>
+                            <Button variant="outline" size="sm">View Details</Button>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{attendee.name}</p>
-                          <p className="text-sm text-muted-foreground">{attendee.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{attendee.ticketType}</Badge>
-                        <Badge className={getStatusColor(attendee.status)}>
-                          {attendee.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">View Details</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
 
@@ -555,13 +610,26 @@ const EventManagement = () => {
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Revenue Analytics</h3>
             
+            {!hasPaymentDetailsAccess && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Your data access is currently restricted. You can only see summary statistics. Contact an administrator to request access to detailed revenue information.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold">${(mockData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0)).toLocaleString()}</p>
+                      <p className="text-2xl font-bold">
+                        {hasPaymentDetailsAccess 
+                          ? `$${totalRevenue.toLocaleString()}`
+                          : 'N/A'}
+                      </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
@@ -572,7 +640,11 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Ticket Sales</p>
-                      <p className="text-2xl font-bold">${(mockData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0) * 0.7).toLocaleString()}</p>
+                      <p className="text-2xl font-bold">
+                        {hasPaymentDetailsAccess 
+                          ? `$${(totalRevenue * 0.7).toLocaleString()}`
+                          : 'N/A'}
+                      </p>
                     </div>
                     <Users className="w-8 h-8 text-blue-600" />
                   </div>
@@ -582,8 +654,12 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Sponsorships</p>
-                      <p className="text-2xl font-bold">${(mockData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0) * 0.3).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">Platform Fee</p>
+                      <p className="text-2xl font-bold">
+                        {hasPaymentDetailsAccess 
+                          ? `$${(totalRevenue * 0.3).toLocaleString()}`
+                          : 'N/A'}
+                      </p>
                     </div>
                     <Star className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -595,7 +671,7 @@ const EventManagement = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Conversion Rate</p>
                       <p className="text-2xl font-bold">{eventData.capacity && eventData.capacity > 0 
-                        ? ((mockData.attendees.length / eventData.capacity) * 100).toFixed(1)
+                        ? ((totalAttendees / eventData.capacity) * 100).toFixed(1)
                         : 0}%</p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-primary" />

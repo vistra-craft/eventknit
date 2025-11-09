@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { UserRole } from '@/types/auth';
 
 const AttendeeRegistration = () => {
   const navigate = useNavigate();
@@ -172,7 +173,7 @@ const AttendeeRegistration = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           phoneNumber: formData.phoneNumber || undefined,
-          role: 'ATTENDEE' as const,
+          role: UserRole.ATTENDEE,
         };
 
         // Call registration API

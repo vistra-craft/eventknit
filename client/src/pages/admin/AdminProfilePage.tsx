@@ -12,8 +12,6 @@ import {
   ArrowLeft,
   Shield,
   Mail,
-  Phone,
-  Building2,
   Calendar,
   CheckCircle2,
   XCircle,

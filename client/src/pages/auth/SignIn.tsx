@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,6 @@ import { requestEmailOAuthCode, verifyEmailOAuthCode, facebookAuth } from '@/lib
 
 const SignIn = () => {
   const { login, isLoading, error: authError, clearError, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [emailOAuthEmail, setEmailOAuthEmail] = useState('');
   const [emailOAuthCode, setEmailOAuthCode] = useState('');
@@ -98,13 +97,18 @@ const SignIn = () => {
       }
 
       // Request Facebook login
-      window.FB.login(async (response: any) => {
+      interface FacebookLoginResponse {
+        authResponse?: {
+          accessToken: string;
+        };
+      }
+      window.FB.login(async (response: FacebookLoginResponse) => {
         if (response.authResponse) {
           try {
             const result = await facebookAuth(response.authResponse.accessToken);
             // Handle successful login - useAuth hook will handle navigation
             window.location.href = result.data.user.role === 'ORGANIZER' ? '/organizer/dashboard' : '/dashboard';
-          } catch (error: any) {
+          } catch (error: unknown) {
             clearError();
             console.error('Facebook login error:', error);
           }
@@ -112,7 +116,7 @@ const SignIn = () => {
           console.log('User cancelled Facebook login');
         }
       }, { scope: 'email' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearError();
       console.error('Facebook sign in error:', error);
     }
@@ -129,7 +133,7 @@ const SignIn = () => {
     try {
       await requestEmailOAuthCode(emailOAuthEmail, emailOAuthRole);
       setEmailOAuthCodeSent(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Email OAuth code request error:', error);
       clearError();
     }
@@ -147,7 +151,7 @@ const SignIn = () => {
       const result = await verifyEmailOAuthCode(emailOAuthEmail, emailOAuthCode);
       // Handle successful login/registration - navigate to appropriate dashboard
       window.location.href = result.data.user.role === 'ORGANIZER' ? '/organizer/dashboard' : '/dashboard';
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Email OAuth verification error:', error);
       clearError();
     }

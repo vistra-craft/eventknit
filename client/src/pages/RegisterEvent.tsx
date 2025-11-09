@@ -20,7 +20,7 @@ import Footer from "@/components/Footer";
 import { useEvent } from "@/hooks/useEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { registerForEvent } from "@/lib/event-api";
-import type { EventData, RegistrationField } from "@/types/event";
+import type { RegistrationField } from "@/types/event";
 
 interface FormData {
   [key: string]: string | number | boolean;
@@ -33,7 +33,7 @@ interface FormErrors {
 const EventRegistration = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { event, isLoading, error: eventError, fetchEvent } = useEvent();
   const [currentStep, setCurrentStep] = useState<'registration' | 'confirmation'>('registration');
   const [formData, setFormData] = useState<FormData>({});
@@ -125,7 +125,7 @@ const EventRegistration = () => {
         } else {
           // Calculate total price
           const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
-          const ticketPrice = selectedTicket?.price || event.price || 0;
+          const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
           const totalPrice = ticketPrice * quantity;
 
           // Paid event - navigate to payment page with registration ID

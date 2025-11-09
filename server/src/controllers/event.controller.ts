@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { EventService } from '../services/event.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { EventStatus } from '@prisma/client';
+import { EventStatus, DataAccessLevel } from '@prisma/client';
 
 export class EventController {
   /**
@@ -339,6 +339,92 @@ export class EventController {
         success: true,
         message: 'Event rejected successfully',
         data: { event },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update organizer data access level (admin function)
+   */
+  static async updateOrganizerDataAccess(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { dataAccessLevel } = req.body;
+
+      if (!dataAccessLevel || !['RESTRICTED', 'STANDARD', 'FULL'].includes(dataAccessLevel)) {
+        res.status(400).json({
+          success: false,
+          message: 'Valid dataAccessLevel is required (RESTRICTED, STANDARD, or FULL)',
+        });
+        return;
+      }
+
+      const event = await EventService.updateOrganizerDataAccess(
+        req.params.id,
+        dataAccessLevel as DataAccessLevel,
+        req.user.id,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Organizer data access updated successfully',
+        data: { event },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Bulk update organizer data access level (admin function)
+   */
+  static async bulkUpdateOrganizerDataAccess(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { eventIds, dataAccessLevel } = req.body;
+
+      if (!eventIds || !Array.isArray(eventIds) || eventIds.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'eventIds array is required and must not be empty',
+        });
+        return;
+      }
+
+      if (!dataAccessLevel || !['RESTRICTED', 'STANDARD', 'FULL'].includes(dataAccessLevel)) {
+        res.status(400).json({
+          success: false,
+          message: 'Valid dataAccessLevel is required (RESTRICTED, STANDARD, or FULL)',
+        });
+        return;
+      }
+
+      const result = await EventService.bulkUpdateOrganizerDataAccess(
+        eventIds,
+        dataAccessLevel as DataAccessLevel,
+        req.user.id,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Organizer data access updated successfully for ${result.updatedCount} event(s)`,
+        data: result,
       });
     } catch (error) {
       next(error);

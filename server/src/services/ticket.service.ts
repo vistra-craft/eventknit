@@ -91,7 +91,7 @@ export class TicketService {
 
     if (startTime) {
       const [hours, minutes] = startTime.split(':');
-      const time12 = new Date(start.getFullYear(), start.getMonth(), start.getDate(), parseInt(hours), parseInt(minutes))
+      const time12 = new Date(start.getFullYear(), start.getMonth(), start.getDate(), parseInt(hours, 10), parseInt(minutes, 10))
         .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
       dateString += ` at ${time12}`;
     }
@@ -101,13 +101,13 @@ export class TicketService {
       dateString += ` - ${end.toLocaleDateString('en-US', options)}`;
       if (endTime) {
         const [hours, minutes] = endTime.split(':');
-        const time12 = new Date(end.getFullYear(), end.getMonth(), end.getDate(), parseInt(hours), parseInt(minutes))
+        const time12 = new Date(end.getFullYear(), end.getMonth(), end.getDate(), parseInt(hours, 10), parseInt(minutes, 10))
           .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         dateString += ` at ${time12}`;
       }
     } else if (endTime && endTime !== startTime) {
       const [hours, minutes] = endTime.split(':');
-      const time12 = new Date(start.getFullYear(), start.getMonth(), start.getDate(), parseInt(hours), parseInt(minutes))
+      const time12 = new Date(start.getFullYear(), start.getMonth(), start.getDate(), parseInt(hours, 10), parseInt(minutes, 10))
         .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
       dateString += ` - ${time12}`;
     }
@@ -127,7 +127,7 @@ export class TicketService {
 
     // Format dates for ICS (YYYYMMDDTHHMMSSZ)
     const formatICSDate = (date: Date): string => {
-      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      return `${date.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`;
     };
 
     const icsContent = [
@@ -173,6 +173,7 @@ export class TicketService {
       const eventDate = this.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime);
 
       // Generate Google Calendar link
+      // eslint-disable-next-line no-undef
       const googleCalendarParams = new URLSearchParams({
         action: 'TEMPLATE',
         text: event.title,
@@ -183,6 +184,7 @@ export class TicketService {
       const googleCalendarUrl = `https://calendar.google.com/calendar/render?${googleCalendarParams.toString()}`;
 
       // Generate Outlook Calendar link
+      // eslint-disable-next-line no-undef
       const outlookCalendarParams = new URLSearchParams({
         subject: event.title,
         startdt: new Date(event.startDate).toISOString(),

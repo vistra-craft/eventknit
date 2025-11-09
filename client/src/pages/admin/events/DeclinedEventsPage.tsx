@@ -1,129 +1,107 @@
-import { useState } from "react";
-import { Search, Calendar, MapPin, Users, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Calendar, MapPin, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
 import AdminLayout from "../AdminLayout";
+import { getEvents, EventStatus } from "../../../lib/event-api";
+import { approveEvent } from "../../../lib/admin-api";
+import { useToast } from "../../../hooks/use-toast";
 
 interface Event {
   id: string;
   title: string;
   organizer: string;
   date: string;
-  time: string;
+  startDate?: string;
+  startTime?: string;
   location: string;
-  attendees: number;
-  status: "declined";
   category: string;
   type: "public" | "private";
-  price: "free" | "paid";
+  isFree: boolean;
   declinedDate: string;
   reason: string;
   declinedBy: string;
 }
 
-const mockDeclinedEvents: Event[] = [
-  {
-    id: "1",
-    title: "Tech Conference 2024",
-    organizer: "TechCorp Inc.",
-    date: "2024-03-15",
-    time: "09:00",
-    location: "San Francisco, CA",
-    attendees: 250,
-    status: "declined",
-    category: "Technology",
-    type: "public",
-    price: "paid",
-    declinedDate: "2024-01-15",
-    reason: "Inappropriate content description",
-    declinedBy: "Admin User"
-  },
-  {
-    id: "2",
-    title: "Music Festival",
-    organizer: "Music Events LLC",
-    date: "2024-04-20",
-    time: "18:00",
-    location: "Austin, TX",
-    attendees: 5000,
-    status: "declined",
-    category: "Music",
-    type: "public",
-    price: "paid",
-    declinedDate: "2024-01-20",
-    reason: "Missing required documentation",
-    declinedBy: "Admin User"
-  },
-  {
-    id: "3",
-    title: "Business Workshop",
-    organizer: "Business Academy",
-    date: "2024-03-10",
-    time: "14:00",
-    location: "New York, NY",
-    attendees: 45,
-    status: "declined",
-    category: "Business",
-    type: "private",
-    price: "free",
-    declinedDate: "2024-01-18",
-    reason: "Venue not approved for events",
-    declinedBy: "Admin User"
-  },
-  {
-    id: "4",
-    title: "Art Exhibition",
-    organizer: "Modern Art Gallery",
-    date: "2024-02-28",
-    time: "10:00",
-    location: "Los Angeles, CA",
-    attendees: 120,
-    status: "declined",
-    category: "Art",
-    type: "public",
-    price: "free",
-    declinedDate: "2024-01-22",
-    reason: "Organizer account suspended",
-    declinedBy: "Admin User"
-  },
-  {
-    id: "5",
-    title: "Sports Tournament",
-    organizer: "Sports Club",
-    date: "2024-05-15",
-    time: "08:00",
-    location: "Chicago, IL",
-    attendees: 300,
-    status: "declined",
-    category: "Sports",
-    type: "public",
-    price: "paid",
-    declinedDate: "2024-01-25",
-    reason: "Duplicate event submission",
-    declinedBy: "Admin User"
-  }
-];
-
 const DeclinedEventsPage = () => {
+  const { toast } = useToast();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
   const [reasonFilter, setReasonFilter] = useState("all");
+  const [processing, setProcessing] = useState<string | null>(null);
 
-  const filteredEvents = mockDeclinedEvents.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
-    const matchesType = typeFilter === "all" || event.type === typeFilter;
-    const matchesPrice = priceFilter === "all" || event.price === priceFilter;
+  // Fetch declined events (status = REJECTED)
+  useEffect(() => {
+    const fetchDeclinedEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const filters: Record<string, unknown> = {
+          status: EventStatus.REJECTED,
+        };
+        
+        if (categoryFilter !== "all") {
+          filters.category = categoryFilter;
+        }
+        
+        if (typeFilter !== "all") {
+          filters.type = typeFilter === "public" ? "PUBLIC" : "PRIVATE";
+        }
+        
+        if (priceFilter !== "all") {
+          filters.isFree = priceFilter === "free";
+        }
+        
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+
+        const response = await getEvents(filters);
+        if (response.success && response.data?.events) {
+          const declinedEvents = response.data.events.map(event => ({
+            id: event.id,
+            title: event.title,
+            organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+            date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
+            startDate: event.startDate,
+            startTime: event.startTime || '',
+            location: event.location || event.venue || 'TBD',
+            category: event.category || 'Uncategorized',
+            type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
+            isFree: event.isFree || false,
+            declinedDate: event.updatedAt || event.createdAt || new Date().toISOString(),
+            reason: (event as { rejectionReason?: string }).rejectionReason || 'No reason provided',
+            declinedBy: 'Admin', // TODO: Get from audit logs
+          }));
+          setEvents(declinedEvents);
+        }
+      } catch (err) {
+        console.error('Error fetching declined events:', err);
+        setError('Failed to load declined events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDeclinedEvents();
+  }, [categoryFilter, typeFilter, priceFilter, searchTerm]);
+
+  const filteredEvents = events.filter(event => {
     const matchesReason = reasonFilter === "all" || event.reason.toLowerCase().includes(reasonFilter.toLowerCase());
-    
-    return matchesSearch && matchesCategory && matchesType && matchesPrice && matchesReason;
+    return matchesReason;
   });
+
+  // Get unique categories from events
+  const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
@@ -131,15 +109,39 @@ const DeclinedEventsPage = () => {
       : "bg-purple-100 text-purple-800 border-purple-200";
   };
 
-  const getPriceBadge = (price: string) => {
-    return price === "free" 
+  const getPriceBadge = (isFree: boolean) => {
+    return isFree
       ? "bg-green-100 text-green-800 border-green-200"
       : "bg-orange-100 text-orange-800 border-orange-200";
   };
 
-  const handleReapprove = (eventId: string) => {
-    console.log("Re-approving event:", eventId);
-    // TODO: Implement re-approval logic
+  const handleReapprove = async (eventId: string) => {
+    try {
+      setProcessing(eventId);
+      const response = await approveEvent(eventId);
+      if (response.success) {
+        toast({
+          title: "Event Re-approved",
+          description: "The event has been re-approved successfully.",
+        });
+        // Remove event from list
+        setEvents(events.filter(e => e.id !== eventId));
+      } else {
+        throw new Error(response.message || 'Failed to re-approve event');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to re-approve event. Please try again.';
+      console.error('Error re-approving event:', err);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const getDaysSinceDeclined = (declinedDate: string) => {
@@ -149,6 +151,28 @@ const DeclinedEventsPage = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading declined events...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -160,7 +184,7 @@ const DeclinedEventsPage = () => {
             <p className="text-gray-600">Review events that were declined and their reasons</p>
           </div>
           <div className="text-sm text-gray-500">
-            {filteredEvents.length} of {mockDeclinedEvents.length} declined events
+            {filteredEvents.length} of {events.length} declined events
           </div>
         </div>
 
@@ -185,13 +209,9 @@ const DeclinedEventsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Technology">Technology</SelectItem>
-                  <SelectItem value="Music">Music</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="Art">Art</SelectItem>
-                  <SelectItem value="Sports">Sports</SelectItem>
-                  <SelectItem value="Comedy">Comedy</SelectItem>
-                  <SelectItem value="Theatre">Theatre</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -248,22 +268,18 @@ const DeclinedEventsPage = () => {
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
                         {event.type}
                       </Badge>
-                      <Badge className={`text-xs ${getPriceBadge(event.price)}`}>
-                        {event.price}
+                      <Badge className={`text-xs ${getPriceBadge(event.isFree)}`}>
+                        {event.isFree ? 'free' : 'paid'}
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.date).toLocaleDateString()} at {event.time}</span>
+                        <span>{event.date} {event.startTime && `at ${event.startTime}`}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" />
                         <span>{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{event.attendees} attendees</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <X className="h-4 w-4" />
@@ -290,9 +306,14 @@ const DeclinedEventsPage = () => {
                       variant="default" 
                       size="sm"
                       onClick={() => handleReapprove(event.id)}
+                      disabled={processing === event.id}
                       className="bg-green-600 hover:bg-green-700"
                     >
-                      <RotateCcw className="h-4 w-4 mr-1" />
+                      {processing === event.id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                      )}
                       Re-approve
                     </Button>
                     <Button variant="ghost" size="sm">

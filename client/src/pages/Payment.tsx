@@ -137,7 +137,7 @@ const PaymentPage = () => {
     );
   }
 
-  const { eventId, eventTitle, tickets: paymentTickets } = paymentData;
+  const { eventTitle, tickets: paymentTickets } = paymentData;
   const subtotal = paymentTickets.reduce((sum: number, ticket: TicketType) => sum + (ticket.price * ticket.quantity), 0);
   const tax = paymentData.totalPrice - subtotal;
 

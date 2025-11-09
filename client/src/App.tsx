@@ -113,15 +113,15 @@ import WorkstationTemplates from "./pages/admin/workstation/WorkstationTemplates
 import WorkstationHistory from "./pages/admin/workstation/WorkstationHistory";
 // Auth imports
 import SignIn from "./pages/auth/SignIn";
-import SignUp from "./pages/auth/SignUp";
+// import SignUp from "./pages/auth/SignUp";
 import SimpleRegistration from "./pages/auth/SimpleRegistration";
-import EmailEntry from "./pages/auth/EmailEntry";
+// import EmailEntry from "./pages/auth/EmailEntry";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import MagicLinkVerify from "./pages/auth/MagicLinkVerify";
-import UserTypeSelection from "./pages/auth/UserTypeSelection";
-import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
-import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
+// import UserTypeSelection from "./pages/auth/UserTypeSelection";
+// import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
+// import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
 
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider

@@ -652,7 +652,7 @@ export class OrganizerService {
       limit?: number;
       offset?: number;
       upcoming?: boolean; // true for upcoming, false for past
-    } = {}
+    } = {},
   ) {
     // Validate organizer can view events
     if (organizerRole !== UserRole.ORGANIZER &&
@@ -661,7 +661,7 @@ export class OrganizerService {
       throw new AuthorizationError('Only organizers can view their events');
     }
 
-    const where: any = {
+    const where: Record<string, unknown> = {
       organizerId,
       deletedAt: null,
     };
@@ -683,14 +683,14 @@ export class OrganizerService {
         {
           OR: [
             { endDate: { lt: now } },
-            { 
+            {
               AND: [
                 { endDate: null },
-                { startDate: { lt: now } }
-              ]
-            }
-          ]
-        }
+                { startDate: { lt: now } },
+              ],
+            },
+          ],
+        },
       ];
     }
 
@@ -702,7 +702,7 @@ export class OrganizerService {
         { location: { contains: filters.search, mode: 'insensitive' } },
       ];
       
-      if (where.AND) {
+      if (where.AND && Array.isArray(where.AND)) {
         where.AND.push({ OR: searchConditions });
       } else {
         where.OR = searchConditions;

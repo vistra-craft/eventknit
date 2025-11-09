@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { UserRole } from '@/types/auth';
 
 const OrganizerRegistration = () => {
   const navigate = useNavigate();
@@ -207,7 +208,7 @@ const OrganizerRegistration = () => {
           lastName: formData.lastName,
           phoneNumber: formData.phoneNumber,
           organizationName: formData.businessName,
-          role: 'ORGANIZER' as const,
+          role: UserRole.ORGANIZER,
         };
 
         // Call registration API

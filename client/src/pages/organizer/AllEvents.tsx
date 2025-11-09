@@ -17,8 +17,6 @@ import { Input } from "../../components/ui/input";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
-import { transformEventData } from "../../lib/event-utils";
-import type { EventData } from "../../types/event";
 
 const AllEvents = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,7 +49,7 @@ const AllEvents = () => {
 
         if (response.success && response.data) {
           // Backend already transforms events to OrganizerDashboardEvent format
-          setAllEvents(response.data.events as OrganizerDashboardEvent[]);
+          setAllEvents(response.data.events as unknown as OrganizerDashboardEvent[]);
         } else {
           throw new Error(response.message || 'Failed to fetch events');
         }

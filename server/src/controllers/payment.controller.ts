@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { paymentService, InitializePaymentData } from '../services/payment.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 import { prisma } from '../config/database';
-import { ValidationError } from '../utils/errors';
 import { logger } from '../utils/logger';
 
 export class PaymentController {
@@ -136,7 +135,7 @@ export class PaymentController {
   /**
    * Handle Paystack webhook
    */
-  static async handleWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async handleWebhook(req: Request, res: Response, _next: NextFunction): Promise<void> {
     try {
       const signature = req.headers['x-paystack-signature'] as string;
 

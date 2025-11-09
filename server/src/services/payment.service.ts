@@ -4,7 +4,6 @@ import { prisma } from '../config/database';
 import { RegistrationStatus } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { NotFoundError, ValidationError } from '../utils/errors';
-import { emailService } from './email.service';
 import { TicketService } from './ticket.service';
 
 export interface InitializePaymentData {
@@ -109,10 +108,15 @@ export class PaymentService {
 
       logger.info(`Payment initialized: ${reference} for registration: ${data.registrationId}`);
 
+      const responseData = response.data as {
+        authorization_url: string;
+        access_code: string;
+        reference: string;
+      };
       return {
-        authorizationUrl: response.data.authorization_url,
-        accessCode: response.data.access_code,
-        reference: response.data.reference,
+        authorizationUrl: responseData.authorization_url,
+        accessCode: responseData.access_code,
+        reference: responseData.reference,
       };
     } catch (error: unknown) {
       logger.error('Failed to initialize payment:', error);
@@ -135,15 +139,23 @@ export class PaymentService {
         throw new ValidationError('Invalid payment reference');
       }
 
+      const responseData = response.data as {
+        status: string;
+        reference: string;
+        amount: number;
+        customer?: { email?: string };
+        metadata?: Record<string, unknown>;
+      };
+
       return {
-        success: response.data.status === 'success',
-        reference: response.data.reference,
-        amount: response.data.amount / 100, // Convert from kobo to main unit
-        status: response.data.status,
+        success: responseData.status === 'success',
+        reference: responseData.reference,
+        amount: responseData.amount / 100, // Convert from kobo to main unit
+        status: responseData.status,
         customer: {
-          email: response.data.customer?.email || '',
+          email: responseData.customer?.email || '',
         },
-        metadata: response.data.metadata as Record<string, unknown> | undefined,
+        metadata: responseData.metadata,
       };
     } catch (error: unknown) {
       logger.error('Failed to verify payment:', error);
@@ -209,8 +221,13 @@ export class PaymentService {
 
           // Send ticket email
           try {
-            await TicketService.sendTicketEmail(registration);
-            logger.info(`Ticket email sent for registration: ${registration.id}`);
+            // Ensure required fields are present before sending email
+            if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
+              await TicketService.sendTicketEmail(registration as Parameters<typeof TicketService.sendTicketEmail>[0]);
+              logger.info(`Ticket email sent for registration: ${registration.id}`);
+            } else {
+              logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
+            }
           } catch (error) {
             logger.error('Failed to send ticket email:', error);
             // Don't fail the webhook if email fails
@@ -240,6 +257,7 @@ export class PaymentService {
    * Verify Paystack webhook signature
    */
   verifyWebhookSignature(payload: string, signature: string): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const crypto = require('crypto');
     const hash = crypto
       .createHmac('sha512', config.paystack.secretKey)

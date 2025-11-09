@@ -1,5 +1,5 @@
 import { prisma } from '../config/database';
-import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType } from '@prisma/client';
+import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType, DataAccessLevel } from '@prisma/client';
 import {
   NotFoundError,
   ConflictError,
@@ -943,14 +943,130 @@ export class EventService {
   }
 
   /**
+   * Update organizer data access level for an event (admin only)
+   */
+  static async updateOrganizerDataAccess(
+    eventId: string,
+    dataAccessLevel: DataAccessLevel,
+    adminId: string,
+  ) {
+    // Verify event exists
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Update data access level
+    const updatedEvent = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        organizerDataAccess: dataAccessLevel,
+        updatedBy: adminId,
+      },
+    });
+
+    // Create audit log
+    await createAuditLog({
+      userId: adminId,
+      action: AuditActions.EVENT_UPDATED,
+      entity: 'Event',
+      entityId: eventId,
+      metadata: {
+        field: 'organizerDataAccess',
+        oldValue: event.organizerDataAccess,
+        newValue: dataAccessLevel,
+      },
+    });
+
+    logger.info(`Organizer data access updated for event: ${eventId} to ${dataAccessLevel} by admin: ${adminId}`);
+
+    return updatedEvent;
+  }
+
+  /**
+   * Bulk update organizer data access level for multiple events (admin only)
+   */
+  static async bulkUpdateOrganizerDataAccess(
+    eventIds: string[],
+    dataAccessLevel: DataAccessLevel,
+    adminId: string,
+  ) {
+    if (!eventIds || eventIds.length === 0) {
+      throw new ValidationError('At least one event ID is required');
+    }
+
+    // Verify all events exist
+    const events = await prisma.event.findMany({
+      where: {
+        id: { in: eventIds },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        organizerDataAccess: true,
+      },
+    });
+
+    if (events.length !== eventIds.length) {
+      const foundIds = events.map(e => e.id);
+      const missingIds = eventIds.filter(id => !foundIds.includes(id));
+      throw new NotFoundError(`Events not found: ${missingIds.join(', ')}`);
+    }
+
+    // Bulk update data access level
+    const result = await prisma.event.updateMany({
+      where: {
+        id: { in: eventIds },
+        deletedAt: null,
+      },
+      data: {
+        organizerDataAccess: dataAccessLevel,
+        updatedBy: adminId,
+      },
+    });
+
+    // Create audit logs for each event
+    await Promise.all(
+      events.map(event =>
+        createAuditLog({
+          userId: adminId,
+          action: AuditActions.EVENT_UPDATED,
+          entity: 'Event',
+          entityId: event.id,
+          metadata: {
+            field: 'organizerDataAccess',
+            oldValue: event.organizerDataAccess,
+            newValue: dataAccessLevel,
+            bulkUpdate: true,
+          },
+        }),
+      ),
+    );
+
+    logger.info(`Bulk organizer data access updated for ${result.count} events to ${dataAccessLevel} by admin: ${adminId}`);
+
+    return {
+      updatedCount: result.count,
+      eventIds,
+    };
+  }
+
+  /**
    * Get event registrations for an event (organizer function)
+   * Filters data based on organizerDataAccess level
    */
   static async getEventRegistrations(
     eventId: string,
     organizerId: string,
     organizerRole: UserRole,
   ) {
-    // Get event
+    // Get event with data access level
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
@@ -959,6 +1075,7 @@ export class EventService {
       select: {
         id: true,
         organizerId: true,
+        organizerDataAccess: true,
       },
     });
 
@@ -967,10 +1084,9 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
-      if (event.organizerId !== organizerId) {
-        throw new AuthorizationError('You do not have permission to view registrations for this event');
-      }
+    const isAdmin = organizerRole === UserRole.SUPERADMIN || organizerRole === UserRole.ADMIN_STAFF;
+    if (!isAdmin && event.organizerId !== organizerId) {
+      throw new AuthorizationError('You do not have permission to view registrations for this event');
     }
 
     // Get registrations
@@ -995,6 +1111,51 @@ export class EventService {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Filter data based on access level (admins always see everything)
+    if (!isAdmin && event.organizerDataAccess) {
+      const accessLevel = event.organizerDataAccess;
+      
+      return registrations.map(reg => {
+        const filtered: Record<string, unknown> = {
+          id: reg.id,
+          eventId: reg.eventId,
+          attendeeId: reg.attendeeId,
+          status: reg.status,
+          ticketType: reg.ticketType,
+          quantity: reg.quantity,
+          createdAt: reg.createdAt,
+          attendee: reg.attendee,
+        };
+
+        // RESTRICTED: Only basic info, no payment data
+        if (accessLevel === 'RESTRICTED') {
+          // Only return minimal data
+          return filtered;
+        }
+
+        // STANDARD: Include payment status and amounts, but NO transaction IDs
+        if (accessLevel === 'STANDARD') {
+          filtered.totalAmount = reg.totalAmount;
+          filtered.paymentStatus = reg.paymentStatus;
+          filtered.paymentMethod = reg.paymentMethod;
+          // Explicitly exclude paymentTransactionId
+          return filtered;
+        }
+
+        // FULL: Include all payment details except transaction IDs
+        if (accessLevel === 'FULL') {
+          filtered.totalAmount = reg.totalAmount;
+          filtered.paymentStatus = reg.paymentStatus;
+          filtered.paymentMethod = reg.paymentMethod;
+          // Still exclude paymentTransactionId - organizers never see this
+          return filtered;
+        }
+
+        return filtered;
+      });
+    }
+
+    // Admins see everything including transaction IDs
     return registrations;
   }
 

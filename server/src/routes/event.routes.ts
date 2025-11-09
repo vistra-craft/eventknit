@@ -126,6 +126,28 @@ router.post(
 );
 
 /**
+ * @route   PUT /api/v1/events/:id/organizer-data-access
+ * @desc    Update organizer data access level (admin function)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/:id/organizer-data-access',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  EventController.updateOrganizerDataAccess,
+);
+
+/**
+ * @route   PUT /api/v1/events/bulk/organizer-data-access
+ * @desc    Bulk update organizer data access level (admin function)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/bulk/organizer-data-access',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  EventController.bulkUpdateOrganizerDataAccess,
+);
+
+/**
  * @route   GET /api/v1/events/user/registered
  * @desc    Get user's registered events (for user dashboard)
  * @access  Private (ATTENDEE+)

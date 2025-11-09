@@ -24,24 +24,23 @@ import {
   Save,
   Eye,
   Upload,
-  Clock,
   Globe,
   MapPin
 } from 'lucide-react';
 import { createEvent, type CreateEventData, EventType } from '@/lib/event-api';
 import { useAuth } from '@/hooks/useAuth';
 
-interface Speaker {
-  name: string;
-  title: string;
-  bio: string;
-}
+// interface Speaker {
+//   name: string;
+//   title: string;
+//   bio: string;
+// }
 
-interface Sponsor {
-  name: string;
-  level: 'gold' | 'silver' | 'bronze';
-  logo: string;
-}
+// interface Sponsor {
+//   name: string;
+//   level: 'gold' | 'silver' | 'bronze';
+//   logo: string;
+// }
 
 interface RegistrationField {
   id: string;
@@ -141,8 +140,8 @@ export default function CreateEventStepwise() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [newTag, setNewTag] = useState("");
   const [faqs, setFaqs] = useState([{ question: "", answer: "" }]);
-  const [speakers] = useState<Speaker[]>([{ name: "", title: "", bio: "" }]);
-  const [sponsors] = useState<Sponsor[]>([{ name: "", level: "gold", logo: "" }]);
+  // const [_speakers] = useState<Speaker[]>([{ name: "", title: "", bio: "" }]);
+  // const [_sponsors] = useState<Sponsor[]>([{ name: "", level: "gold", logo: "" }]);
   const [isPrivate, setIsPrivate] = useState(false);
   
   // Load draft from localStorage on mount
@@ -223,29 +222,29 @@ export default function CreateEventStepwise() {
   ];
 
   // Save draft to localStorage
-  const saveDraft = () => {
-    try {
-      const draftData = {
-        data: {
-          ...eventData,
-          timezone,
-        },
-        ticketTypes,
-        categories,
-        tags,
-        faqs,
-        registrationFields,
-        eventType,
-        isPrivate,
-        timestamp: Date.now(),
-      };
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
-      setLastSaved(new Date());
-      setIsSavingDraft(false);
-    } catch (error) {
-      console.error('Error saving draft:', error);
-    }
-  };
+  // const _saveDraft = () => {
+  //   try {
+  //     const draftData = {
+  //       data: {
+  //         ...eventData,
+  //         timezone,
+  //       },
+  //       ticketTypes,
+  //       categories,
+  //       tags,
+  //       faqs,
+  //       registrationFields,
+  //       eventType,
+  //       isPrivate,
+  //       timestamp: Date.now(),
+  //     };
+  //     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+  //     setLastSaved(new Date());
+  //     setIsSavingDraft(false);
+  //   } catch (error) {
+  //     console.error('Error saving draft:', error);
+  //   }
+  // };
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -322,7 +321,7 @@ export default function CreateEventStepwise() {
         setIsUploadingImage(false);
       };
       reader.readAsDataURL(file);
-    } catch (err) {
+    } catch {
       setError('Failed to upload image');
       setIsUploadingImage(false);
     }
@@ -1383,7 +1382,7 @@ export default function CreateEventStepwise() {
 
   // Render preview modal
   const renderPreview = () => {
-    const isFree = ticketTypes.every(t => t.type === 'free');
+    // const isFree = ticketTypes.every(t => t.type === 'free');
     return (
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -14,7 +14,9 @@ import {
   User,
   CreditCard,
   RefreshCw,
-  Search
+  Search,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "../AdminLayout";
+import { getEventById } from "@/lib/event-api";
+import { getEventRegistrations } from "@/lib/organizer-api";
+import { updateOrganizerDataAccess } from "@/lib/admin-api";
+import { useToast } from "@/hooks/use-toast";
 
 interface EventDetails {
   id: string;
@@ -68,6 +75,7 @@ interface EventDetails {
     level: "gold" | "silver" | "bronze";
     logo: string;
   }>;
+  organizerDataAccess?: 'RESTRICTED' | 'STANDARD' | 'FULL';
 }
 
 interface EventMetrics {
@@ -88,97 +96,231 @@ interface EventMetrics {
   averageTicketPrice: number;
 }
 
+interface Registration {
+  id: string;
+  eventId: string;
+  attendeeId: string;
+  status: string;
+  ticketType?: string | null;
+  quantity: number;
+  totalAmount: number | string;
+  paymentStatus?: string | null;
+  paymentMethod?: string | null;
+  paymentTransactionId?: string | null;
+  createdAt: string;
+  attendee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber?: string | null;
+  };
+}
+
 const EventDetailsPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("details");
+  const [eventData, setEventData] = useState<EventDetails | null>(null);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [updatingAccess, setUpdatingAccess] = useState(false);
+  const { toast } = useToast();
 
-  // Mock event data - in a real app, this would come from your API
-  const eventData: EventDetails = {
-    id: eventId || "1",
-    title: "Tech Innovation Summit 2024",
-    description: "Explore the latest in technology innovation and digital transformation.",
-    fullDescription: "Join us for the most comprehensive technology innovation summit of the year. Featuring keynote speakers, hands-on workshops, and networking opportunities with industry leaders.",
-    date: "March 15-17, 2024",
-    time: "9:00 AM",
-    endTime: "5:00 PM",
-    location: "San Francisco, CA",
-    venue: "Moscone Center",
-    organizer: {
-      id: "ORG-001",
-      name: "Tech Events Inc.",
-      email: "contact@techevents.com",
-      phone: "+1 (555) 123-4567"
-    },
-    category: "Technology",
-    status: "active",
-    type: "public",
-    price: "paid",
-    ticketPrice: 299,
-    capacity: 500,
-    attendees: 485,
-    views: 3250,
-    conversion: 14.9,
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=400&fit=crop",
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-01-28T14:30:00Z",
-    registrationDeadline: "2024-03-10",
-    requirements: [
-      "Valid ID required for entry",
-      "No outside food or drinks",
-      "Professional dress code recommended"
-    ],
-    speakers: [
-      {
-        id: "SPK-001",
-        name: "Dr. Maria Rodriguez",
-        title: "Chief Technology Officer, TechCorp",
-        bio: "Leading expert in AI and machine learning with 15+ years of experience.",
-        image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
-      },
-      {
-        id: "SPK-002",
-        name: "John Smith",
-        title: "VP of Engineering, InnovateLab",
-        bio: "Serial entrepreneur and technology innovator.",
-        image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-      }
-    ],
-    sponsors: [
-      {
-        id: "SPN-001",
-        name: "TechCorp",
-        level: "gold",
-        logo: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=50&fit=crop"
-      },
-      {
-        id: "SPN-002",
-        name: "InnovateLab",
-        level: "silver",
-        logo: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=50&fit=crop"
-      }
-    ]
-  };
+  // Fetch event data and registrations
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!eventId) return;
 
-  // Mock metrics data
-  const metrics: EventMetrics = {
-    totalRevenue: 145200,
-    platformFees: 14520,
-    organizerAmount: 130680,
-    totalPayments: 485,
-    successfulPayments: 470,
-    failedPayments: 8,
-    pendingPayments: 7,
-    totalRefunds: 12,
-    pendingRefunds: 2,
-    processedRefunds: 10,
-    remittancesSent: 3,
-    remittancesPending: 1,
-    attendanceRate: 97.0,
-    conversionRate: 14.9,
-    averageTicketPrice: 299
-  };
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [eventResponse, registrationsResponse] = await Promise.all([
+          getEventById(eventId),
+          getEventRegistrations(eventId),
+        ]);
+
+        if (eventResponse.success && eventResponse.data?.event) {
+          const event = eventResponse.data.event;
+          const now = new Date();
+          let status: "active" | "pending" | "cancelled" | "completed" = "pending";
+          
+          if (event.status === 'REJECTED') {
+            status = "cancelled";
+          } else if (event.status === 'CANCELLED') {
+            status = "cancelled";
+          } else if (event.status === 'APPROVED') {
+            if (event.endDate && new Date(event.endDate) < now) {
+              status = "completed";
+            } else {
+              status = "active";
+            }
+          } else {
+            status = "pending";
+          }
+
+          setEventData({
+            id: event.id,
+            title: event.title,
+            description: event.description || '',
+            fullDescription: event.fullDescription || event.description || '',
+            date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
+            time: event.startTime || 'TBD',
+            endTime: event.endTime || undefined,
+            location: event.location || 'TBD',
+            venue: event.venue || event.location || 'TBD',
+            organizer: {
+              id: event.organizer?.id || '',
+              name: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+              email: event.organizer?.email || '',
+              phone: event.organizer?.phoneNumber || undefined,
+            },
+            category: event.category || 'Uncategorized',
+            status,
+            type: event.type === 'PUBLIC' ? 'public' : 'private',
+            price: event.isFree ? 'free' : 'paid',
+            ticketPrice: event.price ? Number(event.price) : undefined,
+            capacity: event.capacity || 0,
+            attendees: event.attendees || 0,
+            views: 0, // TODO: Add views tracking
+            conversion: 0, // TODO: Calculate conversion rate
+            rating: 0, // TODO: Add rating system
+            image: event.image || '',
+            createdAt: event.createdAt || new Date().toISOString(),
+            updatedAt: event.updatedAt || new Date().toISOString(),
+            registrationDeadline: event.registrationDeadline || undefined,
+            requirements: event.requirements || undefined,
+            speakers: Array.isArray((event as { speakers?: unknown }).speakers) 
+              ? (event as { speakers?: Array<{ id: string; name: string; title: string; bio: string; image?: string }> }).speakers 
+              : undefined,
+            sponsors: Array.isArray((event as { sponsors?: unknown }).sponsors)
+              ? (event as { sponsors?: Array<{ id: string; name: string; level: "gold" | "silver" | "bronze"; logo: string }> }).sponsors
+              : undefined,
+            organizerDataAccess: ((event as { organizerDataAccess?: string }).organizerDataAccess === 'RESTRICTED' || 
+              (event as { organizerDataAccess?: string }).organizerDataAccess === 'STANDARD' || 
+              (event as { organizerDataAccess?: string }).organizerDataAccess === 'FULL')
+              ? (event as { organizerDataAccess?: 'RESTRICTED' | 'STANDARD' | 'FULL' }).organizerDataAccess
+              : 'RESTRICTED' as 'RESTRICTED' | 'STANDARD' | 'FULL',
+          });
+        }
+
+        if (registrationsResponse.success && registrationsResponse.data?.registrations) {
+          // Map registrations to include attendee data (backend returns 'attendee' field)
+          const mappedRegistrations = registrationsResponse.data.registrations.map(reg => ({
+            ...reg,
+            attendee: reg.attendee || reg.user || {
+              id: reg.attendeeId || reg.userId || '',
+              firstName: '',
+              lastName: '',
+              email: '',
+            },
+          }));
+          setRegistrations(mappedRegistrations as Registration[]);
+        }
+      } catch (err) {
+        console.error('Error fetching event data:', err);
+        setError('Failed to load event data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [eventId]);
+
+  // Calculate payment metrics from registrations
+  const metrics: EventMetrics = (() => {
+    const paidRegistrations = registrations.filter(r => r.paymentStatus === 'COMPLETED');
+    const pendingRegistrations = registrations.filter(r => r.paymentStatus === 'PENDING');
+    const failedRegistrations = registrations.filter(r => r.paymentStatus === 'FAILED');
+    
+    const totalRevenue = paidRegistrations.reduce((sum, r) => {
+      const amount = typeof r.totalAmount === 'string' ? parseFloat(r.totalAmount) : r.totalAmount;
+      return sum + (amount || 0);
+    }, 0);
+    
+    const platformFees = totalRevenue * 0.1; // 10% platform fee
+    const organizerAmount = totalRevenue - platformFees;
+
+    return {
+      totalRevenue,
+      platformFees,
+      organizerAmount,
+      totalPayments: registrations.length,
+      successfulPayments: paidRegistrations.length,
+      failedPayments: failedRegistrations.length,
+      pendingPayments: pendingRegistrations.length,
+      totalRefunds: 0, // TODO: Implement refunds
+      pendingRefunds: 0,
+      processedRefunds: 0,
+      remittancesSent: 0, // TODO: Implement remittances
+      remittancesPending: 0,
+      attendanceRate: eventData ? (eventData.attendees / eventData.capacity) * 100 : 0,
+      conversionRate: 0, // TODO: Calculate from views
+      averageTicketPrice: paidRegistrations.length > 0 
+        ? totalRevenue / paidRegistrations.length 
+        : 0,
+    };
+  })();
+
+  // Filter payments
+  const filteredPayments = registrations.filter(reg => {
+    const matchesFilter = paymentFilter === "all" || 
+      (paymentFilter === "successful" && reg.paymentStatus === 'COMPLETED') ||
+      (paymentFilter === "pending" && reg.paymentStatus === 'PENDING') ||
+      (paymentFilter === "failed" && reg.paymentStatus === 'FAILED');
+    
+    const matchesSearch = !paymentSearch || 
+      `${reg.attendee.firstName} ${reg.attendee.lastName}`.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+      reg.attendee.email.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+      (reg.paymentTransactionId && reg.paymentTransactionId.toLowerCase().includes(paymentSearch.toLowerCase()));
+    
+    return matchesFilter && matchesSearch;
+  });
+
+  // Group payments by method
+  const paymentsByMethod = registrations.reduce((acc, reg) => {
+    if (reg.paymentStatus === 'COMPLETED' && reg.paymentMethod) {
+      const method = reg.paymentMethod;
+      if (!acc[method]) {
+        acc[method] = { count: 0, total: 0 };
+      }
+      acc[method].count++;
+      const amount = typeof reg.totalAmount === 'string' ? parseFloat(reg.totalAmount) : reg.totalAmount;
+      acc[method].total += amount || 0;
+    }
+    return acc;
+  }, {} as Record<string, { count: number; total: number }>);
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading event details...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error || !eventData) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error || 'Event not found'}</AlertDescription>
+        </Alert>
+        <Button onClick={() => navigate("/admin/events")} className="mt-4">
+          Back to Events
+        </Button>
+      </AdminLayout>
+    );
+  }
+
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -222,13 +364,49 @@ const EventDetailsPage = () => {
   };
 
   const handleEdit = () => {
-    console.log("Edit event:", eventData.id);
-    // TODO: Navigate to edit page
+    navigate(`/organizer/events/create?edit=${eventData.id}`);
   };
 
   const handleExport = () => {
     console.log("Export event data:", eventData.id);
     // TODO: Implement export functionality
+  };
+
+  const handleRefresh = () => {
+    if (eventId) {
+      window.location.reload();
+    }
+  };
+
+  const handleUpdateDataAccess = async (newLevel: 'RESTRICTED' | 'STANDARD' | 'FULL') => {
+    if (!eventId || !eventData) return;
+
+    try {
+      setUpdatingAccess(true);
+      const response = await updateOrganizerDataAccess(eventId, newLevel);
+      
+      if (response.success) {
+        setEventData({
+          ...eventData,
+          organizerDataAccess: newLevel,
+        });
+        toast({
+          title: "Success",
+          description: `Organizer data access updated to ${newLevel}`,
+        });
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to update data access level';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingAccess(false);
+    }
   };
 
   return (
@@ -255,7 +433,7 @@ const EventDetailsPage = () => {
               <Settings className="h-4 w-4 mr-2" />
               Edit Event
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={handleRefresh}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -408,6 +586,84 @@ const EventDetailsPage = () => {
                           <p className="text-sm text-gray-900">{eventData.organizer.phone}</p>
                         </div>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Organizer Data Access Control */}
+                <Card className="border-border bg-card">
+                  <CardHeader>
+                    <CardTitle>Organizer Data Access Control</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 mb-2 block">
+                        Current Access Level
+                      </label>
+                      <div className="flex items-center gap-3 mb-4">
+                        <Badge 
+                          className={
+                            eventData.organizerDataAccess === 'RESTRICTED' 
+                              ? 'bg-red-100 text-red-800 border-red-200'
+                              : eventData.organizerDataAccess === 'STANDARD'
+                              ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                              : 'bg-green-100 text-green-800 border-green-200'
+                          }
+                        >
+                          {eventData.organizerDataAccess || 'RESTRICTED'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2 mb-4">
+                        <p className="text-xs text-gray-600">
+                          <strong>RESTRICTED:</strong> Organizer can only see summary cards (total attendees, total revenue)
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          <strong>STANDARD:</strong> Organizer can see attendee list and payment summaries (no transaction IDs)
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          <strong>FULL:</strong> Organizer can see all payment details except transaction IDs
+                        </p>
+                        <p className="text-xs text-gray-500 italic mt-2">
+                          Note: Transaction IDs are never visible to organizers, only admins.
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant={eventData.organizerDataAccess === 'RESTRICTED' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleUpdateDataAccess('RESTRICTED')}
+                          disabled={updatingAccess || eventData.organizerDataAccess === 'RESTRICTED'}
+                        >
+                          {updatingAccess && eventData.organizerDataAccess !== 'RESTRICTED' ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : null}
+                          Set Restricted
+                        </Button>
+                        <Button
+                          variant={eventData.organizerDataAccess === 'STANDARD' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleUpdateDataAccess('STANDARD')}
+                          disabled={updatingAccess || eventData.organizerDataAccess === 'STANDARD'}
+                        >
+                          {updatingAccess && eventData.organizerDataAccess !== 'STANDARD' ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : null}
+                          Set Standard
+                        </Button>
+                        <Button
+                          variant={eventData.organizerDataAccess === 'FULL' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleUpdateDataAccess('FULL')}
+                          disabled={updatingAccess || eventData.organizerDataAccess === 'FULL'}
+                        >
+                          {updatingAccess && eventData.organizerDataAccess !== 'FULL' ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : null}
+                          Set Full
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -565,26 +821,32 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600 mb-2">485</div>
+                  <div className="text-2xl font-bold text-blue-600 mb-2">{registrations.length}</div>
                   <p className="text-sm text-gray-600">Total Attendees</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">470</div>
+                  <div className="text-2xl font-bold text-green-600 mb-2">
+                    {registrations.filter(r => r.status === 'CONFIRMED').length}
+                  </div>
                   <p className="text-sm text-gray-600">Confirmed</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-yellow-600 mb-2">10</div>
+                  <div className="text-2xl font-bold text-yellow-600 mb-2">
+                    {registrations.filter(r => r.status === 'PENDING').length}
+                  </div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600 mb-2">5</div>
-                  <p className="text-sm text-gray-600">Cancelled</p>
+                  <div className="text-2xl font-bold text-green-600 mb-2">
+                    {registrations.filter(r => r.paymentStatus === 'COMPLETED').length}
+                  </div>
+                  <p className="text-sm text-gray-600">Paid</p>
                 </CardContent>
               </Card>
             </div>
@@ -638,43 +900,62 @@ const EventDetailsPage = () => {
                 <CardTitle>Attendees List</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { id: "1", name: "Sarah Johnson", email: "sarah@example.com", ticketType: "VIP", status: "confirmed", registeredDate: "2024-01-15", paymentStatus: "paid" },
-                    { id: "2", name: "Michael Chen", email: "michael@example.com", ticketType: "Standard", status: "confirmed", registeredDate: "2024-01-20", paymentStatus: "paid" },
-                    { id: "3", name: "Emma Wilson", email: "emma@example.com", ticketType: "Student", status: "pending", registeredDate: "2024-02-01", paymentStatus: "pending" },
-                    { id: "4", name: "David Brown", email: "david@example.com", ticketType: "Standard", status: "confirmed", registeredDate: "2024-01-25", paymentStatus: "paid" },
-                    { id: "5", name: "Lisa Anderson", email: "lisa@example.com", ticketType: "VIP", status: "cancelled", registeredDate: "2024-01-18", paymentStatus: "refunded" }
-                  ].map((attendee) => (
-                    <div key={attendee.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-primary" />
+                {registrations.length > 0 ? (
+                  <div className="space-y-3">
+                    {registrations.map((reg) => {
+                      const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`;
+                      const isConfirmed = reg.status === 'CONFIRMED';
+                      const isPending = reg.status === 'PENDING';
+                      const hasPaid = reg.paymentStatus === 'COMPLETED';
+
+                      return (
+                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{attendeeName}</h4>
+                              <p className="text-sm text-gray-600">{reg.attendee.email}</p>
+                              {reg.attendee.phoneNumber && (
+                                <p className="text-xs text-gray-500">{reg.attendee.phoneNumber}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <Badge className={`text-xs ${
+                              isConfirmed ? 'bg-green-100 text-green-800 border-green-200' :
+                              isPending ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                              'bg-red-100 text-red-800 border-red-200'
+                            }`}>
+                              {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : reg.status}
+                            </Badge>
+                            {reg.ticketType && (
+                              <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                                {reg.ticketType}
+                              </Badge>
+                            )}
+                            {hasPaid && (
+                              <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
+                                Paid
+                              </Badge>
+                            )}
+                            <span className="text-sm text-gray-600">{formatDate(reg.createdAt)}</span>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{attendee.name}</h4>
-                          <p className="text-sm text-gray-600">{attendee.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <Badge className={`text-xs ${
-                          attendee.status === 'confirmed' ? 'bg-green-100 text-green-800 border-green-200' :
-                          attendee.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                          'bg-red-100 text-red-800 border-red-200'
-                        }`}>
-                          {attendee.status}
-                        </Badge>
-                        <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
-                          {attendee.ticketType}
-                        </Badge>
-                        <span className="text-sm text-gray-600">{formatDate(attendee.registeredDate)}</span>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No attendees yet</h3>
+                    <p className="text-sm text-gray-600">No one has registered for this event yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -710,45 +991,42 @@ const EventDetailsPage = () => {
             </div>
 
             {/* Payment Methods Breakdown */}
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle>Payment Methods</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 border border-border rounded-lg">
-                    <CreditCard className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                    <div className="text-lg font-semibold">Credit Card</div>
-                    <div className="text-sm text-gray-600">320 payments</div>
-                    <div className="text-sm font-medium text-green-600">{formatCurrency(95680)}</div>
+            {Object.keys(paymentsByMethod).length > 0 && (
+              <Card className="border-border bg-card">
+                <CardHeader>
+                  <CardTitle>Payment Methods</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {Object.entries(paymentsByMethod).map(([method, data]) => (
+                      <div key={method} className="text-center p-4 border border-border rounded-lg">
+                        <CreditCard className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                        <div className="text-lg font-semibold">{method}</div>
+                        <div className="text-sm text-gray-600">{data.count} payment{data.count !== 1 ? 's' : ''}</div>
+                        <div className="text-sm font-medium text-green-600">{formatCurrency(data.total)}</div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-center p-4 border border-border rounded-lg">
-                    <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <span className="text-green-600 font-bold text-sm">P</span>
-                    </div>
-                    <div className="text-lg font-semibold">PayPal</div>
-                    <div className="text-sm text-gray-600">120 payments</div>
-                    <div className="text-sm font-medium text-green-600">{formatCurrency(35880)}</div>
-                  </div>
-                  <div className="text-center p-4 border border-border rounded-lg">
-                    <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <span className="text-purple-600 font-bold text-sm">S</span>
-                    </div>
-                    <div className="text-lg font-semibold">Stripe</div>
-                    <div className="text-sm text-gray-600">30 payments</div>
-                    <div className="text-sm font-medium text-green-600">{formatCurrency(13640)}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Recent Payments */}
+            {/* Payments List */}
             <Card className="border-border bg-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Recent Payments</CardTitle>
+                  <CardTitle>Payment Transactions</CardTitle>
                   <div className="flex items-center gap-2">
-                    <Select>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Search by name, email, or transaction ID..."
+                        value={paymentSearch}
+                        onChange={(e) => setPaymentSearch(e.target.value)}
+                        className="pl-10 w-64"
+                      />
+                    </div>
+                    <Select value={paymentFilter} onValueChange={setPaymentFilter}>
                       <SelectTrigger className="w-32">
                         <SelectValue placeholder="Filter" />
                       </SelectTrigger>
@@ -767,43 +1045,65 @@ const EventDetailsPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { id: "PAY-001", attendee: "Sarah Johnson", amount: 299, method: "Credit Card", status: "successful", date: "2024-02-15T10:30:00Z", transactionId: "TXN-123456" },
-                    { id: "PAY-002", attendee: "Michael Chen", amount: 199, method: "PayPal", status: "successful", date: "2024-02-15T11:15:00Z", transactionId: "TXN-123457" },
-                    { id: "PAY-003", attendee: "Emma Wilson", amount: 99, method: "Stripe", status: "pending", date: "2024-02-15T12:00:00Z", transactionId: "TXN-123458" },
-                    { id: "PAY-004", attendee: "David Brown", amount: 299, method: "Credit Card", status: "failed", date: "2024-02-15T13:45:00Z", transactionId: "TXN-123459" },
-                    { id: "PAY-005", attendee: "Lisa Anderson", amount: 299, method: "Credit Card", status: "successful", date: "2024-02-15T14:20:00Z", transactionId: "TXN-123460" }
-                  ].map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <CreditCard className="h-5 w-5 text-primary" />
+                {filteredPayments.length > 0 ? (
+                  <div className="space-y-3">
+                    {filteredPayments.map((reg) => {
+                      const amount = typeof reg.totalAmount === 'string' ? parseFloat(reg.totalAmount) : reg.totalAmount;
+                      const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`;
+                      const paymentStatus = reg.paymentStatus || 'PENDING';
+                      const isSuccessful = paymentStatus === 'COMPLETED';
+                      const isPending = paymentStatus === 'PENDING';
+                      const isFailed = paymentStatus === 'FAILED';
+
+                      return (
+                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                              <CreditCard className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{attendeeName}</h4>
+                              <p className="text-sm text-gray-600">
+                                {reg.attendee.email}
+                                {reg.paymentTransactionId && ` • ${reg.paymentTransactionId}`}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {reg.paymentMethod || 'N/A'} • {reg.ticketType || 'General'} • Qty: {reg.quantity}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <div className="font-medium text-gray-900">{formatCurrency(amount || 0)}</div>
+                              <div className="text-sm text-gray-600">{formatDateTime(reg.createdAt)}</div>
+                            </div>
+                            <Badge className={`text-xs ${
+                              isSuccessful ? 'bg-green-100 text-green-800 border-green-200' :
+                              isPending ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                              isFailed ? 'bg-red-100 text-red-800 border-red-200' :
+                              'bg-gray-100 text-gray-800 border-gray-200'
+                            }`}>
+                              {isSuccessful ? 'Completed' : isPending ? 'Pending' : isFailed ? 'Failed' : paymentStatus}
+                            </Badge>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{payment.attendee}</h4>
-                          <p className="text-sm text-gray-600">{payment.method} • {payment.transactionId}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="font-medium text-gray-900">{formatCurrency(payment.amount)}</div>
-                          <div className="text-sm text-gray-600">{formatDateTime(payment.date)}</div>
-                        </div>
-                        <Badge className={`text-xs ${
-                          payment.status === 'successful' ? 'bg-green-100 text-green-800 border-green-200' :
-                          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                          'bg-red-100 text-red-800 border-red-200'
-                        }`}>
-                          {payment.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No payments found</h3>
+                    <p className="text-sm text-gray-600">
+                      {paymentSearch || paymentFilter !== "all" 
+                        ? "Try adjusting your search or filter criteria"
+                        : "No payment transactions for this event yet"}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

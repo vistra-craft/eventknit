@@ -42,7 +42,7 @@ const PastEvents = () => {
         const response = await getOrganizerPastEvents(filters);
 
         if (response.success && response.data) {
-          setPastEvents(response.data.events as OrganizerDashboardEvent[]);
+          setPastEvents(response.data.events as unknown as OrganizerDashboardEvent[]);
         } else {
           throw new Error(response.message || 'Failed to fetch past events');
         }
