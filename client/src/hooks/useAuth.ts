@@ -18,11 +18,19 @@ export const useAuth = () => {
    */
   const getDashboardRoute = useCallback((role: UserRole): string => {
     switch (role) {
-      case UserRole.ADMIN:
-      case UserRole.STAFF:
+      // Admin roles - redirect to admin dashboard
+      case UserRole.SUPERADMIN:
+      case UserRole.ADMIN_STAFF:
+      case UserRole.MARKETER:
+      case UserRole.SUPPORT:
+      case UserRole.TELLER:
         return '/admin/dashboard';
+      // Organizer roles - redirect to organizer dashboard
       case UserRole.ORGANIZER:
+      case UserRole.ORGANIZER_STAFF:
+      case UserRole.ORGANIZER_TELLER:
         return '/organizer/dashboard';
+      // Attendee role - redirect to user dashboard
       case UserRole.ATTENDEE:
       default:
         return '/user/dashboard';
@@ -95,19 +103,31 @@ export const useAuth = () => {
 
   /**
    * Logout user
+   * Hybrid approach: Immediate client-side logout + optional server-side invalidation
+   * Following pos/vf-ticket pattern for immediate UX, with optional security enhancement
    */
-  const logout = useCallback(async () => {
-    try {
-      // Call logout API
-      await authApi.logout();
-    } catch (error) {
-      // Even if API call fails, clear local state
-      console.error('Logout error:', error);
-    } finally {
-      removeAccessToken();
-      dispatch({ type: 'AUTH_LOGOUT' });
-      navigate('/');
-    }
+  const logout = useCallback(() => {
+    // 1. Clear token immediately (prevents any API calls from using it)
+    removeAccessToken();
+    
+    // 2. Clear role view from localStorage
+    localStorage.removeItem('activeViewRole');
+    
+    // 3. Dispatch logout immediately to clear state (synchronous)
+    dispatch({ type: 'AUTH_LOGOUT' });
+    
+    // 4. Dispatch custom event to notify components immediately
+    window.dispatchEvent(new Event('tokenChange'));
+    
+    // 5. Navigate immediately (no setTimeout delay - like pos/vf-ticket)
+    navigate('/', { replace: true });
+    
+    // 6. Fire-and-forget server-side token invalidation (optional security enhancement)
+    // Don't wait for this - it's non-blocking for better UX
+    authApi.logout().catch((error) => {
+      // Silently fail - client is already logged out
+      console.error('Logout API error (non-blocking):', error);
+    });
   }, [dispatch, navigate]);
 
   /**
@@ -153,8 +173,13 @@ export const useAuth = () => {
    */
   useEffect(() => {
     const initAuth = async () => {
+      // Only initialize if user is not already loaded and not authenticated
+      if (state.user || state.isAuthenticated) {
+        return;
+      }
+      
       const token = localStorage.getItem('accessToken');
-      if (token && !state.user) {
+      if (token) {
         // Try to fetch profile to verify token
         try {
           await refreshProfile();
@@ -176,8 +201,12 @@ export const useAuth = () => {
   useEffect(() => {
     setLogoutCallback(() => {
       removeAccessToken();
+      localStorage.removeItem('activeViewRole');
       dispatch({ type: 'AUTH_LOGOUT' });
-      navigate('/auth/signin');
+      // Use requestAnimationFrame to ensure state update propagates
+      requestAnimationFrame(() => {
+        navigate('/auth/signin');
+      });
     });
   }, [dispatch, navigate]);
 

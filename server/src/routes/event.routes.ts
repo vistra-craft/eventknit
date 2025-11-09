@@ -60,6 +60,17 @@ router.delete(
 );
 
 /**
+ * @route   POST /api/v1/events/:id/register-guest
+ * @desc    Register for an event as guest (public - no auth required)
+ * @access  Public
+ */
+router.post(
+  '/:id/register-guest',
+  validate(eventValidations.registerAsGuest),
+  EventController.registerAsGuest,
+);
+
+/**
  * @route   POST /api/v1/events/:id/register
  * @desc    Register for an event (purchase/register)
  * @access  Private (ATTENDEE+)
@@ -112,6 +123,28 @@ router.post(
   requireMinRole(UserRole.ADMIN_STAFF),
   validate(eventValidations.rejectEvent),
   EventController.rejectEvent,
+);
+
+/**
+ * @route   PUT /api/v1/events/:id/organizer-data-access
+ * @desc    Update organizer data access level (admin function)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/:id/organizer-data-access',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  EventController.updateOrganizerDataAccess,
+);
+
+/**
+ * @route   PUT /api/v1/events/bulk/organizer-data-access
+ * @desc    Bulk update organizer data access level (admin function)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/bulk/organizer-data-access',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  EventController.bulkUpdateOrganizerDataAccess,
 );
 
 /**

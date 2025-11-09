@@ -2,7 +2,8 @@
  * Organizer API Functions
  */
 
-import { apiGet } from './api';
+import { apiGet, apiPost, apiPut, apiDelete } from './api';
+import type { EventsListResponse, EventResponse, EventRegistrationsResponse, CreateEventData, UpdateEventData } from './event-api';
 
 /**
  * Organizer Dashboard Stats Response
@@ -73,5 +74,108 @@ export const getOrganizerDashboardStats = async (): Promise<OrganizerDashboardSt
 export const getOrganizerDashboardEvents = async (limit?: number): Promise<OrganizerDashboardEventsResponse> => {
   const queryParams = limit ? `?limit=${limit}` : '';
   return apiGet<OrganizerDashboardEventsResponse>(`/organizer/dashboard/events${queryParams}`);
+};
+
+/**
+ * Get all organizer events (with filters)
+ */
+export const getOrganizerEvents = async (filters?: {
+  status?: string;
+  category?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+  upcoming?: boolean; // true for upcoming, false for past
+}): Promise<EventsListResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  if (filters?.status) queryParams.append('status', filters.status);
+  if (filters?.category) queryParams.append('category', filters.category);
+  if (filters?.search) queryParams.append('search', filters.search);
+  if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+  if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+  if (filters?.upcoming !== undefined) queryParams.append('upcoming', filters.upcoming.toString());
+  
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/organizer/events?${queryString}` : '/organizer/events';
+  
+  return apiGet<EventsListResponse>(endpoint);
+};
+
+/**
+ * Get upcoming organizer events
+ */
+export const getOrganizerUpcomingEvents = async (filters?: {
+  category?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<EventsListResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  queryParams.append('upcoming', 'true');
+  
+  if (filters?.category) queryParams.append('category', filters.category);
+  if (filters?.search) queryParams.append('search', filters.search);
+  if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+  if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+  
+  return apiGet<EventsListResponse>(`/organizer/events?${queryParams.toString()}`);
+};
+
+/**
+ * Get past organizer events
+ */
+export const getOrganizerPastEvents = async (filters?: {
+  category?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<EventsListResponse> => {
+  const queryParams = new URLSearchParams();
+  
+  queryParams.append('upcoming', 'false');
+  
+  if (filters?.category) queryParams.append('category', filters.category);
+  if (filters?.search) queryParams.append('search', filters.search);
+  if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+  if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+  
+  return apiGet<EventsListResponse>(`/organizer/events?${queryParams.toString()}`);
+};
+
+/**
+ * Get organizer event by ID
+ */
+export const getOrganizerEventById = async (eventId: string): Promise<EventResponse> => {
+  return apiGet<EventResponse>(`/events/${eventId}`);
+};
+
+/**
+ * Get event registrations (attendees)
+ */
+export const getEventRegistrations = async (eventId: string): Promise<EventRegistrationsResponse> => {
+  return apiGet<EventRegistrationsResponse>(`/events/${eventId}/registrations`);
+};
+
+/**
+ * Create event (organizer)
+ */
+export const createOrganizerEvent = async (data: CreateEventData): Promise<EventResponse> => {
+  return apiPost<EventResponse>('/events', data);
+};
+
+/**
+ * Update event (organizer)
+ */
+export const updateOrganizerEvent = async (eventId: string, data: UpdateEventData): Promise<EventResponse> => {
+  return apiPut<EventResponse>(`/events/${eventId}`, data);
+};
+
+/**
+ * Delete event (organizer)
+ */
+export const deleteOrganizerEvent = async (eventId: string): Promise<{ success: boolean; message: string }> => {
+  return apiDelete<{ success: boolean; message: string }>(`/events/${eventId}`);
 };
 

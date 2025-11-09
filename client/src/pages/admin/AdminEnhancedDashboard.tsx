@@ -276,7 +276,7 @@ const AdminEnhancedDashboard = () => {
               color = "text-green-600";
             }
             return {
-              id: alert.id,
+              id: typeof alert.id === 'string' ? parseInt(alert.id, 10) || Date.now() : alert.id,
               type: alert.type,
               message: alert.message,
               time: alert.time,
@@ -312,7 +312,7 @@ const AdminEnhancedDashboard = () => {
               color = "text-blue-600";
             }
             return {
-              id: activity.id,
+              id: typeof activity.id === 'string' ? parseInt(activity.id, 10) || Date.now() : activity.id,
               type: activity.type,
               message: activity.message,
               time: activity.time,
@@ -355,7 +355,7 @@ const AdminEnhancedDashboard = () => {
               <Shield className="h-8 w-8 mr-3 text-primary" />
               Admin Dashboard
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Platform overview and system management
             </p>
           </div>
@@ -383,7 +383,7 @@ const AdminEnhancedDashboard = () => {
         {/* Stats Grid */}
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading dashboard data...</p>
+            <p className="text-sm text-muted-foreground">Loading dashboard data...</p>
           </div>
         ) : (
           <>
@@ -425,7 +425,7 @@ const AdminEnhancedDashboard = () => {
           <div className="lg:col-span-2">
             <div className="bg-card rounded-xl border border-border p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-foreground">Recent Events</h2>
+                <h2 className="text-lg font-semibold text-foreground">Recent Events</h2>
                 <Link
                   to="/admin/events"
                   className="text-primary hover:text-primary/80 text-sm font-medium flex items-center"
@@ -442,7 +442,7 @@ const AdminEnhancedDashboard = () => {
                   >
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-medium text-foreground">{event.title}</h3>
+                        <h3 className="text-sm font-medium text-foreground">{event.title}</h3>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
                             event.status
@@ -467,7 +467,7 @@ const AdminEnhancedDashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-foreground">{event.revenue}</p>
+                      <p className="text-sm font-semibold text-foreground">{event.revenue}</p>
                       <p className="text-sm text-muted-foreground">{event.category}</p>
                     </div>
                   </div>
@@ -481,7 +481,7 @@ const AdminEnhancedDashboard = () => {
             {/* System Alerts */}
             <div className="bg-card rounded-xl border border-border p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">System Alerts</h2>
+                <h2 className="text-base font-semibold text-foreground">System Alerts</h2>
                 <AlertTriangle className="h-5 w-5 text-yellow-600" />
               </div>
               <div className="space-y-3">
@@ -503,7 +503,7 @@ const AdminEnhancedDashboard = () => {
             {/* Recent Activity */}
             <div className="bg-card rounded-xl border border-border p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+                <h2 className="text-base font-semibold text-foreground">Recent Activity</h2>
                 <Activity className="h-5 w-5 text-primary" />
               </div>
               <div className="space-y-3">

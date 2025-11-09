@@ -45,9 +45,67 @@ export const Hero = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying, featuredEvents.length]);
 
-  // Don't render if loading or no events
-  if (loading || featuredEvents.length === 0) {
-    return null;
+  // Show placeholder if no events
+  if (!loading && featuredEvents.length === 0) {
+    return (
+      <div className="relative">
+        <div 
+          className="w-full h-[60vh] object-cover transition-opacity duration-500 relative bg-gradient-to-br from-primary/20 via-primary/10 to-muted flex items-center justify-center"
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 z-10" />
+          
+          {/* Placeholder Content */}
+          <div className="absolute inset-0 z-20 flex items-center justify-center">
+            <div className="container mx-auto max-w-7xl px-6 text-center">
+              <div className="space-y-6 max-w-3xl mx-auto">
+                <Badge variant="secondary" className="bg-primary text-primary-foreground mb-4">
+                  Discover Amazing Events
+                </Badge>
+                <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-foreground">
+                  Find Your Next Unforgettable Experience
+                </h1>
+                <p className="text-xl text-muted-foreground">
+                  Explore concerts, conferences, workshops, and more. Book tickets instantly and join thousands of attendees at premier events.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4 pt-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="w-5 h-5" />
+                    <span>Upcoming Events</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="w-5 h-5" />
+                    <span>Multiple Locations</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Eye className="w-5 h-5" />
+                    <span>Featured Events</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="relative">
+        <div 
+          className="w-full h-[60vh] object-cover transition-opacity duration-500 relative bg-gradient-to-br from-primary/20 via-primary/10 to-muted flex items-center justify-center"
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 z-10" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground">Loading featured events...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   const currentEvent = featuredEvents[currentEventIndex];

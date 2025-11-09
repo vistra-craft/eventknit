@@ -77,11 +77,17 @@ export interface EventData {
     email?: string;
     organizationName?: string | null;
     businessEmail?: string | null;
+    phoneNumber?: string | null;
   };
   
   // Computed fields
   organizerName?: string; // Computed from organizer
   registrationCount?: number; // From _count
+  attendees?: number; // Number of attendees/registrations
+  
+  // Timestamps
+  createdAt?: string; // ISO date string
+  updatedAt?: string; // ISO date string
   
   // Legacy fields for compatibility
   date?: string; // Formatted date string

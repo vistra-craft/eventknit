@@ -1,11 +1,11 @@
 import React from "react";
-import CreateEvent from "../CreateEvent";
+import CreateEventStepwise from "../CreateEventStepwise";
 import OrganizerLayout from "./OrganizerLayout";
 
 const CreateEventPage: React.FC = () => {
   return (
     <OrganizerLayout>
-      <CreateEvent showLayout={false} />
+      <CreateEventStepwise />
     </OrganizerLayout>
   );
 };

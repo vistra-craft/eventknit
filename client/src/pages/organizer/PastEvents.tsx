@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Plus,
@@ -9,190 +9,75 @@ import {
   DollarSign,
   CheckCircle,
   TrendingUp,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
+import { getOrganizerPastEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 
 const PastEvents = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [pastEvents, setPastEvents] = useState<OrganizerDashboardEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - filtered for completed events only
-  const pastEvents = [
-    {
-      id: "3",
-      title: "Food & Wine Expo",
-      date: "February 10, 2024",
-      time: "11:00 AM - 8:00 PM",
-      location: "Los Angeles, CA",
-      venue: "Convention Center",
-      status: "completed",
-      attendees: 320,
-      capacity: 350,
-      revenue: 25600,
-      views: 1890,
-      conversion: 16.9,
-      speakers: 15,
-      exhibitors: 45,
-      sponsors: 8,
-      image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=300&fit=crop",
-      description: "Discover the finest culinary experiences and wine tastings.",
-      category: "Food & Drink",
-      organizer: "Culinary Events Co.",
-      price: "$89",
-      rating: 4.9,
-      fullDescription: "An exclusive expo featuring world-class chefs, sommeliers, and culinary experts showcasing the best in food and wine.",
-      duration: "9 hours",
-      ageRestriction: "21+"
-    },
-    {
-      id: "4",
-      title: "Digital Marketing Conference",
-      date: "January 20, 2024",
-      time: "8:30 AM - 6:00 PM",
-      location: "Chicago, IL",
-      venue: "McCormick Place",
-      status: "completed",
-      attendees: 450,
-      capacity: 500,
-      revenue: 67500,
-      views: 2100,
-      conversion: 21.4,
-      speakers: 32,
-      exhibitors: 28,
-      sponsors: 15,
-      image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=400&h=300&fit=crop",
-      description: "Learn cutting-edge digital marketing strategies and tools.",
-      category: "Marketing",
-      organizer: "Marketing Pro",
-      price: "$149",
-      rating: 4.5,
-      fullDescription: "A comprehensive conference covering the latest trends and strategies in digital marketing.",
-      duration: "9.5 hours",
-      ageRestriction: "18+"
-    },
-    {
-      id: "10",
-      title: "Tech Innovation Summit 2023",
-      date: "December 5-7, 2023",
-      time: "9:00 AM - 5:00 PM",
-      location: "San Francisco, CA",
-      venue: "Moscone Center",
-      status: "completed",
-      attendees: 520,
-      capacity: 600,
-      revenue: 156000,
-      views: 4200,
-      conversion: 12.4,
-      speakers: 28,
-      exhibitors: 22,
-      sponsors: 18,
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-      description: "Annual technology innovation summit showcasing the latest in tech.",
-      category: "Technology",
-      organizer: "Tech Events Inc.",
-      price: "$299",
-      rating: 4.8,
-      fullDescription: "Join us for the most comprehensive technology innovation summit of the year. Featuring keynote speakers, hands-on workshops, and networking opportunities.",
-      duration: "3 days",
-      ageRestriction: "18+"
-    },
-    {
-      id: "11",
-      title: "Creative Design Workshop",
-      date: "November 15, 2023",
-      time: "10:00 AM - 4:00 PM",
-      location: "Brooklyn, NY",
-      venue: "Brooklyn Creative Center",
-      status: "completed",
-      attendees: 85,
-      capacity: 100,
-      revenue: 12750,
-      views: 450,
-      conversion: 18.9,
-      speakers: 6,
-      exhibitors: 8,
-      sponsors: 3,
-      image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
-      description: "Hands-on workshop for creative professionals and designers.",
-      category: "Design",
-      organizer: "Design Academy",
-      price: "$129",
-      rating: 4.6,
-      fullDescription: "A comprehensive workshop covering modern design principles, tools, and techniques.",
-      duration: "6 hours",
-      ageRestriction: "16+"
-    },
-    {
-      id: "12",
-      title: "E-commerce Growth Summit",
-      date: "October 12-13, 2023",
-      time: "9:00 AM - 6:00 PM",
-      location: "Las Vegas, NV",
-      venue: "Las Vegas Convention Center",
-      status: "completed",
-      attendees: 380,
-      capacity: 400,
-      revenue: 57000,
-      views: 1800,
-      conversion: 21.1,
-      speakers: 25,
-      exhibitors: 35,
-      sponsors: 12,
-      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop",
-      description: "Learn strategies for scaling e-commerce businesses.",
-      category: "E-commerce",
-      organizer: "E-commerce Pro",
-      price: "$199",
-      rating: 4.7,
-      fullDescription: "A comprehensive summit covering e-commerce growth strategies, tools, and best practices.",
-      duration: "2 days",
-      ageRestriction: "18+"
-    },
-    {
-      id: "13",
-      title: "Data Science Conference",
-      date: "September 8-9, 2023",
-      time: "8:30 AM - 5:30 PM",
-      location: "Denver, CO",
-      venue: "Denver Convention Center",
-      status: "completed",
-      attendees: 290,
-      capacity: 350,
-      revenue: 43500,
-      views: 1200,
-      conversion: 24.2,
-      speakers: 20,
-      exhibitors: 15,
-      sponsors: 10,
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
-      description: "Explore the latest trends in data science and analytics.",
-      category: "Data Science",
-      organizer: "Data Science Institute",
-      price: "$249",
-      rating: 4.8,
-      fullDescription: "A comprehensive conference covering the latest trends and techniques in data science and machine learning.",
-      duration: "2 days",
-      ageRestriction: "18+"
-    },
-  ];
+  // Fetch past events from API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const filters: {
+          search?: string;
+        } = {};
+        
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
 
-  // Filter events based on search
-  const filteredEvents = pastEvents.filter(event => {
-    return event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           event.category.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+        const response = await getOrganizerPastEvents(filters);
 
-  // Calculate stats
+        if (response.success && response.data) {
+          setPastEvents(response.data.events as unknown as OrganizerDashboardEvent[]);
+        } else {
+          throw new Error(response.message || 'Failed to fetch past events');
+        }
+      } catch (err: unknown) {
+        const errorMessage = err && typeof err === 'object' && 'message' in err
+          ? (err.message as string)
+          : 'Failed to load past events. Please try again.';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [searchTerm]);
+
+  // Events are already filtered by API
+  const filteredEvents = pastEvents;
+
+  // Calculate stats from real data
   const totalPast = pastEvents.length;
-  const totalAttendees = pastEvents.reduce((sum, e) => sum + e.attendees, 0);
-  const totalRevenue = pastEvents.reduce((sum, e) => sum + e.revenue, 0);
+  const totalAttendees = pastEvents.reduce((sum, e) => sum + (typeof e.attendees === 'number' ? e.attendees : 0), 0);
+  const totalRevenue = pastEvents.reduce((sum, e) => sum + (typeof e.revenue === 'number' ? e.revenue : 0), 0);
   const avgConversion = pastEvents.length > 0 
-    ? (pastEvents.reduce((sum, e) => sum + e.conversion, 0) / pastEvents.length).toFixed(1)
-    : 0;
+    ? (pastEvents.reduce((sum, e) => {
+        const conv = typeof e.conversion === 'string' ? parseFloat(e.conversion) : (typeof e.conversion === 'number' ? e.conversion : 0);
+        return sum + conv;
+      }, 0) / pastEvents.length).toFixed(1)
+    : '0';
   const avgAttendance = pastEvents.length > 0
-    ? Math.round(pastEvents.reduce((sum, e) => sum + (e.attendees / e.capacity * 100), 0) / pastEvents.length)
+    ? Math.round(pastEvents.reduce((sum, e) => {
+        const attendees = typeof e.attendees === 'number' ? e.attendees : 0;
+        const capacity = typeof e.capacity === 'number' ? e.capacity : 1;
+        return sum + (capacity > 0 ? (attendees / capacity * 100) : 0);
+      }, 0) / pastEvents.length)
     : 0;
 
   const stats = [
@@ -309,6 +194,14 @@ const PastEvents = () => {
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Events Grid */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-6">
@@ -317,7 +210,12 @@ const PastEvents = () => {
           </h2>
         </div>
 
-        {filteredEvents.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading past events...</p>
+          </div>
+        ) : filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => (
               <OrganizerEventCard key={event.id} event={event} />

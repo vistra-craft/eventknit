@@ -17,6 +17,7 @@ import {
   Badge,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { useAuth } from "../../hooks/useAuth";
 
 interface User {
   name: string;
@@ -32,6 +33,7 @@ interface DashboardNavbarProps {
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -52,9 +54,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
   };
 
   const handleLogout = () => {
-    // Handle logout logic here
-    console.log("Logging out...");
-    navigate("/");
+    // Use proper logout function from useAuth
+    logout();
   };
 
   // Check if we should show navigation buttons (only on specific sections)

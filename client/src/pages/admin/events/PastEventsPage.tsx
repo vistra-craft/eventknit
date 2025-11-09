@@ -1,129 +1,120 @@
-import { useState } from "react";
-import { Search, Calendar, MapPin, Users, Eye, History, MoreHorizontal, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Calendar, MapPin, Users, Eye, History, MoreHorizontal, TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
 import AdminLayout from "../AdminLayout";
+import { getEvents, EventStatus } from "../../../lib/event-api";
 
 interface Event {
   id: string;
   title: string;
   organizer: string;
   date: string;
-  time: string;
+  startDate?: string;
+  startTime?: string;
   location: string;
-  attendees: number;
-  status: "completed";
   category: string;
   type: "public" | "private";
-  price: "free" | "paid";
+  isFree: boolean;
   actualAttendees: number;
+  expectedAttendees: number;
   revenue: number;
   rating: number;
 }
 
-const mockPastEvents: Event[] = [
-  {
-    id: "1",
-    title: "Tech Conference 2023",
-    organizer: "TechCorp Inc.",
-    date: "2023-12-15",
-    time: "09:00",
-    location: "San Francisco, CA",
-    attendees: 250,
-    status: "completed",
-    category: "Technology",
-    type: "public",
-    price: "paid",
-    actualAttendees: 245,
-    revenue: 24500,
-    rating: 4.8
-  },
-  {
-    id: "2",
-    title: "Music Festival",
-    organizer: "Music Events LLC",
-    date: "2023-11-20",
-    time: "18:00",
-    location: "Austin, TX",
-    attendees: 5000,
-    status: "completed",
-    category: "Music",
-    type: "public",
-    price: "paid",
-    actualAttendees: 4850,
-    revenue: 97000,
-    rating: 4.6
-  },
-  {
-    id: "3",
-    title: "Art Exhibition",
-    organizer: "Modern Art Gallery",
-    date: "2023-10-28",
-    time: "10:00",
-    location: "Los Angeles, CA",
-    attendees: 120,
-    status: "completed",
-    category: "Art",
-    type: "public",
-    price: "free",
-    actualAttendees: 115,
-    revenue: 0,
-    rating: 4.9
-  },
-  {
-    id: "4",
-    title: "Business Workshop",
-    organizer: "Business Academy",
-    date: "2023-09-10",
-    time: "14:00",
-    location: "New York, NY",
-    attendees: 45,
-    status: "completed",
-    category: "Business",
-    type: "private",
-    price: "free",
-    actualAttendees: 42,
-    revenue: 0,
-    rating: 4.7
-  },
-  {
-    id: "5",
-    title: "Sports Tournament",
-    organizer: "Sports Club",
-    date: "2023-08-15",
-    time: "08:00",
-    location: "Chicago, IL",
-    attendees: 300,
-    status: "completed",
-    category: "Sports",
-    type: "public",
-    price: "paid",
-    actualAttendees: 285,
-    revenue: 14250,
-    rating: 4.5
-  }
-];
-
 const PastEventsPage = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
 
-  const filteredEvents = mockPastEvents.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
-    const matchesType = typeFilter === "all" || event.type === typeFilter;
-    const matchesPrice = priceFilter === "all" || event.price === priceFilter;
-    const matchesMonth = monthFilter === "all" || new Date(event.date).getMonth() === parseInt(monthFilter);
-    
-    return matchesSearch && matchesCategory && matchesType && matchesPrice && matchesMonth;
+  // Fetch past events (approved events with endDate < now or status = COMPLETED)
+  useEffect(() => {
+    const fetchPastEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const filters: Record<string, unknown> = {
+          status: EventStatus.APPROVED,
+        };
+        
+        if (categoryFilter !== "all") {
+          filters.category = categoryFilter;
+        }
+        
+        if (typeFilter !== "all") {
+          filters.type = typeFilter === "public" ? "PUBLIC" : "PRIVATE";
+        }
+        
+        if (priceFilter !== "all") {
+          filters.isFree = priceFilter === "free";
+        }
+        
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+
+        const response = await getEvents(filters);
+        if (response.success && response.data?.events) {
+          const now = new Date();
+          const pastEvents = response.data.events
+            .filter(event => {
+              if (event.status === 'COMPLETED') return true;
+              if (event.endDate) {
+                const endDate = new Date(event.endDate);
+                return endDate < now;
+              }
+              if (event.startDate) {
+                const startDate = new Date(event.startDate);
+                return startDate < now;
+              }
+              return false;
+            })
+            .map(event => ({
+              id: event.id,
+              title: event.title,
+              organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+              date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
+              startDate: event.startDate,
+              startTime: event.startTime || '',
+              location: event.location || event.venue || 'TBD',
+              category: event.category || 'Uncategorized',
+              type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
+              isFree: event.isFree || false,
+              actualAttendees: event.attendees || 0,
+              expectedAttendees: event.capacity || event.attendees || 0,
+              revenue: 0, // TODO: Calculate from registrations
+              rating: 0, // TODO: Get from reviews/ratings
+            }));
+          setEvents(pastEvents);
+        }
+      } catch (err) {
+        console.error('Error fetching past events:', err);
+        setError('Failed to load past events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPastEvents();
+  }, [categoryFilter, typeFilter, priceFilter, searchTerm]);
+
+  const filteredEvents = events.filter(event => {
+    const matchesMonth = monthFilter === "all" || 
+      (event.startDate && new Date(event.startDate).getMonth() === parseInt(monthFilter));
+    return matchesMonth;
   });
+
+  // Get unique categories from events
+  const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
@@ -131,13 +122,14 @@ const PastEventsPage = () => {
       : "bg-purple-100 text-purple-800 border-purple-200";
   };
 
-  const getPriceBadge = (price: string) => {
-    return price === "free" 
+  const getPriceBadge = (isFree: boolean) => {
+    return isFree
       ? "bg-green-100 text-green-800 border-green-200"
       : "bg-orange-100 text-orange-800 border-orange-200";
   };
 
   const getAttendanceRate = (expected: number, actual: number) => {
+    if (expected === 0) return 0;
     return Math.round((actual / expected) * 100);
   };
 
@@ -157,6 +149,28 @@ const PastEventsPage = () => {
     { value: "11", label: "December" }
   ];
 
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading past events...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -167,7 +181,7 @@ const PastEventsPage = () => {
             <p className="text-gray-600">View completed events and their performance metrics</p>
           </div>
           <div className="text-sm text-gray-500">
-            {filteredEvents.length} of {mockPastEvents.length} past events
+            {filteredEvents.length} of {events.length} past events
           </div>
         </div>
 
@@ -192,13 +206,9 @@ const PastEventsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Technology">Technology</SelectItem>
-                  <SelectItem value="Music">Music</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="Art">Art</SelectItem>
-                  <SelectItem value="Sports">Sports</SelectItem>
-                  <SelectItem value="Comedy">Comedy</SelectItem>
-                  <SelectItem value="Theatre">Theatre</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -254,14 +264,14 @@ const PastEventsPage = () => {
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
                         {event.type}
                       </Badge>
-                      <Badge className={`text-xs ${getPriceBadge(event.price)}`}>
-                        {event.price}
+                      <Badge className={`text-xs ${getPriceBadge(event.isFree)}`}>
+                        {event.isFree ? 'free' : 'paid'}
                       </Badge>
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.date).toLocaleDateString()} at {event.time}</span>
+                        <span>{event.date} {event.startTime && `at ${event.startTime}`}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" />
@@ -269,16 +279,18 @@ const PastEventsPage = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4" />
-                        <span>{event.actualAttendees} / {event.attendees} attendees</span>
+                        <span>{event.actualAttendees} / {event.expectedAttendees} attendees</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <TrendingUp className="h-4 w-4" />
-                        <span>{getAttendanceRate(event.attendees, event.actualAttendees)}% attendance</span>
+                        <span>{getAttendanceRate(event.expectedAttendees, event.actualAttendees)}% attendance</span>
                       </div>
                     </div>
                     <p className="text-sm text-gray-500 mb-2">by {event.organizer}</p>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="text-gray-600">Rating: {event.rating}/5.0</span>
+                      {event.rating > 0 && (
+                        <span className="text-gray-600">Rating: {event.rating}/5.0</span>
+                      )}
                       {event.revenue > 0 && (
                         <span className="text-gray-600">Revenue: ${event.revenue.toLocaleString()}</span>
                       )}

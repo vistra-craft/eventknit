@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { EventService } from '../services/event.service';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
-import { EventStatus } from '@prisma/client';
+import { EventStatus, DataAccessLevel } from '@prisma/client';
 
 export class EventController {
   /**
@@ -346,6 +346,92 @@ export class EventController {
   }
 
   /**
+   * Update organizer data access level (admin function)
+   */
+  static async updateOrganizerDataAccess(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { dataAccessLevel } = req.body;
+
+      if (!dataAccessLevel || !['RESTRICTED', 'STANDARD', 'FULL'].includes(dataAccessLevel)) {
+        res.status(400).json({
+          success: false,
+          message: 'Valid dataAccessLevel is required (RESTRICTED, STANDARD, or FULL)',
+        });
+        return;
+      }
+
+      const event = await EventService.updateOrganizerDataAccess(
+        req.params.id,
+        dataAccessLevel as DataAccessLevel,
+        req.user.id,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Organizer data access updated successfully',
+        data: { event },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Bulk update organizer data access level (admin function)
+   */
+  static async bulkUpdateOrganizerDataAccess(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { eventIds, dataAccessLevel } = req.body;
+
+      if (!eventIds || !Array.isArray(eventIds) || eventIds.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'eventIds array is required and must not be empty',
+        });
+        return;
+      }
+
+      if (!dataAccessLevel || !['RESTRICTED', 'STANDARD', 'FULL'].includes(dataAccessLevel)) {
+        res.status(400).json({
+          success: false,
+          message: 'Valid dataAccessLevel is required (RESTRICTED, STANDARD, or FULL)',
+        });
+        return;
+      }
+
+      const result = await EventService.bulkUpdateOrganizerDataAccess(
+        eventIds,
+        dataAccessLevel as DataAccessLevel,
+        req.user.id,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Organizer data access updated successfully for ${result.updatedCount} event(s)`,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get user's registered events (for user dashboard)
    */
   static async getUserRegisteredEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -387,6 +473,36 @@ export class EventController {
   }
 
   /**
+   * Register for event as guest (public - no auth required)
+   */
+  static async registerAsGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const eventId = req.params.eventId;
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await EventService.registerAsGuest(
+        eventId,
+        req.body,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful. Check your email for confirmation and access link.',
+        data: {
+          registration: result.registration,
+          user: result.user,
+          // Don't return magicLinkToken in response for security (it's in email)
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Register for event via invitation link (public - no auth required)
    */
   static async registerViaInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -413,4 +529,5 @@ export class EventController {
     }
   }
 }
+
 

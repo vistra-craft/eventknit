@@ -1,4 +1,5 @@
 import { useLocation } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import DashboardNavbar from "./DashboardNavbar";
 import DashboardHome from "./DashboardHome";
 import DashboardSpeakers from "./DashboardSpeakers";
@@ -17,24 +18,24 @@ const UserDashboard = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const activeSection = searchParams.get("section") || "home";
+  const { user: authUser } = useAuth();
 
-  // Get user and event data from navigation state or use defaults
+  // Get user data from auth context
+  const user = authUser ? {
+    name: `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || authUser.email || 'User',
+    email: authUser.email || '',
+    initials: authUser.firstName && authUser.lastName 
+      ? `${authUser.firstName[0]}${authUser.lastName[0]}`.toUpperCase()
+      : (authUser.email ? authUser.email[0].toUpperCase() : 'U'),
+  } : {
+    name: 'User',
+    email: '',
+    initials: 'U',
+  };
+
+  // Get event data from navigation state (for specific event views)
   const registration = location.state?.registration;
-  const eventData = location.state?.eventData || {
-    id: 1,
-    title: "Tech Conference 2024",
-    date: "March 15-17, 2024",
-    location: "San Francisco Convention Center",
-    type: "In-Person",
-    image: "/placeholder.svg",
-    registrationDate: "2024-01-15",
-  };
-
-  const user = registration?.user || {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    initials: "JD",
-  };
+  const eventData = location.state?.eventData;
 
   // Show success message if available
   const successMessage = location.state?.message;
@@ -47,14 +48,14 @@ const UserDashboard = () => {
       case "speakers":
         return <DashboardSpeakers eventData={eventData} />;
       case "exhibitors":
-        return <DashboardExhibitors eventData={eventData} user={user} />;
+        return <DashboardExhibitors eventData={eventData} />;
       case "attendees":
         return <DashboardAttendees />;
       case "agenda":
         return <DashboardAgenda eventData={eventData} user={user} />;
       case "my-event":
         return (
-          <DashboardMyEvent eventData={eventData} registration={registration} />
+          <DashboardMyEvent eventData={eventData} registration={registration} user={user} />
         );
       case "my-badge":
         return (

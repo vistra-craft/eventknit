@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { 
   Users, 
   Ticket, 
@@ -16,20 +18,29 @@ import {
   CheckCircle,
   Calendar,
   Camera,
-  FileText
+  FileText,
+  AlertCircle,
+  Loader2,
+  Save,
+  Eye,
+  Upload,
+  Globe,
+  MapPin
 } from 'lucide-react';
+import { createEvent, type CreateEventData, EventType } from '@/lib/event-api';
+import { useAuth } from '@/hooks/useAuth';
 
-interface Speaker {
-  name: string;
-  title: string;
-  bio: string;
-}
+// interface Speaker {
+//   name: string;
+//   title: string;
+//   bio: string;
+// }
 
-interface Sponsor {
-  name: string;
-  level: 'gold' | 'silver' | 'bronze';
-  logo: string;
-}
+// interface Sponsor {
+//   name: string;
+//   level: 'gold' | 'silver' | 'bronze';
+//   logo: string;
+// }
 
 interface RegistrationField {
   id: string;
@@ -68,14 +79,58 @@ interface EventData {
   isOnline: boolean;
   capacity: string;
   category?: string;
+  timezone?: string;
 }
 
 type Tag = string;
 
+// Common timezones list
+const TIMEZONES = [
+  { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'America/Phoenix', label: 'Arizona Time' },
+  { value: 'America/Anchorage', label: 'Alaska Time' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii Time' },
+  { value: 'Europe/London', label: 'London (GMT)' },
+  { value: 'Europe/Paris', label: 'Paris (CET)' },
+  { value: 'Europe/Berlin', label: 'Berlin (CET)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+  { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
+  { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+  { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
+  { value: 'America/Toronto', label: 'Toronto (ET)' },
+  { value: 'America/Mexico_City', label: 'Mexico City (CST)' },
+  { value: 'America/Sao_Paulo', label: 'São Paulo (BRT)' },
+];
+
+const DRAFT_STORAGE_KEY = 'eventknit_event_draft';
+
 export default function CreateEventStepwise() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [eventType, setEventType] = useState("in-person");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showPreview, setShowPreview] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [timezone, setTimezone] = useState(() => {
+    // Default to user's timezone or UTC
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return 'UTC';
+    }
+  });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
     { id: 1, name: "General Admission", type: "paid", price: "50", quantity: "100" }
@@ -85,28 +140,52 @@ export default function CreateEventStepwise() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [newTag, setNewTag] = useState("");
   const [faqs, setFaqs] = useState([{ question: "", answer: "" }]);
-  const [speakers] = useState<Speaker[]>([{ name: "", title: "", bio: "" }]);
-  const [sponsors] = useState<Sponsor[]>([{ name: "", level: "gold", logo: "" }]);
+  // const [_speakers] = useState<Speaker[]>([{ name: "", title: "", bio: "" }]);
+  // const [_sponsors] = useState<Sponsor[]>([{ name: "", level: "gold", logo: "" }]);
   const [isPrivate, setIsPrivate] = useState(false);
   
-  const [eventData, setEventData] = useState<EventData>({
-    title: "",
-    organizer: "",
-    description: "",
-    date: "",
-    time: "",
-    endDate: "",
-    endTime: "",
-    location: "",
-    venue: "",
-    address: "",
-    onlineLink: "",
-    price: "",
-    totalSlots: 0,
-    image: "",
-    requirements: "",
-    isOnline: false,
-    capacity: ""
+  // Load draft from localStorage on mount
+  const loadDraft = (): Partial<EventData> => {
+    try {
+      const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        // Check if draft is less than 7 days old
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000) {
+          return parsed.data || {};
+        } else {
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+    return {};
+  };
+
+  const [eventData, setEventData] = useState<EventData>(() => {
+    const draft = loadDraft();
+    return {
+      title: draft.title || "",
+      organizer: draft.organizer || "",
+      description: draft.description || "",
+      date: draft.date || "",
+      time: draft.time || "",
+      endDate: draft.endDate || "",
+      endTime: draft.endTime || "",
+      location: draft.location || "",
+      venue: draft.venue || "",
+      address: draft.address || "",
+      onlineLink: draft.onlineLink || "",
+      price: draft.price || "",
+      totalSlots: draft.totalSlots || 0,
+      image: draft.image || "",
+      requirements: draft.requirements || "",
+      isOnline: draft.isOnline || false,
+      capacity: draft.capacity || "",
+      category: draft.category || "",
+      timezone: draft.timezone || timezone,
+    };
   });
 
   const [registrationFields, setRegistrationFields] = useState<RegistrationField[]>([
@@ -141,6 +220,127 @@ export default function CreateEventStepwise() {
     "Health", "Food", "Travel", "Networking", "Workshop", "Conference", 
     "Wellness", "Entertainment", "Community", "Charity"
   ];
+
+  // Save draft to localStorage
+  // const _saveDraft = () => {
+  //   try {
+  //     const draftData = {
+  //       data: {
+  //         ...eventData,
+  //         timezone,
+  //       },
+  //       ticketTypes,
+  //       categories,
+  //       tags,
+  //       faqs,
+  //       registrationFields,
+  //       eventType,
+  //       isPrivate,
+  //       timestamp: Date.now(),
+  //     };
+  //     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+  //     setLastSaved(new Date());
+  //     setIsSavingDraft(false);
+  //   } catch (error) {
+  //     console.error('Error saving draft:', error);
+  //   }
+  // };
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    // Set up auto-save interval
+    autoSaveIntervalRef.current = setInterval(() => {
+      setIsSavingDraft(true);
+      const draftData = {
+        data: {
+          ...eventData,
+          timezone,
+        },
+        ticketTypes,
+        categories,
+        tags,
+        faqs,
+        registrationFields,
+        eventType,
+        isPrivate,
+        timestamp: Date.now(),
+      };
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        setLastSaved(new Date());
+        setIsSavingDraft(false);
+      } catch (error) {
+        console.error('Error saving draft:', error);
+      }
+    }, 30000); // 30 seconds
+
+    // Cleanup on unmount
+    return () => {
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current);
+      }
+    };
+  }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone]);
+
+  // Clear draft after successful submission
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  };
+
+  // Handle image upload
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setError(null);
+
+    try {
+      // Convert to base64 for now (in production, upload to cloud storage)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        setEventData(prev => ({ ...prev, image: base64String }));
+        setIsUploadingImage(false);
+      };
+      reader.onerror = () => {
+        setError('Failed to read image file');
+        setIsUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setError('Failed to upload image');
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Format date with timezone
+  const formatDateWithTimezone = (date: string, time: string) => {
+    if (!date || !time) return '';
+    try {
+      const dateTime = new Date(`${date}T${time}`);
+      return new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: timezone,
+      }).format(dateTime);
+    } catch {
+      return `${date} at ${time}`;
+    }
+  };
 
   const handleInputChange = <K extends keyof EventData>(
     field: K,
@@ -237,21 +437,187 @@ export default function CreateEventStepwise() {
 
   const calculateProgress = () => {
     const requiredFields = [
-      eventData.title, eventData.organizer, eventData.description,
+      eventData.title, eventData.description,
       eventData.date, eventData.time, eventData.location || eventData.onlineLink,
-      eventData.price, categories.length > 0
+      eventData.category, ticketTypes.length > 0
     ];
     const filledFields = requiredFields.filter(field => field && field.toString().trim() !== "").length;
     return Math.round((filledFields / requiredFields.length) * 100);
   };
 
+  const validateStep = (step: number): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (step === 1) {
+      if (!eventData.title?.trim()) errors.title = 'Event title is required';
+      if (!eventData.description?.trim()) errors.description = 'Event description is required';
+      if (eventData.description && eventData.description.length < 10) {
+        errors.description = 'Description must be at least 10 characters';
+      }
+      if (!eventData.category) errors.category = 'Category is required';
+    }
+    
+    if (step === 2) {
+      if (!eventData.date) errors.date = 'Event date is required';
+      if (!eventData.time) errors.time = 'Start time is required';
+      if (eventType === 'in-person' && !eventData.venue?.trim()) {
+        errors.venue = 'Venue name is required for in-person events';
+      }
+      if (eventType === 'in-person' && !eventData.location?.trim()) {
+        errors.location = 'Location is required for in-person events';
+      }
+      if (eventType === 'online' && !eventData.onlineLink?.trim()) {
+        errors.onlineLink = 'Online link is required for online events';
+      }
+      if (eventData.endDate && eventData.date && new Date(eventData.endDate) < new Date(eventData.date)) {
+        errors.endDate = 'End date must be after start date';
+      }
+    }
+    
+    if (step === 3) {
+      if (ticketTypes.length === 0) {
+        errors.tickets = 'At least one ticket type is required';
+      }
+      const hasInvalidTickets = ticketTypes.some(ticket => {
+        if (!ticket.name?.trim()) return true;
+        if (ticket.type === 'paid' && (!ticket.price || parseFloat(ticket.price) < 0)) return true;
+        return false;
+      });
+      if (hasInvalidTickets) {
+        errors.tickets = 'All tickets must have a name and valid price (if paid)';
+      }
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleNext = () => {
     if (currentStep < 6) {
-      setCurrentStep(currentStep + 1);
+      if (validateStep(currentStep)) {
+        setError(null);
+        setCurrentStep(currentStep + 1);
+      } else {
+        setError('Please fix the errors before proceeding');
+      }
     } else {
-      // Mock event creation completion
-      console.log('Event created:', { eventData, ticketTypes, categories, tags, faqs, speakers, sponsors, registrationFields });
-      navigate('/organizer/dashboard');
+      handleSubmit();
+    }
+  };
+
+  const transformFormDataToAPI = (): CreateEventData => {
+    // Determine if event is free
+    const isFree = ticketTypes.every(t => t.type === 'free');
+    
+    // Build ticket types array
+    const apiTicketTypes = ticketTypes.map(ticket => ({
+      name: ticket.name.trim(),
+      price: ticket.type === 'free' ? 0 : parseFloat(ticket.price) || 0,
+      quantity: ticket.quantity ? parseInt(ticket.quantity, 10) : undefined,
+      features: []
+    }));
+
+    // Build start date with time and timezone (ISO format)
+    const startDate = eventData.date && eventData.time 
+      ? new Date(`${eventData.date}T${eventData.time}`).toISOString()
+      : new Date().toISOString();
+
+    // Build end date with time if provided
+    const endDate = eventData.endDate && eventData.endTime
+      ? new Date(`${eventData.endDate}T${eventData.endTime}`).toISOString()
+      : undefined;
+
+    // Determine single price if all tickets have same price
+    const singlePrice = !isFree && ticketTypes.length === 1 && ticketTypes[0].type === 'paid'
+      ? parseFloat(ticketTypes[0].price)
+      : undefined;
+
+    const apiData: CreateEventData = {
+      title: eventData.title.trim(),
+      description: eventData.description.trim(),
+      category: eventData.category || categories[0] || undefined,
+      tags: tags.length > 0 ? tags : undefined,
+      startDate,
+      endDate,
+      startTime: eventData.time,
+      endTime: eventData.endTime || undefined,
+      venue: eventData.venue?.trim() || undefined,
+      location: eventData.location?.trim() || eventData.onlineLink?.trim() || '',
+      address: eventData.address?.trim() || undefined,
+      isOnline: eventType === 'online' || eventType === 'hybrid',
+      onlineLink: eventData.onlineLink?.trim() || undefined,
+      isFree,
+      price: singlePrice,
+      ticketTypes: apiTicketTypes.length > 0 ? apiTicketTypes : undefined,
+      capacity: eventData.capacity ? parseInt(eventData.capacity, 10) : undefined,
+      image: eventData.image?.trim() || undefined,
+      type: isPrivate ? EventType.PRIVATE : EventType.PUBLIC,
+      faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()).length > 0
+        ? faqs.filter(faq => faq.question.trim() && faq.answer.trim()).map(faq => ({
+            question: faq.question.trim(),
+            answer: faq.answer.trim()
+          }))
+        : undefined,
+      registrationFields: registrationFields.length > 3
+        ? registrationFields.map(field => ({
+            id: field.id,
+            name: field.name,
+            label: field.label,
+            type: field.type,
+            required: field.required,
+            placeholder: field.placeholder,
+            options: field.options
+          }))
+        : undefined,
+    };
+
+    return apiData;
+  };
+
+  const handleSubmit = async () => {
+    // Final validation
+    if (!validateStep(6)) {
+      setError('Please fix all errors before submitting');
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!user) {
+      setError('You must be logged in to create events');
+      navigate('/auth/signin');
+      return;
+    }
+
+    // Check if user is an organizer
+    if (user.role !== 'ORGANIZER' && user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_STAFF') {
+      setError('Only organizers can create events');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const apiData = transformFormDataToAPI();
+      const response = await createEvent(apiData);
+
+      if (response.success && response.data) {
+        // Clear draft on success
+        clearDraft();
+        // Success! Navigate to event details or organizer dashboard
+        navigate(`/organizer/events/${response.data.event.id}`, {
+          state: { message: 'Event created successfully! It is pending admin approval.' }
+        });
+      } else {
+        setError(response.message || 'Failed to create event. Please try again.');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'An unexpected error occurred. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -281,11 +647,18 @@ export default function CreateEventStepwise() {
             id="eventName" 
             placeholder="Give your event a catchy title" 
             value={eventData.title}
-            onChange={(e) => handleInputChange("title", e.target.value)}
+            onChange={(e) => {
+              handleInputChange("title", e.target.value);
+              if (validationErrors.title) setValidationErrors(prev => ({ ...prev, title: '' }));
+            }}
+            className={validationErrors.title ? 'border-destructive' : ''}
           />
+          {validationErrors.title && (
+            <p className="text-sm text-destructive">{validationErrors.title}</p>
+          )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="organizer">Organizer Name *</Label>
+          <Label htmlFor="organizer">Organizer Name</Label>
           <Input 
             id="organizer" 
             placeholder="Your organization name" 
@@ -303,11 +676,20 @@ export default function CreateEventStepwise() {
           rows={4}
           value={eventData.description}
           maxLength={5000}
-          onChange={(e) => handleInputChange("description", e.target.value)}
+          onChange={(e) => {
+            handleInputChange("description", e.target.value);
+            if (validationErrors.description) setValidationErrors(prev => ({ ...prev, description: '' }));
+          }}
+          className={validationErrors.description ? 'border-destructive' : ''}
         />
-        <p className="text-sm text-muted-foreground">
-          {eventData.description.length}/5000 characters
-        </p>
+        <div className="flex justify-between">
+          <p className="text-sm text-muted-foreground">
+            {eventData.description.length}/5000 characters
+          </p>
+          {validationErrors.description && (
+            <p className="text-sm text-destructive">{validationErrors.description}</p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -326,8 +708,14 @@ export default function CreateEventStepwise() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="category">Category *</Label>
-          <Select value={eventData.category || ""} onValueChange={(value) => handleInputChange("category", value)}>
-            <SelectTrigger>
+          <Select 
+            value={eventData.category || ""} 
+            onValueChange={(value) => {
+              handleInputChange("category", value);
+              if (validationErrors.category) setValidationErrors(prev => ({ ...prev, category: '' }));
+            }}
+          >
+            <SelectTrigger className={validationErrors.category ? 'border-destructive' : ''}>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
@@ -336,6 +724,9 @@ export default function CreateEventStepwise() {
               ))}
             </SelectContent>
           </Select>
+          {validationErrors.category && (
+            <p className="text-sm text-destructive">{validationErrors.category}</p>
+          )}
         </div>
       </div>
     </div>
@@ -359,8 +750,15 @@ export default function CreateEventStepwise() {
             id="date" 
             type="date"
             value={eventData.date}
-            onChange={(e) => handleInputChange("date", e.target.value)}
+            onChange={(e) => {
+              handleInputChange("date", e.target.value);
+              if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
+            }}
+            className={validationErrors.date ? 'border-destructive' : ''}
           />
+          {validationErrors.date && (
+            <p className="text-sm text-destructive">{validationErrors.date}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="time">Start Time *</Label>
@@ -368,8 +766,15 @@ export default function CreateEventStepwise() {
             id="time" 
             type="time"
             value={eventData.time}
-            onChange={(e) => handleInputChange("time", e.target.value)}
+            onChange={(e) => {
+              handleInputChange("time", e.target.value);
+              if (validationErrors.time) setValidationErrors(prev => ({ ...prev, time: '' }));
+            }}
+            className={validationErrors.time ? 'border-destructive' : ''}
           />
+          {validationErrors.time && (
+            <p className="text-sm text-destructive">{validationErrors.time}</p>
+          )}
         </div>
       </div>
 
@@ -380,8 +785,15 @@ export default function CreateEventStepwise() {
             id="endDate" 
             type="date"
             value={eventData.endDate}
-            onChange={(e) => handleInputChange("endDate", e.target.value)}
+            onChange={(e) => {
+              handleInputChange("endDate", e.target.value);
+              if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
+            }}
+            className={validationErrors.endDate ? 'border-destructive' : ''}
           />
+          {validationErrors.endDate && (
+            <p className="text-sm text-destructive">{validationErrors.endDate}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="endTime">End Time</Label>
@@ -394,6 +806,28 @@ export default function CreateEventStepwise() {
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="timezone" className="flex items-center gap-2">
+          <Globe className="w-4 h-4" />
+          Timezone *
+        </Label>
+        <Select value={timezone} onValueChange={setTimezone}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select timezone" />
+          </SelectTrigger>
+          <SelectContent>
+            {TIMEZONES.map((tz) => (
+              <SelectItem key={tz.value} value={tz.value}>
+                {tz.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-sm text-muted-foreground">
+          Event time will be displayed in this timezone
+        </p>
+      </div>
+
       {eventType === "in-person" && (
         <div className="space-y-4">
           <div className="space-y-2">
@@ -402,11 +836,34 @@ export default function CreateEventStepwise() {
               id="venue" 
               placeholder="Enter venue name"
               value={eventData.venue}
-              onChange={(e) => handleInputChange("venue", e.target.value)}
+              onChange={(e) => {
+                handleInputChange("venue", e.target.value);
+                if (validationErrors.venue) setValidationErrors(prev => ({ ...prev, venue: '' }));
+              }}
+              className={validationErrors.venue ? 'border-destructive' : ''}
             />
+            {validationErrors.venue && (
+              <p className="text-sm text-destructive">{validationErrors.venue}</p>
+            )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Address *</Label>
+            <Label htmlFor="location">Location *</Label>
+            <Input 
+              id="location" 
+              placeholder="City, State/Country"
+              value={eventData.location}
+              onChange={(e) => {
+                handleInputChange("location", e.target.value);
+                if (validationErrors.location) setValidationErrors(prev => ({ ...prev, location: '' }));
+              }}
+              className={validationErrors.location ? 'border-destructive' : ''}
+            />
+            {validationErrors.location && (
+              <p className="text-sm text-destructive">{validationErrors.location}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
             <Textarea 
               id="address" 
               placeholder="Enter full address"
@@ -425,8 +882,15 @@ export default function CreateEventStepwise() {
             id="onlineLink" 
             placeholder="https://zoom.us/j/..."
             value={eventData.onlineLink}
-            onChange={(e) => handleInputChange("onlineLink", e.target.value)}
+            onChange={(e) => {
+              handleInputChange("onlineLink", e.target.value);
+              if (validationErrors.onlineLink) setValidationErrors(prev => ({ ...prev, onlineLink: '' }));
+            }}
+            className={validationErrors.onlineLink ? 'border-destructive' : ''}
           />
+          {validationErrors.onlineLink && (
+            <p className="text-sm text-destructive">{validationErrors.onlineLink}</p>
+          )}
         </div>
       )}
 
@@ -454,6 +918,13 @@ export default function CreateEventStepwise() {
         </p>
       </div>
 
+      {validationErrors.tickets && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{validationErrors.tickets}</AlertDescription>
+        </Alert>
+      )}
+      
       <div className="space-y-4">
         {ticketTypes.map((ticket, index) => (
           <Card key={ticket.id}>
@@ -654,12 +1125,70 @@ export default function CreateEventStepwise() {
       {/* Event Image */}
       <div className="space-y-4">
         <Label>Event Image</Label>
-        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-          <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground mb-2">Upload an event image</p>
-          <Button variant="outline" size="sm">
-            Choose File
-          </Button>
+        <div className="space-y-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          {imagePreview || eventData.image ? (
+            <div className="relative">
+              <img
+                src={imagePreview || eventData.image}
+                alt="Event preview"
+                className="w-full h-64 object-cover rounded-lg border"
+              />
+              <Button
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2"
+                onClick={() => {
+                  setImagePreview(null);
+                  setEventData(prev => ({ ...prev, image: '' }));
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+              <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground mb-2">Upload an event image</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage}
+              >
+                {isUploadingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Choose File
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
+            </div>
+          )}
+          {!imagePreview && !eventData.image && (
+            <div className="space-y-2">
+              <Label htmlFor="imageUrl" className="text-sm">Or provide image URL</Label>
+              <Input
+                id="imageUrl"
+                placeholder="https://example.com/image.jpg"
+                value={eventData.image}
+                onChange={(e) => handleInputChange("image", e.target.value)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -851,17 +1380,155 @@ export default function CreateEventStepwise() {
     { title: "Review", icon: CheckCircle }
   ];
 
+  // Render preview modal
+  const renderPreview = () => {
+    // const isFree = ticketTypes.every(t => t.type === 'free');
+    return (
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Preview</DialogTitle>
+            <DialogDescription>
+              This is how your event will appear to attendees
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Event Image */}
+            {(imagePreview || eventData.image) && (
+              <img
+                src={imagePreview || eventData.image}
+                alt={eventData.title || 'Event'}
+                className="w-full h-64 object-cover rounded-lg"
+              />
+            )}
+            
+            {/* Event Title */}
+            <div>
+              <h2 className="text-3xl font-bold">{eventData.title || 'Untitled Event'}</h2>
+              {eventData.organizer && (
+                <p className="text-muted-foreground mt-1">by {eventData.organizer}</p>
+              )}
+            </div>
+
+            {/* Date & Time */}
+            {eventData.date && eventData.time && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{formatDateWithTimezone(eventData.date, eventData.time)}</p>
+                  <p className="text-sm text-muted-foreground">{timezone}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Location */}
+            {(eventData.venue || eventData.location || eventData.onlineLink) && (
+              <div className="flex items-start gap-2">
+                <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div>
+                  {eventData.venue && <p className="font-medium">{eventData.venue}</p>}
+                  {eventData.location && <p className="text-muted-foreground">{eventData.location}</p>}
+                  {eventData.onlineLink && (
+                    <a href={eventData.onlineLink} className="text-primary hover:underline">
+                      {eventData.onlineLink}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            {eventData.description && (
+              <div>
+                <h3 className="font-semibold mb-2">About this event</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{eventData.description}</p>
+              </div>
+            )}
+
+            {/* Tickets */}
+            {ticketTypes.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Tickets</h3>
+                <div className="space-y-2">
+                  {ticketTypes.map((ticket, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{ticket.name || `Ticket ${index + 1}`}</p>
+                        {ticket.quantity && (
+                          <p className="text-sm text-muted-foreground">
+                            {ticket.quantity} available
+                          </p>
+                        )}
+                      </div>
+                      <p className="font-bold">
+                        {ticket.type === 'free' ? 'Free' : `$${parseFloat(ticket.price || '0').toFixed(2)}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* FAQs */}
+            {faqs.filter(f => f.question && f.answer).length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Frequently Asked Questions</h3>
+                <div className="space-y-3">
+                  {faqs.filter(f => f.question && f.answer).map((faq, index) => (
+                    <div key={index}>
+                      <p className="font-medium">{faq.question}</p>
+                      <p className="text-muted-foreground text-sm">{faq.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <Badge key={tag} variant="outline">{tag}</Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10">
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Create New Event</h1>
-          <p className="text-muted-foreground">Set up your event with all the details attendees need to know</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Create New Event</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Set up your event with all the details attendees need to know</p>
+          
+          {/* Draft Save Indicator */}
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            {isSavingDraft ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving draft...</span>
+              </>
+            ) : lastSaved ? (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Draft saved {lastSaved.toLocaleTimeString()}</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Auto-saving every 30 seconds</span>
+              </>
+            )}
+          </div>
           
           {/* Progress Indicator */}
-          <div className="mt-6">
-            <div className="flex justify-between text-sm text-muted-foreground mb-2">
+          <div className="mt-4 sm:mt-6">
+            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mb-2">
               <span>Step {currentStep} of {steps.length}</span>
               <span>{calculateProgress()}% complete</span>
             </div>
@@ -873,22 +1540,22 @@ export default function CreateEventStepwise() {
             </div>
           </div>
 
-          {/* Step Navigation */}
-          <div className="flex items-center justify-center space-x-4 mt-6">
+          {/* Step Navigation - Hidden on mobile, shown on desktop */}
+          <div className="hidden md:flex items-center justify-center space-x-2 sm:space-x-4 mt-6">
             {steps.map((step, index) => (
               <div key={index} className="flex items-center">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors ${
                     index + 1 <= currentStep
                       ? 'bg-eventknit text-eventknit-foreground'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  <step.icon className="w-4 h-4" />
+                  <step.icon className="w-3 h-3 sm:w-4 sm:h-4" />
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`w-16 h-0.5 mx-2 transition-colors ${
+                    className={`w-8 sm:w-16 h-0.5 mx-1 sm:mx-2 transition-colors ${
                       index + 1 < currentStep ? 'bg-eventknit' : 'bg-muted'
                     }`}
                   />
@@ -897,6 +1564,14 @@ export default function CreateEventStepwise() {
             ))}
           </div>
         </div>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Form Content */}
         <Card>
@@ -909,24 +1584,49 @@ export default function CreateEventStepwise() {
             {currentStep === 6 && renderStep6()}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                className="px-6"
-              >
-                Back
-              </Button>
+            <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
+              <div className="flex gap-2 order-2 sm:order-1">
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  className="flex-1 sm:px-6 sm:flex-none"
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
+                {currentStep >= 3 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPreview(true)}
+                    className="flex-1 sm:px-6 sm:flex-none"
+                    disabled={isSubmitting}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview
+                  </Button>
+                )}
+              </div>
               <Button
                 onClick={handleNext}
-                className="px-6 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+                disabled={isSubmitting}
               >
-                {currentStep === 6 ? 'Publish Event' : 'Next'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {currentStep === 6 ? 'Publishing...' : 'Validating...'}
+                  </>
+                ) : (
+                  currentStep === 6 ? 'Publish Event' : 'Next'
+                )}
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+      
+      {/* Preview Modal */}
+      {renderPreview()}
     </div>
   );
 }

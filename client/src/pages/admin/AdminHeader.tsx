@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Bell, Menu, User, ChevronDown, LogOut, Shield, AlertTriangle } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
 interface AdminHeaderProps {
   onMenuToggle?: () => void;
@@ -11,6 +12,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
   onMenuToggle
 }) => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Mock admin user data - replace with actual user data
@@ -22,8 +24,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
   };
 
   const handleLogout = () => {
-    // Add logout logic here
-    navigate('/');
+    // Use proper logout function from useAuth
+    logout();
   };
 
   return (

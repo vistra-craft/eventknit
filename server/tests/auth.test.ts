@@ -51,6 +51,7 @@ describe('Authentication System', () => {
     // Note: Event/Ticket tables removed for now - focusing on auth first
     await prisma.auditLog.deleteMany();
     await prisma.refreshToken.deleteMany();
+    await prisma.magicLinkToken.deleteMany();
     await prisma.passwordReset.deleteMany();
     await prisma.emailVerification.deleteMany();
     await prisma.kYCDocument.deleteMany();
@@ -82,6 +83,8 @@ describe('Authentication System', () => {
       expect(response.body.data.accessToken).toBeDefined();
       expect(response.body.data.refreshToken).toBeDefined();
       expect(response.body.data.user.password).toBeUndefined(); // Password should not be returned
+      // Check verification level defaults to 1
+      expect(response.body.data.user.verificationLevel).toBe(1);
     });
 
     it('should register a new organizer successfully', async () => {
@@ -150,6 +153,44 @@ describe('Authentication System', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
+    });
+
+    it('should register with email code verification (requires password)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Request verification code
+      const codeResponse = await request(app)
+        .post('/api/v1/auth/register-code/request')
+        .send({ email: 'emailcode@test.com', role: 'ATTENDEE' })
+        .expect(200);
+
+      expect(codeResponse.body.success).toBe(true);
+
+      // Get the code from database (in real scenario, user receives via email)
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'emailcode@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(verification).toBeDefined();
+      expect(verification?.code).toBeDefined();
+
+      // Verify code and create account (now requires password)
+      const verifyResponse = await request(app)
+        .post('/api/v1/auth/register-code/verify')
+        .send({
+          email: 'emailcode@test.com',
+          code: verification?.code,
+          password: 'Test123!@#',
+        })
+        .expect(200);
+
+      expect(verifyResponse.body.success).toBe(true);
+      expect(verifyResponse.body.data.user.email).toBe('emailcode@test.com');
+      expect(verifyResponse.body.data.user.verificationLevel).toBe(1);
+      expect(verifyResponse.body.data.accessToken).toBeDefined();
     });
 
     it('should register organizer without requiring organization details (optional fields)', async () => {
@@ -290,6 +331,39 @@ describe('Authentication System', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Invalid email or password');
+    });
+
+    it('should fail to login for user without password (password now required)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create user without password (should not exist in normal flow, but testing edge case)
+      await prisma.user.create({
+        data: {
+          email: 'nopassword@test.com',
+          password: null, // No password set
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'nopassword@test.com',
+          password: 'AnyPassword',
+        })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid email or password');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'nopassword@test.com' },
+      });
     });
 
     it('should lock account after multiple failed attempts', async () => {
@@ -1041,6 +1115,302 @@ describe('Authentication System', () => {
     });
   });
 
+  describe('POST /api/v1/auth/email-oauth/request', () => {
+    it('should send Email OAuth code to existing user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create an existing user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'existing@test.com',
+          password: hashedPassword,
+          firstName: 'Existing',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'existing@test.com' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('Verification code');
+
+      // Verify code was created
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'existing@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(verification).toBeDefined();
+      expect(verification?.code).toBeDefined();
+
+      // Cleanup
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'existing@test.com' },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'existing@test.com' },
+      });
+    });
+
+    it('should send Email OAuth code to new user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'newuser@test.com', role: 'ORGANIZER' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify code was created with role
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'newuser@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(verification).toBeDefined();
+      expect(verification?.code).toBeDefined();
+      expect(verification?.role).toBe(UserRole.ORGANIZER);
+
+      // Cleanup
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'newuser@test.com' },
+      });
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a suspended user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'suspendedoauth@test.com',
+          password: hashedPassword,
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'suspendedoauth@test.com' })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'suspendedoauth@test.com' },
+      });
+    });
+  });
+
+  describe('POST /api/v1/auth/email-oauth/verify', () => {
+    it('should login existing user with Email OAuth code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create an existing user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'emaillogin@test.com',
+          password: hashedPassword,
+          firstName: 'Email',
+          lastName: 'Login',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Request code
+      await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'emaillogin@test.com' })
+        .expect(200);
+
+      // Get code from database
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'emaillogin@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Verify code and login
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'emaillogin@test.com',
+          code: verification?.code,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe('emaillogin@test.com');
+      expect(response.body.data.accessToken).toBeDefined();
+      expect(response.headers['set-cookie']).toBeDefined(); // Refresh token cookie
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'emaillogin@test.com' } },
+      });
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'emaillogin@test.com' },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'emaillogin@test.com' },
+      });
+    });
+
+    it('should create new user account with Email OAuth code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Request code for new user
+      await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'newemailoauth@test.com', role: 'ORGANIZER' })
+        .expect(200);
+
+      // Get code from database
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'newemailoauth@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Verify code and create account (like Facebook OAuth)
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'newemailoauth@test.com',
+          code: verification?.code,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe('newemailoauth@test.com');
+      expect(response.body.data.user.role).toBe(UserRole.ORGANIZER);
+      expect(response.body.data.user.status).toBe(UserStatus.ACTIVE);
+      expect(response.body.data.user.isEmailVerified).toBe(true);
+      expect(response.body.data.accessToken).toBeDefined();
+
+      // Verify user was created in database
+      const user = await prisma.user.findUnique({
+        where: { email: 'newemailoauth@test.com' },
+      });
+      expect(user).toBeDefined();
+      expect(user?.role).toBe(UserRole.ORGANIZER);
+
+      // Cleanup
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: 'newemailoauth@test.com' } },
+      });
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'newemailoauth@test.com' },
+      });
+      await prisma.user.deleteMany({
+        where: { email: 'newemailoauth@test.com' },
+      });
+    });
+
+    it('should fail with invalid code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'invalidcode@test.com',
+          code: '000000',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid verification code');
+    });
+
+    it('should fail with expired code', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create an expired verification record
+      await prisma.emailVerification.create({
+        data: {
+          email: 'expiredcode@test.com',
+          code: '123456',
+          expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/email-oauth/verify')
+        .send({
+          email: 'expiredcode@test.com',
+          code: '123456',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('expired');
+
+      // Cleanup
+      await prisma.emailVerification.deleteMany({
+        where: { email: 'expiredcode@test.com' },
+      });
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      // Create a suspended user
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'suspendedverify@test.com',
+          password: hashedPassword,
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      // Request code
+      await request(app)
+        .post('/api/v1/auth/email-oauth/request')
+        .send({ email: 'suspendedverify@test.com' })
+        .expect(401); // Should fail at request stage
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'suspendedverify@test.com' },
+      });
+    });
+  });
+
   describe('POST /api/v1/auth/password/change', () => {
     let accessToken: string;
 
@@ -1123,6 +1493,287 @@ describe('Authentication System', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Current password is incorrect');
+    });
+  });
+
+  describe('POST /api/v1/auth/magic-link/request', () => {
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      const hashedPassword = await hashPassword('Test123!@#');
+      await prisma.user.create({
+        data: {
+          email: 'magiclink@test.com',
+          password: hashedPassword,
+          firstName: 'Magic',
+          lastName: 'Link',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+    });
+
+    afterEach(async () => {
+      if (!dbConnected) return;
+      await prisma.magicLinkToken.deleteMany();
+      await prisma.user.deleteMany({
+        where: { email: 'magiclink@test.com' },
+      });
+    });
+
+    it('should send magic link to existing user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/auth/magic-link/request')
+        .send({ email: 'magiclink@test.com' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('Magic link sent');
+
+      // Verify token was created
+      const token = await prisma.magicLinkToken.findFirst({
+        where: { user: { email: 'magiclink@test.com' } },
+      });
+
+      expect(token).toBeDefined();
+      expect(token?.used).toBe(false);
+      expect(token?.expiresAt).toBeDefined();
+    });
+
+    it('should fail for non-existent user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/auth/magic-link/request')
+        .send({ email: 'nonexistent@test.com' })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('User not found');
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create suspended user
+      await prisma.user.create({
+        data: {
+          email: 'suspendedmagic@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/auth/magic-link/request')
+        .send({ email: 'suspendedmagic@test.com' })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'suspendedmagic@test.com' },
+      });
+    });
+  });
+
+  describe('GET /api/v1/auth/magic-link/verify', () => {
+    let user: { id: string; email: string };
+    let magicLinkToken: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      const hashedPassword = await hashPassword('Test123!@#');
+      user = await prisma.user.create({
+        data: {
+          email: 'verifylink@test.com',
+          password: hashedPassword,
+          firstName: 'Verify',
+          lastName: 'Link',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Create magic link token
+      const token = await prisma.magicLinkToken.create({
+        data: {
+          userId: user.id,
+          token: 'test-magic-link-token-123',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+          used: false,
+        },
+      });
+
+      magicLinkToken = token.token;
+    });
+
+    afterEach(async () => {
+      if (!dbConnected) return;
+      await prisma.magicLinkToken.deleteMany();
+      await prisma.refreshToken.deleteMany();
+      await prisma.user.deleteMany({
+        where: { email: 'verifylink@test.com' },
+      });
+    });
+
+    it('should verify magic link and auto-login user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${magicLinkToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe(user.email);
+      expect(response.body.data.accessToken).toBeDefined();
+      expect(response.body.data.expiresIn).toBeDefined();
+
+      // Verify token was marked as used
+      const token = await prisma.magicLinkToken.findUnique({
+        where: { token: magicLinkToken },
+      });
+
+      expect(token?.used).toBe(true);
+      expect(token?.usedAt).toBeDefined();
+    });
+
+    it('should fail with invalid token', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/auth/magic-link/verify?token=invalid-token-123')
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid magic link');
+    });
+
+    it('should fail with expired token', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create expired token
+      const expiredToken = await prisma.magicLinkToken.create({
+        data: {
+          userId: user.id,
+          token: 'expired-token-123',
+          expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
+          used: false,
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${expiredToken.token}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('expired');
+
+      // Cleanup
+      await prisma.magicLinkToken.delete({
+        where: { id: expiredToken.id },
+      });
+    });
+
+    it('should fail with already used token', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create used token
+      const usedToken = await prisma.magicLinkToken.create({
+        data: {
+          userId: user.id,
+          token: 'used-token-123',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+          used: true,
+          usedAt: new Date(),
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${usedToken.token}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('already been used');
+
+      // Cleanup
+      await prisma.magicLinkToken.delete({
+        where: { id: usedToken.id },
+      });
+    });
+
+    it('should fail for SUSPENDED user', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create suspended user
+      const suspendedUser = await prisma.user.create({
+        data: {
+          email: 'suspendedverify@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Suspended',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.SUSPENDED,
+          isEmailVerified: true,
+        },
+      });
+
+      const suspendedToken = await prisma.magicLinkToken.create({
+        data: {
+          userId: suspendedUser.id,
+          token: 'suspended-token-123',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+          used: false,
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/auth/magic-link/verify?token=${suspendedToken.token}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('suspended');
+
+      // Cleanup
+      await prisma.magicLinkToken.delete({
+        where: { id: suspendedToken.id },
+      });
+      await prisma.user.delete({
+        where: { id: suspendedUser.id },
+      });
     });
   });
 });

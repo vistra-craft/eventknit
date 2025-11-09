@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { CreditCard, Lock, ArrowLeft, Loader2, Ticket, Calendar, MapPin } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { CreditCard, Lock, ArrowLeft, Loader2, Ticket, Calendar, MapPin, AlertCircle } from "lucide-react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+// API
+import { initializePayment, verifyPayment } from "@/lib/payment-api";
+
 // Types
 interface TicketType {
   name: string;
@@ -23,6 +26,7 @@ interface TicketType {
 }
 
 interface PaymentData {
+  registrationId: string;
   eventId: string;
   eventTitle: string;
   tickets: TicketType[];
@@ -46,12 +50,18 @@ interface BillingDetails {
 const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
-  const [error] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("card");
   
   // Get payment data from location state
   const paymentData = location.state as PaymentData | undefined;
+  
+  // Check if this is a payment callback (from Paystack redirect)
+  const reference = searchParams.get('reference');
+  const trxref = searchParams.get('trxref');
   
   const [cardDetails, setCardDetails] = useState<CardDetails>({
     cardNumber: "",
@@ -67,12 +77,54 @@ const PaymentPage = () => {
     country: "United States",
   });
 
+  // Handle payment callback from Paystack
+  useEffect(() => {
+    const handlePaymentCallback = async () => {
+      const paymentRef = reference || trxref;
+      if (paymentRef && paymentData) {
+        setLoading(true);
+        try {
+          const verification = await verifyPayment(paymentRef);
+          if (verification.success && verification.data.success) {
+            // Payment successful - redirect to confirmation
+            navigate(`/event/${paymentData.eventId}/confirmation`, {
+              state: {
+                eventId: paymentData.eventId,
+                eventTitle: paymentData.eventTitle,
+                tickets: paymentData.tickets,
+                totalPrice: paymentData.totalPrice,
+                paymentMethod: 'paystack',
+                paymentId: paymentRef,
+                date: new Date().toISOString(),
+                success: true,
+              }
+            });
+          } else {
+            // Payment failed
+            setError('Payment verification failed. Please try again or contact support.');
+          }
+        } catch (err: unknown) {
+          const errorMessage = err && typeof err === 'object' && 'message' in err
+            ? (err.message as string)
+            : 'Failed to verify payment. Please contact support.';
+          setError(errorMessage);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (reference || trxref) {
+      handlePaymentCallback();
+    }
+  }, [reference, trxref, paymentData, navigate]);
+
   // Handle initial data load and navigation
   useEffect(() => {
-    if (!paymentData) {
+    if (!paymentData && !reference && !trxref) {
       navigate('/');
     }
-  }, [paymentData, navigate]);
+  }, [paymentData, reference, trxref, navigate]);
 
   if (!paymentData) {
     return (
@@ -85,7 +137,7 @@ const PaymentPage = () => {
     );
   }
 
-  const { eventId, eventTitle, tickets: paymentTickets } = paymentData;
+  const { eventTitle, tickets: paymentTickets } = paymentData;
   const subtotal = paymentTickets.reduce((sum: number, ticket: TicketType) => sum + (ticket.price * ticket.quantity), 0);
   const tax = paymentData.totalPrice - subtotal;
 
@@ -117,23 +169,32 @@ const PaymentPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     
-    // Skip all validation and go directly to confirmation
-    // Simulate a quick loading state
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    navigate(`/event/${eventId}/confirmation`, {
-      state: {
-        eventId,
-        eventTitle,
-        tickets: paymentTickets,
-        totalPrice: paymentData.totalPrice,
-        paymentMethod,
-        paymentId: `PAY-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-        date: new Date().toISOString()
+    if (!paymentData?.registrationId) {
+      setError('Registration ID is missing. Please go back and try again.');
+      return;
+    }
+
+    setError(null);
+    setInitializing(true);
+
+    try {
+      // Initialize Paystack payment
+      const response = await initializePayment(paymentData.registrationId);
+
+      if (response.success && response.data) {
+        // Redirect to Paystack checkout
+        window.location.href = response.data.authorizationUrl;
+      } else {
+        throw new Error(response.message || 'Failed to initialize payment');
       }
-    });
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to initialize payment. Please try again.';
+      setError(errorMessage);
+      setInitializing(false);
+    }
   };
 
   return (
@@ -181,6 +242,7 @@ const PaymentPage = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -328,10 +390,15 @@ const PaymentPage = () => {
               <div className="flex justify-end">
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || initializing}
                   className="px-8 py-3 text-lg font-semibold"
                 >
-                  {loading ? (
+                  {initializing ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Initializing Payment...
+                    </>
+                  ) : loading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Processing...

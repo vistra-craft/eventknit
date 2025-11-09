@@ -1,4 +1,5 @@
-import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -29,72 +30,168 @@ import {
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Loader2, AlertCircle } from "lucide-react";
 import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../components/charts/ChartComponents";
 import { CHART_COLORS } from "../../components/charts/chartConstants";
+import { getOrganizerEventById, getEventRegistrations } from "../../lib/organizer-api";
+import { transformEventData } from "../../lib/event-utils";
 
 const EventManagement = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("overview");
+  const [eventData, setEventData] = useState<any>(null);
+  const [attendees, setAttendees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock event data - in a real app, this would come from your API
-  const eventData = {
-    id: eventId || "1",
-    title: "Tech Innovation Summit 2024",
-    date: "March 15-17, 2024",
-    time: "9:00 AM - 5:00 PM",
-    location: "San Francisco, CA",
-    venue: "Moscone Center",
-    status: "active",
-    attendees: 485,
-    capacity: 500,
-    revenue: 145200,
-    views: 3250,
-    conversion: 14.9,
-    speakers: 24,
-    exhibitors: 18,
-    sponsors: 12,
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-    description: "Explore the latest in technology innovation and digital transformation.",
-    category: "Technology"
+  // Fetch event data and attendees
+  useEffect(() => {
+    const fetchEventData = async () => {
+      if (!eventId) {
+        setError('Event ID is required');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch event details
+        const eventResponse = await getOrganizerEventById(eventId);
+        if (eventResponse.success && eventResponse.data) {
+          const transformedEvent = transformEventData(eventResponse.data.event);
+          setEventData(transformedEvent);
+        } else {
+          throw new Error(eventResponse.message || 'Failed to fetch event');
+        }
+
+        // Fetch attendees/registrations
+        const registrationsResponse = await getEventRegistrations(eventId);
+        if (registrationsResponse.success && registrationsResponse.data) {
+          // Transform registrations to attendees format
+          // Backend already filters based on access level
+          interface Registration {
+            id: string;
+            attendee?: { firstName?: string; lastName?: string; email?: string };
+            user?: { firstName?: string; lastName?: string; email?: string };
+            ticketType?: string | null;
+            status?: string;
+            createdAt?: string;
+            quantity?: number;
+            totalAmount?: number | string;
+            paymentStatus?: string | null;
+            paymentMethod?: string | null;
+          }
+          const transformedAttendees = registrationsResponse.data.registrations.map((reg: Registration) => ({
+            id: reg.id,
+            name: `${reg.attendee?.firstName || reg.user?.firstName || ''} ${reg.attendee?.lastName || reg.user?.lastName || ''}`.trim() || 'Guest',
+            email: reg.attendee?.email || reg.user?.email || 'N/A',
+            ticketType: reg.ticketType || 'Standard',
+            status: reg.status?.toLowerCase() || 'pending',
+            registeredDate: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A',
+            quantity: reg.quantity || 1,
+            totalAmount: reg.totalAmount || 0, // May be undefined if RESTRICTED
+            paymentStatus: reg.paymentStatus || undefined,
+            paymentMethod: reg.paymentMethod || undefined,
+            // paymentTransactionId is never included for organizers
+          }));
+          setAttendees(transformedAttendees);
+        }
+      } catch (err: unknown) {
+        const errorMessage = err && typeof err === 'object' && 'message' in err
+          ? (err.message as string)
+          : 'Failed to load event data. Please try again.';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventData();
+  }, [eventId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading event data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !eventData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error || 'Event not found'}</AlertDescription>
+          </Alert>
+          <Button onClick={() => navigate('/organizer/events')} className="mt-4">
+            Back to Events
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Get access level from event data (if available)
+  const accessLevel = (eventData as { organizerDataAccess?: string })?.organizerDataAccess || 'RESTRICTED';
+  const hasAttendeeListAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
+  const hasPaymentDetailsAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
+  
+  // Calculate summary stats (always available)
+  const totalAttendees = attendees.length;
+  interface Attendee {
+    status?: string;
+    totalAmount?: number | string;
+  }
+  const confirmedAttendees = attendees.filter((a: Attendee) => a.status === 'confirmed' || a.status === 'CONFIRMED').length;
+  const pendingAttendees = attendees.filter((a: Attendee) => a.status === 'pending' || a.status === 'PENDING').length;
+  const totalRevenue = hasPaymentDetailsAccess 
+    ? attendees.reduce((sum: number, a: Attendee) => sum + (Number(a.totalAmount) || 0), 0)
+    : 0;
+
+  // Mock data for sections that don't have APIs yet (speakers, exhibitors, sponsors, sessions, abstracts)
+  // These can be added later when those features are implemented
+  const mockData = {
+    // Use real attendees data from API (already filtered by backend based on access level)
+    attendees: attendees,
+
+    speakers: eventData.speakers ? (Array.isArray(eventData.speakers) ? eventData.speakers : []) : [
+      { id: 1, name: "No speakers", title: "Add speakers to your event", bio: "", sessions: 0, status: "pending" },
+    ],
+    exhibitors: eventData.sponsors ? (Array.isArray(eventData.sponsors) ? eventData.sponsors.map((s: any, idx: number) => ({
+      id: idx + 1,
+      name: s.name || 'Exhibitor',
+      booth: `Booth ${idx + 1}`,
+      category: s.level || 'General',
+      contact: 'N/A',
+      status: 'confirmed',
+    })) : []) : [
+      { id: 1, name: "No exhibitors", booth: "N/A", category: "Add exhibitors", contact: "N/A", status: "pending" },
+    ],
+    sponsors: eventData.sponsors ? (Array.isArray(eventData.sponsors) ? eventData.sponsors.map((s: any, idx: number) => ({
+      id: idx + 1,
+      name: s.level || 'Sponsor',
+      company: s.name || 'Company',
+      amount: 0,
+      benefits: [],
+    })) : []) : [
+      { id: 1, name: "No sponsors", company: "Add sponsors", amount: 0, benefits: [] },
+    ],
+    sessions: [
+      { id: 1, title: "No sessions scheduled", speaker: "Add sessions", time: "TBD", room: "TBD", attendees: 0 },
+    ],
+    abstracts: [
+      { id: 1, title: "No abstracts submitted", author: "N/A", status: "pending", submittedDate: "N/A", category: "N/A" },
+    ],
   };
-
-  // Mock data for different sections
-  const attendees = [
-    { id: 1, name: "Sarah Johnson", email: "sarah@example.com", ticketType: "VIP", status: "confirmed", registeredDate: "2024-01-15" },
-    { id: 2, name: "Michael Chen", email: "michael@example.com", ticketType: "Standard", status: "confirmed", registeredDate: "2024-01-20" },
-    { id: 3, name: "Emma Wilson", email: "emma@example.com", ticketType: "Student", status: "pending", registeredDate: "2024-02-01" },
-  ];
-
-  const speakers = [
-    { id: 1, name: "Dr. Maria Rodriguez", title: "CTO at TechCorp", bio: "Expert in AI and Machine Learning", sessions: 3, status: "confirmed" },
-    { id: 2, name: "John Smith", title: "VP of Engineering", bio: "Leading digital transformation initiatives", sessions: 2, status: "confirmed" },
-    { id: 3, name: "Lisa Park", title: "Product Manager", bio: "Specialist in user experience design", sessions: 1, status: "pending" },
-  ];
-
-  const exhibitors = [
-    { id: 1, name: "TechCorp", booth: "A-101", category: "Technology", contact: "contact@techcorp.com", status: "confirmed" },
-    { id: 2, name: "InnovateLab", booth: "B-205", category: "Startup", contact: "hello@innovatelab.com", status: "confirmed" },
-    { id: 3, name: "DataFlow", booth: "C-310", category: "Analytics", contact: "info@dataflow.com", status: "pending" },
-  ];
-
-  const sponsors = [
-    { id: 1, name: "Gold Sponsor", company: "TechGiant Inc", amount: 50000, benefits: ["Logo on stage", "Booth space", "Speaking slot"] },
-    { id: 2, name: "Silver Sponsor", company: "InnovateNow", amount: 25000, benefits: ["Logo on banners", "Booth space"] },
-    { id: 3, name: "Bronze Sponsor", company: "StartupHub", amount: 10000, benefits: ["Logo on website"] },
-  ];
-
-  const sessions = [
-    { id: 1, title: "Opening Keynote: Future of Technology", speaker: "Dr. Maria Rodriguez", time: "9:00 AM - 10:00 AM", room: "Main Hall", attendees: 485 },
-    { id: 2, title: "AI and Machine Learning Workshop", speaker: "John Smith", time: "10:30 AM - 12:00 PM", room: "Room A", attendees: 120 },
-    { id: 3, title: "Digital Transformation Panel", speaker: "Lisa Park", time: "2:00 PM - 3:30 PM", room: "Room B", attendees: 85 },
-  ];
-
-  const abstracts = [
-    { id: 1, title: "Revolutionary AI Applications", author: "Dr. Sarah Kim", status: "approved", submittedDate: "2024-01-15", category: "Technology" },
-    { id: 2, title: "Sustainable Tech Solutions", author: "Prof. David Lee", status: "under_review", submittedDate: "2024-01-20", category: "Sustainability" },
-    { id: 3, title: "Future of Work", author: "Dr. Maria Garcia", status: "pending", submittedDate: "2024-02-01", category: "Business" },
-  ];
 
   // Mock data for charts and analytics
   const registrationTrends = [
@@ -180,7 +277,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Attendees</p>
-                      <p className="text-2xl font-bold">{attendees.length}</p>
+                      <p className="text-2xl font-bold">{totalAttendees}</p>
                     </div>
                     <Users className="w-8 h-8 text-primary" />
                   </div>
@@ -191,7 +288,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{attendees.filter(a => a.status === 'confirmed').length}</p>
+                      <p className="text-2xl font-bold">{confirmedAttendees}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -202,7 +299,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold">{attendees.filter(a => a.status === 'pending').length}</p>
+                      <p className="text-2xl font-bold">{pendingAttendees}</p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -210,37 +307,58 @@ const EventManagement = () => {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendees List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {attendees.map((attendee) => (
-                    <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {attendee.name.split(' ').map(n => n[0]).join('')}
-                          </span>
+            {!hasAttendeeListAccess && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Your data access is currently restricted. Contact an administrator to request access to attendee details.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {hasAttendeeListAccess && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendees List</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {mockData.attendees.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">No attendees registered yet</p>
+                    ) : (
+                      mockData.attendees.map((attendee: any) => (
+                        <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-primary">
+                                {attendee.name.split(' ').map((n: string) => n[0]).join('')}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium">{attendee.name}</p>
+                              <p className="text-sm text-muted-foreground">{attendee.email}</p>
+                              {hasPaymentDetailsAccess && attendee.totalAmount && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Amount: ${Number(attendee.totalAmount).toFixed(2)} | 
+                                  Status: {attendee.paymentStatus || 'N/A'}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <Badge variant="secondary">{attendee.ticketType}</Badge>
+                            <Badge className={getStatusColor(attendee.status)}>
+                              {attendee.status}
+                            </Badge>
+                            <Button variant="outline" size="sm">View Details</Button>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{attendee.name}</p>
-                          <p className="text-sm text-muted-foreground">{attendee.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{attendee.ticketType}</Badge>
-                        <Badge className={getStatusColor(attendee.status)}>
-                          {attendee.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">View Details</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
 
@@ -261,7 +379,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Speakers</p>
-                      <p className="text-2xl font-bold">{speakers.length}</p>
+                      <p className="text-2xl font-bold">{mockData.speakers.length}</p>
                     </div>
                     <Mic className="w-8 h-8 text-primary" />
                   </div>
@@ -272,7 +390,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{speakers.filter(s => s.status === 'confirmed').length}</p>
+                      <p className="text-2xl font-bold">{mockData.speakers.filter((s: any) => s.status === 'confirmed').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -283,7 +401,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sessions</p>
-                      <p className="text-2xl font-bold">{speakers.reduce((sum, s) => sum + s.sessions, 0)}</p>
+                      <p className="text-2xl font-bold">{mockData.speakers.reduce((sum: number, s: any) => sum + (s.sessions || 0), 0)}</p>
                     </div>
                     <Calendar className="w-8 h-8 text-blue-600" />
                   </div>
@@ -297,12 +415,12 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {speakers.map((speaker) => (
+                  {mockData.speakers.map((speaker: any) => (
                     <div key={speaker.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">
-                            {speaker.name.split(' ').map(n => n[0]).join('')}
+                            {speaker.name.split(' ').map((n: string) => n[0]).join('')}
                           </span>
                         </div>
                         <div>
@@ -312,7 +430,7 @@ const EventManagement = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{speaker.sessions} sessions</Badge>
+                        <Badge variant="secondary">{(speaker.sessions || 0)} sessions</Badge>
                         <Badge className={getStatusColor(speaker.status)}>
                           {speaker.status}
                         </Badge>
@@ -343,7 +461,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Exhibitors</p>
-                      <p className="text-2xl font-bold">{exhibitors.length}</p>
+                      <p className="text-2xl font-bold">{mockData.exhibitors.length}</p>
                     </div>
                     <Building2 className="w-8 h-8 text-primary" />
                   </div>
@@ -354,7 +472,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{exhibitors.filter(e => e.status === 'confirmed').length}</p>
+                      <p className="text-2xl font-bold">{mockData.exhibitors.filter((e: any) => e.status === 'confirmed').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -365,7 +483,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold">{exhibitors.filter(e => e.status === 'pending').length}</p>
+                      <p className="text-2xl font-bold">{mockData.exhibitors.filter((e: any) => e.status === 'pending').length}</p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -379,12 +497,12 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {exhibitors.map((exhibitor) => (
+                  {mockData.exhibitors.map((exhibitor: any) => (
                     <div key={exhibitor.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">
-                            {exhibitor.name.split(' ').map(n => n[0]).join('')}
+                            {exhibitor.name.split(' ').map((n: string) => n[0]).join('')}
                           </span>
                         </div>
                         <div>
@@ -425,7 +543,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sponsors</p>
-                      <p className="text-2xl font-bold">{sponsors.length}</p>
+                      <p className="text-2xl font-bold">{mockData.sponsors.length}</p>
                     </div>
                     <Star className="w-8 h-8 text-primary" />
                   </div>
@@ -436,7 +554,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold">${sponsors.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}</p>
+                      <p className="text-2xl font-bold">${mockData.sponsors.reduce((sum: number, s: any) => sum + (s.amount || 0), 0).toLocaleString()}</p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
@@ -447,7 +565,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Gold Sponsors</p>
-                      <p className="text-2xl font-bold">{sponsors.filter(s => s.name.includes('Gold')).length}</p>
+                      <p className="text-2xl font-bold">{mockData.sponsors.filter((s: any) => s.name?.includes('Gold')).length}</p>
                     </div>
                     <Star className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -461,12 +579,12 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {sponsors.map((sponsor) => (
+                  {mockData.sponsors.map((sponsor: any) => (
                     <div key={sponsor.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">
-                            {sponsor.company.split(' ').map(n => n[0]).join('')}
+                            {sponsor.company.split(' ').map((n: string) => n[0]).join('')}
                           </span>
                         </div>
                         <div>
@@ -492,13 +610,26 @@ const EventManagement = () => {
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Revenue Analytics</h3>
             
+            {!hasPaymentDetailsAccess && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Your data access is currently restricted. You can only see summary statistics. Contact an administrator to request access to detailed revenue information.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold">${eventData.revenue.toLocaleString()}</p>
+                      <p className="text-2xl font-bold">
+                        {hasPaymentDetailsAccess 
+                          ? `$${totalRevenue.toLocaleString()}`
+                          : 'N/A'}
+                      </p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
@@ -509,7 +640,11 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Ticket Sales</p>
-                      <p className="text-2xl font-bold">${(eventData.revenue * 0.7).toLocaleString()}</p>
+                      <p className="text-2xl font-bold">
+                        {hasPaymentDetailsAccess 
+                          ? `$${(totalRevenue * 0.7).toLocaleString()}`
+                          : 'N/A'}
+                      </p>
                     </div>
                     <Users className="w-8 h-8 text-blue-600" />
                   </div>
@@ -519,8 +654,12 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Sponsorships</p>
-                      <p className="text-2xl font-bold">${(eventData.revenue * 0.3).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">Platform Fee</p>
+                      <p className="text-2xl font-bold">
+                        {hasPaymentDetailsAccess 
+                          ? `$${(totalRevenue * 0.3).toLocaleString()}`
+                          : 'N/A'}
+                      </p>
                     </div>
                     <Star className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -531,7 +670,9 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                      <p className="text-2xl font-bold">{eventData.conversion}%</p>
+                      <p className="text-2xl font-bold">{eventData.capacity && eventData.capacity > 0 
+                        ? ((totalAttendees / eventData.capacity) * 100).toFixed(1)
+                        : 0}%</p>
                     </div>
                     <TrendingUp className="w-8 h-8 text-primary" />
                   </div>
@@ -596,7 +737,7 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {sessions.map((session) => (
+                  {mockData.sessions.map((session: any) => (
                     <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -643,7 +784,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Abstracts</p>
-                      <p className="text-2xl font-bold">{abstracts.length}</p>
+                      <p className="text-2xl font-bold">{mockData.abstracts.length}</p>
                     </div>
                     <FileText className="w-8 h-8 text-primary" />
                   </div>
@@ -654,7 +795,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Approved</p>
-                      <p className="text-2xl font-bold">{abstracts.filter(a => a.status === 'approved').length}</p>
+                      <p className="text-2xl font-bold">{mockData.abstracts.filter((a: any) => a.status === 'approved').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -665,7 +806,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Under Review</p>
-                      <p className="text-2xl font-bold">{abstracts.filter(a => a.status === 'under_review').length}</p>
+                      <p className="text-2xl font-bold">{mockData.abstracts.filter((a: any) => a.status === 'under_review').length}</p>
                     </div>
                     <Eye className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -679,12 +820,12 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {abstracts.map((abstract) => (
+                  {mockData.abstracts.map((abstract: any) => (
                     <div key={abstract.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">
-                            {abstract.author.split(' ').map(n => n[0]).join('')}
+                            {abstract.author.split(' ').map((n: string) => n[0]).join('')}
                           </span>
                         </div>
                         <div>
@@ -717,15 +858,17 @@ const EventManagement = () => {
               <div className="lg:col-span-1">
                 <div className="relative rounded-2xl overflow-hidden shadow-xl">
                   <img 
-                    src={eventData.image}
+                    src={eventData.image || 'https://via.placeholder.com/400x300?text=Event+Image'}
                     alt="Event background"
                     className="w-full h-80 lg:h-96 object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4">
-                    <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 mb-2">
-                      {eventData.category}
-                    </Badge>
+                    {eventData.category && (
+                      <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 mb-2">
+                        {eventData.category}
+                      </Badge>
+                    )}
                     <div className="flex items-center gap-4 text-white/90 text-sm">
                       <div className="flex items-center gap-1">
                         <Heart className="w-4 h-4" />
@@ -758,15 +901,15 @@ const EventManagement = () => {
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-primary" />
-                      <span>{eventData.date}</span>
+                      <span>{eventData.date || 'Date TBD'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-primary" />
-                      <span>{eventData.time}</span>
+                      <span>{eventData.time || 'Time TBD'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-primary" />
-                      <span>{eventData.venue}, {eventData.location}</span>
+                      <span>{eventData.venue ? `${eventData.venue}, ${eventData.location}` : eventData.location || 'Location TBD'}</span>
                     </div>
                   </div>
                 </div>
@@ -775,11 +918,11 @@ const EventManagement = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="border-l-4 border-l-primary">
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Attendees</p>
-                          <p className="text-2xl font-bold text-primary">{eventData.attendees}</p>
-                          <p className="text-xs text-muted-foreground">of {eventData.capacity}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Attendees</p>
+                      <p className="text-2xl font-bold text-primary">{mockData.attendees.length}</p>
+                          <p className="text-xs text-muted-foreground">of {eventData.capacity || 0}</p>
                         </div>
                         <Users className="w-8 h-8 text-primary/60" />
                       </div>
@@ -791,7 +934,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Speakers</p>
-                          <p className="text-2xl font-bold text-blue-600">{eventData.speakers}</p>
+                          <p className="text-2xl font-bold text-blue-600">{mockData.speakers.length}</p>
                           <p className="text-xs text-muted-foreground">confirmed</p>
                         </div>
                         <Mic className="w-8 h-8 text-blue-500/60" />
@@ -804,7 +947,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-2xl font-bold text-green-600">${eventData.revenue.toLocaleString()}</p>
+                          <p className="text-2xl font-bold text-green-600">${(mockData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0)).toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">total</p>
                         </div>
                         <DollarSign className="w-8 h-8 text-green-500/60" />
@@ -817,7 +960,9 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Conversion</p>
-                          <p className="text-2xl font-bold text-purple-600">{eventData.conversion}%</p>
+                          <p className="text-2xl font-bold text-purple-600">{eventData.capacity && eventData.capacity > 0 
+                            ? ((mockData.attendees.length / eventData.capacity) * 100).toFixed(1)
+                            : 0}%</p>
                           <p className="text-xs text-muted-foreground">rate</p>
                         </div>
                         <Target className="w-8 h-8 text-purple-500/60" />
@@ -828,13 +973,22 @@ const EventManagement = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3">
-                  <Button size="lg" className="flex items-center gap-2">
+                  <Button 
+                    size="lg" 
+                    className="flex items-center gap-2"
+                    onClick={() => window.open(`/event/${eventId}`, '_blank')}
+                  >
                     <Eye className="w-4 h-4" />
                     Preview Event
                   </Button>
-                  <Button variant="outline" size="lg" className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="flex items-center gap-2"
+                    onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}
+                  >
                     <Settings className="w-4 h-4" />
-                    Event Settings
+                    Edit Event
                   </Button>
                   <Button variant="outline" size="lg" className="flex items-center gap-2">
                     <Share2 className="w-4 h-4" />
@@ -966,27 +1120,27 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
-                      <Building2 className="w-6 h-6 text-primary" />
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <Building2 className="w-6 h-6 text-primary" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">Exhibitors</p>
+                      <p className="text-xl font-bold">{mockData.exhibitors.length}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">Exhibitors</p>
-                    <p className="text-xl font-bold">{eventData.exhibitors}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
-                      <Star className="w-6 h-6 text-yellow-500" />
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <Star className="w-6 h-6 text-yellow-500" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">Sponsors</p>
+                      <p className="text-xl font-bold">{mockData.sponsors.length}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">Sponsors</p>
-                    <p className="text-xl font-bold">{eventData.sponsors}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
-                      <Eye className="w-6 h-6 text-blue-500" />
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                        <Eye className="w-6 h-6 text-blue-500" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">Page Views</p>
+                      <p className="text-xl font-bold">0</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">Page Views</p>
-                    <p className="text-xl font-bold">{eventData.views.toLocaleString()}</p>
-                  </div>
                   <div className="text-center">
                     <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
                       <TrendingUp className="w-6 h-6 text-green-500" />
@@ -1018,17 +1172,25 @@ const EventManagement = () => {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">{eventData.title}</h1>
-                <p className="text-muted-foreground">Event Management</p>
-              </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">{eventData?.title || 'Event Management'}</h1>
+                  <p className="text-muted-foreground">Event Management</p>
+                </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}
+              >
                 <Settings className="w-4 h-4 mr-2" />
-                Event Settings
+                Edit Event
               </Button>
-              <Button size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open(`/event/${eventId}`, '_blank')}
+              >
                 <Eye className="w-4 h-4 mr-2" />
                 Preview Event
               </Button>

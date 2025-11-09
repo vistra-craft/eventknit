@@ -1,115 +1,145 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, Loader2, AlertCircle, CheckSquare, Square, Settings } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import AdminLayout from "../AdminLayout";
+import { getEvents, EventStatus } from "../../../lib/event-api";
+import { bulkUpdateOrganizerDataAccess } from "../../../lib/admin-api";
+import { useToast } from "@/hooks/use-toast";
 
 interface Event {
   id: string;
   title: string;
   organizer: string;
   date: string;
-  time: string;
+  startDate?: string;
+  startTime?: string;
   location: string;
+  venue?: string;
   attendees: number;
-  status: "active" | "pending" | "cancelled" | "completed";
+  status: "active" | "pending" | "cancelled" | "completed" | "declined";
   category: string;
   type: "public" | "private";
-  price: "free" | "paid";
+  isFree: boolean;
 }
-
-const mockEvents: Event[] = [
-  {
-    id: "1",
-    title: "Tech Conference 2024",
-    organizer: "TechCorp Inc.",
-    date: "2024-03-15",
-    time: "09:00",
-    location: "San Francisco, CA",
-    attendees: 250,
-    status: "active",
-    category: "Technology",
-    type: "public",
-    price: "paid"
-  },
-  {
-    id: "2",
-    title: "Music Festival",
-    organizer: "Music Events LLC",
-    date: "2024-04-20",
-    time: "18:00",
-    location: "Austin, TX",
-    attendees: 5000,
-    status: "pending",
-    category: "Music",
-    type: "public",
-    price: "paid"
-  },
-  {
-    id: "3",
-    title: "Business Workshop",
-    organizer: "Business Academy",
-    date: "2024-03-10",
-    time: "14:00",
-    location: "New York, NY",
-    attendees: 45,
-    status: "active",
-    category: "Business",
-    type: "private",
-    price: "free"
-  },
-  {
-    id: "4",
-    title: "Art Exhibition",
-    organizer: "Modern Art Gallery",
-    date: "2024-02-28",
-    time: "10:00",
-    location: "Los Angeles, CA",
-    attendees: 120,
-    status: "completed",
-    category: "Art",
-    type: "public",
-    price: "free"
-  },
-  {
-    id: "5",
-    title: "Sports Tournament",
-    organizer: "Sports Club",
-    date: "2024-05-15",
-    time: "08:00",
-    location: "Chicago, IL",
-    attendees: 300,
-    status: "active",
-    category: "Sports",
-    type: "public",
-    price: "paid"
-  }
-];
 
 const AllEventsPage = () => {
   const navigate = useNavigate();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
+  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
+  const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = useState(false);
+  const [bulkUpdateLevel, setBulkUpdateLevel] = useState<'RESTRICTED' | 'STANDARD' | 'FULL'>('RESTRICTED');
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const { toast } = useToast();
 
-  const filteredEvents = mockEvents.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || event.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
-    const matchesType = typeFilter === "all" || event.type === typeFilter;
-    const matchesPrice = priceFilter === "all" || event.price === priceFilter;
-    const matchesLocation = locationFilter === "all" || event.location.includes(locationFilter);
-    
-    return matchesSearch && matchesStatus && matchesCategory && matchesType && matchesPrice && matchesLocation;
+  // Fetch all events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const filters: Record<string, unknown> = {};
+        
+        // Map frontend status to backend status
+        if (statusFilter !== "all") {
+          if (statusFilter === "active") {
+            filters.status = EventStatus.APPROVED;
+          } else if (statusFilter === "pending") {
+            filters.status = EventStatus.PENDING;
+          } else if (statusFilter === "cancelled") {
+            filters.status = EventStatus.CANCELLED;
+          } else if (statusFilter === "declined") {
+            filters.status = EventStatus.REJECTED;
+          }
+        }
+        
+        if (categoryFilter !== "all") {
+          filters.category = categoryFilter;
+        }
+        
+        if (typeFilter !== "all") {
+          filters.type = typeFilter === "public" ? "PUBLIC" : "PRIVATE";
+        }
+        
+        if (priceFilter !== "all") {
+          filters.isFree = priceFilter === "free";
+        }
+        
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+
+        const response = await getEvents(filters);
+        if (response.success && response.data?.events) {
+          const mappedEvents = response.data.events.map(event => {
+            const now = new Date();
+            let status: "active" | "pending" | "cancelled" | "completed" | "declined" = "pending";
+            
+            if (event.status === EventStatus.REJECTED) {
+              status = "declined";
+            } else if (event.status === EventStatus.CANCELLED) {
+              status = "cancelled";
+            } else if (event.status === EventStatus.APPROVED) {
+              if (event.endDate && new Date(event.endDate) < now) {
+                status = "completed";
+              } else {
+                status = "active";
+              }
+            } else {
+              status = "pending";
+            }
+
+            return {
+              id: event.id,
+              title: event.title,
+              organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+              date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
+              startDate: event.startDate,
+              startTime: event.startTime || '',
+              location: event.location || event.venue || 'TBD',
+              venue: event.venue || undefined,
+              attendees: event.registrationCount || 0,
+              status,
+              category: event.category || 'Uncategorized',
+              type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
+              isFree: event.isFree || false,
+            };
+          });
+          setEvents(mappedEvents);
+        }
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError('Failed to load events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [statusFilter, categoryFilter, typeFilter, priceFilter, searchTerm]);
+
+  const filteredEvents = events.filter(event => {
+    const matchesLocation = locationFilter === "all" || event.location.toLowerCase().includes(locationFilter.toLowerCase());
+    return matchesLocation;
   });
+
+  // Get unique categories and locations from events
+  const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
+  const locations = Array.from(new Set(events.map(e => e.location).filter(Boolean))).slice(0, 10);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -133,6 +163,82 @@ const AllEventsPage = () => {
       : "bg-orange-100 text-orange-800 border-orange-200";
   };
 
+  const handleSelectEvent = (eventId: string, checked: boolean) => {
+    setSelectedEvents(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(eventId);
+      } else {
+        newSet.delete(eventId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedEvents(new Set(filteredEvents.map(e => e.id)));
+    } else {
+      setSelectedEvents(new Set());
+    }
+  };
+
+  const handleBulkUpdate = async () => {
+    if (selectedEvents.size === 0) return;
+
+    try {
+      setBulkUpdating(true);
+      const response = await bulkUpdateOrganizerDataAccess(
+        Array.from(selectedEvents),
+        bulkUpdateLevel
+      );
+
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: `Data access updated for ${response.data.updatedCount} event(s)`,
+        });
+        setSelectedEvents(new Set());
+        setBulkUpdateDialogOpen(false);
+        // Refresh events
+        window.location.reload();
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to update data access';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading events...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -143,7 +249,7 @@ const AllEventsPage = () => {
             <p className="text-gray-600">Manage and monitor all platform events</p>
           </div>
           <div className="text-sm text-gray-500">
-            {filteredEvents.length} of {mockEvents.length} events
+            {filteredEvents.length} of {events.length} events
           </div>
         </div>
 
@@ -172,6 +278,7 @@ const AllEventsPage = () => {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="declined">Declined</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -180,13 +287,9 @@ const AllEventsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Technology">Technology</SelectItem>
-                  <SelectItem value="Music">Music</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                  <SelectItem value="Art">Art</SelectItem>
-                  <SelectItem value="Sports">Sports</SelectItem>
-                  <SelectItem value="Comedy">Comedy</SelectItem>
-                  <SelectItem value="Theatre">Theatre</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -217,54 +320,121 @@ const AllEventsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Locations</SelectItem>
-                  <SelectItem value="San Francisco">San Francisco</SelectItem>
-                  <SelectItem value="Austin">Austin</SelectItem>
-                  <SelectItem value="New York">New York</SelectItem>
-                  <SelectItem value="Los Angeles">Los Angeles</SelectItem>
-                  <SelectItem value="Chicago">Chicago</SelectItem>
+                  {locations.map(loc => (
+                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </CardContent>
         </Card>
 
+        {/* Bulk Actions Toolbar */}
+        {selectedEvents.size > 0 && (
+          <Card className="border-primary bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectedEvents.size} event{selectedEvents.size !== 1 ? 's' : ''} selected
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedEvents(new Set())}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setBulkUpdateDialogOpen(true)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Update Data Access
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Events List */}
         <div className="space-y-3">
+          {/* Select All Checkbox */}
+          {filteredEvents.length > 0 && (
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSelectAll(selectedEvents.size !== filteredEvents.length)}
+                className="h-8 px-2"
+              >
+                {selectedEvents.size === filteredEvents.length ? (
+                  <CheckSquare className="h-4 w-4" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+              </Button>
+              <span className="text-sm text-gray-600">
+                {selectedEvents.size === filteredEvents.length ? 'Deselect all' : 'Select all'}
+              </span>
+            </div>
+          )}
+
           {filteredEvents.map((event) => (
             <Card 
               key={event.id} 
-              className="border-border bg-card hover:shadow-md transition-all duration-200 cursor-pointer"
-              onClick={() => navigate(`/admin/events/${event.id}`)}
+              className="border-border bg-card hover:shadow-md transition-all duration-200"
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
-                      <Badge className={`text-xs ${getStatusBadge(event.status)}`}>
-                        {event.status}
-                      </Badge>
-                      <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
-                        {event.type}
-                      </Badge>
-                      <Badge className={`text-xs ${getPriceBadge(event.price)}`}>
-                        {event.price}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.date).toLocaleDateString()} at {event.time}</span>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectEvent(event.id, !selectedEvents.has(event.id));
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      {selectedEvents.has(event.id) ? (
+                        <CheckSquare className="h-4 w-4" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => navigate(`/admin/events/${event.id}`)}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
+                        <Badge className={`text-xs ${getStatusBadge(event.status)}`}>
+                          {event.status}
+                        </Badge>
+                        <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
+                          {event.type}
+                        </Badge>
+                        <Badge className={`text-xs ${getPriceBadge(event.isFree ? 'free' : 'paid')}`}>
+                          {event.isFree ? 'free' : 'paid'}
+                        </Badge>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>{event.location}</span>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span>{event.date} {event.startTime && `at ${event.startTime}`}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          <span>{event.location}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span>{event.attendees} attendees</span>
+                        </div>
+                        <span className="text-gray-500">by {event.organizer}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{event.attendees} attendees</span>
-                      </div>
-                      <span className="text-gray-500">by {event.organizer}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
@@ -307,6 +477,62 @@ const AllEventsPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Bulk Update Dialog */}
+        <Dialog open={bulkUpdateDialogOpen} onOpenChange={setBulkUpdateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Data Access Level</DialogTitle>
+              <DialogDescription>
+                Update organizer data access for {selectedEvents.size} selected event{selectedEvents.size !== 1 ? 's' : ''}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Access Level
+                </label>
+                <Select value={bulkUpdateLevel} onValueChange={(value: 'RESTRICTED' | 'STANDARD' | 'FULL') => setBulkUpdateLevel(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RESTRICTED">RESTRICTED - Summary only</SelectItem>
+                    <SelectItem value="STANDARD">STANDARD - Attendees + payment summaries</SelectItem>
+                    <SelectItem value="FULL">FULL - All details except transaction IDs</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-2">
+                  {bulkUpdateLevel === 'RESTRICTED' && 'Organizers can only see summary cards (total attendees, total revenue)'}
+                  {bulkUpdateLevel === 'STANDARD' && 'Organizers can see attendee list and payment summaries (no transaction IDs)'}
+                  {bulkUpdateLevel === 'FULL' && 'Organizers can see all payment details except transaction IDs'}
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setBulkUpdateDialogOpen(false)}
+                disabled={bulkUpdating}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleBulkUpdate}
+                disabled={bulkUpdating}
+              >
+                {bulkUpdating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Access Level'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

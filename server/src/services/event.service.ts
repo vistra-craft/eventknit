@@ -1,5 +1,5 @@
 import { prisma } from '../config/database';
-import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType } from '@prisma/client';
+import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType, DataAccessLevel } from '@prisma/client';
 import {
   NotFoundError,
   ConflictError,
@@ -11,6 +11,7 @@ import { logger } from '../utils/logger';
 import { Decimal } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password';
 import crypto from 'crypto';
+import { emailService } from './email.service';
 
 export interface CreateEventData {
   title: string;
@@ -86,14 +87,94 @@ export class EventService {
       throw new AuthorizationError('Only organizers can create events');
     }
 
-    // Verify organizer exists
+    // Verify organizer exists and get verification status
     const organizer = await prisma.user.findUnique({
       where: { id: organizerId },
-      select: { id: true, role: true },
+      select: {
+        id: true,
+        role: true,
+        isIdentityVerified: true,
+        verificationLevel: true,
+        payoutLimit: true,
+        kycStatus: true,
+      },
     });
 
     if (!organizer) {
       throw new NotFoundError('Organizer not found');
+    }
+
+    // Progressive verification check for paid events
+    if (!data.isFree) {
+      // Check if organizer has identity verification (Level 2)
+      if (!organizer.isIdentityVerified) {
+        throw new ValidationError(
+          'Identity verification is required to create paid events. Please verify your identity in your profile settings.',
+        );
+      }
+
+      // Calculate total event value
+      let totalEventValue = 0;
+      if (data.price) {
+        const capacity = data.capacity ? Number(data.capacity) : 1;
+        totalEventValue = Number(data.price) * capacity;
+      } else if (data.ticketTypes && data.ticketTypes.length > 0) {
+        totalEventValue = data.ticketTypes.reduce((sum, ticket) => {
+          const price = Number(ticket.price);
+          const quantity = ticket.quantity ? Number(ticket.quantity) : (data.capacity ? Number(data.capacity) : 1);
+          return sum + (price * quantity);
+        }, 0);
+      }
+
+      // Check payout limit for Level 2 users (identity verified but not full KYC)
+      if (organizer.verificationLevel === 2 && organizer.payoutLimit) {
+        const limit = Number(organizer.payoutLimit);
+        if (totalEventValue > limit) {
+          throw new ValidationError(
+            `This event exceeds your current payout limit of $${limit.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`,
+          );
+        }
+      }
+
+      // Check monthly limit (calculate current month's events value)
+      if (organizer.verificationLevel === 2 && organizer.payoutLimit) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const currentMonthEvents = await prisma.event.findMany({
+          where: {
+            organizerId,
+            isFree: false,
+            createdAt: { gte: startOfMonth },
+            status: { not: EventStatus.CANCELLED },
+          },
+          select: {
+            price: true,
+            ticketTypes: true,
+            capacity: true,
+          },
+        });
+
+        const currentMonthValue = currentMonthEvents.reduce((sum, event) => {
+          let eventValue = 0;
+          if (event.price) {
+            eventValue = Number(event.price) * (event.capacity || 1);
+          } else if (event.ticketTypes) {
+            const ticketTypes = event.ticketTypes as Array<{ price: number; quantity?: number }>;
+            eventValue = ticketTypes.reduce((ticketSum, ticket) => {
+              return ticketSum + (ticket.price * (ticket.quantity || event.capacity || 1));
+            }, 0);
+          }
+          return sum + eventValue;
+        }, 0);
+
+        const limit = Number(organizer.payoutLimit);
+        if (currentMonthValue + totalEventValue > limit) {
+          throw new ValidationError(
+            `This event would exceed your monthly payout limit of $${limit.toFixed(2)}. Current month total: $${currentMonthValue.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`,
+          );
+        }
+      }
     }
 
     // Validate pricing
@@ -862,14 +943,130 @@ export class EventService {
   }
 
   /**
+   * Update organizer data access level for an event (admin only)
+   */
+  static async updateOrganizerDataAccess(
+    eventId: string,
+    dataAccessLevel: DataAccessLevel,
+    adminId: string,
+  ) {
+    // Verify event exists
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Update data access level
+    const updatedEvent = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        organizerDataAccess: dataAccessLevel,
+        updatedBy: adminId,
+      },
+    });
+
+    // Create audit log
+    await createAuditLog({
+      userId: adminId,
+      action: AuditActions.EVENT_UPDATED,
+      entity: 'Event',
+      entityId: eventId,
+      metadata: {
+        field: 'organizerDataAccess',
+        oldValue: event.organizerDataAccess,
+        newValue: dataAccessLevel,
+      },
+    });
+
+    logger.info(`Organizer data access updated for event: ${eventId} to ${dataAccessLevel} by admin: ${adminId}`);
+
+    return updatedEvent;
+  }
+
+  /**
+   * Bulk update organizer data access level for multiple events (admin only)
+   */
+  static async bulkUpdateOrganizerDataAccess(
+    eventIds: string[],
+    dataAccessLevel: DataAccessLevel,
+    adminId: string,
+  ) {
+    if (!eventIds || eventIds.length === 0) {
+      throw new ValidationError('At least one event ID is required');
+    }
+
+    // Verify all events exist
+    const events = await prisma.event.findMany({
+      where: {
+        id: { in: eventIds },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        organizerDataAccess: true,
+      },
+    });
+
+    if (events.length !== eventIds.length) {
+      const foundIds = events.map(e => e.id);
+      const missingIds = eventIds.filter(id => !foundIds.includes(id));
+      throw new NotFoundError(`Events not found: ${missingIds.join(', ')}`);
+    }
+
+    // Bulk update data access level
+    const result = await prisma.event.updateMany({
+      where: {
+        id: { in: eventIds },
+        deletedAt: null,
+      },
+      data: {
+        organizerDataAccess: dataAccessLevel,
+        updatedBy: adminId,
+      },
+    });
+
+    // Create audit logs for each event
+    await Promise.all(
+      events.map(event =>
+        createAuditLog({
+          userId: adminId,
+          action: AuditActions.EVENT_UPDATED,
+          entity: 'Event',
+          entityId: event.id,
+          metadata: {
+            field: 'organizerDataAccess',
+            oldValue: event.organizerDataAccess,
+            newValue: dataAccessLevel,
+            bulkUpdate: true,
+          },
+        }),
+      ),
+    );
+
+    logger.info(`Bulk organizer data access updated for ${result.count} events to ${dataAccessLevel} by admin: ${adminId}`);
+
+    return {
+      updatedCount: result.count,
+      eventIds,
+    };
+  }
+
+  /**
    * Get event registrations for an event (organizer function)
+   * Filters data based on organizerDataAccess level
    */
   static async getEventRegistrations(
     eventId: string,
     organizerId: string,
     organizerRole: UserRole,
   ) {
-    // Get event
+    // Get event with data access level
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
@@ -878,6 +1075,7 @@ export class EventService {
       select: {
         id: true,
         organizerId: true,
+        organizerDataAccess: true,
       },
     });
 
@@ -886,10 +1084,9 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
-      if (event.organizerId !== organizerId) {
-        throw new AuthorizationError('You do not have permission to view registrations for this event');
-      }
+    const isAdmin = organizerRole === UserRole.SUPERADMIN || organizerRole === UserRole.ADMIN_STAFF;
+    if (!isAdmin && event.organizerId !== organizerId) {
+      throw new AuthorizationError('You do not have permission to view registrations for this event');
     }
 
     // Get registrations
@@ -914,6 +1111,51 @@ export class EventService {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Filter data based on access level (admins always see everything)
+    if (!isAdmin && event.organizerDataAccess) {
+      const accessLevel = event.organizerDataAccess;
+      
+      return registrations.map(reg => {
+        const filtered: Record<string, unknown> = {
+          id: reg.id,
+          eventId: reg.eventId,
+          attendeeId: reg.attendeeId,
+          status: reg.status,
+          ticketType: reg.ticketType,
+          quantity: reg.quantity,
+          createdAt: reg.createdAt,
+          attendee: reg.attendee,
+        };
+
+        // RESTRICTED: Only basic info, no payment data
+        if (accessLevel === 'RESTRICTED') {
+          // Only return minimal data
+          return filtered;
+        }
+
+        // STANDARD: Include payment status and amounts, but NO transaction IDs
+        if (accessLevel === 'STANDARD') {
+          filtered.totalAmount = reg.totalAmount;
+          filtered.paymentStatus = reg.paymentStatus;
+          filtered.paymentMethod = reg.paymentMethod;
+          // Explicitly exclude paymentTransactionId
+          return filtered;
+        }
+
+        // FULL: Include all payment details except transaction IDs
+        if (accessLevel === 'FULL') {
+          filtered.totalAmount = reg.totalAmount;
+          filtered.paymentStatus = reg.paymentStatus;
+          filtered.paymentMethod = reg.paymentMethod;
+          // Still exclude paymentTransactionId - organizers never see this
+          return filtered;
+        }
+
+        return filtered;
+      });
+    }
+
+    // Admins see everything including transaction IDs
     return registrations;
   }
 
@@ -1320,6 +1562,370 @@ export class EventService {
         lastName: user.lastName,
         isNewUser: !user.isEmailVerified, // Indicate if this is a new user
       },
+    };
+  }
+
+  /**
+   * Register for event as guest (public - no auth required)
+   * Creates account if needed and sends magic link for immediate access
+   */
+  static async registerAsGuest(
+    eventId: string,
+    guestData: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      phoneNumber?: string;
+      ticketType?: string;
+      quantity?: number;
+      registrationData?: Record<string, unknown>;
+    },
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Validate required fields
+    const email = guestData.email?.toLowerCase().trim();
+    const firstName = guestData.firstName?.trim();
+    const lastName = guestData.lastName?.trim();
+
+    if (!email || !firstName || !lastName) {
+      throw new ValidationError('Email, first name, and last name are required');
+    }
+
+    // Get event
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        isFree: true,
+        price: true,
+        ticketTypes: true,
+        capacity: true,
+        availableSlots: true,
+        registrationDeadline: true,
+        startDate: true,
+        venue: true,
+        location: true,
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            organizationName: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Check if event is approved
+    if (event.status !== EventStatus.APPROVED) {
+      throw new ValidationError('Event is not available for registration');
+    }
+
+    // Check if registration deadline has passed
+    if (event.registrationDeadline && new Date(event.registrationDeadline) < new Date()) {
+      throw new ValidationError('Registration deadline has passed');
+    }
+
+    // Check if event has already started
+    if (new Date(event.startDate) < new Date()) {
+      throw new ValidationError('Event has already started');
+    }
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    const isNewUser = !user;
+
+    // Create user account if doesn't exist (passwordless)
+    if (!user) {
+      // Check for SUSPENDED or DEACTIVATED users with this email
+      const existingUser = await prisma.user.findFirst({
+        where: { email },
+        select: { status: true },
+      });
+
+      if (existingUser?.status === UserStatus.SUSPENDED) {
+        throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
+      }
+
+      if (existingUser?.status === UserStatus.DEACTIVATED) {
+        throw new ConflictError('This account has been deactivated. Please contact support to appeal or wait for the deactivation period to end.');
+      }
+
+      // Create passwordless account (user can set password later)
+      user = await prisma.user.create({
+        data: {
+          email,
+          password: null, // Passwordless account
+          firstName,
+          lastName,
+          phoneNumber: guestData.phoneNumber?.trim(),
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true, // Email verified from checkout
+          emailVerifiedAt: new Date(),
+        },
+      });
+
+      logger.info(`Guest user created: ${user.id} for event: ${eventId}`);
+    } else {
+      // Check user status
+      if (user.status === UserStatus.SUSPENDED) {
+        throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
+      }
+    }
+
+    // Check if already registered
+    const existingRegistration = await prisma.eventRegistration.findUnique({
+      where: {
+        eventId_attendeeId: {
+          eventId,
+          attendeeId: user.id,
+        },
+      },
+    });
+
+    if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
+      throw new ConflictError('You are already registered for this event');
+    }
+
+    // Calculate total amount
+    const quantity = guestData.quantity || 1;
+    let totalAmount = new Decimal(0);
+
+    if (!event.isFree) {
+      if (guestData.ticketType && event.ticketTypes) {
+        const ticketTypes = event.ticketTypes as Array<{ name: string; price: number }>;
+        const selectedTicket = ticketTypes.find(t => t.name === guestData.ticketType);
+        if (!selectedTicket) {
+          throw new ValidationError('Invalid ticket type');
+        }
+        totalAmount = new Decimal(Number(selectedTicket.price) * quantity);
+      } else if (event.price) {
+        totalAmount = new Decimal(Number(event.price) * quantity);
+      } else {
+        throw new ValidationError('Ticket type is required for this event');
+      }
+    }
+
+    // Check capacity
+    if (event.capacity !== null) {
+      const currentRegistrations = await prisma.eventRegistration.count({
+        where: {
+          eventId,
+          status: {
+            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          },
+        },
+      });
+
+      if (currentRegistrations + quantity > event.capacity) {
+        throw new ValidationError('Event is sold out or insufficient capacity');
+      }
+    }
+
+    // Create registration
+    const registrationStatus = event.isFree
+      ? RegistrationStatus.CONFIRMED
+      : RegistrationStatus.PENDING;
+
+    const registration = await prisma.eventRegistration.create({
+      data: {
+        eventId,
+        attendeeId: user.id,
+        ticketType: guestData.ticketType || null,
+        quantity,
+        totalAmount,
+        registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
+        status: registrationStatus,
+        paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            venue: true,
+            location: true,
+          },
+        },
+        attendee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Update available slots if capacity exists
+    if (event.capacity !== null) {
+      const newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
+      await prisma.event.update({
+        where: { id: eventId },
+        data: {
+          availableSlots: Math.max(0, newAvailableSlots),
+        },
+      });
+    }
+
+    // Generate magic link token for immediate access
+    const magicLinkToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    // Delete any existing unused magic link tokens for this user
+    await prisma.magicLinkToken.deleteMany({
+      where: {
+        userId: user.id,
+        used: false,
+        expiresAt: { lt: new Date() },
+      },
+    });
+
+    // Create magic link token
+    await prisma.magicLinkToken.create({
+      data: {
+        userId: user.id,
+        token: magicLinkToken,
+        expiresAt,
+      },
+    });
+
+    // Generate password setup token (optional, for setting password later)
+    const passwordSetupToken = crypto.randomBytes(32).toString('hex');
+    const passwordSetupExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Store password setup token in EmailVerification table
+    await prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        token: passwordSetupToken,
+        expiresAt: passwordSetupExpiresAt,
+        verified: false,
+      },
+    });
+
+    // Send confirmation email with magic link and password setup option
+    try {
+      const magicLinkUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/magic-link/verify?token=${magicLinkToken}`;
+      const passwordSetupUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/password/setup?token=${passwordSetupToken}`;
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Event Registration Confirmed</title>
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #4a6cf7;">Your Event Registration is Confirmed! 🎉</h1>
+              
+              <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h2 style="margin-top: 0;">Event Details</h2>
+                <p><strong>Event:</strong> ${event.title}</p>
+                <p><strong>Date:</strong> ${new Date(event.startDate).toLocaleDateString()}</p>
+                ${event.venue ? `<p><strong>Venue:</strong> ${event.venue}</p>` : ''}
+                ${event.location ? `<p><strong>Location:</strong> ${event.location}</p>` : ''}
+                <p><strong>Quantity:</strong> ${quantity}</p>
+                ${!event.isFree ? `<p><strong>Total Amount:</strong> $${totalAmount.toString()}</p>` : '<p><strong>Event Type:</strong> Free</p>'}
+              </div>
+
+              <div style="margin: 30px 0;">
+                <h2>Access Your Tickets</h2>
+                <p>Click the button below to view and manage your tickets:</p>
+                <div style="text-align: center; margin: 20px 0;">
+                  <a href="${magicLinkUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Your Tickets</a>
+                </div>
+                <p style="font-size: 12px; color: #666;">This link expires in 15 minutes and can only be used once.</p>
+              </div>
+
+              ${isNewUser ? `
+              <div style="margin: 30px 0;">
+                <h2>Set Up Your Account</h2>
+                <p>Create a password to access your account anytime:</p>
+                <div style="text-align: center; margin: 20px 0;">
+                  <a href="${passwordSetupUrl}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Set Password</a>
+                </div>
+                <p style="font-size: 12px; color: #666;">Or continue using passwordless login (no password needed).</p>
+              </div>
+              ` : ''}
+
+              <div style="margin: 30px 0;">
+                <h2>Other Login Options</h2>
+                <p>You can also login using:</p>
+                <ul>
+                  <li><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/signin">Continue with Email</a> (code-based)</li>
+                  <li><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/signin">Continue with Facebook</a></li>
+                </ul>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+              <p style="font-size: 12px; color: #666;">This is an automated message, please do not reply.</p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      await emailService.sendEmail({
+        to: user.email,
+        subject: `Event Registration Confirmed - ${event.title}`,
+        html,
+      });
+
+      logger.info(`Confirmation email sent to: ${user.email} for event: ${eventId}`);
+    } catch (error) {
+      logger.error('Failed to send confirmation email:', error);
+      // Don't throw error - registration is complete, email is optional
+    }
+
+    // Audit log
+    await createAuditLog({
+      userId: user.id,
+      action: AuditActions.TICKET_PURCHASED,
+      entity: 'EventRegistration',
+      entityId: registration.id,
+      metadata: {
+        eventId,
+        eventTitle: event.title,
+        quantity,
+        totalAmount: totalAmount.toString(),
+        isFree: event.isFree,
+        isGuestCheckout: true,
+        isNewUser,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`Guest registration created: ${registration.id} for event: ${eventId} by user: ${user.id}`);
+
+    return {
+      registration,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isNewUser,
+      },
+      magicLinkToken, // Return token for immediate use (optional)
     };
   }
 }

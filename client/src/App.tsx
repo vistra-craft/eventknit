@@ -19,6 +19,7 @@ import PublicEventForm from "./pages/PublicEventForm";
 // User Dashboard imports
 import UserDashboard from "./pages/user/UserDashboard";
 import ExhibitorDetails from "./pages/user/ExhibitorDetails";
+import UserProfilePage from "./pages/user/UserProfilePage";
 // Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import EventManagement from "./pages/organizer/EventManagement";
@@ -47,6 +48,7 @@ import EventTemplates from "./pages/organizer/EventTemplates";
 // Admin Dashboard imports
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarketingPage from "./pages/admin/AdminMarketingPage";
+import AdminProfilePage from "./pages/admin/AdminProfilePage";
 import { 
   AdminCampaignsPage,
   AdminSocialMediaPage,
@@ -111,13 +113,15 @@ import WorkstationTemplates from "./pages/admin/workstation/WorkstationTemplates
 import WorkstationHistory from "./pages/admin/workstation/WorkstationHistory";
 // Auth imports
 import SignIn from "./pages/auth/SignIn";
-import SignUp from "./pages/auth/SignUp";
-import EmailEntry from "./pages/auth/EmailEntry";
+// import SignUp from "./pages/auth/SignUp";
+import SimpleRegistration from "./pages/auth/SimpleRegistration";
+// import EmailEntry from "./pages/auth/EmailEntry";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
-import UserTypeSelection from "./pages/auth/UserTypeSelection";
-import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
-import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
+import MagicLinkVerify from "./pages/auth/MagicLinkVerify";
+// import UserTypeSelection from "./pages/auth/UserTypeSelection";
+// import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
+// import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
 
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider
@@ -152,6 +156,7 @@ const App = () => (
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
       {/* User Dashboard Routes */}
       <Route path="/user/dashboard" element={<UserDashboard />} />
+      <Route path="/user/profile" element={<UserProfilePage />} />
       <Route path="/exhibitors/:id" element={<ExhibitorDetails />} />
       {/* Organizer Dashboard Routes */}
       <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
@@ -200,6 +205,7 @@ const App = () => (
       <Route path="/admin/users/organizers/:organizerId/edit" element={<OrganizerEditPage />} />
       <Route path="/admin/users/roles" element={<UserRolesPage />} />
       <Route path="/admin/settings" element={<AdminSettingsPage />} />
+      <Route path="/admin/profile" element={<AdminProfilePage />} />
       {/* Admin System Routes */}
       <Route path="/admin/system/health" element={<SystemHealthPage />} />
       <Route path="/admin/system/database" element={<DatabasePage />} />
@@ -240,13 +246,16 @@ const App = () => (
       <Route path="/support" element={<Support />} />
       {/* Auth Routes */}
       <Route path="/auth/signin" element={<SignIn />} />
-      <Route path="/auth/signup" element={<SignUp />} />
-      <Route path="/auth/email-entry" element={<EmailEntry />} />
+      <Route path="/auth/signup" element={<SimpleRegistration />} />
+      <Route path="/auth/register" element={<SimpleRegistration />} />
+      {/* Legacy registration routes - redirect to simple registration */}
+      <Route path="/auth/email-entry" element={<SimpleRegistration />} />
+      <Route path="/auth/user-type" element={<SimpleRegistration />} />
+      <Route path="/auth/register/organizer" element={<SimpleRegistration />} />
+      <Route path="/auth/register/attendee" element={<SimpleRegistration />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
-      <Route path="/auth/user-type" element={<UserTypeSelection />} />
-      <Route path="/auth/register/organizer" element={<OrganizerRegistration />} />
-      <Route path="/auth/register/attendee" element={<AttendeeRegistration />} />
+      <Route path="/auth/magic-link/verify" element={<MagicLinkVerify />} />
       <Route path="*" element={<NotFound />} />
       {/* Admin Workstation Routes */}
       <Route path="/admin/workstation" element={<WorkstationOverview />} />

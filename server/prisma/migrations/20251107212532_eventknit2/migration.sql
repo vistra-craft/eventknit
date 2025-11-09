@@ -1,0 +1,32 @@
+-- CreateTable
+CREATE TABLE "MagicLinkToken" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "used" BOOLEAN NOT NULL DEFAULT false,
+    "usedAt" TIMESTAMP(3),
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MagicLinkToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "MagicLinkToken_token_key" ON "MagicLinkToken"("token");
+
+-- CreateIndex
+CREATE INDEX "MagicLinkToken_token_idx" ON "MagicLinkToken"("token");
+
+-- CreateIndex
+CREATE INDEX "MagicLinkToken_userId_idx" ON "MagicLinkToken"("userId");
+
+-- CreateIndex
+CREATE INDEX "MagicLinkToken_expiresAt_idx" ON "MagicLinkToken"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "MagicLinkToken_used_idx" ON "MagicLinkToken"("used");
+
+-- AddForeignKey
+ALTER TABLE "MagicLinkToken" ADD CONSTRAINT "MagicLinkToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

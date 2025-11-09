@@ -5,7 +5,52 @@ import { prisma } from '../config/database';
 
 export class AuthController {
   /**
-   * Register new user
+   * Request registration verification code (email-only registration)
+   */
+  static async requestRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.requestRegistrationCode(req.body.email, req.body.role);
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code sent to your email',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify registration code and create account
+   */
+  static async verifyRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await AuthService.verifyRegistrationCode(req.body.email, req.body.code, req.body.password);
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Registration successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Register new user (legacy endpoint - kept for backward compatibility)
    */
   static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -310,6 +355,97 @@ export class AuthController {
   }
 
   /**
+   * Request Email OAuth code (code-based passwordless login/registration)
+   */
+  static async requestEmailOAuthCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.requestEmailOAuthCode(req.body.email, req.body.role);
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code has been sent to your email.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify Email OAuth code and authenticate user (creates account if new, logs in if existing)
+   */
+  static async verifyEmailOAuthCode(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await AuthService.verifyEmailOAuthCode(
+        req.body.email,
+        req.body.code,
+        ipAddress,
+        userAgent,
+      );
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Authentication successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Facebook OAuth login/registration
+   */
+  static async facebookAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const { FacebookAuthService } = await import('../services/facebook-auth.service');
+      const result = await FacebookAuthService.authenticateWithFacebook(
+        req.body.accessToken,
+        req.body.role,
+        ipAddress,
+        userAgent,
+      );
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Facebook authentication successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Change password
    */
   static async changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -361,6 +497,64 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Email verified successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Request magic link login (send email with login link)
+   */
+  static async requestMagicLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.requestMagicLink(req.body.email);
+
+      res.status(200).json({
+        success: true,
+        message: 'Magic link sent to your email',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify magic link token and auto-login user
+   */
+  static async verifyMagicLink(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const token = req.query.token as string || req.body.token;
+      
+      if (!token) {
+        res.status(400).json({
+          success: false,
+          message: 'Token is required',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await AuthService.verifyMagicLink(token, ipAddress, userAgent);
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
       });
     } catch (error) {
       next(error);

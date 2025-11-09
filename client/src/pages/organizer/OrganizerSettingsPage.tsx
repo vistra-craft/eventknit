@@ -15,6 +15,7 @@ import {
   Moon,
   Sun,
   Monitor,
+  Mail,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,21 +23,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import OrganizerLayout from "./OrganizerLayout";
+import { useAuth } from "@/hooks/useAuth";
+import * as authApi from "@/lib/auth-api";
+import RoleSwitcher from "@/components/RoleSwitcher";
+import { Badge } from "@/components/ui/badge";
+import { UserStatus, UserRole } from "@/types/auth";
 
 interface OrganizerSettingsData {
   // Profile Settings
   firstName: string;
   lastName: string;
+  otherName: string;
   email: string;
   phone: string;
+  companyAffiliation: string;
   company: string;
   position: string;
   location: string;
   bio: string;
   avatar: string;
+  // Organizer-specific
+  organizationName: string;
+  businessEmail: string;
+  kycStatus: string | null;
   
   // Notification Settings
   emailNotifications: boolean;
@@ -61,9 +72,22 @@ interface OrganizerSettingsData {
 
 const OrganizerSettingsPage = () => {
   const location = useLocation();
+  const { user, refreshProfile } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [saveMessage, setSaveMessage] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Password change form state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -81,25 +105,96 @@ const OrganizerSettingsPage = () => {
   useEffect(() => {
     setActiveTab(getActiveTabFromUrl());
   }, [getActiveTabFromUrl]);
+
+  // Load user profile data from API
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await authApi.getProfile();
+        if (response.success && response.data?.user) {
+          const userData = response.data.user;
+          setSettings(prev => ({
+            ...prev,
+            firstName: userData.firstName || "",
+            lastName: userData.lastName || "",
+            otherName: userData.otherName || "",
+            email: userData.email || "",
+            phone: userData.phoneNumber || "",
+            companyAffiliation: "", // Not in User interface yet
+            company: userData.organizationName || "",
+            organizationName: userData.organizationName || "",
+            businessEmail: userData.businessEmail || "",
+            kycStatus: userData.kycStatus || null,
+            // Keep other settings as they are (notifications, appearance, etc.)
+          }));
+          setAccountInfo({
+            role: userData.role,
+            status: userData.status,
+            isEmailVerified: userData.isEmailVerified || false,
+            emailVerifiedAt: userData.emailVerifiedAt || null,
+            lastLoginAt: userData.lastLoginAt || null,
+            createdAt: userData.createdAt || "",
+            updatedAt: userData.updatedAt || "",
+            kycStatus: userData.kycStatus || null,
+            kycSubmittedAt: null, // Not in User interface yet
+            kycApprovedAt: null, // Not in User interface yet
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error);
+        setSaveStatus("error");
+        setSaveMessage("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, [user]);
   
-  // Mock settings data - in a real app, this would come from your API
+  // Account info (read-only)
+  const [accountInfo, setAccountInfo] = useState({
+    role: "" as UserRole | "",
+    status: "" as UserStatus | "",
+    isEmailVerified: false,
+    emailVerifiedAt: null as string | null,
+    lastLoginAt: null as string | null,
+    createdAt: "",
+    updatedAt: "",
+    kycStatus: null as string | null,
+    kycSubmittedAt: null as string | null,
+    kycApprovedAt: null as string | null,
+  });
+
+  // Settings state - initialized with user data
   const [settings, setSettings] = useState<OrganizerSettingsData>({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    company: "EventKnit Solutions",
-    position: "Event Manager",
-    location: "San Francisco, CA",
-    bio: "Experienced event manager with 5+ years in the industry, specializing in tech conferences and corporate events.",
-    avatar: "/api/placeholder/96/96",
+    firstName: "",
+    lastName: "",
+    otherName: "",
+    email: "",
+    phone: "",
+    companyAffiliation: "",
+    company: "",
+    position: "",
+    location: "",
+    bio: "",
+    avatar: "",
+    organizationName: "",
+    businessEmail: "",
+    kycStatus: null,
     emailNotifications: true,
     eventUpdates: true,
     attendeeRegistrations: true,
     paymentNotifications: true,
     marketingEmails: false,
     weeklyDigest: true,
-    notificationEmail: "john.doe@example.com",
+    notificationEmail: "",
     theme: "system",
     dashboardLayout: "spacious",
     showMetrics: true,
@@ -116,18 +211,131 @@ const OrganizerSettingsPage = () => {
     { id: "security", label: "Security", icon: Shield },
   ];
 
-  const handleSave = async () => {
+  // Validate password change form
+  const validatePasswordForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!passwordData.currentPassword.trim()) {
+      errors.currentPassword = "Current password is required";
+    }
+    
+    if (!passwordData.newPassword.trim()) {
+      errors.newPassword = "New password is required";
+    } else if (passwordData.newPassword.length < 8) {
+      errors.newPassword = "Password must be at least 8 characters";
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(passwordData.newPassword)) {
+      errors.newPassword = "Password must contain uppercase, lowercase, number, and special character";
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+    
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle password change
+  const handlePasswordChange = async () => {
+    if (!validatePasswordForm()) {
+      setSaveStatus("error");
+      setSaveMessage("Please fix the errors in the form");
+      return;
+    }
+
     setIsSaving(true);
     setSaveStatus("idle");
-    
+    setSaveMessage("");
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await authApi.changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
+      
       setSaveStatus("success");
-      setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch {
+      setSaveMessage("Password changed successfully");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setPasswordErrors({});
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 3000);
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? (error.message as string)
+        : 'Failed to change password';
       setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      setSaveMessage(errorMessage);
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 5000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle profile save
+  const handleSave = async () => {
+    if (activeTab === "security") {
+      // Password change is handled separately
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveStatus("idle");
+    setSaveMessage("");
+
+    try {
+      if (activeTab === "profile") {
+        // Update profile
+        const profileData: Partial<authApi.RegisterData> = {
+          firstName: settings.firstName,
+          lastName: settings.lastName,
+          otherName: settings.otherName || undefined,
+          phoneNumber: settings.phone || undefined,
+          companyAffiliation: settings.companyAffiliation || undefined,
+          organizationName: settings.organizationName || undefined,
+          businessEmail: settings.businessEmail || undefined,
+        };
+
+        const response = await authApi.updateProfile(profileData);
+        
+        if (response.success) {
+          // Refresh user profile in context
+          await refreshProfile();
+          setSaveStatus("success");
+          setSaveMessage("Profile updated successfully");
+        } else {
+          throw new Error("Failed to update profile");
+        }
+      } else {
+        // Other settings (notifications, appearance) - save locally for now
+        // TODO: Implement API endpoints for these settings
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setSaveStatus("success");
+        setSaveMessage("Settings saved successfully");
+      }
+      
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 3000);
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? (error.message as string)
+        : 'Failed to save settings';
+      setSaveStatus("error");
+      setSaveMessage(errorMessage);
+      setTimeout(() => {
+        setSaveStatus("idle");
+        setSaveMessage("");
+      }, 5000);
     } finally {
       setIsSaving(false);
     }
@@ -198,8 +406,22 @@ const OrganizerSettingsPage = () => {
           id="email"
           type="email"
           value={settings.email}
-          onChange={(e) => updateSetting("email", e.target.value)}
-          placeholder="Enter email address"
+          disabled
+          placeholder="Email address cannot be changed"
+          className="bg-muted cursor-not-allowed"
+        />
+        <p className="text-sm text-muted-foreground mt-1">
+          Email address cannot be changed for security reasons
+        </p>
+      </div>
+
+      <div>
+        <Label htmlFor="otherName">Other Name (Optional)</Label>
+        <Input
+          id="otherName"
+          value={settings.otherName}
+          onChange={(e) => updateSetting("otherName", e.target.value)}
+          placeholder="Middle name or other names"
         />
       </div>
 
@@ -215,46 +437,127 @@ const OrganizerSettingsPage = () => {
       </div>
 
       <div>
-        <Label htmlFor="location">Location</Label>
+        <Label htmlFor="companyAffiliation">Company Affiliation</Label>
         <Input
-          id="location"
-          value={settings.location}
-          onChange={(e) => updateSetting("location", e.target.value)}
-          placeholder="Enter location"
+          id="companyAffiliation"
+          value={settings.companyAffiliation}
+          onChange={(e) => updateSetting("companyAffiliation", e.target.value)}
+          placeholder="Enter company or institutional affiliation"
         />
       </div>
 
-      {/* Professional Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Organizer-Specific Information */}
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Organizer Information</h3>
+        
         <div>
-          <Label htmlFor="company">Company</Label>
+          <Label htmlFor="organizationName">Organization Name</Label>
           <Input
-            id="company"
-            value={settings.company}
-            onChange={(e) => updateSetting("company", e.target.value)}
-            placeholder="Enter company name"
+            id="organizationName"
+            value={settings.organizationName}
+            onChange={(e) => updateSetting("organizationName", e.target.value)}
+            placeholder="Enter organization name"
           />
         </div>
-        <div>
-          <Label htmlFor="position">Position/Title</Label>
+
+        <div className="mt-4">
+          <Label htmlFor="businessEmail">Business Email</Label>
           <Input
-            id="position"
-            value={settings.position}
-            onChange={(e) => updateSetting("position", e.target.value)}
-            placeholder="Enter position"
+            id="businessEmail"
+            type="email"
+            value={settings.businessEmail}
+            onChange={(e) => updateSetting("businessEmail", e.target.value)}
+            placeholder="Enter business email address"
           />
+        </div>
+
+        <div className="mt-4">
+          <Label>KYC Status</Label>
+          <div className="mt-1">
+            {accountInfo.kycStatus ? (
+              <Badge variant={
+                accountInfo.kycStatus === 'APPROVED' ? 'default' :
+                accountInfo.kycStatus === 'PENDING' ? 'secondary' :
+                'destructive'
+              }>
+                {accountInfo.kycStatus}
+              </Badge>
+            ) : (
+              <span className="text-sm text-muted-foreground">Not submitted</span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="bio">Bio</Label>
-        <Textarea
-          id="bio"
-          value={settings.bio}
-          onChange={(e) => updateSetting("bio", e.target.value)}
-          placeholder="Tell us about yourself..."
-          rows={4}
-        />
+      {/* Account Information */}
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-lg font-semibold mb-4">Account Information</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Label>Role</Label>
+            <div className="mt-1">
+              <Badge variant="outline" className="text-sm">
+                {accountInfo.role ? (
+                  ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(accountInfo.role) 
+                    ? 'Organizer' 
+                    : accountInfo.role
+                ) : "Loading..."}
+              </Badge>
+            </div>
+          </div>
+          <div>
+            <Label>Account Status</Label>
+            <div className="mt-1">
+              {accountInfo.status === UserStatus.ACTIVE ? (
+                <Badge className="bg-green-500">Active</Badge>
+              ) : accountInfo.status === UserStatus.SUSPENDED ? (
+                <Badge variant="destructive">Suspended</Badge>
+              ) : accountInfo.status === UserStatus.DEACTIVATED ? (
+                <Badge variant="secondary">Deactivated</Badge>
+              ) : (
+                <span className="text-sm">{accountInfo.status || "Loading..."}</span>
+              )}
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Email Verification
+            </Label>
+            <div className="mt-1 flex items-center gap-2">
+              {accountInfo.isEmailVerified ? (
+                <>
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Verified</span>
+                  {accountInfo.emailVerifiedAt && (
+                    <span className="text-xs text-muted-foreground">
+                      ({new Date(accountInfo.emailVerifiedAt).toLocaleDateString()})
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <span className="text-sm">Not Verified</span>
+                </>
+              )}
+            </div>
+          </div>
+          <div>
+            <Label className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Last Login
+            </Label>
+            <div className="mt-1">
+              <span className="text-sm">
+                {accountInfo.lastLoginAt
+                  ? new Date(accountInfo.lastLoginAt).toLocaleString()
+                  : "Never"}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -475,6 +778,14 @@ const OrganizerSettingsPage = () => {
               id="currentPassword"
               type={showPassword ? "text" : "password"}
               placeholder="Enter current password"
+              value={passwordData.currentPassword}
+              onChange={(e) => {
+                setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }));
+                if (passwordErrors.currentPassword) {
+                  setPasswordErrors(prev => ({ ...prev, currentPassword: "" }));
+                }
+              }}
+              disabled={isSaving}
             />
             <Button
               type="button"
@@ -490,29 +801,95 @@ const OrganizerSettingsPage = () => {
               )}
             </Button>
           </div>
+          {passwordErrors.currentPassword && (
+            <p className="text-sm text-destructive mt-1">{passwordErrors.currentPassword}</p>
+          )}
         </div>
 
         <div>
           <Label htmlFor="newPassword">New Password</Label>
-          <Input
-            id="newPassword"
-            type="password"
-            placeholder="Enter new password"
-          />
+          <div className="relative">
+            <Input
+              id="newPassword"
+              type={showNewPassword ? "text" : "password"}
+              placeholder="Enter new password"
+              value={passwordData.newPassword}
+              onChange={(e) => {
+                setPasswordData(prev => ({ ...prev, newPassword: e.target.value }));
+                if (passwordErrors.newPassword) {
+                  setPasswordErrors(prev => ({ ...prev, newPassword: "" }));
+                }
+              }}
+              disabled={isSaving}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+            >
+              {showNewPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {passwordErrors.newPassword && (
+            <p className="text-sm text-destructive mt-1">{passwordErrors.newPassword}</p>
+          )}
+          <p className="text-sm text-muted-foreground mt-1">
+            Must be at least 8 characters with uppercase, lowercase, number, and special character
+          </p>
         </div>
 
         <div>
           <Label htmlFor="confirmPassword">Confirm New Password</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            placeholder="Confirm new password"
-          />
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm new password"
+              value={passwordData.confirmPassword}
+              onChange={(e) => {
+                setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                if (passwordErrors.confirmPassword) {
+                  setPasswordErrors(prev => ({ ...prev, confirmPassword: "" }));
+                }
+              }}
+              disabled={isSaving}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {passwordErrors.confirmPassword && (
+            <p className="text-sm text-destructive mt-1">{passwordErrors.confirmPassword}</p>
+          )}
         </div>
 
-        <Button variant="outline">
-          <Key className="h-4 w-4 mr-2" />
-          Change Password
+        <Button 
+          variant="outline" 
+          onClick={handlePasswordChange}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Key className="h-4 w-4 mr-2" />
+          )}
+          {isSaving ? "Changing Password..." : "Change Password"}
         </Button>
       </div>
 
@@ -560,18 +937,22 @@ const OrganizerSettingsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={handleReset}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
+            {activeTab !== "security" && (
+              <>
+                <Button variant="outline" onClick={handleReset}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reset
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving || isLoading}>
+                  {isSaving ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -580,7 +961,7 @@ const OrganizerSettingsPage = () => {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center">
               <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <span className="text-green-800">Settings saved successfully!</span>
+              <span className="text-green-800">{saveMessage || "Settings saved successfully!"}</span>
             </div>
           </div>
         )}
@@ -589,14 +970,14 @@ const OrganizerSettingsPage = () => {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <span className="text-red-800">Failed to save settings. Please try again.</span>
+              <span className="text-red-800">{saveMessage || "Failed to save settings. Please try again."}</span>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Content */}
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-3">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -609,9 +990,21 @@ const OrganizerSettingsPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {renderTabContent()}
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-muted-foreground">Loading profile...</span>
+                  </div>
+                ) : (
+                  renderTabContent()
+                )}
               </CardContent>
             </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {activeTab === "profile" && <RoleSwitcher />}
           </div>
         </div>
       </div>

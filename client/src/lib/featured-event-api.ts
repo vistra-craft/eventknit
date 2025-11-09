@@ -179,3 +179,4 @@ export const deleteFeaturedEvent = async (id: string): Promise<void> => {
   await apiDelete<ApiResponse<void>>(`/featured-events/${id}`);
 };
 
+

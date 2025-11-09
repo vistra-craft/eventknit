@@ -73,5 +73,12 @@ router.get('/dashboard/stats', OrganizerController.getDashboardStats);
  */
 router.get('/dashboard/events', OrganizerController.getDashboardEvents);
 
+/**
+ * @route   GET /api/v1/organizer/events
+ * @desc    Get all organizer events (with filters: status, category, search, upcoming, past)
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/events', OrganizerController.getOrganizerEvents);
+
 export default router;
 

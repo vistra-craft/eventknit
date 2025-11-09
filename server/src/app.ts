@@ -11,6 +11,8 @@ import eventRoutes from './routes/event.routes';
 import invitationRoutes from './routes/invitation.routes';
 import templateRoutes from './routes/template.routes';
 import featuredEventRoutes from './routes/featured-event.routes';
+import verificationRoutes from './routes/verification.routes';
+import paymentRoutes from './routes/payment.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { rateLimiter } from './middleware/rateLimiter.middleware';
 
@@ -19,15 +21,19 @@ const app = express();
 // Trust proxy for accurate IP addresses
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet());
-
-// CORS configuration
+// CORS configuration (before helmet to avoid conflicts)
 app.use(cors({
   origin: config.cors.origin,
   credentials: config.cors.credentials,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+}));
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false,
 }));
 
 // Logging
@@ -79,6 +85,8 @@ app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/invitations', invitationRoutes);
 app.use('/api/v1/templates', templateRoutes);
 app.use('/api/v1/featured-events', featuredEventRoutes);
+app.use('/api/v1/verification', verificationRoutes);
+app.use('/api/v1/payments', paymentRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
@@ -92,3 +100,4 @@ app.use((_req, res) => {
 });
 
 export default app;
+

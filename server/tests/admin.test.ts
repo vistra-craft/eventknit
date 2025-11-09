@@ -242,7 +242,10 @@ describe('Admin User Management', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      response.body.data.users.forEach((user: any) => {
+      interface UserItem {
+        role: string;
+      }
+      response.body.data.users.forEach((user: UserItem) => {
         expect(user.role).toBe(UserRole.ATTENDEE);
       });
     });

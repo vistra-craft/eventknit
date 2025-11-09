@@ -12,8 +12,32 @@ const router = Router();
 router.use(cookieParser());
 
 /**
+ * @route   POST /api/v1/auth/register-code/request
+ * @desc    Request registration verification code (email-only registration)
+ * @access  Public
+ */
+router.post(
+  '/register-code/request',
+  authRateLimiter,
+  validate(authValidations.requestRegistrationCode),
+  AuthController.requestRegistrationCode,
+);
+
+/**
+ * @route   POST /api/v1/auth/register-code/verify
+ * @desc    Verify registration code and create account
+ * @access  Public
+ */
+router.post(
+  '/register-code/verify',
+  authRateLimiter,
+  validate(authValidations.verifyRegistrationCode),
+  AuthController.verifyRegistrationCode,
+);
+
+/**
  * @route   POST /api/v1/auth/register
- * @desc    Register a new user
+ * @desc    Register a new user (legacy endpoint)
  * @access  Public
  */
 router.post(
@@ -29,6 +53,42 @@ router.post(
   authRateLimiter,
   validate(authValidations.register),
   AuthController.register,
+);
+
+/**
+ * @route   POST /api/v1/auth/email-oauth/request
+ * @desc    Request Email OAuth code (code-based passwordless login/registration)
+ * @access  Public
+ */
+router.post(
+  '/email-oauth/request',
+  authRateLimiter,
+  validate(authValidations.requestEmailOAuthCode),
+  AuthController.requestEmailOAuthCode,
+);
+
+/**
+ * @route   POST /api/v1/auth/email-oauth/verify
+ * @desc    Verify Email OAuth code and authenticate user (creates account if new, logs in if existing)
+ * @access  Public
+ */
+router.post(
+  '/email-oauth/verify',
+  authRateLimiter,
+  validate(authValidations.verifyEmailOAuthCode),
+  AuthController.verifyEmailOAuthCode,
+);
+
+/**
+ * @route   POST /api/v1/auth/facebook
+ * @desc    Facebook OAuth login/registration
+ * @access  Public
+ */
+router.post(
+  '/facebook',
+  authRateLimiter,
+  validate(authValidations.facebookAuth),
+  AuthController.facebookAuth,
 );
 
 /**
@@ -123,6 +183,29 @@ router.post(
   authRateLimiter,
   validate(authValidations.resetPassword),
   AuthController.resetPassword,
+);
+
+/**
+ * @route   POST /api/v1/auth/magic-link/request
+ * @desc    Request magic link login (send email with login link)
+ * @access  Public
+ */
+router.post(
+  '/magic-link/request',
+  authRateLimiter,
+  validate(authValidations.requestMagicLink),
+  AuthController.requestMagicLink,
+);
+
+/**
+ * @route   GET /api/v1/auth/magic-link/verify
+ * @desc    Verify magic link token and auto-login user
+ * @access  Public
+ */
+router.get(
+  '/magic-link/verify',
+  authRateLimiter,
+  AuthController.verifyMagicLink,
 );
 
 // Protected routes

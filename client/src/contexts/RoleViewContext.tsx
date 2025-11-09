@@ -38,13 +38,27 @@ export const RoleViewProvider: React.FC<RoleViewProviderProps> = ({ children, us
     roles.push(userRole);
     
     // Additional roles based on current role
-    if (userRole === UserRole.ORGANIZER) {
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(userRole);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(userRole);
+    
+    if (isOrganizerRole) {
       // Organizers can view as attendees
       roles.push(UserRole.ATTENDEE);
     } else if (userRole === UserRole.ATTENDEE) {
       // Attendees can view as organizers (but can't create events unless they actually are organizers)
       roles.push(UserRole.ORGANIZER);
-    } else if (userRole === UserRole.ADMIN || userRole === UserRole.STAFF) {
+    } else if (isAdminRole) {
       // Admins can view as any role
       roles.push(UserRole.ORGANIZER);
       roles.push(UserRole.ATTENDEE);

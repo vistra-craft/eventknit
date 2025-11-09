@@ -71,6 +71,57 @@ export interface ProfileResponse {
 }
 
 /**
+ * Request registration verification code (email-only registration)
+ */
+export const requestRegistrationCode = async (
+  email: string,
+  role?: 'ATTENDEE' | 'ORGANIZER'
+): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/register-code/request', { email, role });
+};
+
+/**
+ * Verify registration code and create account
+ */
+export const verifyRegistrationCode = async (
+  email: string,
+  code: string,
+  password: string
+): Promise<RegisterResponse> => {
+  return apiPost<RegisterResponse>('/auth/register-code/verify', { email, code, password });
+};
+
+/**
+ * Request Email OAuth code (code-based passwordless login/registration)
+ */
+export const requestEmailOAuthCode = async (
+  email: string,
+  role?: 'ATTENDEE' | 'ORGANIZER'
+): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/email-oauth/request', { email, role });
+};
+
+/**
+ * Verify Email OAuth code and authenticate user (creates account if new, logs in if existing)
+ */
+export const verifyEmailOAuthCode = async (
+  email: string,
+  code: string
+): Promise<LoginResponse> => {
+  return apiPost<LoginResponse>('/auth/email-oauth/verify', { email, code });
+};
+
+/**
+ * Facebook OAuth login/registration
+ */
+export const facebookAuth = async (
+  accessToken: string,
+  role?: 'ATTENDEE' | 'ORGANIZER'
+): Promise<LoginResponse> => {
+  return apiPost<LoginResponse>('/auth/facebook', { accessToken, role });
+};
+
+/**
  * Login user
  */
 export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
@@ -131,4 +182,19 @@ export const changePassword = async (
     newPassword,
   });
 };
+
+/**
+ * Request magic link login (send email with login link)
+ */
+export const requestMagicLink = async (email: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/magic-link/request', { email });
+};
+
+/**
+ * Verify magic link token and auto-login user
+ */
+export const verifyMagicLink = async (token: string): Promise<LoginResponse> => {
+  return apiGet<LoginResponse>(`/auth/magic-link/verify?token=${token}`);
+};
+
 

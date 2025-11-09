@@ -6,6 +6,9 @@ import { apiPost, apiGet, apiPut, apiDelete, type ApiResponse } from './api';
 import type { EventData } from '../types/event';
 import { transformEventData, transformEventsData } from './event-utils';
 
+// Re-export EventData for use in other modules
+export type { EventData } from '../types/event';
+
 /**
  * Event Status enum (matches backend)
  */
@@ -153,16 +156,29 @@ export interface EventRegistrationsResponse {
     registrations: Array<{
       id: string;
       eventId: string;
-      userId: string;
+      userId?: string;
+      attendeeId?: string;
       status: string;
-      ticketType?: string;
+      ticketType?: string | null;
       quantity?: number;
+      totalAmount?: number | string;
+      paymentStatus?: string | null;
+      paymentMethod?: string | null;
+      paymentTransactionId?: string | null;
       createdAt: string;
       user?: {
         id: string;
         email: string;
         firstName: string;
         lastName: string;
+        phoneNumber?: string | null;
+      };
+      attendee?: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        phoneNumber?: string | null;
       };
     }>;
   };

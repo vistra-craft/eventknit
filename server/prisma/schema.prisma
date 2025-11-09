@@ -63,12 +63,18 @@ enum InviteType {
   GUEST // Guest/VIP invitation
 }
 
+enum DataAccessLevel {
+  RESTRICTED // Summary cards only (total attendees, total revenue)
+  STANDARD // Attendee list + payment summaries (no transaction IDs)
+  FULL // Everything except transaction IDs (detailed payment info)
+}
+
 model User {
   id                 String     @id @default(uuid())
   email              String     @unique
-  password           String
-  firstName          String
-  lastName           String
+  password           String? // Optional - users can set password later in profile
+  firstName          String? // Optional - can be added in profile
+  lastName           String? // Optional - can be added in profile
   otherName          String? // Middle name or other names
   phoneNumber        String?
   companyAffiliation String? // Company or institutional affiliation
@@ -91,6 +97,12 @@ model User {
   kycSubmittedAt DateTime?
   kycApprovedAt  DateTime?
 
+  // Verification levels (progressive verification system)
+  isIdentityVerified Boolean   @default(false) // Level 2: Identity verified (can create paid events with limits)
+  identityVerifiedAt DateTime?
+  payoutLimit        Decimal?  @db.Decimal(10, 2) // Monthly payout limit (null = unlimited, requires full KYC)
+  verificationLevel  Int       @default(1) // 1=Basic, 2=Identity Verified, 3=Full KYC
+
   // Security fields
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
@@ -104,16 +116,17 @@ model User {
   deletedAt DateTime?
 
   // Relations
-  refreshTokens      RefreshToken[]
-  emailVerifications EmailVerification[]
-  passwordResets     PasswordReset[]
-  kycDocuments       KYCDocument[]
-  auditLogs          AuditLog[]
-  eventsCreated      Event[]             @relation("EventOrganizer")
-  eventRegistrations EventRegistration[]
-  invitationsCreated EventInvitation[]  @relation("InvitationCreator")
-  templatesCreated   TicketTemplate[]   @relation("TemplateCreator")
-  featuredEventsCreated FeaturedEvent[]  @relation("FeaturedEventCreator")
+  refreshTokens         RefreshToken[]
+  emailVerifications    EmailVerification[]
+  passwordResets        PasswordReset[]
+  magicLinkTokens       MagicLinkToken[]
+  kycDocuments          KYCDocument[]
+  auditLogs             AuditLog[]
+  eventsCreated         Event[]             @relation("EventOrganizer")
+  eventRegistrations    EventRegistration[]
+  invitationsCreated    EventInvitation[]   @relation("InvitationCreator")
+  templatesCreated      TicketTemplate[]    @relation("TemplateCreator")
+  featuredEventsCreated FeaturedEvent[]     @relation("FeaturedEventCreator")
 
   @@index([email])
   @@index([role])
@@ -144,15 +157,20 @@ model RefreshToken {
 
 model EmailVerification {
   id         String    @id @default(uuid())
-  userId     String
-  token      String    @unique
+  userId     String?
+  email      String // Store email for code-based verification before user creation
+  code       String? // 6-digit verification code
+  token      String?   @unique // Token for link-based verification (backward compatibility)
+  role       UserRole? // Store selected role during registration
   expiresAt  DateTime
   verified   Boolean   @default(false)
   verifiedAt DateTime?
   createdAt  DateTime  @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([code])
+  @@index([email])
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
@@ -172,6 +190,25 @@ model PasswordReset {
   @@index([token])
   @@index([userId])
   @@index([expiresAt])
+}
+
+model MagicLinkToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([used])
 }
 
 model KYCDocument {
@@ -272,6 +309,9 @@ model Event {
   rejectedAt      DateTime?
   rejectionReason String?   @db.Text
 
+  // Organizer data access control (admin-controlled)
+  organizerDataAccess DataAccessLevel @default(RESTRICTED) // What data organizers can see
+
   // Audit fields
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -280,10 +320,10 @@ model Event {
   deletedAt DateTime?
 
   // Relations
-  registrations EventRegistration[]
-  invitations    EventInvitation[]
+  registrations   EventRegistration[]
+  invitations     EventInvitation[]
   ticketTemplates TicketTemplate[]
-  featuredEvents FeaturedEvent[]
+  featuredEvents  FeaturedEvent[]
 
   @@index([organizerId])
   @@index([status])
@@ -341,24 +381,24 @@ model EventInvitation {
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   // Invitation details
-  inviteType InviteType // Type of invitation (ATTENDEE, SPEAKER, EXHIBITOR, GUEST)
-  token      String     @unique // Unique shareable token for the registration link
-  title      String? // Optional custom title for the link
-  description String? @db.Text // Optional description
+  inviteType  InviteType // Type of invitation (ATTENDEE, SPEAKER, EXHIBITOR, GUEST)
+  token       String     @unique // Unique shareable token for the registration link
+  title       String? // Optional custom title for the link
+  description String?    @db.Text // Optional description
 
   // Link settings
   expiresAt DateTime? // Optional expiration date
   maxUses   Int? // Optional maximum number of uses (null = unlimited)
-  usedCount Int  @default(0) // Track how many times the link has been used
-  isActive  Boolean @default(true) // Whether the link is active
+  usedCount Int       @default(0) // Track how many times the link has been used
+  isActive  Boolean   @default(true) // Whether the link is active
 
   // Organizer who created this invitation
   createdBy String
   creator   User   @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Audit fields
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   revokedAt DateTime?
   revokedBy String?
 
@@ -373,32 +413,32 @@ model EventInvitation {
 }
 
 model TicketTemplate {
-  id          String   @id @default(uuid())
-  eventId     String
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   // Template metadata
-  name        String   // Template name
-  description String?  @db.Text
-  isDefault   Boolean  @default(false) // Whether this is the default template for the event
+  name        String // Template name
+  description String? @db.Text
+  isDefault   Boolean @default(false) // Whether this is the default template for the event
 
   // Template design
   backgroundUrl String? // Background image URL
-  width        Int?    // Template width in pixels
-  height       Int?    // Template height in pixels
-  unit         String? // Unit: 'px', 'mm', 'in' (default: 'px')
+  width         Int? // Template width in pixels
+  height        Int? // Template height in pixels
+  unit          String? // Unit: 'px', 'mm', 'in' (default: 'px')
 
   // Template elements (JSON array of elements)
-  elements     Json?   // Array of template elements (text, image, QR code, etc.)
+  elements Json? // Array of template elements (text, image, QR code, etc.)
 
   // Created by
-  createdBy    String
-  creator      User    @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy String
+  creator   User   @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Audit fields
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  deletedAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([eventId])
   @@index([createdBy])
@@ -407,15 +447,15 @@ model TicketTemplate {
 }
 
 model FeaturedEvent {
-  id        String   @id @default(uuid())
-  eventId   String
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   // Display customization
   customTitle    String? // Optional custom title (defaults to event.title)
   customImage    String? // Optional custom hero image (defaults to event.image)
   customCategory String? // Optional custom category (defaults to event.category)
-  
+
   // Display dates - when this featured event should be shown
   displayStartDate DateTime? // When to start showing this featured event
   displayEndDate   DateTime? // When to stop showing this featured event
@@ -429,8 +469,8 @@ model FeaturedEvent {
   creator   User   @relation("FeaturedEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Audit fields
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@index([eventId])

@@ -2,7 +2,7 @@
  * Admin API Functions
  */
 
-import { apiGet } from './api';
+import { apiGet, apiPost, apiPut } from './api';
 
 /**
  * Admin Dashboard Stats Response
@@ -130,5 +130,98 @@ export const getAdminRecentActivity = async (
  */
 export const getAdminSystemAlerts = async (): Promise<AdminSystemAlertsResponse> => {
   return apiGet<AdminSystemAlertsResponse>('/admin/dashboard/alerts');
+};
+
+/**
+ * Approve Event Response
+ */
+export interface ApproveEventResponse {
+  success: boolean;
+  message: string;
+  data: {
+    event: {
+      id: string;
+      title: string;
+      status: string;
+    };
+  };
+}
+
+/**
+ * Reject Event Response
+ */
+export interface RejectEventResponse {
+  success: boolean;
+  message: string;
+  data: {
+    event: {
+      id: string;
+      title: string;
+      status: string;
+    };
+  };
+}
+
+/**
+ * Approve an event
+ */
+export const approveEvent = async (eventId: string): Promise<ApproveEventResponse> => {
+  return apiPost<ApproveEventResponse>(`/events/${eventId}/approve`, {});
+};
+
+/**
+ * Reject an event
+ */
+export const rejectEvent = async (eventId: string, rejectionReason: string): Promise<RejectEventResponse> => {
+  return apiPost<RejectEventResponse>(`/events/${eventId}/reject`, { rejectionReason });
+};
+
+/**
+ * Update Organizer Data Access Response
+ */
+export interface UpdateOrganizerDataAccessResponse {
+  success: boolean;
+  message: string;
+  data: {
+    event: {
+      id: string;
+      organizerDataAccess: 'RESTRICTED' | 'STANDARD' | 'FULL';
+    };
+  };
+}
+
+/**
+ * Update organizer data access level for an event
+ */
+export const updateOrganizerDataAccess = async (
+  eventId: string,
+  dataAccessLevel: 'RESTRICTED' | 'STANDARD' | 'FULL'
+): Promise<UpdateOrganizerDataAccessResponse> => {
+  return apiPut<UpdateOrganizerDataAccessResponse>(`/events/${eventId}/organizer-data-access`, { dataAccessLevel });
+};
+
+/**
+ * Bulk Update Organizer Data Access Response
+ */
+export interface BulkUpdateOrganizerDataAccessResponse {
+  success: boolean;
+  message: string;
+  data: {
+    updatedCount: number;
+    eventIds: string[];
+  };
+}
+
+/**
+ * Bulk update organizer data access level for multiple events
+ */
+export const bulkUpdateOrganizerDataAccess = async (
+  eventIds: string[],
+  dataAccessLevel: 'RESTRICTED' | 'STANDARD' | 'FULL'
+): Promise<BulkUpdateOrganizerDataAccessResponse> => {
+  return apiPut<BulkUpdateOrganizerDataAccessResponse>(`/events/bulk/organizer-data-access`, { 
+    eventIds, 
+    dataAccessLevel 
+  });
 };
 
