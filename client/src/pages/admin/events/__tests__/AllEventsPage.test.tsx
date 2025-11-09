@@ -130,8 +130,8 @@ describe('AllEventsPage - Bulk Update', () => {
 
     await waitFor(() => {
       // Checkboxes should be present (using Square/CheckSquare icons)
-      const selectAllButton = screen.getByText(/select all/i);
-      expect(selectAllButton).toBeInTheDocument();
+      const selectAllElements = screen.getAllByText(/select all/i);
+      expect(selectAllElements.length).toBeGreaterThan(0);
     });
   });
 
@@ -139,7 +139,8 @@ describe('AllEventsPage - Bulk Update', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('Event 1')).toBeInTheDocument();
+      const event1Elements = screen.getAllByText('Event 1');
+      expect(event1Elements.length).toBeGreaterThan(0);
     });
 
     // Find and click the first event's checkbox
@@ -154,7 +155,8 @@ describe('AllEventsPage - Bulk Update', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('Event 1')).toBeInTheDocument();
+      const event1Elements = screen.getAllByText('Event 1');
+      expect(event1Elements.length).toBeGreaterThan(0);
     });
 
     // Mock the bulk update API call
@@ -192,7 +194,8 @@ describe('AllEventsPage - Bulk Update', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('Event 1')).toBeInTheDocument();
+      const event1Elements = screen.getAllByText('Event 1');
+      expect(event1Elements.length).toBeGreaterThan(0);
     });
 
     // Note: Full implementation would require:
@@ -260,7 +263,8 @@ describe('AllEventsPage - Bulk Update', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText(/select all/i)).toBeInTheDocument();
+      const selectAllElements = screen.getAllByText(/select all/i);
+      expect(selectAllElements.length).toBeGreaterThan(0);
     });
 
     // Note: Full test would:
