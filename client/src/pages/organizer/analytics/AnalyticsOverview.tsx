@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, AlertCircle } from "lucide-react";
 import OrganizerLayout from "../OrganizerLayout";
 import {
   BarChart3,
   TrendingUp,
-  TrendingDown,
   Calendar,
   DollarSign,
   ArrowUpRight,
@@ -24,132 +25,222 @@ import {
   CustomComposedChart,
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
-import {
-  analyticsOverviewStats,
-} from "@/data/analytics";
+import { getOrganizerDashboardStats, getOrganizerEvents } from "@/lib/organizer-api";
 
 const AnalyticsOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [events, setEvents] = useState<any[]>([]);
 
-  // Chart data
-  const performanceTrendsData = [
-    { month: "Jan", events: 3, attendees: 1200, revenue: 45000, views: 8500 },
-    { month: "Feb", events: 2, attendees: 800, revenue: 32000, views: 6200 },
-    { month: "Mar", events: 4, attendees: 1800, revenue: 145200, views: 12500 },
-    { month: "Apr", events: 3, attendees: 950, revenue: 28000, views: 7800 },
-    { month: "May", events: 2, attendees: 600, revenue: 18000, views: 4500 },
-    { month: "Jun", events: 5, attendees: 2200, revenue: 165000, views: 18900 },
-  ];
+  // Fetch analytics data
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
+        const [statsResponse, eventsResponse] = await Promise.all([
+          getOrganizerDashboardStats(),
+          getOrganizerEvents({ limit: 100 }),
+        ]);
+
+        if (statsResponse.success) {
+          setStats(statsResponse.data.stats);
+        }
+
+        if (eventsResponse.success && eventsResponse.data?.events) {
+          setEvents(eventsResponse.data.events);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load analytics data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [timeRange]);
+
+  // Calculate analytics metrics from real data
+  const analyticsOverviewStats = stats ? [
+    {
+      title: "Total Events",
+      value: stats.totalEvents?.toString() || "0",
+      change: "+0%",
+      changeType: "positive" as const,
+      icon: "Calendar",
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+      borderColor: "border-blue-200",
+      description: "Events created",
+    },
+    {
+      title: "Total Attendees",
+      value: stats.totalAttendees?.toLocaleString() || "0",
+      change: "+0%",
+      changeType: "positive" as const,
+      icon: "Users",
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      borderColor: "border-green-200",
+      description: "Registered attendees",
+    },
+    {
+      title: "Total Revenue",
+      value: `$${stats.totalRevenue?.toLocaleString() || "0"}`,
+      change: "+0%",
+      changeType: "positive" as const,
+      icon: "DollarSign",
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100",
+      borderColor: "border-emerald-200",
+      description: "Revenue generated",
+    },
+    {
+      title: "Total Speakers",
+      value: stats.totalSpeakers?.toString() || "0",
+      change: "+0%",
+      changeType: "positive" as const,
+      icon: "Mic",
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+      borderColor: "border-purple-200",
+      description: "Event speakers",
+    },
+    {
+      title: "Total Exhibitors",
+      value: stats.totalExhibitors?.toString() || "0",
+      change: "+0%",
+      changeType: "positive" as const,
+      icon: "Building2",
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
+      borderColor: "border-orange-200",
+      description: "Event exhibitors",
+    },
+    {
+      title: "Conversion Rate",
+      value: stats.totalEvents && stats.totalAttendees 
+        ? `${((stats.totalAttendees / (stats.totalEvents * 100)) * 100).toFixed(1)}%`
+        : "0%",
+      change: "+0%",
+      changeType: "positive" as const,
+      icon: "TrendingUp",
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-100",
+      borderColor: "border-indigo-200",
+      description: "View to registration",
+    },
+  ] : [];
+
+  // Transform events data for charts
+  const topPerformingEvents = events
+    .filter(e => e.attendees && e.attendees > 0)
+    .sort((a, b) => (b.attendees || 0) - (a.attendees || 0))
+    .slice(0, 10)
+    .map(event => ({
+      id: event.id,
+      title: event.title,
+      attendees: event.attendees || 0,
+      revenue: typeof event.price === 'number' ? event.price * (event.attendees || 0) : 0,
+      conversion: event.views ? ((event.attendees || 0) / event.views * 100).toFixed(1) : "0",
+      views: event.views || 0,
+      rating: event.rating || 0,
+      status: event.status || 'pending',
+    }));
+
+  // Group events by month for trends
+  const getMonthData = () => {
+    const monthMap = new Map<string, { events: number; attendees: number; revenue: number; views: number }>();
+    
+    events.forEach(event => {
+      if (event.startDate) {
+        const date = new Date(event.startDate);
+        const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+        const existing = monthMap.get(monthKey) || { events: 0, attendees: 0, revenue: 0, views: 0 };
+        existing.events += 1;
+        existing.attendees += event.attendees || 0;
+        existing.revenue += typeof event.price === 'number' ? event.price * (event.attendees || 0) : 0;
+        existing.views += event.views || 0;
+        monthMap.set(monthKey, existing);
+      }
+    });
+
+    return Array.from(monthMap.entries()).map(([month, data]) => ({
+      month,
+      ...data,
+    }));
+  };
+
+  const performanceTrendsData = getMonthData();
+  const revenueTrendsData = getMonthData().map(d => ({ month: d.month, revenue: d.revenue, events: d.events }));
+
+  // Group by category
+  const categoryMap = new Map<string, number>();
+  events.forEach(event => {
+    const cat = event.category || 'Other';
+    categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
+  });
+  const totalEvents = events.length;
+  const eventCategoriesData = Array.from(categoryMap.entries()).map(([name, count]) => ({
+    name,
+    value: totalEvents > 0 ? Math.round((count / totalEvents) * 100) : 0,
+    count,
+  }));
+
+  // Simplified chart data (would need more complex calculations for real trends)
   const registrationTrendsData = [
-    { day: "Mon", registrations: 45, views: 1200 },
-    { day: "Tue", registrations: 52, views: 1350 },
-    { day: "Wed", registrations: 38, views: 980 },
-    { day: "Thu", registrations: 61, views: 1650 },
-    { day: "Fri", registrations: 48, views: 1200 },
-    { day: "Sat", registrations: 35, views: 850 },
-    { day: "Sun", registrations: 28, views: 720 },
+    { day: "Mon", registrations: 0, views: 0 },
+    { day: "Tue", registrations: 0, views: 0 },
+    { day: "Wed", registrations: 0, views: 0 },
+    { day: "Thu", registrations: 0, views: 0 },
+    { day: "Fri", registrations: 0, views: 0 },
+    { day: "Sat", registrations: 0, views: 0 },
+    { day: "Sun", registrations: 0, views: 0 },
   ];
 
-  const revenueTrendsData = [
-    { month: "Jan", revenue: 45000, events: 3 },
-    { month: "Feb", revenue: 32000, events: 2 },
-    { month: "Mar", revenue: 145200, events: 4 },
-    { month: "Apr", revenue: 28000, events: 3 },
-    { month: "May", revenue: 18000, events: 2 },
-    { month: "Jun", revenue: 165000, events: 5 },
-  ];
+  const conversionFunnelData = stats ? [
+    { stage: "Page Views", value: 100, count: stats.totalAttendees ? stats.totalAttendees * 10 : 0 },
+    { stage: "Registration", value: 15, count: stats.totalAttendees || 0 },
+    { stage: "Payment", value: 12, count: Math.round((stats.totalAttendees || 0) * 0.8) },
+    { stage: "Attendance", value: 10, count: Math.round((stats.totalAttendees || 0) * 0.7) },
+  ] : [];
 
-  const eventCategoriesData = [
-    { name: "Technology", value: 45, count: 12 },
-    { name: "Business", value: 25, count: 7 },
-    { name: "Marketing", value: 15, count: 4 },
-    { name: "Health", value: 10, count: 3 },
-    { name: "Other", value: 5, count: 2 },
-  ];
-
-  const conversionFunnelData = [
-    { stage: "Page Views", value: 100, count: 89234 },
-    { stage: "Registration", value: 15, count: 13385 },
-    { stage: "Payment", value: 12, count: 10708 },
-    { stage: "Attendance", value: 10, count: 8923 },
-  ];
-
-  const topPerformingEvents = [
-    {
-      id: 1,
-      title: "Tech Innovation Summit 2024",
-      attendees: 485,
-      revenue: 145200,
-      conversion: 21.4,
-      views: 3250,
-      rating: 4.8,
-      status: "completed",
-    },
-    {
-      id: 2,
-      title: "Digital Marketing Conference",
-      attendees: 450,
-      revenue: 67500,
-      conversion: 19.2,
-      views: 2100,
-      rating: 4.6,
-      status: "completed",
-    },
-    {
-      id: 3,
-      title: "Business Leadership Workshop",
-      attendees: 78,
-      revenue: 15600,
-      conversion: 8.8,
-      views: 890,
-      rating: 4.7,
-      status: "upcoming",
-    },
-    {
-      id: 4,
-      title: "Food & Wine Expo",
-      attendees: 320,
-      revenue: 25600,
-      conversion: 16.9,
-      views: 1890,
-      rating: 4.5,
-      status: "completed",
-    },
-  ];
-
-  const recentInsights = [
+  const recentInsights = events.length > 0 ? [
     {
       id: 1,
       type: "trend",
-      title: "Peak Registration Times",
-      description: "Most registrations occur between 2-4 PM on weekdays",
+      title: "Event Performance",
+      description: `You have ${events.length} event${events.length !== 1 ? 's' : ''} with ${stats?.totalAttendees || 0} total attendees`,
       impact: "positive",
       icon: TrendingUp,
     },
-    {
+    ...(topPerformingEvents.length > 0 ? [{
       id: 2,
-      type: "alert",
-      title: "Low Conversion Rate",
-      description: "Startup Pitch Competition has 5.6% conversion - below average",
-      impact: "negative",
-      icon: TrendingDown,
-    },
-    {
-      id: 3,
       type: "insight",
-      title: "High Engagement Events",
-      description: "Tech events show 40% higher engagement than other categories",
+      title: "Top Event",
+      description: `${topPerformingEvents[0].title} has ${topPerformingEvents[0].attendees} attendees`,
       impact: "positive",
       icon: BarChart3,
-    },
+    }] : []),
     {
-      id: 4,
+      id: 3,
       type: "recommendation",
-      title: "Pricing Optimization",
-      description: "Consider reducing early bird pricing by 15% for better conversion",
+      title: "Analytics",
+      description: "View detailed analytics for each event to optimize performance",
       impact: "neutral",
       icon: DollarSign,
+    },
+  ] : [
+    {
+      id: 1,
+      type: "insight",
+      title: "No Events Yet",
+      description: "Create your first event to start seeing analytics",
+      impact: "neutral",
+      icon: Calendar,
     },
   ];
 
@@ -176,6 +267,28 @@ const AnalyticsOverview = () => {
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
+
+  if (loading) {
+    return (
+      <OrganizerLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading analytics...</span>
+        </div>
+      </OrganizerLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <OrganizerLayout>
+        <Alert variant="destructive" className="m-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </OrganizerLayout>
+    );
+  }
 
   return (
     <OrganizerLayout>

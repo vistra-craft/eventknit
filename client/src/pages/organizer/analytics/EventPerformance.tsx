@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,14 +24,44 @@ import {
   CustomScatterChart
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
-import {
-  eventPerformanceData,
-  performanceMetrics,
-} from "@/data/analytics";
+import { getOrganizerEvents } from "@/lib/organizer-api";
 
 const EventPerformance = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await getOrganizerEvents({ limit: 100 });
+        if (response.success && response.data?.events) {
+          setEvents(response.data.events);
+        }
+      } catch (err) {
+        console.error('Failed to load event performance data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [timeRange]);
+
+  const eventPerformanceData = events.map(e => ({
+    event: e.title,
+    attendees: e.attendees || 0,
+    revenue: typeof e.price === 'number' ? e.price * (e.attendees || 0) : 0,
+    conversion: e.views ? ((e.attendees || 0) / e.views * 100).toFixed(1) : "0",
+    rating: e.rating || 0,
+  }));
+
+  const performanceMetrics = [
+    { metric: "Total Events", value: events.length.toString(), change: "+0%", trend: "up" },
+    { metric: "Avg Attendees", value: events.length > 0 ? Math.round(events.reduce((sum, e) => sum + (e.attendees || 0), 0) / events.length).toString() : "0", change: "+0%", trend: "up" },
+    { metric: "Total Revenue", value: `$${events.reduce((sum, e) => sum + (typeof e.price === 'number' ? e.price * (e.attendees || 0) : 0), 0).toLocaleString()}`, change: "+0%", trend: "up" },
+  ];
 
   // Chart data for performance analysis
   const performanceTrendsData = [

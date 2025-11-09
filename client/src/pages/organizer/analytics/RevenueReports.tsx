@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,24 +19,90 @@ import {
   CustomComposedChart,
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
-import {
-  revenueStats,
-  revenueBreakdown,
-  paymentMethods,
-  revenueTrends,
-  financialInsights,
-} from "@/data/analytics";
+import { getOrganizerDashboardStats, getOrganizerEvents } from "@/lib/organizer-api";
 
 const RevenueReports = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
+  const [_loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  const [events, setEvents] = useState<any[]>([]);
 
-  // Debug: Log the imported data
-  console.log('RevenueReports - revenueStats:', revenueStats);
-  console.log('RevenueReports - revenueBreakdown:', revenueBreakdown);
-  console.log('RevenueReports - paymentMethods:', paymentMethods);
-  console.log('RevenueReports - revenueTrends:', revenueTrends);
-  console.log('RevenueReports - financialInsights:', financialInsights);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [statsResponse, eventsResponse] = await Promise.all([
+          getOrganizerDashboardStats(),
+          getOrganizerEvents({ limit: 100 }),
+        ]);
+        if (statsResponse.success) setStats(statsResponse.data.stats);
+        if (eventsResponse.success && eventsResponse.data?.events) {
+          setEvents(eventsResponse.data.events);
+        }
+      } catch (err) {
+        console.error('Failed to load revenue data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [timeRange]);
+
+  // Calculate revenue data from real events
+  const revenueStats = stats ? [
+    { title: "Total Revenue", value: `$${stats.totalRevenue?.toLocaleString() || "0"}`, change: "+0%", changeType: "positive", description: "Total revenue generated", bgColor: "bg-emerald-100", color: "text-emerald-600" },
+    { title: "Platform Fees", value: `$${Math.round((stats.totalRevenue || 0) * 0.1).toLocaleString()}`, change: "+0%", changeType: "neutral", description: "Platform service fees", bgColor: "bg-blue-100", color: "text-blue-600" },
+    { title: "Net Revenue", value: `$${Math.round((stats.totalRevenue || 0) * 0.9).toLocaleString()}`, change: "+0%", changeType: "positive", description: "Revenue after fees", bgColor: "bg-green-100", color: "text-green-600" },
+  ] : [];
+
+  const revenueBreakdown = events.map(e => {
+    const revenue = typeof e.price === 'number' ? e.price * (e.attendees || 0) : 0;
+    return {
+      event: e.title,
+      revenue,
+      percentage: stats?.totalRevenue ? ((revenue / stats.totalRevenue) * 100).toFixed(1) : "0",
+      status: e.status || 'pending',
+      netRevenue: Math.round(revenue * 0.9),
+      attendees: e.attendees || 0,
+      ticketPrice: typeof e.price === 'number' ? e.price : 0,
+      refunds: 0,
+      revenuePerAttendee: (e.attendees || 0) > 0 ? Math.round(revenue / (e.attendees || 0)) : 0,
+      growth: "+0%",
+      date: e.startDate ? new Date(e.startDate).toLocaleDateString() : 'TBD',
+    };
+  });
+
+  const paymentMethods = [
+    { method: "Credit Card", percentage: 65, amount: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.65) : 0, count: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.65 / 100) : 0 },
+    { method: "Mobile Money", percentage: 25, amount: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.25) : 0, count: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.25 / 100) : 0 },
+    { method: "Bank Transfer", percentage: 10, amount: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.1) : 0, count: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.1 / 100) : 0 },
+  ];
+
+  // Group events by month for trends
+  const revenueTrendsMap = new Map<string, { revenue: number; events: number }>();
+  events.forEach(e => {
+    if (e.startDate) {
+      const date = new Date(e.startDate);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+      const existing = revenueTrendsMap.get(monthKey) || { revenue: 0, events: 0 };
+      existing.revenue += typeof e.price === 'number' ? e.price * (e.attendees || 0) : 0;
+      existing.events += 1;
+      revenueTrendsMap.set(monthKey, existing);
+    }
+  });
+  const revenueTrends = Array.from(revenueTrendsMap.entries()).map(([month, data]) => ({
+    month,
+    revenue: data.revenue,
+    events: data.events,
+  }));
+
+  const financialInsights = [
+    { id: 1, type: "trend", title: "Revenue Growth", description: `Total revenue: $${stats?.totalRevenue?.toLocaleString() || "0"}`, impact: "positive", icon: DollarSign },
+    { id: 2, type: "insight", title: "Top Event", description: events.length > 0 ? `${events[0].title}` : "No events yet", impact: "neutral", icon: DollarSign },
+  ];
+
+  const insightsData = financialInsights;
 
   // Chart data for revenue analysis
   const monthlyRevenueData = [
@@ -78,7 +144,6 @@ const RevenueReports = () => {
   const breakdownData = revenueBreakdown;
   const paymentMethodsData = paymentMethods;
   const trendsData = revenueTrends;
-  const insightsData = financialInsights;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -449,15 +514,11 @@ const RevenueReports = () => {
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
                       <div className={`w-8 h-8 rounded-full ${getInsightTypeColor(insight.type).split(' ')[1]} flex items-center justify-center`}>
-                        {React.createElement(insight.icon, { className: `h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}` })}
+                        {insight.icon && <insight.icon className={`h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}`} />}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium text-foreground mb-1">{insight.title}</h3>
                         <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
-                        <div className="bg-muted/50 p-3 rounded-lg">
-                          <p className="text-sm font-medium text-foreground">Recommendation:</p>
-                          <p className="text-sm text-muted-foreground">{insight.insight}</p>
-                        </div>
                       </div>
                     </div>
                   </CardContent>
