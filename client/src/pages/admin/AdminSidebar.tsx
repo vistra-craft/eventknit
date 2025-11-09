@@ -206,7 +206,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}>
       <div className="p-4">
         <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
-          {isOpen && <h2 className="text-lg font-semibold text-foreground">Admin Panel</h2>}
+          {isOpen && (
+            <Link 
+              to="/" 
+              className="text-lg font-bold text-eventknit hover:text-eventknit/80 transition-colors"
+            >
+              EventKnit
+            </Link>
+          )}
           {isMobile && (
             <button
               onClick={onToggle}

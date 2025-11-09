@@ -605,7 +605,7 @@ export default function CreateEventStepwise() {
         // Clear draft on success
         clearDraft();
         // Success! Navigate to event details or organizer dashboard
-        navigate(`/organizer/events/${response.data.event.id}`, {
+        navigate('/organizer/dashboard', {
           state: { message: 'Event created successfully! It is pending admin approval.' }
         });
       } else {
@@ -1207,16 +1207,27 @@ export default function CreateEventStepwise() {
           ))}
         </div>
         <div className="flex gap-2">
-          <Input 
-            placeholder="Add category"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && addCategory()}
-          />
+          <Select value={newCategory} onValueChange={setNewCategory}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a category to add" />
+            </SelectTrigger>
+            <SelectContent>
+              {eventCategories
+                .filter(cat => !categories.includes(cat))
+                .map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
           <Button onClick={addCategory} disabled={!newCategory.trim()}>
             Add
           </Button>
         </div>
+        {eventCategories.filter(cat => !categories.includes(cat)).length === 0 && (
+          <p className="text-sm text-muted-foreground">All available categories have been added</p>
+        )}
       </div>
 
       {/* Tags */}
@@ -1382,7 +1393,68 @@ export default function CreateEventStepwise() {
 
   // Render preview modal
   const renderPreview = () => {
-    // const isFree = ticketTypes.every(t => t.type === 'free');
+    // Show registration form preview if on step 4
+    if (currentStep === 4) {
+      return (
+        <Dialog open={showPreview} onOpenChange={setShowPreview}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Registration Form Preview</DialogTitle>
+              <DialogDescription>
+                This is how your registration form will appear to attendees
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div className="border rounded-lg p-6 bg-card">
+                <h3 className="text-xl font-semibold mb-4">{eventData.title || 'Event Registration'}</h3>
+                <form className="space-y-4">
+                  {registrationFields.map((field, index) => (
+                    <div key={field.id || index} className="space-y-2">
+                      <Label htmlFor={`preview-${field.id}`}>
+                        {field.label || `Field ${index + 1}`}
+                        {field.required && <span className="text-destructive ml-1">*</span>}
+                      </Label>
+                      {field.type === 'textarea' ? (
+                        <Textarea
+                          id={`preview-${field.id}`}
+                          placeholder={field.placeholder || `Enter ${field.label?.toLowerCase() || 'value'}`}
+                          disabled
+                          className="bg-muted"
+                        />
+                      ) : field.type === 'select' ? (
+                        <Select disabled>
+                          <SelectTrigger>
+                            <SelectValue placeholder={field.placeholder || `Select ${field.label?.toLowerCase() || 'option'}`} />
+                          </SelectTrigger>
+                        </Select>
+                      ) : field.type === 'checkbox' ? (
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" id={`preview-${field.id}`} disabled className="bg-muted" />
+                          <Label htmlFor={`preview-${field.id}`} className="font-normal">{field.placeholder || field.label}</Label>
+                        </div>
+                      ) : (
+                        <Input
+                          id={`preview-${field.id}`}
+                          type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                          placeholder={field.placeholder || `Enter ${field.label?.toLowerCase() || 'value'}`}
+                          disabled
+                          className="bg-muted"
+                        />
+                      )}
+                    </div>
+                  ))}
+                  <Button type="submit" className="w-full" disabled>
+                    Register Now
+                  </Button>
+                </form>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+
+    // Default event preview for other steps
     return (
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
