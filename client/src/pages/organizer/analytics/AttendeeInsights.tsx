@@ -25,7 +25,7 @@ import { getOrganizerDashboardStats } from "@/lib/organizer-api";
 const AttendeeInsights = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<{ totalAttendees?: number; totalEvents?: number } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,26 +40,62 @@ const AttendeeInsights = () => {
   }, [timeRange]);
 
   const attendeeStats = stats ? [
-    { title: "Total Attendees", value: stats.totalAttendees?.toLocaleString() || "0", change: "+0%", changeType: "positive" as const, trend: "up" },
-    { title: "Avg per Event", value: stats.totalEvents ? Math.round((stats.totalAttendees || 0) / stats.totalEvents).toString() : "0", change: "+0%", changeType: "positive" as const, trend: "up" },
-    { title: "Growth Rate", value: "+0%", change: "+0%", changeType: "positive" as const, trend: "up" },
+    { title: "Total Attendees", value: stats.totalAttendees?.toLocaleString() || "0", change: "+0%", changeType: "positive" as const, trend: "up", description: "Total registered attendees", bgColor: "bg-green-100", color: "text-green-600" },
+    { title: "Avg per Event", value: stats.totalEvents ? Math.round((stats.totalAttendees || 0) / stats.totalEvents).toString() : "0", change: "+0%", changeType: "positive" as const, trend: "up", description: "Average attendees per event", bgColor: "bg-blue-100", color: "text-blue-600" },
+    { title: "Growth Rate", value: "+0%", change: "+0%", changeType: "positive" as const, trend: "up", description: "Attendee growth rate", bgColor: "bg-purple-100", color: "text-purple-600" },
   ] : [];
 
-  const demographicData = [
-    { category: "Age 18-25", percentage: 35, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.35) : 0 },
-    { category: "Age 26-35", percentage: 40, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0 },
-    { category: "Age 36-45", percentage: 20, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.2) : 0 },
-    { category: "Age 45+", percentage: 5, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.05) : 0 },
-  ];
+
+  const demographicsData = {
+    ageGroups: [
+      { range: "18-25", percentage: 35, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.35) : 0 },
+      { range: "26-35", percentage: 40, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0 },
+      { range: "36-45", percentage: 20, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.2) : 0 },
+      { range: "45+", percentage: 5, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.05) : 0 },
+    ],
+    locations: [
+      { city: "Nairobi", percentage: 45, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.45) : 0 },
+      { city: "Mombasa", percentage: 25, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.25) : 0 },
+      { city: "Kisumu", percentage: 15, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.15) : 0 },
+      { city: "Other", percentage: 15, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.15) : 0 },
+    ],
+    industries: [
+      { industry: "Technology", percentage: 40, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0 },
+      { industry: "Business", percentage: 30, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.3) : 0 },
+      { industry: "Education", percentage: 20, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.2) : 0 },
+      { industry: "Other", percentage: 10, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.1) : 0 },
+    ],
+    experience: [
+      { level: "Beginner", percentage: 30, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.3) : 0 },
+      { level: "Intermediate", percentage: 45, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.45) : 0 },
+      { level: "Advanced", percentage: 25, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.25) : 0 },
+    ],
+  };
 
   const behaviorInsights = [
-    { insight: "Peak Registration", description: "Most registrations occur in the week before events", impact: "positive" },
-    { insight: "Engagement", description: `Average ${stats?.totalAttendees ? Math.round(stats.totalAttendees / (stats.totalEvents || 1)) : 0} attendees per event`, impact: "positive" },
+    { id: 1, type: "insight", title: "Peak Registration", insight: "Peak Registration", description: "Most registrations occur in the week before events", impact: "positive" },
+    { id: 2, type: "trend", title: "Engagement", insight: "Engagement", description: `Average ${stats?.totalAttendees ? Math.round(stats.totalAttendees / (stats.totalEvents || 1)) : 0} attendees per event`, impact: "positive" },
   ];
 
   const attendeeSegments = [
-    { segment: "First-time", percentage: 60, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.6) : 0 },
-    { segment: "Returning", percentage: 40, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0 },
+    { 
+      segment: "First-time",
+      name: "First-time",
+      percentage: 60, 
+      count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.6) : 0,
+      satisfaction: 4.5,
+      retention: 65,
+      characteristics: ["New to platform", "High engagement", "Tech-savvy"],
+    },
+    { 
+      segment: "Returning",
+      name: "Returning",
+      percentage: 40, 
+      count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0,
+      satisfaction: 4.7,
+      retention: 80,
+      characteristics: ["Loyal customers", "High retention", "Brand advocates"],
+    },
   ];
 
   // Chart data for attendee analysis
@@ -100,9 +136,6 @@ const AttendeeInsights = () => {
 
   // Use imported data
   const statsData = attendeeStats;
-
-  // Use imported demographic data
-  const demographicsData = demographicData;
 
   // Use imported behavior insights and segments
   const insightsData = behaviorInsights;

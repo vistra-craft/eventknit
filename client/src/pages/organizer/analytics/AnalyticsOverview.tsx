@@ -31,8 +31,8 @@ const AnalyticsOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<any>(null);
-  const [events, setEvents] = useState<any[]>([]);
+  const [stats, setStats] = useState<{ totalEvents?: number; totalAttendees?: number; totalRevenue?: number; totalSpeakers?: number; totalExhibitors?: number } | null>(null);
+  const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; category?: string; capacity?: number }>>([]);
 
   // Fetch analytics data
   useEffect(() => {
@@ -51,7 +51,7 @@ const AnalyticsOverview = () => {
         }
 
         if (eventsResponse.success && eventsResponse.data?.events) {
-          setEvents(eventsResponse.data.events);
+          setEvents(eventsResponse.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; category?: string; capacity?: number }>);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load analytics data');

@@ -24,26 +24,22 @@ import { getOrganizerDashboardStats, getOrganizerEvents } from "@/lib/organizer-
 const RevenueReports = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
-  const [_loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
-  const [events, setEvents] = useState<any[]>([]);
+  const [stats, setStats] = useState<{ totalRevenue?: number } | null>(null);
+  const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
         const [statsResponse, eventsResponse] = await Promise.all([
           getOrganizerDashboardStats(),
           getOrganizerEvents({ limit: 100 }),
         ]);
         if (statsResponse.success) setStats(statsResponse.data.stats);
         if (eventsResponse.success && eventsResponse.data?.events) {
-          setEvents(eventsResponse.data.events);
+          setEvents(eventsResponse.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string }>);
         }
       } catch (err) {
         console.error('Failed to load revenue data:', err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchData();
