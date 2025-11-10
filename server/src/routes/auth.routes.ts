@@ -186,6 +186,18 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/auth/create-account
+ * @desc    Create account from invitation token (for guest users)
+ * @access  Public
+ */
+router.post(
+  '/create-account',
+  authRateLimiter,
+  validate(authValidations.createAccountFromInvitation),
+  AuthController.createAccountFromInvitation,
+);
+
+/**
  * @route   POST /api/v1/auth/magic-link/request
  * @desc    Request magic link login (send email with login link)
  * @access  Public

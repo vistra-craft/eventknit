@@ -19,7 +19,9 @@ import Footer from "@/components/Footer";
 // Hooks & API
 import { useEvent } from "@/hooks/useEvent";
 import { useAuth } from "@/hooks/useAuth";
-import { registerForEvent } from "@/lib/event-api";
+import { registerForEvent, registerAsGuest } from "@/lib/event-api";
+import { setAccessToken } from "@/lib/api";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import type { RegistrationField } from "@/types/event";
 
 interface FormData {
@@ -31,7 +33,7 @@ interface FormErrors {
 }
 
 const EventRegistration = () => {
-  const { eventId } = useParams<{ eventId: string }>();
+  const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { event, isLoading, error: eventError, fetchEvent } = useEvent();
@@ -42,6 +44,7 @@ const EventRegistration = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedTicketType, setSelectedTicketType] = useState<string>('');
   const [ticketQuantity, setTicketQuantity] = useState<number>(1);
+  const [isGuestRegistration, setIsGuestRegistration] = useState(false);
 
   // Fetch event data
   useEffect(() => {
@@ -50,13 +53,8 @@ const EventRegistration = () => {
     }
   }, [eventId, fetchEvent]);
 
-  // Check authentication
-  useEffect(() => {
-    if (!isAuthenticated && eventId) {
-      // Redirect to login with return URL
-      navigate(`/auth/signin?redirect=/event/${eventId}/register`);
-    }
-  }, [isAuthenticated, eventId, navigate]);
+
+  // Note: Guest checkout is now allowed - no authentication redirect
 
   // Set default ticket type
   useEffect(() => {
@@ -106,7 +104,154 @@ const EventRegistration = () => {
       const ticketType = selectedTicketType || (event.ticketTypes && event.ticketTypes.length > 0 ? event.ticketTypes[0].name : undefined);
       const quantity = ticketQuantity || 1;
 
-      // Register for event
+      // Extract email, firstName, lastName from form data for guest checkout
+      // Try multiple strategies to find these fields
+      let email = '';
+      let firstName = '';
+      let lastName = '';
+      let phoneNumber = '';
+
+      // Strategy 1: Look in registrationFields by type and common patterns
+      if (event.registrationFields) {
+        for (const field of event.registrationFields) {
+          const value = (formData[field.id] as string)?.trim() || '';
+          
+          // Email field - check by type first
+          if (field.type === 'email' && value && !email) {
+            email = value;
+          }
+          
+          // First name - check multiple patterns
+          const fieldNameLower = field.name?.toLowerCase() || '';
+          const fieldLabelLower = field.label?.toLowerCase() || '';
+          const fieldIdLower = field.id?.toLowerCase() || '';
+          
+          if (!firstName && value) {
+            if (fieldNameLower.includes('first') || 
+                fieldLabelLower.includes('first') || 
+                fieldIdLower.includes('first') ||
+                fieldNameLower.includes('fname') ||
+                fieldLabelLower.includes('fname') ||
+                fieldIdLower.includes('fname')) {
+              firstName = value;
+            }
+          }
+          
+          // Last name - check multiple patterns
+          if (!lastName && value) {
+            if (fieldNameLower.includes('last') || 
+                fieldLabelLower.includes('last') || 
+                fieldIdLower.includes('last') ||
+                fieldNameLower.includes('lname') ||
+                fieldLabelLower.includes('lname') ||
+                fieldIdLower.includes('lname') ||
+                fieldNameLower.includes('surname') ||
+                fieldLabelLower.includes('surname') ||
+                fieldIdLower.includes('surname')) {
+              lastName = value;
+            }
+          }
+          
+          // Phone number
+          if (field.type === 'tel' && value && !phoneNumber) {
+            phoneNumber = value;
+          }
+        }
+      }
+      
+      // Strategy 2: Check formData directly with common field names (including guest- prefixed)
+      if (!email) {
+        email = (formData['guest-email'] as string)?.trim() || 
+                (formData.email as string)?.trim() || 
+                (formData.Email as string)?.trim() || 
+                (formData.EMAIL as string)?.trim() || '';
+      }
+      
+      if (!firstName) {
+        firstName = (formData['guest-firstName'] as string)?.trim() || 
+                    (formData.firstName as string)?.trim() || 
+                    (formData.first_name as string)?.trim() || 
+                    (formData.fname as string)?.trim() || 
+                    (formData.FirstName as string)?.trim() || '';
+      }
+      
+      if (!lastName) {
+        lastName = (formData['guest-lastName'] as string)?.trim() || 
+                  (formData.lastName as string)?.trim() || 
+                  (formData.last_name as string)?.trim() || 
+                  (formData.lname as string)?.trim() || 
+                  (formData.LastName as string)?.trim() || 
+                  (formData.surname as string)?.trim() || '';
+      }
+      
+      if (!phoneNumber) {
+        phoneNumber = (formData.phoneNumber as string)?.trim() || 
+                     (formData.phone as string)?.trim() || 
+                     (formData.phone_number as string)?.trim() || 
+                     (formData.tel as string)?.trim() || '';
+      }
+
+      // If user is not authenticated, use guest checkout
+      if (!isAuthenticated) {
+        // Validate required fields for guest checkout
+        const missingFields: string[] = [];
+        if (!email) missingFields.push('Email');
+        if (!firstName) missingFields.push('First Name');
+        if (!lastName) missingFields.push('Last Name');
+        
+        if (missingFields.length > 0) {
+          setSubmitError(`Please fill in the required fields: ${missingFields.join(', ')}. These fields are required for guest registration.`);
+          setSubmitting(false);
+          return;
+        }
+
+        // Register as guest
+        const response = await registerAsGuest(eventId, {
+          email,
+          firstName,
+          lastName,
+          phoneNumber: phoneNumber || undefined,
+          ticketType,
+          quantity,
+          registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
+        });
+
+        if (response.success && response.data) {
+          const registration = response.data.registration;
+          setIsGuestRegistration(response.data.user.isNewUser || true);
+
+          // Check if event is free
+          const isFree = event.isFree || event.price === 0;
+
+          if (isFree) {
+            // Free event - go directly to confirmation
+            setCurrentStep('confirmation');
+          } else {
+            // Calculate total price
+            const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
+            const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
+            const totalPrice = ticketPrice * quantity;
+
+            // Paid event - navigate to payment page with registration ID
+            navigate(`/event/${eventId}/payment`, {
+              state: {
+                registrationId: registration.id,
+                eventId: eventId,
+                eventTitle: event.title,
+                tickets: event.ticketTypes?.map(t => ({
+                  name: t.name,
+                  quantity: t.name === ticketType ? quantity : 0,
+                  price: t.price
+                })).filter(t => t.quantity > 0) || [],
+                totalPrice: totalPrice,
+              }
+            });
+          }
+        } else {
+          throw new Error(response.message || 'Failed to register for event');
+        }
+      } else {
+        // Authenticated user - use regular registration
       const response = await registerForEvent(eventId, {
         ticketType,
         quantity,
@@ -145,6 +290,7 @@ const EventRegistration = () => {
         }
       } else {
         throw new Error(response.message || 'Failed to register for event');
+        }
       }
     } catch (err: unknown) {
       const errorMessage = err && typeof err === 'object' && 'message' in err
@@ -592,6 +738,68 @@ const EventRegistration = () => {
                     autoComplete="on"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* For guest checkout, ensure email, firstName, lastName are always present */}
+                      {!isAuthenticated && (!event.registrationFields || event.registrationFields.length === 0 || 
+                        !event.registrationFields.some(f => f.type === 'email') ||
+                        !event.registrationFields.some(f => f.name?.toLowerCase().includes('first') || f.label?.toLowerCase().includes('first')) ||
+                        !event.registrationFields.some(f => f.name?.toLowerCase().includes('last') || f.label?.toLowerCase().includes('last'))) && (
+                        <>
+                          <div>
+                            <Label htmlFor="guest-email">
+                              Email <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="guest-email"
+                              type="email"
+                              placeholder="your.email@example.com"
+                              value={formData['guest-email'] as string || ''}
+                              onChange={(e) => handleInputChange('guest-email', e.target.value)}
+                              required
+                              className={errors['guest-email'] ? "border-destructive" : ""}
+                            />
+                            {errors['guest-email'] && (
+                              <p className="text-destructive text-sm mt-1">{errors['guest-email']}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              We'll never share your email.
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="guest-firstName">
+                              First Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="guest-firstName"
+                              type="text"
+                              placeholder="John"
+                              value={formData['guest-firstName'] as string || ''}
+                              onChange={(e) => handleInputChange('guest-firstName', e.target.value)}
+                              required
+                              className={errors['guest-firstName'] ? "border-destructive" : ""}
+                            />
+                            {errors['guest-firstName'] && (
+                              <p className="text-destructive text-sm mt-1">{errors['guest-firstName']}</p>
+                            )}
+                          </div>
+                          <div>
+                            <Label htmlFor="guest-lastName">
+                              Last Name <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="guest-lastName"
+                              type="text"
+                              placeholder="Doe"
+                              value={formData['guest-lastName'] as string || ''}
+                              onChange={(e) => handleInputChange('guest-lastName', e.target.value)}
+                              required
+                              className={errors['guest-lastName'] ? "border-destructive" : ""}
+                            />
+                            {errors['guest-lastName'] && (
+                              <p className="text-destructive text-sm mt-1">{errors['guest-lastName']}</p>
+                            )}
+                          </div>
+                        </>
+                      )}
                       {event.registrationFields && event.registrationFields.length > 0 && event.registrationFields.map((field) => {
                         // Long-form fields (textarea) span both columns
                         if (field.type === "textarea") {
@@ -688,13 +896,29 @@ const EventRegistration = () => {
                     <Check className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="text-2xl font-bold text-foreground mb-2">
-                    Registration Confirmed!
+                    🎉 You're Going!
                   </h3>
-                  <p className="text-muted-foreground mb-6">
-                    You have successfully registered for{" "}
-                    <strong>{event.title}</strong>. A confirmation email will be
-                    sent to your registered email address.
+                  <p className="text-muted-foreground mb-4">
+                    Your registration for <strong>{event.title}</strong> is confirmed!
                   </p>
+                  {isGuestRegistration ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <p className="text-sm text-blue-900 mb-2">
+                        <strong>Check your email!</strong> We've sent you two emails:
+                      </p>
+                      <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
+                        <li><strong>Ticket confirmation</strong> - Your event ticket with QR code and backup entry code</li>
+                        <li><strong>Account invitation</strong> - Create your EventKnit account to manage tickets and register for future events</li>
+                      </ul>
+                      <p className="text-xs text-blue-700 mt-2">
+                        You can access your tickets via the email link, and creating an account is optional but recommended.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground mb-6 text-sm">
+                      A confirmation email with your ticket has been sent to your registered email address.
+                    </p>
+                  )}
                   <div className="bg-muted rounded-lg p-4 mb-6">
                     <h4 className="font-semibold mb-2">Event Details:</h4>
                     <p className="text-sm text-muted-foreground">

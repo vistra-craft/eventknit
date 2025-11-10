@@ -917,6 +917,104 @@ export class AuthService {
   }
 
   /**
+   * Create account from invitation token (for guest users who registered for events)
+   * Verifies token, loads existing guest account, sets password, and returns auth response
+   */
+  static async createAccountFromInvitation(token: string, password: string): Promise<AuthResponse> {
+    // Find email verification record with this token
+    const emailVerification = await prisma.emailVerification.findUnique({
+      where: { token },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!emailVerification) {
+      throw new NotFoundError('Invalid or expired invitation link');
+    }
+
+    // Check if token is expired
+    if (emailVerification.expiresAt && new Date(emailVerification.expiresAt) < new Date()) {
+      throw new ValidationError('Invitation link has expired');
+    }
+
+    // Check if already used
+    if (emailVerification.verified) {
+      throw new ValidationError('This invitation link has already been used');
+    }
+
+    const user = emailVerification.user;
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Check user status
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
+    }
+
+    if (user.status === UserStatus.DEACTIVATED) {
+      throw new ConflictError('This account has been deactivated. Please contact support to appeal or wait for the deactivation period to end.');
+    }
+
+    // Check if password already exists
+    if (user.password) {
+      throw new ValidationError('Account already has a password. Use login or password reset instead.');
+    }
+
+    // Validate password
+    if (!password || password.length < 8) {
+      throw new ValidationError('Password must be at least 8 characters long');
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Update user with password
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    // Mark email verification as used
+    await prisma.emailVerification.update({
+      where: { id: emailVerification.id },
+      data: {
+        verified: true,
+        verifiedAt: new Date(),
+      },
+    });
+
+    // Generate tokens
+    const tokens = await this.generateTokens(updatedUser);
+
+    // Save refresh token
+    await this.saveRefreshToken(updatedUser.id, tokens.refreshToken);
+
+    logger.info(`Account created from invitation for user: ${user.email}`);
+
+    return {
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName || '',
+        lastName: updatedUser.lastName || '',
+        otherName: updatedUser.otherName,
+        companyAffiliation: updatedUser.companyAffiliation,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        isEmailVerified: updatedUser.isEmailVerified,
+        organizationName: updatedUser.organizationName,
+        verificationLevel: updatedUser.verificationLevel,
+      },
+      ...tokens,
+    };
+  }
+
+  /**
    * Request email verification code (alternative to token-based)
    */
   static async requestEmailVerificationCode(email: string): Promise<void> {

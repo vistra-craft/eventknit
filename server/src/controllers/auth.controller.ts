@@ -470,6 +470,35 @@ export class AuthController {
   }
 
   /**
+   * Create account from invitation token (for guest users)
+   */
+  static async createAccountFromInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await AuthService.createAccountFromInvitation(req.body.token, req.body.password);
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Account created successfully',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Request email verification code
    */
   static async requestEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {

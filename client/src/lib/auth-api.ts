@@ -197,4 +197,11 @@ export const verifyMagicLink = async (token: string): Promise<LoginResponse> => 
   return apiGet<LoginResponse>(`/auth/magic-link/verify?token=${token}`);
 };
 
+/**
+ * Create account from invitation token (for guest users)
+ */
+export const createAccountFromInvitation = async (token: string, password: string): Promise<LoginResponse> => {
+  return apiPost<LoginResponse>('/auth/create-account', { token, password });
+};
+
 
