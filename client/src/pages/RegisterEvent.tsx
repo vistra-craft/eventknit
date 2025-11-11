@@ -20,8 +20,6 @@ import Footer from "@/components/Footer";
 import { useEvent } from "@/hooks/useEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { registerForEvent, registerAsGuest } from "@/lib/event-api";
-import { setAccessToken } from "@/lib/api";
-import { useAuthContext } from "@/hooks/useAuthContext";
 import type { RegistrationField } from "@/types/event";
 
 interface FormData {

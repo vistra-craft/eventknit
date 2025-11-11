@@ -21,6 +21,41 @@ const EventDetails = () => {
   // Fetch event data using hook
   const { event, isLoading, error } = useEvent(id);
   
+  // Normalize frontend URL (remove trailing slash if present)
+  const getFrontendUrl = () => {
+    const envUrl = import.meta.env.VITE_FRONTEND_URL;
+    if (envUrl) {
+      return envUrl.replace(/\/$/, ''); // Remove trailing slash
+    }
+    return window.location.origin;
+  };
+  
+  const frontendUrl = getFrontendUrl();
+  
+  // Prepare meta tags data (before early returns to satisfy React hooks rules)
+  const eventUrl = id ? `${frontendUrl}/event/${id}` : undefined;
+  const eventImage = event?.image 
+    ? (event.image.startsWith('http') ? event.image : `${frontendUrl}${event.image}`)
+    : undefined;
+  
+  const eventDescription = event?.description 
+    ? (event.description.length > 160 
+        ? `${event.description.substring(0, 157)}...` 
+        : event.description)
+    : event?.title 
+      ? `Join us for ${event.title}${event.venue ? ` at ${event.venue}` : ''}${event.startDate ? ` on ${new Date(event.startDate).toLocaleDateString()}` : ''}`
+      : undefined;
+  
+  // Call useMetaTags hook unconditionally (must be before any early returns)
+  useMetaTags({
+    title: event?.title,
+    description: eventDescription,
+    image: eventImage,
+    url: eventUrl,
+    type: 'website',
+    siteName: 'EventKnit',
+  });
+  
   // Show loading state
   if (isLoading) {
     return (
@@ -55,18 +90,6 @@ const EventDetails = () => {
   // TypeScript now knows event is EventData (not null)
   const eventData: EventData = event;
 
-  // Set meta tags for social media sharing (Open Graph, Twitter Cards)
-  // Normalize frontend URL (remove trailing slash if present)
-  const getFrontendUrl = () => {
-    const envUrl = import.meta.env.VITE_FRONTEND_URL;
-    if (envUrl) {
-      return envUrl.replace(/\/$/, ''); // Remove trailing slash
-    }
-    return window.location.origin;
-  };
-  
-  const frontendUrl = getFrontendUrl();
-  
   // Validate ID exists
   if (!id) {
     return (
@@ -83,28 +106,11 @@ const EventDetails = () => {
     );
   }
   
-  const eventUrl = `${frontendUrl}/event/${id}`;
-  const eventImage = eventData.image 
-    ? (eventData.image.startsWith('http') ? eventData.image : `${frontendUrl}${eventData.image}`)
-    : undefined;
-  
-  const eventDescription = eventData.description 
-    ? (eventData.description.length > 160 
-        ? `${eventData.description.substring(0, 157)}...` 
-        : eventData.description)
-    : `Join us for ${eventData.title}${eventData.venue ? ` at ${eventData.venue}` : ''}${eventData.startDate ? ` on ${new Date(eventData.startDate).toLocaleDateString()}` : ''}`;
-
-  useMetaTags({
-    title: eventData.title,
-    description: eventDescription,
-    image: eventImage,
-    url: eventUrl,
-    type: 'website',
-    siteName: 'EventKnit',
-  });
+  // At this point, we know id exists, so eventUrl is defined
+  const finalEventUrl = `${frontendUrl}/event/${id}`;
 
   // Share functionality
-  const shareUrl = eventUrl;
+  const shareUrl = finalEventUrl;
   const shareText = `Check out ${eventData.title} on EventKnit!${eventData.venue ? `\n📍 ${eventData.venue}` : ''}${eventData.startDate ? `\n📅 ${new Date(eventData.startDate).toLocaleDateString()}` : ''}\n\n${shareUrl}`;
 
   // Platform-specific share handlers
@@ -142,7 +148,7 @@ const EventDetails = () => {
 
   // Generic share handler (Web Share API - mobile fallback)
   const handleGenericShare = async () => {
-    if (navigator.share) {
+    if (typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title: eventData.title,
@@ -330,7 +336,7 @@ const EventDetails = () => {
                   </div>
 
                   {/* Generic Share Button (Mobile Web Share API) */}
-                  {navigator.share && (
+                  {typeof navigator.share === 'function' && (
                 <Button 
                   variant="outline" 
                       onClick={handleGenericShare}

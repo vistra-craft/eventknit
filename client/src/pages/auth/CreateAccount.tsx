@@ -16,7 +16,7 @@ const CreateAccount = () => {
   const { dispatch } = useAuthContext();
   
   const token = searchParams.get('token');
-  const [email, setEmail] = useState('');
+  const [email] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
