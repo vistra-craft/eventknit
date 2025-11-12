@@ -205,6 +205,15 @@ export const createAccountFromInvitation = async (token: string, password: strin
   return apiPost<LoginResponse>('/auth/create-account', { token, password });
 };
 
+export interface ResendInvitationResponse {
+  success: boolean;
+  message: string;
+}
+
+export const resendAccountInvitation = async (email: string): Promise<ResendInvitationResponse> => {
+  return apiPost<ResendInvitationResponse>('/auth/resend-invitation', { email });
+};
+
 
 
 

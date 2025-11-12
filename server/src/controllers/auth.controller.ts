@@ -499,6 +499,22 @@ export class AuthController {
   }
 
   /**
+   * Resend account invitation email
+   */
+  static async resendAccountInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.resendAccountInvitation(req.body.email);
+
+      res.status(200).json({
+        success: true,
+        message: 'Account invitation email sent successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Request email verification code
    */
   static async requestEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
