@@ -271,6 +271,51 @@ export const registerForEvent = async (
 };
 
 /**
+ * Register for an event as guest (no authentication required)
+ */
+export interface RegisterAsGuestData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  ticketType?: string;
+  quantity?: number;
+  registrationData?: Record<string, unknown>;
+}
+
+export interface RegisterAsGuestResponse {
+  success: boolean;
+  message: string;
+  data: {
+    registration: {
+      id: string;
+      eventId: string;
+      attendeeId: string;
+      status: string;
+      ticketType?: string | null;
+      quantity?: number;
+      totalAmount?: number | string;
+      paymentStatus?: string | null;
+      createdAt: string;
+    };
+    user: {
+      id: string;
+      email: string;
+      isNewUser: boolean;
+      requiresPasswordSetup: boolean;
+    };
+    // No magic link token - user receives ticket email and account invitation email separately
+  };
+}
+
+export const registerAsGuest = async (
+  eventId: string,
+  data: RegisterAsGuestData
+): Promise<RegisterAsGuestResponse> => {
+  return apiPost<RegisterAsGuestResponse>(`/events/${eventId}/register-guest`, data);
+};
+
+/**
  * Get event registrations (organizer function)
  */
 export const getEventRegistrations = async (

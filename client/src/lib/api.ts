@@ -194,10 +194,13 @@ export const apiRequest = async <T>(
     // Check if error is 401 Unauthorized
     const apiError = error as ApiError & { status?: number };
     
-    // Handle 401 errors (except for auth endpoints)
+    // Handle 401 errors (except for auth endpoints and public endpoints)
     if (apiError.status === 401) {
-      // Don't try to refresh token for auth endpoints
-      if (endpoint.includes('/auth/login') || endpoint.includes('/auth/register') || endpoint.includes('/auth/refresh')) {
+      // Don't try to refresh token for auth endpoints or public endpoints
+      if (endpoint.includes('/auth/login') || 
+          endpoint.includes('/auth/register') || 
+          endpoint.includes('/auth/refresh') ||
+          endpoint.includes('/register-guest')) {
         throw error;
       }
 

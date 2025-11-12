@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom'
+import { afterEach } from 'vitest'
+import { cleanup } from '@testing-library/react'
 
 // Mock URL for jsdom environment
 Object.defineProperty(window, 'URL', {
@@ -25,4 +27,9 @@ if (typeof window !== 'undefined') {
     (window as any).URL = URL
   }
 }
+
+// Cleanup after each test to prevent DOM access after teardown
+afterEach(() => {
+  cleanup()
+})
 

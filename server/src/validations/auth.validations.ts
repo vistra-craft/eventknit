@@ -247,5 +247,20 @@ export const authValidations = {
       'any.required': 'Token is required',
     }),
   }),
+
+  createAccountFromInvitation: Joi.object({
+    token: Joi.string().required().messages({
+      'any.required': 'Invitation token is required',
+    }),
+    password: Joi.string()
+      .min(8)
+      .pattern(passwordRegex)
+      .required()
+      .messages({
+        'string.min': 'Password must be at least 8 characters long',
+        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'any.required': 'Password is required',
+      }),
+  }),
 };
 

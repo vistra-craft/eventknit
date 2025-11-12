@@ -12,6 +12,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password';
 import crypto from 'crypto';
 import { emailService } from './email.service';
+import { TicketService } from './ticket.service';
 
 export interface CreateEventData {
   title: string;
@@ -1736,6 +1737,9 @@ export class EventService {
       }
     }
 
+    // Generate backup ticket code
+    const backupCode = TicketService.generateBackupTicketCode();
+
     // Create registration
     const registrationStatus = event.isFree
       ? RegistrationStatus.CONFIRMED
@@ -1749,6 +1753,7 @@ export class EventService {
         quantity,
         totalAmount,
         registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
+        backupCode,
         status: registrationStatus,
         paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
       },
@@ -1757,9 +1762,26 @@ export class EventService {
           select: {
             id: true,
             title: true,
+            description: true,
             startDate: true,
+            endDate: true,
+            startTime: true,
+            endTime: true,
             venue: true,
             location: true,
+            address: true,
+            isOnline: true,
+            onlineLink: true,
+            image: true,
+            organizer: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                organizationName: true,
+                email: true,
+              },
+            },
           },
         },
         attendee: {
@@ -1768,6 +1790,7 @@ export class EventService {
             firstName: true,
             lastName: true,
             email: true,
+            companyAffiliation: true,
           },
         },
       },
@@ -1784,115 +1807,109 @@ export class EventService {
       });
     }
 
-    // Generate magic link token for immediate access
-    const magicLinkToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-    // Delete any existing unused magic link tokens for this user
-    await prisma.magicLinkToken.deleteMany({
-      where: {
-        userId: user.id,
-        used: false,
-        expiresAt: { lt: new Date() },
-      },
-    });
-
-    // Create magic link token
-    await prisma.magicLinkToken.create({
-      data: {
-        userId: user.id,
-        token: magicLinkToken,
-        expiresAt,
-      },
-    });
-
-    // Generate password setup token (optional, for setting password later)
-    const passwordSetupToken = crypto.randomBytes(32).toString('hex');
-    const passwordSetupExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    // Store password setup token in EmailVerification table
-    await prisma.emailVerification.create({
-      data: {
-        userId: user.id,
-        email: user.email,
-        token: passwordSetupToken,
-        expiresAt: passwordSetupExpiresAt,
-        verified: false,
-      },
-    });
-
-    // Send confirmation email with magic link and password setup option
+    // Send ticket email immediately (Email 1: Ticket Confirmation)
     try {
-      const magicLinkUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/magic-link/verify?token=${magicLinkToken}`;
-      const passwordSetupUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/password/setup?token=${passwordSetupToken}`;
+      await TicketService.sendTicketEmail({
+        id: registration.id,
+        ticketType: registration.ticketType,
+        quantity: registration.quantity,
+        totalAmount: registration.totalAmount,
+        createdAt: registration.createdAt,
+        backupCode: registration.backupCode,
+        registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+        event: registration.event,
+        attendee: registration.attendee,
+      });
+      logger.info(`Ticket email sent to: ${user.email} for event: ${eventId}`);
+    } catch (error) {
+      logger.error('Failed to send ticket email:', error);
+      // Don't throw error - registration is complete, email is optional
+    }
 
-      const html = `
+    // Generate account invitation token (only for new users)
+    let accountInvitationToken: string | undefined;
+    if (isNewUser) {
+      accountInvitationToken = crypto.randomBytes(32).toString('hex');
+      const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      // Store account invitation token in EmailVerification table
+      await prisma.emailVerification.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          token: accountInvitationToken,
+          expiresAt: accountInvitationExpiresAt,
+          verified: false,
+        },
+      });
+
+      // Send account invitation email (Email 2: Account Setup)
+      try {
+        const accountCreationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/create-account?token=${accountInvitationToken}`;
+
+        const html = `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="utf-8">
-            <title>Event Registration Confirmed</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Create Your EventKnit Account</title>
           </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h1 style="color: #4a6cf7;">Your Event Registration is Confirmed! 🎉</h1>
-              
-              <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h2 style="margin-top: 0;">Event Details</h2>
-                <p><strong>Event:</strong> ${event.title}</p>
-                <p><strong>Date:</strong> ${new Date(event.startDate).toLocaleDateString()}</p>
-                ${event.venue ? `<p><strong>Venue:</strong> ${event.venue}</p>` : ''}
-                ${event.location ? `<p><strong>Location:</strong> ${event.location}</p>` : ''}
-                <p><strong>Quantity:</strong> ${quantity}</p>
-                ${!event.isFree ? `<p><strong>Total Amount:</strong> $${totalAmount.toString()}</p>` : '<p><strong>Event Type:</strong> Free</p>'}
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #4a6cf7 0%, #5b7cfa 100%); padding: 40px 20px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Welcome to EventKnit!</h1>
+                <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">You're registered for ${event.title}</p>
               </div>
 
-              <div style="margin: 30px 0;">
-                <h2>Access Your Tickets</h2>
-                <p>Click the button below to view and manage your tickets:</p>
-                <div style="text-align: center; margin: 20px 0;">
-                  <a href="${magicLinkUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Your Tickets</a>
+              <!-- Content -->
+              <div style="padding: 40px 30px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 22px; color: #333;">Create Your Account</h2>
+                <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                  You've successfully registered for <strong>${event.title}</strong>. Your ticket has been sent to this email.
+                </p>
+                <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                  Create your EventKnit account to easily manage your tickets, view your event history, and register for future events.
+                </p>
+
+                <!-- CTA Button -->
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${accountCreationUrl}" style="background-color: #4a6cf7; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(74, 108, 247, 0.3);">
+                    Create Account
+                  </a>
                 </div>
-                <p style="font-size: 12px; color: #666;">This link expires in 15 minutes and can only be used once.</p>
+
+                <p style="margin: 20px 0 0 0; color: #999; font-size: 14px; text-align: center;">
+                  This link will expire in 7 days. You can still access your tickets via the email link.
+                </p>
               </div>
 
-              ${isNewUser ? `
-              <div style="margin: 30px 0;">
-                <h2>Set Up Your Account</h2>
-                <p>Create a password to access your account anytime:</p>
-                <div style="text-align: center; margin: 20px 0;">
-                  <a href="${passwordSetupUrl}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Set Password</a>
-                </div>
-                <p style="font-size: 12px; color: #666;">Or continue using passwordless login (no password needed).</p>
+              <!-- Footer -->
+              <div style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e5e5;">
+                <p style="margin: 0 0 10px 0; font-size: 12px; color: #999; text-align: center;">
+                  Need help? Contact us at <a href="mailto:support@eventknit.com" style="color: #4a6cf7; text-decoration: none;">support@eventknit.com</a>
+                </p>
+                <p style="margin: 0; font-size: 11px; color: #bbb; text-align: center;">
+                  This is an automated message. Please do not reply.
+                </p>
               </div>
-              ` : ''}
-
-              <div style="margin: 30px 0;">
-                <h2>Other Login Options</h2>
-                <p>You can also login using:</p>
-                <ul>
-                  <li><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/signin">Continue with Email</a> (code-based)</li>
-                  <li><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/signin">Continue with Facebook</a></li>
-                </ul>
-              </div>
-
-              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-              <p style="font-size: 12px; color: #666;">This is an automated message, please do not reply.</p>
             </div>
           </body>
         </html>
-      `;
+        `;
 
-      await emailService.sendEmail({
-        to: user.email,
-        subject: `Event Registration Confirmed - ${event.title}`,
-        html,
-      });
+        await emailService.sendEmail({
+          to: user.email,
+          subject: `Create Your EventKnit Account - ${event.title}`,
+          html,
+        });
 
-      logger.info(`Confirmation email sent to: ${user.email} for event: ${eventId}`);
-    } catch (error) {
-      logger.error('Failed to send confirmation email:', error);
-      // Don't throw error - registration is complete, email is optional
+        logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId}`);
+      } catch (error) {
+        logger.error('Failed to send account invitation email:', error);
+        // Don't throw error - registration is complete, email is optional
+      }
     }
 
     // Audit log
@@ -1925,7 +1942,7 @@ export class EventService {
         lastName: user.lastName,
         isNewUser,
       },
-      magicLinkToken, // Return token for immediate use (optional)
+      // No magic link token - user must use account invitation link or ticket email link
     };
   }
 }

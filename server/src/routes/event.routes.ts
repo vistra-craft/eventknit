@@ -21,6 +21,17 @@ router.get('/', EventController.getEvents);
  */
 router.get('/:id', EventController.getEventById);
 
+/**
+ * @route   POST /api/v1/events/:id/register-guest
+ * @desc    Register for an event as guest (public - no auth required)
+ * @access  Public
+ */
+router.post(
+  '/:id/register-guest',
+  validate(eventValidations.registerAsGuest),
+  EventController.registerAsGuest,
+);
+
 // Protected routes (require authentication)
 router.use(authenticate);
 
@@ -57,17 +68,6 @@ router.delete(
   '/:id',
   requireMinRole(UserRole.ORGANIZER),
   EventController.deleteEvent,
-);
-
-/**
- * @route   POST /api/v1/events/:id/register-guest
- * @desc    Register for an event as guest (public - no auth required)
- * @access  Public
- */
-router.post(
-  '/:id/register-guest',
-  validate(eventValidations.registerAsGuest),
-  EventController.registerAsGuest,
 );
 
 /**

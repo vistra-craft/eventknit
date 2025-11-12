@@ -12,6 +12,8 @@ interface TicketEmailData {
     quantity: number;
     totalAmount: Decimal;
     createdAt: Date;
+    backupCode?: string | null;
+    registrationData?: Record<string, unknown> | null;
     event: {
       id: string;
       title: string;
@@ -28,8 +30,8 @@ interface TicketEmailData {
       image: string | null;
       organizer: {
         id: string;
-        firstName: string;
-        lastName: string;
+        firstName: string | null;
+        lastName: string | null;
         organizationName: string | null;
         email: string;
       };
@@ -37,8 +39,9 @@ interface TicketEmailData {
     attendee: {
       id: string;
       email: string;
-      firstName: string;
-      lastName: string;
+      firstName: string | null;
+      lastName: string | null;
+      companyAffiliation?: string | null;
     };
   };
 }
@@ -73,6 +76,22 @@ export class TicketService {
     // Format: registrationId|eventId|email|timestamp
     const timestamp = Date.now();
     return `${registrationId}|${eventId}|${attendeeEmail}|${timestamp}`;
+  }
+
+  /**
+   * Generate backup ticket code for manual entry (if QR code fails)
+   * Format: Short, random alphanumeric code (e.g., A7K9M2)
+   * Hard to guess, easy to read and type
+   */
+  static generateBackupTicketCode(): string {
+    // Generate 6-character alphanumeric code (uppercase letters + numbers)
+    // Excludes similar-looking characters: 0, O, I, 1, L
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
   }
 
   /**
@@ -144,8 +163,8 @@ export class TicketService {
       `SUMMARY:${event.title}`,
       `DESCRIPTION:${event.description || 'Event ticket from EventKnit'}`,
       event.venue ? `LOCATION:${event.venue}, ${event.location}` : `LOCATION:${event.location}`,
-      `ORGANIZER;CN=${event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`}:MAILTO:${event.organizer.email}`,
-      `ATTENDEE;CN=${attendee.firstName} ${attendee.lastName};RSVP=TRUE:MAILTO:${attendee.email}`,
+      `ORGANIZER;CN=${event.organizer.organizationName || `${event.organizer.firstName || ''} ${event.organizer.lastName || ''}`}:MAILTO:${event.organizer.email}`,
+      `ATTENDEE;CN=${attendee.firstName || ''} ${attendee.lastName || ''};RSVP=TRUE:MAILTO:${attendee.email}`,
       'STATUS:CONFIRMED',
       'SEQUENCE:0',
       'END:VEVENT',
@@ -257,8 +276,14 @@ export class TicketService {
                           ` : ''}
                           <tr>
                             <td style="padding: 8px 0; color: #666; font-size: 14px;">👤 Attendee</td>
-                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${attendee.firstName} ${attendee.lastName}</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${attendee.firstName || ''} ${attendee.lastName || ''}</td>
                           </tr>
+                          ${attendee.companyAffiliation ? `
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px;">🏢 Company</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${attendee.companyAffiliation}</td>
+                          </tr>
+                          ` : ''}
                           <tr>
                             <td style="padding: 8px 0; color: #666; font-size: 14px;">🎫 Ticket Type</td>
                             <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${registration.ticketType || 'General Admission'}</td>
@@ -285,16 +310,48 @@ export class TicketService {
                     </td>
                   </tr>
 
-                  <!-- QR Code Section -->
+                  <!-- Ticket Badge Section -->
                   <tr>
                     <td style="padding: 0 30px 30px 30px; text-align: center;">
                       <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 30px; border: 2px dashed #667eea;">
-                        <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 18px; font-weight: 600;">Your Entry QR Code</h3>
-                        <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">Present this QR code at the event entrance</p>
-                        <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; display: inline-block; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                          <img src="${qrCodeDataUrl}" alt="Ticket QR Code" style="width: 200px; height: 200px; display: block;">
+                        <h3 style="margin: 0 0 15px 0; color: #1a1a1a; font-size: 18px; font-weight: 600;">Your Event Ticket</h3>
+                        
+                        <!-- Professional Ticket Badge -->
+                        <div style="background-color: #ffffff; border-radius: 12px; padding: 25px; margin: 20px auto; max-width: 400px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 2px solid #667eea;">
+                          <!-- Attendee Name -->
+                          <h2 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 22px; font-weight: 700; text-align: center;">${attendee.firstName || ''} ${attendee.lastName || ''}</h2>
+                          
+                          <!-- Company/Affiliation -->
+                          ${attendee.companyAffiliation ? `
+                          <p style="margin: 0 0 15px 0; color: #666; font-size: 14px; text-align: center;">${attendee.companyAffiliation}</p>
+                          ` : ''}
+                          
+                          <!-- Event Name -->
+                          <div style="border-top: 2px solid #e9ecef; border-bottom: 2px solid #e9ecef; padding: 15px 0; margin: 15px 0;">
+                            <p style="margin: 0; color: #1a1a1a; font-size: 16px; font-weight: 600; text-align: center;">${event.title}</p>
+                          </div>
+                          
+                          <!-- Venue -->
+                          <p style="margin: 10px 0; color: #666; font-size: 14px; text-align: center;">
+                            ${event.venue ? event.venue : ''}${event.venue && event.location ? ', ' : ''}${event.location}
+                          </p>
+                          
+                          <!-- QR Code -->
+                          <div style="margin: 20px 0; text-align: center;">
+                            <img src="${qrCodeDataUrl}" alt="Ticket QR Code" style="width: 200px; height: 200px; display: block; margin: 0 auto; border: 2px solid #e9ecef; border-radius: 8px; padding: 10px; background-color: #ffffff;">
+                          </div>
+                          
+                          <!-- Backup Code -->
+                          ${registration.backupCode ? `
+                          <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid #e9ecef;">
+                            <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-align: center; font-weight: 600;">BACKUP ENTRY CODE</p>
+                            <p style="margin: 0; color: #1a1a1a; font-size: 24px; font-weight: 700; text-align: center; letter-spacing: 4px; font-family: 'Courier New', monospace;">${registration.backupCode}</p>
+                            <p style="margin: 8px 0 0 0; color: #999; font-size: 11px; text-align: center;">Use this code if QR scanning fails</p>
+                          </div>
+                          ` : ''}
                         </div>
-                        <p style="margin: 20px 0 0 0; color: #999; font-size: 12px;">Ticket ID: ${registration.id.substring(0, 8).toUpperCase()}</p>
+                        
+                        <p style="margin: 20px 0 0 0; color: #666; font-size: 14px;">Present this ticket (QR code or backup code) at the event entrance</p>
                       </div>
                     </td>
                   </tr>
@@ -319,7 +376,7 @@ export class TicketService {
                       <div style="margin-top: 20px;">
                         <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; font-weight: 600;">Organized By</h3>
                         <p style="margin: 0; color: #666; font-size: 14px;">
-                          ${event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`}
+                          ${event.organizer.organizationName || `${event.organizer.firstName || ''} ${event.organizer.lastName || ''}`}
                         </p>
                         <p style="margin: 5px 0 0 0;">
                           <a href="mailto:${event.organizer.email}" style="color: #667eea; text-decoration: none; font-size: 14px;">Contact Organizer</a>

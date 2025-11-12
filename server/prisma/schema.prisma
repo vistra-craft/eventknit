@@ -353,6 +353,7 @@ model EventRegistration {
 
   // Registration form data
   registrationData Json? // Custom form data submitted by attendee
+  backupCode String? // Backup ticket code for manual entry (if QR code fails)
 
   // Status
   status RegistrationStatus @default(PENDING)

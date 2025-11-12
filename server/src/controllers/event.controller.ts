@@ -477,7 +477,7 @@ export class EventController {
    */
   static async registerAsGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const eventId = req.params.eventId;
+      const eventId = req.params.id;
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
@@ -490,11 +490,10 @@ export class EventController {
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful. Check your email for confirmation and access link.',
+        message: 'Registration successful. Check your email for ticket confirmation and account setup.',
         data: {
           registration: result.registration,
           user: result.user,
-          // Don't return magicLinkToken in response for security (it's in email)
         },
       });
     } catch (error) {
@@ -529,5 +528,7 @@ export class EventController {
     }
   }
 }
+
+
 
 
