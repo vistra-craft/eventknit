@@ -1,8 +1,8 @@
 import * as cron from 'node-cron';
-import { prisma } from '../config/database';
-import { logger } from '../utils/logger';
+import { prisma } from '../config/database.js';
+import { logger } from '../utils/logger.js';
 import { RegistrationStatus } from '@prisma/client';
-import { EventService } from '../services/event.service';
+import { EventService } from '../services/event.service.js';
 
 /**
  * Payment Timeout Job

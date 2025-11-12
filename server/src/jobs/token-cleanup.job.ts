@@ -1,6 +1,6 @@
 import * as cron from 'node-cron';
-import { prisma } from '../config/database';
-import { logger } from '../utils/logger';
+import { prisma } from '../config/database.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Token Cleanup Job
