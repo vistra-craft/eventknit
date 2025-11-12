@@ -24,5 +24,18 @@ export const authRateLimiter = rateLimit({
   skipSuccessfulRequests: true, // Don't count successful requests
 });
 
+/**
+ * Rate limiter for guest event registration
+ * Limits: 5 registrations per hour per IP (configurable)
+ */
+export const guestRegistrationRateLimiter = rateLimit({
+  windowMs: parseInt(process.env.GUEST_REGISTRATION_WINDOW_MS || '3600000', 10), // 1 hour
+  max: parseInt(process.env.GUEST_REGISTRATION_MAX || '5', 10), // 5 registrations per hour
+  message: 'Too many registration attempts from this IP. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false, // Count all requests (successful or not)
+});
+
 
 
