@@ -2,10 +2,10 @@
   "name": "eventknit-server",
   "version": "1.0.0",
   "description": "EventKnit Backend API Server",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "type": "module",
   "scripts": {
-    "start": "npm run prisma:migrate:deploy && node dist/server.js",
+    "start": "npm run prisma:migrate:deploy && node dist/src/server.js",
     "dev": "tsx src/server.ts",
     "dev:watch": "tsx --watch src/server.ts",
     "build": "tsc",

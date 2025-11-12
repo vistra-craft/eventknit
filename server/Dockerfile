@@ -104,4 +104,4 @@ HEALTHCHECK --interval=30s \
   CMD curl -f http://localhost:3001/health || exit 1
 
 # Use exec form for better signal handling
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/src/server.js"]
