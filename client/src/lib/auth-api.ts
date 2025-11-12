@@ -12,6 +12,7 @@ export interface User {
   lastName: string;
   otherName?: string | null;
   phoneNumber?: string | null;
+  companyAffiliation?: string | null;
   role: UserRole;
   status: UserStatus;
   isEmailVerified: boolean;
