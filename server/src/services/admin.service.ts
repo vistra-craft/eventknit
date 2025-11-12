@@ -1,4 +1,4 @@
-import { prisma } from '../config/database';
+import { prisma } from '../config/database.js';
 import { hashPassword } from '../utils/password.js';
 import { UserRole, UserStatus } from '@prisma/client';
 import {

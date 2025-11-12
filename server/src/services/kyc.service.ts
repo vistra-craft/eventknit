@@ -1,4 +1,4 @@
-import { prisma } from '../config/database';
+import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError, ConflictError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { KYCStatus } from '@prisma/client';

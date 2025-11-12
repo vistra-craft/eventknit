@@ -1,4 +1,4 @@
-import { prisma } from '../config/database';
+import { prisma } from '../config/database.js';
 import { UserRole } from '@prisma/client';
 import {
   NotFoundError,
