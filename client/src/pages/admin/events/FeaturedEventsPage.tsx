@@ -390,7 +390,7 @@ const FeaturedEventsPage = () => {
 
         {/* Add Featured Event Dialog */}
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-hidden">
             <DialogHeader>
               <DialogTitle>Add Featured Event</DialogTitle>
               <DialogDescription>
@@ -585,7 +585,7 @@ const FeaturedEventsPage = () => {
 
         {/* Edit Featured Event Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-hidden">
             <DialogHeader>
               <DialogTitle>Edit Featured Event</DialogTitle>
               <DialogDescription>
