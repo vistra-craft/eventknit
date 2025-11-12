@@ -41,7 +41,12 @@ export const config = {
   },
   
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    // Support multiple origins (comma-separated) or single origin
+    origin: process.env.CORS_ORIGIN 
+      ? process.env.CORS_ORIGIN.includes(',') 
+        ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+        : process.env.CORS_ORIGIN
+      : 'http://localhost:5173',
     credentials: process.env.CORS_CREDENTIALS === 'true' || true,
   },
   
