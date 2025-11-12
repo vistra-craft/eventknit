@@ -154,8 +154,84 @@ export class PaymentService {
       };
     } catch (error: unknown) {
       logger.error('Failed to initialize payment:', error);
+      
+      // Rollback: Cancel registration and restore capacity if payment initialization fails
+      // This prevents orphaned registrations when payment fails
+      try {
+        await this.rollbackRegistration(data.registrationId);
+        logger.info(`Rolled back registration ${data.registrationId} due to payment initialization failure`);
+      } catch (rollbackError) {
+        logger.error(`Failed to rollback registration ${data.registrationId}:`, rollbackError);
+        // Continue to throw original error even if rollback fails
+      }
+      
       throw new ValidationError('Failed to initialize payment. Please try again.');
     }
+  }
+
+  /**
+   * Rollback registration when payment initialization fails
+   * Cancels the registration and restores event capacity
+   */
+  private async rollbackRegistration(registrationId: string): Promise<void> {
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      include: {
+        event: {
+          select: {
+            id: true,
+            capacity: true,
+            availableSlots: true,
+          },
+        },
+      },
+    });
+
+    if (!registration) {
+      logger.warn(`Registration ${registrationId} not found for rollback`);
+      return;
+    }
+
+    // Only rollback if registration is still PENDING (not already cancelled or confirmed)
+    if (registration.status !== RegistrationStatus.PENDING || registration.paymentStatus !== 'PENDING') {
+      logger.info(`Registration ${registrationId} is not in PENDING state, skipping rollback`);
+      return;
+    }
+
+    // Use transaction to ensure atomic rollback
+    await prisma.$transaction(async (tx) => {
+      // Use status validation to ensure consistency
+      const syncedStatus = EventService.validateAndSyncStatus(
+        registration.status,
+        registration.paymentStatus || 'PENDING',
+        'FAILED',
+        RegistrationStatus.CANCELLED,
+      );
+
+      // Cancel registration
+      await tx.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          status: syncedStatus.status,
+          paymentStatus: syncedStatus.paymentStatus,
+          cancelledAt: new Date(),
+          cancelledBy: null, // System cancellation
+        },
+      });
+
+      // Restore event capacity if capacity exists
+      if (registration.event.capacity !== null) {
+        const newAvailableSlots = (registration.event.availableSlots || registration.event.capacity) + registration.quantity;
+        await tx.event.update({
+          where: { id: registration.event.id },
+          data: {
+            availableSlots: Math.min(registration.event.capacity, newAvailableSlots),
+          },
+        });
+      }
+    });
+
+    logger.info(`Successfully rolled back registration ${registrationId} and restored capacity`);
   }
 
   /**
