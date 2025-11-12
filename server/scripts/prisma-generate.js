@@ -6,22 +6,30 @@
  */
 
 import { execSync } from "child_process";
-import { existsSync } from "fs";
 import { join } from "path";
 
 // Set a placeholder DATABASE_URL if not already set
+// Use a dummy URL that won't cause connection attempts during generate
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL =
-    "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+    "postgresql://placeholder:placeholder@placeholder:5432/placeholder?schema=public";
 }
 
+// Prisma generate doesn't need a real database connection
+// It only generates the client code based on the schema
 try {
-  // Run prisma generate
-  execSync("prisma generate", {
+  // Run prisma generate with explicit schema path to avoid any connection attempts
+  const schemaPath = join(process.cwd(), "prisma", "schema.prisma");
+  execSync(`prisma generate --schema=${schemaPath}`, {
     stdio: "inherit",
-    cwd: join(process.cwd()),
-    env: process.env,
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      // Ensure we don't try to connect during generate
+      DATABASE_URL: process.env.DATABASE_URL,
+    },
   });
+  console.log("✓ Prisma Client generated successfully");
 } catch (error) {
   // Use console.error here since this script runs before TypeScript compilation
   // and logger from src/ won't be available
