@@ -1,18 +1,18 @@
 import { prisma } from '../config/database';
-import { hashPassword } from '../utils/password';
+import { hashPassword } from '../utils/password.js';
 import { UserRole, UserStatus } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
   ConflictError,
-} from '../utils/errors';
+} from '../utils/errors.js';
 import {
   validateRoleCreation,
   validateUserModification,
   validateUserDeletion,
-} from '../utils/privileges';
-import { createAuditLog, AuditActions } from '../utils/audit';
-import { logger } from '../utils/logger';
+} from '../utils/privileges.js';
+import { createAuditLog, AuditActions } from '../utils/audit.js';
+import { logger } from '../utils/logger.js';
 
 export interface CreateUserData {
   email: string;

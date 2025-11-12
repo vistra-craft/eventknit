@@ -1,6 +1,6 @@
 import { prisma } from '../config/database';
-import { NotFoundError, ValidationError, ConflictError } from '../utils/errors';
-import { logger } from '../utils/logger';
+import { NotFoundError, ValidationError, ConflictError } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
 import { KYCStatus } from '@prisma/client';
 
 export interface CreateKYCDocumentData {

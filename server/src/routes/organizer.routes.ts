@@ -1,8 +1,8 @@
 import { Router, Response, NextFunction } from 'express';
 import { OrganizerController } from '../controllers/organizer.controller.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { canManageStaff } from '../utils/privileges';
-import { AuthorizationError } from '../utils/errors';
+import { canManageStaff } from '../utils/privileges.js';
+import { AuthorizationError } from '../utils/errors.js';
 
 const router = Router();
 

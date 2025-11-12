@@ -4,9 +4,9 @@ import {
   NotFoundError,
   ValidationError,
   AuthorizationError,
-} from '../utils/errors';
-import { createAuditLog, AuditActions } from '../utils/audit';
-import { logger } from '../utils/logger';
+} from '../utils/errors.js';
+import { createAuditLog, AuditActions } from '../utils/audit.js';
+import { logger } from '../utils/logger.js';
 import crypto from 'crypto';
 
 export interface CreateInvitationData {

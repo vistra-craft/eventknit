@@ -1,6 +1,6 @@
 import { prisma } from '../config/database';
-import { ValidationError, NotFoundError } from '../utils/errors';
-import { logger } from '../utils/logger';
+import { ValidationError, NotFoundError } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export interface IdentityVerificationData {
