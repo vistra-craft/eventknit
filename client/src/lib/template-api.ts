@@ -135,7 +135,8 @@ export const getDefaultTemplate = async (
   eventId: string
 ): Promise<TemplateResponse> => {
   // Public endpoint - no auth required
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+  // Default to deployed backend. For local development, set VITE_API_BASE_URL in .env.local
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventknit.onrender.com/api/v1';
   const response = await fetch(`${API_BASE_URL}/templates/events/${eventId}/default`);
   const data = await response.json();
   

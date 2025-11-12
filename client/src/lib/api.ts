@@ -2,7 +2,10 @@
  * API Client Configuration and Utilities
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+// Default to deployed backend. For local development, set VITE_API_BASE_URL in .env.local
+// Local: 'http://localhost:3000/api/v1'
+// Deployed: 'https://eventknit.onrender.com/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventknit.onrender.com/api/v1';
 
 export interface ApiResponse<T> {
   success: boolean;
