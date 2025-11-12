@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError, DatabaseError, ServiceUnavailableError } from '../utils/errors';
+import { AppError, DatabaseError, ServiceUnavailableError } from '../utils/errors.js';
 import { config } from '../config/index.js';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 /**
  * Check if error is a Prisma database connection error

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { EventService } from '../services/event.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { EventService } from '../services/event.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { EventStatus, DataAccessLevel } from '@prisma/client';
 
 export class EventController {

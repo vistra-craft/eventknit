@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { TemplateService } from '../services/template.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { TemplateService } from '../services/template.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class TemplateController {
   /**

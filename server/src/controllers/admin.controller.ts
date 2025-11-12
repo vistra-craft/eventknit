@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { AdminService } from '../services/admin.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { AdminService } from '../services/admin.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { UserRole, UserStatus } from '@prisma/client';
 
 export class AdminController {

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { paymentService, InitializePaymentData } from '../services/payment.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { paymentService, InitializePaymentData } from '../services/payment.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { prisma } from '../config/database';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 export class PaymentController {
   /**

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { FeaturedEventService } from '../services/featured-event.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { FeaturedEventService } from '../services/featured-event.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class FeaturedEventController {
   /**

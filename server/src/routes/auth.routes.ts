@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { AuthController } from '../controllers/auth.controller';
-import { validate } from '../middleware/validation.middleware';
-import { authenticate } from '../middleware/auth.middleware';
-import { authValidations } from '../validations/auth.validations';
-import { authRateLimiter } from '../middleware/rateLimiter.middleware';
+import { AuthController } from '../controllers/auth.controller.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { authenticate } from '../middleware/auth.middleware.js';
+import { authValidations } from '../validations/auth.validations.js';
+import { authRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import cookieParser from 'cookie-parser';
 
 const router = Router();

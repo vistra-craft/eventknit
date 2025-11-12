@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { OrganizerService } from '../services/organizer.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { OrganizerService } from '../services/organizer.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class OrganizerController {
   /**

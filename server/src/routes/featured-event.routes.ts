@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { FeaturedEventController } from '../controllers/featured-event.controller';
-import { authenticate, requireMinRole } from '../middleware/auth.middleware';
+import { FeaturedEventController } from '../controllers/featured-event.controller.js';
+import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
 
 const router = Router();

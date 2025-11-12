@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { InvitationService } from '../services/invitation.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { InvitationService } from '../services/invitation.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class InvitationController {
   /**

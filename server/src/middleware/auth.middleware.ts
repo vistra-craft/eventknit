@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken } from '../utils/jwt';
-import { AuthenticationError, AuthorizationError } from '../utils/errors';
-import { prisma } from '../config/database';
+import { verifyAccessToken } from '../utils/jwt.js';
+import { AuthenticationError, AuthorizationError } from '../utils/errors.js';
+import { prisma } from '../config/database.js';
 import { UserRole, UserStatus } from '@prisma/client';
 
 export interface AuthenticatedRequest extends Request {

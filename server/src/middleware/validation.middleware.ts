@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { ValidationError } from '../utils/errors';
+import { ValidationError } from '../utils/errors.js';
 
 /**
  * Validate request body against Joi schema

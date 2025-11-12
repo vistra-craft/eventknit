@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { InvitationController } from '../controllers/invitation.controller';
-import { EventController } from '../controllers/event.controller';
-import { validate } from '../middleware/validation.middleware';
-import { authenticate, requireMinRole } from '../middleware/auth.middleware';
-import { invitationValidations } from '../validations/invitation.validations';
+import { InvitationController } from '../controllers/invitation.controller.js';
+import { EventController } from '../controllers/event.controller.js';
+import { validate } from '../middleware/validation.middleware.js';
+import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
+import { invitationValidations } from '../validations/invitation.validations.js';
 import { UserRole } from '@prisma/client';
 
 const router = Router();
