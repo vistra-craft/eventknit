@@ -28,6 +28,7 @@ const startServer = async () => {
     const server = app.listen(PORT, HOST, () => {
       logger.info(`🚀 EventKnit Server running on http://${HOST}:${PORT}`);
       logger.info(`📊 Environment: ${config.env}`);
+      logger.info(`🌐 CORS Origin: ${JSON.stringify(config.cors.origin)}`);
       logger.info(`🕐 Started at: ${new Date().toISOString()}`);
       logger.info(`🔍 Health check: http://localhost:${PORT}/health`);
       logger.info(`📋 API status: http://localhost:${PORT}/api/v1/status`);

@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType, DataAccessLevel } from '@prisma/client';
 import {
   NotFoundError,
@@ -2094,7 +2095,7 @@ export class EventService {
 
       // Send account invitation email (Email 2: Account Setup)
       try {
-        const accountCreationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/create-account?token=${accountInvitationToken}`;
+        const accountCreationUrl = `${config.frontend.url}/auth/create-account?token=${accountInvitationToken}`;
 
         const html = `
         <!DOCTYPE html>

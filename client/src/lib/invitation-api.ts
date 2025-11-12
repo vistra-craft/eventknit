@@ -157,8 +157,13 @@ export const getInvitationByToken = async (
   token: string
 ): Promise<InvitationResponse> => {
   // Public endpoint - no auth required
-  // Default to deployed backend. For local development, set VITE_API_BASE_URL in .env.local
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventknit.onrender.com/api/v1';
+  // API Base URL - must be set via VITE_API_BASE_URL environment variable
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 
+     (() => {
+       console.error('VITE_API_BASE_URL is not set! Please set it in your environment variables.');
+       throw new Error('VITE_API_BASE_URL environment variable is required');
+     })());
   const response = await fetch(`${API_BASE_URL}/invitations/${token}`);
   const data = await response.json();
   
@@ -208,8 +213,13 @@ export const registerViaInvitation = async (
   registrationData: Record<string, unknown>
 ): Promise<RegisterViaInvitationResponse> => {
   // Public endpoint - no auth required
-  // Default to deployed backend. For local development, set VITE_API_BASE_URL in .env.local
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://eventknit.onrender.com/api/v1';
+  // API Base URL - must be set via VITE_API_BASE_URL environment variable
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 
+     (() => {
+       console.error('VITE_API_BASE_URL is not set! Please set it in your environment variables.');
+       throw new Error('VITE_API_BASE_URL environment variable is required');
+     })());
   const response = await fetch(`${API_BASE_URL}/invitations/${token}/register`, {
     method: 'POST',
     headers: {
@@ -235,7 +245,8 @@ export const registerViaInvitation = async (
  * Generate registration link URL
  */
 export const getRegistrationLinkUrl = (token: string): string => {
-  const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+  // Use environment variable if set, otherwise use current origin (works for both localhost and production)
+  const frontendUrl = import.meta.env.VITE_FRONTEND_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
   return `${frontendUrl}/register/${token}`;
 };
 
