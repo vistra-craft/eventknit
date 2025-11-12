@@ -182,6 +182,101 @@ export class PaymentController {
   }
 
   /**
+   * Initialize payment for guest users (no authentication required)
+   */
+  static async initializeGuestPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { registrationId, email } = req.body;
+
+      if (!registrationId) {
+        res.status(400).json({
+          success: false,
+          message: 'Registration ID is required',
+        });
+        return;
+      }
+
+      if (!email) {
+        res.status(400).json({
+          success: false,
+          message: 'Email is required',
+        });
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid email format',
+        });
+        return;
+      }
+
+      // Validate guest payment (email + registration ID)
+      await paymentService.validateGuestPayment(registrationId, email);
+
+      // Get registration details
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: registrationId },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              isFree: true,
+            },
+          },
+          attendee: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!registration) {
+        res.status(404).json({
+          success: false,
+          message: 'Registration not found',
+        });
+        return;
+      }
+
+      // Check if free event
+      if (registration.event.isFree) {
+        res.status(400).json({
+          success: false,
+          message: 'This is a free event, no payment required',
+        });
+        return;
+      }
+
+      const paymentData: InitializePaymentData = {
+        registrationId,
+        email: registration.attendee.email || email,
+        amount: Number(registration.totalAmount),
+        currency: 'NGN', // Can be made configurable
+        metadata: {
+          eventId: registration.eventId,
+          isGuest: true,
+        },
+      };
+
+      const result = await paymentService.initializePayment(paymentData);
+
+      res.status(200).json({
+        success: true,
+        message: 'Payment initialized successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get payment status for a registration
    */
   static async getPaymentStatus(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

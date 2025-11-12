@@ -37,6 +37,39 @@ export class PaymentService {
   }
 
   /**
+   * Validate guest payment request (email + registration ID)
+   */
+  async validateGuestPayment(registrationId: string, email: string): Promise<void> {
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      include: {
+        attendee: {
+          select: {
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!registration) {
+      throw new NotFoundError('Registration not found');
+    }
+
+    // Validate email matches registration
+    const normalizedEmail = email.toLowerCase().trim();
+    const registrationEmail = registration.attendee.email?.toLowerCase().trim();
+
+    if (registrationEmail !== normalizedEmail) {
+      throw new ValidationError('Email does not match the registration');
+    }
+
+    // Check if already paid
+    if (registration.paymentStatus === 'COMPLETED') {
+      throw new ValidationError('Payment already completed');
+    }
+  }
+
+  /**
    * Initialize payment with Paystack
    */
   async initializePayment(data: InitializePaymentData) {

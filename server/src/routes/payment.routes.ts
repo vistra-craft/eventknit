@@ -1,18 +1,30 @@
 import { Router } from 'express';
 import { PaymentController } from '../controllers/payment.controller';
 import { authenticate } from '../middleware/auth.middleware';
+import { guestPaymentRateLimiter } from '../middleware/rateLimiter.middleware';
 
 const router = Router();
 
 /**
  * @route   POST /api/v1/payments/initialize
- * @desc    Initialize payment for a registration
+ * @desc    Initialize payment for a registration (authenticated users)
  * @access  Private
  */
 router.post(
   '/initialize',
   authenticate,
   PaymentController.initializePayment,
+);
+
+/**
+ * @route   POST /api/v1/payments/initialize-guest
+ * @desc    Initialize payment for a registration (guest users, no auth required)
+ * @access  Public (rate limited)
+ */
+router.post(
+  '/initialize-guest',
+  guestPaymentRateLimiter,
+  PaymentController.initializeGuestPayment,
 );
 
 /**

@@ -37,5 +37,18 @@ export const guestRegistrationRateLimiter = rateLimit({
   skipSuccessfulRequests: false, // Count all requests (successful or not)
 });
 
+/**
+ * Rate limiter for guest payment initialization
+ * Limits: 10 payment initializations per hour per IP (configurable)
+ */
+export const guestPaymentRateLimiter = rateLimit({
+  windowMs: parseInt(process.env.GUEST_PAYMENT_WINDOW_MS || '3600000', 10), // 1 hour
+  max: parseInt(process.env.GUEST_PAYMENT_MAX || '10', 10), // 10 payment attempts per hour
+  message: 'Too many payment attempts from this IP. Please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false, // Count all requests (successful or not)
+});
+
 
 
