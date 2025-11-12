@@ -1790,22 +1790,6 @@ export class EventService {
       }
     }
 
-    // Check capacity
-    if (event.capacity !== null) {
-      const currentRegistrations = await prisma.eventRegistration.count({
-        where: {
-          eventId,
-          status: {
-            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
-          },
-        },
-      });
-
-      if (currentRegistrations + quantity > event.capacity) {
-        throw new ValidationError('Event is sold out or insufficient capacity');
-      }
-    }
-
     // Generate backup ticket code
     const backupCode = TicketService.generateBackupTicketCode();
 
@@ -1814,130 +1798,169 @@ export class EventService {
       ? RegistrationStatus.CONFIRMED
       : RegistrationStatus.PENDING;
 
-    // Update existing cancelled registration or create new one
+    // Use transaction with Serializable isolation level to prevent capacity race condition
+    // This ensures atomic capacity check and registration creation
     const isReRegistration = existingRegistration && existingRegistration.status === RegistrationStatus.CANCELLED;
-    const registration = isReRegistration
-      ? await prisma.eventRegistration.update({
-        where: {
-          eventId_attendeeId: {
-            eventId,
-            attendeeId: user.id,
-          },
-        },
-        data: {
-          ticketType: guestData.ticketType || null,
-          quantity,
-          totalAmount,
-          registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
-          backupCode,
-          status: registrationStatus,
-          paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-          cancelledAt: null, // Clear cancellation timestamp
-          cancelledBy: null, // Clear cancellation user
-        },
-        include: {
-          event: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              startDate: true,
-              endDate: true,
-              startTime: true,
-              endTime: true,
-              venue: true,
-              location: true,
-              address: true,
-              isOnline: true,
-              onlineLink: true,
-              image: true,
-              organizer: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  organizationName: true,
-                  email: true,
-                },
-              },
-            },
-          },
-          attendee: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              companyAffiliation: true,
-            },
-          },
-        },
-      })
-      : await prisma.eventRegistration.create({
-        data: {
-          eventId,
-          attendeeId: user.id,
-          ticketType: guestData.ticketType || null,
-          quantity,
-          totalAmount,
-          registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
-          backupCode,
-          status: registrationStatus,
-          paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-        },
-        include: {
-          event: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              startDate: true,
-              endDate: true,
-              startTime: true,
-              endTime: true,
-              venue: true,
-              location: true,
-              address: true,
-              isOnline: true,
-              onlineLink: true,
-              image: true,
-              organizer: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  organizationName: true,
-                  email: true,
-                },
-              },
-            },
-          },
-          attendee: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              companyAffiliation: true,
-            },
-          },
+    const registration = await prisma.$transaction(async (tx) => {
+      // Fetch event within transaction (will be serialized with other concurrent transactions)
+      const lockedEvent = await tx.event.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          capacity: true,
+          availableSlots: true,
         },
       });
+
+      if (!lockedEvent) {
+        throw new NotFoundError('Event not found');
+      }
+
+      // Check capacity within transaction (atomic with registration creation)
+      if (lockedEvent.capacity !== null) {
+        const currentRegistrations = await tx.eventRegistration.count({
+          where: {
+            eventId,
+            status: {
+              in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+            },
+          },
+        });
+
+        // For re-registrations, we don't need to check capacity (slot already reserved)
+        if (!isReRegistration && currentRegistrations + quantity > lockedEvent.capacity) {
+          throw new ValidationError('Event is sold out or insufficient capacity');
+        }
+      }
+
+      // Create or update registration
+      const reg = isReRegistration
+        ? await tx.eventRegistration.update({
+          where: {
+            eventId_attendeeId: {
+              eventId,
+              attendeeId: user.id,
+            },
+          },
+          data: {
+            ticketType: guestData.ticketType || null,
+            quantity,
+            totalAmount,
+            registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
+            backupCode,
+            status: registrationStatus,
+            paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+            cancelledAt: null, // Clear cancellation timestamp
+            cancelledBy: null, // Clear cancellation user
+          },
+          include: {
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            attendee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                companyAffiliation: true,
+              },
+            },
+          },
+        })
+        : await tx.eventRegistration.create({
+          data: {
+            eventId,
+            attendeeId: user.id,
+            ticketType: guestData.ticketType || null,
+            quantity,
+            totalAmount,
+            registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
+            backupCode,
+            status: registrationStatus,
+            paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+          },
+          include: {
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            attendee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                companyAffiliation: true,
+              },
+            },
+          },
+        });
+
+      // Update available slots if capacity exists (only for new registrations)
+      if (lockedEvent.capacity !== null && !isReRegistration) {
+        const newAvailableSlots = (lockedEvent.availableSlots || lockedEvent.capacity) - quantity;
+        await tx.event.update({
+          where: { id: eventId },
+          data: {
+            availableSlots: Math.max(0, newAvailableSlots),
+          },
+        });
+      }
+
+      return reg;
+    }, {
+      isolationLevel: 'Serializable', // Highest isolation level to prevent race conditions
+      timeout: 10000, // 10 second timeout
+    });
 
     if (isReRegistration) {
       logger.info(`Re-registration created: ${registration.id} for event: ${eventId} by user: ${user.id} (previously cancelled)`);
-    }
-
-    // Update available slots if capacity exists
-    // Only decrement capacity for new registrations, not re-registrations
-    if (event.capacity !== null && !isReRegistration) {
-      const newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
-      await prisma.event.update({
-        where: { id: eventId },
-        data: {
-          availableSlots: Math.max(0, newAvailableSlots),
-        },
-      });
     }
 
     // Send appropriate email based on event type
