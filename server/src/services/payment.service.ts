@@ -5,6 +5,7 @@ import { RegistrationStatus } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { NotFoundError, ValidationError } from '../utils/errors';
 import { TicketService } from './ticket.service';
+import { EventService } from './event.service';
 
 export interface InitializePaymentData {
   registrationId: string;
@@ -256,11 +257,19 @@ export class PaymentService {
         }
 
         // All validations passed - update registration status
+        // Use status validation to ensure consistency
+        const syncedStatus = EventService.validateAndSyncStatus(
+          registration.status,
+          registration.paymentStatus || 'PENDING',
+          'COMPLETED',
+          RegistrationStatus.CONFIRMED,
+        );
+
         await prisma.eventRegistration.update({
           where: { id: registration.id },
           data: {
-            status: RegistrationStatus.CONFIRMED,
-            paymentStatus: 'COMPLETED',
+            status: syncedStatus.status,
+            paymentStatus: syncedStatus.paymentStatus,
             paymentMethod: 'PAYSTACK',
           },
         });
@@ -284,16 +293,37 @@ export class PaymentService {
     } else if (event === 'charge.failed') {
       const reference = data.reference as string;
       if (reference) {
-        await prisma.eventRegistration.updateMany({
+        // Find registration and update both payment status and registration status
+        const registration = await prisma.eventRegistration.findFirst({
           where: {
             paymentTransactionId: reference,
             paymentStatus: 'PENDING',
           },
-          data: {
-            paymentStatus: 'FAILED',
+          select: {
+            id: true,
+            status: true,
           },
         });
-        logger.info(`Payment failed: ${reference}`);
+
+        if (registration) {
+          // Use status validation to ensure consistency
+          const syncedStatus = EventService.validateAndSyncStatus(
+            registration.status,
+            'PENDING', // Current payment status before failure
+            'FAILED',
+          );
+
+          await prisma.eventRegistration.update({
+            where: { id: registration.id },
+            data: {
+              status: syncedStatus.status,
+              paymentStatus: syncedStatus.paymentStatus,
+            },
+          });
+          logger.info(`Payment failed: ${reference} for registration: ${registration.id}`);
+        } else {
+          logger.warn(`Payment failed webhook: Registration not found for reference: ${reference}`);
+        }
       }
     }
   }

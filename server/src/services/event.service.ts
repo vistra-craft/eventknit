@@ -72,6 +72,69 @@ export interface RegisterForEventData {
 
 export class EventService {
   /**
+   * Validate and sync registration status with payment status
+   * Ensures status consistency across the application
+   */
+  static validateAndSyncStatus(
+    currentStatus: RegistrationStatus,
+    currentPaymentStatus: string,
+    newPaymentStatus?: string,
+    newStatus?: RegistrationStatus,
+  ): { status: RegistrationStatus; paymentStatus: string } {
+    // Define valid status combinations
+    const validCombinations: Record<string, RegistrationStatus[]> = {
+      COMPLETED: [RegistrationStatus.CONFIRMED],
+      PENDING: [RegistrationStatus.PENDING],
+      FAILED: [RegistrationStatus.PENDING, RegistrationStatus.CANCELLED],
+    };
+
+    // Determine final payment status
+    const finalPaymentStatus = newPaymentStatus || currentPaymentStatus;
+
+    // Determine final registration status
+    let finalStatus = newStatus || currentStatus;
+
+    // Validate and sync status based on payment status
+    if (finalPaymentStatus === 'COMPLETED') {
+      // Payment completed - registration must be CONFIRMED
+      if (finalStatus !== RegistrationStatus.CONFIRMED) {
+        finalStatus = RegistrationStatus.CONFIRMED;
+      }
+    } else if (finalPaymentStatus === 'PENDING') {
+      // Payment pending - registration should be PENDING (unless already CANCELLED)
+      if (finalStatus === RegistrationStatus.CONFIRMED) {
+        // This shouldn't happen, but if it does, keep CONFIRMED
+        // (might be a free event that was confirmed)
+      } else if (finalStatus !== RegistrationStatus.CANCELLED) {
+        finalStatus = RegistrationStatus.PENDING;
+      }
+    } else if (finalPaymentStatus === 'FAILED') {
+      // Payment failed - registration can be PENDING (for retry) or CANCELLED
+      if (finalStatus === RegistrationStatus.CONFIRMED) {
+        // This is inconsistent - payment failed but status is confirmed
+        // Keep as PENDING to allow retry
+        finalStatus = RegistrationStatus.PENDING;
+      }
+      // If already CANCELLED, keep it as CANCELLED
+    }
+
+    // Validate the final combination
+    const validStatuses = validCombinations[finalPaymentStatus] || [];
+    if (validStatuses.length > 0 && !validStatuses.includes(finalStatus)) {
+      logger.warn(
+        `Invalid status combination detected: paymentStatus=${finalPaymentStatus}, status=${finalStatus}. Auto-correcting...`,
+      );
+      // Auto-correct to first valid status
+      finalStatus = validStatuses[0];
+    }
+
+    return {
+      status: finalStatus,
+      paymentStatus: finalPaymentStatus,
+    };
+  }
+
+  /**
    * Create a new event
    */
   static async createEvent(

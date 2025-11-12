@@ -2,6 +2,7 @@ import * as cron from 'node-cron';
 import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
 import { RegistrationStatus } from '@prisma/client';
+import { EventService } from '../services/event.service';
 
 /**
  * Payment Timeout Job
@@ -90,12 +91,20 @@ export class PaymentTimeoutJob {
               return;
             }
 
+            // Use status validation to ensure consistency
+            const syncedStatus = EventService.validateAndSyncStatus(
+              currentRegistration.status,
+              currentRegistration.paymentStatus || 'PENDING',
+              'FAILED',
+              RegistrationStatus.CANCELLED,
+            );
+
             // Cancel registration
             await tx.eventRegistration.update({
               where: { id: registration.id },
               data: {
-                status: RegistrationStatus.CANCELLED,
-                paymentStatus: 'FAILED',
+                status: syncedStatus.status,
+                paymentStatus: syncedStatus.paymentStatus,
                 cancelledAt: new Date(),
                 cancelledBy: null, // System cancellation
               },
