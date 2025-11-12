@@ -28,9 +28,10 @@ interface User {
 interface DashboardNavbarProps {
   user: User;
   activeSection: string;
+  eventTitle?: string;
 }
 
-const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }) => {
+const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, eventTitle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
@@ -70,8 +71,12 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection }
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <span className="text-xl font-bold text-eventknit">EventKnit</span>
-              <span className="text-muted-foreground mx-2">&gt;</span>
-              <span className="text-lg font-medium text-foreground">Seamless East Africa 2025</span>
+              {eventTitle && (
+                <>
+                  <span className="text-muted-foreground mx-2">&gt;</span>
+                  <span className="text-lg font-medium text-foreground">{eventTitle}</span>
+                </>
+              )}
             </Link>
           </div>
 

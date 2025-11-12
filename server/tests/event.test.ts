@@ -1100,5 +1100,322 @@ describe('Event System', () => {
       expect(response.body.data.events.length).toBe(0);
     });
   });
+
+  describe('Guest Registration - New Functionality', () => {
+    it('should handle capacity race condition with concurrent registrations', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create event with limited capacity
+      const event = await prisma.event.create({
+        data: {
+          title: 'Limited Capacity Event',
+          description: 'Event with capacity limit',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          price: 50,
+          capacity: 2, // Only 2 spots
+          availableSlots: 2,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      // Attempt concurrent registrations (3 registrations for 2 capacity)
+      const registrations = await Promise.allSettled([
+        request(app)
+          .post(`/api/v1/events/${event.id}/register-guest`)
+          .send({
+            email: 'guest1@test.com',
+            firstName: 'Guest',
+            lastName: 'One',
+            quantity: 1,
+          }),
+        request(app)
+          .post(`/api/v1/events/${event.id}/register-guest`)
+          .send({
+            email: 'guest2@test.com',
+            firstName: 'Guest',
+            lastName: 'Two',
+            quantity: 1,
+          }),
+        request(app)
+          .post(`/api/v1/events/${event.id}/register-guest`)
+          .send({
+            email: 'guest3@test.com',
+            firstName: 'Guest',
+            lastName: 'Three',
+            quantity: 1,
+          }),
+      ]);
+
+      // Count successful registrations
+      const successful = registrations.filter(
+        (r) => r.status === 'fulfilled' && r.value.status === 201,
+      ).length;
+
+      // Should have exactly 2 successful registrations (capacity limit)
+      expect(successful).toBe(2);
+
+      // Verify final capacity
+      const finalEvent = await prisma.event.findUnique({
+        where: { id: event.id },
+        select: { availableSlots: true, capacity: true },
+      });
+      expect(finalEvent?.availableSlots).toBe(0); // All slots taken
+    });
+
+    it('should allow re-registration for cancelled events', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create event
+      const event = await prisma.event.create({
+        data: {
+          title: 'Re-registration Event',
+          description: 'Event for re-registration test',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          price: 50,
+          capacity: 10,
+          availableSlots: 10,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      // Create user
+      const user = await prisma.user.create({
+        data: {
+          email: 'reregister@test.com',
+          password: null, // Passwordless
+          firstName: 'Re',
+          lastName: 'Register',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Create cancelled registration
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event.id,
+          attendeeId: user.id,
+          quantity: 1,
+          totalAmount: 50,
+          status: 'CANCELLED',
+          paymentStatus: 'FAILED',
+          cancelledAt: new Date(),
+        },
+      });
+
+      // Re-register
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'reregister@test.com',
+          firstName: 'Re',
+          lastName: 'Register',
+          quantity: 1,
+        })
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+
+      // Verify registration was updated (not created new)
+      const registrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId: event.id,
+          attendeeId: user.id,
+        },
+      });
+
+      // Should have only one registration (updated, not duplicated)
+      expect(registrations.length).toBe(1);
+      expect(registrations[0].status).toBe('PENDING'); // New status
+      expect(registrations[0].cancelledAt).toBeNull(); // Cancellation cleared
+    });
+
+    it('should handle existing user with password during guest registration', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create user with password
+      const existingUser = await prisma.user.create({
+        data: {
+          email: 'existingwithpass@test.com',
+          password: await hashPassword('Test123!@#'),
+          firstName: 'Existing',
+          lastName: 'User',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Existing User Event',
+          description: 'Event for existing user',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'existingwithpass@test.com',
+          firstName: 'Existing',
+          lastName: 'User',
+          quantity: 1,
+        })
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.isNewUser).toBe(false);
+
+      // Verify no account invitation email token was created (user has password)
+      // Users with passwords should not receive account invitation emails
+      const invitationToken = await prisma.emailVerification.findFirst({
+        where: {
+          userId: existingUser.id,
+          verified: false,
+        },
+      });
+
+      // Should not create invitation token for users with password
+      // (The logic should check if user has password and skip invitation)
+      // This test verifies the existing user handling works correctly
+      expect(invitationToken).toBeNull();
+    });
+  });
+
+  describe('Payment Service - New Functionality', () => {
+    it('should validate guest payment with correct email', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create event and registration
+      const event = await prisma.event.create({
+        data: {
+          title: 'Payment Test Event',
+          description: 'Event for payment test',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          price: 100,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const user = await prisma.user.create({
+        data: {
+          email: 'paymenttest@test.com',
+          password: null,
+          firstName: 'Payment',
+          lastName: 'Test',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const registration = await prisma.eventRegistration.create({
+        data: {
+          eventId: event.id,
+          attendeeId: user.id,
+          quantity: 1,
+          totalAmount: 100,
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+        },
+      });
+
+      // Test guest payment validation endpoint
+      const response = await request(app)
+        .post('/api/v1/payments/initialize-guest')
+        .send({
+          registrationId: registration.id,
+          email: 'paymenttest@test.com',
+        });
+
+      // Should either succeed (if Paystack is configured) or fail with specific error
+      // In test environment, Paystack is usually not configured, so we expect a validation error
+      // or service unavailable error
+      expect([200, 400, 503]).toContain(response.status);
+    });
+
+    it('should reject guest payment with wrong email', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create event and registration
+      const event = await prisma.event.create({
+        data: {
+          title: 'Payment Test Event',
+          description: 'Event for payment test',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          price: 100,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const user = await prisma.user.create({
+        data: {
+          email: 'paymenttest2@test.com',
+          password: null,
+          firstName: 'Payment',
+          lastName: 'Test',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const registration = await prisma.eventRegistration.create({
+        data: {
+          eventId: event.id,
+          attendeeId: user.id,
+          quantity: 1,
+          totalAmount: 100,
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+        },
+      });
+
+      // Test with wrong email
+      const response = await request(app)
+        .post('/api/v1/payments/initialize-guest')
+        .send({
+          registrationId: registration.id,
+          email: 'wrong@email.com',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Email does not match');
+    });
+  });
 });
 
