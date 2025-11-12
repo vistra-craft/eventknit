@@ -25,6 +25,7 @@
     "prisma:migrate:deploy": "node scripts/prisma-migrate-deploy.js",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
+    "check-superadmin": "node scripts/check-superadmin.js",
     "list-users": "node scripts/list-users.js",
     "delete-user": "node scripts/delete-user.js"
   },

@@ -2,15 +2,12 @@
  * API Client Configuration and Utilities
  */
 
-// API Base URL - must be set via VITE_API_BASE_URL environment variable
+// API Base URL - uses VITE_API_BASE_URL environment variable if set
 // For local development: Set VITE_API_BASE_URL=http://localhost:3000/api/v1 in .env.local
-// For production: Set VITE_API_BASE_URL in Netlify environment variables
+// For production: Set VITE_API_BASE_URL in Netlify environment variables (recommended)
+// Falls back to production URL if not set (for backwards compatibility)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 
-   (() => {
-     console.error('VITE_API_BASE_URL is not set! Please set it in your environment variables.');
-     throw new Error('VITE_API_BASE_URL environment variable is required');
-   })());
+  (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 'https://eventknit.onrender.com/api/v1');
 
 export interface ApiResponse<T> {
   success: boolean;

@@ -157,13 +157,9 @@ export const getInvitationByToken = async (
   token: string
 ): Promise<InvitationResponse> => {
   // Public endpoint - no auth required
-  // API Base URL - must be set via VITE_API_BASE_URL environment variable
+  // API Base URL - uses VITE_API_BASE_URL environment variable if set
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 
-     (() => {
-       console.error('VITE_API_BASE_URL is not set! Please set it in your environment variables.');
-       throw new Error('VITE_API_BASE_URL environment variable is required');
-     })());
+    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 'https://eventknit.onrender.com/api/v1');
   const response = await fetch(`${API_BASE_URL}/invitations/${token}`);
   const data = await response.json();
   
@@ -213,13 +209,9 @@ export const registerViaInvitation = async (
   registrationData: Record<string, unknown>
 ): Promise<RegisterViaInvitationResponse> => {
   // Public endpoint - no auth required
-  // API Base URL - must be set via VITE_API_BASE_URL environment variable
+  // API Base URL - uses VITE_API_BASE_URL environment variable if set
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 
-     (() => {
-       console.error('VITE_API_BASE_URL is not set! Please set it in your environment variables.');
-       throw new Error('VITE_API_BASE_URL environment variable is required');
-     })());
+    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 'https://eventknit.onrender.com/api/v1');
   const response = await fetch(`${API_BASE_URL}/invitations/${token}/register`, {
     method: 'POST',
     headers: {
