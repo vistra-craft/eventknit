@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import { AuthProvider } from './contexts/AuthContext'
 import type { ReactNode } from 'react'
@@ -15,24 +15,29 @@ const TestWrapper = ({ children }: { children: ReactNode }) => {
 }
 
 describe('App', () => {
-  it('renders without crashing', () => {
-    render(
+  it('renders without crashing', async () => {
+    const { container } = render(
       <TestWrapper>
         <App />
       </TestWrapper>
     )
-    // Since App is currently empty, we just check it renders
-    expect(document.body).toBeInTheDocument()
+    // Wait for React to finish rendering to avoid DOM access after teardown
+    await waitFor(() => {
+      expect(container).toBeInTheDocument()
+    })
   })
 
-  it('renders the main div', () => {
-    render(
+  it('renders the main div', async () => {
+    const { container } = render(
       <TestWrapper>
         <App />
       </TestWrapper>
     )
-    const appDiv = document.querySelector('div')
-    expect(appDiv).toBeInTheDocument()
+    // Wait for React to finish rendering
+    await waitFor(() => {
+      const appDiv = container.querySelector('div')
+      expect(appDiv).toBeInTheDocument()
+    })
   })
 })
 
