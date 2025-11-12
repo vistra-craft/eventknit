@@ -1686,7 +1686,45 @@ export class EventService {
       if (user.status === UserStatus.SUSPENDED) {
         throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
       }
+
+      // Update existing user profile data if new information is provided
+      const updateData: {
+        firstName?: string;
+        lastName?: string;
+        phoneNumber?: string;
+        isEmailVerified?: boolean;
+        emailVerifiedAt?: Date;
+      } = {};
+
+      // Update name fields if provided and different
+      if (firstName && firstName !== user.firstName) {
+        updateData.firstName = firstName;
+      }
+      if (lastName && lastName !== user.lastName) {
+        updateData.lastName = lastName;
+      }
+      if (guestData.phoneNumber?.trim() && guestData.phoneNumber.trim() !== user.phoneNumber) {
+        updateData.phoneNumber = guestData.phoneNumber.trim();
+      }
+
+      // Verify email if not already verified
+      if (!user.isEmailVerified) {
+        updateData.isEmailVerified = true;
+        updateData.emailVerifiedAt = new Date();
+      }
+
+      // Update user if there are changes
+      if (Object.keys(updateData).length > 0) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        });
+        logger.info(`Updated existing user profile: ${user.id} for event: ${eventId}`);
+      }
     }
+
+    // Recalculate userHasPassword after potential user creation/update
+    const finalUserHasPassword = user.password !== null && user.password !== undefined;
 
     // Check if already registered
     const existingRegistration = await prisma.eventRegistration.findUnique({
@@ -1826,9 +1864,10 @@ export class EventService {
       // Don't throw error - registration is complete, email is optional
     }
 
-    // Generate account invitation token (only for new users)
+    // Generate account invitation token (only for new users or existing users without passwords)
+    // Skip account invitation for existing users who already have passwords
     let accountInvitationToken: string | undefined;
-    if (isNewUser) {
+    if (isNewUser || !finalUserHasPassword) {
       accountInvitationToken = crypto.randomBytes(32).toString('hex');
       const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
