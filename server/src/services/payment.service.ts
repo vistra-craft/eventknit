@@ -209,33 +209,77 @@ export class PaymentService {
           },
         });
 
-        if (registration && registration.paymentStatus !== 'COMPLETED') {
-          // Update registration status
-          await prisma.eventRegistration.update({
-            where: { id: registration.id },
-            data: {
-              status: RegistrationStatus.CONFIRMED,
-              paymentStatus: 'COMPLETED',
-              paymentMethod: 'PAYSTACK',
-            },
-          });
-
-          // Send ticket email
-          try {
-            // Ensure required fields are present before sending email
-            if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
-              await TicketService.sendTicketEmail(registration as Parameters<typeof TicketService.sendTicketEmail>[0]);
-              logger.info(`Ticket email sent for registration: ${registration.id}`);
-            } else {
-              logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
-            }
-          } catch (error) {
-            logger.error('Failed to send ticket email:', error);
-            // Don't fail the webhook if email fails
-          }
-
-          logger.info(`Payment completed: ${reference} for registration: ${registration.id}`);
+        if (!registration) {
+          logger.error(`Payment webhook: Registration not found for reference: ${reference}`);
+          return;
         }
+
+        // Validate payment hasn't already been processed
+        if (registration.paymentStatus === 'COMPLETED') {
+          logger.warn(`Payment webhook: Duplicate payment attempt for reference: ${reference}, registration: ${registration.id}`);
+          return;
+        }
+
+        // Validate payment amount matches registration totalAmount
+        const expectedAmount = Number(registration.totalAmount);
+        const paidAmount = verification.amount;
+        const amountDifference = Math.abs(expectedAmount - paidAmount);
+        const tolerance = 0.01; // Allow 1 cent/kobo difference for rounding
+
+        if (amountDifference > tolerance) {
+          logger.error(`Payment webhook: Amount mismatch for reference: ${reference}`, {
+            registrationId: registration.id,
+            expectedAmount,
+            paidAmount,
+            difference: amountDifference,
+            eventId: registration.eventId,
+            attendeeEmail: registration.attendee.email,
+          });
+          // Alert admin - log as critical error
+          logger.warn(`CRITICAL: Payment amount mismatch detected. Reference: ${reference}, Expected: ${expectedAmount}, Paid: ${paidAmount}`);
+          return;
+        }
+
+        // Validate payment email matches attendee email
+        const paymentEmail = verification.customer.email?.toLowerCase().trim() || '';
+        const attendeeEmail = registration.attendee.email?.toLowerCase().trim() || '';
+
+        if (paymentEmail && attendeeEmail && paymentEmail !== attendeeEmail) {
+          logger.warn(`Payment webhook: Email mismatch for reference: ${reference}`, {
+            registrationId: registration.id,
+            paymentEmail,
+            attendeeEmail,
+            eventId: registration.eventId,
+          });
+          // Log warning but don't block payment - email might be different (e.g., company email)
+          // Admin can review if needed
+        }
+
+        // All validations passed - update registration status
+        await prisma.eventRegistration.update({
+          where: { id: registration.id },
+          data: {
+            status: RegistrationStatus.CONFIRMED,
+            paymentStatus: 'COMPLETED',
+            paymentMethod: 'PAYSTACK',
+          },
+        });
+
+        // Send ticket email
+        try {
+          // Ensure required fields are present before sending email
+          if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
+            await TicketService.sendTicketEmail(registration as Parameters<typeof TicketService.sendTicketEmail>[0]);
+            logger.info(`Ticket email sent for registration: ${registration.id}`);
+          } else {
+            logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
+          }
+        } catch (error) {
+          logger.error('Failed to send ticket email:', error);
+          // Don't fail the webhook if email fails
+        }
+
+        logger.info(`Payment completed: ${reference} for registration: ${registration.id}`);
       }
     } else if (event === 'charge.failed') {
       const reference = data.reference as string;
