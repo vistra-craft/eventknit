@@ -203,6 +203,7 @@ export class PaymentService {
                 email: true,
                 firstName: true,
                 lastName: true,
+                companyAffiliation: true,
               },
             },
           },

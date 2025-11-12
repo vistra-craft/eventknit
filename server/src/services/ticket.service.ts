@@ -430,6 +430,151 @@ export class TicketService {
   }
 
   /**
+   * Send payment pending email for paid events
+   * This email is sent when registration is created but payment is still pending
+   */
+  static async sendPaymentPendingEmail(registration: TicketEmailData['registration'], paymentUrl?: string): Promise<void> {
+    try {
+      const { event, attendee } = registration;
+
+      // Format event date
+      const eventDate = this.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime);
+
+      // Payment pending email template
+      const html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payment Pending - ${event.title}</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+            <tr>
+              <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td style="background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); padding: 40px 30px; text-align: center;">
+                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">⏳ Payment Pending</h1>
+                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">Complete your registration</p>
+                    </td>
+                  </tr>
+
+                  <!-- Event Image -->
+                  ${event.image ? `
+                  <tr>
+                    <td style="padding: 0;">
+                      <img src="${event.image}" alt="${event.title}" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+                    </td>
+                  </tr>
+                  ` : ''}
+
+                  <!-- Content -->
+                  <tr>
+                    <td style="padding: 30px;">
+                      <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 24px; font-weight: 700;">${event.title}</h2>
+                      
+                      <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                        Thank you for registering for <strong>${event.title}</strong>! Your registration has been received, but we're waiting for your payment to be confirmed.
+                      </p>
+
+                      <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                        <p style="margin: 0; color: #856404; font-size: 14px; font-weight: 600;">⚠️ Your ticket will be sent once payment is confirmed</p>
+                      </div>
+                      
+                      <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                        <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px; width: 120px;">📅 Date & Time</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${eventDate}</td>
+                          </tr>
+                          ${event.venue ? `
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px;">📍 Venue</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${event.venue}</td>
+                          </tr>
+                          ` : ''}
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px;">📍 Location</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${event.location}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px;">👤 Attendee</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${attendee.firstName || ''} ${attendee.lastName || ''}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px;">🎫 Ticket Type</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${registration.ticketType || 'General Admission'}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px;">🔢 Quantity</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${registration.quantity}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; font-size: 14px;">💰 Amount Due</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">$${Number(registration.totalAmount).toFixed(2)}</td>
+                          </tr>
+                        </table>
+                      </div>
+
+                      ${paymentUrl ? `
+                      <!-- Payment Button -->
+                      <div style="text-align: center; margin: 30px 0;">
+                        <a href="${paymentUrl}" style="display: inline-block; background-color: #667eea; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                          Complete Payment
+                        </a>
+                      </div>
+                      ` : ''}
+
+                      <p style="margin: 20px 0 0 0; color: #666; font-size: 14px; line-height: 1.6;">
+                        If you've already completed payment, please allow a few minutes for processing. You'll receive your ticket via email once payment is confirmed.
+                      </p>
+
+                      ${event.description ? `
+                      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                        <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 18px; font-weight: 600;">About This Event</h3>
+                        <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">${event.description}</p>
+                      </div>
+                      ` : ''}
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e5e5;">
+                      <p style="margin: 0 0 10px 0; font-size: 12px; color: #999; text-align: center;">
+                        Need help? Contact us at <a href="mailto:support@eventknit.com" style="color: #667eea; text-decoration: none;">support@eventknit.com</a>
+                      </p>
+                      <p style="margin: 0; font-size: 11px; color: #bbb; text-align: center;">
+                        This is an automated message. Please do not reply.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `;
+
+      await emailService.sendEmail({
+        to: attendee.email,
+        subject: `Payment Pending - ${event.title}`,
+        html,
+      });
+
+      logger.info(`Payment pending email sent to: ${attendee.email} for event: ${event.id}`);
+    } catch (error) {
+      logger.error('Failed to send payment pending email:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get ticket by registration ID
    */
   static async getTicketByRegistrationId(registrationId: string) {
