@@ -1015,6 +1015,138 @@ export class AuthService {
   }
 
   /**
+   * Resend account invitation email for passwordless users
+   * Invalidates old tokens and sends a new invitation
+   */
+  static async resendAccountInvitation(email: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists (security best practice)
+      // Return success to prevent email enumeration
+      return;
+    }
+
+    // Check if user already has a password
+    if (user.password) {
+      throw new ValidationError('Account already has a password. Use login or password reset instead.');
+    }
+
+    // Check user status
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
+    }
+
+    if (user.status === UserStatus.DEACTIVATED) {
+      throw new ConflictError('This account has been deactivated. Please contact support to appeal or wait for the deactivation period to end.');
+    }
+
+    // Find and invalidate existing unverified account invitation tokens
+    await prisma.emailVerification.updateMany({
+      where: {
+        userId: user.id,
+        email: user.email,
+        verified: false,
+        // Only invalidate tokens that haven't expired yet (or are close to expiring)
+        expiresAt: {
+          gte: new Date(),
+        },
+      },
+      data: {
+        verified: true, // Mark as used to invalidate
+        verifiedAt: new Date(),
+      },
+    });
+
+    // Generate new account invitation token
+    const accountInvitationToken = crypto.randomBytes(32).toString('hex');
+    const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Store new account invitation token
+    await prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        token: accountInvitationToken,
+        expiresAt: accountInvitationExpiresAt,
+        verified: false,
+      },
+    });
+
+    // Send account invitation email
+    const accountCreationUrl = `${config.frontend.url}/auth/create-account?token=${accountInvitationToken}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Create Your EventKnit Account</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #4a6cf7 0%, #5b7cfa 100%); padding: 40px 20px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Welcome to EventKnit!</h1>
+              <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Create Your Account</p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+              <h2 style="margin: 0 0 20px 0; font-size: 22px; color: #333;">Create Your Account</h2>
+              <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                You've requested a new account invitation link. Create your EventKnit account to easily manage your tickets, view your event history, and register for future events.
+              </p>
+
+              <!-- CTA Button -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${accountCreationUrl}" style="background-color: #4a6cf7; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(74, 108, 247, 0.3);">
+                  Create Account
+                </a>
+              </div>
+
+              <p style="margin: 20px 0 0 0; color: #999; font-size: 14px; text-align: center;">
+                This link will expire in 7 days. If you didn't request this, you can safely ignore this email.
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0 0 10px 0; font-size: 12px; color: #999; text-align: center;">
+                Need help? Contact us at <a href="mailto:support@eventknit.com" style="color: #4a6cf7; text-decoration: none;">support@eventknit.com</a>
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #bbb; text-align: center;">
+                This is an automated message. Please do not reply.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const emailResult = await emailService.sendEmail({
+      to: user.email,
+      subject: 'Create Your EventKnit Account',
+      html,
+      isCritical: false, // Not critical - user can request again
+    });
+
+    if (emailResult.success) {
+      if (emailResult.attempts > 1) {
+        logger.info(`Account invitation email resent to: ${user.email} after ${emailResult.attempts} attempts`);
+      } else {
+        logger.info(`Account invitation email resent to: ${user.email}`);
+      }
+    } else {
+      logger.warn(`Failed to resend account invitation email to ${user.email} after ${emailResult.attempts} attempts:`, emailResult.error);
+      throw new ServiceUnavailableError('Failed to send account invitation email. Please try again later.');
+    }
+  }
+
+  /**
    * Request email verification code (alternative to token-based)
    */
   static async requestEmailVerificationCode(email: string): Promise<void> {

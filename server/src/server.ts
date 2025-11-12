@@ -2,6 +2,7 @@ import { connectDB, disconnectDB } from './config/database';
 import { config } from './config';
 import { logger } from './utils/logger';
 import app from './app';
+import { initializeJobs, stopJobs } from './jobs';
 
 const PORT = config.port;
 const HOST = config.host;
@@ -13,6 +14,14 @@ const startServer = async () => {
       await connectDB();
     } catch (error) {
       // Already handled in connectDB, but catch here to ensure server still starts
+    }
+
+    // Initialize scheduled jobs
+    try {
+      initializeJobs();
+    } catch (error) {
+      logger.error('Failed to initialize scheduled jobs:', error);
+      // Don't fail server startup if jobs fail to initialize
     }
 
     // Start Express server
@@ -28,6 +37,9 @@ const startServer = async () => {
     // Graceful shutdown handler
     const gracefulShutdown = async (signal: string) => {
       logger.info(`\n${signal} received, shutting down gracefully...`);
+
+      // Stop scheduled jobs
+      stopJobs();
 
       await new Promise<void>((resolve) => server.close(() => resolve()));
 

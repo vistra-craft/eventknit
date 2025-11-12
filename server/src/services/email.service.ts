@@ -14,10 +14,22 @@ export interface EmailOptions {
   html: string;
   text?: string;
   attachments?: EmailAttachment[];
+  retries?: number; // Optional: number of retry attempts (default: 3)
+  isCritical?: boolean; // Optional: mark as critical email (affects retry behavior)
+}
+
+export interface EmailResult {
+  success: boolean;
+  attempts: number;
+  error?: Error;
 }
 
 class EmailService {
   private transporter;
+  private readonly DEFAULT_MAX_RETRIES = 3;
+  private readonly CRITICAL_MAX_RETRIES = 5;
+  private readonly INITIAL_RETRY_DELAY_MS = 1000; // 1 second
+  private readonly MAX_RETRY_DELAY_MS = 30000; // 30 seconds
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -31,30 +43,99 @@ class EmailService {
     });
   }
 
-  async sendEmail(options: EmailOptions): Promise<void> {
-    try {
-      const mailOptions: nodemailer.SendMailOptions = {
-        from: config.email.from,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-        text: options.text,
-      };
+  /**
+   * Calculate exponential backoff delay
+   * Formula: min(initialDelay * 2^attempt, maxDelay)
+   */
+  private calculateRetryDelay(attempt: number): number {
+    const delay = this.INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+    return Math.min(delay, this.MAX_RETRY_DELAY_MS);
+  }
 
-      // Add attachments if provided
-      if (options.attachments && options.attachments.length > 0) {
-        mailOptions.attachments = options.attachments.map(att => ({
-          filename: att.filename,
-          content: att.content,
-          contentType: att.contentType,
-        }));
+  /**
+   * Sleep for specified milliseconds
+   */
+  private sleep(ms: number): Promise<void> {
+    // eslint-disable-next-line no-undef
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Send email with retry logic and exponential backoff
+   */
+  async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    const maxRetries = options.retries ?? (options.isCritical ? this.CRITICAL_MAX_RETRIES : this.DEFAULT_MAX_RETRIES);
+    let lastError: Error | undefined;
+    let attempts = 0;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      attempts++;
+      try {
+        const mailOptions: nodemailer.SendMailOptions = {
+          from: config.email.from,
+          to: options.to,
+          subject: options.subject,
+          html: options.html,
+          text: options.text,
+        };
+
+        // Add attachments if provided
+        if (options.attachments && options.attachments.length > 0) {
+          mailOptions.attachments = options.attachments.map(att => ({
+            filename: att.filename,
+            content: att.content,
+            contentType: att.contentType,
+          }));
+        }
+
+        await this.transporter.sendMail(mailOptions);
+        
+        // Success - log if it was a retry
+        if (attempt > 0) {
+          logger.info(`Email sent successfully after ${attempts} attempts to: ${options.to}`);
+        } else {
+          logger.info(`Email sent successfully to: ${options.to}`);
+        }
+
+        return { success: true, attempts };
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const isLastAttempt = attempt === maxRetries - 1;
+
+        if (isLastAttempt) {
+          // Final attempt failed - log persistent failure
+          logger.error(`Failed to send email after ${attempts} attempts to: ${options.to}`, {
+            error: lastError.message,
+            subject: options.subject,
+            isCritical: options.isCritical || false,
+            attempts,
+          });
+
+          // Log persistent failure for admin review
+          if (options.isCritical) {
+            logger.warn(`CRITICAL EMAIL FAILURE: ${options.subject} to ${options.to} failed after ${attempts} attempts`);
+          }
+        } else {
+          // Calculate delay for next retry
+          const delay = this.calculateRetryDelay(attempt);
+          logger.warn(`Email send attempt ${attempts} failed, retrying in ${delay}ms...`, {
+            to: options.to,
+            subject: options.subject,
+            error: lastError.message,
+          });
+
+          // Wait before retrying
+          await this.sleep(delay);
+        }
       }
-
-      await this.transporter.sendMail(mailOptions);
-    } catch (error) {
-      logger.error('Failed to send email:', error);
-      throw new Error('Failed to send email');
     }
+
+    // All retries exhausted
+    return {
+      success: false,
+      attempts,
+      error: lastError,
+    };
   }
 
   async sendVerificationEmail(email: string, token: string): Promise<void> {
@@ -85,11 +166,16 @@ class EmailService {
       </html>
     `;
 
-    await this.sendEmail({
+    const result = await this.sendEmail({
       to: email,
       subject: 'Verify Your EventKnit Email',
       html,
+      isCritical: true, // Email verification is critical
     });
+
+    if (!result.success) {
+      throw new Error(`Failed to send verification email after ${result.attempts} attempts: ${result.error?.message}`);
+    }
   }
 
   async sendVerificationCode(email: string, code: string): Promise<void> {
@@ -118,11 +204,16 @@ class EmailService {
       </html>
     `;
 
-    await this.sendEmail({
+    const result = await this.sendEmail({
       to: email,
       subject: 'Your EventKnit Verification Code',
       html,
+      isCritical: true, // Verification code is critical
     });
+
+    if (!result.success) {
+      throw new Error(`Failed to send verification code after ${result.attempts} attempts: ${result.error?.message}`);
+    }
   }
 
   async sendPasswordResetEmail(email: string, token: string): Promise<void> {
@@ -154,11 +245,16 @@ class EmailService {
       </html>
     `;
 
-    await this.sendEmail({
+    const result = await this.sendEmail({
       to: email,
       subject: 'Reset Your EventKnit Password',
       html,
+      isCritical: true, // Password reset is critical
     });
+
+    if (!result.success) {
+      throw new Error(`Failed to send password reset email after ${result.attempts} attempts: ${result.error?.message}`);
+    }
   }
 
   async sendMagicLinkEmail(email: string, token: string): Promise<void> {
@@ -189,11 +285,16 @@ class EmailService {
       </html>
     `;
 
-    await this.sendEmail({
+    const result = await this.sendEmail({
       to: email,
       subject: 'Login to EventKnit',
       html,
+      isCritical: true, // Magic link login is critical
     });
+
+    if (!result.success) {
+      throw new Error(`Failed to send magic link email after ${result.attempts} attempts: ${result.error?.message}`);
+    }
   }
 }
 

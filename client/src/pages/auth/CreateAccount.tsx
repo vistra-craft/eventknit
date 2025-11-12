@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import * as authApi from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
@@ -16,13 +16,15 @@ const CreateAccount = () => {
   const { dispatch } = useAuthContext();
   
   const token = searchParams.get('token');
-  const [email] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifyingToken, setIsVerifyingToken] = useState(true);
+  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showResend, setShowResend] = useState(false);
 
   // Password validation
   const validatePassword = (password: string): string | null => {
@@ -48,6 +50,7 @@ const CreateAccount = () => {
   useEffect(() => {
     if (!token) {
       setError('Invalid invitation link. Please check your email for the correct link.');
+      setShowResend(true);
       setIsVerifyingToken(false);
       return;
     }
@@ -55,6 +58,35 @@ const CreateAccount = () => {
     // In a full implementation, we could verify the token first to show the email
     setIsVerifyingToken(false);
   }, [token]);
+
+  const handleResendInvitation = async () => {
+    if (!email) {
+      setError('Please enter your email address to resend the invitation');
+      return;
+    }
+
+    setIsResending(true);
+    setError('');
+
+    try {
+      await authApi.resendAccountInvitation(email);
+      setSuccess(true);
+      setError('');
+      // Show success message
+      setTimeout(() => {
+        setSuccess(false);
+        setShowResend(false);
+      }, 3000);
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === 'object' && 'message' in err
+          ? (err.message as string)
+          : 'Failed to resend invitation. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +139,15 @@ const CreateAccount = () => {
           ? (err.message as string)
           : 'Failed to create account. Please try again.';
       setError(errorMessage);
+      
+      // Show resend option if token is invalid or expired
+      if (
+        errorMessage.toLowerCase().includes('expired') ||
+        errorMessage.toLowerCase().includes('invalid') ||
+        errorMessage.toLowerCase().includes('already been used')
+      ) {
+        setShowResend(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +198,7 @@ const CreateAccount = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email (read-only, pre-filled) */}
+            {/* Email (read-only if token exists, editable if resending) */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -166,14 +207,18 @@ const CreateAccount = () => {
                   id="email"
                   type="email"
                   value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@example.com"
-                  disabled
-                  className="pl-10 bg-muted"
+                  disabled={!showResend && token !== null}
+                  className="pl-10"
+                  required={showResend}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Your email is pre-filled from your event registration
-              </p>
+              {!showResend && token && (
+                <p className="text-xs text-muted-foreground">
+                  Your email is pre-filled from your event registration
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -224,20 +269,58 @@ const CreateAccount = () => {
               </Alert>
             )}
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading || !token}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </Button>
+            {success && !showResend && (
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>Invitation email sent! Please check your inbox.</AlertDescription>
+              </Alert>
+            )}
+
+            {!showResend && (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || !token}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
+              </Button>
+            )}
+
+            {showResend && (
+              <div className="space-y-2">
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Your invitation link is invalid or has expired. Enter your email to receive a new invitation.
+                  </AlertDescription>
+                </Alert>
+                <Button
+                  type="button"
+                  onClick={handleResendInvitation}
+                  className="w-full"
+                  disabled={isResending || !email}
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Resend Invitation
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
 
             <p className="text-xs text-center text-muted-foreground">
               By creating an account, you agree to our Terms of Service and Privacy Policy

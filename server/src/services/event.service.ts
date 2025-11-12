@@ -8,7 +8,7 @@ import {
 } from '../utils/errors';
 import { createAuditLog, AuditActions } from '../utils/audit';
 import { logger } from '../utils/logger';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password';
 import crypto from 'crypto';
 import { emailService } from './email.service';
@@ -71,6 +71,69 @@ export interface RegisterForEventData {
 }
 
 export class EventService {
+  /**
+   * Validate and sync registration status with payment status
+   * Ensures status consistency across the application
+   */
+  static validateAndSyncStatus(
+    currentStatus: RegistrationStatus,
+    currentPaymentStatus: string,
+    newPaymentStatus?: string,
+    newStatus?: RegistrationStatus,
+  ): { status: RegistrationStatus; paymentStatus: string } {
+    // Define valid status combinations
+    const validCombinations: Record<string, RegistrationStatus[]> = {
+      COMPLETED: [RegistrationStatus.CONFIRMED],
+      PENDING: [RegistrationStatus.PENDING],
+      FAILED: [RegistrationStatus.PENDING, RegistrationStatus.CANCELLED],
+    };
+
+    // Determine final payment status
+    const finalPaymentStatus = newPaymentStatus || currentPaymentStatus;
+
+    // Determine final registration status
+    let finalStatus = newStatus || currentStatus;
+
+    // Validate and sync status based on payment status
+    if (finalPaymentStatus === 'COMPLETED') {
+      // Payment completed - registration must be CONFIRMED
+      if (finalStatus !== RegistrationStatus.CONFIRMED) {
+        finalStatus = RegistrationStatus.CONFIRMED;
+      }
+    } else if (finalPaymentStatus === 'PENDING') {
+      // Payment pending - registration should be PENDING (unless already CANCELLED)
+      if (finalStatus === RegistrationStatus.CONFIRMED) {
+        // This shouldn't happen, but if it does, keep CONFIRMED
+        // (might be a free event that was confirmed)
+      } else if (finalStatus !== RegistrationStatus.CANCELLED) {
+        finalStatus = RegistrationStatus.PENDING;
+      }
+    } else if (finalPaymentStatus === 'FAILED') {
+      // Payment failed - registration can be PENDING (for retry) or CANCELLED
+      if (finalStatus === RegistrationStatus.CONFIRMED) {
+        // This is inconsistent - payment failed but status is confirmed
+        // Keep as PENDING to allow retry
+        finalStatus = RegistrationStatus.PENDING;
+      }
+      // If already CANCELLED, keep it as CANCELLED
+    }
+
+    // Validate the final combination
+    const validStatuses = validCombinations[finalPaymentStatus] || [];
+    if (validStatuses.length > 0 && !validStatuses.includes(finalStatus)) {
+      logger.warn(
+        `Invalid status combination detected: paymentStatus=${finalPaymentStatus}, status=${finalStatus}. Auto-correcting...`,
+      );
+      // Auto-correct to first valid status
+      finalStatus = validStatuses[0];
+    }
+
+    return {
+      status: finalStatus,
+      paymentStatus: finalPaymentStatus,
+    };
+  }
+
   /**
    * Create a new event
    */
@@ -1647,9 +1710,10 @@ export class EventService {
       where: { email },
     });
 
-    const isNewUser = !user;
+    let userCreatedInThisRequest = false;
 
     // Create user account if doesn't exist (passwordless)
+    // Use try-catch to handle race condition where user might be created between check and create
     if (!user) {
       // Check for SUSPENDED or DEACTIVATED users with this email
       const existingUser = await prisma.user.findFirst({
@@ -1666,27 +1730,95 @@ export class EventService {
       }
 
       // Create passwordless account (user can set password later)
-      user = await prisma.user.create({
-        data: {
-          email,
-          password: null, // Passwordless account
-          firstName,
-          lastName,
-          phoneNumber: guestData.phoneNumber?.trim(),
-          role: UserRole.ATTENDEE,
-          status: UserStatus.ACTIVE,
-          isEmailVerified: true, // Email verified from checkout
-          emailVerifiedAt: new Date(),
-        },
-      });
+      // Handle race condition: if user is created by another request, catch unique constraint error
+      try {
+        user = await prisma.user.create({
+          data: {
+            email,
+            password: null, // Passwordless account
+            firstName,
+            lastName,
+            phoneNumber: guestData.phoneNumber?.trim(),
+            role: UserRole.ATTENDEE,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true, // Email verified from checkout
+            emailVerifiedAt: new Date(),
+          },
+        });
 
-      logger.info(`Guest user created: ${user.id} for event: ${eventId}`);
-    } else {
+        userCreatedInThisRequest = true;
+        logger.info(`Guest user created: ${user.id} for event: ${eventId}`);
+      } catch (error: unknown) {
+        // Handle race condition: if user was created by another concurrent request
+        if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+          // User was created by another request - fetch the existing user
+          user = await prisma.user.findUnique({
+            where: { email },
+          });
+
+          if (!user) {
+            // This shouldn't happen, but handle it gracefully
+            throw new ConflictError('User account creation failed. Please try again.');
+          }
+
+          userCreatedInThisRequest = false; // User was NOT created in this request
+          logger.info(`User already exists (race condition handled): ${user.id} for event: ${eventId}`);
+        } else {
+          // Re-throw other errors
+          throw error;
+        }
+      }
+    }
+
+    // Determine if user is new (created in this request)
+    // This is used to determine if we should send account invitation email
+    const finalIsNewUser = userCreatedInThisRequest;
+
+    // Continue with existing user logic
+    if (user) {
       // Check user status
       if (user.status === UserStatus.SUSPENDED) {
         throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
       }
+
+      // Update existing user profile data if new information is provided
+      const updateData: {
+        firstName?: string;
+        lastName?: string;
+        phoneNumber?: string;
+        isEmailVerified?: boolean;
+        emailVerifiedAt?: Date;
+      } = {};
+
+      // Update name fields if provided and different
+      if (firstName && firstName !== user.firstName) {
+        updateData.firstName = firstName;
+      }
+      if (lastName && lastName !== user.lastName) {
+        updateData.lastName = lastName;
+      }
+      if (guestData.phoneNumber?.trim() && guestData.phoneNumber.trim() !== user.phoneNumber) {
+        updateData.phoneNumber = guestData.phoneNumber.trim();
+      }
+
+      // Verify email if not already verified
+      if (!user.isEmailVerified) {
+        updateData.isEmailVerified = true;
+        updateData.emailVerifiedAt = new Date();
+      }
+
+      // Update user if there are changes
+      if (Object.keys(updateData).length > 0) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        });
+        logger.info(`Updated existing user profile: ${user.id} for event: ${eventId}`);
+      }
     }
+
+    // Recalculate userHasPassword after potential user creation/update
+    const finalUserHasPassword = user.password !== null && user.password !== undefined;
 
     // Check if already registered
     const existingRegistration = await prisma.eventRegistration.findUnique({
@@ -1721,114 +1853,231 @@ export class EventService {
       }
     }
 
-    // Check capacity
-    if (event.capacity !== null) {
-      const currentRegistrations = await prisma.eventRegistration.count({
-        where: {
-          eventId,
-          status: {
-            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
-          },
-        },
-      });
-
-      if (currentRegistrations + quantity > event.capacity) {
-        throw new ValidationError('Event is sold out or insufficient capacity');
-      }
-    }
-
     // Generate backup ticket code
     const backupCode = TicketService.generateBackupTicketCode();
 
-    // Create registration
+    // Determine registration status
     const registrationStatus = event.isFree
       ? RegistrationStatus.CONFIRMED
       : RegistrationStatus.PENDING;
 
-    const registration = await prisma.eventRegistration.create({
-      data: {
-        eventId,
-        attendeeId: user.id,
-        ticketType: guestData.ticketType || null,
-        quantity,
-        totalAmount,
-        registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
-        backupCode,
-        status: registrationStatus,
-        paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-      },
-      include: {
-        event: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            startDate: true,
-            endDate: true,
-            startTime: true,
-            endTime: true,
-            venue: true,
-            location: true,
-            address: true,
-            isOnline: true,
-            onlineLink: true,
-            image: true,
-            organizer: {
+    // Use transaction with Serializable isolation level to prevent capacity race condition
+    // This ensures atomic capacity check and registration creation
+    const isReRegistration = existingRegistration && existingRegistration.status === RegistrationStatus.CANCELLED;
+    const registration = await prisma.$transaction(async (tx) => {
+      // Fetch event within transaction (will be serialized with other concurrent transactions)
+      const lockedEvent = await tx.event.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          capacity: true,
+          availableSlots: true,
+        },
+      });
+
+      if (!lockedEvent) {
+        throw new NotFoundError('Event not found');
+      }
+
+      // Check capacity within transaction (atomic with registration creation)
+      if (lockedEvent.capacity !== null) {
+        const currentRegistrations = await tx.eventRegistration.count({
+          where: {
+            eventId,
+            status: {
+              in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+            },
+          },
+        });
+
+        // For re-registrations, we don't need to check capacity (slot already reserved)
+        if (!isReRegistration && currentRegistrations + quantity > lockedEvent.capacity) {
+          throw new ValidationError('Event is sold out or insufficient capacity');
+        }
+      }
+
+      // Create or update registration
+      const reg = isReRegistration
+        ? await tx.eventRegistration.update({
+          where: {
+            eventId_attendeeId: {
+              eventId,
+              attendeeId: user.id,
+            },
+          },
+          data: {
+            ticketType: guestData.ticketType || null,
+            quantity,
+            totalAmount,
+            registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
+            backupCode,
+            status: registrationStatus,
+            paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+            cancelledAt: null, // Clear cancellation timestamp
+            cancelledBy: null, // Clear cancellation user
+          },
+          include: {
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            attendee: {
               select: {
                 id: true,
                 firstName: true,
                 lastName: true,
-                organizationName: true,
                 email: true,
+                companyAffiliation: true,
               },
             },
           },
-        },
-        attendee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            companyAffiliation: true,
+        })
+        : await tx.eventRegistration.create({
+          data: {
+            eventId,
+            attendeeId: user.id,
+            ticketType: guestData.ticketType || null,
+            quantity,
+            totalAmount,
+            registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
+            backupCode,
+            status: registrationStatus,
+            paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
           },
-        },
-      },
+          include: {
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            attendee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                companyAffiliation: true,
+              },
+            },
+          },
+        });
+
+      // Update available slots if capacity exists (only for new registrations)
+      if (lockedEvent.capacity !== null && !isReRegistration) {
+        const newAvailableSlots = (lockedEvent.availableSlots || lockedEvent.capacity) - quantity;
+        await tx.event.update({
+          where: { id: eventId },
+          data: {
+            availableSlots: Math.max(0, newAvailableSlots),
+          },
+        });
+      }
+
+      return reg;
+    }, {
+      isolationLevel: 'Serializable', // Highest isolation level to prevent race conditions
+      timeout: 10000, // 10 second timeout
     });
 
-    // Update available slots if capacity exists
-    if (event.capacity !== null) {
-      const newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
-      await prisma.event.update({
-        where: { id: eventId },
-        data: {
-          availableSlots: Math.max(0, newAvailableSlots),
-        },
-      });
+    if (isReRegistration) {
+      logger.info(`Re-registration created: ${registration.id} for event: ${eventId} by user: ${user.id} (previously cancelled)`);
     }
 
-    // Send ticket email immediately (Email 1: Ticket Confirmation)
+    // Send appropriate email based on event type
+    // For free events: Send ticket email immediately
+    // For paid events: Send payment pending email (ticket email will be sent after payment confirmation)
     try {
-      await TicketService.sendTicketEmail({
-        id: registration.id,
-        ticketType: registration.ticketType,
-        quantity: registration.quantity,
-        totalAmount: registration.totalAmount,
-        createdAt: registration.createdAt,
-        backupCode: registration.backupCode,
-        registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-        event: registration.event,
-        attendee: registration.attendee,
-      });
-      logger.info(`Ticket email sent to: ${user.email} for event: ${eventId}`);
+      if (event.isFree) {
+        // Free event - send ticket email immediately
+        await TicketService.sendTicketEmail({
+          id: registration.id,
+          ticketType: registration.ticketType,
+          quantity: registration.quantity,
+          totalAmount: registration.totalAmount,
+          createdAt: registration.createdAt,
+          backupCode: registration.backupCode,
+          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+          event: registration.event,
+          attendee: registration.attendee,
+        });
+        logger.info(`Ticket email sent to: ${user.email} for free event: ${eventId}`);
+      } else {
+        // Paid event - send payment pending email
+        // Note: Payment URL will be generated by frontend, so we don't include it here
+        await TicketService.sendPaymentPendingEmail({
+          id: registration.id,
+          ticketType: registration.ticketType,
+          quantity: registration.quantity,
+          totalAmount: registration.totalAmount,
+          createdAt: registration.createdAt,
+          backupCode: registration.backupCode,
+          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+          event: registration.event,
+          attendee: registration.attendee,
+        });
+        logger.info(`Payment pending email sent to: ${user.email} for paid event: ${eventId}`);
+      }
     } catch (error) {
-      logger.error('Failed to send ticket email:', error);
+      // Log error but don't fail registration
+      // For free events: ticket email failure is logged but registration succeeds
+      // For paid events: payment pending email failure is logged but registration succeeds
+      // Ticket email will be sent after payment confirmation
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to send ${event.isFree ? 'ticket' : 'payment pending'} email:`, {
+        error: errorMessage,
+        eventId,
+        userEmail: user.email,
+      });
       // Don't throw error - registration is complete, email is optional
     }
 
-    // Generate account invitation token (only for new users)
+    // Generate account invitation token (only for new users or existing users without passwords)
+    // Skip account invitation for existing users who already have passwords
     let accountInvitationToken: string | undefined;
-    if (isNewUser) {
+    if (finalIsNewUser || !finalUserHasPassword) {
       accountInvitationToken = crypto.randomBytes(32).toString('hex');
       const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -1899,13 +2148,26 @@ export class EventService {
         </html>
         `;
 
-        await emailService.sendEmail({
+        // Account invitation emails are important but not critical
+        // User can still access their account via ticket email or request a new invitation
+        const emailResult = await emailService.sendEmail({
           to: user.email,
           subject: `Create Your EventKnit Account - ${event.title}`,
           html,
+          isCritical: false, // Not critical - user can request new invitation
         });
 
-        logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId}`);
+        if (emailResult.success) {
+          if (emailResult.attempts > 1) {
+            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId} after ${emailResult.attempts} attempts`);
+          } else {
+            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId}`);
+          }
+        } else {
+          logger.warn(`Failed to send account invitation email to ${user.email} after ${emailResult.attempts} attempts:`, emailResult.error);
+          // Don't throw - account invitation email failure is not critical
+          // User can still access their account and request a new invitation
+        }
       } catch (error) {
         logger.error('Failed to send account invitation email:', error);
         // Don't throw error - registration is complete, email is optional
@@ -1925,7 +2187,7 @@ export class EventService {
         totalAmount: totalAmount.toString(),
         isFree: event.isFree,
         isGuestCheckout: true,
-        isNewUser,
+        isNewUser: finalIsNewUser,
       },
       ipAddress,
       userAgent,
@@ -1940,7 +2202,7 @@ export class EventService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        isNewUser,
+        isNewUser: finalIsNewUser,
       },
       // No magic link token - user must use account invitation link or ticket email link
     };

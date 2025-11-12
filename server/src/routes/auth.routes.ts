@@ -198,6 +198,18 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/auth/resend-invitation
+ * @desc    Resend account invitation email (for passwordless users)
+ * @access  Public
+ */
+router.post(
+  '/resend-invitation',
+  authRateLimiter,
+  validate(authValidations.resendAccountInvitation),
+  AuthController.resendAccountInvitation,
+);
+
+/**
  * @route   POST /api/v1/auth/magic-link/request
  * @desc    Request magic link login (send email with login link)
  * @access  Public

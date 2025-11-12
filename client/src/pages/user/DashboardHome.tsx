@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   MapPin,
@@ -16,6 +17,7 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { getUserRegisteredEvents } from "../../lib/event-api";
+import { useAuth } from "../../hooks/useAuth";
 
 interface EventData {
   id: string;
@@ -49,9 +51,14 @@ interface DashboardHomeProps {
 }
 
 const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [userEvents, setUserEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Get company affiliation from auth user if available
+  const companyAffiliation = authUser?.companyAffiliation || null;
 
   useEffect(() => {
     const fetchUserEvents = async () => {
@@ -131,9 +138,9 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                   </div>
                   
                   <h3 className="text-lg font-bold text-foreground mb-1">{user.name}</h3>
-                  {/* Note: User profile details (job title, company) not yet implemented - will be fetched from user profile API */}
-                  <p className="text-sm text-muted-foreground mb-1">—</p>
-                  <p className="text-sm text-muted-foreground">—</p>
+                  {companyAffiliation && (
+                    <p className="text-sm text-muted-foreground">{companyAffiliation}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -286,8 +293,13 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
           <div className="lg:col-span-1">
             <div className="bg-card rounded-2xl shadow-lg p-6 sticky top-24 border border-border">
               <div className="text-right mb-4">
-                <Button variant="outline" size="sm" className="text-xs">
-                  Edit
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs"
+                  onClick={() => navigate('/user/profile')}
+                >
+                  Edit Profile
                 </Button>
               </div>
               
@@ -298,8 +310,9 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                 </div>
                 
                 <h3 className="text-lg font-bold text-foreground mb-1">{user.name}</h3>
-                <p className="text-sm text-muted-foreground mb-1">Software Engineer</p>
-                <p className="text-sm text-muted-foreground">Dukapaq Ltd.</p>
+                {companyAffiliation && (
+                  <p className="text-sm text-muted-foreground">{companyAffiliation}</p>
+                )}
               </div>
 
               {/* Quick Stats */}
@@ -410,7 +423,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                 <p className="text-muted-foreground mb-6">
                   You haven't registered for any events yet. Start exploring!
                 </p>
-                <Button>
+                <Button onClick={() => navigate('/')}>
                   Browse Events
                 </Button>
               </div>

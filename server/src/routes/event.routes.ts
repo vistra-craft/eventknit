@@ -3,6 +3,7 @@ import { EventController } from '../controllers/event.controller';
 import { validate } from '../middleware/validation.middleware';
 import { authenticate, requireMinRole } from '../middleware/auth.middleware';
 import { eventValidations } from '../validations/event.validations';
+import { guestRegistrationRateLimiter } from '../middleware/rateLimiter.middleware';
 import { UserRole } from '@prisma/client';
 
 const router = Router();
@@ -28,6 +29,7 @@ router.get('/:id', EventController.getEventById);
  */
 router.post(
   '/:id/register-guest',
+  guestRegistrationRateLimiter,
   validate(eventValidations.registerAsGuest),
   EventController.registerAsGuest,
 );

@@ -5,6 +5,7 @@ import { RegistrationStatus } from '@prisma/client';
 import { logger } from '../utils/logger';
 import { NotFoundError, ValidationError } from '../utils/errors';
 import { TicketService } from './ticket.service';
+import { EventService } from './event.service';
 
 export interface InitializePaymentData {
   registrationId: string;
@@ -33,6 +34,39 @@ export class PaymentService {
       logger.warn('Paystack secret key not configured. Payment features will not work.');
     }
     this.paystack = new Paystack(config.paystack.secretKey);
+  }
+
+  /**
+   * Validate guest payment request (email + registration ID)
+   */
+  async validateGuestPayment(registrationId: string, email: string): Promise<void> {
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      include: {
+        attendee: {
+          select: {
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!registration) {
+      throw new NotFoundError('Registration not found');
+    }
+
+    // Validate email matches registration
+    const normalizedEmail = email.toLowerCase().trim();
+    const registrationEmail = registration.attendee.email?.toLowerCase().trim();
+
+    if (registrationEmail !== normalizedEmail) {
+      throw new ValidationError('Email does not match the registration');
+    }
+
+    // Check if already paid
+    if (registration.paymentStatus === 'COMPLETED') {
+      throw new ValidationError('Payment already completed');
+    }
   }
 
   /**
@@ -120,8 +154,84 @@ export class PaymentService {
       };
     } catch (error: unknown) {
       logger.error('Failed to initialize payment:', error);
+      
+      // Rollback: Cancel registration and restore capacity if payment initialization fails
+      // This prevents orphaned registrations when payment fails
+      try {
+        await this.rollbackRegistration(data.registrationId);
+        logger.info(`Rolled back registration ${data.registrationId} due to payment initialization failure`);
+      } catch (rollbackError) {
+        logger.error(`Failed to rollback registration ${data.registrationId}:`, rollbackError);
+        // Continue to throw original error even if rollback fails
+      }
+      
       throw new ValidationError('Failed to initialize payment. Please try again.');
     }
+  }
+
+  /**
+   * Rollback registration when payment initialization fails
+   * Cancels the registration and restores event capacity
+   */
+  private async rollbackRegistration(registrationId: string): Promise<void> {
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      include: {
+        event: {
+          select: {
+            id: true,
+            capacity: true,
+            availableSlots: true,
+          },
+        },
+      },
+    });
+
+    if (!registration) {
+      logger.warn(`Registration ${registrationId} not found for rollback`);
+      return;
+    }
+
+    // Only rollback if registration is still PENDING (not already cancelled or confirmed)
+    if (registration.status !== RegistrationStatus.PENDING || registration.paymentStatus !== 'PENDING') {
+      logger.info(`Registration ${registrationId} is not in PENDING state, skipping rollback`);
+      return;
+    }
+
+    // Use transaction to ensure atomic rollback
+    await prisma.$transaction(async (tx) => {
+      // Use status validation to ensure consistency
+      const syncedStatus = EventService.validateAndSyncStatus(
+        registration.status,
+        registration.paymentStatus || 'PENDING',
+        'FAILED',
+        RegistrationStatus.CANCELLED,
+      );
+
+      // Cancel registration
+      await tx.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          status: syncedStatus.status,
+          paymentStatus: syncedStatus.paymentStatus,
+          cancelledAt: new Date(),
+          cancelledBy: null, // System cancellation
+        },
+      });
+
+      // Restore event capacity if capacity exists
+      if (registration.event.capacity !== null) {
+        const newAvailableSlots = (registration.event.availableSlots || registration.event.capacity) + registration.quantity;
+        await tx.event.update({
+          where: { id: registration.event.id },
+          data: {
+            availableSlots: Math.min(registration.event.capacity, newAvailableSlots),
+          },
+        });
+      }
+    });
+
+    logger.info(`Successfully rolled back registration ${registrationId} and restored capacity`);
   }
 
   /**
@@ -203,52 +313,126 @@ export class PaymentService {
                 email: true,
                 firstName: true,
                 lastName: true,
+                companyAffiliation: true,
               },
             },
           },
         });
 
-        if (registration && registration.paymentStatus !== 'COMPLETED') {
-          // Update registration status
-          await prisma.eventRegistration.update({
-            where: { id: registration.id },
-            data: {
-              status: RegistrationStatus.CONFIRMED,
-              paymentStatus: 'COMPLETED',
-              paymentMethod: 'PAYSTACK',
-            },
-          });
-
-          // Send ticket email
-          try {
-            // Ensure required fields are present before sending email
-            if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
-              await TicketService.sendTicketEmail(registration as Parameters<typeof TicketService.sendTicketEmail>[0]);
-              logger.info(`Ticket email sent for registration: ${registration.id}`);
-            } else {
-              logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
-            }
-          } catch (error) {
-            logger.error('Failed to send ticket email:', error);
-            // Don't fail the webhook if email fails
-          }
-
-          logger.info(`Payment completed: ${reference} for registration: ${registration.id}`);
+        if (!registration) {
+          logger.error(`Payment webhook: Registration not found for reference: ${reference}`);
+          return;
         }
+
+        // Validate payment hasn't already been processed
+        if (registration.paymentStatus === 'COMPLETED') {
+          logger.warn(`Payment webhook: Duplicate payment attempt for reference: ${reference}, registration: ${registration.id}`);
+          return;
+        }
+
+        // Validate payment amount matches registration totalAmount
+        const expectedAmount = Number(registration.totalAmount);
+        const paidAmount = verification.amount;
+        const amountDifference = Math.abs(expectedAmount - paidAmount);
+        const tolerance = 0.01; // Allow 1 cent/kobo difference for rounding
+
+        if (amountDifference > tolerance) {
+          logger.error(`Payment webhook: Amount mismatch for reference: ${reference}`, {
+            registrationId: registration.id,
+            expectedAmount,
+            paidAmount,
+            difference: amountDifference,
+            eventId: registration.eventId,
+            attendeeEmail: registration.attendee.email,
+          });
+          // Alert admin - log as critical error
+          logger.warn(`CRITICAL: Payment amount mismatch detected. Reference: ${reference}, Expected: ${expectedAmount}, Paid: ${paidAmount}`);
+          return;
+        }
+
+        // Validate payment email matches attendee email
+        const paymentEmail = verification.customer.email?.toLowerCase().trim() || '';
+        const attendeeEmail = registration.attendee.email?.toLowerCase().trim() || '';
+
+        if (paymentEmail && attendeeEmail && paymentEmail !== attendeeEmail) {
+          logger.warn(`Payment webhook: Email mismatch for reference: ${reference}`, {
+            registrationId: registration.id,
+            paymentEmail,
+            attendeeEmail,
+            eventId: registration.eventId,
+          });
+          // Log warning but don't block payment - email might be different (e.g., company email)
+          // Admin can review if needed
+        }
+
+        // All validations passed - update registration status
+        // Use status validation to ensure consistency
+        const syncedStatus = EventService.validateAndSyncStatus(
+          registration.status,
+          registration.paymentStatus || 'PENDING',
+          'COMPLETED',
+          RegistrationStatus.CONFIRMED,
+        );
+
+        await prisma.eventRegistration.update({
+          where: { id: registration.id },
+          data: {
+            status: syncedStatus.status,
+            paymentStatus: syncedStatus.paymentStatus,
+            paymentMethod: 'PAYSTACK',
+          },
+        });
+
+        // Send ticket email
+        try {
+          // Ensure required fields are present before sending email
+          if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
+            await TicketService.sendTicketEmail(registration as Parameters<typeof TicketService.sendTicketEmail>[0]);
+            logger.info(`Ticket email sent for registration: ${registration.id}`);
+          } else {
+            logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
+          }
+        } catch (error) {
+          logger.error('Failed to send ticket email:', error);
+          // Don't fail the webhook if email fails
+        }
+
+        logger.info(`Payment completed: ${reference} for registration: ${registration.id}`);
       }
     } else if (event === 'charge.failed') {
       const reference = data.reference as string;
       if (reference) {
-        await prisma.eventRegistration.updateMany({
+        // Find registration and update both payment status and registration status
+        const registration = await prisma.eventRegistration.findFirst({
           where: {
             paymentTransactionId: reference,
             paymentStatus: 'PENDING',
           },
-          data: {
-            paymentStatus: 'FAILED',
+          select: {
+            id: true,
+            status: true,
           },
         });
-        logger.info(`Payment failed: ${reference}`);
+
+        if (registration) {
+          // Use status validation to ensure consistency
+          const syncedStatus = EventService.validateAndSyncStatus(
+            registration.status,
+            'PENDING', // Current payment status before failure
+            'FAILED',
+          );
+
+          await prisma.eventRegistration.update({
+            where: { id: registration.id },
+            data: {
+              status: syncedStatus.status,
+              paymentStatus: syncedStatus.paymentStatus,
+            },
+          });
+          logger.info(`Payment failed: ${reference} for registration: ${registration.id}`);
+        } else {
+          logger.warn(`Payment failed webhook: Registration not found for reference: ${reference}`);
+        }
       }
     }
   }

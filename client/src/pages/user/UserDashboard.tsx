@@ -86,7 +86,11 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <DashboardNavbar user={user} activeSection={activeSection} />
+      <DashboardNavbar 
+        user={user} 
+        activeSection={activeSection}
+        eventTitle={eventData?.title}
+      />
       <main className={`${shouldShowNavigationButtons ? 'pt-32' : 'pt-20'} flex-1`}>
         {/* Success Message */}
         {successMessage && (
