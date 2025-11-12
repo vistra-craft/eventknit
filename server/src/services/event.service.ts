@@ -8,7 +8,7 @@ import {
 } from '../utils/errors';
 import { createAuditLog, AuditActions } from '../utils/audit';
 import { logger } from '../utils/logger';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password';
 import crypto from 'crypto';
 import { emailService } from './email.service';
@@ -1647,9 +1647,10 @@ export class EventService {
       where: { email },
     });
 
-    const isNewUser = !user;
+    let userCreatedInThisRequest = false;
 
     // Create user account if doesn't exist (passwordless)
+    // Use try-catch to handle race condition where user might be created between check and create
     if (!user) {
       // Check for SUSPENDED or DEACTIVATED users with this email
       const existingUser = await prisma.user.findFirst({
@@ -1666,22 +1667,52 @@ export class EventService {
       }
 
       // Create passwordless account (user can set password later)
-      user = await prisma.user.create({
-        data: {
-          email,
-          password: null, // Passwordless account
-          firstName,
-          lastName,
-          phoneNumber: guestData.phoneNumber?.trim(),
-          role: UserRole.ATTENDEE,
-          status: UserStatus.ACTIVE,
-          isEmailVerified: true, // Email verified from checkout
-          emailVerifiedAt: new Date(),
-        },
-      });
+      // Handle race condition: if user is created by another request, catch unique constraint error
+      try {
+        user = await prisma.user.create({
+          data: {
+            email,
+            password: null, // Passwordless account
+            firstName,
+            lastName,
+            phoneNumber: guestData.phoneNumber?.trim(),
+            role: UserRole.ATTENDEE,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true, // Email verified from checkout
+            emailVerifiedAt: new Date(),
+          },
+        });
 
-      logger.info(`Guest user created: ${user.id} for event: ${eventId}`);
-    } else {
+        userCreatedInThisRequest = true;
+        logger.info(`Guest user created: ${user.id} for event: ${eventId}`);
+      } catch (error: unknown) {
+        // Handle race condition: if user was created by another concurrent request
+        if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+          // User was created by another request - fetch the existing user
+          user = await prisma.user.findUnique({
+            where: { email },
+          });
+
+          if (!user) {
+            // This shouldn't happen, but handle it gracefully
+            throw new ConflictError('User account creation failed. Please try again.');
+          }
+
+          userCreatedInThisRequest = false; // User was NOT created in this request
+          logger.info(`User already exists (race condition handled): ${user.id} for event: ${eventId}`);
+        } else {
+          // Re-throw other errors
+          throw error;
+        }
+      }
+    }
+
+    // Determine if user is new (created in this request)
+    // This is used to determine if we should send account invitation email
+    const finalIsNewUser = userCreatedInThisRequest;
+
+    // Continue with existing user logic
+    if (user) {
       // Check user status
       if (user.status === UserStatus.SUSPENDED) {
         throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
@@ -1867,7 +1898,7 @@ export class EventService {
     // Generate account invitation token (only for new users or existing users without passwords)
     // Skip account invitation for existing users who already have passwords
     let accountInvitationToken: string | undefined;
-    if (isNewUser || !finalUserHasPassword) {
+    if (finalIsNewUser || !finalUserHasPassword) {
       accountInvitationToken = crypto.randomBytes(32).toString('hex');
       const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -1964,7 +1995,7 @@ export class EventService {
         totalAmount: totalAmount.toString(),
         isFree: event.isFree,
         isGuestCheckout: true,
-        isNewUser,
+        isNewUser: finalIsNewUser,
       },
       ipAddress,
       userAgent,
@@ -1979,7 +2010,7 @@ export class EventService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        isNewUser,
+        isNewUser: finalIsNewUser,
       },
       // No magic link token - user must use account invitation link or ticket email link
     };
