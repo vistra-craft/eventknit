@@ -409,10 +409,12 @@ export class TicketService {
       `;
 
       // Send email with calendar invite as attachment
-      await emailService.sendEmail({
+      // Ticket emails are critical - users need them for event entry
+      const emailResult = await emailService.sendEmail({
         to: attendee.email,
         subject: `Your Ticket for ${event.title} - EventKnit`,
         html,
+        isCritical: true,
         attachments: [
           {
             filename: 'event.ics',
@@ -422,7 +424,16 @@ export class TicketService {
         ],
       });
 
-      logger.info(`Ticket email sent to ${attendee.email} for event: ${event.id}`);
+      if (emailResult.success) {
+        if (emailResult.attempts > 1) {
+          logger.info(`Ticket email sent to ${attendee.email} for event: ${event.id} after ${emailResult.attempts} attempts`);
+        } else {
+          logger.info(`Ticket email sent to ${attendee.email} for event: ${event.id}`);
+        }
+      } else {
+        logger.error(`Failed to send ticket email to ${attendee.email} after ${emailResult.attempts} attempts:`, emailResult.error);
+        throw new Error(`Failed to send ticket email after ${emailResult.attempts} attempts: ${emailResult.error?.message}`);
+      }
     } catch (error) {
       logger.error('Failed to send ticket email:', error);
       throw error;
@@ -561,16 +572,28 @@ export class TicketService {
         </html>
       `;
 
-      await emailService.sendEmail({
+      // Payment pending emails are important but not as critical as ticket emails
+      const emailResult = await emailService.sendEmail({
         to: attendee.email,
         subject: `Payment Pending - ${event.title}`,
         html,
+        isCritical: false, // Important but not critical - ticket email will be sent after payment
       });
 
-      logger.info(`Payment pending email sent to: ${attendee.email} for event: ${event.id}`);
+      if (emailResult.success) {
+        if (emailResult.attempts > 1) {
+          logger.info(`Payment pending email sent to: ${attendee.email} for event: ${event.id} after ${emailResult.attempts} attempts`);
+        } else {
+          logger.info(`Payment pending email sent to: ${attendee.email} for event: ${event.id}`);
+        }
+      } else {
+        logger.warn(`Failed to send payment pending email to ${attendee.email} after ${emailResult.attempts} attempts:`, emailResult.error);
+        // Don't throw - payment pending email failure is not critical
+        // User can still complete payment and receive ticket email
+      }
     } catch (error) {
       logger.error('Failed to send payment pending email:', error);
-      throw error;
+      // Don't throw - payment pending email failure is not critical
     }
   }
 

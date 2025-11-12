@@ -1975,7 +1975,16 @@ export class EventService {
         logger.info(`Payment pending email sent to: ${user.email} for paid event: ${eventId}`);
       }
     } catch (error) {
-      logger.error('Failed to send email:', error);
+      // Log error but don't fail registration
+      // For free events: ticket email failure is logged but registration succeeds
+      // For paid events: payment pending email failure is logged but registration succeeds
+      // Ticket email will be sent after payment confirmation
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Failed to send ${event.isFree ? 'ticket' : 'payment pending'} email:`, {
+        error: errorMessage,
+        eventId,
+        userEmail: user.email,
+      });
       // Don't throw error - registration is complete, email is optional
     }
 
@@ -2053,13 +2062,26 @@ export class EventService {
         </html>
         `;
 
-        await emailService.sendEmail({
+        // Account invitation emails are important but not critical
+        // User can still access their account via ticket email or request a new invitation
+        const emailResult = await emailService.sendEmail({
           to: user.email,
           subject: `Create Your EventKnit Account - ${event.title}`,
           html,
+          isCritical: false, // Not critical - user can request new invitation
         });
 
-        logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId}`);
+        if (emailResult.success) {
+          if (emailResult.attempts > 1) {
+            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId} after ${emailResult.attempts} attempts`);
+          } else {
+            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId}`);
+          }
+        } else {
+          logger.warn(`Failed to send account invitation email to ${user.email} after ${emailResult.attempts} attempts:`, emailResult.error);
+          // Don't throw - account invitation email failure is not critical
+          // User can still access their account and request a new invitation
+        }
       } catch (error) {
         logger.error('Failed to send account invitation email:', error);
         // Don't throw error - registration is complete, email is optional
