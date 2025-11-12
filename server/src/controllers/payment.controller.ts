@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { paymentService, InitializePaymentData } from '../services/payment.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { prisma } from '../config/database';
+import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 
 export class PaymentController {

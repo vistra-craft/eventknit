@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { prisma } from '../config/database';
+import { prisma } from '../config/database.js';
 
 export class AuthController {
   /**
