@@ -75,9 +75,9 @@ COPY --from=builder /app/scripts ./scripts
 # Install production dependencies only
 # Use --ignore-scripts since Prisma Client is already generated in builder stage
 RUN npm ci --only=production --ignore-scripts --prefer-offline --no-audit && \
-    npm cache clean --force && \
-    rm -rf /tmp/* && \
-    rm -rf /root/.npm
+  npm cache clean --force && \
+  rm -rf /tmp/* && \
+  rm -rf /root/.npm
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist

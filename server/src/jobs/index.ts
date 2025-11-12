@@ -1,6 +1,6 @@
-import { logger } from '../utils/logger';
-import { TokenCleanupJob } from './token-cleanup.job';
-import { PaymentTimeoutJob } from './payment-timeout.job';
+import { logger } from '../utils/logger.js';
+import { TokenCleanupJob } from './token-cleanup.job.js';
+import { PaymentTimeoutJob } from './payment-timeout.job.js';
 
 /**
  * Initialize all scheduled jobs
@@ -39,6 +39,6 @@ export function stopJobs(): void {
 }
 
 // Export individual jobs for direct access if needed
-export { TokenCleanupJob } from './token-cleanup.job';
-export { PaymentTimeoutJob } from './payment-timeout.job';
+export { TokenCleanupJob } from './token-cleanup.job.js';
+export { PaymentTimeoutJob } from './payment-timeout.job.js';
 

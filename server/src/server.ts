@@ -1,8 +1,8 @@
-import { connectDB, disconnectDB } from './config/database';
-import { config } from './config';
-import { logger } from './utils/logger';
-import app from './app';
-import { initializeJobs, stopJobs } from './jobs';
+import { connectDB, disconnectDB } from './config/database.js';
+import { config } from './config/index.js';
+import { logger } from './utils/logger.js';
+import app from './app.js';
+import { initializeJobs, stopJobs } from './jobs/index.js';
 
 const PORT = config.port;
 const HOST = config.host;

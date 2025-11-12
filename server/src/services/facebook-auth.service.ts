@@ -1,19 +1,19 @@
 import axios from 'axios';
-import { prisma } from '../config/database';
-import { logger } from '../utils/logger';
+import { prisma } from '../config/database.js';
+import { logger } from '../utils/logger.js';
 import {
   generateAccessToken,
   generateRefreshToken,
   parseExpiresIn,
   type TokenPayload,
-} from '../utils/jwt';
+} from '../utils/jwt.js';
 import {
   AuthenticationError,
   ValidationError,
-} from '../utils/errors';
+} from '../utils/errors.js';
 import { UserRole, UserStatus } from '@prisma/client';
-import { config } from '../config';
-import type { AuthResponse } from './auth.service';
+import { config } from '../config/index.js';
+import type { AuthResponse } from './auth.service.js';
 
 interface FacebookUserData {
   id: string;

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import { config } from './index';
-import { logger } from '../utils/logger';
+import { config } from './index.js';
+import { logger } from '../utils/logger.js';
 
 // PrismaClient is attached to the `global` object in development to prevent
 // exhausting your database connection limit.

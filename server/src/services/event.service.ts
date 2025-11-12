@@ -1,18 +1,18 @@
-import { prisma } from '../config/database';
+import { prisma } from '../config/database.js';
 import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType, DataAccessLevel } from '@prisma/client';
 import {
   NotFoundError,
   ConflictError,
   AuthorizationError,
   ValidationError,
-} from '../utils/errors';
-import { createAuditLog, AuditActions } from '../utils/audit';
-import { logger } from '../utils/logger';
+} from '../utils/errors.js';
+import { createAuditLog, AuditActions } from '../utils/audit.js';
+import { logger } from '../utils/logger.js';
 import { Decimal, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { hashPassword } from '../utils/password';
+import { hashPassword } from '../utils/password.js';
 import crypto from 'crypto';
-import { emailService } from './email.service';
-import { TicketService } from './ticket.service';
+import { emailService } from './email.service.js';
+import { TicketService } from './ticket.service.js';
 
 export interface CreateEventData {
   title: string;

@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { UserStatus } from '@prisma/client';
-import { AuthorizationError } from '../utils/errors';
-import { AuthenticatedRequest } from './auth.middleware';
+import { AuthorizationError } from '../utils/errors.js';
+import { AuthenticatedRequest } from './auth.middleware.js';
 
 /**
  * Middleware to ensure user account is ACTIVE before performing actions

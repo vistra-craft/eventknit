@@ -1,24 +1,24 @@
 import crypto from 'crypto';
-import { prisma } from '../config/database';
-import { hashPassword, comparePassword } from '../utils/password';
-import { logger } from '../utils/logger';
+import { prisma } from '../config/database.js';
+import { hashPassword, comparePassword } from '../utils/password.js';
+import { logger } from '../utils/logger.js';
 import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
   parseExpiresIn,
   type TokenPayload,
-} from '../utils/jwt';
+} from '../utils/jwt.js';
 import {
   AuthenticationError,
   ValidationError,
   NotFoundError,
   ConflictError,
   ServiceUnavailableError,
-} from '../utils/errors';
-import { emailService } from './email.service';
+} from '../utils/errors.js';
+import { emailService } from './email.service.js';
 import { UserRole, UserStatus } from '@prisma/client';
-import { config } from '../config';
+import { config } from '../config/index.js';
 
 export interface RegisterData {
   email: string;

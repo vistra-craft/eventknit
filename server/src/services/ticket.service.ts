@@ -1,8 +1,8 @@
 import QRCode from 'qrcode';
-import { prisma } from '../config/database';
-import { emailService } from './email.service';
-import { logger } from '../utils/logger';
-import { NotFoundError } from '../utils/errors';
+import { prisma } from '../config/database.js';
+import { emailService } from './email.service.js';
+import { logger } from '../utils/logger.js';
+import { NotFoundError } from '../utils/errors.js';
 import { Decimal } from '@prisma/client/runtime/library';
 
 interface TicketEmailData {

@@ -1,5 +1,5 @@
-import { prisma } from '../config/database';
-import { logger } from './logger';
+import { prisma } from '../config/database.js';
+import { logger } from './logger.js';
 
 export interface AuditLogData {
   userId?: string;

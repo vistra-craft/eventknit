@@ -1,5 +1,5 @@
 import { UserRole } from '@prisma/client';
-import { AuthorizationError } from './errors';
+import { AuthorizationError } from './errors.js';
 
 /**
  * Role hierarchy for privilege checking

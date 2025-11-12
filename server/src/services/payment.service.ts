@@ -1,11 +1,11 @@
 import Paystack from 'paystack';
-import { config } from '../config';
-import { prisma } from '../config/database';
+import { config } from '../config/index.js';
+import { prisma } from '../config/database.js';
 import { RegistrationStatus } from '@prisma/client';
-import { logger } from '../utils/logger';
-import { NotFoundError, ValidationError } from '../utils/errors';
-import { TicketService } from './ticket.service';
-import { EventService } from './event.service';
+import { logger } from '../utils/logger.js';
+import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { TicketService } from './ticket.service.js';
+import { EventService } from './event.service.js';
 
 export interface InitializePaymentData {
   registrationId: string;
