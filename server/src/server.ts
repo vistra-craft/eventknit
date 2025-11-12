@@ -3,6 +3,7 @@ import { config } from './config/index.js';
 import { logger } from './utils/logger.js';
 import app from './app.js';
 import { initializeJobs, stopJobs } from './jobs/index.js';
+import { ensureSuperAdmin } from './utils/ensureSuperAdmin.js';
 
 const PORT = config.port;
 const HOST = config.host;
@@ -12,6 +13,13 @@ const startServer = async () => {
     // Connect to database (optional - will warn if unavailable)
     try {
       await connectDB();
+      
+      // Ensure super admin exists (only if database is connected)
+      try {
+        await ensureSuperAdmin();
+      } catch (error) {
+        // Already logged in ensureSuperAdmin, continue startup
+      }
     } catch (error) {
       // Already handled in connectDB, but catch here to ensure server still starts
     }
