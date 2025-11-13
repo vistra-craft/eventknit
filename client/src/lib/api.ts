@@ -84,6 +84,22 @@ export const setLogoutCallback = (callback: () => void): void => {
 };
 
 /**
+ * API request timeout (30 seconds)
+ */
+const API_TIMEOUT_MS = 30000;
+
+/**
+ * Create a timeout promise that rejects after specified milliseconds
+ */
+const createTimeout = (ms: number): Promise<never> => {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Request timeout after ${ms}ms`));
+    }, ms);
+  });
+};
+
+/**
  * Internal API request function (used for retries)
  */
 const apiRequestInternal = async <T>(
@@ -110,7 +126,11 @@ const apiRequestInternal = async <T>(
   };
 
   try {
-    const response = await fetch(url, config);
+    // Race between fetch and timeout
+    const response = await Promise.race([
+      fetch(url, config),
+      createTimeout(API_TIMEOUT_MS),
+    ]) as Response;
 
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
@@ -140,6 +160,15 @@ const apiRequestInternal = async <T>(
 
     return data as T;
   } catch (error) {
+    // Handle timeout errors
+    if (error instanceof Error && error.message.includes('timeout')) {
+      throw {
+        success: false,
+        message: 'Request timed out. The server is taking too long to respond. Please try again.',
+      } as ApiError;
+    }
+    
+    // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw {
         success: false,

@@ -48,10 +48,17 @@ const SimpleRegistration = () => {
       setSuccess('Verification code sent to your email!');
       setStep('code');
     } catch (err: unknown) {
-      const errorMessage =
-        err && typeof err === 'object' && 'message' in err
-          ? (err.message as string)
-          : 'Failed to send verification code. Please try again.';
+      // Extract error message from various error formats
+      let errorMessage = 'Failed to send verification code. Please try again.';
+      
+      if (err && typeof err === 'object') {
+        if ('message' in err && typeof err.message === 'string') {
+          errorMessage = err.message;
+        } else if ('success' in err && err.success === false && 'message' in err) {
+          errorMessage = (err as { message: string }).message;
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setIsLoading(false);

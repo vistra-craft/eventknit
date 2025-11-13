@@ -24,6 +24,8 @@ export const Hero = () => {
         }
       } catch (error) {
         console.error("Failed to fetch featured events:", error);
+        // Set empty array on error so UI doesn't hang
+        setFeaturedEvents([]);
       } finally {
         setLoading(false);
       }

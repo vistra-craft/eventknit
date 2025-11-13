@@ -22,14 +22,14 @@ services:
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
-      # CORS - Set to your Netlify domain
+      # CORS - Set to your Netlify domain (supports multiple origins separated by commas)
       - key: CORS_ORIGIN
-        sync: false # Set manually to your Netlify URL
+        value: "https://eventknit.netlify.app,http://localhost:5173" # Netlify production + localhost for testing
       - key: CORS_CREDENTIALS
         value: "true"
       # Frontend URL - Set to your Netlify domain
       - key: FRONTEND_URL
-        sync: false # Set manually to your Netlify URL
+        value: "https://eventknit.netlify.app"
       # Email Configuration
       - key: SMTP_HOST
         sync: false # Set manually
@@ -71,6 +71,4 @@ databases:
     databaseName: eventknit
     user: eventknit
     plan: starter # or free, starter, standard, pro
-
-
 
