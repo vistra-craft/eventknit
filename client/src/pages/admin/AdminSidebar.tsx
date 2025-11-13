@@ -58,6 +58,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Past Events", href: "/admin/events/past" },
         { name: "Upcoming Events", href: "/admin/events/upcoming" },
         { name: "Declined Events", href: "/admin/events/declined" },
+        { name: "Create New", href: "/admin/events/create" },
       ]
     },
     { 

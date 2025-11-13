@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -110,6 +110,7 @@ const DRAFT_STORAGE_KEY = 'eventknit_event_draft';
 
 export default function CreateEventStepwise() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [eventType, setEventType] = useState("in-person");
@@ -588,9 +589,12 @@ export default function CreateEventStepwise() {
       return;
     }
 
-    // Check if user is an organizer
-    if (user.role !== 'ORGANIZER' && user.role !== 'SUPERADMIN' && user.role !== 'ADMIN_STAFF') {
-      setError('Only organizers can create events');
+    // Check if user is an organizer or admin
+    const isOrganizerRole = ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+    const isAdminRole = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'].includes(user.role);
+    
+    if (!isOrganizerRole && !isAdminRole) {
+      setError('Only organizers and admins can create events');
       return;
     }
 
@@ -604,8 +608,10 @@ export default function CreateEventStepwise() {
       if (response.success && response.data) {
         // Clear draft on success
         clearDraft();
-        // Success! Navigate to event details or organizer dashboard
-        navigate('/organizer/dashboard', {
+        // Success! Navigate to appropriate dashboard based on current route
+        const isAdminRoute = location.pathname.startsWith('/admin');
+        const dashboardRoute = isAdminRoute ? '/admin/dashboard' : '/organizer/dashboard';
+        navigate(dashboardRoute, {
           state: { message: 'Event created successfully! It is pending admin approval.' }
         });
       } else {
@@ -625,7 +631,10 @@ export default function CreateEventStepwise() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     } else {
-      navigate('/organizer/dashboard');
+      // Navigate to appropriate dashboard based on current route
+      const isAdminRoute = location.pathname.startsWith('/admin');
+      const dashboardRoute = isAdminRoute ? '/admin/dashboard' : '/organizer/dashboard';
+      navigate(dashboardRoute);
     }
   };
 

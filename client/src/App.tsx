@@ -63,6 +63,7 @@ import AdminFeaturedEventsPage from "./pages/admin/events/FeaturedEventsPage";
 import AdminPastEventsPage from "./pages/admin/events/PastEventsPage";
 import AdminUpcomingEventsPage from "./pages/admin/events/UpcomingEventsPage";
 import AdminDeclinedEventsPage from "./pages/admin/events/DeclinedEventsPage";
+import AdminCreateEventPage from "./pages/admin/AdminCreateEventPage";
 import EventDetailsPage from "./pages/admin/events/EventDetailsPage";
 import AdminStaffManagementPage from "./pages/admin/StaffManagementPage";
 import OrganizersPage from "./pages/admin/OrganizersPage";
@@ -196,6 +197,7 @@ const App = () => (
       <Route path="/admin/events/past" element={<AdminPastEventsPage />} />
       <Route path="/admin/events/upcoming" element={<AdminUpcomingEventsPage />} />
       <Route path="/admin/events/declined" element={<AdminDeclinedEventsPage />} />
+      <Route path="/admin/events/create" element={<AdminCreateEventPage />} />
       <Route path="/admin/events/:eventId" element={<EventDetailsPage />} />
       {/* Admin Users Routes */}
       <Route path="/admin/users/staff" element={<AdminStaffManagementPage />} />

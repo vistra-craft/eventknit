@@ -7,6 +7,7 @@ import { ProfileDropdown } from "./ProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleView } from "@/contexts/RoleViewContext";
 import { UserRole } from "@/types/auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface NavItem {
   name: string;
@@ -18,6 +19,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const { activeViewRole } = useRoleView();
+  const { toast } = useToast();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [country] = useState<string>('US'); // Default to US
@@ -139,6 +141,65 @@ const Navbar: React.FC = () => {
     }
   };
 
+  const handleCreateEvent = () => {
+    // Check if user is authenticated
+    if (!isAuthenticated || !user) {
+      toast({
+        title: "Registration Required",
+        description: "Please register as an organizer to create events. You'll be redirected to the registration page.",
+        variant: "default",
+      });
+      navigate('/auth/register/organizer', { 
+        state: { 
+          message: 'Register as an organizer to create and manage events',
+          redirectTo: '/organizer/events/create'
+        } 
+      });
+      return;
+    }
+
+    // Check if user is an organizer
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(user.role);
+
+    // Check if user is an admin
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(user.role);
+
+    // Route admins to admin event creation page
+    if (isAdminRole) {
+      navigate('/admin/events/create');
+      return;
+    }
+
+    // Route organizers to organizer event creation page
+    if (isOrganizerRole) {
+      navigate('/organizer/events/create');
+      return;
+    }
+
+    // User is authenticated but not an organizer or admin
+    toast({
+      title: "Organizer Account Required",
+      description: "You need to register as an organizer to create events. Register now to continue.",
+      variant: "default",
+    });
+    navigate('/auth/register/organizer', { 
+      state: { 
+        message: 'Register as an organizer to create and manage events',
+        redirectTo: '/organizer/events/create'
+      } 
+    });
+  };
+
   return (
     <>
       {/* Utility Bar - Simplified */}
@@ -215,7 +276,7 @@ const Navbar: React.FC = () => {
               
               {/* Actions */}
               <button
-                onClick={() => navigate('/create-event')}
+                onClick={handleCreateEvent}
                 className="text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200"
               >
                 Create Event
@@ -263,7 +324,7 @@ const Navbar: React.FC = () => {
                 <button
                   className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
                   onClick={() => {
-                    navigate('/create-event');
+                    handleCreateEvent();
                     setIsMobileMenuOpen(false);
                   }}
                 >
