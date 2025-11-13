@@ -144,11 +144,7 @@ const Navbar: React.FC = () => {
   const handleCreateEvent = () => {
     // Check if user is authenticated
     if (!isAuthenticated || !user) {
-      toast({
-        title: "Registration Required",
-        description: "Please register as an organizer to create events. You'll be redirected to the registration page.",
-        variant: "default",
-      });
+      // Not logged in - redirect to organizer signup
       navigate('/auth/register/organizer', { 
         state: { 
           message: 'Register as an organizer to create and manage events',
@@ -158,14 +154,13 @@ const Navbar: React.FC = () => {
       return;
     }
 
-    // Check if user is an organizer
+    // User is logged in - route based on role
     const isOrganizerRole = [
       UserRole.ORGANIZER,
       UserRole.ORGANIZER_STAFF,
       UserRole.ORGANIZER_TELLER,
     ].includes(user.role);
 
-    // Check if user is an admin
     const isAdminRole = [
       UserRole.SUPERADMIN,
       UserRole.ADMIN_STAFF,
@@ -186,15 +181,16 @@ const Navbar: React.FC = () => {
       return;
     }
 
-    // User is authenticated but not an organizer or admin
+    // Logged in as client/attendee - they need to register as organizer to create events
+    // Redirect to organizer signup so they can switch/register as organizer
     toast({
       title: "Organizer Account Required",
-      description: "You need to register as an organizer to create events. Register now to continue.",
+      description: "You need to register as an organizer to create events. You can register with a different email or switch accounts.",
       variant: "default",
     });
     navigate('/auth/register/organizer', { 
       state: { 
-        message: 'Register as an organizer to create and manage events',
+        message: 'Register as an organizer to create and manage events. You can use a different email if needed.',
         redirectTo: '/organizer/events/create'
       } 
     });
