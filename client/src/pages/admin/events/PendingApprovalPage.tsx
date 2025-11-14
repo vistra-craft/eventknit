@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "../../../components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
+import { Pagination } from "../../../components/ui/pagination";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { approveEvent, rejectEvent } from "../../../lib/admin-api";
@@ -51,6 +52,10 @@ const PendingApprovalPage = () => {
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Fetch pending events
   useEffect(() => {
@@ -58,8 +63,31 @@ const PendingApprovalPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getEvents({ status: EventStatus.PENDING });
-        if (response.success && response.data?.events) {
+        const filters: Record<string, unknown> = {
+          status: EventStatus.PENDING,
+          page,
+          limit,
+        };
+        
+        if (categoryFilter !== "all") {
+          filters.category = categoryFilter;
+        }
+        
+        if (typeFilter !== "all") {
+          filters.type = typeFilter === "public" ? "PUBLIC" : "PRIVATE";
+        }
+        
+        if (priceFilter !== "all") {
+          filters.isFree = priceFilter === "free";
+        }
+        
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+        
+        const response = await getEvents(filters);
+        if (response.success && response.data) {
+          if (response.data.events) {
           const pendingEvents = response.data.events.map(event => ({
             id: event.id,
             title: event.title,
@@ -81,6 +109,15 @@ const PendingApprovalPage = () => {
             image: event.image || undefined,
           }));
           setEvents(pendingEvents);
+          }
+          
+          // Update pagination info
+          if (response.data.totalPages !== undefined) {
+            setTotalPages(response.data.totalPages);
+          }
+          if (response.data.total !== undefined) {
+            setTotal(response.data.total);
+          }
         }
       } catch (err) {
         console.error('Error fetching pending events:', err);
@@ -91,17 +128,15 @@ const PendingApprovalPage = () => {
     };
 
     fetchPendingEvents();
-  }, []);
+  }, [page, limit]);
 
-  const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || event.category === categoryFilter;
-    const matchesType = typeFilter === "all" || event.type === typeFilter;
-    const matchesPrice = priceFilter === "all" || (priceFilter === "free" && event.isFree) || (priceFilter === "paid" && !event.isFree);
-    
-    return matchesSearch && matchesCategory && matchesType && matchesPrice;
-  });
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, categoryFilter, typeFilter, priceFilter]);
+
+  // Filters are handled by backend, no need for frontend filtering
+  const filteredEvents = events;
 
   // Get unique categories from events
   const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
@@ -233,8 +268,24 @@ const PendingApprovalPage = () => {
             <h1 className="text-lg font-semibold text-gray-900">Pending Approval</h1>
             <p className="text-gray-600">Review and approve events waiting for platform approval</p>
           </div>
-          <div className="text-sm text-gray-500">
-            {filteredEvents.length} of {events.length} events pending
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              Showing {filteredEvents.length} of {total || events.length} events pending
+            </div>
+            <Select value={limit.toString()} onValueChange={(value) => {
+              setLimit(parseInt(value, 10));
+              setPage(1);
+            }}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -439,7 +490,21 @@ const PendingApprovalPage = () => {
           ))}
         </div>
 
-        {filteredEvents.length === 0 && (
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(newPage) => {
+                setPage(newPage);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        )}
+
+        {filteredEvents.length === 0 && !loading && (
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
               <div className="text-gray-500">

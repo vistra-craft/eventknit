@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
 import { Label } from "../../../components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
+import { Pagination } from "../../../components/ui/pagination";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
@@ -51,6 +52,10 @@ const UpcomingEventsPage = () => {
   const [recallReason, setRecallReason] = useState("");
   const [recalling, setRecalling] = useState(false);
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Fetch upcoming events (approved events with startDate > now)
   useEffect(() => {
@@ -77,6 +82,10 @@ const UpcomingEventsPage = () => {
         if (searchTerm) {
           filters.search = searchTerm;
         }
+
+        // Add pagination
+        filters.page = page;
+        filters.limit = limit;
 
         const response = await getEvents(filters);
         if (response.success && response.data?.events) {
@@ -109,6 +118,14 @@ const UpcomingEventsPage = () => {
               };
             });
           setEvents(upcomingEvents);
+          
+          // Update pagination info
+          if (response.data.totalPages !== undefined) {
+            setTotalPages(response.data.totalPages);
+          }
+          if (response.data.total !== undefined) {
+            setTotal(response.data.total);
+          }
         }
       } catch (err) {
         console.error('Error fetching upcoming events:', err);
@@ -119,6 +136,11 @@ const UpcomingEventsPage = () => {
     };
 
     fetchUpcomingEvents();
+  }, [categoryFilter, typeFilter, priceFilter, searchTerm, page, limit]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
   }, [categoryFilter, typeFilter, priceFilter, searchTerm]);
 
   // Handle recall event
@@ -274,8 +296,24 @@ const UpcomingEventsPage = () => {
             <h1 className="text-lg font-semibold text-gray-900">Upcoming Events</h1>
             <p className="text-gray-600">Monitor upcoming events and their registration progress</p>
           </div>
-          <div className="text-sm text-gray-500">
-            {filteredEvents.length} of {events.length} upcoming events
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              Showing {filteredEvents.length} of {total || events.length} upcoming events
+            </div>
+            <Select value={limit.toString()} onValueChange={(value) => {
+              setLimit(parseInt(value, 10));
+              setPage(1);
+            }}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
