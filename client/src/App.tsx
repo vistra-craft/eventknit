@@ -64,9 +64,12 @@ import AdminPastEventsPage from "./pages/admin/events/PastEventsPage";
 import AdminUpcomingEventsPage from "./pages/admin/events/UpcomingEventsPage";
 import AdminDeclinedEventsPage from "./pages/admin/events/DeclinedEventsPage";
 import AdminCreateEventPage from "./pages/admin/AdminCreateEventPage";
+import EventPreviewPage from "./pages/admin/events/EventPreviewPage";
 import EventDetailsPage from "./pages/admin/events/EventDetailsPage";
 import AdminStaffManagementPage from "./pages/admin/StaffManagementPage";
 import OrganizersPage from "./pages/admin/OrganizersPage";
+import CreateOrganizerPage from "./pages/admin/organizers/CreateOrganizerPage";
+import OrganizerPreviewPage from "./pages/admin/organizers/OrganizerPreviewPage";
 import OrganizerDetailsPage from "./pages/admin/OrganizerDetailsPage";
 import OrganizerEditPage from "./pages/admin/OrganizerEditPage";
 import StaffDetailsPage from "./pages/admin/StaffDetailsPage";
@@ -198,12 +201,15 @@ const App = () => (
       <Route path="/admin/events/upcoming" element={<AdminUpcomingEventsPage />} />
       <Route path="/admin/events/declined" element={<AdminDeclinedEventsPage />} />
       <Route path="/admin/events/create" element={<AdminCreateEventPage />} />
+      <Route path="/admin/events/:eventId/preview" element={<EventPreviewPage />} />
       <Route path="/admin/events/:eventId" element={<EventDetailsPage />} />
       {/* Admin Users Routes */}
       <Route path="/admin/users/staff" element={<AdminStaffManagementPage />} />
       <Route path="/admin/users/staff/:staffId" element={<StaffDetailsPage />} />
       <Route path="/admin/users/staff/:staffId/edit" element={<StaffEditPage />} />
       <Route path="/admin/users/organizers" element={<OrganizersPage />} />
+      <Route path="/admin/users/organizers/create" element={<CreateOrganizerPage />} />
+      <Route path="/admin/users/organizers/:organizerId/preview" element={<OrganizerPreviewPage />} />
       <Route path="/admin/users/organizers/:organizerId" element={<OrganizerDetailsPage />} />
       <Route path="/admin/users/organizers/:organizerId/edit" element={<OrganizerEditPage />} />
       <Route path="/admin/users/roles" element={<UserRolesPage />} />

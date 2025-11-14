@@ -27,7 +27,6 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
 import { exportUserData } from "@/lib/utils/export";
-import CreateOrganizerModal from "./CreateOrganizerModal";
 
 const OrganizersContent = () => {
   const navigate = useNavigate();
@@ -37,9 +36,7 @@ const OrganizersContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [previewOrganizer, setPreviewOrganizer] = useState<User | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
@@ -101,7 +98,7 @@ const OrganizersContent = () => {
   };
 
   const handleViewOrganizer = (id: string) => {
-    navigate(`/admin/users/organizers/${id}`);
+    navigate(`/admin/users/organizers/${id}/preview`);
   };
 
   const handleEditOrganizer = (id: string) => {
@@ -198,13 +195,6 @@ const OrganizersContent = () => {
     }
   };
 
-  const handleCreateSuccess = async () => {
-    // Refresh list
-    const response = await getUsers({ role: "ORGANIZER" });
-    if (response.success && response.data) {
-      setOrganizers(response.data.users);
-    }
-  };
 
   const filteredOrganizers = organizers.filter((organizer) => {
     const matchesSearch =
@@ -260,7 +250,7 @@ const OrganizersContent = () => {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button size="sm" onClick={() => setShowCreateModal(true)}>
+          <Button size="sm" onClick={() => navigate("/admin/users/organizers/create")}>
             <Plus className="h-4 w-4 mr-2" />
             Add Organizer
           </Button>
@@ -384,7 +374,7 @@ const OrganizersContent = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPreviewOrganizer(organizer)}
+                        onClick={() => navigate(`/admin/users/organizers/${organizer.id}/preview`)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
@@ -519,98 +509,6 @@ const OrganizersContent = () => {
         </div>
       )}
 
-      <CreateOrganizerModal
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        onSuccess={handleCreateSuccess}
-      />
-
-      {/* Organizer Preview Dialog */}
-      <Dialog 
-        open={!!previewOrganizer} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setPreviewOrganizer(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Organizer Preview</DialogTitle>
-            <DialogDescription>
-              View organizer details
-            </DialogDescription>
-          </DialogHeader>
-          {previewOrganizer && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar
-                  src={undefined} // Profile image URL if available in future
-                  name={`${previewOrganizer.firstName} ${previewOrganizer.lastName}`}
-                  alt={`${previewOrganizer.firstName} ${previewOrganizer.lastName}`}
-                  size="xl"
-                />
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                    {previewOrganizer.firstName} {previewOrganizer.lastName}
-                  </h2>
-                  <Badge className={`${getStatusBadge(previewOrganizer.status)} mb-2`}>
-                    {previewOrganizer.status}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{previewOrganizer.email}</p>
-                  </div>
-                </div>
-                {previewOrganizer.businessEmail && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Business Email</p>
-                      <p className="font-medium">{previewOrganizer.businessEmail}</p>
-                    </div>
-                  </div>
-                )}
-                {previewOrganizer.organizationName && (
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Organization</p>
-                      <p className="font-medium">{previewOrganizer.organizationName}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Joined</p>
-                    <p className="font-medium">{formatDate(previewOrganizer.createdAt)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPreviewOrganizer(null)}>
-                  Close
-                </Button>
-                <Button onClick={() => {
-                  setPreviewOrganizer(null);
-                  handleEditOrganizer(previewOrganizer.id);
-                }}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Organizer
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

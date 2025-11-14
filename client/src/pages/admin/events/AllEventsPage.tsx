@@ -51,24 +51,14 @@ const AllEventsPage = () => {
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = useState(false);
   const [bulkUpdateLevel, setBulkUpdateLevel] = useState<'RESTRICTED' | 'STANDARD' | 'FULL'>('RESTRICTED');
   const [bulkUpdating, setBulkUpdating] = useState(false);
-  const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const { toast } = useToast();
 
-  const handlePreviewEvent = (event: Event) => {
-    try {
-      setPreviewEvent(event);
-    } catch (error) {
-      console.error('Error opening preview:', error);
-      toast({
-        title: "Error",
-        description: "Failed to open event preview",
-        variant: "destructive",
-      });
-    }
+  const handlePreviewEvent = (eventId: string) => {
+    navigate(`/admin/events/${eventId}/preview`);
   };
 
   // Fetch all events
@@ -477,7 +467,7 @@ const AllEventsPage = () => {
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      handlePreviewEvent(event);
+                      handlePreviewEvent(event.id);
                     }}
                   >
                     <div className="flex items-center gap-3 mb-2">
@@ -516,7 +506,7 @@ const AllEventsPage = () => {
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        handlePreviewEvent(event);
+                        handlePreviewEvent(event.id);
                       }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
@@ -717,112 +707,6 @@ const AllEventsPage = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Event Preview Dialog */}
-        <Dialog 
-          open={!!previewEvent} 
-          onOpenChange={(open) => {
-            if (!open) {
-              setPreviewEvent(null);
-            }
-          }}
-        >
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Event Preview</DialogTitle>
-              <DialogDescription>
-                Preview event details
-              </DialogDescription>
-            </DialogHeader>
-            {previewEvent && (
-              <div className="space-y-6">
-                {previewEvent.image && (
-                  <div className="relative rounded-lg overflow-hidden">
-                    <img
-                      src={previewEvent.image}
-                      alt={previewEvent.title}
-                      className="w-full h-64 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                    <div className="absolute bottom-4 left-4 right-4 text-white">
-                      <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
-                      <Badge className={`${getStatusBadge(previewEvent.status)}`}>
-                        {previewEvent.status}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-                {!previewEvent.image && (
-                  <div>
-                    <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
-                    <Badge className={`${getStatusBadge(previewEvent.status)}`}>
-                      {previewEvent.status}
-                    </Badge>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{previewEvent.date}</p>
-                      {previewEvent.startTime && (
-                        <p className="text-sm text-muted-foreground">{previewEvent.startTime}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{previewEvent.venue || previewEvent.location}</p>
-                      {previewEvent.venue && previewEvent.location && (
-                        <p className="text-sm text-muted-foreground">{previewEvent.location}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-medium">{previewEvent.attendees} attendees</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-muted-foreground">by {previewEvent.organizer}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Badge className={`text-xs ${getTypeBadge(previewEvent.type)}`}>
-                    {previewEvent.type}
-                  </Badge>
-                  <Badge className={`text-xs ${getPriceBadge(previewEvent.isFree ? 'free' : 'paid')}`}>
-                    {previewEvent.isFree ? 'free' : 'paid'}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {previewEvent.category}
-                  </Badge>
-                </div>
-
-                {previewEvent.description && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Description</h3>
-                    <p className="text-muted-foreground whitespace-pre-wrap">{previewEvent.description}</p>
-                  </div>
-                )}
-
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setPreviewEvent(null)}>
-                    Close
-                  </Button>
-                  <Button onClick={() => {
-                    setPreviewEvent(null);
-                    window.open(`/admin/events/${previewEvent.id}`, '_blank');
-                  }}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Event
-                  </Button>
-                </DialogFooter>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </AdminLayout>
   );
