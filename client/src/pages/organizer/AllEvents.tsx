@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -11,19 +11,34 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
+  Eye,
+  Edit,
+  MoreHorizontal,
+  BarChart3,
+  Download,
+  Share2,
+  Copy,
+  MapPin,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import OrganizerEventCard from "../../components/OrganizerEventCard";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
+import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 
 const AllEvents = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [allEvents, setAllEvents] = useState<OrganizerDashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<OrganizerDashboardEvent | null>(null);
 
   // Fetch events from API
   useEffect(() => {
@@ -223,9 +238,168 @@ const AllEvents = () => {
           </div>
         ) : filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <OrganizerEventCard key={event.id} event={event} />
-            ))}
+            {filteredEvents.map((event) => {
+              const metrics = {
+                attendees: typeof event.attendees === 'number' ? event.attendees : 0,
+                capacity: typeof event.capacity === 'number' ? event.capacity : 0,
+                revenue: typeof event.revenue === 'number' ? event.revenue : 0,
+                conversion: typeof event.conversion === 'string' ? parseFloat(event.conversion) : (typeof event.conversion === 'number' ? event.conversion : 0),
+                speakers: typeof event.speakers === 'number' ? event.speakers : 0,
+                exhibitors: typeof event.exhibitors === 'number' ? event.exhibitors : 0,
+              };
+
+              const getStatusBadge = (status: string) => {
+                if (status === "active" || status === "approved") {
+                  return "bg-green-100 text-green-800 border-green-200";
+                } else if (status === "upcoming") {
+                  return "bg-blue-100 text-blue-800 border-blue-200";
+                } else if (status === "completed") {
+                  return "bg-gray-100 text-gray-800 border-gray-200";
+                } else if (status === "pending") {
+                  return "bg-yellow-100 text-yellow-800 border-yellow-200";
+                }
+                return "bg-muted text-muted-foreground border-border";
+              };
+
+              return (
+                <Card key={event.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4 mb-4">
+                      <EventThumbnail
+                        src={event.image}
+                        alt={event.title}
+                        category={event.category}
+                        size="md"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                            {event.title}
+                          </h3>
+                          <Badge className={`text-xs ${getStatusBadge(event.status || 'pending')} flex-shrink-0`}>
+                            {event.status || 'pending'}
+                          </Badge>
+                        </div>
+                        <Badge variant="outline" className="text-xs mb-2">
+                          {event.category}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="w-4 h-4" />
+                        <span>{event.date} {event.time && `at ${event.time}`}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="w-4 h-4" />
+                        <span className="truncate">{event.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Users className="w-4 h-4" />
+                        <span>{metrics.attendees}/{metrics.capacity || '∞'} attendees</span>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {event.description}
+                    </p>
+                    
+                    {/* Event Metrics */}
+                    <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Speakers</p>
+                        <p className="font-semibold text-foreground">{metrics.speakers}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Exhibitors</p>
+                        <p className="font-semibold text-foreground">{metrics.exhibitors}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Revenue</p>
+                        <p className="font-semibold text-foreground">${metrics.revenue.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {metrics.conversion.toFixed(1)}% conversion
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewEvent(event);
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/organizer/event/${event.id}`);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Manage
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/organizer/event/${event.id}`)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Event
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Public Page
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => navigate(`/organizer/analytics/events?eventId=${event.id}`)}>
+                              <BarChart3 className="h-4 w-4 mr-2" />
+                              View Analytics
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              // TODO: Export event data
+                              console.log('Export event', event.id);
+                            }}>
+                              <Download className="h-4 w-4 mr-2" />
+                              Export Data
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            }}>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Event Link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              // TODO: Share event
+                              console.log('Share event', event.id);
+                            }}>
+                              <Share2 className="h-4 w-4 mr-2" />
+                              Share Event
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
@@ -247,6 +421,144 @@ const AllEvents = () => {
           </div>
         )}
       </div>
+
+      {/* Event Preview Dialog */}
+      <Dialog 
+        open={!!previewEvent} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewEvent(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Preview</DialogTitle>
+            <DialogDescription>
+              Preview event details
+            </DialogDescription>
+          </DialogHeader>
+          {previewEvent && (
+            <div className="space-y-6">
+              {previewEvent.image && (
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={previewEvent.image}
+                    alt={previewEvent.title}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                    <Badge className="bg-green-500/90 text-white">
+                      {previewEvent.status || 'Active'}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+              {!previewEvent.image && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                  <Badge className="bg-green-500/90 text-white">
+                    {previewEvent.status || 'Active'}
+                  </Badge>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{previewEvent.date}</p>
+                    {previewEvent.time && (
+                      <p className="text-sm text-muted-foreground">{previewEvent.time}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{previewEvent.venue || previewEvent.location}</p>
+                    {previewEvent.venue && previewEvent.location && (
+                      <p className="text-sm text-muted-foreground">{previewEvent.location}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <p className="font-medium">
+                    {typeof previewEvent.attendees === 'number' ? previewEvent.attendees : 0} / 
+                    {typeof previewEvent.capacity === 'number' ? previewEvent.capacity : '∞'} registered
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <p className="font-medium">
+                    {(() => {
+                      const conversion = typeof previewEvent.conversion === 'string' 
+                        ? parseFloat(previewEvent.conversion) 
+                        : (typeof previewEvent.conversion === 'number' ? previewEvent.conversion : 0);
+                      return `${conversion.toFixed(1)}% conversion`;
+                    })()}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">by {previewEvent.organizer}</p>
+                <div className="flex gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {previewEvent.category}
+                  </Badge>
+                  {previewEvent.price && (
+                    <Badge variant="outline" className="text-xs">
+                      {previewEvent.price}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {previewEvent.description && (
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{previewEvent.description}</p>
+                </div>
+              )}
+
+              {/* Event Metrics */}
+              <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Speakers</p>
+                  <p className="text-lg font-semibold">{typeof previewEvent.speakers === 'number' ? previewEvent.speakers : 0}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Exhibitors</p>
+                  <p className="text-lg font-semibold">{typeof previewEvent.exhibitors === 'number' ? previewEvent.exhibitors : 0}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Revenue</p>
+                  <p className="text-lg font-semibold">
+                    ${typeof previewEvent.revenue === 'number' ? previewEvent.revenue.toLocaleString() : '0'}
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreviewEvent(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setPreviewEvent(null);
+                  navigate(`/organizer/event/${previewEvent.id}`);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Manage Event
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
