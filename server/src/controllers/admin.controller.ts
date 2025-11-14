@@ -246,5 +246,158 @@ export class AdminController {
       next(error);
     }
   }
+
+  /**
+   * Seed test users (temporary endpoint for production setup)
+   */
+  static async seedTestUsers(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const result = await AdminService.seedTestUsers(req.user.id);
+
+      res.status(200).json({
+        success: true,
+        message: 'Test users seeded successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Suspend user
+   */
+  static async suspendUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const user = await AdminService.suspendUser(
+        req.params.id,
+        req.user.id,
+        req.user.role,
+        req.body.reason,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'User suspended successfully',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Deactivate user
+   */
+  static async deactivateUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const user = await AdminService.deactivateUser(
+        req.params.id,
+        req.user.id,
+        req.user.role,
+        req.body.reason,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'User deactivated successfully',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Activate user
+   */
+  static async activateUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const user = await AdminService.activateUser(
+        req.params.id,
+        req.user.id,
+        req.user.role,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'User activated successfully',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get attendees
+   */
+  static async getAttendees(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const filters = {
+        eventId: req.query.eventId as string | undefined,
+        search: req.query.search as string | undefined,
+        status: req.query.status ? (req.query.status as UserStatus) : undefined,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+      };
+
+      const result = await AdminService.getAttendees(filters);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

@@ -38,6 +38,76 @@ export interface UpdateUserData {
 
 export class AdminService {
   /**
+   * Seed test users (for production setup)
+   */
+  static async seedTestUsers(createdBy: string) {
+    const testUsers = [
+      {
+        email: 'test@organizer.com',
+        password: 'testpass123',
+        firstName: 'Test',
+        lastName: 'Organizer',
+        role: UserRole.ORGANIZER,
+        organizationName: 'Test Organization',
+        businessEmail: 'test@organizer.com',
+      },
+      {
+        email: 'test@user.com',
+        password: 'testpass123',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.ATTENDEE,
+      },
+    ];
+
+    const results = [];
+
+    for (const userData of testUsers) {
+      const existing = await prisma.user.findUnique({
+        where: { email: userData.email },
+      });
+
+      if (existing) {
+        const hashedPassword = await hashPassword(userData.password);
+        const user = await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            password: hashedPassword,
+            role: userData.role,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+            emailVerifiedAt: new Date(),
+            ...(userData.organizationName && { organizationName: userData.organizationName }),
+            ...(userData.businessEmail && { businessEmail: userData.businessEmail }),
+            updatedBy: createdBy,
+          },
+        });
+        results.push({ email: userData.email, action: 'updated', user });
+      } else {
+        const hashedPassword = await hashPassword(userData.password);
+        const user = await prisma.user.create({
+          data: {
+            email: userData.email,
+            password: hashedPassword,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            role: userData.role,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+            emailVerifiedAt: new Date(),
+            ...(userData.organizationName && { organizationName: userData.organizationName }),
+            ...(userData.businessEmail && { businessEmail: userData.businessEmail }),
+            createdBy,
+          },
+        });
+        results.push({ email: userData.email, action: 'created', user });
+      }
+    }
+
+    logger.info('Test users seeded via admin endpoint');
+    return { users: results };
+  }
+  /**
    * Create a new user (admin function)
    */
   static async createUser(
@@ -431,6 +501,308 @@ export class AdminService {
     });
 
     logger.info(`Password reset by admin for user: ${targetUser.email}`);
+  }
+
+  /**
+   * Suspend user (punitive action - user cannot login)
+   */
+  static async suspendUser(
+    userId: string,
+    suspendedBy: string,
+    suspendedByRole: UserRole,
+    reason?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Get target user
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Validate permission
+    validateUserModification(suspendedByRole, targetUser.role);
+
+    // Cannot suspend yourself
+    if (targetUser.id === suspendedBy) {
+      throw new ValidationError('You cannot suspend your own account');
+    }
+
+    // Update status
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: UserStatus.SUSPENDED,
+        updatedBy: suspendedBy,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: suspendedBy,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        statusChanged: true,
+        oldStatus: targetUser.status,
+        newStatus: UserStatus.SUSPENDED,
+        reason: reason || 'No reason provided',
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`User suspended by admin: ${targetUser.email}`);
+    return updatedUser;
+  }
+
+  /**
+   * Deactivate user (non-punitive action - user can login but cannot perform actions)
+   */
+  static async deactivateUser(
+    userId: string,
+    deactivatedBy: string,
+    deactivatedByRole: UserRole,
+    reason?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Get target user
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Validate permission
+    validateUserModification(deactivatedByRole, targetUser.role);
+
+    // Cannot deactivate yourself
+    if (targetUser.id === deactivatedBy) {
+      throw new ValidationError('You cannot deactivate your own account');
+    }
+
+    // Update status
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: UserStatus.DEACTIVATED,
+        updatedBy: deactivatedBy,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: deactivatedBy,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        statusChanged: true,
+        oldStatus: targetUser.status,
+        newStatus: UserStatus.DEACTIVATED,
+        reason: reason || 'No reason provided',
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`User deactivated by admin: ${targetUser.email}`);
+    return updatedUser;
+  }
+
+  /**
+   * Activate user (reactivate suspended or deactivated user)
+   */
+  static async activateUser(
+    userId: string,
+    activatedBy: string,
+    activatedByRole: UserRole,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Get target user
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Validate permission
+    validateUserModification(activatedByRole, targetUser.role);
+
+    // Check if user is already active
+    if (targetUser.status === UserStatus.ACTIVE) {
+      throw new ValidationError('User is already active');
+    }
+
+    // Update status
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: UserStatus.ACTIVE,
+        updatedBy: activatedBy,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: activatedBy,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        statusChanged: true,
+        oldStatus: targetUser.status,
+        newStatus: UserStatus.ACTIVE,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`User activated by admin: ${targetUser.email}`);
+    return updatedUser;
+  }
+
+  /**
+   * Get attendees with event filtering and registration history
+   */
+  static async getAttendees(filters: {
+    eventId?: string;
+    search?: string;
+    status?: UserStatus;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = filters.page || 1;
+    const limit = filters.limit || 50;
+    const skip = (page - 1) * limit;
+
+    const where: {
+      deletedAt: null;
+      role: 'ATTENDEE';
+      status?: UserStatus;
+      OR?: Array<{
+        email?: { contains: string; mode: 'insensitive' };
+        firstName?: { contains: string; mode: 'insensitive' };
+        lastName?: { contains: string; mode: 'insensitive' };
+      }>;
+      registrations?: {
+        some: {
+          eventId: string;
+        };
+      };
+    } = {
+      deletedAt: null,
+      role: UserRole.ATTENDEE,
+    };
+
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    if (filters.search) {
+      where.OR = [
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { firstName: { contains: filters.search, mode: 'insensitive' } },
+        { lastName: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (filters.eventId) {
+      where.registrations = {
+        some: {
+          eventId: filters.eventId,
+        },
+      };
+    }
+
+    const [attendees, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          status: true,
+          isEmailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          registrations: {
+            select: {
+              id: true,
+              eventId: true,
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                  startDate: true,
+                  endDate: true,
+                },
+              },
+              status: true,
+              totalAmount: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 10, // Limit registration history per attendee
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return {
+      attendees,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   /**

@@ -48,6 +48,13 @@ router.put('/users/:id', AdminController.updateUser);
 router.delete('/users/:id', AdminController.deleteUser);
 
 /**
+ * @route   POST /api/v1/admin/seed-test-users
+ * @desc    Seed test users (temporary endpoint for production setup)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/seed-test-users', AdminController.seedTestUsers);
+
+/**
  * @route   POST /api/v1/admin/users/:id/password
  * @desc    Force password reset
  * @access  Private (ADMIN_STAFF+)
@@ -81,6 +88,34 @@ router.get('/dashboard/activity', AdminController.getRecentActivity);
  * @access  Private (ADMIN_STAFF+)
  */
 router.get('/dashboard/alerts', AdminController.getSystemAlerts);
+
+/**
+ * @route   POST /api/v1/admin/users/:id/suspend
+ * @desc    Suspend user (punitive action)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/users/:id/suspend', AdminController.suspendUser);
+
+/**
+ * @route   POST /api/v1/admin/users/:id/deactivate
+ * @desc    Deactivate user (non-punitive action)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/users/:id/deactivate', AdminController.deactivateUser);
+
+/**
+ * @route   POST /api/v1/admin/users/:id/activate
+ * @desc    Activate user (reactivate suspended/deactivated user)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/users/:id/activate', AdminController.activateUser);
+
+/**
+ * @route   GET /api/v1/admin/users/attendees
+ * @desc    Get attendees with event filtering and registration history
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/users/attendees', AdminController.getAttendees);
 
 export default router;
 
