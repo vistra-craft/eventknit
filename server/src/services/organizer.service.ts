@@ -541,7 +541,14 @@ export class OrganizerService {
   /**
    * Get organizer events with dashboard data
    */
-  static async getDashboardEvents(organizerId: string, organizerRole: UserRole, limit: number = 10) {
+  static async getDashboardEvents(
+    organizerId: string,
+    organizerRole: UserRole,
+    filters?: {
+      page?: number;
+      limit?: number;
+    }
+  ) {
     // Validate organizer can view dashboard
     if (organizerRole !== UserRole.ORGANIZER &&
         organizerRole !== UserRole.SUPERADMIN &&
@@ -549,33 +556,46 @@ export class OrganizerService {
       throw new AuthorizationError('Only organizers can view dashboard');
     }
 
-    const events = await prisma.event.findMany({
-      where: {
-        organizerId,
-        deletedAt: null,
-      },
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            organizationName: true,
-          },
+    const limit = filters?.limit || 12; // Default 12 for infinite scroll
+    const page = filters?.page || 1;
+    const skip = (page - 1) * limit;
+
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
+        where: {
+          organizerId,
+          deletedAt: null,
         },
-        registrations: {
-          where: {
-            status: {
-              in: ['CONFIRMED', 'PENDING'],
+        include: {
+          organizer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              organizationName: true,
+            },
+          },
+          registrations: {
+            where: {
+              status: {
+                in: ['CONFIRMED', 'PENDING'],
+              },
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: limit,
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+        skip,
+      }),
+      prisma.event.count({
+        where: {
+          organizerId,
+          deletedAt: null,
+        },
+      }),
+    ]);
 
     // Transform events with dashboard data
     const dashboardEvents = events.map(event => {
@@ -636,7 +656,16 @@ export class OrganizerService {
       };
     });
 
-    return dashboardEvents;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      events: dashboardEvents,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore: page < totalPages,
+    };
   }
 
   /**

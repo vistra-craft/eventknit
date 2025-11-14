@@ -227,12 +227,23 @@ export class OrganizerController {
         return;
       }
 
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-      const events = await OrganizerService.getDashboardEvents(req.user.id, req.user.role, limit);
+      const filters: {
+        page?: number;
+        limit?: number;
+      } = {};
+
+      if (req.query.page) {
+        filters.page = parseInt(req.query.page as string, 10);
+      }
+      if (req.query.limit) {
+        filters.limit = parseInt(req.query.limit as string, 10);
+      }
+
+      const result = await OrganizerService.getDashboardEvents(req.user.id, req.user.role, filters);
 
       res.status(200).json({
         success: true,
-        data: { events },
+        data: result,
       });
     } catch (error) {
       next(error);
@@ -258,6 +269,7 @@ export class OrganizerController {
         search?: string;
         limit?: number;
         offset?: number;
+        page?: number;
         upcoming?: boolean;
       } = {};
 
@@ -265,7 +277,12 @@ export class OrganizerController {
       if (req.query.category) filters.category = req.query.category as string;
       if (req.query.search) filters.search = req.query.search as string;
       if (req.query.limit) filters.limit = parseInt(req.query.limit as string, 10);
-      if (req.query.offset) filters.offset = parseInt(req.query.offset as string, 10);
+      // Support both page and offset (page takes precedence)
+      if (req.query.page) {
+        filters.page = parseInt(req.query.page as string, 10);
+      } else if (req.query.offset) {
+        filters.offset = parseInt(req.query.offset as string, 10);
+      }
       if (req.query.upcoming !== undefined) {
         filters.upcoming = req.query.upcoming === 'true' || req.query.upcoming === '1';
       }

@@ -51,6 +51,7 @@ export class EventController {
         search?: string;
         limit?: number;
         offset?: number;
+        page?: number;
       } = {};
 
       if (req.query.status) {
@@ -71,7 +72,10 @@ export class EventController {
       if (req.query.limit) {
         filters.limit = parseInt(req.query.limit as string, 10);
       }
-      if (req.query.offset) {
+      // Support both page and offset (page takes precedence)
+      if (req.query.page) {
+        filters.page = parseInt(req.query.page as string, 10);
+      } else if (req.query.offset) {
         filters.offset = parseInt(req.query.offset as string, 10);
       }
 
@@ -479,11 +483,23 @@ export class EventController {
         return;
       }
 
-      const events = await EventService.getUserRegisteredEvents(req.user.id);
+      const filters: {
+        page?: number;
+        limit?: number;
+      } = {};
+
+      if (req.query.page) {
+        filters.page = parseInt(req.query.page as string, 10);
+      }
+      if (req.query.limit) {
+        filters.limit = parseInt(req.query.limit as string, 10);
+      }
+
+      const result = await EventService.getUserRegisteredEvents(req.user.id, filters);
 
       res.status(200).json({
         success: true,
-        data: { events },
+        data: result,
       });
     } catch (error) {
       next(error);

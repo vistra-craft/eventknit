@@ -58,6 +58,11 @@ export interface OrganizerDashboardEventsResponse {
   success: boolean;
   data: {
     events: OrganizerDashboardEvent[];
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+    hasMore?: boolean;
   };
 }
 
@@ -71,9 +76,17 @@ export const getOrganizerDashboardStats = async (): Promise<OrganizerDashboardSt
 /**
  * Get organizer dashboard events
  */
-export const getOrganizerDashboardEvents = async (limit?: number): Promise<OrganizerDashboardEventsResponse> => {
-  const queryParams = limit ? `?limit=${limit}` : '';
-  return apiGet<OrganizerDashboardEventsResponse>(`/organizer/dashboard/events${queryParams}`);
+export const getOrganizerDashboardEvents = async (filters?: {
+  page?: number;
+  limit?: number;
+}): Promise<OrganizerDashboardEventsResponse> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.page) queryParams.append('page', filters.page.toString());
+  if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+  
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/organizer/dashboard/events?${queryString}` : '/organizer/dashboard/events';
+  return apiGet<OrganizerDashboardEventsResponse>(endpoint);
 };
 
 /**
@@ -84,7 +97,8 @@ export const getOrganizerEvents = async (filters?: {
   category?: string;
   search?: string;
   limit?: number;
-  offset?: number;
+  offset?: number; // Deprecated: use page instead
+  page?: number;
   upcoming?: boolean; // true for upcoming, false for past
 }): Promise<EventsListResponse> => {
   const queryParams = new URLSearchParams();
@@ -93,7 +107,12 @@ export const getOrganizerEvents = async (filters?: {
   if (filters?.category) queryParams.append('category', filters.category);
   if (filters?.search) queryParams.append('search', filters.search);
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+  // Support both page and offset (page takes precedence)
+  if (filters?.page !== undefined) {
+    queryParams.append('page', filters.page.toString());
+  } else if (filters?.offset !== undefined) {
+    queryParams.append('offset', filters.offset.toString());
+  }
   if (filters?.upcoming !== undefined) queryParams.append('upcoming', filters.upcoming.toString());
   
   const queryString = queryParams.toString();
@@ -109,7 +128,8 @@ export const getOrganizerUpcomingEvents = async (filters?: {
   category?: string;
   search?: string;
   limit?: number;
-  offset?: number;
+  offset?: number; // Deprecated: use page instead
+  page?: number;
 }): Promise<EventsListResponse> => {
   const queryParams = new URLSearchParams();
   
@@ -118,7 +138,12 @@ export const getOrganizerUpcomingEvents = async (filters?: {
   if (filters?.category) queryParams.append('category', filters.category);
   if (filters?.search) queryParams.append('search', filters.search);
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+  // Support both page and offset (page takes precedence)
+  if (filters?.page !== undefined) {
+    queryParams.append('page', filters.page.toString());
+  } else if (filters?.offset !== undefined) {
+    queryParams.append('offset', filters.offset.toString());
+  }
   
   return apiGet<EventsListResponse>(`/organizer/events?${queryParams.toString()}`);
 };
@@ -130,7 +155,8 @@ export const getOrganizerPastEvents = async (filters?: {
   category?: string;
   search?: string;
   limit?: number;
-  offset?: number;
+  offset?: number; // Deprecated: use page instead
+  page?: number;
 }): Promise<EventsListResponse> => {
   const queryParams = new URLSearchParams();
   
@@ -139,7 +165,12 @@ export const getOrganizerPastEvents = async (filters?: {
   if (filters?.category) queryParams.append('category', filters.category);
   if (filters?.search) queryParams.append('search', filters.search);
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+  // Support both page and offset (page takes precedence)
+  if (filters?.page !== undefined) {
+    queryParams.append('page', filters.page.toString());
+  } else if (filters?.offset !== undefined) {
+    queryParams.append('offset', filters.offset.toString());
+  }
   
   return apiGet<EventsListResponse>(`/organizer/events?${queryParams.toString()}`);
 };

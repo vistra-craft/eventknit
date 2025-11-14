@@ -364,6 +364,7 @@ export class EventService {
 
   /**
    * Get all events (with filters)
+   * Supports both page+limit (preferred) and offset+limit (backward compatibility)
    */
   static async getEvents(filters: {
     status?: EventStatus;
@@ -373,6 +374,7 @@ export class EventService {
     search?: string;
     limit?: number;
     offset?: number;
+    page?: number;
   } = {}) {
     const where: Prisma.EventWhereInput = {
       deletedAt: null,
@@ -403,7 +405,13 @@ export class EventService {
     }
 
     const limit = filters.limit || 50;
-    const offset = filters.offset || 0;
+    // Support both page and offset for backward compatibility
+    let skip = 0;
+    if (filters.page !== undefined) {
+      skip = (filters.page - 1) * limit;
+    } else if (filters.offset !== undefined) {
+      skip = filters.offset;
+    }
 
     const [events, total] = await Promise.all([
       prisma.event.findMany({
@@ -425,16 +433,22 @@ export class EventService {
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
-        skip: offset,
+        skip,
       }),
       prisma.event.count({ where }),
     ]);
+
+    const page = filters.page !== undefined ? filters.page : Math.floor(skip / limit) + 1;
+    const totalPages = Math.ceil(total / limit);
 
     return {
       events,
       total,
       limit,
-      offset,
+      page,
+      totalPages,
+      // Keep offset for backward compatibility
+      offset: skip,
     };
   }
 
@@ -1498,30 +1512,52 @@ export class EventService {
   /**
    * Get user's registered events (for user dashboard)
    */
-  static async getUserRegisteredEvents(attendeeId: string) {
-    const registrations = await prisma.eventRegistration.findMany({
-      where: {
-        attendeeId,
-        status: {
-          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+  static async getUserRegisteredEvents(
+    attendeeId: string,
+    filters?: {
+      page?: number;
+      limit?: number;
+    }
+  ) {
+    const limit = filters?.limit || 12; // Default 12 for infinite scroll
+    const page = filters?.page || 1;
+    const skip = (page - 1) * limit;
+
+    const [registrations, total] = await Promise.all([
+      prisma.eventRegistration.findMany({
+        where: {
+          attendeeId,
+          status: {
+            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          },
         },
-      },
-      include: {
-        event: {
-          include: {
-            organizer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                organizationName: true,
+        include: {
+          event: {
+            include: {
+              organizer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  organizationName: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+      }),
+      prisma.eventRegistration.count({
+        where: {
+          attendeeId,
+          status: {
+            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          },
+        },
+      }),
+    ]);
 
     // Transform registrations to dashboard format
     const userEvents = registrations.map(registration => {
@@ -1582,7 +1618,16 @@ export class EventService {
       };
     });
 
-    return userEvents;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      events: userEvents,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore: page < totalPages,
+    };
   }
 
   /**

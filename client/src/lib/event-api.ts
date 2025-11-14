@@ -37,7 +37,8 @@ export interface EventFilters {
   organizerId?: string;
   search?: string;
   limit?: number;
-  offset?: number;
+  offset?: number; // Deprecated: use page instead
+  page?: number;
 }
 
 /**
@@ -124,7 +125,9 @@ export interface EventsListResponse {
     events: EventData[];
     total: number;
     limit?: number;
-    offset?: number;
+    page?: number;
+    totalPages?: number;
+    offset?: number; // Deprecated: use page instead
   };
 }
 
@@ -196,7 +199,12 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   if (filters?.organizerId) queryParams.append('organizerId', filters.organizerId);
   if (filters?.search) queryParams.append('search', filters.search);
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+  // Support both page and offset (page takes precedence)
+  if (filters?.page !== undefined) {
+    queryParams.append('page', filters.page.toString());
+  } else if (filters?.offset !== undefined) {
+    queryParams.append('offset', filters.offset.toString());
+  }
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';
@@ -389,10 +397,24 @@ export interface UserRegisteredEventsResponse {
       status?: 'upcoming' | 'ongoing' | 'completed';
       category?: string;
     }>;
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+    hasMore?: boolean;
   };
 }
 
-export const getUserRegisteredEvents = async (): Promise<UserRegisteredEventsResponse> => {
-  return apiGet<UserRegisteredEventsResponse>('/events/user/registered');
+export const getUserRegisteredEvents = async (filters?: {
+  page?: number;
+  limit?: number;
+}): Promise<UserRegisteredEventsResponse> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.page) queryParams.append('page', filters.page.toString());
+  if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+  
+  const queryString = queryParams.toString();
+  const endpoint = queryString ? `/events/user/registered?${queryString}` : '/events/user/registered';
+  return apiGet<UserRegisteredEventsResponse>(endpoint);
 };
 
