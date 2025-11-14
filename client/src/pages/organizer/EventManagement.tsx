@@ -26,15 +26,17 @@ import {
   Heart,
   Share2,
   MessageSquare,
+  X,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Loader2, AlertCircle } from "lucide-react";
 import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../components/charts/ChartComponents";
 import { CHART_COLORS } from "../../components/charts/chartConstants";
-import { getOrganizerEventById, getEventRegistrations } from "../../lib/organizer-api";
+import { getOrganizerEventById, getEventRegistrations, cancelEvent } from "../../lib/organizer-api";
 import { transformEventData } from "../../lib/event-utils";
 
 const EventManagement = () => {
@@ -45,6 +47,9 @@ const EventManagement = () => {
   const [attendees, setAttendees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -112,6 +117,55 @@ const EventManagement = () => {
 
     fetchEventData();
   }, [eventId]);
+
+  // Check if event can be cancelled (APPROVED and hasn't started)
+  const canCancelEvent = () => {
+    if (!eventData) return false;
+    const status = eventData.status?.toUpperCase();
+    if (status !== 'APPROVED') return false;
+    
+    // Check if event has started
+    if (eventData.startDate) {
+      const startDate = new Date(eventData.startDate);
+      const now = new Date();
+      if (startDate < now) return false;
+    }
+    
+    return true;
+  };
+
+  // Handle cancel event
+  const handleCancelEvent = async () => {
+    if (!eventId) return;
+    
+    try {
+      setCancelling(true);
+      const response = await cancelEvent(eventId, cancelReason || undefined);
+      
+      if (response.success) {
+        setShowCancelDialog(false);
+        setCancelReason("");
+        // Refresh event data
+        const eventResponse = await getOrganizerEventById(eventId);
+        if (eventResponse.success && eventResponse.data) {
+          const transformedEvent = transformEventData(eventResponse.data.event);
+          setEventData(transformedEvent);
+        }
+        // Show success message
+        setError(null);
+        // You could add a toast here if available
+      } else {
+        throw new Error(response.message || 'Failed to cancel event');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to cancel event. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -990,6 +1044,17 @@ const EventManagement = () => {
                     <Settings className="w-4 h-4" />
                     Edit Event
                   </Button>
+                  {canCancelEvent() && (
+                    <Button 
+                      variant="destructive" 
+                      size="lg" 
+                      className="flex items-center gap-2"
+                      onClick={() => setShowCancelDialog(true)}
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel Event
+                    </Button>
+                  )}
                   <Button variant="outline" size="lg" className="flex items-center gap-2">
                     <Share2 className="w-4 h-4" />
                     Share Event
@@ -1186,6 +1251,16 @@ const EventManagement = () => {
                 <Settings className="w-4 h-4 mr-2" />
                 Edit Event
               </Button>
+              {canCancelEvent() && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel Event
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 size="sm"
@@ -1227,6 +1302,59 @@ const EventManagement = () => {
           {renderSection()}
         </div>
       </div>
+
+      {/* Cancel Event Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Event</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this event? This action cannot be undone. 
+              All registrations will be notified of the cancellation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label htmlFor="cancel-reason" className="text-sm font-medium">
+                Reason for cancellation (optional)
+              </label>
+              <textarea
+                id="cancel-reason"
+                className="mt-2 w-full min-h-[100px] px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
+                placeholder="Enter reason for cancellation..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCancelDialog(false);
+                setCancelReason("");
+              }}
+              disabled={cancelling}
+            >
+              Keep Event
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelEvent}
+              disabled={cancelling}
+            >
+              {cancelling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                'Cancel Event'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
