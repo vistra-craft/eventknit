@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
   Calendar,
@@ -70,6 +71,35 @@ const EnhancedDashboard = () => {
   ]);
   const [recentEvents, setRecentEvents] = useState<OrganizerDashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const loadMoreRef = React.useRef<HTMLDivElement>(null);
+
+  const fetchDashboardEvents = async (pageNum: number = 1, append: boolean = false) => {
+    try {
+      if (append) {
+        setLoadingMore(true);
+      }
+
+      const eventsResponse = await getOrganizerDashboardEvents({ page: pageNum, limit: 12 });
+
+      if (eventsResponse.success && eventsResponse.data) {
+        if (append) {
+          setRecentEvents(prev => [...prev, ...eventsResponse.data.events]);
+        } else {
+          setRecentEvents(eventsResponse.data.events);
+        }
+
+        setHasMore(eventsResponse.data.hasMore || false);
+        setPage(pageNum);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard events:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -77,7 +107,7 @@ const EnhancedDashboard = () => {
         setLoading(true);
         const [statsResponse, eventsResponse] = await Promise.all([
           getOrganizerDashboardStats(),
-          getOrganizerDashboardEvents(3),
+          getOrganizerDashboardEvents({ page: 1, limit: 12 }),
         ]);
 
         if (statsResponse.success && statsResponse.data.stats) {
@@ -136,8 +166,10 @@ const EnhancedDashboard = () => {
           ]);
         }
 
-        if (eventsResponse.success && eventsResponse.data.events) {
+        if (eventsResponse.success && eventsResponse.data) {
           setRecentEvents(eventsResponse.data.events);
+          setHasMore(eventsResponse.data.hasMore || false);
+          setPage(1);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -148,6 +180,27 @@ const EnhancedDashboard = () => {
 
     fetchDashboardData();
   }, []);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const currentRef = loadMoreRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchDashboardEvents(page + 1, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(currentRef);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, loadingMore, loading, page]);
 
 
   return (
@@ -242,11 +295,24 @@ const EnhancedDashboard = () => {
                 <p className="text-muted-foreground">Loading events...</p>
               </div>
             ) : recentEvents.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {recentEvents.map((event) => (
-                  <OrganizerEventCard key={event.id} event={event} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {recentEvents.map((event) => (
+                    <OrganizerEventCard key={event.id} event={event} />
+                  ))}
+                </div>
+                {/* Infinite Scroll Loader */}
+                {hasMore && (
+                  <div ref={loadMoreRef} className="py-8 text-center">
+                    {loadingMore && (
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading more events...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">No events yet. Create your first event to get started!</p>
