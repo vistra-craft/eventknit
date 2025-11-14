@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Pagination } from '../../components/ui/pagination';
 import { Building2, MapPin, Mail, Globe } from 'lucide-react';
 import ExhibitorDetailsModal from '../../components/ExhibitorDetailsModal';
 import { getEventById } from '../../lib/event-api';
@@ -45,6 +47,12 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [exhibitors, setExhibitors] = useState<Exhibitor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const totalPages = Math.ceil(exhibitors.length / limit);
+  const exhibitorsStartIndex = (page - 1) * limit;
+  const exhibitorsEndIndex = exhibitorsStartIndex + limit;
+  const paginatedExhibitors = exhibitors.slice(exhibitorsStartIndex, exhibitorsEndIndex);
 
   useEffect(() => {
     const fetchExhibitors = async () => {
@@ -153,8 +161,27 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
                     <p className="text-muted-foreground">Loading exhibitors...</p>
                   </div>
                 ) : exhibitors.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {exhibitors.map((exhibitor) => (
+                  <>
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {exhibitorsStartIndex + 1}-{Math.min(exhibitorsEndIndex, exhibitors.length)} of {exhibitors.length} exhibitors
+                      </div>
+                      <Select value={limit.toString()} onValueChange={(value) => {
+                        setLimit(parseInt(value, 10));
+                        setPage(1);
+                      }}>
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="12">12</SelectItem>
+                          <SelectItem value="24">24</SelectItem>
+                          <SelectItem value="48">48</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {paginatedExhibitors.map((exhibitor) => (
                       <Card 
                         key={exhibitor.id} 
                         className="bg-muted/30 border border-border hover:shadow-lg transition-all duration-200 cursor-pointer"
@@ -237,6 +264,19 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
                       </Card>
                     ))}
                   </div>
+                  {totalPages > 1 && (
+                    <div className="mt-6">
+                      <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={(newPage) => {
+                          setPage(newPage);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
                 ) : (
                   <div className="text-center py-12">
                     <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

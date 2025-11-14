@@ -37,6 +37,8 @@ import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Pagination } from "../../components/ui/pagination";
 import { Loader2, AlertCircle } from "lucide-react";
 import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../components/charts/ChartComponents";
 import { CHART_COLORS } from "../../components/charts/chartConstants";
@@ -59,6 +61,8 @@ const EventManagement = () => {
   const [cancelling, setCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [attendeesPage, setAttendeesPage] = useState(1);
+  const [attendeesLimit, setAttendeesLimit] = useState(25);
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -302,11 +306,33 @@ const EventManagement = () => {
   const renderSection = () => {
     switch (activeSection) {
       case "attendees":
+        const attendeesStartIndex = (attendeesPage - 1) * attendeesLimit;
+        const attendeesEndIndex = attendeesStartIndex + attendeesLimit;
+        const paginatedAttendees = apiData.attendees.slice(attendeesStartIndex, attendeesEndIndex);
+        const attendeesTotalPages = Math.ceil(apiData.attendees.length / attendeesLimit);
+        
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">Attendees Management</h3>
-              <div className="flex gap-2">
+              <h3 className="text-lg font-semibold">Attendees Management</h3>
+              <div className="flex gap-2 items-center">
+                <div className="text-sm text-muted-foreground">
+                  Showing {attendeesStartIndex + 1}-{Math.min(attendeesEndIndex, apiData.attendees.length)} of {apiData.attendees.length}
+                </div>
+                <Select value={attendeesLimit.toString()} onValueChange={(value) => {
+                  setAttendeesLimit(parseInt(value, 10));
+                  setAttendeesPage(1);
+                }}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant="outline" size="sm">
                   <Download className="w-4 h-4 mr-2" />
                   Export
@@ -373,7 +399,7 @@ const EventManagement = () => {
                     {apiData.attendees.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">No attendees registered yet</p>
                     ) : (
-                      apiData.attendees.map((attendee: any) => (
+                      paginatedAttendees.map((attendee: any) => (
                         <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex items-center space-x-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -403,6 +429,18 @@ const EventManagement = () => {
                       ))
                     )}
                   </div>
+                  {attendeesTotalPages > 1 && (
+                    <div className="mt-6">
+                      <Pagination
+                        currentPage={attendeesPage}
+                        totalPages={attendeesTotalPages}
+                        onPageChange={(newPage) => {
+                          setAttendeesPage(newPage);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

@@ -3,6 +3,8 @@ import { Calendar, MapPin, Users, ArrowLeft, X, Clock, Users2 } from "lucide-rea
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Pagination } from "../../components/ui/pagination";
 import { getEventById } from "../../lib/event-api";
 import { SocialConnections } from "../../components/SocialConnections";
 
@@ -266,6 +268,12 @@ const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
   const [selectedSpeaker, setSelectedSpeaker] = useState<Speaker | null>(null);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const totalPages = Math.ceil(speakers.length / limit);
+  const speakersStartIndex = (page - 1) * limit;
+  const speakersEndIndex = speakersStartIndex + limit;
+  const paginatedSpeakers = speakers.slice(speakersStartIndex, speakersEndIndex);
 
   useEffect(() => {
     const fetchSpeakers = async () => {
@@ -372,15 +380,47 @@ const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
                 <p className="text-muted-foreground">Loading speakers...</p>
               </div>
             ) : speakers.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                {speakers.map((speaker, index) => (
-                  <SpeakerCard 
-                    key={speaker.id || `speaker-${index}`} 
-                    speaker={speaker} 
-                    onClick={() => setSelectedSpeaker(speaker)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {speakersStartIndex + 1}-{Math.min(speakersEndIndex, speakers.length)} of {speakers.length} speakers
+                  </div>
+                  <Select value={limit.toString()} onValueChange={(value) => {
+                    setLimit(parseInt(value, 10));
+                    setPage(1);
+                  }}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12</SelectItem>
+                      <SelectItem value="24">24</SelectItem>
+                      <SelectItem value="48">48</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                  {paginatedSpeakers.map((speaker, index) => (
+                    <SpeakerCard 
+                      key={speaker.id || `speaker-${index}`} 
+                      speaker={speaker} 
+                      onClick={() => setSelectedSpeaker(speaker)}
+                    />
+                  ))}
+                </div>
+                {totalPages > 1 && (
+                  <div className="mt-6">
+                    <Pagination
+                      currentPage={page}
+                      totalPages={totalPages}
+                      onPageChange={(newPage) => {
+                        setPage(newPage);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
