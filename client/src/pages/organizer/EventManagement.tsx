@@ -42,10 +42,14 @@ import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../component
 import { CHART_COLORS } from "../../components/charts/chartConstants";
 import { getOrganizerEventById, getEventRegistrations, cancelEvent } from "../../lib/organizer-api";
 import { transformEventData } from "../../lib/event-utils";
+import { shareEvent } from "../../lib/utils/share";
+import { exportEventData } from "../../lib/utils/export";
+import { useToast } from "../../hooks/use-toast";
 
 const EventManagement = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("overview");
   const [eventData, setEventData] = useState<any>(null);
   const [attendees, setAttendees] = useState<any[]>([]);
@@ -1290,22 +1294,67 @@ const EventManagement = () => {
                     View Analytics
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
+                  <DropdownMenuItem onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
+                      toast({
+                        title: "Copied",
+                        description: "Event link copied to clipboard",
+                      });
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to copy link",
+                        variant: "destructive",
+                      });
+                    }
                   }}>
                     <Copy className="h-4 w-4 mr-2" />
                     Copy Event Link
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    // TODO: Share event
-                    console.log('Share event', eventId);
+                  <DropdownMenuItem onClick={async () => {
+                    if (!eventId || !eventData) return;
+                    const shared = await shareEvent(eventData.title || 'Event', eventId);
+                    if (shared) {
+                      toast({
+                        title: "Shared",
+                        description: "Event shared successfully",
+                      });
+                    } else {
+                      toast({
+                        title: "Link Copied",
+                        description: "Event link copied to clipboard",
+                      });
+                    }
                   }}>
                     <Share2 className="h-4 w-4 mr-2" />
                     Share Event
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => {
-                    // TODO: Export event data
-                    console.log('Export event', eventId);
+                    if (!eventId || !eventData) return;
+                    try {
+                      exportEventData({
+                        id: eventId,
+                        title: eventData.title || 'Event',
+                        date: eventData.date,
+                        location: eventData.location || eventData.venue,
+                        attendees: typeof eventData.attendees === 'number' ? eventData.attendees : attendees.length,
+                        revenue: typeof eventData.revenue === 'number' ? eventData.revenue : 0,
+                        views: typeof eventData.views === 'number' ? eventData.views : 0,
+                        status: eventData.status,
+                        category: eventData.category,
+                      });
+                      toast({
+                        title: "Exported",
+                        description: "Event data exported successfully",
+                      });
+                    } catch (error) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to export event data",
+                        variant: "destructive",
+                      });
+                    }
                   }}>
                     <Download className="h-4 w-4 mr-2" />
                     Export Data

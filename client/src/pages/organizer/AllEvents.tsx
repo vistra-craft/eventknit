@@ -30,9 +30,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
+import { shareEvent } from "../../lib/utils/share";
+import { exportEventData } from "../../lib/utils/export";
+import { useToast } from "../../hooks/use-toast";
 
 const AllEvents = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [allEvents, setAllEvents] = useState<OrganizerDashboardEvent[]>([]);
@@ -373,21 +377,64 @@ const AllEvents = () => {
                               View Analytics
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => {
-                              // TODO: Export event data
-                              console.log('Export event', event.id);
+                              try {
+                                exportEventData({
+                                  id: event.id,
+                                  title: event.title,
+                                  date: event.date,
+                                  location: event.location,
+                                  attendees: typeof event.attendees === 'number' ? event.attendees : 0,
+                                  revenue: typeof event.revenue === 'number' ? event.revenue : 0,
+                                  views: typeof event.views === 'number' ? event.views : 0,
+                                  status: event.status,
+                                  category: event.category,
+                                });
+                                toast({
+                                  title: "Exported",
+                                  description: "Event data exported successfully",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to export event data",
+                                  variant: "destructive",
+                                });
+                              }
                             }}>
                               <Download className="h-4 w-4 mr-2" />
                               Export Data
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            <DropdownMenuItem onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                                toast({
+                                  title: "Copied",
+                                  description: "Event link copied to clipboard",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to copy link",
+                                  variant: "destructive",
+                                });
+                              }
                             }}>
                               <Copy className="h-4 w-4 mr-2" />
                               Copy Event Link
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              // TODO: Share event
-                              console.log('Share event', event.id);
+                            <DropdownMenuItem onClick={async () => {
+                              const shared = await shareEvent(event.title, event.id);
+                              if (shared) {
+                                toast({
+                                  title: "Shared",
+                                  description: "Event shared successfully",
+                                });
+                              } else {
+                                toast({
+                                  title: "Link Copied",
+                                  description: "Event link copied to clipboard",
+                                });
+                              }
                             }}>
                               <Share2 className="h-4 w-4 mr-2" />
                               Share Event
