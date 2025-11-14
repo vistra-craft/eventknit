@@ -3,7 +3,7 @@ services:
     name: eventknit-server
     env: node
     plan: starter # or free, starter, standard, pro
-    buildCommand: npm install && npm run prisma:generate && npm run build && npm run prisma:migrate:deploy && npm run seed:test-users
+    buildCommand: npm install && npm run prisma:generate && npm run build && npm run prisma:migrate:deploy
     startCommand: npm start
     envVars:
       - key: NODE_ENV
