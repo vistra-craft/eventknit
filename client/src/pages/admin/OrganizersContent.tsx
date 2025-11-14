@@ -5,7 +5,6 @@ import {
   Plus,
   Eye,
   Edit,
-  User,
   CheckCircle,
   XCircle,
   Download,
@@ -16,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
 import CreateOrganizerModal from "./CreateOrganizerModal";
@@ -294,9 +294,12 @@ const OrganizersContent = () => {
                   className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center overflow-hidden">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
+                    <Avatar
+                      src={undefined} // Profile image URL if available in future
+                      name={`${organizer.firstName} ${organizer.lastName}`}
+                      alt={`${organizer.firstName} ${organizer.lastName}`}
+                      size="lg"
+                    />
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">
                         {organizer.firstName} {organizer.lastName}

@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
 import { Label } from "../../../components/ui/label";
+import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
@@ -24,6 +25,7 @@ interface Event {
   category: string;
   type: "public" | "private";
   isFree: boolean;
+  image?: string;
   registrations: number;
   capacity: number;
   daysUntil: number;
@@ -337,7 +339,13 @@ const UpcomingEventsPage = () => {
           {filteredEvents.map((event) => (
             <Card key={event.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <EventThumbnail
+                    src={event.image}
+                    alt={event.title}
+                    category={event.category}
+                    size="md"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
@@ -382,7 +390,7 @@ const UpcomingEventsPage = () => {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                     <Button variant="outline" size="sm">
                       <Eye className="h-4 w-4 mr-1" />
                       View

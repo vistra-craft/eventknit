@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../../components/ui/dialog";
 import { Switch } from "../../../components/ui/switch";
+import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import AdminLayout from "../AdminLayout";
 import {
   getAllFeaturedEvents,
@@ -283,17 +284,12 @@ const FeaturedEventsPage = () => {
                 <Card key={featuredEvent.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
-                      {/* Event Image Preview */}
-                      {displayImage && (
-                        <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                          <img 
-                            src={displayImage} 
-                            alt={displayTitle}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      
+                      <EventThumbnail
+                        src={displayImage}
+                        alt={displayTitle}
+                        category={displayCategory}
+                        size="lg"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-semibold text-foreground truncate">{displayTitle}</h3>

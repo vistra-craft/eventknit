@@ -8,6 +8,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { Textarea } from "../../../components/ui/textarea";
+import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { approveEvent, rejectEvent } from "../../../lib/admin-api";
@@ -74,6 +75,7 @@ const PendingApprovalPage = () => {
             submittedDate: event.createdAt || new Date().toISOString(),
             createdAt: event.createdAt || new Date().toISOString(),
             description: event.description || '',
+            image: event.image || undefined,
           }));
           setEvents(pendingEvents);
         }
@@ -288,7 +290,13 @@ const PendingApprovalPage = () => {
           {filteredEvents.map((event) => (
             <Card key={event.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <EventThumbnail
+                    src={event.image}
+                    alt={event.title}
+                    category={event.category}
+                    size="md"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
@@ -323,7 +331,7 @@ const PendingApprovalPage = () => {
                     <p className="text-sm text-gray-500 mb-2">by {event.organizer}</p>
                     <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                     <Button variant="outline" size="sm" onClick={() => setPreviewEvent(event)}>
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
