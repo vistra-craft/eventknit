@@ -564,6 +564,56 @@ describe('Organizer Staff Management', () => {
       expect(response.body.data.events.length).toBeLessThanOrEqual(1);
     });
 
+    it('should support pagination with page and limit', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create more events for pagination testing
+      for (let i = 3; i <= 5; i++) {
+        await prisma.event.create({
+          data: {
+            title: `Event ${i}`,
+            description: `Description ${i}`,
+            startDate: new Date(Date.now() + (i * 7) * 24 * 60 * 60 * 1000),
+            location: `Location ${i}`,
+            isFree: true,
+            organizerId,
+            status: 'APPROVED',
+          },
+        });
+      }
+
+      // Test first page
+      const page1Response = await request(app)
+        .get('/api/v1/organizer/dashboard/events?page=1&limit=2')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(page1Response.body.success).toBe(true);
+      expect(page1Response.body.data.events.length).toBeLessThanOrEqual(2);
+      expect(page1Response.body.data).toHaveProperty('page', 1);
+      expect(page1Response.body.data).toHaveProperty('limit', 2);
+      expect(page1Response.body.data).toHaveProperty('total');
+      expect(page1Response.body.data).toHaveProperty('totalPages');
+      expect(page1Response.body.data).toHaveProperty('hasMore');
+      expect(page1Response.body.data.totalPages).toBeGreaterThan(0);
+      expect(typeof page1Response.body.data.hasMore).toBe('boolean');
+
+      // Test second page
+      if (page1Response.body.data.hasMore) {
+        const page2Response = await request(app)
+          .get('/api/v1/organizer/dashboard/events?page=2&limit=2')
+          .set('Authorization', `Bearer ${organizerToken}`)
+          .expect(200);
+
+        expect(page2Response.body.success).toBe(true);
+        expect(page2Response.body.data).toHaveProperty('page', 2);
+        expect(page2Response.body.data.events.length).toBeGreaterThan(0);
+      }
+    });
+
     it('should calculate event stats correctly', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');

@@ -680,6 +680,7 @@ export class OrganizerService {
       search?: string;
       limit?: number;
       offset?: number;
+      page?: number;
       upcoming?: boolean; // true for upcoming, false for past
     } = {},
   ) {
@@ -739,7 +740,13 @@ export class OrganizerService {
     }
 
     const limit = filters.limit || 50;
-    const offset = filters.offset || 0;
+    // Support both page and offset for backward compatibility
+    let skip = 0;
+    if (filters.page !== undefined) {
+      skip = (filters.page - 1) * limit;
+    } else if (filters.offset !== undefined) {
+      skip = filters.offset;
+    }
 
     const [events, total] = await Promise.all([
       prisma.event.findMany({
@@ -768,7 +775,7 @@ export class OrganizerService {
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
-        skip: offset,
+        skip,
       }),
       prisma.event.count({ where }),
     ]);
@@ -831,11 +838,18 @@ export class OrganizerService {
       };
     });
 
+    const page = filters.page !== undefined ? filters.page : Math.floor(skip / limit) + 1;
+    const totalPages = Math.ceil(total / limit);
+
     return {
       events: transformedEvents,
       total,
       limit,
-      offset,
+      page,
+      totalPages,
+      hasMore: page < totalPages,
+      // Keep offset for backward compatibility
+      offset: skip,
     };
   }
 }

@@ -957,6 +957,14 @@ describe('Event System', () => {
       expect(Array.isArray(response.body.data.events)).toBe(true);
       expect(response.body.data.events.length).toBeGreaterThanOrEqual(3);
 
+      // Verify pagination metadata
+      expect(response.body.data).toHaveProperty('page');
+      expect(response.body.data).toHaveProperty('limit');
+      expect(response.body.data).toHaveProperty('total');
+      expect(response.body.data).toHaveProperty('totalPages');
+      expect(response.body.data).toHaveProperty('hasMore');
+      expect(typeof response.body.data.hasMore).toBe('boolean');
+
       const event = response.body.data.events[0];
       expect(event).toHaveProperty('id');
       expect(event).toHaveProperty('title');
@@ -966,6 +974,65 @@ describe('Event System', () => {
       expect(event).toHaveProperty('image');
       expect(event).toHaveProperty('registrationDate');
       expect(event).toHaveProperty('status');
+    });
+
+    it('should support pagination with page and limit', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create more registrations for pagination testing
+      for (let i = 4; i <= 6; i++) {
+        const event = await prisma.event.create({
+          data: {
+            title: `Additional Event ${i}`,
+            description: `Description ${i}`,
+            startDate: new Date(Date.now() + (i * 7) * 24 * 60 * 60 * 1000),
+            location: `Location ${i}`,
+            isFree: true,
+            organizerId,
+            status: EventStatus.APPROVED,
+          },
+        });
+
+        await prisma.eventRegistration.create({
+          data: {
+            eventId: event.id,
+            attendeeId,
+            quantity: 1,
+            totalAmount: 0,
+            status: 'CONFIRMED',
+            paymentStatus: 'COMPLETED',
+          },
+        });
+      }
+
+      // Test first page
+      const page1Response = await request(app)
+        .get('/api/v1/events/user/registered?page=1&limit=3')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(200);
+
+      expect(page1Response.body.success).toBe(true);
+      expect(page1Response.body.data.events.length).toBeLessThanOrEqual(3);
+      expect(page1Response.body.data).toHaveProperty('page', 1);
+      expect(page1Response.body.data).toHaveProperty('limit', 3);
+      expect(page1Response.body.data).toHaveProperty('total');
+      expect(page1Response.body.data).toHaveProperty('totalPages');
+      expect(page1Response.body.data).toHaveProperty('hasMore');
+
+      // Test second page if hasMore is true
+      if (page1Response.body.data.hasMore) {
+        const page2Response = await request(app)
+          .get('/api/v1/events/user/registered?page=2&limit=3')
+          .set('Authorization', `Bearer ${attendeeToken}`)
+          .expect(200);
+
+        expect(page2Response.body.success).toBe(true);
+        expect(page2Response.body.data).toHaveProperty('page', 2);
+        expect(page2Response.body.data.events.length).toBeGreaterThan(0);
+      }
     });
 
     it('should correctly determine event status', async () => {
