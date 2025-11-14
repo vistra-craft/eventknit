@@ -1,13 +1,14 @@
 import * as React from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./dialog";
-import { Button } from "./button";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./alert-dialog";
 import { AlertTriangle, AlertCircle, Info, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -95,40 +96,39 @@ const ConfirmationDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
           <div className="flex items-start gap-4">
-            <div className={cn("flex h-10 w-10 items-center justify-center rounded-full", getIconBg())}>
+            <div className={cn("flex h-10 w-10 items-center justify-center rounded-full flex-shrink-0", getIconBg())}>
               {getIcon()}
             </div>
             <div className="flex-1 space-y-2">
-              <DialogTitle>{title}</DialogTitle>
-              <DialogDescription>{description}</DialogDescription>
+              <AlertDialogTitle>{title}</AlertDialogTitle>
+              <AlertDialogDescription>{description}</AlertDialogDescription>
             </div>
           </div>
-        </DialogHeader>
+        </AlertDialogHeader>
         {children && <div className="py-4">{children}</div>}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={loading}
-          >
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancel} disabled={loading}>
             {cancelText}
-          </Button>
-          <Button
-            type="button"
-            variant={getConfirmVariant()}
+          </AlertDialogCancel>
+          <AlertDialogAction
             onClick={handleConfirm}
             disabled={loading}
+            className={cn(
+              type === "danger" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+              type === "warning" && "bg-yellow-600 text-white hover:bg-yellow-700",
+              type === "info" && "bg-blue-600 text-white hover:bg-blue-700",
+              type === "success" && "bg-green-600 text-white hover:bg-green-700"
+            )}
           >
             {loading ? "Processing..." : confirmText}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 

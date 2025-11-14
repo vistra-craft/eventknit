@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleViewProvider } from "./contexts/RoleViewContext";
 import { useAuth } from "./hooks/useAuth";
+import { Toaster } from "./components/ui/toaster";
 import type { ReactNode } from "react";
 import Index from "./pages/index";
 import CreateEvent from "./pages/CreateEvent";
@@ -60,6 +61,8 @@ import {
 import AdminAllEventsPage from "./pages/admin/events/AllEventsPage";
 import AdminPendingApprovalPage from "./pages/admin/events/PendingApprovalPage";
 import AdminFeaturedEventsPage from "./pages/admin/events/FeaturedEventsPage";
+import CreateFeaturedEventPage from "./pages/admin/events/featured/CreateFeaturedEventPage";
+import EditFeaturedEventPage from "./pages/admin/events/featured/EditFeaturedEventPage";
 import AdminPastEventsPage from "./pages/admin/events/PastEventsPage";
 import AdminUpcomingEventsPage from "./pages/admin/events/UpcomingEventsPage";
 import AdminDeclinedEventsPage from "./pages/admin/events/DeclinedEventsPage";
@@ -197,6 +200,8 @@ const App = () => (
       <Route path="/admin/events" element={<AdminAllEventsPage />} />
       <Route path="/admin/events/pending" element={<AdminPendingApprovalPage />} />
       <Route path="/admin/events/featured" element={<AdminFeaturedEventsPage />} />
+      <Route path="/admin/events/featured/create" element={<CreateFeaturedEventPage />} />
+      <Route path="/admin/events/featured/:id/edit" element={<EditFeaturedEventPage />} />
       <Route path="/admin/events/past" element={<AdminPastEventsPage />} />
       <Route path="/admin/events/upcoming" element={<AdminUpcomingEventsPage />} />
       <Route path="/admin/events/declined" element={<AdminDeclinedEventsPage />} />
@@ -277,6 +282,7 @@ const App = () => (
       <Route path="/admin/workstation/history" element={<WorkstationHistory />} />
         </Routes>
       </RoleViewWrapper>
+      <Toaster />
     </BrowserRouter>
   </AuthProvider>
 );

@@ -58,3 +58,4 @@ export function downloadTicket(ticket: TicketData): void {
   URL.revokeObjectURL(url);
 }
 
+

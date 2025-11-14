@@ -1,136 +1,36 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, Upload, Camera, X, Loader2 } from "lucide-react";
+import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { Label } from "../../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../../components/ui/dialog";
-import { Switch } from "../../../components/ui/switch";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
+import { ConfirmationDialog } from "../../../components/ui/confirmation-dialog";
+import { useToast } from "../../../hooks/use-toast";
 import AdminLayout from "../AdminLayout";
 import {
   getAllFeaturedEvents,
-  createFeaturedEvent,
-  updateFeaturedEvent,
   deleteFeaturedEvent,
   type FeaturedEventData,
-  type CreateFeaturedEventData,
 } from "../../../lib/featured-event-api";
-import { getEvents, EventStatus, type EventData } from "../../../lib/event-api";
 
 const FeaturedEventsPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [featuredEvents, setFeaturedEvents] = useState<FeaturedEventData[]>([]);
-  const [availableEvents, setAvailableEvents] = useState<EventData[]>([]);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingFeaturedEvent, setEditingFeaturedEvent] = useState<FeaturedEventData | null>(null);
-  const [formData, setFormData] = useState<CreateFeaturedEventData>({
-    eventId: "",
-    customTitle: "",
-    customImage: "",
-    customCategory: "",
-    displayStartDate: "",
-    displayEndDate: "",
-    displayOrder: 0,
-    isActive: true,
-  });
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
-  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
-  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchFeaturedEvents();
-    fetchAvailableEvents();
   }, []);
-
-  // Handle image upload (for add dialog)
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
-      return;
-    }
-
-    setIsUploadingImage(true);
-
-    try {
-      // Convert to base64 for now (in production, upload to cloud storage)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        setFormData(prev => ({ ...prev, customImage: base64String }));
-        setIsUploadingImage(false);
-      };
-      reader.onerror = () => {
-        alert('Failed to read image file');
-        setIsUploadingImage(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      alert('Failed to upload image');
-      setIsUploadingImage(false);
-    }
-  };
-
-  // Handle image upload (for edit dialog)
-  const handleEditImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
-      return;
-    }
-
-    setIsUploadingEditImage(true);
-
-    try {
-      // Convert to base64 for now (in production, upload to cloud storage)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setEditImagePreview(base64String);
-        setFormData(prev => ({ ...prev, customImage: base64String }));
-        setIsUploadingEditImage(false);
-      };
-      reader.onerror = () => {
-        alert('Failed to read image file');
-        setIsUploadingEditImage(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      alert('Failed to upload image');
-      setIsUploadingEditImage(false);
-    }
-  };
 
   const fetchFeaturedEvents = async () => {
     try {
@@ -139,17 +39,13 @@ const FeaturedEventsPage = () => {
       setFeaturedEvents(data);
     } catch (error) {
       console.error("Failed to fetch featured events:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch featured events",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAvailableEvents = async () => {
-    try {
-      const response = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
-      setAvailableEvents(response.data.events);
-    } catch (error) {
-      console.error("Failed to fetch available events:", error);
     }
   };
 
@@ -166,94 +62,38 @@ const FeaturedEventsPage = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const resetForm = () => {
-    setFormData({
-      eventId: "",
-      customTitle: "",
-      customImage: "",
-      customCategory: "",
-      displayStartDate: "",
-      displayEndDate: "",
-      displayOrder: 0,
-      isActive: true,
-    });
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const handleDeleteClick = (id: string) => {
+    setDeletingId(id);
+    setDeleteDialogOpen(true);
   };
 
-  const handleAddFeaturedEvent = async () => {
-    if (!formData.eventId) {
-      alert("Please select an event");
-      return;
-    }
+  const handleDeleteConfirm = async () => {
+    if (!deletingId) return;
 
     try {
-      await createFeaturedEvent(formData);
-      alert("Featured event created successfully");
-      setShowAddDialog(false);
-      resetForm();
-      fetchFeaturedEvents();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create featured event";
-      alert(errorMessage);
-    }
-  };
-
-  const handleEditFeaturedEvent = async () => {
-    if (!editingFeaturedEvent) return;
-
-    try {
-      await updateFeaturedEvent(editingFeaturedEvent.id, formData);
-      alert("Featured event updated successfully");
-      setShowEditDialog(false);
-      setEditingFeaturedEvent(null);
-      setFormData({
-        eventId: "",
-        customTitle: "",
-        customImage: "",
-        customCategory: "",
-        displayStartDate: "",
-        displayEndDate: "",
-        displayOrder: 0,
-        isActive: true,
+      setDeleting(true);
+      await deleteFeaturedEvent(deletingId);
+      toast({
+        title: "Success",
+        description: "Featured event removed successfully",
       });
       fetchFeaturedEvents();
+      setDeleteDialogOpen(false);
+      setDeletingId(null);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update featured event";
-      alert(errorMessage);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to delete featured event";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
     }
   };
-
-  const handleDeleteFeaturedEvent = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this featured event?")) return;
-
-    try {
-      await deleteFeaturedEvent(id);
-      alert("Featured event removed successfully");
-      fetchFeaturedEvents();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete featured event";
-      alert(errorMessage);
-    }
-  };
-
-  const openEditDialog = (featuredEvent: FeaturedEventData) => {
-    setEditingFeaturedEvent(featuredEvent);
-    setFormData({
-      eventId: featuredEvent.eventId,
-      customTitle: featuredEvent.customTitle || "",
-      customImage: featuredEvent.customImage || "",
-      customCategory: featuredEvent.customCategory || "",
-      displayStartDate: featuredEvent.displayStartDate ? new Date(featuredEvent.displayStartDate).toISOString().split('T')[0] : "",
-      displayEndDate: featuredEvent.displayEndDate ? new Date(featuredEvent.displayEndDate).toISOString().split('T')[0] : "",
-      displayOrder: featuredEvent.displayOrder,
-      isActive: featuredEvent.isActive,
-    });
-    setEditImagePreview(featuredEvent.customImage || null);
-    setShowEditDialog(true);
-  };
-
-  const selectedEvent = availableEvents.find(e => e.id === formData.eventId);
 
   return (
     <AdminLayout>
@@ -268,7 +108,7 @@ const FeaturedEventsPage = () => {
             <div className="text-sm text-muted-foreground">
               {filteredEvents.length} of {featuredEvents.length} featured events
             </div>
-            <Button onClick={() => setShowAddDialog(true)}>
+            <Button onClick={() => navigate("/admin/events/featured/create")}>
               <Plus className="h-4 w-4 mr-2" />
               Add Featured Event
             </Button>
@@ -395,7 +235,7 @@ const FeaturedEventsPage = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => openEditDialog(featuredEvent)}
+                          onClick={() => navigate(`/admin/events/featured/${featuredEvent.id}/edit`)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
@@ -403,7 +243,7 @@ const FeaturedEventsPage = () => {
                         <Button 
                           variant="destructive" 
                           size="sm"
-                          onClick={() => handleDeleteFeaturedEvent(featuredEvent.id)}
+                          onClick={() => handleDeleteClick(featuredEvent.id)}
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Remove
@@ -429,357 +269,18 @@ const FeaturedEventsPage = () => {
           </Card>
         )}
 
-        {/* Add Featured Event Dialog */}
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <DialogHeader>
-              <DialogTitle>Add Featured Event</DialogTitle>
-              <DialogDescription>
-                Select an approved event to feature on the homepage hero section
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="eventId">Event *</Label>
-                <Select value={formData.eventId} onValueChange={(value) => setFormData({ ...formData, eventId: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an event" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableEvents
-                      .filter(e => !featuredEvents.some(fe => fe.eventId === e.id && fe.isActive))
-                      .map(event => (
-                        <SelectItem key={event.id} value={event.id}>
-                          {event.title} - {new Date(event.startDate).toLocaleDateString()}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedEvent && (
-                <div className="p-4 bg-muted rounded-lg space-y-2">
-                  <div className="flex items-center gap-2">
-                    {selectedEvent.image && (
-                      <img src={selectedEvent.image} alt={selectedEvent.title} className="w-16 h-16 rounded object-cover" />
-                    )}
-                    <div>
-                      <p className="font-semibold">{selectedEvent.title}</p>
-                      <p className="text-sm text-muted-foreground">{selectedEvent.category || "No category"}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="customTitle">Custom Title (optional)</Label>
-                <Input
-                  id="customTitle"
-                  placeholder="Leave empty to use event title"
-                  value={formData.customTitle}
-                  onChange={(e) => setFormData({ ...formData, customTitle: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  If empty, the event title will be used
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <Label>Custom Image (optional)</Label>
-                <div className="space-y-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  {imagePreview || formData.customImage ? (
-                    <div className="relative">
-                      <img
-                        src={imagePreview || formData.customImage}
-                        alt="Preview"
-                        className="w-full h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={() => {
-                          setImagePreview(null);
-                          setFormData(prev => ({ ...prev, customImage: '' }));
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                      <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground mb-2">Upload an image or enter URL</p>
-                      <div className="flex gap-2 justify-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isUploadingImage}
-                        >
-                          {isUploadingImage ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4 mr-2" />
-                              Upload Image
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="customImageUrl">Or enter image URL</Label>
-                  <Input
-                    id="customImageUrl"
-                    placeholder="https://example.com/image.jpg"
-                    value={formData.customImage && !imagePreview ? formData.customImage : ''}
-                    onChange={(e) => {
-                      setFormData({ ...formData, customImage: e.target.value });
-                      setImagePreview(null);
-                    }}
-                    disabled={!!imagePreview}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    If empty, the event image will be used
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="customCategory">Custom Category (optional)</Label>
-                <Input
-                  id="customCategory"
-                  placeholder="Leave empty to use event category"
-                  value={formData.customCategory}
-                  onChange={(e) => setFormData({ ...formData, customCategory: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="displayStartDate">Display Start Date (optional)</Label>
-                  <Input
-                    id="displayStartDate"
-                    type="date"
-                    value={formData.displayStartDate}
-                    onChange={(e) => setFormData({ ...formData, displayStartDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="displayEndDate">Display End Date (optional)</Label>
-                  <Input
-                    id="displayEndDate"
-                    type="date"
-                    value={formData.displayEndDate}
-                    onChange={(e) => setFormData({ ...formData, displayEndDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="displayOrder">Display Order</Label>
-                <Input
-                  id="displayOrder"
-                  type="number"
-                  value={formData.displayOrder}
-                  onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Lower numbers appear first in the hero section
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="isActive">Active</Label>
-                <Switch
-                  id="isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddFeaturedEvent}>
-                Add Featured Event
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Featured Event Dialog */}
-        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
-            <DialogHeader>
-              <DialogTitle>Edit Featured Event</DialogTitle>
-              <DialogDescription>
-                Update the featured event settings
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-customTitle">Custom Title (optional)</Label>
-                <Input
-                  id="edit-customTitle"
-                  placeholder="Leave empty to use event title"
-                  value={formData.customTitle}
-                  onChange={(e) => setFormData({ ...formData, customTitle: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <Label>Custom Image (optional)</Label>
-                <div className="space-y-2">
-                  <input
-                    ref={editFileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleEditImageUpload}
-                    className="hidden"
-                  />
-                  {editImagePreview || formData.customImage ? (
-                    <div className="relative">
-                      <img
-                        src={editImagePreview || formData.customImage}
-                        alt="Preview"
-                        className="w-full h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={() => {
-                          setEditImagePreview(null);
-                          setFormData(prev => ({ ...prev, customImage: '' }));
-                          if (editFileInputRef.current) editFileInputRef.current.value = '';
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                      <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground mb-2">Upload an image or enter URL</p>
-                      <div className="flex gap-2 justify-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => editFileInputRef.current?.click()}
-                          disabled={isUploadingEditImage}
-                        >
-                          {isUploadingEditImage ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4 mr-2" />
-                              Upload Image
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="edit-customImageUrl">Or enter image URL</Label>
-                  <Input
-                    id="edit-customImageUrl"
-                    placeholder="https://example.com/image.jpg"
-                    value={formData.customImage && !editImagePreview ? formData.customImage : ''}
-                    onChange={(e) => {
-                      setFormData({ ...formData, customImage: e.target.value });
-                      setEditImagePreview(null);
-                    }}
-                    disabled={!!editImagePreview}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    If empty, the event image will be used
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="edit-customCategory">Custom Category (optional)</Label>
-                <Input
-                  id="edit-customCategory"
-                  placeholder="Leave empty to use event category"
-                  value={formData.customCategory}
-                  onChange={(e) => setFormData({ ...formData, customCategory: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-displayStartDate">Display Start Date (optional)</Label>
-                  <Input
-                    id="edit-displayStartDate"
-                    type="date"
-                    value={formData.displayStartDate}
-                    onChange={(e) => setFormData({ ...formData, displayStartDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-displayEndDate">Display End Date (optional)</Label>
-                  <Input
-                    id="edit-displayEndDate"
-                    type="date"
-                    value={formData.displayEndDate}
-                    onChange={(e) => setFormData({ ...formData, displayEndDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="edit-displayOrder">Display Order</Label>
-                <Input
-                  id="edit-displayOrder"
-                  type="number"
-                  value={formData.displayOrder}
-                  onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="edit-isActive">Active</Label>
-                <Switch
-                  id="edit-isActive"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditFeaturedEvent}>
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Remove Featured Event"
+          description="Are you sure you want to remove this featured event? This action cannot be undone."
+          confirmText="Remove"
+          cancelText="Cancel"
+          type="danger"
+          loading={deleting}
+          onConfirm={handleDeleteConfirm}
+        />
 
       </div>
     </AdminLayout>

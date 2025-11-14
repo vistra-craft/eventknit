@@ -216,3 +216,4 @@ const CreateOrganizerModal = ({ open, onOpenChange, onSuccess }: CreateOrganizer
 
 export default CreateOrganizerModal;
 
+
