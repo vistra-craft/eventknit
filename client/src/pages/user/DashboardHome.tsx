@@ -27,6 +27,9 @@ import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { Avatar } from "../../components/ui/avatar";
 import { getUserRegisteredEvents } from "../../lib/event-api";
 import { useAuth } from "../../hooks/useAuth";
+import { shareEvent } from "../../lib/utils/share";
+import { downloadTicket } from "../../lib/utils/ticket";
+import { useToast } from "../../hooks/use-toast";
 
 interface EventData {
   id: string;
@@ -62,6 +65,7 @@ interface DashboardHomeProps {
 const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
+  const { toast } = useToast();
   const [previewEvent, setPreviewEvent] = useState<EventData | null>(null);
   const [userEvents, setUserEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -271,22 +275,63 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                               View Event Page
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            <DropdownMenuItem onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                                toast({
+                                  title: "Copied",
+                                  description: "Event link copied to clipboard",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to copy link",
+                                  variant: "destructive",
+                                });
+                              }
                             }}>
                               <Copy className="h-4 w-4 mr-2" />
                               Copy Event Link
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              // TODO: Share event
-                              console.log('Share event', event.id);
+                            <DropdownMenuItem onClick={async () => {
+                              const shared = await shareEvent(event.title, event.id);
+                              if (shared) {
+                                toast({
+                                  title: "Shared",
+                                  description: "Event shared successfully",
+                                });
+                              } else {
+                                toast({
+                                  title: "Link Copied",
+                                  description: "Event link copied to clipboard",
+                                });
+                              }
                             }}>
                               <Share2 className="h-4 w-4 mr-2" />
                               Share Event
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => {
-                              // TODO: Download ticket/badge
-                              console.log('Download ticket for event', event.id);
+                              try {
+                                downloadTicket({
+                                  eventTitle: event.title,
+                                  eventDate: event.date,
+                                  eventLocation: event.location,
+                                  attendeeName: user.name,
+                                  attendeeEmail: user.email,
+                                  ticketType: event.type || 'Standard',
+                                  ticketId: `${event.id}-${Date.now()}`,
+                                });
+                                toast({
+                                  title: "Downloaded",
+                                  description: "Ticket downloaded successfully",
+                                });
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to download ticket",
+                                  variant: "destructive",
+                                });
+                              }
                             }}>
                               <Download className="h-4 w-4 mr-2" />
                               Download Ticket
