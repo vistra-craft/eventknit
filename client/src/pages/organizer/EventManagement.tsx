@@ -1248,7 +1248,7 @@ const EventManagement = () => {
                 Back to Dashboard
               </Button>
                 <div>
-                  <h1 className="text-3xl font-bold text-foreground">{eventData?.title || 'Event Management'}</h1>
+                  <h1 className="text-lg font-semibold text-foreground">{eventData?.title || 'Event Management'}</h1>
                   <p className="text-muted-foreground">Event Management</p>
                 </div>
             </div>
