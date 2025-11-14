@@ -719,7 +719,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Platform Fee</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-lg font-semibold">
                         {hasPaymentDetailsAccess 
                           ? `$${(totalRevenue * 0.3).toLocaleString()}`
                           : 'N/A'}
