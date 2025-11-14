@@ -10,12 +10,19 @@ import {
   Download,
   Upload,
   Shield,
+  MoreHorizontal,
+  Mail,
+  Phone,
+  Calendar,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
 
@@ -29,6 +36,7 @@ const StaffManagementContent = () => {
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [previewStaff, setPreviewStaff] = useState<User | null>(null);
 
   // Fetch staff members (ADMIN_STAFF, SUPERADMIN, etc.)
   useEffect(() => {
@@ -318,9 +326,12 @@ const StaffManagementContent = () => {
                   className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center overflow-hidden">
-                      <Shield className="h-6 w-6 text-primary" />
-                    </div>
+                    <Avatar
+                      src={undefined} // Profile image URL if available in future
+                      name={`${staff.firstName} ${staff.lastName}`}
+                      alt={`${staff.firstName} ${staff.lastName}`}
+                      size="lg"
+                    />
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">
                         {staff.firstName} {staff.lastName}
@@ -349,40 +360,31 @@ const StaffManagementContent = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewStaff(staff.id)}
+                        onClick={() => setPreviewStaff(staff)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditStaff(staff.id)}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
                       </Button>
                       {staff.status === "ACTIVE" && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSuspendStaff(staff.id)}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            title="Suspend Staff"
-                            disabled={actionLoading === staff.id}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeactivateStaff(staff.id)}
-                            className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                            title="Deactivate Staff"
-                            disabled={actionLoading === staff.id}
-                          >
-                            Deactivate
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSuspendStaff(staff.id)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          title="Suspend Staff"
+                          disabled={actionLoading === staff.id}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Suspend
+                        </Button>
                       )}
                       {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && (
                         <Button
@@ -393,9 +395,63 @@ const StaffManagementContent = () => {
                           title="Activate Staff"
                           disabled={actionLoading === staff.id}
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Activate
                         </Button>
                       )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewStaff(staff.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditStaff(staff.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Staff
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {staff.status === "ACTIVE" && (
+                            <>
+                              <DropdownMenuItem 
+                                onClick={() => handleSuspendStaff(staff.id)}
+                                disabled={actionLoading === staff.id}
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Suspend
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeactivateStaff(staff.id)}
+                                disabled={actionLoading === staff.id}
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Deactivate
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && (
+                            <DropdownMenuItem 
+                              onClick={() => handleActivateStaff(staff.id)}
+                              disabled={actionLoading === staff.id}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Activate
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            // TODO: Export staff data
+                            console.log('Export staff', staff.id);
+                          }}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Export Data
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
@@ -404,6 +460,96 @@ const StaffManagementContent = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Staff Preview Dialog */}
+      <Dialog 
+        open={!!previewStaff} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewStaff(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Staff Preview</DialogTitle>
+            <DialogDescription>
+              View staff member details
+            </DialogDescription>
+          </DialogHeader>
+          {previewStaff && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Avatar
+                  src={undefined} // Profile image URL if available in future
+                  name={`${previewStaff.firstName} ${previewStaff.lastName}`}
+                  alt={`${previewStaff.firstName} ${previewStaff.lastName}`}
+                  size="xl"
+                />
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {previewStaff.firstName} {previewStaff.lastName}
+                  </h2>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className={`${getRoleBadge(previewStaff.role)}`}>
+                      {previewStaff.role.replace("_", " ")}
+                    </Badge>
+                    <Badge className={`${getStatusBadge(previewStaff.status)}`}>
+                      {previewStaff.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{previewStaff.email}</p>
+                  </div>
+                </div>
+                {previewStaff.phoneNumber && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Phone</p>
+                      <p className="font-medium">{previewStaff.phoneNumber}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Role</p>
+                    <p className="font-medium">{previewStaff.role.replace("_", " ")}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Joined</p>
+                    <p className="font-medium">{formatDate(previewStaff.createdAt)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreviewStaff(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setPreviewStaff(null);
+                  handleEditStaff(previewStaff.id);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Staff
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
