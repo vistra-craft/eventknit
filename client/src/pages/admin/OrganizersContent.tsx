@@ -9,6 +9,11 @@ import {
   XCircle,
   Download,
   Upload,
+  MoreHorizontal,
+  User,
+  Mail,
+  Building2,
+  Calendar,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
 import CreateOrganizerModal from "./CreateOrganizerModal";
@@ -30,6 +37,7 @@ const OrganizersContent = () => {
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [previewOrganizer, setPreviewOrganizer] = useState<User | null>(null);
 
   // Fetch organizers
   useEffect(() => {
@@ -328,40 +336,31 @@ const OrganizersContent = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewOrganizer(organizer.id)}
+                        onClick={() => setPreviewOrganizer(organizer)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditOrganizer(organizer.id)}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
                       </Button>
                       {organizer.status === "ACTIVE" && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSuspendOrganizer(organizer.id)}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            title="Suspend Organizer"
-                            disabled={actionLoading === organizer.id}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeactivateOrganizer(organizer.id)}
-                            className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                            title="Deactivate Organizer"
-                            disabled={actionLoading === organizer.id}
-                          >
-                            Deactivate
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSuspendOrganizer(organizer.id)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          title="Suspend Organizer"
+                          disabled={actionLoading === organizer.id}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Suspend
+                        </Button>
                       )}
                       {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && (
                         <Button
@@ -372,9 +371,63 @@ const OrganizersContent = () => {
                           title="Activate Organizer"
                           disabled={actionLoading === organizer.id}
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Activate
                         </Button>
                       )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewOrganizer(organizer.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditOrganizer(organizer.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Organizer
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {organizer.status === "ACTIVE" && (
+                            <>
+                              <DropdownMenuItem 
+                                onClick={() => handleSuspendOrganizer(organizer.id)}
+                                disabled={actionLoading === organizer.id}
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Suspend
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeactivateOrganizer(organizer.id)}
+                                disabled={actionLoading === organizer.id}
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Deactivate
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && (
+                            <DropdownMenuItem 
+                              onClick={() => handleActivateOrganizer(organizer.id)}
+                              disabled={actionLoading === organizer.id}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Activate
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            // TODO: Export organizer data
+                            console.log('Export organizer', organizer.id);
+                          }}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Export Data
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
@@ -389,6 +442,93 @@ const OrganizersContent = () => {
         onOpenChange={setShowCreateModal}
         onSuccess={handleCreateSuccess}
       />
+
+      {/* Organizer Preview Dialog */}
+      <Dialog 
+        open={!!previewOrganizer} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewOrganizer(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Organizer Preview</DialogTitle>
+            <DialogDescription>
+              View organizer details
+            </DialogDescription>
+          </DialogHeader>
+          {previewOrganizer && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Avatar
+                  src={undefined} // Profile image URL if available in future
+                  name={`${previewOrganizer.firstName} ${previewOrganizer.lastName}`}
+                  alt={`${previewOrganizer.firstName} ${previewOrganizer.lastName}`}
+                  size="xl"
+                />
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {previewOrganizer.firstName} {previewOrganizer.lastName}
+                  </h2>
+                  <Badge className={`${getStatusBadge(previewOrganizer.status)} mb-2`}>
+                    {previewOrganizer.status}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{previewOrganizer.email}</p>
+                  </div>
+                </div>
+                {previewOrganizer.businessEmail && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Business Email</p>
+                      <p className="font-medium">{previewOrganizer.businessEmail}</p>
+                    </div>
+                  </div>
+                )}
+                {previewOrganizer.organizationName && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Organization</p>
+                      <p className="font-medium">{previewOrganizer.organizationName}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Joined</p>
+                    <p className="font-medium">{formatDate(previewOrganizer.createdAt)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreviewOrganizer(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setPreviewOrganizer(null);
+                  handleEditOrganizer(previewOrganizer.id);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Organizer
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
