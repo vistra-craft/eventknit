@@ -51,6 +51,19 @@ const AllEventsPage = () => {
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
   const { toast } = useToast();
 
+  const handlePreviewEvent = (event: Event) => {
+    try {
+      setPreviewEvent(event);
+    } catch (error) {
+      console.error('Error opening preview:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open event preview",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Fetch all events
   useEffect(() => {
     const fetchEvents = async () => {
@@ -418,7 +431,11 @@ const AllEventsPage = () => {
                   />
                   <div 
                     className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => setPreviewEvent(event)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handlePreviewEvent(event);
+                    }}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
@@ -455,7 +472,8 @@ const AllEventsPage = () => {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPreviewEvent(event);
+                        e.preventDefault();
+                        handlePreviewEvent(event);
                       }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
@@ -604,7 +622,14 @@ const AllEventsPage = () => {
         </Dialog>
 
         {/* Event Preview Dialog */}
-        <Dialog open={!!previewEvent} onOpenChange={() => setPreviewEvent(null)}>
+        <Dialog 
+          open={!!previewEvent} 
+          onOpenChange={(open) => {
+            if (!open) {
+              setPreviewEvent(null);
+            }
+          }}
+        >
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Event Preview</DialogTitle>
