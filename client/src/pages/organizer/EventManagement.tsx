@@ -689,7 +689,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-lg font-semibold">
                         {hasPaymentDetailsAccess 
                           ? `$${totalRevenue.toLocaleString()}`
                           : 'N/A'}
@@ -704,7 +704,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Ticket Sales</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-lg font-semibold">
                         {hasPaymentDetailsAccess 
                           ? `$${(totalRevenue * 0.7).toLocaleString()}`
                           : 'N/A'}
@@ -734,7 +734,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                      <p className="text-2xl font-bold">{eventData.capacity && eventData.capacity > 0 
+                      <p className="text-lg font-semibold">{eventData.capacity && eventData.capacity > 0 
                         ? ((totalAttendees / eventData.capacity) * 100).toFixed(1)
                         : 0}%</p>
                     </div>
@@ -955,7 +955,7 @@ const EventManagement = () => {
               <div className="lg:col-span-2 space-y-6">
                 {/* Event Header */}
                 <div>
-                  <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
+                  <h1 className="text-lg font-semibold text-foreground mb-2">
                     {eventData.title}
                   </h1>
                   <p className="text-lg text-muted-foreground mb-4">
@@ -1127,7 +1127,7 @@ const EventManagement = () => {
                 <CardContent>
                   <div className="text-center">
                     <div className="w-20 h-20 mx-auto bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mb-4">
-                      <span className="text-2xl font-bold text-white">92</span>
+                      <span className="text-lg font-semibold text-white">92</span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">Overall Health</p>
                     <div className="space-y-2">
@@ -1200,28 +1200,28 @@ const EventManagement = () => {
                         <Building2 className="w-6 h-6 text-primary" />
                       </div>
                       <p className="text-sm text-muted-foreground">Exhibitors</p>
-                      <p className="text-xl font-bold">{mockData.exhibitors.length}</p>
+                      <p className="text-lg font-semibold">{mockData.exhibitors.length}</p>
                     </div>
                     <div className="text-center">
                       <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
                         <Star className="w-6 h-6 text-yellow-500" />
                       </div>
                       <p className="text-sm text-muted-foreground">Sponsors</p>
-                      <p className="text-xl font-bold">{apiData.sponsors.length}</p>
+                      <p className="text-lg font-semibold">{apiData.sponsors.length}</p>
                     </div>
                     <div className="text-center">
                       <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
                         <Eye className="w-6 h-6 text-blue-500" />
                       </div>
                       <p className="text-sm text-muted-foreground">Page Views</p>
-                      <p className="text-xl font-bold">0</p>
+                      <p className="text-lg font-semibold">0</p>
                     </div>
                   <div className="text-center">
                     <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
                       <TrendingUp className="w-6 h-6 text-green-500" />
                     </div>
                     <p className="text-sm text-muted-foreground">Growth Rate</p>
-                    <p className="text-xl font-bold">+18%</p>
+                    <p className="text-lg font-semibold">+18%</p>
                   </div>
                 </div>
               </CardContent>
@@ -1427,7 +1427,7 @@ const EventManagement = () => {
               )}
               {!eventData.image && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">{eventData.title}</h2>
+                  <h2 className="text-lg font-semibold mb-2">{eventData.title}</h2>
                   {eventData.category && (
                     <Badge className="bg-green-500/90 text-white">
                       {eventData.category}

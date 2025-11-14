@@ -396,7 +396,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               )}
               {!previewEvent.image && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                  <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
                   <Badge className="bg-blue-500/90 text-white">
                     {previewEvent.status || 'Upcoming'}
                   </Badge>
