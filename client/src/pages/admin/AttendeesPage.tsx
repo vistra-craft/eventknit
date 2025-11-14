@@ -25,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { getAttendees, type Attendee, type UserStatus } from "@/lib/admin-api";
 import { getEvents } from "@/lib/event-api";
+import { exportAttendeeData } from "@/lib/utils/export";
 
 interface EventOption {
   id: string;
@@ -345,8 +346,7 @@ const AttendeesPage = () => {
                           <DropdownMenuSeparator />
                           {attendee.registrations.length > 0 && (
                             <DropdownMenuItem onClick={() => {
-                              // TODO: View registration history
-                              console.log('View registration history for', attendee.id);
+                              setPreviewAttendee(attendee);
                             }}>
                               <Ticket className="h-4 w-4 mr-2" />
                               View Registrations ({attendee.registrations.length})
@@ -354,8 +354,31 @@ const AttendeesPage = () => {
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => {
-                            // TODO: Export attendee data
-                            console.log('Export attendee', attendee.id);
+                            try {
+                              exportAttendeeData({
+                                id: attendee.id,
+                                firstName: attendee.firstName,
+                                lastName: attendee.lastName,
+                                email: attendee.email,
+                                status: attendee.status,
+                                registrations: attendee.registrations.map(reg => ({
+                                  eventTitle: reg.eventTitle,
+                                  registeredAt: reg.registeredAt,
+                                  totalAmount: reg.totalAmount,
+                                  ticketType: reg.ticketType,
+                                })),
+                              });
+                              toast({
+                                title: "Exported",
+                                description: "Attendee data exported successfully",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to export attendee data",
+                                variant: "destructive",
+                              });
+                            }
                           }}>
                             <Download className="h-4 w-4 mr-2" />
                             Export Data

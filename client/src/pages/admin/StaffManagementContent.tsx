@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
+import { exportUserData } from "@/lib/utils/export";
 
 const StaffManagementContent = () => {
   const navigate = useNavigate();
@@ -444,8 +445,27 @@ const StaffManagementContent = () => {
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => {
-                            // TODO: Export staff data
-                            console.log('Export staff', staff.id);
+                            try {
+                              exportUserData({
+                                id: staff.id,
+                                firstName: staff.firstName,
+                                lastName: staff.lastName,
+                                email: staff.email,
+                                role: staff.role,
+                                status: staff.status,
+                                createdAt: staff.createdAt,
+                              });
+                              toast({
+                                title: "Exported",
+                                description: "Staff data exported successfully",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to export staff data",
+                                variant: "destructive",
+                              });
+                            }
                           }}>
                             <Download className="h-4 w-4 mr-2" />
                             Export Data

@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
+import { exportUserData } from "@/lib/utils/export";
 import CreateOrganizerModal from "./CreateOrganizerModal";
 
 const OrganizersContent = () => {
@@ -420,8 +421,28 @@ const OrganizersContent = () => {
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => {
-                            // TODO: Export organizer data
-                            console.log('Export organizer', organizer.id);
+                            try {
+                              exportUserData({
+                                id: organizer.id,
+                                firstName: organizer.firstName,
+                                lastName: organizer.lastName,
+                                email: organizer.email,
+                                role: organizer.role,
+                                status: organizer.status,
+                                createdAt: organizer.createdAt,
+                                organizationName: organizer.organizationName,
+                              });
+                              toast({
+                                title: "Exported",
+                                description: "Organizer data exported successfully",
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to export organizer data",
+                                variant: "destructive",
+                              });
+                            }
                           }}>
                             <Download className="h-4 w-4 mr-2" />
                             Export Data
