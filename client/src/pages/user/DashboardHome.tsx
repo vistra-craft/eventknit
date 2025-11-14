@@ -69,40 +69,97 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   const [previewEvent, setPreviewEvent] = useState<EventData | null>(null);
   const [userEvents, setUserEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalEvents, setTotalEvents] = useState(0);
+  const [completedEvents, setCompletedEvents] = useState(0);
+  const loadMoreRef = React.useRef<HTMLDivElement>(null);
   
   // Get company affiliation from auth user if available
   const companyAffiliation = authUser?.companyAffiliation || null;
 
-  useEffect(() => {
-    const fetchUserEvents = async () => {
-      try {
+  const fetchUserEvents = async (pageNum: number = 1, append: boolean = false) => {
+    try {
+      if (append) {
+        setLoadingMore(true);
+      } else {
         setLoading(true);
-        const response = await getUserRegisteredEvents();
-        if (response.success && response.data?.events) {
-          // API already returns data in the correct format
-          setUserEvents(response.data.events.map(event => ({
-            id: event.id,
-            title: event.title,
-            date: event.date,
-            location: event.location,
-            type: event.type || 'In-Person',
-            image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-            registrationDate: event.registrationDate,
-            venue: event.venue || event.location,
-            description: event.description || '',
-            status: event.status || 'upcoming',
-            category: event.category || '',
-          })));
-        }
-      } catch (error) {
-        console.error("Error fetching user events:", error);
-      } finally {
-        setLoading(false);
       }
-    };
+      
+      const response = await getUserRegisteredEvents({ page: pageNum, limit: 12 });
+      if (response.success && response.data) {
+        const newEvents = response.data.events.map(event => ({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          location: event.location,
+          type: event.type || 'In-Person',
+          image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+          registrationDate: event.registrationDate,
+          venue: event.venue || event.location,
+          description: event.description || '',
+          status: event.status || 'upcoming',
+          category: event.category || '',
+        }));
 
-    fetchUserEvents();
+        if (append) {
+          setUserEvents(prev => {
+            const updated = [...prev, ...newEvents];
+            // Update completed count from all loaded events
+            setCompletedEvents(updated.filter(e => e.status === 'completed').length);
+            return updated;
+          });
+        } else {
+          setUserEvents(newEvents);
+          // Update stats from first page load
+          if (response.data.total !== undefined) {
+            setTotalEvents(response.data.total);
+          }
+          // Count completed events from loaded events
+          setCompletedEvents(newEvents.filter(e => e.status === 'completed').length);
+        }
+
+        setHasMore(response.data.hasMore || false);
+        setPage(pageNum);
+      }
+    } catch (error) {
+      console.error("Error fetching user events:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load events. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserEvents(1, false);
   }, []);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const currentRef = loadMoreRef.current;
+    if (!currentRef) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          fetchUserEvents(page + 1, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(currentRef);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, loadingMore, loading, page]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -161,12 +218,12 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               <div className="mt-6 pt-6 border-t border-border">
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <p className="text-lg font-semibold text-primary">{userEvents.length}</p>
+                    <p className="text-lg font-semibold text-primary">{totalEvents || userEvents.length}</p>
                     <p className="text-xs text-muted-foreground">Events</p>
                   </div>
                   <div>
                     <p className="text-lg font-semibold text-primary">
-                      {userEvents.filter(e => e.status === 'completed').length}
+                      {completedEvents || userEvents.filter(e => e.status === 'completed').length}
                     </p>
                     <p className="text-xs text-muted-foreground">Completed</p>
                   </div>
@@ -354,6 +411,18 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                 <Button onClick={() => navigate('/')}>
                   Browse Events
                 </Button>
+              </div>
+            )}
+
+            {/* Infinite Scroll Loader */}
+            {hasMore && (
+              <div ref={loadMoreRef} className="py-8 text-center">
+                {loadingMore && (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading more events...</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
