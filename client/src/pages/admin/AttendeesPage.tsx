@@ -9,12 +9,19 @@ import {
   DollarSign,
   Download,
   Upload,
+  MoreHorizontal,
+  Mail,
+  Phone,
+  Ticket,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { getAttendees, type Attendee, type UserStatus } from "@/lib/admin-api";
 import { getEvents } from "@/lib/event-api";
@@ -36,6 +43,7 @@ const AttendeesPage = () => {
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [previewAttendee, setPreviewAttendee] = useState<Attendee | null>(null);
 
   // Fetch events for filter dropdown
   useEffect(() => {
@@ -263,9 +271,12 @@ const AttendeesPage = () => {
                   className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center overflow-hidden">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
+                    <Avatar
+                      src={undefined} // Profile image URL if available in future
+                      name={`${attendee.firstName} ${attendee.lastName}`}
+                      alt={`${attendee.firstName} ${attendee.lastName}`}
+                      size="lg"
+                    />
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900">
                         {attendee.firstName} {attendee.lastName}
@@ -303,18 +314,54 @@ const AttendeesPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewAttendee(attendee.id)}
-                        title="View Registration History"
+                        onClick={() => setPreviewAttendee(attendee)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditAttendee(attendee.id)}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewAttendee(attendee.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditAttendee(attendee.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Attendee
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {attendee.registrations.length > 0 && (
+                            <DropdownMenuItem onClick={() => {
+                              // TODO: View registration history
+                              console.log('View registration history for', attendee.id);
+                            }}>
+                              <Ticket className="h-4 w-4 mr-2" />
+                              View Registrations ({attendee.registrations.length})
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            // TODO: Export attendee data
+                            console.log('Export attendee', attendee.id);
+                          }}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Export Data
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
@@ -350,6 +397,127 @@ const AttendeesPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Attendee Preview Dialog */}
+      <Dialog 
+        open={!!previewAttendee} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewAttendee(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Attendee Preview</DialogTitle>
+            <DialogDescription>
+              View attendee details and registration history
+            </DialogDescription>
+          </DialogHeader>
+          {previewAttendee && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Avatar
+                  src={undefined} // Profile image URL if available in future
+                  name={`${previewAttendee.firstName} ${previewAttendee.lastName}`}
+                  alt={`${previewAttendee.firstName} ${previewAttendee.lastName}`}
+                  size="xl"
+                />
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {previewAttendee.firstName} {previewAttendee.lastName}
+                  </h2>
+                  <Badge className={`${getStatusBadge(previewAttendee.status)} mb-2`}>
+                    {previewAttendee.status}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{previewAttendee.email}</p>
+                  </div>
+                </div>
+                {previewAttendee.phoneNumber && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Phone</p>
+                      <p className="font-medium">{previewAttendee.phoneNumber}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Joined</p>
+                    <p className="font-medium">{formatDate(previewAttendee.createdAt)}</p>
+                  </div>
+                </div>
+                {previewAttendee.registrations.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Spent</p>
+                      <p className="font-medium">
+                        {formatCurrency(
+                          previewAttendee.registrations.reduce((sum, reg) => sum + reg.totalAmount, 0)
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Registration History */}
+              {previewAttendee.registrations.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3">Registration History ({previewAttendee.registrations.length})</h3>
+                  <div className="space-y-2">
+                    {previewAttendee.registrations.map((registration, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border border-border rounded-lg bg-muted/30"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{registration.eventTitle || 'Event'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {registration.registeredAt ? formatDate(registration.registeredAt) : 'N/A'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{formatCurrency(registration.totalAmount)}</p>
+                            <Badge variant="outline" className="text-xs">
+                              {registration.ticketType || 'Standard'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreviewAttendee(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setPreviewAttendee(null);
+                  handleEditAttendee(previewAttendee.id);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Attendee
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
