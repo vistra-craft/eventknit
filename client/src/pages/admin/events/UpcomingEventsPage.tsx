@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Calendar, MapPin, Users, Eye, Clock, MoreHorizontal, TrendingUp, Loader2, AlertCircle, X, Edit, BarChart3, Download, Share2, Copy } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -37,6 +38,7 @@ interface Event {
 }
 
 const UpcomingEventsPage = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,6 @@ const UpcomingEventsPage = () => {
   const [recallAction, setRecallAction] = useState<'PENDING' | 'CANCELLED'>('PENDING');
   const [recallReason, setRecallReason] = useState("");
   const [recalling, setRecalling] = useState(false);
-  const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
@@ -440,7 +441,7 @@ const UpcomingEventsPage = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => setPreviewEvent(event)}
+                      onClick={() => navigate(`/admin/events/${event.id}/preview`)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
@@ -628,92 +629,6 @@ const UpcomingEventsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Event Preview Dialog */}
-      <Dialog open={!!previewEvent} onOpenChange={() => setPreviewEvent(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Event Preview</DialogTitle>
-            <DialogDescription>
-              Preview event details
-            </DialogDescription>
-          </DialogHeader>
-          {previewEvent && (
-            <div className="space-y-6">
-              <div className="relative rounded-lg overflow-hidden">
-                {previewEvent.image && (
-                  <img
-                    src={previewEvent.image}
-                    alt={previewEvent.title}
-                    className="w-full h-64 object-cover"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
-                  <Badge className="bg-green-500/90 text-white">
-                    Active
-                  </Badge>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">{previewEvent.date}</p>
-                    {previewEvent.startTime && (
-                      <p className="text-sm text-muted-foreground">{previewEvent.startTime}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <p className="font-medium">{previewEvent.location}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <p className="font-medium">{previewEvent.registrations} / {previewEvent.capacity || '∞'} registered</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <p className="font-medium">{getRegistrationRate(previewEvent.registrations, previewEvent.capacity)}% filled</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground mb-2">by {previewEvent.organizer}</p>
-                <div className="flex gap-2">
-                  <Badge className={`text-xs ${getTypeBadge(previewEvent.type)}`}>
-                    {previewEvent.type}
-                  </Badge>
-                  <Badge className={`text-xs ${getPriceBadge(previewEvent.isFree)}`}>
-                    {previewEvent.isFree ? 'free' : 'paid'}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    {previewEvent.category}
-                  </Badge>
-                  <Badge className={`text-xs ${getDaysUntilBadge(previewEvent.daysUntil)}`}>
-                    {previewEvent.daysUntil} days until
-                  </Badge>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPreviewEvent(null)}>
-                  Close
-                </Button>
-                <Button onClick={() => {
-                  setPreviewEvent(null);
-                  window.open(`/admin/events/${previewEvent.id}`, '_blank');
-                }}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Event
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 };

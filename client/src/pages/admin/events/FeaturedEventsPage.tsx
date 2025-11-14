@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, Upload, Camera, X, Loader2 } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -21,6 +22,7 @@ import {
 import { getEvents, EventStatus, type EventData } from "../../../lib/event-api";
 
 const FeaturedEventsPage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -46,7 +48,6 @@ const FeaturedEventsPage = () => {
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
-  const [previewEvent, setPreviewEvent] = useState<FeaturedEventData | null>(null);
 
   useEffect(() => {
     fetchFeaturedEvents();
@@ -386,7 +387,7 @@ const FeaturedEventsPage = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => setPreviewEvent(featuredEvent)}
+                          onClick={() => navigate(`/admin/events/${featuredEvent.eventId}/preview`)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Preview
@@ -780,98 +781,6 @@ const FeaturedEventsPage = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Preview Featured Event Dialog */}
-        <Dialog open={!!previewEvent} onOpenChange={() => setPreviewEvent(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Featured Event Preview</DialogTitle>
-              <DialogDescription>
-                Preview how this featured event will appear on the homepage
-              </DialogDescription>
-            </DialogHeader>
-            {previewEvent && (
-              <div className="space-y-6">
-                <div className="relative rounded-lg overflow-hidden">
-                  <img
-                    src={previewEvent.customImage || previewEvent.event.image || ''}
-                    alt={previewEvent.customTitle || previewEvent.event.title}
-                    className="w-full h-64 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <Badge className="bg-yellow-500/90 text-white mb-2">
-                      <Star className="h-3 w-3 mr-1" />
-                      Featured
-                    </Badge>
-                    <h2 className="text-2xl font-bold mb-2">
-                      {previewEvent.customTitle || previewEvent.event.title}
-                    </h2>
-                    {previewEvent.customCategory || previewEvent.event.category ? (
-                      <Badge variant="outline" className="bg-white/20 text-white border-white/30">
-                        {previewEvent.customCategory || previewEvent.event.category}
-                      </Badge>
-                    ) : null}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">
-                        {new Date(previewEvent.event.startDate).toLocaleDateString()}
-                      </p>
-                      {previewEvent.event.startTime && (
-                        <p className="text-sm text-muted-foreground">{previewEvent.event.startTime}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{previewEvent.event.venue || previewEvent.event.location}</p>
-                      {previewEvent.event.venue && previewEvent.event.location && (
-                        <p className="text-sm text-muted-foreground">{previewEvent.event.location}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Event Details</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-medium">Event ID:</span> {previewEvent.eventId}</p>
-                    <p><span className="font-medium">Display Order:</span> {previewEvent.displayOrder}</p>
-                    <p><span className="font-medium">Status:</span> 
-                      <Badge className={`ml-2 ${previewEvent.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                        {previewEvent.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </p>
-                    {previewEvent.displayStartDate && (
-                      <p><span className="font-medium">Display From:</span> {new Date(previewEvent.displayStartDate).toLocaleDateString()}</p>
-                    )}
-                    {previewEvent.displayEndDate && (
-                      <p><span className="font-medium">Display Until:</span> {new Date(previewEvent.displayEndDate).toLocaleDateString()}</p>
-                    )}
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setPreviewEvent(null)}>
-                    Close
-                  </Button>
-                  <Button onClick={() => {
-                    setPreviewEvent(null);
-                    openEditDialog(previewEvent);
-                  }}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Event
-                  </Button>
-                </DialogFooter>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </AdminLayout>
   );
