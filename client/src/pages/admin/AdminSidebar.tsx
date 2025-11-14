@@ -67,8 +67,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       icon: Users,
       group: "main",
       children: [
+        { name: "All Users", href: "/admin/users" },
         { name: "Staff", href: "/admin/users/staff" },
         { name: "Organizers", href: "/admin/users/organizers" },
+        { name: "Attendees", href: "/admin/users/attendees" },
         { name: "User Roles", href: "/admin/users/roles" },
       ]
     },
