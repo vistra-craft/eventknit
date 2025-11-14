@@ -151,7 +151,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                   size="lg"
                 />
                 
-                <h3 className="text-lg font-bold text-foreground mb-1 mt-4">{user.name}</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-1 mt-4">{user.name}</h3>
                 {companyAffiliation && (
                   <p className="text-sm text-muted-foreground">{companyAffiliation}</p>
                 )}
@@ -161,11 +161,11 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               <div className="mt-6 pt-6 border-t border-border">
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <p className="text-2xl font-bold text-primary">{userEvents.length}</p>
+                    <p className="text-lg font-semibold text-primary">{userEvents.length}</p>
                     <p className="text-xs text-muted-foreground">Events</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-primary">
+                    <p className="text-lg font-semibold text-primary">
                       {userEvents.filter(e => e.status === 'completed').length}
                     </p>
                     <p className="text-xs text-muted-foreground">Completed</p>
@@ -178,7 +178,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
           {/* Main Content - My Events */}
           <div className="lg:col-span-3">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">My Events</h1>
+              <h1 className="text-lg font-semibold text-foreground mb-2">My Events</h1>
               <p className="text-muted-foreground">
                 Manage and explore all your registered events
               </p>
@@ -219,7 +219,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                   </div>
                   
                   <CardContent className="p-6">
-                    <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    <h3 className="text-base font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
                       {event.title}
                     </h3>
                     
@@ -387,7 +387,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                    <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
                     <Badge className="bg-blue-500/90 text-white">
                       {previewEvent.status || 'Upcoming'}
                     </Badge>

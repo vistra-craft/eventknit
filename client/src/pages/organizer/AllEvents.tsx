@@ -144,7 +144,7 @@ const AllEvents = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">All Events</h1>
+          <h1 className="text-lg font-semibold text-foreground mb-2">All Events</h1>
           <p className="text-muted-foreground">
             Manage and view all your events in one place.
           </p>
@@ -172,7 +172,7 @@ const AllEvents = () => {
                 <p className="text-xs font-medium text-muted-foreground mb-1">
                   {stat.title}
                 </p>
-                <p className="text-xl font-bold text-foreground mb-1">
+                <p className="text-lg font-semibold text-foreground mb-1">
                   {stat.value}
                 </p>
               </div>
@@ -230,7 +230,7 @@ const AllEvents = () => {
       {/* Events Grid */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-foreground">
+          <h2 className="text-lg font-semibold text-foreground">
             Events ({filteredEvents.length})
           </h2>
         </div>
@@ -277,7 +277,7 @@ const AllEvents = () => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                          <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
                             {event.title}
                           </h3>
                           <Badge className={`text-xs ${getStatusBadge(event.status || 'pending')} flex-shrink-0`}>
@@ -496,7 +496,7 @@ const AllEvents = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                    <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
                     <Badge className="bg-green-500/90 text-white">
                       {previewEvent.status || 'Active'}
                     </Badge>
@@ -505,7 +505,7 @@ const AllEvents = () => {
               )}
               {!previewEvent.image && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                  <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
                   <Badge className="bg-green-500/90 text-white">
                     {previewEvent.status || 'Active'}
                   </Badge>

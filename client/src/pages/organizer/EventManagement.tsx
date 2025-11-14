@@ -324,7 +324,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Attendees</p>
-                      <p className="text-2xl font-bold">{totalAttendees}</p>
+                      <p className="text-lg font-semibold">{totalAttendees}</p>
                     </div>
                     <Users className="w-8 h-8 text-primary" />
                   </div>
@@ -335,7 +335,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{confirmedAttendees}</p>
+                      <p className="text-lg font-semibold">{confirmedAttendees}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -346,7 +346,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold">{pendingAttendees}</p>
+                      <p className="text-lg font-semibold">{pendingAttendees}</p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -426,7 +426,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Speakers</p>
-                      <p className="text-2xl font-bold">{apiData.speakers.length}</p>
+                      <p className="text-lg font-semibold">{apiData.speakers.length}</p>
                     </div>
                     <Mic className="w-8 h-8 text-primary" />
                   </div>
@@ -437,7 +437,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{apiData.speakers.filter((s: any) => s.status === 'confirmed').length}</p>
+                      <p className="text-lg font-semibold">{apiData.speakers.filter((s: any) => s.status === 'confirmed').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -448,7 +448,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sessions</p>
-                      <p className="text-2xl font-bold">{apiData.speakers.reduce((sum: number, s: any) => sum + (s.sessions || 0), 0)}</p>
+                      <p className="text-lg font-semibold">{apiData.speakers.reduce((sum: number, s: any) => sum + (s.sessions || 0), 0)}</p>
                     </div>
                     <Calendar className="w-8 h-8 text-blue-600" />
                   </div>
@@ -511,7 +511,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Exhibitors</p>
-                      <p className="text-2xl font-bold">{mockData.exhibitors.length}</p>
+                      <p className="text-lg font-semibold">{mockData.exhibitors.length}</p>
                     </div>
                     <Building2 className="w-8 h-8 text-primary" />
                   </div>
@@ -522,7 +522,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{mockData.exhibitors.filter((e: any) => e.status === 'confirmed').length}</p>
+                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e: any) => e.status === 'confirmed').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -533,7 +533,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold">{mockData.exhibitors.filter((e: any) => e.status === 'pending').length}</p>
+                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e: any) => e.status === 'pending').length}</p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -593,7 +593,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sponsors</p>
-                      <p className="text-2xl font-bold">{apiData.sponsors.length}</p>
+                      <p className="text-lg font-semibold">{apiData.sponsors.length}</p>
                     </div>
                     <Star className="w-8 h-8 text-primary" />
                   </div>
@@ -604,7 +604,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold">${apiData.sponsors.reduce((sum: number, s: any) => sum + (s.amount || 0), 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">${apiData.sponsors.reduce((sum: number, s: any) => sum + (s.amount || 0), 0).toLocaleString()}</p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
@@ -615,7 +615,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Gold Sponsors</p>
-                      <p className="text-2xl font-bold">{apiData.sponsors.filter((s: any) => s.level?.includes('Gold') || s.name?.includes('Gold')).length}</p>
+                      <p className="text-lg font-semibold">{apiData.sponsors.filter((s: any) => s.level?.includes('Gold') || s.name?.includes('Gold')).length}</p>
                     </div>
                     <Star className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -848,7 +848,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Abstracts</p>
-                      <p className="text-2xl font-bold">{mockData.abstracts.length}</p>
+                      <p className="text-lg font-semibold">{mockData.abstracts.length}</p>
                     </div>
                     <FileText className="w-8 h-8 text-primary" />
                   </div>
@@ -859,7 +859,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Approved</p>
-                      <p className="text-2xl font-bold">{mockData.abstracts.filter((a: any) => a.status === 'approved').length}</p>
+                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a: any) => a.status === 'approved').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -870,7 +870,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Under Review</p>
-                      <p className="text-2xl font-bold">{mockData.abstracts.filter((a: any) => a.status === 'under_review').length}</p>
+                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a: any) => a.status === 'under_review').length}</p>
                     </div>
                     <Eye className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -985,7 +985,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Attendees</p>
-                      <p className="text-2xl font-bold text-primary">{apiData.attendees.length}</p>
+                      <p className="text-lg font-semibold text-primary">{apiData.attendees.length}</p>
                           <p className="text-xs text-muted-foreground">of {eventData.capacity || 0}</p>
                         </div>
                         <Users className="w-8 h-8 text-primary/60" />
@@ -998,7 +998,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Speakers</p>
-                          <p className="text-2xl font-bold text-blue-600">{apiData.speakers.length}</p>
+                          <p className="text-lg font-semibold text-blue-600">{apiData.speakers.length}</p>
                           <p className="text-xs text-muted-foreground">confirmed</p>
                         </div>
                         <Mic className="w-8 h-8 text-blue-500/60" />
@@ -1011,7 +1011,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-2xl font-bold text-green-600">${(apiData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0)).toLocaleString()}</p>
+                          <p className="text-lg font-semibold text-green-600">${(apiData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0)).toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">total</p>
                         </div>
                         <DollarSign className="w-8 h-8 text-green-500/60" />
@@ -1024,7 +1024,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Conversion</p>
-                          <p className="text-2xl font-bold text-purple-600">{eventData.capacity && eventData.capacity > 0 
+                          <p className="text-lg font-semibold text-purple-600">{eventData.capacity && eventData.capacity > 0 
                             ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(1)
                             : 0}%</p>
                           <p className="text-xs text-muted-foreground">rate</p>
@@ -1416,7 +1416,7 @@ const EventManagement = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <h2 className="text-2xl font-bold mb-2">{eventData.title}</h2>
+                    <h2 className="text-lg font-semibold mb-2">{eventData.title}</h2>
                     {eventData.category && (
                       <Badge className="bg-green-500/90 text-white">
                         {eventData.category}

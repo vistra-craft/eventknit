@@ -213,7 +213,7 @@ const StaffManagementContent = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Staff Management</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Staff Management</h2>
           <p className="text-gray-600">Manage company employees and event staff</p>
         </div>
         <div className="flex items-center gap-3">
@@ -232,13 +232,13 @@ const StaffManagementContent = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600 mb-2">{staffMembers.length}</div>
+            <div className="text-lg font-semibold text-blue-600 mb-2">{staffMembers.length}</div>
             <p className="text-sm text-gray-600">Total Staff</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600 mb-2">
+            <div className="text-lg font-semibold text-green-600 mb-2">
               {staffMembers.filter((s) => s.status === "ACTIVE").length}
             </div>
             <p className="text-sm text-gray-600">Active</p>
@@ -246,7 +246,7 @@ const StaffManagementContent = () => {
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600 mb-2">
+            <div className="text-lg font-semibold text-red-600 mb-2">
               {staffMembers.filter((s) => s.status === "SUSPENDED").length}
             </div>
             <p className="text-sm text-gray-600">Suspended</p>
@@ -254,7 +254,7 @@ const StaffManagementContent = () => {
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-600 mb-2">
+            <div className="text-lg font-semibold text-gray-600 mb-2">
               {staffMembers.filter((s) => s.status === "DEACTIVATED").length}
             </div>
             <p className="text-sm text-gray-600">Deactivated</p>
@@ -507,7 +507,7 @@ const StaffManagementContent = () => {
                   size="xl"
                 />
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
                     {previewStaff.firstName} {previewStaff.lastName}
                   </h2>
                   <div className="flex items-center gap-2 mb-2">

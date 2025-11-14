@@ -271,7 +271,7 @@ const UpcomingEventsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Upcoming Events</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Upcoming Events</h1>
             <p className="text-gray-600">Monitor upcoming events and their registration progress</p>
           </div>
           <div className="text-sm text-gray-500">
@@ -611,7 +611,7 @@ const UpcomingEventsPage = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                 <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                  <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
                   <Badge className="bg-green-500/90 text-white">
                     Active
                   </Badge>

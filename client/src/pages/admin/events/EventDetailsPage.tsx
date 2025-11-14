@@ -443,7 +443,7 @@ const EventDetailsPage = () => {
               Back to Events
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{eventData.title}</h1>
+              <h1 className="text-lg font-semibold text-gray-900">{eventData.title}</h1>
               <p className="text-gray-600">Event ID: {eventData.id}</p>
             </div>
           </div>
@@ -482,7 +482,7 @@ const EventDetailsPage = () => {
                 <Users className="h-5 w-5 text-blue-600" />
                 <span className="text-sm font-medium">Attendees</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {eventData.attendees}/{eventData.capacity}
               </p>
             </CardContent>
@@ -493,7 +493,7 @@ const EventDetailsPage = () => {
                 <DollarSign className="h-5 w-5 text-green-600" />
                 <span className="text-sm font-medium">Revenue</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {formatCurrency(metrics.totalRevenue)}
               </p>
             </CardContent>
@@ -504,7 +504,7 @@ const EventDetailsPage = () => {
                 <TrendingUp className="h-5 w-5 text-purple-600" />
                 <span className="text-sm font-medium">Conversion</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {eventData.conversion}%
               </p>
             </CardContent>
@@ -844,13 +844,13 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600 mb-2">{registrations.length}</div>
+                  <div className="text-lg font-semibold text-blue-600 mb-2">{registrations.length}</div>
                   <p className="text-sm text-gray-600">Total Attendees</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">
+                  <div className="text-lg font-semibold text-green-600 mb-2">
                     {registrations.filter(r => r.status === 'CONFIRMED').length}
                   </div>
                   <p className="text-sm text-gray-600">Confirmed</p>
@@ -858,7 +858,7 @@ const EventDetailsPage = () => {
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-yellow-600 mb-2">
+                  <div className="text-lg font-semibold text-yellow-600 mb-2">
                     {registrations.filter(r => r.status === 'PENDING').length}
                   </div>
                   <p className="text-sm text-gray-600">Pending</p>
@@ -866,7 +866,7 @@ const EventDetailsPage = () => {
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">
+                  <div className="text-lg font-semibold text-green-600 mb-2">
                     {registrations.filter(r => r.paymentStatus === 'COMPLETED').length}
                   </div>
                   <p className="text-sm text-gray-600">Paid</p>
@@ -989,25 +989,25 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">{formatCurrency(metrics.totalRevenue)}</div>
+                  <div className="text-lg font-semibold text-green-600 mb-2">{formatCurrency(metrics.totalRevenue)}</div>
                   <p className="text-sm text-gray-600">Total Revenue</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600 mb-2">{metrics.successfulPayments}</div>
+                  <div className="text-lg font-semibold text-blue-600 mb-2">{metrics.successfulPayments}</div>
                   <p className="text-sm text-gray-600">Successful</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-yellow-600 mb-2">{metrics.pendingPayments}</div>
+                  <div className="text-lg font-semibold text-yellow-600 mb-2">{metrics.pendingPayments}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600 mb-2">{metrics.failedPayments}</div>
+                  <div className="text-lg font-semibold text-red-600 mb-2">{metrics.failedPayments}</div>
                   <p className="text-sm text-gray-600">Failed</p>
                 </CardContent>
               </Card>
@@ -1137,25 +1137,25 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600 mb-2">{formatCurrency(metrics.totalRefunds)}</div>
+                  <div className="text-lg font-semibold text-red-600 mb-2">{formatCurrency(metrics.totalRefunds)}</div>
                   <p className="text-sm text-gray-600">Total Refunds</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">{metrics.processedRefunds}</div>
+                  <div className="text-lg font-semibold text-green-600 mb-2">{metrics.processedRefunds}</div>
                   <p className="text-sm text-gray-600">Processed</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-yellow-600 mb-2">{metrics.pendingRefunds}</div>
+                  <div className="text-lg font-semibold text-yellow-600 mb-2">{metrics.pendingRefunds}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600 mb-2">2.5%</div>
+                  <div className="text-lg font-semibold text-blue-600 mb-2">2.5%</div>
                   <p className="text-sm text-gray-600">Refund Rate</p>
                 </CardContent>
               </Card>
@@ -1252,25 +1252,25 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">{formatCurrency(metrics.organizerAmount)}</div>
+                  <div className="text-lg font-semibold text-green-600 mb-2">{formatCurrency(metrics.organizerAmount)}</div>
                   <p className="text-sm text-gray-600">Total to Organizer</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600 mb-2">{formatCurrency(metrics.platformFees)}</div>
+                  <div className="text-lg font-semibold text-blue-600 mb-2">{formatCurrency(metrics.platformFees)}</div>
                   <p className="text-sm text-gray-600">Platform Fees</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600 mb-2">{metrics.remittancesSent}</div>
+                  <div className="text-lg font-semibold text-green-600 mb-2">{metrics.remittancesSent}</div>
                   <p className="text-sm text-gray-600">Sent</p>
                 </CardContent>
               </Card>
               <Card className="border-border bg-card">
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-yellow-600 mb-2">{metrics.remittancesPending}</div>
+                  <div className="text-lg font-semibold text-yellow-600 mb-2">{metrics.remittancesPending}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>

@@ -230,7 +230,7 @@ const PendingApprovalPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Pending Approval</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Pending Approval</h1>
             <p className="text-gray-600">Review and approve events waiting for platform approval</p>
           </div>
           <div className="text-sm text-gray-500">
@@ -463,7 +463,7 @@ const PendingApprovalPage = () => {
             {previewEvent && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold">{previewEvent.title}</h2>
+                  <h2 className="text-lg font-semibold">{previewEvent.title}</h2>
                   <p className="text-muted-foreground mt-1">by {previewEvent.organizer}</p>
                 </div>
                 
