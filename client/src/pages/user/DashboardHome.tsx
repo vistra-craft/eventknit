@@ -12,10 +12,19 @@ import {
   ArrowLeft,
   Clock,
   Star,
+  Eye,
+  MoreHorizontal,
+  Share2,
+  Copy,
+  Download,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
+import { EventThumbnail } from "../../components/ui/event-thumbnail";
+import { Avatar } from "../../components/ui/avatar";
 import { getUserRegisteredEvents } from "../../lib/event-api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -53,7 +62,7 @@ interface DashboardHomeProps {
 const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
-  const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<EventData | null>(null);
   const [userEvents, setUserEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -109,179 +118,6 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
     }
   };
 
-  // If an event is selected, show event details
-  if (selectedEvent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            
-            {/* Left Sidebar - User Profile */}
-            <div className="lg:col-span-1">
-              <div className="bg-card rounded-2xl shadow-lg p-6 sticky top-24 border border-border">
-                <div className="text-right mb-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-xs"
-                    onClick={() => setSelectedEvent(null)}
-                  >
-                    <ArrowLeft className="w-3 h-3 mr-1" />
-                    Back to Events
-                  </Button>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                    <span className="text-2xl font-bold text-primary">{user.initials}</span>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-card"></div>
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-foreground mb-1">{user.name}</h3>
-                  {companyAffiliation && (
-                    <p className="text-sm text-muted-foreground">{companyAffiliation}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content - Event Details */}
-            <div className="lg:col-span-3">
-              {/* Event Banner */}
-              <div className="relative rounded-2xl p-8 mb-8 text-white overflow-hidden">
-                <img 
-                  src={selectedEvent.image}
-                  alt="Event background"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40"></div>
-                <div className="relative z-10">
-                  <div className="mb-4">
-                    <h1 className="text-3xl font-bold mb-2">{selectedEvent.title}</h1>
-                    <p className="text-white/80 text-sm">{selectedEvent.category}</p>
-                  </div>
-                  
-                  <div className="mb-6">
-                    <p className="text-xl font-semibold mb-2">{selectedEvent.date}</p>
-                    <p className="text-white/90">{selectedEvent.location}</p>
-                  </div>
-                  
-                  <div className="bg-white/20 rounded-lg px-4 py-2 inline-block">
-                    <span className="text-white font-medium">#{selectedEvent.title.replace(/\s+/g, '')}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Event Features Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-8">
-                <Button 
-                  variant="outline"
-                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
-                  onClick={() => window.location.href = '/user/dashboard?section=speakers'}
-                >
-                  <Mic className="w-5 h-5" />
-                  <span className="font-medium text-xs sm:text-sm">Speakers</span>
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
-                  onClick={() => window.location.href = '/user/dashboard?section=exhibitors'}
-                >
-                  <Users2 className="w-5 h-5" />
-                  <span className="font-medium text-xs sm:text-sm">Exhibitors</span>
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
-                  onClick={() => window.location.href = '/user/dashboard?section=agenda'}
-                >
-                  <CalendarIcon className="w-5 h-5" />
-                  <span className="font-medium text-xs sm:text-sm">Agenda</span>
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
-                  onClick={() => window.location.href = '/user/dashboard?section=badge'}
-                >
-                  <BadgeIcon className="w-5 h-5" />
-                  <span className="font-medium text-xs sm:text-sm">My Badge</span>
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
-                  onClick={() => window.location.href = '/user/dashboard?section=abstracts'}
-                >
-                  <FileText className="w-5 h-5" />
-                  <span className="font-medium text-xs sm:text-sm">Submit Abstract</span>
-                </Button>
-              </div>
-
-              {/* Sponsors Section */}
-              {selectedEvent && (() => {
-                // Fetch sponsors from event data - this will be implemented when event details API is available
-                // For now, show placeholder
-                return (
-                  <div className="bg-card rounded-xl p-6 shadow-sm border border-border mb-8">
-                    <h3 className="text-lg font-semibold text-foreground mb-4">Sponsors</h3>
-                    <div className="text-center py-4">
-                      <p className="text-sm text-muted-foreground">
-                        Sponsor information will be displayed here when available.
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Event Details Section */}
-              <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
-                <h2 className="text-2xl font-bold text-foreground mb-6">Event Details</h2>
-                
-                {/* Event Description */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-3">About This Event</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {selectedEvent.description}
-                  </p>
-                </div>
-
-                {/* Date & Time */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    Date & Time
-                  </h3>
-                  <div className="bg-muted/30 rounded-lg p-4">
-                    <p className="text-foreground font-medium mb-2">
-                      {selectedEvent.date}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Registered on {selectedEvent.registrationDate}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Location */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    Location
-                  </h3>
-                  <div className="bg-muted/30 rounded-lg p-4">
-                    <p className="text-foreground font-medium mb-1">{selectedEvent.venue}</p>
-                    <p className="text-muted-foreground">{selectedEvent.location}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Default view - My Events Overview
   return (
@@ -304,12 +140,14 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               </div>
               
               <div className="text-center">
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 relative">
-                  <span className="text-2xl font-bold text-primary">{user.initials}</span>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-primary rounded-full border-2 border-card"></div>
-                </div>
+                <Avatar
+                  src={authUser?.profileImage || undefined}
+                  name={user.name}
+                  alt={user.name}
+                  size="lg"
+                />
                 
-                <h3 className="text-lg font-bold text-foreground mb-1">{user.name}</h3>
+                <h3 className="text-lg font-bold text-foreground mb-1 mt-4">{user.name}</h3>
                 {companyAffiliation && (
                   <p className="text-sm text-muted-foreground">{companyAffiliation}</p>
                 )}
@@ -352,16 +190,16 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                 {userEvents.map((event) => (
                 <Card 
                   key={event.id} 
-                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                  onClick={() => setSelectedEvent(event)}
+                  className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
                   <div className="relative overflow-hidden">
-                    <img 
+                    <EventThumbnail
                       src={event.image}
                       alt={event.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      category={event.category || ''}
+                      size="lg"
                     />
-                    <div className="absolute top-4 left-4">
+                    <div className="absolute top-4 left-4 z-10">
                       <Badge className={`${getStatusColor(event.status || 'upcoming')} border-0`}>
                         <div className="flex items-center gap-1">
                           {getStatusIcon(event.status || 'upcoming')}
@@ -369,7 +207,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                         </div>
                       </Badge>
                     </div>
-                    <div className="absolute top-4 right-4">
+                    <div className="absolute top-4 right-4 z-10">
                       <Badge variant="secondary" className="bg-white/90 text-gray-800">
                         {event.category}
                       </Badge>
@@ -400,17 +238,62 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                       {event.description}
                     </p>
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-xs text-muted-foreground">
                         Registered: {new Date(event.registrationDate).toLocaleDateString()}
                       </span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                      >
-                        View Details
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewEvent(event);
+                          }}
+                          className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Event Page
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            }}>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Event Link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              // TODO: Share event
+                              console.log('Share event', event.id);
+                            }}>
+                              <Share2 className="h-4 w-4 mr-2" />
+                              Share Event
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              // TODO: Download ticket/badge
+                              console.log('Download ticket for event', event.id);
+                            }}>
+                              <Download className="h-4 w-4 mr-2" />
+                              Download Ticket
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -431,6 +314,166 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Event Preview Dialog */}
+      <Dialog 
+        open={!!previewEvent} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewEvent(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Preview</DialogTitle>
+            <DialogDescription>
+              Preview event details
+            </DialogDescription>
+          </DialogHeader>
+          {previewEvent && (
+            <div className="space-y-6">
+              {previewEvent.image && (
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={previewEvent.image}
+                    alt={previewEvent.title}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                    <Badge className="bg-blue-500/90 text-white">
+                      {previewEvent.status || 'Upcoming'}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+              {!previewEvent.image && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                  <Badge className="bg-blue-500/90 text-white">
+                    {previewEvent.status || 'Upcoming'}
+                  </Badge>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{previewEvent.date}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Registered on {new Date(previewEvent.registrationDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{previewEvent.venue || previewEvent.location}</p>
+                    {previewEvent.venue && previewEvent.location && (
+                      <p className="text-sm text-muted-foreground">{previewEvent.location}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <p className="font-medium">{previewEvent.type}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {previewEvent.category}
+                  </Badge>
+                </div>
+              </div>
+
+              {previewEvent.description && (
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{previewEvent.description}</p>
+                </div>
+              )}
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-4 border-t">
+                <Button 
+                  variant="outline"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
+                  onClick={() => {
+                    setPreviewEvent(null);
+                    window.location.href = '/user/dashboard?section=speakers';
+                  }}
+                >
+                  <Mic className="w-5 h-5" />
+                  <span className="font-medium text-xs">Speakers</span>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
+                  onClick={() => {
+                    setPreviewEvent(null);
+                    window.location.href = '/user/dashboard?section=exhibitors';
+                  }}
+                >
+                  <Users2 className="w-5 h-5" />
+                  <span className="font-medium text-xs">Exhibitors</span>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
+                  onClick={() => {
+                    setPreviewEvent(null);
+                    window.location.href = '/user/dashboard?section=agenda';
+                  }}
+                >
+                  <CalendarIcon className="w-5 h-5" />
+                  <span className="font-medium text-xs">Agenda</span>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
+                  onClick={() => {
+                    setPreviewEvent(null);
+                    window.location.href = '/user/dashboard?section=badge';
+                  }}
+                >
+                  <BadgeIcon className="w-5 h-5" />
+                  <span className="font-medium text-xs">My Badge</span>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  className="h-16 bg-card hover:bg-primary hover:text-primary-foreground border-border rounded-xl flex flex-col items-center justify-center gap-1 transition-all duration-200"
+                  onClick={() => {
+                    setPreviewEvent(null);
+                    window.location.href = '/user/dashboard?section=abstracts';
+                  }}
+                >
+                  <FileText className="w-5 h-5" />
+                  <span className="font-medium text-xs">Abstracts</span>
+                </Button>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreviewEvent(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setPreviewEvent(null);
+                  window.open(`/event/${previewEvent.id}`, '_blank');
+                }}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Full Event
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
