@@ -75,11 +75,12 @@ const CreateOrganizerPage = () => {
         // Navigate back to organizers list
         navigate("/admin/users/organizers");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating organizer:", error);
+      const message = error instanceof Error ? error.message : "Failed to create organizer";
       toast({
         title: "Error",
-        description: error.message || "Failed to create organizer",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -215,5 +216,6 @@ const CreateOrganizerPage = () => {
 };
 
 export default CreateOrganizerPage;
+
 
 

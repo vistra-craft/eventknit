@@ -4,7 +4,6 @@ import {
   Search,
   Eye,
   Edit,
-  User,
   Calendar,
   DollarSign,
   Download,
@@ -90,12 +89,13 @@ const AttendeesPage = () => {
             setTotal(response.data.pagination.total);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching attendees:", err);
-        setError(err.message || "Failed to load attendees");
+        const message = err instanceof Error ? err.message : "Failed to load attendees";
+        setError(message);
         toast({
           title: "Error",
-          description: err.message || "Failed to load attendees",
+          description: message,
           variant: "destructive",
         });
       } finally {
@@ -392,17 +392,17 @@ const AttendeesPage = () => {
                                 email: attendee.email,
                                 status: attendee.status,
                                 registrations: attendee.registrations.map(reg => ({
-                                  eventTitle: reg.eventTitle,
-                                  registeredAt: reg.registeredAt,
+                                  eventTitle: reg.event.title,
+                                  registeredAt: reg.createdAt,
                                   totalAmount: reg.totalAmount,
-                                  ticketType: reg.ticketType,
+                                  ticketType: 'Standard', // Not available in API
                                 })),
                               });
                               toast({
                                 title: "Exported",
                                 description: "Attendee data exported successfully",
                               });
-                            } catch (error) {
+                            } catch {
                               toast({
                                 title: "Error",
                                 description: "Failed to export attendee data",
@@ -533,15 +533,15 @@ const AttendeesPage = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium">{registration.eventTitle || 'Event'}</p>
+                            <p className="font-medium">{registration.event.title || 'Event'}</p>
                             <p className="text-sm text-muted-foreground">
-                              {registration.registeredAt ? formatDate(registration.registeredAt) : 'N/A'}
+                              {registration.createdAt ? formatDate(registration.createdAt) : 'N/A'}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="font-medium">{formatCurrency(registration.totalAmount)}</p>
                             <Badge variant="outline" className="text-xs">
-                              {registration.ticketType || 'Standard'}
+                              Standard
                             </Badge>
                           </div>
                         </div>

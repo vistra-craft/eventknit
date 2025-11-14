@@ -63,10 +63,11 @@ const EditFeaturedEventPage = () => {
         if (featuredEvent.customImage) {
           setImagePreview(featuredEvent.customImage);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to fetch featured event";
         toast({
           title: "Error",
-          description: error.message || "Failed to fetch featured event",
+          description: message,
           variant: "destructive",
         });
         navigate("/admin/events/featured");
@@ -148,10 +149,11 @@ const EditFeaturedEventPage = () => {
         description: "Featured event updated successfully",
       });
       navigate("/admin/events/featured");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update featured event";
       toast({
         title: "Error",
-        description: error.message || "Failed to update featured event",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -385,4 +387,5 @@ const EditFeaturedEventPage = () => {
 };
 
 export default EditFeaturedEventPage;
+
 

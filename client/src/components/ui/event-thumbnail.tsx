@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Calendar, Image as ImageIcon } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EventThumbnailProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -84,5 +84,6 @@ const EventThumbnail = React.forwardRef<HTMLDivElement, EventThumbnailProps>(
 EventThumbnail.displayName = "EventThumbnail";
 
 export { EventThumbnail };
+
 
 

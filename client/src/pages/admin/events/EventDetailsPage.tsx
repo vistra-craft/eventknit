@@ -386,7 +386,7 @@ const EventDetailsPage = () => {
         title: "Exported",
         description: "Event data exported successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to export event data",

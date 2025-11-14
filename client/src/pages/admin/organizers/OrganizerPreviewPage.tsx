@@ -33,10 +33,11 @@ const OrganizerPreviewPage = () => {
           });
           navigate("/admin/users/organizers");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to load organizer details";
         toast({
           title: "Error",
-          description: error.message || "Failed to load organizer details",
+          description: message,
           variant: "destructive",
         });
         navigate("/admin/users/organizers");
@@ -192,5 +193,6 @@ const OrganizerPreviewPage = () => {
 };
 
 export default OrganizerPreviewPage;
+
 
 

@@ -13,7 +13,7 @@ import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
-import { bulkUpdateOrganizerDataAccess, recallEvent } from "../../../lib/admin-api";
+import { bulkUpdateOrganizerDataAccess } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/use-toast";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
@@ -498,7 +498,6 @@ const AllEventsPage = () => {
                         <span className="text-gray-500">by {event.organizer}</span>
                       </div>
                     </div>
-                  </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                     <Button 
                       variant="outline" 
@@ -570,7 +569,7 @@ const AllEventsPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch (error) {
+                          } catch {
                             toast({
                               title: "Error",
                               description: "Failed to export event data",
@@ -588,7 +587,7 @@ const AllEventsPage = () => {
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch (error) {
+                          } catch {
                             toast({
                               title: "Error",
                               description: "Failed to copy link",

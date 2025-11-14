@@ -5,7 +5,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, LogOut, Settings, LayoutDashboard, Users, RefreshCw } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useRoleView } from '@/contexts/RoleViewContext';
 import { UserRole } from '@/types/auth';
@@ -46,12 +46,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   }, [isAuthenticated, user]);
 
   if (!isAuthenticated || !user) return null;
-
-  const getInitials = () => {
-    const first = user.firstName?.[0] || '';
-    const last = user.lastName?.[0] || '';
-    return `${first}${last}`.toUpperCase() || user.email[0].toUpperCase();
-  };
 
   const getDashboardRoute = () => {
     // Use active view role if set, otherwise use user's actual role
@@ -150,12 +144,13 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
         aria-label="User menu"
         aria-expanded={isOpen}
       >
-        <Avatar className="h-8 w-8 border-2 border-eventknit-foreground/20">
-          <AvatarImage src={undefined} alt={`${user.firstName} ${user.lastName}`} />
-          <AvatarFallback className="bg-eventknit text-eventknit-foreground text-xs font-semibold">
-            {getInitials()}
-          </AvatarFallback>
-        </Avatar>
+        <Avatar
+          src={undefined}
+          name={`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
+          alt={`${user.firstName} ${user.lastName}`}
+          size="sm"
+          className="h-8 w-8 border-2 border-eventknit-foreground/20"
+        />
       </button>
 
       {isOpen && (

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -88,11 +87,12 @@ const CreateOrganizerModal = ({ open, onOpenChange, onSuccess }: CreateOrganizer
         onSuccess?.();
         onOpenChange(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating organizer:", error);
+      const message = error instanceof Error ? error.message : "Failed to create organizer";
       toast({
         title: "Error",
-        description: error.message || "Failed to create organizer",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -215,5 +215,6 @@ const CreateOrganizerModal = ({ open, onOpenChange, onSuccess }: CreateOrganizer
 };
 
 export default CreateOrganizerModal;
+
 
 

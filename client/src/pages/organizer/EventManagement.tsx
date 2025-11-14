@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -29,7 +28,6 @@ import {
   X,
   MoreHorizontal,
   Copy,
-  BarChart3,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -44,6 +42,7 @@ import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../component
 import { CHART_COLORS } from "../../components/charts/chartConstants";
 import { getOrganizerEventById, getEventRegistrations, cancelEvent } from "../../lib/organizer-api";
 import { transformEventData } from "../../lib/event-utils";
+import type { EventData } from "../../types/event";
 import { shareEvent } from "../../lib/utils/share";
 import { exportEventData } from "../../lib/utils/export";
 import { useToast } from "../../hooks/use-toast";
@@ -53,8 +52,8 @@ const EventManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("overview");
-  const [eventData, setEventData] = useState<any>(null);
-  const [attendees, setAttendees] = useState<any[]>([]);
+  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -212,16 +211,70 @@ const EventManagement = () => {
   const hasAttendeeListAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
   const hasPaymentDetailsAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
   
-  // Calculate summary stats (always available)
-  const totalAttendees = attendees.length;
+  // Type definitions for mock data
   interface Attendee {
+    id?: string;
     status?: string;
     totalAmount?: number | string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    name?: string;
+    paymentStatus?: string;
+    ticketType?: string;
   }
-  const confirmedAttendees = attendees.filter((a: Attendee) => a.status === 'confirmed' || a.status === 'CONFIRMED').length;
-  const pendingAttendees = attendees.filter((a: Attendee) => a.status === 'pending' || a.status === 'PENDING').length;
+  
+  interface Speaker {
+    id: string | number;
+    name: string;
+    title?: string;
+    bio?: string;
+    status?: string;
+    sessions?: number;
+  }
+  
+  // Type definitions for mock data structures
+  interface Exhibitor {
+    id: number;
+    name: string;
+    booth?: string;
+    category?: string;
+    contact?: string;
+    status?: string;
+  }
+  
+  interface Sponsor {
+    id: string | number;
+    name?: string;
+    level?: string;
+    amount?: number;
+  }
+  
+  interface Session {
+    id: number;
+    title: string;
+    speaker?: string;
+    time?: string;
+    room?: string;
+    attendees?: number;
+  }
+  
+  interface Abstract {
+    id: number;
+    title: string;
+    author?: string;
+    status?: string;
+    submittedDate?: string;
+    category?: string;
+  }
+  
+
+  // Calculate summary stats (always available)
+  const totalAttendees = attendees.length;
+  const confirmedAttendees = attendees.filter((a) => a.status === 'confirmed' || a.status === 'CONFIRMED').length;
+  const pendingAttendees = attendees.filter((a) => a.status === 'pending' || a.status === 'PENDING').length;
   const totalRevenue = hasPaymentDetailsAccess 
-    ? attendees.reduce((sum: number, a: Attendee) => sum + (Number(a.totalAmount) || 0), 0)
+    ? attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)
     : 0;
 
   // Data from API - attendees are real, speakers and sponsors come from eventData if available
@@ -236,7 +289,15 @@ const EventManagement = () => {
 
   // Mock data ONLY for sections that don't have APIs yet (exhibitors, sessions, abstracts, charts)
   // These will be replaced when APIs are implemented
-  const mockData = {
+  const mockData: {
+    exhibitors: Exhibitor[];
+    sessions: Session[];
+    abstracts: Abstract[];
+    registrationTrends: Array<{ day: string; registrations: number }>;
+    revenueBySource: Array<{ name: string; value: number; amount: number }>;
+    attendeeDemographics: Array<{ age: string; count: number }>;
+    recentActivity: Array<{ id: number; type: string; message: string; time: string; icon: React.ComponentType<{ className?: string }>; color: string }>;
+  } = {
     exhibitors: [
       { id: 1, name: "No exhibitors", booth: "N/A", category: "Add exhibitors", contact: "N/A", status: "pending" },
     ],
@@ -305,7 +366,7 @@ const EventManagement = () => {
 
   const renderSection = () => {
     switch (activeSection) {
-      case "attendees":
+      case "attendees": {
         const attendeesStartIndex = (attendeesPage - 1) * attendeesLimit;
         const attendeesEndIndex = attendeesStartIndex + attendeesLimit;
         const paginatedAttendees = apiData.attendees.slice(attendeesStartIndex, attendeesEndIndex);
@@ -399,12 +460,12 @@ const EventManagement = () => {
                     {apiData.attendees.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">No attendees registered yet</p>
                     ) : (
-                      paginatedAttendees.map((attendee: any) => (
+                      paginatedAttendees.map((attendee) => (
                         <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex items-center space-x-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                               <span className="text-sm font-bold text-primary">
-                                {attendee.name.split(' ').map((n: string) => n[0]).join('')}
+                                {(attendee.name || attendee.email || 'U').split(' ').map((n: string) => n[0]).join('')}
                               </span>
                             </div>
                             <div>
@@ -420,8 +481,8 @@ const EventManagement = () => {
                           </div>
                           <div className="flex items-center space-x-4">
                             <Badge variant="secondary">{attendee.ticketType}</Badge>
-                            <Badge className={getStatusColor(attendee.status)}>
-                              {attendee.status}
+                            <Badge className={getStatusColor(attendee.status || 'pending')}>
+                              {attendee.status || 'pending'}
                             </Badge>
                             <Button variant="outline" size="sm">View Details</Button>
                           </div>
@@ -446,6 +507,7 @@ const EventManagement = () => {
             )}
           </div>
         );
+      }
 
       case "speakers":
         return (
@@ -475,7 +537,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-lg font-semibold">{apiData.speakers.filter((s: any) => s.status === 'confirmed').length}</p>
+                      <p className="text-lg font-semibold">{(apiData.speakers as Speaker[]).filter((s) => s.status === 'confirmed').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -486,7 +548,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sessions</p>
-                      <p className="text-lg font-semibold">{apiData.speakers.reduce((sum: number, s: any) => sum + (s.sessions || 0), 0)}</p>
+                      <p className="text-lg font-semibold">{(apiData.speakers as Speaker[]).reduce((sum: number, s) => sum + (s.sessions || 0), 0)}</p>
                     </div>
                     <Calendar className="w-8 h-8 text-blue-600" />
                   </div>
@@ -503,29 +565,30 @@ const EventManagement = () => {
                   {apiData.speakers.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">No speakers added yet</p>
                   ) : (
-                    apiData.speakers.map((speaker: any) => (
-                    <div key={speaker.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {speaker.name.split(' ').map((n: string) => n[0]).join('')}
-                          </span>
+                    (apiData.speakers as Speaker[]).map((speaker) => (
+                      <div key={speaker.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-bold text-primary">
+                              {speaker.name.split(' ').map((n: string) => n[0]).join('')}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium">{speaker.name}</p>
+                            <p className="text-sm text-muted-foreground">{speaker.title}</p>
+                            <p className="text-xs text-muted-foreground">{speaker.bio}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{speaker.name}</p>
-                          <p className="text-sm text-muted-foreground">{speaker.title}</p>
-                          <p className="text-xs text-muted-foreground">{speaker.bio}</p>
+                        <div className="flex items-center space-x-4">
+                          <Badge variant="secondary">{(speaker.sessions || 0)} sessions</Badge>
+                          <Badge className={getStatusColor(speaker.status || 'pending')}>
+                            {speaker.status || 'pending'}
+                          </Badge>
+                          <Button variant="outline" size="sm">Manage</Button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{(speaker.sessions || 0)} sessions</Badge>
-                        <Badge className={getStatusColor(speaker.status)}>
-                          {speaker.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">Manage</Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -560,7 +623,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e: any) => e.status === 'confirmed').length}</p>
+                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e) => e.status === 'confirmed').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -571,7 +634,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e: any) => e.status === 'pending').length}</p>
+                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e) => e.status === 'pending').length}</p>
                     </div>
                     <Clock className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -585,7 +648,7 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockData.exhibitors.map((exhibitor: any) => (
+                  {mockData.exhibitors.map((exhibitor) => (
                     <div key={exhibitor.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -601,8 +664,8 @@ const EventManagement = () => {
                       </div>
                       <div className="flex items-center space-x-4">
                         <Badge variant="secondary">{exhibitor.category}</Badge>
-                        <Badge className={getStatusColor(exhibitor.status)}>
-                          {exhibitor.status}
+                        <Badge className={getStatusColor(exhibitor.status || 'pending')}>
+                          {exhibitor.status || 'pending'}
                         </Badge>
                         <Button variant="outline" size="sm">Manage</Button>
                       </div>
@@ -642,7 +705,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-lg font-semibold">${apiData.sponsors.reduce((sum: number, s: any) => sum + (s.amount || 0), 0).toLocaleString()}</p>
+                      <p className="text-lg font-semibold">${(apiData.sponsors as unknown as Sponsor[]).reduce((sum: number, s) => sum + (s.amount || 0), 0).toLocaleString()}</p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
@@ -653,7 +716,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Gold Sponsors</p>
-                      <p className="text-lg font-semibold">{apiData.sponsors.filter((s: any) => s.level?.includes('Gold') || s.name?.includes('Gold')).length}</p>
+                      <p className="text-lg font-semibold">{(apiData.sponsors as unknown as Sponsor[]).filter((s) => s.level?.includes('Gold') || s.name?.includes('Gold')).length}</p>
                     </div>
                     <Star className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -670,7 +733,7 @@ const EventManagement = () => {
                   {apiData.sponsors.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">No sponsors added yet</p>
                   ) : (
-                    apiData.sponsors.map((sponsor: any, idx: number) => {
+                    (apiData.sponsors as unknown as Sponsor[]).map((sponsor, idx: number) => {
                       // Transform API sponsor format to display format
                       const displaySponsor = {
                         id: idx + 1,
@@ -839,7 +902,7 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockData.sessions.map((session: any) => (
+                  {mockData.sessions.map((session) => (
                     <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -897,7 +960,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Approved</p>
-                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a: any) => a.status === 'approved').length}</p>
+                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a) => a.status === 'approved').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -908,7 +971,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Under Review</p>
-                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a: any) => a.status === 'under_review').length}</p>
+                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a) => a.status === 'under_review').length}</p>
                     </div>
                     <Eye className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -922,12 +985,12 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockData.abstracts.map((abstract: any) => (
+                  {mockData.abstracts.map((abstract) => (
                     <div key={abstract.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">
-                            {abstract.author.split(' ').map((n: string) => n[0]).join('')}
+                            {(abstract.author || 'N/A').split(' ').map((n: string) => n[0]).join('')}
                           </span>
                         </div>
                         <div>
@@ -938,8 +1001,8 @@ const EventManagement = () => {
                       </div>
                       <div className="flex items-center space-x-4">
                         <Badge variant="secondary">{abstract.category}</Badge>
-                        <Badge className={getStatusColor(abstract.status)}>
-                          {abstract.status.replace('_', ' ')}
+                        <Badge className={getStatusColor(abstract.status || 'pending')}>
+                          {(abstract.status || 'pending').replace('_', ' ')}
                         </Badge>
                         <Button variant="outline" size="sm">Review</Button>
                       </div>
@@ -1049,7 +1112,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-lg font-semibold text-green-600">${(apiData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0)).toLocaleString()}</p>
+                          <p className="text-lg font-semibold text-green-600">${(apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">total</p>
                         </div>
                         <DollarSign className="w-8 h-8 text-green-500/60" />
@@ -1340,7 +1403,7 @@ const EventManagement = () => {
                         title: "Copied",
                         description: "Event link copied to clipboard",
                       });
-                    } catch (error) {
+                    } catch {
                       toast({
                         title: "Error",
                         description: "Failed to copy link",
@@ -1376,18 +1439,18 @@ const EventManagement = () => {
                         id: eventId,
                         title: eventData.title || 'Event',
                         date: eventData.date,
-                        location: eventData.location || eventData.venue,
+                        location: (eventData.location || eventData.venue || undefined) ?? undefined,
                         attendees: typeof eventData.attendees === 'number' ? eventData.attendees : attendees.length,
-                        revenue: typeof eventData.revenue === 'number' ? eventData.revenue : 0,
-                        views: typeof eventData.views === 'number' ? eventData.views : 0,
-                        status: eventData.status,
-                        category: eventData.category,
+                        revenue: 0, // Not available in EventData
+                        views: 0, // Not available in EventData
+                        status: eventData.status || undefined,
+                        category: (eventData.category || undefined) ?? undefined,
                       });
                       toast({
                         title: "Exported",
                         description: "Event data exported successfully",
                       });
-                    } catch (error) {
+                    } catch {
                       toast({
                         title: "Error",
                         description: "Failed to export event data",
@@ -1490,9 +1553,9 @@ const EventManagement = () => {
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">{eventData.venue || eventData.location}</p>
+                      <p className="font-medium">{String(eventData.venue ?? eventData.location ?? '')}</p>
                       {eventData.venue && eventData.location && (
-                        <p className="text-sm text-muted-foreground">{eventData.location}</p>
+                        <p className="text-sm text-muted-foreground">{String(eventData.location ?? '')}</p>
                       )}
                     </div>
                   </div>
@@ -1501,14 +1564,14 @@ const EventManagement = () => {
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <p className="font-medium">
-                      {totalAttendees} / {eventData.capacity || '∞'} registered
+                      {totalAttendees} / {(eventData.capacity as number | undefined) || '∞'} registered
                     </p>
                   </div>
                 )}
                 {eventData.price && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-medium">{eventData.price}</p>
+                    <p className="font-medium">{String(eventData.price ?? '')}</p>
                   </div>
                 )}
               </div>
@@ -1516,7 +1579,7 @@ const EventManagement = () => {
               {eventData.description && (
                 <div>
                   <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{eventData.description}</p>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{String(eventData.description ?? '')}</p>
                 </div>
               )}
 

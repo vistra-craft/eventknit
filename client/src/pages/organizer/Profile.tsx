@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import OrganizerLayout from "./OrganizerLayout";
 import { 
   User, 
@@ -42,9 +42,6 @@ const Profile = () => {
     console.log("Profile saved:", profileData);
   };
 
-  const getInitials = () => {
-    return `${profileData.firstName[0]}${profileData.lastName[0]}`.toUpperCase();
-  };
 
   return (
     <OrganizerLayout>
@@ -85,10 +82,13 @@ const Profile = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center space-x-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src="/api/placeholder/96/96" alt="Profile" />
-                <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
-              </Avatar>
+              <Avatar
+                src="/api/placeholder/96/96"
+                name={profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : undefined}
+                alt="Profile"
+                size="xl"
+                className="h-24 w-24"
+              />
               <div className="space-y-2">
                 <Button variant="outline" size="sm">
                   <Camera className="h-4 w-4 mr-2" />

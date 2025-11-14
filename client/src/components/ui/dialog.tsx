@@ -13,10 +13,7 @@ interface DialogProps extends React.ComponentPropsWithoutRef<typeof DialogPrimit
   onUnsavedChangesConfirm?: () => void;
 }
 
-const Dialog = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Root>,
-  DialogProps
->(({ hasUnsavedChanges = false, onOpenChange, onUnsavedChangesConfirm, ...props }, ref) => {
+const Dialog: React.FC<DialogProps> = ({ hasUnsavedChanges = false, onOpenChange, onUnsavedChangesConfirm, ...props }) => {
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
   const [pendingClose, setPendingClose] = React.useState(false);
 
@@ -55,7 +52,6 @@ const Dialog = React.forwardRef<
   return (
     <>
       <DialogRoot
-        ref={ref}
         {...props}
         onOpenChange={handleOpenChange}
       />
@@ -96,7 +92,7 @@ const Dialog = React.forwardRef<
       </DialogPrimitive.Root>
     </>
   );
-});
+};
 
 Dialog.displayName = "Dialog"
 

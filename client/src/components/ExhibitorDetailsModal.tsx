@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
-import { Avatar, AvatarFallback } from './ui/avatar';
+import { Avatar } from './ui/avatar';
 import { X, Building2, MapPin, Phone, Mail, Globe, Send } from 'lucide-react';
 import { SocialConnections } from './SocialConnections';
 
@@ -240,11 +240,12 @@ const ExhibitorDetailsModal: React.FC<ExhibitorDetailsModalProps> = ({ exhibitor
                   {exhibitor.representatives.map((rep, index) => (
                     <div key={index} className="p-4 bg-muted/30 rounded-lg">
                       <div className="flex items-start gap-4 mb-4">
-                        <Avatar className="w-12 h-12">
-                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                            {rep.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
+                        <Avatar
+                          name={rep.name}
+                          alt={rep.name}
+                          size="md"
+                          className="w-12 h-12"
+                        />
                         <div className="flex-1">
                           <h4 className="font-semibold text-foreground">{rep.name}</h4>
                           <p className="text-sm text-muted-foreground">{rep.position}</p>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
@@ -28,11 +28,7 @@ const FeaturedEventsPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    fetchFeaturedEvents();
-  }, []);
-
-  const fetchFeaturedEvents = async () => {
+  const fetchFeaturedEvents = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAllFeaturedEvents();
@@ -47,7 +43,11 @@ const FeaturedEventsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchFeaturedEvents();
+  }, [fetchFeaturedEvents]);
 
   const filteredEvents = featuredEvents.filter(event => {
     const title = event.customTitle || event.event.title;

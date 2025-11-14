@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -9,7 +9,6 @@ import {
   Calendar as CalendarIcon,
   FileText,
   Badge as BadgeIcon,
-  ArrowLeft,
   Clock,
   Star,
   Eye,
@@ -79,7 +78,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   // Get company affiliation from auth user if available
   const companyAffiliation = authUser?.companyAffiliation || null;
 
-  const fetchUserEvents = async (pageNum: number = 1, append: boolean = false) => {
+  const fetchUserEvents = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     try {
       if (append) {
         setLoadingMore(true);
@@ -134,11 +133,11 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchUserEvents(1, false);
-  }, []);
+  }, [fetchUserEvents]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -159,7 +158,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
     return () => {
       observer.disconnect();
     };
-  }, [hasMore, loadingMore, loading, page]);
+  }, [hasMore, loadingMore, loading, page, fetchUserEvents]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -202,7 +201,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               
               <div className="text-center">
                 <Avatar
-                  src={authUser?.profileImage || undefined}
+                  src={(authUser as { profileImage?: string })?.profileImage || undefined}
                   name={user.name}
                   alt={user.name}
                   size="lg"
@@ -339,7 +338,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                                   title: "Copied",
                                   description: "Event link copied to clipboard",
                                 });
-                              } catch (error) {
+                              } catch {
                                 toast({
                                   title: "Error",
                                   description: "Failed to copy link",
@@ -382,7 +381,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                                   title: "Downloaded",
                                   description: "Ticket downloaded successfully",
                                 });
-                              } catch (error) {
+                              } catch {
                                 toast({
                                   title: "Error",
                                   description: "Failed to download ticket",

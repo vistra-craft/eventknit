@@ -10,10 +10,6 @@ import {
   Download,
   Upload,
   MoreHorizontal,
-  User,
-  Mail,
-  Building2,
-  Calendar,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
@@ -33,7 +28,7 @@ const OrganizersContent = () => {
   const { toast } = useToast();
   const [organizers, setOrganizers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -63,12 +58,13 @@ const OrganizersContent = () => {
             setTotal(response.data.pagination.total);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching organizers:", err);
-        setError(err.message || "Failed to load organizers");
+        const message = err instanceof Error ? err.message : "Failed to load organizers";
+        setError(message);
         toast({
           title: "Error",
-          description: err.message || "Failed to load organizers",
+          description: message,
           variant: "destructive",
         });
       } finally {
@@ -124,10 +120,11 @@ const OrganizersContent = () => {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to suspend organizer";
       toast({
         title: "Error",
-        description: err.message || "Failed to suspend organizer",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -154,10 +151,11 @@ const OrganizersContent = () => {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to deactivate organizer";
       toast({
         title: "Error",
-        description: err.message || "Failed to deactivate organizer",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -184,10 +182,11 @@ const OrganizersContent = () => {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to activate organizer";
       toast({
         title: "Error",
-        description: err.message || "Failed to activate organizer",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -467,13 +466,13 @@ const OrganizersContent = () => {
                                 role: organizer.role,
                                 status: organizer.status,
                                 createdAt: organizer.createdAt,
-                                organizationName: organizer.organizationName,
+                                organizationName: organizer.organizationName || undefined,
                               });
                               toast({
                                 title: "Exported",
                                 description: "Organizer data exported successfully",
                               });
-                            } catch (error) {
+                            } catch {
                               toast({
                                 title: "Error",
                                 description: "Failed to export organizer data",

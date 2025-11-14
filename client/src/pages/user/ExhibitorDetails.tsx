@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
-import { Avatar, AvatarFallback } from '../../components/ui/avatar';
+import { Avatar } from '../../components/ui/avatar';
 import { ArrowLeft, Building2, MapPin, Phone, Mail, Globe, MessageCircle, Send } from 'lucide-react';
 
 interface Exhibitor {
@@ -172,9 +172,12 @@ const ExhibitorDetails: React.FC = () => {
                   <div className="space-y-4">
                     {exhibitor.representatives.map((rep, index) => (
                       <div key={index} className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-                        <Avatar className="w-12 h-12">
-                          <AvatarFallback>{rep.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
+                        <Avatar
+                          name={rep.name}
+                          alt={rep.name}
+                          size="md"
+                          className="w-12 h-12"
+                        />
                         <div>
                           <h4 className="font-semibold text-foreground">{rep.name}</h4>
                           <p className="text-sm text-muted-foreground">{rep.position}</p>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Users, DollarSign, Eye, Edit } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, DollarSign, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,10 +33,11 @@ const EventPreviewPage = () => {
           });
           navigate("/admin/events");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to load event details";
         toast({
           title: "Error",
-          description: error.message || "Failed to load event details",
+          description: message,
           variant: "destructive",
         });
         navigate("/admin/events");
@@ -204,5 +205,6 @@ const EventPreviewPage = () => {
 };
 
 export default EventPreviewPage;
+
 
 

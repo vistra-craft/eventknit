@@ -23,9 +23,9 @@ export async function shareContent(data: ShareData): Promise<boolean> {
     try {
       await navigator.share(shareData);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // User cancelled or error occurred
-      if (error.name !== 'AbortError') {
+      if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Error sharing:', error);
       }
       return false;
@@ -53,5 +53,6 @@ export async function shareEvent(eventTitle: string, eventId: string): Promise<b
     url,
   });
 }
+
 
 

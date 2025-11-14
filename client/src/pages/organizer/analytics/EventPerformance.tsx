@@ -400,11 +400,12 @@ const EventPerformance = () => {
                           <p className="text-sm text-muted-foreground mt-1">{event.date}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                        {getStatusBadge(event.status)}
-                        <div className={`px-3 py-1 rounded-full ${getPerformanceBg(event.performance.engagementScore)}`}>
-                          <span className={`text-sm font-medium ${getPerformanceColor(event.performance.engagementScore)}`}>
-                            Score: {event.performance.engagementScore}
-                          </span>
+                          {getStatusBadge(event.status)}
+                          <div className={`px-3 py-1 rounded-full ${getPerformanceBg(event.performance.engagementScore)}`}>
+                            <span className={`text-sm font-medium ${getPerformanceColor(event.performance.engagementScore)}`}>
+                              Score: {event.performance.engagementScore}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

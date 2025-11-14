@@ -80,20 +80,6 @@ const ConfirmationDialog = ({
     }
   };
 
-  const getConfirmVariant = () => {
-    switch (type) {
-      case "danger":
-        return "destructive";
-      case "warning":
-        return "default";
-      case "info":
-        return "default";
-      case "success":
-        return "default";
-      default:
-        return "default";
-    }
-  };
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

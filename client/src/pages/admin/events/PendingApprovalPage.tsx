@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Share2, Copy } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -16,7 +16,6 @@ import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { approveEvent, rejectEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/use-toast";
-import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 
 interface Event {
@@ -37,6 +36,7 @@ interface Event {
   submittedDate: string;
   createdAt: string;
   description: string;
+  image?: string;
 }
 
 const PendingApprovalPage = () => {
@@ -107,7 +107,7 @@ const PendingApprovalPage = () => {
             submittedDate: event.createdAt || new Date().toISOString(),
             createdAt: event.createdAt || new Date().toISOString(),
             description: event.description || '',
-            image: event.image || undefined,
+            image: (event.image as string | undefined) || undefined,
           }));
           setEvents(pendingEvents);
           }
@@ -129,7 +129,7 @@ const PendingApprovalPage = () => {
     };
 
     fetchPendingEvents();
-  }, [page, limit]);
+  }, [page, limit, categoryFilter, priceFilter, searchTerm, typeFilter]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -453,7 +453,7 @@ const PendingApprovalPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch (error) {
+                          } catch {
                             toast({
                               title: "Error",
                               description: "Failed to export event data",
@@ -471,7 +471,7 @@ const PendingApprovalPage = () => {
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch (error) {
+                          } catch {
                             toast({
                               title: "Error",
                               description: "Failed to copy link",

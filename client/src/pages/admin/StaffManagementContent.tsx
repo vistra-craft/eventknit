@@ -4,7 +4,6 @@ import {
   Search,
   Eye,
   Edit,
-  User,
   CheckCircle,
   XCircle,
   Download,
@@ -26,6 +25,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
+import { UserRole as UserRoleEnum } from "@/types/auth";
+
+// Staff roles that exist in the enum but not in the admin-api UserRole type
+type StaffRole = UserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
 import { exportUserData } from "@/lib/utils/export";
 
 const StaffManagementContent = () => {
@@ -33,7 +36,7 @@ const StaffManagementContent = () => {
   const { toast } = useToast();
   const [staffMembers, setStaffMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
@@ -60,7 +63,7 @@ const StaffManagementContent = () => {
 
         if (response.success && response.data) {
           // Filter to only show staff roles
-          const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
+          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
           const staff = response.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
           if (response.data.pagination) {
@@ -69,12 +72,13 @@ const StaffManagementContent = () => {
             setTotal(response.data.pagination.total);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Error fetching staff:", err);
-        setError(err.message || "Failed to load staff members");
+        const message = err instanceof Error ? err.message : "Failed to load staff members";
+        setError(message);
         toast({
           title: "Error",
-          description: err.message || "Failed to load staff members",
+          description: message,
           variant: "destructive",
         });
       } finally {
@@ -99,15 +103,15 @@ const StaffManagementContent = () => {
     return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
-  const getRoleBadge = (role: UserRole) => {
-    const variants: Record<UserRole, string> = {
-      SUPERADMIN: "bg-red-100 text-red-800",
-      ADMIN_STAFF: "bg-blue-100 text-blue-800",
-      MARKETER: "bg-pink-100 text-pink-800",
-      SUPPORT: "bg-purple-100 text-purple-800",
-      TELLER: "bg-green-100 text-green-800",
-      ORGANIZER: "bg-yellow-100 text-yellow-800",
-      ATTENDEE: "bg-gray-100 text-gray-800",
+  const getRoleBadge = (role: UserRole | StaffRole) => {
+    const variants: Record<string, string> = {
+      [UserRoleEnum.SUPERADMIN]: "bg-red-100 text-red-800",
+      [UserRoleEnum.ADMIN_STAFF]: "bg-blue-100 text-blue-800",
+      [UserRoleEnum.MARKETER]: "bg-pink-100 text-pink-800",
+      [UserRoleEnum.SUPPORT]: "bg-purple-100 text-purple-800",
+      [UserRoleEnum.TELLER]: "bg-green-100 text-green-800",
+      [UserRoleEnum.ORGANIZER]: "bg-yellow-100 text-yellow-800",
+      [UserRoleEnum.ATTENDEE]: "bg-gray-100 text-gray-800",
     };
     return variants[role] || "bg-gray-100 text-gray-800";
   };
@@ -136,7 +140,7 @@ const StaffManagementContent = () => {
         // Refresh list
         const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
-          const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
+          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
           if (updatedResponse.data.pagination) {
@@ -145,10 +149,11 @@ const StaffManagementContent = () => {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to suspend staff member";
       toast({
         title: "Error",
-        description: err.message || "Failed to suspend staff member",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -168,7 +173,7 @@ const StaffManagementContent = () => {
         // Refresh list
         const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
-          const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
+          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
           if (updatedResponse.data.pagination) {
@@ -177,10 +182,11 @@ const StaffManagementContent = () => {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to deactivate staff member";
       toast({
         title: "Error",
-        description: err.message || "Failed to deactivate staff member",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -200,7 +206,7 @@ const StaffManagementContent = () => {
         // Refresh list
         const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
-          const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
+          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
           if (updatedResponse.data.pagination) {
@@ -209,10 +215,11 @@ const StaffManagementContent = () => {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to activate staff member";
       toast({
         title: "Error",
-        description: err.message || "Failed to activate staff member",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -501,7 +508,7 @@ const StaffManagementContent = () => {
                                 title: "Exported",
                                 description: "Staff data exported successfully",
                               });
-                            } catch (error) {
+                            } catch {
                               toast({
                                 title: "Error",
                                 description: "Failed to export staff data",

@@ -5,7 +5,7 @@
 /**
  * Convert data to CSV format
  */
-export function convertToCSV(data: any[], headers: string[]): string {
+export function convertToCSV(data: Record<string, unknown>[], headers: string[]): string {
   const csvRows: string[] = [];
 
   // Add headers
@@ -30,7 +30,7 @@ export function convertToCSV(data: any[], headers: string[]): string {
 /**
  * Download data as CSV file
  */
-export function downloadCSV(data: any[], headers: string[], filename: string): void {
+export function downloadCSV(data: Record<string, unknown>[], headers: string[], filename: string): void {
   const csv = convertToCSV(data, headers);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -146,5 +146,6 @@ export function exportAttendeeData(attendee: {
     downloadCSV(data, headers, `attendee-${attendee.id}-${Date.now()}`);
   }
 }
+
 
 

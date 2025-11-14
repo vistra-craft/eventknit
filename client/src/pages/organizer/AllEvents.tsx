@@ -434,7 +434,7 @@ const AllEvents = () => {
                                   title: "Exported",
                                   description: "Event data exported successfully",
                                 });
-                              } catch (error) {
+                              } catch {
                                 toast({
                                   title: "Error",
                                   description: "Failed to export event data",
@@ -452,7 +452,7 @@ const AllEvents = () => {
                                   title: "Copied",
                                   description: "Event link copied to clipboard",
                                 });
-                              } catch (error) {
+                              } catch {
                                 toast({
                                   title: "Error",
                                   description: "Failed to copy link",

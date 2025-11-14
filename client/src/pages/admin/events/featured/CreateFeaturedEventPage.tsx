@@ -18,7 +18,7 @@ const CreateFeaturedEventPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [availableEvents, setAvailableEvents] = useState<any[]>([]);
+  const [availableEvents, setAvailableEvents] = useState<Array<{ id: string; title: string; startDate?: string; image?: string; category?: string }>>([]);
   const [formData, setFormData] = useState<CreateFeaturedEventData>({
     eventId: "",
     customTitle: "",
@@ -37,7 +37,15 @@ const CreateFeaturedEventPage = () => {
     const fetchAvailableEvents = async () => {
       try {
         const response = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
-        setAvailableEvents(response.data.events);
+        if (response.data?.events) {
+          setAvailableEvents(response.data.events.map(event => ({
+            id: event.id,
+            title: event.title,
+            startDate: event.startDate,
+            image: event.image || undefined,
+            category: event.category || undefined,
+          })));
+        }
       } catch (error) {
         console.error("Failed to fetch available events:", error);
       }
@@ -117,10 +125,11 @@ const CreateFeaturedEventPage = () => {
         description: "Featured event created successfully",
       });
       navigate("/admin/events/featured");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create featured event";
       toast({
         title: "Error",
-        description: error.message || "Failed to create featured event",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -162,7 +171,7 @@ const CreateFeaturedEventPage = () => {
                   <SelectContent>
                     {availableEvents.map(event => (
                       <SelectItem key={event.id} value={event.id}>
-                        {event.title} - {new Date(event.startDate).toLocaleDateString()}
+                        {event.title} - {event.startDate ? new Date(event.startDate).toLocaleDateString() : 'No date'}
                       </SelectItem>
                     ))}
                   </SelectContent>

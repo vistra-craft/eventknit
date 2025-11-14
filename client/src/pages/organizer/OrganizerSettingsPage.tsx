@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 import OrganizerLayout from "./OrganizerLayout";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
@@ -356,18 +356,17 @@ const OrganizerSettingsPage = () => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const getInitials = () => {
-    return `${settings.firstName[0]}${settings.lastName[0]}`.toUpperCase();
-  };
-
   const renderProfileSettings = () => (
     <div className="space-y-6">
       {/* Profile Picture */}
       <div className="flex items-center space-x-6">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={settings.avatar} alt="Profile" />
-          <AvatarFallback className="text-lg">{getInitials()}</AvatarFallback>
-        </Avatar>
+        <Avatar
+          src={settings.avatar}
+          name={`${settings.firstName} ${settings.lastName}`}
+          alt="Profile"
+          size="xl"
+          className="h-24 w-24"
+        />
         <div className="space-y-2">
           <Button variant="outline" size="sm">
             Change Photo

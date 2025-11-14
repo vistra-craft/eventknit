@@ -12,7 +12,6 @@ import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
 import { Label } from "../../../components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
-import { Pagination } from "../../../components/ui/pagination";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
@@ -55,7 +54,6 @@ const UpcomingEventsPage = () => {
   const [recalling, setRecalling] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
-  const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
   // Fetch upcoming events (approved events with startDate > now)
@@ -121,9 +119,6 @@ const UpcomingEventsPage = () => {
           setEvents(upcomingEvents);
           
           // Update pagination info
-          if (response.data.totalPages !== undefined) {
-            setTotalPages(response.data.totalPages);
-          }
           if (response.data.total !== undefined) {
             setTotal(response.data.total);
           }
@@ -493,7 +488,7 @@ const UpcomingEventsPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch (error) {
+                          } catch {
                             toast({
                               title: "Error",
                               description: "Failed to export event data",
@@ -511,7 +506,7 @@ const UpcomingEventsPage = () => {
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch (error) {
+                          } catch {
                             toast({
                               title: "Error",
                               description: "Failed to copy link",
