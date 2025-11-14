@@ -26,7 +26,8 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
     "list-users": "node scripts/list-users.js",
-    "delete-user": "node scripts/delete-user.js"
+    "delete-user": "node scripts/delete-user.js",
+    "verify-test-users": "node scripts/verify-test-users.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
