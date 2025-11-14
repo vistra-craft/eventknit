@@ -43,13 +43,17 @@ const FeaturedEventsPage = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
+  const [previewEvent, setPreviewEvent] = useState<FeaturedEventData | null>(null);
 
   useEffect(() => {
     fetchFeaturedEvents();
     fetchAvailableEvents();
   }, []);
 
-  // Handle image upload
+  // Handle image upload (for add dialog)
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -85,6 +89,45 @@ const FeaturedEventsPage = () => {
     } catch {
       alert('Failed to upload image');
       setIsUploadingImage(false);
+    }
+  };
+
+  // Handle image upload (for edit dialog)
+  const handleEditImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    setIsUploadingEditImage(true);
+
+    try {
+      // Convert to base64 for now (in production, upload to cloud storage)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setEditImagePreview(base64String);
+        setFormData(prev => ({ ...prev, customImage: base64String }));
+        setIsUploadingEditImage(false);
+      };
+      reader.onerror = () => {
+        alert('Failed to read image file');
+        setIsUploadingEditImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      alert('Failed to upload image');
+      setIsUploadingEditImage(false);
     }
   };
 
@@ -205,6 +248,7 @@ const FeaturedEventsPage = () => {
       displayOrder: featuredEvent.displayOrder,
       isActive: featuredEvent.isActive,
     });
+    setEditImagePreview(featuredEvent.customImage || null);
     setShowEditDialog(true);
   };
 
@@ -342,10 +386,10 @@ const FeaturedEventsPage = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`/event/${featuredEvent.eventId}`, '_blank')}
+                          onClick={() => setPreviewEvent(featuredEvent)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
-                          View
+                          Preview
                         </Button>
                         <Button 
                           variant="outline" 
@@ -599,14 +643,80 @@ const FeaturedEventsPage = () => {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="edit-customImage">Custom Image URL (optional)</Label>
-                <Input
-                  id="edit-customImage"
-                  placeholder="Leave empty to use event image"
-                  value={formData.customImage}
-                  onChange={(e) => setFormData({ ...formData, customImage: e.target.value })}
-                />
+              <div className="space-y-4">
+                <Label>Custom Image (optional)</Label>
+                <div className="space-y-2">
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditImageUpload}
+                    className="hidden"
+                  />
+                  {editImagePreview || formData.customImage ? (
+                    <div className="relative">
+                      <img
+                        src={editImagePreview || formData.customImage}
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          setEditImagePreview(null);
+                          setFormData(prev => ({ ...prev, customImage: '' }));
+                          if (editFileInputRef.current) editFileInputRef.current.value = '';
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                      <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground mb-2">Upload an image or enter URL</p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => editFileInputRef.current?.click()}
+                          disabled={isUploadingEditImage}
+                        >
+                          {isUploadingEditImage ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Upload Image
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="edit-customImageUrl">Or enter image URL</Label>
+                  <Input
+                    id="edit-customImageUrl"
+                    placeholder="https://example.com/image.jpg"
+                    value={formData.customImage && !editImagePreview ? formData.customImage : ''}
+                    onChange={(e) => {
+                      setFormData({ ...formData, customImage: e.target.value });
+                      setEditImagePreview(null);
+                    }}
+                    disabled={!!editImagePreview}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    If empty, the event image will be used
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -667,6 +777,99 @@ const FeaturedEventsPage = () => {
                 Save Changes
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview Featured Event Dialog */}
+        <Dialog open={!!previewEvent} onOpenChange={() => setPreviewEvent(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Featured Event Preview</DialogTitle>
+              <DialogDescription>
+                Preview how this featured event will appear on the homepage
+              </DialogDescription>
+            </DialogHeader>
+            {previewEvent && (
+              <div className="space-y-6">
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={previewEvent.customImage || previewEvent.event.image || ''}
+                    alt={previewEvent.customTitle || previewEvent.event.title}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <Badge className="bg-yellow-500/90 text-white mb-2">
+                      <Star className="h-3 w-3 mr-1" />
+                      Featured
+                    </Badge>
+                    <h2 className="text-2xl font-bold mb-2">
+                      {previewEvent.customTitle || previewEvent.event.title}
+                    </h2>
+                    {previewEvent.customCategory || previewEvent.event.category ? (
+                      <Badge variant="outline" className="bg-white/20 text-white border-white/30">
+                        {previewEvent.customCategory || previewEvent.event.category}
+                      </Badge>
+                    ) : null}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">
+                        {new Date(previewEvent.event.startDate).toLocaleDateString()}
+                      </p>
+                      {previewEvent.event.startTime && (
+                        <p className="text-sm text-muted-foreground">{previewEvent.event.startTime}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{previewEvent.event.venue || previewEvent.event.location}</p>
+                      {previewEvent.event.venue && previewEvent.event.location && (
+                        <p className="text-sm text-muted-foreground">{previewEvent.event.location}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2">Event Details</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-medium">Event ID:</span> {previewEvent.eventId}</p>
+                    <p><span className="font-medium">Display Order:</span> {previewEvent.displayOrder}</p>
+                    <p><span className="font-medium">Status:</span> 
+                      <Badge className={`ml-2 ${previewEvent.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
+                        {previewEvent.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </p>
+                    {previewEvent.displayStartDate && (
+                      <p><span className="font-medium">Display From:</span> {new Date(previewEvent.displayStartDate).toLocaleDateString()}</p>
+                    )}
+                    {previewEvent.displayEndDate && (
+                      <p><span className="font-medium">Display Until:</span> {new Date(previewEvent.displayEndDate).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPreviewEvent(null)}>
+                    Close
+                  </Button>
+                  <Button onClick={() => {
+                    setPreviewEvent(null);
+                    openEditDialog(previewEvent);
+                  }}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Event
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

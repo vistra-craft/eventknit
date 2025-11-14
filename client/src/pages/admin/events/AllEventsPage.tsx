@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, Loader2, AlertCircle, CheckSquare, Square, Settings } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, Loader2, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
+import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
-import { bulkUpdateOrganizerDataAccess } from "../../../lib/admin-api";
+import { bulkUpdateOrganizerDataAccess, recallEvent } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/use-toast";
 
 interface Event {
@@ -27,6 +29,8 @@ interface Event {
   category: string;
   type: "public" | "private";
   isFree: boolean;
+  image?: string;
+  description?: string;
 }
 
 const AllEventsPage = () => {
@@ -44,6 +48,7 @@ const AllEventsPage = () => {
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = useState(false);
   const [bulkUpdateLevel, setBulkUpdateLevel] = useState<'RESTRICTED' | 'STANDARD' | 'FULL'>('RESTRICTED');
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
   const { toast } = useToast();
 
   // Fetch all events
@@ -117,6 +122,8 @@ const AllEventsPage = () => {
               category: event.category || 'Uncategorized',
               type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
               isFree: event.isFree || false,
+              image: event.image || undefined,
+              description: event.description || undefined,
             };
           });
           setEvents(mappedEvents);
@@ -387,29 +394,34 @@ const AllEventsPage = () => {
               className="border-border bg-card hover:shadow-md transition-all duration-200"
             >
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectEvent(event.id, !selectedEvents.has(event.id));
-                      }}
-                      className="h-6 w-6 p-0"
-                    >
-                      {selectedEvents.has(event.id) ? (
-                        <CheckSquare className="h-4 w-4" />
-                      ) : (
-                        <Square className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <div 
-                      className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() => navigate(`/admin/events/${event.id}`)}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectEvent(event.id, !selectedEvents.has(event.id));
+                    }}
+                    className="h-6 w-6 p-0 flex-shrink-0"
+                  >
+                    {selectedEvents.has(event.id) ? (
+                      <CheckSquare className="h-4 w-4" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <EventThumbnail
+                    src={event.image}
+                    alt={event.title}
+                    category={event.category}
+                    size="md"
+                  />
+                  <div 
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => setPreviewEvent(event)}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
                         <Badge className={`text-xs ${getStatusBadge(event.status)}`}>
                           {event.status}
                         </Badge>
@@ -437,28 +449,85 @@ const AllEventsPage = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/admin/events/${event.id}`);
+                        setPreviewEvent(event);
                       }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
-                      View
+                      Preview
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // TODO: Add dropdown menu for more actions
-                      }}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    {event.status === "active" && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // TODO: Add recall functionality
+                          console.log('Recall event', event.id);
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Recall
+                      </Button>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => window.open(`/admin/events/${event.id}`, '_blank')}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Event
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Public Page
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => {
+                          // TODO: Navigate to analytics
+                          console.log('View analytics for', event.id);
+                        }}>
+                          <BarChart3 className="h-4 w-4 mr-2" />
+                          View Analytics
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          // TODO: Export event data
+                          console.log('Export event', event.id);
+                        }}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Export Data
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                          toast({
+                            title: "Copied",
+                            description: "Event link copied to clipboard",
+                          });
+                        }}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Event Link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          // TODO: Share event
+                          console.log('Share event', event.id);
+                        }}>
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share Event
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>
@@ -531,6 +600,106 @@ const AllEventsPage = () => {
                 )}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Event Preview Dialog */}
+        <Dialog open={!!previewEvent} onOpenChange={() => setPreviewEvent(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Event Preview</DialogTitle>
+              <DialogDescription>
+                Preview event details
+              </DialogDescription>
+            </DialogHeader>
+            {previewEvent && (
+              <div className="space-y-6">
+                {previewEvent.image && (
+                  <div className="relative rounded-lg overflow-hidden">
+                    <img
+                      src={previewEvent.image}
+                      alt={previewEvent.title}
+                      className="w-full h-64 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                      <Badge className={`${getStatusBadge(previewEvent.status)}`}>
+                        {previewEvent.status}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+                {!previewEvent.image && (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2">{previewEvent.title}</h2>
+                    <Badge className={`${getStatusBadge(previewEvent.status)}`}>
+                      {previewEvent.status}
+                    </Badge>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{previewEvent.date}</p>
+                      {previewEvent.startTime && (
+                        <p className="text-sm text-muted-foreground">{previewEvent.startTime}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{previewEvent.venue || previewEvent.location}</p>
+                      {previewEvent.venue && previewEvent.location && (
+                        <p className="text-sm text-muted-foreground">{previewEvent.location}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <p className="font-medium">{previewEvent.attendees} attendees</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">by {previewEvent.organizer}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Badge className={`text-xs ${getTypeBadge(previewEvent.type)}`}>
+                    {previewEvent.type}
+                  </Badge>
+                  <Badge className={`text-xs ${getPriceBadge(previewEvent.isFree ? 'free' : 'paid')}`}>
+                    {previewEvent.isFree ? 'free' : 'paid'}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {previewEvent.category}
+                  </Badge>
+                </div>
+
+                {previewEvent.description && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Description</h3>
+                    <p className="text-muted-foreground whitespace-pre-wrap">{previewEvent.description}</p>
+                  </div>
+                )}
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPreviewEvent(null)}>
+                    Close
+                  </Button>
+                  <Button onClick={() => {
+                    setPreviewEvent(null);
+                    window.open(`/admin/events/${previewEvent.id}`, '_blank');
+                  }}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Event
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

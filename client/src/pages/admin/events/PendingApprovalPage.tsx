@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Share2, Copy } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -8,6 +8,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { Textarea } from "../../../components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
@@ -359,6 +360,45 @@ const PendingApprovalPage = () => {
                       <X className="h-4 w-4 mr-1" />
                       Decline
                     </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => window.open(`/admin/events/${event.id}`, '_blank')}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Event
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Public Page
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => {
+                          // TODO: Navigate to analytics
+                          console.log('View analytics for', event.id);
+                        }}>
+                          <BarChart3 className="h-4 w-4 mr-2" />
+                          View Analytics
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          // TODO: Export event data
+                          console.log('Export event', event.id);
+                        }}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Export Data
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                          // TODO: Show toast notification
+                        }}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Event Link
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>
