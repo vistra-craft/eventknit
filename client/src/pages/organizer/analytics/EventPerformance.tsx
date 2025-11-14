@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import OrganizerLayout from "../OrganizerLayout";
 import {
   Users,
@@ -29,14 +30,14 @@ import { getOrganizerEvents } from "@/lib/organizer-api";
 const EventPerformance = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
-  const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; capacity?: number; duration?: string; location?: string; venue?: string; speakers?: Array<unknown>; exhibitors?: Array<unknown> }>>([]);
+  const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; capacity?: number; duration?: string; location?: string; venue?: string; speakers?: Array<unknown>; exhibitors?: Array<unknown>; image?: string; category?: string }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await getOrganizerEvents({ limit: 100 });
         if (response.success && response.data?.events) {
-          setEvents(response.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; capacity?: number; duration?: string; location?: string; venue?: string; speakers?: Array<unknown>; exhibitors?: Array<unknown> }>);
+          setEvents(response.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; capacity?: number; duration?: string; location?: string; venue?: string; speakers?: Array<unknown>; exhibitors?: Array<unknown>; image?: string; category?: string }>);
         }
       } catch (err) {
         console.error('Failed to load event performance data:', err);
@@ -78,6 +79,8 @@ const EventPerformance = () => {
         duration: e.duration || 'N/A',
         location: e.location || e.venue || 'N/A',
         attendees: e.attendees || 0,
+        image: e.image,
+        category: e.category,
         capacity: e.capacity || 0,
         views: e.views || 0,
         conversion: parseFloat(conversion.toFixed(1)),
@@ -384,12 +387,19 @@ const EventPerformance = () => {
               {eventPerformanceData.map((event) => (
                 <Card key={event.id}>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{event.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">{event.date}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
+                      <EventThumbnail
+                        src={event.metrics.image}
+                        alt={event.title}
+                        category={event.metrics.category || ''}
+                        size="md"
+                      />
+                      <div className="flex-1 flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{event.title}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">{event.date}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
                         {getStatusBadge(event.status)}
                         <div className={`px-3 py-1 rounded-full ${getPerformanceBg(event.performance.engagementScore)}`}>
                           <span className={`text-sm font-medium ${getPerformanceColor(event.performance.engagementScore)}`}>
