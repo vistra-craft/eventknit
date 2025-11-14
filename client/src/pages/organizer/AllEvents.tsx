@@ -510,6 +510,20 @@ const AllEvents = () => {
         )}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => {
+              setPage(newPage);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
+      )}
+
       {/* Event Preview Dialog */}
       <Dialog 
         open={!!previewEvent} 
