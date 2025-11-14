@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { 
   UserPlus, 
   MoreHorizontal, 
@@ -222,9 +223,12 @@ const TeamPage = () => {
             {filteredMembers.map((member) => (
               <div key={member.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                 <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary-foreground" />
-                  </div>
+                  <Avatar
+                    src={member.avatar}
+                    name={member.name}
+                    alt={member.name}
+                    size="md"
+                  />
                   <div>
                     <div className="flex items-center space-x-2">
                       <h3 className="font-medium text-foreground">{member.name}</h3>
