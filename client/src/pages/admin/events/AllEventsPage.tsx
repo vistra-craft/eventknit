@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
+import { Pagination } from "../../../components/ui/pagination";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { bulkUpdateOrganizerDataAccess, recallEvent } from "../../../lib/admin-api";
@@ -51,6 +52,10 @@ const AllEventsPage = () => {
   const [bulkUpdateLevel, setBulkUpdateLevel] = useState<'RESTRICTED' | 'STANDARD' | 'FULL'>('RESTRICTED');
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [previewEvent, setPreviewEvent] = useState<Event | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const { toast } = useToast();
 
   const handlePreviewEvent = (event: Event) => {
@@ -103,8 +108,13 @@ const AllEventsPage = () => {
           filters.search = searchTerm;
         }
 
+        // Add pagination
+        filters.page = page;
+        filters.limit = limit;
+
         const response = await getEvents(filters);
-        if (response.success && response.data?.events) {
+        if (response.success && response.data) {
+          if (response.data.events) {
           const mappedEvents = response.data.events.map(event => {
             const now = new Date();
             let status: "active" | "pending" | "cancelled" | "completed" | "declined" = "pending";
@@ -142,6 +152,15 @@ const AllEventsPage = () => {
             };
           });
           setEvents(mappedEvents);
+          }
+          
+          // Update pagination info
+          if (response.data.totalPages !== undefined) {
+            setTotalPages(response.data.totalPages);
+          }
+          if (response.data.total !== undefined) {
+            setTotal(response.data.total);
+          }
         }
       } catch (err) {
         console.error('Error fetching events:', err);
@@ -152,12 +171,18 @@ const AllEventsPage = () => {
     };
 
     fetchEvents();
-  }, [statusFilter, categoryFilter, typeFilter, priceFilter, searchTerm]);
+  }, [statusFilter, categoryFilter, typeFilter, priceFilter, searchTerm, page, limit]);
 
+  // Filter events by location on frontend (other filters are handled by backend)
   const filteredEvents = events.filter(event => {
     const matchesLocation = locationFilter === "all" || event.location.toLowerCase().includes(locationFilter.toLowerCase());
     return matchesLocation;
   });
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, categoryFilter, typeFilter, priceFilter, searchTerm]);
 
   // Get unique categories and locations from events
   const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
@@ -270,8 +295,24 @@ const AllEventsPage = () => {
             <h1 className="text-lg font-semibold text-gray-900">All Events</h1>
             <p className="text-gray-600">Manage and monitor all platform events</p>
           </div>
-          <div className="text-sm text-gray-500">
-            {filteredEvents.length} of {events.length} events
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              Showing {filteredEvents.length} of {total} events
+            </div>
+            <Select value={limit.toString()} onValueChange={(value) => {
+              setLimit(parseInt(value, 10));
+              setPage(1); // Reset to first page when changing limit
+            }}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -594,7 +635,21 @@ const AllEventsPage = () => {
           ))}
         </div>
 
-        {filteredEvents.length === 0 && (
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(newPage) => {
+                setPage(newPage);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        )}
+
+        {filteredEvents.length === 0 && !loading && (
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
               <div className="text-gray-500">
