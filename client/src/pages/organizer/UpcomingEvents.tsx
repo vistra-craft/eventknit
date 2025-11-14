@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Pagination } from "../../components/ui/pagination";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 import { getOrganizerUpcomingEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 
@@ -24,6 +26,10 @@ const UpcomingEvents = () => {
   const [upcomingEvents, setUpcomingEvents] = useState<OrganizerDashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Fetch upcoming events from API
   useEffect(() => {
@@ -34,7 +40,12 @@ const UpcomingEvents = () => {
         
         const filters: {
           search?: string;
-        } = {};
+          page?: number;
+          limit?: number;
+        } = {
+          page,
+          limit,
+        };
         
         if (searchTerm) {
           filters.search = searchTerm;
@@ -44,6 +55,14 @@ const UpcomingEvents = () => {
 
         if (response.success && response.data) {
           setUpcomingEvents(response.data.events as unknown as OrganizerDashboardEvent[]);
+          
+          // Update pagination info
+          if (response.data.totalPages !== undefined) {
+            setTotalPages(response.data.totalPages);
+          }
+          if (response.data.total !== undefined) {
+            setTotal(response.data.total);
+          }
         } else {
           throw new Error(response.message || 'Failed to fetch upcoming events');
         }
@@ -58,6 +77,11 @@ const UpcomingEvents = () => {
     };
 
     fetchEvents();
+  }, [searchTerm, page, limit]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1);
   }, [searchTerm]);
 
   // Events are already filtered by API
@@ -124,7 +148,7 @@ const UpcomingEvents = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Upcoming Events</h1>
+          <h1 className="text-lg font-semibold text-foreground mb-2">Upcoming Events</h1>
           <p className="text-muted-foreground">
             Manage your upcoming events and track their progress.
           </p>
@@ -200,9 +224,23 @@ const UpcomingEvents = () => {
       {/* Events Grid */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-foreground">
-            Upcoming Events ({filteredEvents.length})
+          <h2 className="text-lg font-semibold text-foreground">
+            Upcoming Events ({total || filteredEvents.length})
           </h2>
+          <Select value={limit.toString()} onValueChange={(value) => {
+            setLimit(parseInt(value, 10));
+            setPage(1);
+          }}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {loading ? (
@@ -236,6 +274,20 @@ const UpcomingEvents = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => {
+              setPage(newPage);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
