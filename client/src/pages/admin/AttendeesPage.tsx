@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getAttendees, type Attendee, type UserStatus } from "@/lib/admin-api";
 import { getEvents } from "@/lib/event-api";
@@ -43,7 +44,9 @@ const AttendeesPage = () => {
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [previewAttendee, setPreviewAttendee] = useState<Attendee | null>(null);
 
   // Fetch events for filter dropdown
@@ -77,12 +80,15 @@ const AttendeesPage = () => {
           search: searchTerm || undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
           page,
-          limit: 50,
+          limit,
         });
 
         if (response.success && response.data) {
           setAttendees(response.data.attendees);
-          setTotalPages(response.data.pagination.totalPages);
+          if (response.data.pagination) {
+            setTotalPages(response.data.pagination.totalPages);
+            setTotal(response.data.pagination.total);
+          }
         }
       } catch (err: any) {
         console.error("Error fetching attendees:", err);
@@ -98,7 +104,12 @@ const AttendeesPage = () => {
     };
 
     fetchAttendees();
-  }, [searchTerm, statusFilter, eventFilter, page, toast]);
+  }, [searchTerm, statusFilter, eventFilter, page, limit, toast]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, eventFilter]);
 
   const getStatusBadge = (status: UserStatus) => {
     const variants = {
@@ -152,6 +163,25 @@ const AttendeesPage = () => {
           <h2 className="text-lg font-semibold text-gray-900">Attendees</h2>
           <p className="text-gray-600">Manage event attendees and view registration history</p>
         </div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            Showing {attendees.length} of {total || attendees.length} attendees
+          </div>
+          <Select value={limit.toString()} onValueChange={(value) => {
+            setLimit(parseInt(value, 10));
+            setPage(1);
+          }}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
             <Upload className="h-4 w-4 mr-2" />
@@ -168,7 +198,7 @@ const AttendeesPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-blue-600 mb-2">{attendees.length}</div>
+            <div className="text-lg font-semibold text-blue-600 mb-2">{total || attendees.length}</div>
             <p className="text-sm text-gray-600">Total Attendees</p>
           </CardContent>
         </Card>
@@ -398,28 +428,24 @@ const AttendeesPage = () => {
               <div className="text-sm text-gray-600">
                 Page {page} of {totalPages}
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => {
+              setPage(newPage);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
+      )}
 
       {/* Attendee Preview Dialog */}
       <Dialog 

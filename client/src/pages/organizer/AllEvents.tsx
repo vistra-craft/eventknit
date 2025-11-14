@@ -29,6 +29,8 @@ import { Badge } from "../../components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../components/ui/event-thumbnail";
+import { Pagination } from "../../components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 import { shareEvent } from "../../lib/utils/share";
 import { exportEventData } from "../../lib/utils/export";
@@ -43,6 +45,10 @@ const AllEvents = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewEvent, setPreviewEvent] = useState<OrganizerDashboardEvent | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Fetch events from API
   useEffect(() => {
@@ -54,6 +60,8 @@ const AllEvents = () => {
         const filters: {
           status?: string;
           search?: string;
+          page?: number;
+          limit?: number;
         } = {};
         
         if (statusFilter !== "all") {
@@ -64,11 +72,20 @@ const AllEvents = () => {
           filters.search = searchTerm;
         }
 
+        filters.page = page;
+        filters.limit = limit;
+
         const response = await getOrganizerEvents(filters);
 
         if (response.success && response.data) {
           // Backend already transforms events to OrganizerDashboardEvent format
           setAllEvents(response.data.events as unknown as OrganizerDashboardEvent[]);
+          if (response.data.totalPages !== undefined) {
+            setTotalPages(response.data.totalPages);
+          }
+          if (response.data.total !== undefined) {
+            setTotal(response.data.total);
+          }
         } else {
           throw new Error(response.message || 'Failed to fetch events');
         }
@@ -83,13 +100,18 @@ const AllEvents = () => {
     };
 
     fetchEvents();
+  }, [searchTerm, statusFilter, page, limit]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
   }, [searchTerm, statusFilter]);
 
   // Events are already filtered by API
   const filteredEvents = allEvents;
 
-  // Calculate stats from real data
-  const totalEvents = allEvents.length;
+  // Calculate stats from real data (using total from API when available)
+  const totalEvents = total || allEvents.length;
   const activeEvents = allEvents.filter(e => e.status === "active" || e.status === "approved").length;
   const upcomingEvents = allEvents.filter(e => e.status === "upcoming").length;
   const totalRevenue = allEvents.reduce((sum, e) => sum + (typeof e.revenue === 'number' ? e.revenue : 0), 0);
@@ -148,6 +170,25 @@ const AllEvents = () => {
           <p className="text-muted-foreground">
             Manage and view all your events in one place.
           </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {allEvents.length} of {total || allEvents.length} events
+          </div>
+          <Select value={limit.toString()} onValueChange={(value) => {
+            setLimit(parseInt(value, 10));
+            setPage(1);
+          }}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center space-x-3">
           <Link
