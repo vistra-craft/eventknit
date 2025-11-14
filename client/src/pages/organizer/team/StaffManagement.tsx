@@ -1,7 +1,10 @@
 import { useState } from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination } from "@/components/ui/pagination";
 import { 
   UserPlus, 
   QrCode, 
@@ -35,6 +38,8 @@ interface StaffMember {
 const StaffManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
 
   // Mock staff data
   const staffMembers: StaffMember[] = [
@@ -132,6 +137,16 @@ const StaffManagement = () => {
     const matchesRole = filterRole === "all" || member.role === filterRole;
     return matchesSearch && matchesRole;
   });
+
+  const totalPages = Math.ceil(filteredMembers.length / limit);
+  const membersStartIndex = (page - 1) * limit;
+  const membersEndIndex = membersStartIndex + limit;
+  const paginatedMembers = filteredMembers.slice(membersStartIndex, membersEndIndex);
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterRole]);
 
   const activeStaff = staffMembers.filter(m => m.status === 'active').length;
   const mobileEnabled = staffMembers.filter(m => m.mobileAccess).length;
@@ -249,11 +264,27 @@ const StaffManagement = () => {
       {/* Staff Members List */}
       <Card>
         <CardHeader>
-          <CardTitle>Staff Members</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Staff Members</CardTitle>
+            <Select value={limit.toString()} onValueChange={(value) => {
+              setLimit(parseInt(value, 10));
+              setPage(1);
+            }}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {filteredMembers.map((member) => (
+            {paginatedMembers.map((member) => (
               <div key={member.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                 <div className="flex items-center space-x-4">
                   <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
@@ -311,6 +342,18 @@ const StaffManagement = () => {
               </div>
             ))}
           </div>
+          {totalPages > 1 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(newPage) => {
+                  setPage(newPage);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

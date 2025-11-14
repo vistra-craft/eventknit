@@ -6,6 +6,8 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { Alert } from '../../components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Pagination } from '../../components/ui/pagination';
 import { FileText, Send, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
 interface EventData {
@@ -54,6 +56,12 @@ const DashboardAbstracts: React.FC<DashboardAbstractsProps> = ({ eventData }) =>
   const [submissionStatus, setSubmissionStatus] = useState<'success' | 'error' | null>(null);
   const [error, setError] = useState<string>('');
   const [submissions, setSubmissions] = useState<AbstractSubmission[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const totalPages = Math.ceil(submissions.length / limit);
+  const submissionsStartIndex = (page - 1) * limit;
+  const submissionsEndIndex = submissionsStartIndex + limit;
+  const paginatedSubmissions = submissions.slice(submissionsStartIndex, submissionsEndIndex);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -240,7 +248,24 @@ const DashboardAbstracts: React.FC<DashboardAbstractsProps> = ({ eventData }) =>
             {/* My Submissions */}
             <Card className="bg-card rounded-2xl shadow-lg border border-border">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-foreground">My Submissions</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl font-bold text-foreground">My Submissions</CardTitle>
+                  {submissions.length > 0 && (
+                    <Select value={limit.toString()} onValueChange={(value) => {
+                      setLimit(parseInt(value, 10));
+                      setPage(1);
+                    }}>
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {submissions.length === 0 ? (
@@ -250,8 +275,9 @@ const DashboardAbstracts: React.FC<DashboardAbstractsProps> = ({ eventData }) =>
                     <p className="text-sm text-muted-foreground mt-1">Submit your first abstract above to get started!</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {submissions.map((submission) => (
+                  <>
+                    <div className="space-y-4">
+                      {paginatedSubmissions.map((submission) => (
                       <Card key={submission.id} className="bg-muted/30 border border-border">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between">
@@ -271,8 +297,21 @@ const DashboardAbstracts: React.FC<DashboardAbstractsProps> = ({ eventData }) =>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                    {totalPages > 1 && (
+                      <div className="mt-6">
+                        <Pagination
+                          currentPage={page}
+                          totalPages={totalPages}
+                          onPageChange={(newPage) => {
+                            setPage(newPage);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
