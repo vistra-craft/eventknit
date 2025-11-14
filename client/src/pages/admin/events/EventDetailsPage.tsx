@@ -30,6 +30,7 @@ import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
 import { useToast } from "@/hooks/use-toast";
+import { exportEventData } from "@/lib/utils/export";
 
 interface EventDetails {
   id: string;
@@ -368,8 +369,30 @@ const EventDetailsPage = () => {
   };
 
   const handleExport = () => {
-    console.log("Export event data:", eventData.id);
-    // TODO: Implement export functionality
+    if (!eventData) return;
+    try {
+      exportEventData({
+        id: eventData.id,
+        title: eventData.title,
+        date: eventData.date,
+        location: eventData.location || eventData.venue,
+        attendees: eventData.attendees,
+        revenue: 0, // Calculate from registrations if needed
+        views: eventData.views,
+        status: eventData.status,
+        category: eventData.category,
+      });
+      toast({
+        title: "Exported",
+        description: "Event data exported successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export event data",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleRefresh = () => {
