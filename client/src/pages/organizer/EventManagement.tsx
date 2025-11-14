@@ -220,33 +220,21 @@ const EventManagement = () => {
     ? attendees.reduce((sum: number, a: Attendee) => sum + (Number(a.totalAmount) || 0), 0)
     : 0;
 
-  // Mock data for sections that don't have APIs yet (speakers, exhibitors, sponsors, sessions, abstracts)
-  // These can be added later when those features are implemented
-  const mockData = {
-    // Use real attendees data from API (already filtered by backend based on access level)
+  // Data from API - attendees are real, speakers and sponsors come from eventData if available
+  const apiData = {
+    // Real attendees data from API (already filtered by backend based on access level)
     attendees: attendees,
+    // Speakers from API if available
+    speakers: eventData?.speakers && Array.isArray(eventData.speakers) ? eventData.speakers : [],
+    // Sponsors from API if available
+    sponsors: eventData?.sponsors && Array.isArray(eventData.sponsors) ? eventData.sponsors : [],
+  };
 
-    speakers: eventData.speakers ? (Array.isArray(eventData.speakers) ? eventData.speakers : []) : [
-      { id: 1, name: "No speakers", title: "Add speakers to your event", bio: "", sessions: 0, status: "pending" },
-    ],
-    exhibitors: eventData.sponsors ? (Array.isArray(eventData.sponsors) ? eventData.sponsors.map((s: any, idx: number) => ({
-      id: idx + 1,
-      name: s.name || 'Exhibitor',
-      booth: `Booth ${idx + 1}`,
-      category: s.level || 'General',
-      contact: 'N/A',
-      status: 'confirmed',
-    })) : []) : [
+  // Mock data ONLY for sections that don't have APIs yet (exhibitors, sessions, abstracts, charts)
+  // These will be replaced when APIs are implemented
+  const mockData = {
+    exhibitors: [
       { id: 1, name: "No exhibitors", booth: "N/A", category: "Add exhibitors", contact: "N/A", status: "pending" },
-    ],
-    sponsors: eventData.sponsors ? (Array.isArray(eventData.sponsors) ? eventData.sponsors.map((s: any, idx: number) => ({
-      id: idx + 1,
-      name: s.level || 'Sponsor',
-      company: s.name || 'Company',
-      amount: 0,
-      benefits: [],
-    })) : []) : [
-      { id: 1, name: "No sponsors", company: "Add sponsors", amount: 0, benefits: [] },
     ],
     sessions: [
       { id: 1, title: "No sessions scheduled", speaker: "Add sessions", time: "TBD", room: "TBD", attendees: 0 },
@@ -254,40 +242,36 @@ const EventManagement = () => {
     abstracts: [
       { id: 1, title: "No abstracts submitted", author: "N/A", status: "pending", submittedDate: "N/A", category: "N/A" },
     ],
+    // Mock data for charts and analytics (no APIs yet)
+    registrationTrends: [
+      { day: "Jan 1", registrations: 12 },
+      { day: "Jan 2", registrations: 19 },
+      { day: "Jan 3", registrations: 25 },
+      { day: "Jan 4", registrations: 32 },
+      { day: "Jan 5", registrations: 28 },
+      { day: "Jan 6", registrations: 35 },
+      { day: "Jan 7", registrations: 42 },
+    ],
+    revenueBySource: [
+      { name: "Ticket Sales", value: 70, amount: 101640 },
+      { name: "Sponsorships", value: 20, amount: 29040 },
+      { name: "Merchandise", value: 7, amount: 10164 },
+      { name: "Donations", value: 3, amount: 4356 },
+    ],
+    attendeeDemographics: [
+      { age: "18-25", count: 85 },
+      { age: "26-35", count: 142 },
+      { age: "36-45", count: 98 },
+      { age: "46-55", count: 67 },
+      { age: "56+", count: 43 },
+    ],
+    recentActivity: [
+      { id: 1, type: "registration", message: "Sarah Johnson registered", time: "2 min ago", icon: Users, color: "text-green-600" },
+      { id: 2, type: "payment", message: "Payment of $299 received", time: "5 min ago", icon: DollarSign, color: "text-blue-600" },
+      { id: 3, type: "speaker", message: "New speaker confirmed", time: "12 min ago", icon: Mic, color: "text-purple-600" },
+      { id: 4, type: "exhibitor", message: "Booth assignment completed", time: "18 min ago", icon: Building2, color: "text-orange-600" },
+    ],
   };
-
-  // Mock data for charts and analytics
-  const registrationTrends = [
-    { day: "Jan 1", registrations: 12 },
-    { day: "Jan 2", registrations: 19 },
-    { day: "Jan 3", registrations: 25 },
-    { day: "Jan 4", registrations: 32 },
-    { day: "Jan 5", registrations: 28 },
-    { day: "Jan 6", registrations: 35 },
-    { day: "Jan 7", registrations: 42 },
-  ];
-
-  const revenueBySource = [
-    { name: "Ticket Sales", value: 70, amount: 101640 },
-    { name: "Sponsorships", value: 20, amount: 29040 },
-    { name: "Merchandise", value: 7, amount: 10164 },
-    { name: "Donations", value: 3, amount: 4356 },
-  ];
-
-  const attendeeDemographics = [
-    { age: "18-25", count: 85 },
-    { age: "26-35", count: 142 },
-    { age: "36-45", count: 98 },
-    { age: "46-55", count: 67 },
-    { age: "56+", count: 43 },
-  ];
-
-  const recentActivity = [
-    { id: 1, type: "registration", message: "Sarah Johnson registered", time: "2 min ago", icon: Users, color: "text-green-600" },
-    { id: 2, type: "payment", message: "Payment of $299 received", time: "5 min ago", icon: DollarSign, color: "text-blue-600" },
-    { id: 3, type: "speaker", message: "New speaker confirmed", time: "12 min ago", icon: Mic, color: "text-purple-600" },
-    { id: 4, type: "exhibitor", message: "Booth assignment completed", time: "18 min ago", icon: Building2, color: "text-orange-600" },
-  ];
 
   const navigationSections = [
     { key: "overview", label: "Overview", icon: BarChart3 },
@@ -386,10 +370,10 @@ const EventManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockData.attendees.length === 0 ? (
+                    {apiData.attendees.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">No attendees registered yet</p>
                     ) : (
-                      mockData.attendees.map((attendee: any) => (
+                      apiData.attendees.map((attendee: any) => (
                         <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex items-center space-x-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -442,7 +426,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Speakers</p>
-                      <p className="text-2xl font-bold">{mockData.speakers.length}</p>
+                      <p className="text-2xl font-bold">{apiData.speakers.length}</p>
                     </div>
                     <Mic className="w-8 h-8 text-primary" />
                   </div>
@@ -453,7 +437,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-2xl font-bold">{mockData.speakers.filter((s: any) => s.status === 'confirmed').length}</p>
+                      <p className="text-2xl font-bold">{apiData.speakers.filter((s: any) => s.status === 'confirmed').length}</p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -464,7 +448,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sessions</p>
-                      <p className="text-2xl font-bold">{mockData.speakers.reduce((sum: number, s: any) => sum + (s.sessions || 0), 0)}</p>
+                      <p className="text-2xl font-bold">{apiData.speakers.reduce((sum: number, s: any) => sum + (s.sessions || 0), 0)}</p>
                     </div>
                     <Calendar className="w-8 h-8 text-blue-600" />
                   </div>
@@ -478,7 +462,10 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockData.speakers.map((speaker: any) => (
+                  {apiData.speakers.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No speakers added yet</p>
+                  ) : (
+                    apiData.speakers.map((speaker: any) => (
                     <div key={speaker.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -606,7 +593,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Sponsors</p>
-                      <p className="text-2xl font-bold">{mockData.sponsors.length}</p>
+                      <p className="text-2xl font-bold">{apiData.sponsors.length}</p>
                     </div>
                     <Star className="w-8 h-8 text-primary" />
                   </div>
@@ -617,7 +604,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold">${mockData.sponsors.reduce((sum: number, s: any) => sum + (s.amount || 0), 0).toLocaleString()}</p>
+                      <p className="text-2xl font-bold">${apiData.sponsors.reduce((sum: number, s: any) => sum + (s.amount || 0), 0).toLocaleString()}</p>
                     </div>
                     <DollarSign className="w-8 h-8 text-green-600" />
                   </div>
@@ -628,7 +615,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Gold Sponsors</p>
-                      <p className="text-2xl font-bold">{mockData.sponsors.filter((s: any) => s.name?.includes('Gold')).length}</p>
+                      <p className="text-2xl font-bold">{apiData.sponsors.filter((s: any) => s.level?.includes('Gold') || s.name?.includes('Gold')).length}</p>
                     </div>
                     <Star className="w-8 h-8 text-yellow-600" />
                   </div>
@@ -642,26 +629,40 @@ const EventManagement = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockData.sponsors.map((sponsor: any) => (
-                    <div key={sponsor.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  {apiData.sponsors.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No sponsors added yet</p>
+                  ) : (
+                    apiData.sponsors.map((sponsor: any, idx: number) => {
+                      // Transform API sponsor format to display format
+                      const displaySponsor = {
+                        id: idx + 1,
+                        name: sponsor.level || 'Sponsor',
+                        company: sponsor.name || 'Company',
+                        amount: 0, // Not available in API
+                        benefits: [],
+                      };
+                      return (
+                    <div key={idx} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">
-                            {sponsor.company.split(' ').map((n: string) => n[0]).join('')}
+                            {displaySponsor.company.split(' ').map((n: string) => n[0]).join('')}
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium">{sponsor.company}</p>
-                          <p className="text-sm text-muted-foreground">{sponsor.name}</p>
-                          <p className="text-xs text-muted-foreground">${sponsor.amount.toLocaleString()}</p>
+                          <p className="font-medium">{displaySponsor.company}</p>
+                          <p className="text-sm text-muted-foreground">{displaySponsor.name}</p>
+                          <p className="text-xs text-muted-foreground">${displaySponsor.amount.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{sponsor.name}</Badge>
+                        <Badge variant="secondary">{displaySponsor.name}</Badge>
                         <Button variant="outline" size="sm">Manage</Button>
                       </div>
                     </div>
-                  ))}
+                      );
+                    })
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -984,7 +985,7 @@ const EventManagement = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Attendees</p>
-                      <p className="text-2xl font-bold text-primary">{mockData.attendees.length}</p>
+                      <p className="text-2xl font-bold text-primary">{apiData.attendees.length}</p>
                           <p className="text-xs text-muted-foreground">of {eventData.capacity || 0}</p>
                         </div>
                         <Users className="w-8 h-8 text-primary/60" />
@@ -997,7 +998,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Speakers</p>
-                          <p className="text-2xl font-bold text-blue-600">{mockData.speakers.length}</p>
+                          <p className="text-2xl font-bold text-blue-600">{apiData.speakers.length}</p>
                           <p className="text-xs text-muted-foreground">confirmed</p>
                         </div>
                         <Mic className="w-8 h-8 text-blue-500/60" />
@@ -1010,7 +1011,7 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-2xl font-bold text-green-600">${(mockData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0)).toLocaleString()}</p>
+                          <p className="text-2xl font-bold text-green-600">${(apiData.attendees.reduce((sum: number, a: any) => sum + (a.totalAmount || 0), 0)).toLocaleString()}</p>
                           <p className="text-xs text-muted-foreground">total</p>
                         </div>
                         <DollarSign className="w-8 h-8 text-green-500/60" />
@@ -1024,7 +1025,7 @@ const EventManagement = () => {
                         <div>
                           <p className="text-sm text-muted-foreground">Conversion</p>
                           <p className="text-2xl font-bold text-purple-600">{eventData.capacity && eventData.capacity > 0 
-                            ? ((mockData.attendees.length / eventData.capacity) * 100).toFixed(1)
+                            ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(1)
                             : 0}%</p>
                           <p className="text-xs text-muted-foreground">rate</p>
                         </div>
@@ -1084,7 +1085,7 @@ const EventManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <CustomAreaChart
-                    data={registrationTrends}
+                    data={mockData.registrationTrends}
                     xAxisKey="day"
                     dataKey="registrations"
                     height={200}
@@ -1103,7 +1104,7 @@ const EventManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <CustomPieChart
-                    data={revenueBySource}
+                    data={mockData.revenueBySource}
                     dataKey="value"
                     nameKey="name"
                     height={200}
@@ -1152,7 +1153,7 @@ const EventManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <CustomBarChart
-                    data={attendeeDemographics}
+                    data={mockData.attendeeDemographics}
                     xAxisKey="age"
                     dataKey="count"
                     height={150}
@@ -1171,7 +1172,7 @@ const EventManagement = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {recentActivity.map((activity) => (
+                    {mockData.recentActivity.map((activity) => (
                       <div key={activity.id} className="flex items-start gap-3">
                         <div className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}>
                           <activity.icon className={`h-4 w-4 ${activity.color}`} />
@@ -1206,7 +1207,7 @@ const EventManagement = () => {
                         <Star className="w-6 h-6 text-yellow-500" />
                       </div>
                       <p className="text-sm text-muted-foreground">Sponsors</p>
-                      <p className="text-xl font-bold">{mockData.sponsors.length}</p>
+                      <p className="text-xl font-bold">{apiData.sponsors.length}</p>
                     </div>
                     <div className="text-center">
                       <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
