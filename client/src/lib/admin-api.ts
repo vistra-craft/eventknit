@@ -450,3 +450,29 @@ export const updateUser = async (
   return apiPut<{ success: boolean; message: string; data: { user: User } }>(`/admin/users/${userId}`, userData);
 };
 
+/**
+ * Recall Event Response
+ */
+export interface RecallEventResponse {
+  success: boolean;
+  message: string;
+  data: {
+    event: {
+      id: string;
+      title: string;
+      status: string;
+    };
+  };
+}
+
+/**
+ * Recall event (admin function - pull down approved event)
+ */
+export const recallEvent = async (
+  eventId: string,
+  action: 'PENDING' | 'CANCELLED',
+  reason?: string
+): Promise<RecallEventResponse> => {
+  return apiPost<RecallEventResponse>(`/admin/events/${eventId}/recall`, { action, reason });
+};
+

@@ -179,3 +179,25 @@ export const deleteOrganizerEvent = async (eventId: string): Promise<{ success: 
   return apiDelete<{ success: boolean; message: string }>(`/events/${eventId}`);
 };
 
+/**
+ * Cancel event (organizer function)
+ */
+export interface CancelEventResponse {
+  success: boolean;
+  message: string;
+  data: {
+    event: {
+      id: string;
+      title: string;
+      status: string;
+    };
+  };
+}
+
+export const cancelEvent = async (
+  eventId: string,
+  reason?: string
+): Promise<CancelEventResponse> => {
+  return apiPost<CancelEventResponse>(`/events/${eventId}/cancel`, { reason });
+};
+
