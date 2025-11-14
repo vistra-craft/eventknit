@@ -14,6 +14,8 @@ import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { bulkUpdateOrganizerDataAccess, recallEvent } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/use-toast";
+import { shareEvent } from "../../../lib/utils/share";
+import { exportEventData } from "../../../lib/utils/export";
 
 interface Event {
   id: string;
@@ -479,20 +481,21 @@ const AllEventsPage = () => {
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
                     </Button>
-                    {event.status === "active" && (
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // TODO: Add recall functionality
-                          console.log('Recall event', event.id);
-                        }}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Recall
-                      </Button>
-                    )}
+                         {event.status === "active" && (
+                           <Button
+                             variant="destructive"
+                             size="sm"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               // Open recall dialog - functionality already exists in UpcomingEventsPage
+                               // For now, navigate to upcoming events page where recall is available
+                               window.open(`/admin/events/upcoming`, '_blank');
+                             }}
+                           >
+                             <X className="h-4 w-4 mr-1" />
+                             Recall
+                           </Button>
+                         )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
@@ -514,32 +517,70 @@ const AllEventsPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => {
-                          // TODO: Navigate to analytics
-                          console.log('View analytics for', event.id);
+                          window.open(`/admin/analytics/events?eventId=${event.id}`, '_blank');
                         }}>
                           <BarChart3 className="h-4 w-4 mr-2" />
                           View Analytics
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
-                          // TODO: Export event data
-                          console.log('Export event', event.id);
+                          try {
+                            exportEventData({
+                              id: event.id,
+                              title: event.title,
+                              date: event.date,
+                              location: event.location,
+                              attendees: event.attendees,
+                              revenue: 0, // Not available in this context
+                              views: 0, // Not available in this context
+                              status: event.status,
+                              category: event.category,
+                            });
+                            toast({
+                              title: "Exported",
+                              description: "Event data exported successfully",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to export event data",
+                              variant: "destructive",
+                            });
+                          }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
                           Export Data
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
-                          toast({
-                            title: "Copied",
-                            description: "Event link copied to clipboard",
-                          });
+                        <DropdownMenuItem onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            toast({
+                              title: "Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to copy link",
+                              variant: "destructive",
+                            });
+                          }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />
                           Copy Event Link
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          // TODO: Share event
-                          console.log('Share event', event.id);
+                        <DropdownMenuItem onClick={async () => {
+                          const shared = await shareEvent(event.title, event.id);
+                          if (shared) {
+                            toast({
+                              title: "Shared",
+                              description: "Event shared successfully",
+                            });
+                          } else {
+                            toast({
+                              title: "Link Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          }
                         }}>
                           <Share2 className="h-4 w-4 mr-2" />
                           Share Event

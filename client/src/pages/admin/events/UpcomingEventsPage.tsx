@@ -14,6 +14,9 @@ import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
+import { shareEvent } from "../../../lib/utils/share";
+import { exportEventData } from "../../../lib/utils/export";
+import { useToast } from "../../../hooks/use-toast";
 
 interface Event {
   id: string;
@@ -33,6 +36,7 @@ interface Event {
 }
 
 const UpcomingEventsPage = () => {
+  const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -428,29 +432,70 @@ const UpcomingEventsPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => {
-                          // TODO: Navigate to analytics
-                          console.log('View analytics for', event.id);
+                          window.open(`/admin/analytics/events?eventId=${event.id}`, '_blank');
                         }}>
                           <BarChart3 className="h-4 w-4 mr-2" />
                           View Analytics
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
-                          // TODO: Export event data
-                          console.log('Export event', event.id);
+                          try {
+                            exportEventData({
+                              id: event.id,
+                              title: event.title,
+                              date: event.date,
+                              location: event.location,
+                              attendees: event.registrations,
+                              revenue: 0,
+                              views: 0,
+                              status: 'active',
+                              category: event.category,
+                            });
+                            toast({
+                              title: "Exported",
+                              description: "Event data exported successfully",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to export event data",
+                              variant: "destructive",
+                            });
+                          }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
                           Export Data
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
-                          // TODO: Show toast notification
+                        <DropdownMenuItem onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            toast({
+                              title: "Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to copy link",
+                              variant: "destructive",
+                            });
+                          }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />
                           Copy Event Link
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          // TODO: Share event
-                          console.log('Share event', event.id);
+                        <DropdownMenuItem onClick={async () => {
+                          const shared = await shareEvent(event.title, event.id);
+                          if (shared) {
+                            toast({
+                              title: "Shared",
+                              description: "Event shared successfully",
+                            });
+                          } else {
+                            toast({
+                              title: "Link Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          }
                         }}>
                           <Share2 className="h-4 w-4 mr-2" />
                           Share Event
