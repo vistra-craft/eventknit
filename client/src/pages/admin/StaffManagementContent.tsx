@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
 import { exportUserData } from "@/lib/utils/export";
@@ -38,6 +39,10 @@ const StaffManagementContent = () => {
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewStaff, setPreviewStaff] = useState<User | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Fetch staff members (ADMIN_STAFF, SUPERADMIN, etc.)
   useEffect(() => {
@@ -49,6 +54,8 @@ const StaffManagementContent = () => {
           role: roleFilter !== "all" ? roleFilter : undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
           search: searchTerm || undefined,
+          page,
+          limit,
         });
 
         if (response.success && response.data) {
@@ -56,6 +63,11 @@ const StaffManagementContent = () => {
           const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
           const staff = response.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
+          if (response.data.pagination) {
+            setTotalPages(response.data.pagination.totalPages);
+            // Note: total is for all users, not just staff. We'll use staff.length for display
+            setTotal(response.data.pagination.total);
+          }
         }
       } catch (err: any) {
         console.error("Error fetching staff:", err);
@@ -71,7 +83,12 @@ const StaffManagementContent = () => {
     };
 
     fetchStaff();
-  }, [searchTerm, statusFilter, roleFilter, toast]);
+  }, [searchTerm, statusFilter, roleFilter, page, limit, toast]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, roleFilter]);
 
   const getStatusBadge = (status: UserStatus) => {
     const variants = {
@@ -117,11 +134,15 @@ const StaffManagementContent = () => {
           description: "Staff member suspended successfully",
         });
         // Refresh list
-        const updatedResponse = await getUsers({});
+        const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
           const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
+          if (updatedResponse.data.pagination) {
+            setTotalPages(updatedResponse.data.pagination.totalPages);
+            setTotal(updatedResponse.data.pagination.total);
+          }
         }
       }
     } catch (err: any) {
@@ -145,11 +166,15 @@ const StaffManagementContent = () => {
           description: "Staff member deactivated successfully",
         });
         // Refresh list
-        const updatedResponse = await getUsers({});
+        const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
           const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
+          if (updatedResponse.data.pagination) {
+            setTotalPages(updatedResponse.data.pagination.totalPages);
+            setTotal(updatedResponse.data.pagination.total);
+          }
         }
       }
     } catch (err: any) {
@@ -173,11 +198,15 @@ const StaffManagementContent = () => {
           description: "Staff member activated successfully",
         });
         // Refresh list
-        const updatedResponse = await getUsers({});
+        const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
           const staffRoles: UserRole[] = ["SUPERADMIN", "ADMIN_STAFF", "MARKETER", "SUPPORT", "TELLER"];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
+          if (updatedResponse.data.pagination) {
+            setTotalPages(updatedResponse.data.pagination.totalPages);
+            setTotal(updatedResponse.data.pagination.total);
+          }
         }
       }
     } catch (err: any) {
@@ -191,14 +220,8 @@ const StaffManagementContent = () => {
     }
   };
 
-  const filteredStaff = staffMembers.filter((staff) => {
-    const matchesSearch =
-      !searchTerm ||
-      staff.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.email.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  // Search is handled by backend, no need for frontend filtering
+  const filteredStaff = staffMembers;
 
   if (loading && staffMembers.length === 0) {
     return (
@@ -216,6 +239,25 @@ const StaffManagementContent = () => {
           <h2 className="text-lg font-semibold text-gray-900">Staff Management</h2>
           <p className="text-gray-600">Manage company employees and event staff</p>
         </div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            Showing {staffMembers.length} of {total || staffMembers.length} staff
+          </div>
+          <Select value={limit.toString()} onValueChange={(value) => {
+            setLimit(parseInt(value, 10));
+            setPage(1);
+          }}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
             <Upload className="h-4 w-4 mr-2" />
@@ -232,7 +274,7 @@ const StaffManagementContent = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-blue-600 mb-2">{staffMembers.length}</div>
+            <div className="text-lg font-semibold text-blue-600 mb-2">{total || staffMembers.length}</div>
             <p className="text-sm text-gray-600">Total Staff</p>
           </CardContent>
         </Card>
@@ -480,6 +522,20 @@ const StaffManagementContent = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => {
+              setPage(newPage);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
+      )}
 
       {/* Staff Preview Dialog */}
       <Dialog 

@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
 import { exportUserData } from "@/lib/utils/export";
@@ -39,6 +40,10 @@ const OrganizersContent = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [previewOrganizer, setPreviewOrganizer] = useState<User | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // Fetch organizers
   useEffect(() => {
@@ -50,10 +55,16 @@ const OrganizersContent = () => {
           role: "ORGANIZER",
           status: statusFilter !== "all" ? statusFilter : undefined,
           search: searchTerm || undefined,
+          page,
+          limit,
         });
 
         if (response.success && response.data) {
           setOrganizers(response.data.users);
+          if (response.data.pagination) {
+            setTotalPages(response.data.pagination.totalPages);
+            setTotal(response.data.pagination.total);
+          }
         }
       } catch (err: any) {
         console.error("Error fetching organizers:", err);
@@ -69,7 +80,12 @@ const OrganizersContent = () => {
     };
 
     fetchOrganizers();
-  }, [searchTerm, statusFilter, toast]);
+  }, [searchTerm, statusFilter, page, limit, toast]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
 
   const getStatusBadge = (status: UserStatus) => {
     const variants = {
@@ -102,9 +118,13 @@ const OrganizersContent = () => {
           description: "Organizer suspended successfully",
         });
         // Refresh list
-        const updatedResponse = await getUsers({ role: "ORGANIZER" });
+        const updatedResponse = await getUsers({ role: "ORGANIZER", page, limit });
         if (updatedResponse.success && updatedResponse.data) {
           setOrganizers(updatedResponse.data.users);
+          if (updatedResponse.data.pagination) {
+            setTotalPages(updatedResponse.data.pagination.totalPages);
+            setTotal(updatedResponse.data.pagination.total);
+          }
         }
       }
     } catch (err: any) {
@@ -128,9 +148,13 @@ const OrganizersContent = () => {
           description: "Organizer deactivated successfully",
         });
         // Refresh list
-        const updatedResponse = await getUsers({ role: "ORGANIZER" });
+        const updatedResponse = await getUsers({ role: "ORGANIZER", page, limit });
         if (updatedResponse.success && updatedResponse.data) {
           setOrganizers(updatedResponse.data.users);
+          if (updatedResponse.data.pagination) {
+            setTotalPages(updatedResponse.data.pagination.totalPages);
+            setTotal(updatedResponse.data.pagination.total);
+          }
         }
       }
     } catch (err: any) {
@@ -154,9 +178,13 @@ const OrganizersContent = () => {
           description: "Organizer activated successfully",
         });
         // Refresh list
-        const updatedResponse = await getUsers({ role: "ORGANIZER" });
+        const updatedResponse = await getUsers({ role: "ORGANIZER", page, limit });
         if (updatedResponse.success && updatedResponse.data) {
           setOrganizers(updatedResponse.data.users);
+          if (updatedResponse.data.pagination) {
+            setTotalPages(updatedResponse.data.pagination.totalPages);
+            setTotal(updatedResponse.data.pagination.total);
+          }
         }
       }
     } catch (err: any) {
@@ -204,6 +232,25 @@ const OrganizersContent = () => {
           <h2 className="text-lg font-semibold text-gray-900">Organizers</h2>
           <p className="text-gray-600">Manage external event organizers</p>
         </div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500">
+            Showing {organizers.length} of {total} organizers
+          </div>
+          <Select value={limit.toString()} onValueChange={(value) => {
+            setLimit(parseInt(value, 10));
+            setPage(1);
+          }}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm">
             <Upload className="h-4 w-4 mr-2" />
@@ -224,7 +271,7 @@ const OrganizersContent = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-blue-600 mb-2">{organizers.length}</div>
+            <div className="text-lg font-semibold text-blue-600 mb-2">{total || organizers.length}</div>
             <p className="text-sm text-gray-600">Total Organizers</p>
           </CardContent>
         </Card>
@@ -457,6 +504,20 @@ const OrganizersContent = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => {
+              setPage(newPage);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
+      )}
 
       <CreateOrganizerModal
         open={showCreateModal}
