@@ -225,3 +225,228 @@ export const bulkUpdateOrganizerDataAccess = async (
   });
 };
 
+/**
+ * User Status Management Types
+ */
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
+export type UserRole = 'SUPERADMIN' | 'ADMIN_STAFF' | 'ORGANIZER' | 'ATTENDEE';
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string | null;
+  role: UserRole;
+  status: UserStatus;
+  isEmailVerified: boolean;
+  organizationName?: string | null;
+  businessEmail?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventRegistration {
+  id: string;
+  eventId: string;
+  event: {
+    id: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+  };
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+}
+
+export interface Attendee extends User {
+  registrations: EventRegistration[];
+}
+
+/**
+ * Suspend User Response
+ */
+export interface SuspendUserResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+  };
+}
+
+/**
+ * Deactivate User Response
+ */
+export interface DeactivateUserResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+  };
+}
+
+/**
+ * Activate User Response
+ */
+export interface ActivateUserResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+  };
+}
+
+/**
+ * Get Attendees Response
+ */
+export interface GetAttendeesResponse {
+  success: boolean;
+  data: {
+    attendees: Attendee[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+/**
+ * Get Users Response
+ */
+export interface GetUsersResponse {
+  success: boolean;
+  data: {
+    users: User[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+/**
+ * Create User Response
+ */
+export interface CreateUserResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: User;
+  };
+}
+
+/**
+ * Create User Data
+ */
+export interface CreateUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  role: UserRole;
+  organizationName?: string;
+  businessEmail?: string;
+  status?: UserStatus;
+}
+
+/**
+ * Suspend a user (punitive action - user cannot login)
+ */
+export const suspendUser = async (
+  userId: string,
+  reason?: string
+): Promise<SuspendUserResponse> => {
+  return apiPost<SuspendUserResponse>(`/admin/users/${userId}/suspend`, { reason });
+};
+
+/**
+ * Deactivate a user (non-punitive action - user can login but cannot perform actions)
+ */
+export const deactivateUser = async (
+  userId: string,
+  reason?: string
+): Promise<DeactivateUserResponse> => {
+  return apiPost<DeactivateUserResponse>(`/admin/users/${userId}/deactivate`, { reason });
+};
+
+/**
+ * Activate a user (reactivate suspended or deactivated user)
+ */
+export const activateUser = async (
+  userId: string
+): Promise<ActivateUserResponse> => {
+  return apiPost<ActivateUserResponse>(`/admin/users/${userId}/activate`, {});
+};
+
+/**
+ * Get attendees with event filtering and registration history
+ */
+export const getAttendees = async (filters?: {
+  eventId?: string;
+  search?: string;
+  status?: UserStatus;
+  page?: number;
+  limit?: number;
+}): Promise<GetAttendeesResponse> => {
+  const params = new URLSearchParams();
+  if (filters?.eventId) params.append('eventId', filters.eventId);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+  
+  const queryString = params.toString();
+  return apiGet<GetAttendeesResponse>(`/admin/users/attendees${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Get all users with filters
+ */
+export const getUsers = async (filters?: {
+  role?: UserRole;
+  status?: UserStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<GetUsersResponse> => {
+  const params = new URLSearchParams();
+  if (filters?.role) params.append('role', filters.role);
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+  
+  const queryString = params.toString();
+  return apiGet<GetUsersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Get user by ID
+ */
+export const getUserById = async (userId: string): Promise<{ success: boolean; data: { user: User } }> => {
+  return apiGet<{ success: boolean; data: { user: User } }>(`/admin/users/${userId}`);
+};
+
+/**
+ * Create a new user (admin function)
+ */
+export const createUser = async (userData: CreateUserData): Promise<CreateUserResponse> => {
+  return apiPost<CreateUserResponse>('/admin/users', userData);
+};
+
+/**
+ * Update user
+ */
+export const updateUser = async (
+  userId: string,
+  userData: Partial<CreateUserData>
+): Promise<{ success: boolean; message: string; data: { user: User } }> => {
+  return apiPut<{ success: boolean; message: string; data: { user: User } }>(`/admin/users/${userId}`, userData);
+};
+
