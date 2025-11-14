@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
-import { Search, Calendar, MapPin, Users, Eye, Clock, MoreHorizontal, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Clock, MoreHorizontal, TrendingUp, Loader2, AlertCircle, X } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
+import { Label } from "../../../components/ui/label";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
+import { recallEvent } from "../../../lib/admin-api";
 
 interface Event {
   id: string;
@@ -34,6 +38,11 @@ const UpcomingEventsPage = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
+  const [showRecallDialog, setShowRecallDialog] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [recallAction, setRecallAction] = useState<'PENDING' | 'CANCELLED'>('PENDING');
+  const [recallReason, setRecallReason] = useState("");
+  const [recalling, setRecalling] = useState(false);
 
   // Fetch upcoming events (approved events with startDate > now)
   useEffect(() => {
@@ -102,6 +111,84 @@ const UpcomingEventsPage = () => {
 
     fetchUpcomingEvents();
   }, [categoryFilter, typeFilter, priceFilter, searchTerm]);
+
+  // Handle recall event
+  const handleRecallEvent = async () => {
+    if (!selectedEventId) return;
+    
+    try {
+      setRecalling(true);
+      const response = await recallEvent(selectedEventId, recallAction, recallReason || undefined);
+      
+      if (response.success) {
+        setShowRecallDialog(false);
+        setSelectedEventId(null);
+        setRecallAction('PENDING');
+        setRecallReason("");
+        // Refresh events
+        const filters: Record<string, unknown> = {
+          status: EventStatus.APPROVED,
+        };
+        if (categoryFilter !== "all") {
+          filters.category = categoryFilter;
+        }
+        if (typeFilter !== "all") {
+          filters.type = typeFilter === "public" ? "PUBLIC" : "PRIVATE";
+        }
+        if (priceFilter !== "all") {
+          filters.isFree = priceFilter === "free";
+        }
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+        const response2 = await getEvents(filters);
+        if (response2.success && response2.data?.events) {
+          const now = new Date();
+          const upcomingEvents = response2.data.events
+            .filter(event => {
+              if (!event.startDate) return false;
+              const startDate = new Date(event.startDate);
+              return startDate > now;
+            })
+            .map(event => {
+              const startDate = event.startDate ? new Date(event.startDate) : new Date();
+              const daysUntil = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              return {
+                id: event.id,
+                title: event.title,
+                organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+                date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
+                startDate: event.startDate,
+                startTime: event.startTime || '',
+                location: event.location || event.venue || 'TBD',
+                category: event.category || 'Uncategorized',
+                type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
+                isFree: event.isFree || false,
+                registrations: event.attendees || 0,
+                capacity: event.capacity || 0,
+                daysUntil,
+              };
+            });
+          setEvents(upcomingEvents);
+        }
+        setError(null);
+      } else {
+        throw new Error(response.message || 'Failed to recall event');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err.message as string)
+        : 'Failed to recall event. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setRecalling(false);
+    }
+  };
+
+  const openRecallDialog = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setShowRecallDialog(true);
+  };
 
   const filteredEvents = events.filter(event => {
     let matchesTime = true;
@@ -300,6 +387,14 @@ const UpcomingEventsPage = () => {
                       <Eye className="h-4 w-4 mr-1" />
                       View
                     </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => openRecallDialog(event.id)}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Recall
+                    </Button>
                     <Button variant="ghost" size="sm">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -322,6 +417,74 @@ const UpcomingEventsPage = () => {
           </Card>
         )}
       </div>
+
+      {/* Recall Event Dialog */}
+      <Dialog open={showRecallDialog} onOpenChange={setShowRecallDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recall Event</DialogTitle>
+            <DialogDescription>
+              Pull down this approved event. Choose whether to set it back to pending for re-approval or permanently cancel it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <RadioGroup value={recallAction} onValueChange={(value) => setRecallAction(value as 'PENDING' | 'CANCELLED')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="PENDING" id="pending" />
+                <Label htmlFor="pending" className="cursor-pointer">
+                  Set to Pending (Re-approval)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="CANCELLED" id="cancelled" />
+                <Label htmlFor="cancelled" className="cursor-pointer">
+                  Permanently Cancel
+                </Label>
+              </div>
+            </RadioGroup>
+            <div>
+              <label htmlFor="recall-reason" className="text-sm font-medium">
+                Reason for recall (optional)
+              </label>
+              <textarea
+                id="recall-reason"
+                className="mt-2 w-full min-h-[100px] px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
+                placeholder="Enter reason for recall..."
+                value={recallReason}
+                onChange={(e) => setRecallReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRecallDialog(false);
+                setSelectedEventId(null);
+                setRecallAction('PENDING');
+                setRecallReason("");
+              }}
+              disabled={recalling}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRecallEvent}
+              disabled={recalling}
+            >
+              {recalling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Recalling...
+                </>
+              ) : (
+                recallAction === 'PENDING' ? 'Set to Pending' : 'Permanently Cancel'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
