@@ -117,6 +117,13 @@ router.post('/users/:id/activate', AdminController.activateUser);
  */
 router.get('/users/attendees', AdminController.getAttendees);
 
+/**
+ * @route   POST /api/v1/admin/events/:id/recall
+ * @desc    Recall event (pull down approved event)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/events/:id/recall', AdminController.recallEvent);
+
 export default router;
 
 

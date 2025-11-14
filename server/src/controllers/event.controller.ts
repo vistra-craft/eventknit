@@ -346,6 +346,41 @@ export class EventController {
   }
 
   /**
+   * Cancel event (organizer function)
+   */
+  static async cancelEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const event = await EventService.cancelEvent(
+        req.params.id,
+        req.user.id,
+        req.user.role,
+        req.body.reason,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Event cancelled successfully',
+        data: { event },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update organizer data access level (admin function)
    */
   static async updateOrganizerDataAccess(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

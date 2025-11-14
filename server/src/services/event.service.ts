@@ -1008,6 +1008,201 @@ export class EventService {
   }
 
   /**
+   * Cancel event (organizer function)
+   */
+  static async cancelEvent(
+    eventId: string,
+    organizerId: string,
+    organizerRole: UserRole,
+    reason?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Get event
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        organizerId: true,
+        title: true,
+        status: true,
+        startDate: true,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Verify organizer owns the event (unless admin)
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+      if (event.organizerId !== organizerId) {
+        throw new AuthorizationError('You do not have permission to cancel this event');
+      }
+    }
+
+    // Check if event is approved
+    if (event.status !== EventStatus.APPROVED) {
+      throw new ValidationError('Only approved events can be cancelled');
+    }
+
+    // Check if event has already started
+    const now = new Date();
+    if (event.startDate && new Date(event.startDate) < now) {
+      throw new ValidationError('Cannot cancel an event that has already started');
+    }
+
+    // Cancel event
+    const cancelledEvent = await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        status: EventStatus.CANCELLED,
+        updatedBy: organizerId,
+      },
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            organizationName: true,
+          },
+        },
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: organizerId,
+      action: AuditActions.EVENT_CANCELLED,
+      entity: 'Event',
+      entityId: eventId,
+      metadata: {
+        eventTitle: cancelledEvent.title,
+        reason: reason || 'No reason provided',
+        cancelledBy: 'organizer',
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`Event cancelled: ${eventId} by organizer: ${organizerId}`);
+
+    return cancelledEvent;
+  }
+
+  /**
+   * Recall event (admin function - pull down approved event)
+   */
+  static async recallEvent(
+    eventId: string,
+    action: 'PENDING' | 'CANCELLED',
+    adminId: string,
+    adminRole: UserRole,
+    reason?: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Verify admin
+    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN_STAFF) {
+      throw new AuthorizationError('Only admins can recall events');
+    }
+
+    // Validate action
+    if (action !== 'PENDING' && action !== 'CANCELLED') {
+      throw new ValidationError('Action must be either PENDING or CANCELLED');
+    }
+
+    // Get event
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        approvedBy: true,
+        approvedAt: true,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Check if event is approved
+    if (event.status !== EventStatus.APPROVED) {
+      throw new ValidationError('Only approved events can be recalled');
+    }
+
+    // Prepare update data
+    const updateData: {
+      status: EventStatus;
+      updatedBy: string;
+      approvedBy?: null;
+      approvedAt?: null;
+      rejectedBy?: null;
+      rejectedAt?: null;
+      rejectionReason?: null;
+    } = {
+      status: action === 'PENDING' ? EventStatus.PENDING : EventStatus.CANCELLED,
+      updatedBy: adminId,
+    };
+
+    // If setting to PENDING, clear approval fields
+    if (action === 'PENDING') {
+      updateData.approvedBy = null;
+      updateData.approvedAt = null;
+      updateData.rejectedBy = null;
+      updateData.rejectedAt = null;
+      updateData.rejectionReason = null;
+    }
+
+    // Update event
+    const recalledEvent = await prisma.event.update({
+      where: { id: eventId },
+      data: updateData,
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            organizationName: true,
+          },
+        },
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: adminId,
+      action: action === 'PENDING' ? AuditActions.EVENT_UPDATED : AuditActions.EVENT_CANCELLED,
+      entity: 'Event',
+      entityId: eventId,
+      metadata: {
+        eventTitle: recalledEvent.title,
+        action: action === 'PENDING' ? 'recalled_to_pending' : 'recalled_cancelled',
+        reason: reason || 'No reason provided',
+        recalledBy: 'admin',
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`Event recalled: ${eventId} by admin: ${adminId} - Action: ${action}`);
+
+    return recalledEvent;
+  }
+
+  /**
    * Update organizer data access level for an event (admin only)
    */
   static async updateOrganizerDataAccess(

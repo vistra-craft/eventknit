@@ -399,5 +399,54 @@ export class AdminController {
       next(error);
     }
   }
+
+  /**
+   * Recall event (admin function - pull down approved event)
+   */
+  static async recallEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { action, reason } = req.body;
+
+      if (!action || (action !== 'PENDING' && action !== 'CANCELLED')) {
+        res.status(400).json({
+          success: false,
+          message: 'Action is required and must be either PENDING or CANCELLED',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const { EventService } = await import('../services/event.service.js');
+      const event = await EventService.recallEvent(
+        req.params.id,
+        action,
+        req.user.id,
+        req.user.role,
+        reason,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: action === 'PENDING'
+          ? 'Event recalled and set to pending for re-approval'
+          : 'Event recalled and permanently cancelled',
+        data: { event },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

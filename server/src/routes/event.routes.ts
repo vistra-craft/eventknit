@@ -128,6 +128,17 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/events/:id/cancel
+ * @desc    Cancel event (organizer function)
+ * @access  Private (ORGANIZER+)
+ */
+router.post(
+  '/:id/cancel',
+  requireMinRole(UserRole.ORGANIZER),
+  EventController.cancelEvent,
+);
+
+/**
  * @route   PUT /api/v1/events/:id/organizer-data-access
  * @desc    Update organizer data access level (admin function)
  * @access  Private (ADMIN_STAFF+)
