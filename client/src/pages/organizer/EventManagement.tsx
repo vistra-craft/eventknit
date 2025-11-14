@@ -27,12 +27,16 @@ import {
   Share2,
   MessageSquare,
   X,
+  MoreHorizontal,
+  Copy,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
 import { Loader2, AlertCircle } from "lucide-react";
 import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../components/charts/ChartComponents";
 import { CHART_COLORS } from "../../components/charts/chartConstants";
@@ -50,6 +54,7 @@ const EventManagement = () => {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -1246,6 +1251,14 @@ const EventManagement = () => {
               <Button 
                 variant="outline" 
                 size="sm"
+                onClick={() => setShowPreviewModal(true)}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Preview
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm"
                 onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}
               >
                 <Settings className="w-4 h-4 mr-2" />
@@ -1261,14 +1274,44 @@ const EventManagement = () => {
                   Cancel Event
                 </Button>
               )}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.open(`/event/${eventId}`, '_blank')}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Preview Event
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => window.open(`/event/${eventId}`, '_blank')}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Public Page
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(`/organizer/analytics/events?eventId=${eventId}`)}>
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    View Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
+                  }}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Event Link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    // TODO: Share event
+                    console.log('Share event', eventId);
+                  }}>
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    // TODO: Export event data
+                    console.log('Export event', eventId);
+                  }}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Data
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -1302,6 +1345,109 @@ const EventManagement = () => {
           {renderSection()}
         </div>
       </div>
+
+      {/* Event Preview Dialog */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Preview</DialogTitle>
+            <DialogDescription>
+              Preview event details
+            </DialogDescription>
+          </DialogHeader>
+          {eventData && (
+            <div className="space-y-6">
+              {eventData.image && (
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={eventData.image}
+                    alt={eventData.title}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h2 className="text-2xl font-bold mb-2">{eventData.title}</h2>
+                    {eventData.category && (
+                      <Badge className="bg-green-500/90 text-white">
+                        {eventData.category}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+              {!eventData.image && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">{eventData.title}</h2>
+                  {eventData.category && (
+                    <Badge className="bg-green-500/90 text-white">
+                      {eventData.category}
+                    </Badge>
+                  )}
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {eventData.date && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{eventData.date}</p>
+                      {eventData.time && (
+                        <p className="text-sm text-muted-foreground">{eventData.time}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {eventData.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">{eventData.venue || eventData.location}</p>
+                      {eventData.venue && eventData.location && (
+                        <p className="text-sm text-muted-foreground">{eventData.location}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {totalAttendees !== undefined && (
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <p className="font-medium">
+                      {totalAttendees} / {eventData.capacity || '∞'} registered
+                    </p>
+                  </div>
+                )}
+                {eventData.price && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <p className="font-medium">{eventData.price}</p>
+                  </div>
+                )}
+              </div>
+
+              {eventData.description && (
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{eventData.description}</p>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowPreviewModal(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setShowPreviewModal(false);
+                  window.open(`/event/${eventId}`, '_blank');
+                }}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Public Page
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Cancel Event Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
