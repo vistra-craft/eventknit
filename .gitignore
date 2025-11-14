@@ -7,6 +7,7 @@ yarn-error.log*
 # Environment variables
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -82,6 +83,7 @@ temp/
 # Editor directories and files
 .vscode/
 .idea/
+.marscode/
 *.swp
 *.swo
 *~
