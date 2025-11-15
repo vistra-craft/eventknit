@@ -652,7 +652,7 @@ export class TicketService {
     try {
       // Get ticket data
       const ticketData = await this.getTicketByRegistrationId(registrationId);
-      const { registration, qrCode, ticketData: ticketDataString } = ticketData;
+      const { registration, qrCode } = ticketData;
       const { event, attendee } = registration;
 
       // Format event date
@@ -662,14 +662,21 @@ export class TicketService {
       // Note: For production, install puppeteer for server-side PDF generation:
       // npm install puppeteer
       // Otherwise, return HTML that frontend can convert to PDF
-      const htmlContent = this.generateTicketHTML(registration, event, attendee, eventDate, qrCode);
+      const registrationForHTML: TicketEmailData['registration'] = {
+        ...registration,
+        registrationData: registration.registrationData && typeof registration.registrationData === 'object' && !Array.isArray(registration.registrationData)
+          ? registration.registrationData as Record<string, unknown>
+          : null,
+      };
+      const htmlContent = this.generateTicketHTML(registrationForHTML, event, attendee, eventDate, qrCode);
       
       // Try to use puppeteer for PDF generation (if available)
-      // Check if puppeteer module exists using require.resolve
+      // Check if puppeteer module exists using dynamic import
       try {
-        // Use Function constructor to avoid TypeScript checking the import
-        const requirePuppeteer = new Function('moduleName', 'return require(moduleName)');
-        const puppeteer = requirePuppeteer('puppeteer');
+        // Use dynamic import to avoid TypeScript checking the import
+        // @ts-expect-error - puppeteer is optional dependency
+        const puppeteerModule = await import('puppeteer');
+        const puppeteer = puppeteerModule.default || puppeteerModule;
         
         const browser = await puppeteer.launch({
           headless: true,
@@ -693,7 +700,7 @@ export class TicketService {
         
         await browser.close();
         return Buffer.from(pdfBuffer);
-      } catch (puppeteerError) {
+      } catch {
         // If puppeteer is not available, return HTML
         // Frontend can use browser's print-to-PDF or a client-side library
         logger.warn('Puppeteer not available, returning HTML for client-side PDF conversion');
@@ -710,9 +717,9 @@ export class TicketService {
    * Generate HTML content for ticket (used for PDF generation)
    */
   private static generateTicketHTML(
-    registration: any,
-    event: any,
-    attendee: any,
+    registration: TicketEmailData['registration'],
+    event: TicketEmailData['registration']['event'],
+    attendee: TicketEmailData['registration']['attendee'],
     eventDate: string,
     qrCode: string,
   ): string {

@@ -210,26 +210,40 @@ export const eventValidations = {
         discountLabel: Joi.string().trim().max(100).optional().allow('', null),
         quantity: Joi.number().integer().min(1).optional().allow(null),
         features: Joi.array().items(Joi.string().trim().max(200)).optional(),
-        isComplementary: Joi.boolean().optional(),
-        requiresInvitation: Joi.boolean().optional(),
+        isComplementary: Joi.boolean().optional().allow(null),
+        requiresInvitation: Joi.boolean().optional().allow(null),
         availableFrom: Joi.string().isoDate().optional().allow('', null),
         availableUntil: Joi.string().isoDate().optional().allow('', null),
       }).custom((value, helpers) => {
         // Validate discount: if originalPrice exists, it must be > price
-        if (value.originalPrice && value.price) {
-          if (value.originalPrice <= value.price) {
-            return helpers.error('any.invalid', {
+        if (value.originalPrice !== undefined && value.originalPrice !== null && value.price !== undefined) {
+          const origPrice = typeof value.originalPrice === 'string' ? parseFloat(value.originalPrice) : value.originalPrice;
+          const currPrice = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
+          if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
+            return helpers.error('any.custom', {
               message: 'Original price must be greater than current price for discounts',
             });
           }
         }
         // Validate complementary tickets
-        if (value.isComplementary && value.price !== 0) {
-          return helpers.error('any.invalid', {
-            message: 'Complementary tickets must have price of 0',
-          });
+        if (value.isComplementary === true) {
+          const price = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
+          if (price !== 0 && !isNaN(price)) {
+            return helpers.error('any.custom', {
+              message: 'Complementary tickets must have price of 0',
+            });
+          }
         }
-        return value;
+        // Explicitly preserve all fields to prevent Joi from stripping them
+        return {
+          ...value,
+          isComplementary: value.isComplementary,
+          requiresInvitation: value.requiresInvitation,
+          originalPrice: value.originalPrice,
+          discountLabel: value.discountLabel,
+          availableFrom: value.availableFrom,
+          availableUntil: value.availableUntil,
+        };
       }, 'ticket type validation'),
     ).optional(),
     capacity: Joi.number().integer().min(1).optional().allow(null),
@@ -285,8 +299,11 @@ export const eventValidations = {
       'number.base': 'Quantity must be a valid number',
     }),
     registrationData: Joi.object().optional().allow(null),
-    invitationId: Joi.string().uuid().optional().allow('', null).messages({
-      'string.guid': 'Invalid invitation ID format',
+    invitationId: Joi.string().optional().allow('', null).messages({
+      'string.base': 'Invitation ID must be a string',
+    }),
+    promoCode: Joi.string().trim().max(50).optional().allow('', null).messages({
+      'string.max': 'Promo code must not exceed 50 characters',
     }),
   }),
 

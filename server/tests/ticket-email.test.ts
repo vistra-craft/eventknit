@@ -1,5 +1,3 @@
-import request from 'supertest';
-import app from '../src/app';
 import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
@@ -13,11 +11,11 @@ const hashPassword = async (password: string): Promise<string> => {
 
 describe('Ticket Email System', () => {
   let dbConnected = false;
-  let organizerToken: string;
-  let attendeeToken: string;
+  let _organizerToken: string;
+  let _attendeeToken: string;
   let organizerId: string;
   let attendeeId: string;
-  let eventId: string;
+  let _eventId: string;
   let registrationId: string;
 
   beforeAll(async () => {
@@ -89,7 +87,7 @@ describe('Ticket Email System', () => {
       },
     });
     organizerId = organizer.id;
-    organizerToken = generateAccessToken({
+    _organizerToken = generateAccessToken({
       userId: organizer.id,
       email: organizer.email,
       role: organizer.role,
@@ -117,7 +115,7 @@ describe('Ticket Email System', () => {
       },
     });
     attendeeId = attendee.id;
-    attendeeToken = generateAccessToken({
+    _attendeeToken = generateAccessToken({
       userId: attendee.id,
       email: attendee.email,
       role: attendee.role,
@@ -140,7 +138,7 @@ describe('Ticket Email System', () => {
         capacity: 100,
       },
     });
-    eventId = event.id;
+    _eventId = event.id;
 
     // Create registration
     const registration = await prisma.eventRegistration.create({
@@ -215,7 +213,7 @@ describe('Ticket Email System', () => {
         registration: {
           ...registration,
           registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-        }
+        },
       });
 
       expect(icsContent).toBeDefined();
@@ -533,6 +531,7 @@ describe('Ticket Email System', () => {
         : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
       // Generate Google Calendar link (similar to service)
+      // eslint-disable-next-line no-undef
       const googleCalendarParams = new URLSearchParams({
         action: 'TEMPLATE',
         text: registration.event.title,
@@ -574,6 +573,7 @@ describe('Ticket Email System', () => {
         : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
       // Generate Outlook Calendar link (similar to service)
+      // eslint-disable-next-line no-undef
       const outlookCalendarParams = new URLSearchParams({
         subject: registration.event.title,
         startdt: startDate.toISOString(),

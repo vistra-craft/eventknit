@@ -12,7 +12,7 @@ const hashPassword = async (password: string): Promise<string> => {
 
 describe('Event Registration System', () => {
   let dbConnected = false;
-  let organizerToken: string;
+  let _organizerToken: string;
   let attendeeToken: string;
   let organizerId: string;
   let attendeeId: string;
@@ -95,7 +95,7 @@ describe('Event Registration System', () => {
       },
     });
     organizerId = organizer.id;
-    organizerToken = generateAccessToken({
+    _organizerToken = generateAccessToken({
       userId: organizer.id,
       email: organizer.email,
       role: organizer.role,
@@ -370,7 +370,7 @@ describe('Event Registration System', () => {
       // Register other attendees to fill capacity
       // Note: The service counts registrations, not total quantity
       // So we need to create enough registrations to fill the capacity
-      const otherAttendeeToken = generateAccessToken({
+      const _otherAttendeeToken = generateAccessToken({
         userId: otherAttendee.id,
         email: otherAttendee.email,
         role: otherAttendee.role,

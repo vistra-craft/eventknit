@@ -37,8 +37,14 @@ export interface CreateEventData {
   ticketTypes?: Array<{
     name: string;
     price: number | string;
+    originalPrice?: number | string;
+    discountLabel?: string;
     quantity?: number | string;
     features?: string[];
+    isComplementary?: boolean;
+    requiresInvitation?: boolean;
+    availableFrom?: string;
+    availableUntil?: string;
   }>;
   capacity?: number | string;
   image?: string;
@@ -70,6 +76,7 @@ export interface RegisterForEventData {
   quantity?: number;
   registrationData?: Record<string, unknown>;
   invitationId?: string; // For complementary tickets
+  promoCode?: string; // Promo code to apply
 }
 
 export class EventService {
@@ -146,6 +153,19 @@ export class EventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
+    // Validate complementary tickets FIRST - before any other processing
+    if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
+      for (const ticket of data.ticketTypes) {
+        // Check if isComplementary is explicitly true
+        if (ticket.isComplementary === true) {
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+          if (price !== 0 && !isNaN(price)) {
+            throw new ValidationError('Complementary tickets must have price of 0');
+          }
+        }
+      }
+    }
+
     // Verify organizer can create events
     if (organizerRole !== UserRole.ORGANIZER &&
         organizerRole !== UserRole.SUPERADMIN &&
@@ -255,12 +275,36 @@ export class EventService {
     // Prepare ticket types JSON
     let ticketTypesJson: Prisma.InputJsonValue | undefined = undefined;
     if (data.ticketTypes && data.ticketTypes.length > 0) {
-      ticketTypesJson = data.ticketTypes.map(ticket => ({
-        name: ticket.name,
-        price: Number(ticket.price),
-        quantity: ticket.quantity ? Number(ticket.quantity) : null,
-        features: ticket.features || [],
-      }));
+      ticketTypesJson = data.ticketTypes.map(ticket => {
+        const ticketData: Record<string, unknown> = {
+          name: ticket.name,
+          price: Number(ticket.price),
+          quantity: ticket.quantity ? Number(ticket.quantity) : null,
+          features: ticket.features || [],
+        };
+        
+        // Add optional fields if present
+        if ('originalPrice' in ticket && ticket.originalPrice !== undefined) {
+          ticketData.originalPrice = Number(ticket.originalPrice);
+        }
+        if ('discountLabel' in ticket && ticket.discountLabel) {
+          ticketData.discountLabel = ticket.discountLabel;
+        }
+        if ('isComplementary' in ticket && ticket.isComplementary !== undefined) {
+          ticketData.isComplementary = ticket.isComplementary;
+        }
+        if ('requiresInvitation' in ticket && ticket.requiresInvitation !== undefined) {
+          ticketData.requiresInvitation = ticket.requiresInvitation;
+        }
+        if ('availableFrom' in ticket && ticket.availableFrom) {
+          ticketData.availableFrom = ticket.availableFrom;
+        }
+        if ('availableUntil' in ticket && ticket.availableUntil) {
+          ticketData.availableUntil = ticket.availableUntil;
+        }
+        
+        return ticketData;
+      }) as Prisma.InputJsonValue;
     }
 
     // Create event
@@ -588,12 +632,36 @@ export class EventService {
     // Handle ticket types
     if (data.ticketTypes !== undefined) {
       if (data.ticketTypes.length > 0) {
-        updateData.ticketTypes = data.ticketTypes.map(ticket => ({
-          name: ticket.name,
-          price: Number(ticket.price),
-          quantity: ticket.quantity ? Number(ticket.quantity) : null,
-          features: ticket.features || [],
-        }));
+        updateData.ticketTypes = data.ticketTypes.map(ticket => {
+          const ticketData: Record<string, unknown> = {
+            name: ticket.name,
+            price: Number(ticket.price),
+            quantity: ticket.quantity ? Number(ticket.quantity) : null,
+            features: ticket.features || [],
+          };
+          
+          // Add optional fields if present
+          if ('originalPrice' in ticket && ticket.originalPrice !== undefined) {
+            ticketData.originalPrice = Number(ticket.originalPrice);
+          }
+          if ('discountLabel' in ticket && ticket.discountLabel) {
+            ticketData.discountLabel = ticket.discountLabel;
+          }
+          if ('isComplementary' in ticket && ticket.isComplementary !== undefined) {
+            ticketData.isComplementary = ticket.isComplementary;
+          }
+          if ('requiresInvitation' in ticket && ticket.requiresInvitation !== undefined) {
+            ticketData.requiresInvitation = ticket.requiresInvitation;
+          }
+          if ('availableFrom' in ticket && ticket.availableFrom) {
+            ticketData.availableFrom = ticket.availableFrom;
+          }
+          if ('availableUntil' in ticket && ticket.availableUntil) {
+            ticketData.availableUntil = ticket.availableUntil;
+          }
+          
+          return ticketData;
+        }) as Prisma.InputJsonValue;
       } else {
         updateData.ticketTypes = Prisma.JsonNull;
       }
@@ -755,9 +823,10 @@ export class EventService {
       throw new ConflictError('You are already registered for this event');
     }
 
-    // Calculate total amount
+    // Calculate total amount and check if ticket is complementary
     const quantity = data.quantity || 1;
     let totalAmount = new Decimal(0);
+    let isComplementaryTicket = false;
 
     if (!event.isFree) {
       if (data.ticketType && event.ticketTypes) {
@@ -775,11 +844,14 @@ export class EventService {
           throw new ValidationError('Invalid ticket type');
         }
 
-        // Check if ticket is complementary and requires invitation
+        // Check if ticket is complementary
+        isComplementaryTicket = selectedTicket.isComplementary === true || selectedTicket.price === 0;
+
+        // Check if ticket requires invitation
         if (selectedTicket.isComplementary || selectedTicket.requiresInvitation) {
           if (!data.invitationId) {
             throw new ValidationError(
-              'This ticket type requires an invitation. Please use the invitation link provided.'
+              'This ticket type requires an invitation. Please use the invitation link provided.',
             );
           }
           // Verify invitation is valid and matches ticket type
@@ -808,6 +880,32 @@ export class EventService {
       }
     }
 
+    // Apply promo code discount if provided
+    let discountAmount = new Decimal(0);
+    let promoCodeId: string | null = null;
+
+    if (data.promoCode && totalAmount.gt(0)) {
+      const { PromoCodeService } = await import('./promo-code.service.js');
+      const validation = await PromoCodeService.validatePromoCode(
+        data.promoCode,
+        eventId,
+        data.ticketType || null,
+        Number(totalAmount),
+        attendeeId,
+      );
+
+      if (!validation.valid) {
+        throw new ValidationError(validation.error || 'Invalid promo code');
+      }
+
+      if (validation.discountAmount && validation.promoCodeId) {
+        discountAmount = new Decimal(validation.discountAmount);
+        promoCodeId = validation.promoCodeId;
+      }
+    }
+
+    const finalAmount = totalAmount.minus(discountAmount);
+
     // Check capacity
     if (event.capacity !== null) {
       const currentRegistrations = await prisma.eventRegistration.count({
@@ -825,8 +923,9 @@ export class EventService {
     }
 
     // Create registration
-    // For now, free events are automatically CONFIRMED, paid events are PENDING (no payment yet)
-    const registrationStatus = event.isFree
+    // Free events and complementary tickets (price = 0) are automatically CONFIRMED
+    // Paid events are PENDING (no payment yet)
+    const registrationStatus = (event.isFree || isComplementaryTicket)
       ? RegistrationStatus.CONFIRMED
       : RegistrationStatus.PENDING;
 
@@ -836,7 +935,7 @@ export class EventService {
         attendeeId,
         ticketType: data.ticketType || null,
         quantity,
-        totalAmount,
+        totalAmount: finalAmount,
         registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
         status: registrationStatus,
         paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
@@ -863,6 +962,18 @@ export class EventService {
       },
     });
 
+    // Create promo code redemption if promo code was used
+    if (promoCodeId && discountAmount.gt(0)) {
+      const { PromoCodeService } = await import('./promo-code.service.js');
+      await PromoCodeService.applyPromoCode(
+        promoCodeId,
+        registration.id,
+        attendeeId,
+        Number(totalAmount),
+        Number(discountAmount),
+      );
+    }
+
     // Update available slots if capacity exists
     if (event.capacity !== null) {
       const newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
@@ -884,7 +995,10 @@ export class EventService {
         eventId,
         eventTitle: event.title,
         quantity,
-        totalAmount: totalAmount.toString(),
+        totalAmount: finalAmount.toString(),
+        originalAmount: totalAmount.toString(),
+        discountAmount: discountAmount.toString(),
+        promoCode: data.promoCode || null,
         isFree: event.isFree,
       },
       ipAddress,

@@ -1051,7 +1051,7 @@ describe('Event System', () => {
         .post(`/api/v1/events/${event.id}/approve`)
         .set('Authorization', `Bearer ${organizerToken}`)
         .expect(403);
-  });
+    });
 
     it('should fail to approve already approved event', async () => {
       if (!dbConnected) {
@@ -1142,8 +1142,8 @@ describe('Event System', () => {
       await request(app)
         .post(`/api/v1/events/${event.id}/approve`)
         .expect(401);
-      });
     });
+  });
 
   describe('POST /api/v1/events/:id/reject', () => {
     it('should reject an event successfully', async () => {
@@ -1181,17 +1181,17 @@ describe('Event System', () => {
         return;
       }
 
-        const event = await prisma.event.create({
-          data: {
+      const event = await prisma.event.create({
+        data: {
           title: 'Pending Event',
           description: 'Pending Event Description',
           startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           location: 'Location',
-            isFree: true,
-            organizerId,
+          isFree: true,
+          organizerId,
           status: EventStatus.PENDING,
-          },
-        });
+        },
+      });
 
       await request(app)
         .post(`/api/v1/events/${event.id}/reject`)
@@ -1207,7 +1207,7 @@ describe('Event System', () => {
       }
 
       const event = await prisma.event.create({
-          data: {
+        data: {
           title: 'Rejected Event',
           description: 'Rejected Event Description',
           startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -1215,8 +1215,8 @@ describe('Event System', () => {
           isFree: true,
           organizerId,
           status: EventStatus.REJECTED,
-          },
-        });
+        },
+      });
 
       const response = await request(app)
         .post(`/api/v1/events/${event.id}/reject`)
@@ -1319,8 +1319,8 @@ describe('Event System', () => {
         .expect(404);
 
       expect(response.body.success).toBe(false);
-      });
     });
+  });
 
   describe('POST /api/v1/events/:id/cancel', () => {
     it('should cancel event successfully', async () => {

@@ -9,7 +9,8 @@ export const validate = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
-      stripUnknown: true,
+      stripUnknown: false, // Don't strip - preserve all fields defined in schema (including optional ones)
+      allowUnknown: true, // Allow unknown fields at root level, but schema validation will catch invalid nested fields
     });
 
     if (error) {

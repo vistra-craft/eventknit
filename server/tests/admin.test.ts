@@ -60,7 +60,7 @@ describe('Admin User Management', () => {
 
     // Use upsert to maintain consistent user IDs across test runs
     const adminPassword = await hashPassword('Admin123!@$');
-    const admin = await prisma.user.upsert({
+    const _admin = await prisma.user.upsert({
       where: { email: 'admin@test.com' },
       update: {
         password: adminPassword,
@@ -84,7 +84,7 @@ describe('Admin User Management', () => {
 
     // Create superadmin user
     const superAdminPassword = await hashPassword('Super123!@$');
-    const superAdmin = await prisma.user.upsert({
+    const _superAdmin = await prisma.user.upsert({
       where: { email: 'superadmin@test.com' },
       update: {
         password: superAdminPassword,
@@ -495,7 +495,7 @@ describe('Admin User Management', () => {
 
       // Create attendee
       const attendeePassword = await hashPassword('Test123!@$');
-      const attendee = await prisma.user.create({
+      const _attendee = await prisma.user.create({
         data: {
           email: 'attendeeadmin@test.com',
           password: attendeePassword,
@@ -1042,7 +1042,7 @@ describe('Admin User Management', () => {
       }
 
       const attendeePassword = await hashPassword('Test123!@$');
-      const attendee = await prisma.user.create({
+      const _attendee = await prisma.user.create({
         data: {
           email: 'attendeeadmin2@test.com',
           password: attendeePassword,
@@ -1160,7 +1160,7 @@ describe('Admin User Management', () => {
 
   describe('POST /api/v1/admin/events/:id/recall', () => {
     let eventId: string;
-    let organizerId: string;
+    let _organizerId: string;
 
     beforeEach(async () => {
       if (!dbConnected) return;
@@ -1177,7 +1177,7 @@ describe('Admin User Management', () => {
           isEmailVerified: true,
         },
       });
-      organizerId = organizer.id;
+      _organizerId = organizer.id;
 
       const event = await prisma.event.create({
         data: {
@@ -1247,7 +1247,7 @@ describe('Admin User Management', () => {
       }
 
       const attendeePassword = await hashPassword('Test123!@$');
-      const attendee = await prisma.user.create({
+      const _attendee = await prisma.user.create({
         data: {
           email: 'attendeeadmin3@test.com',
           password: attendeePassword,

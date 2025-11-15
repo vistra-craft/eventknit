@@ -6,7 +6,6 @@ import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
 import crypto from 'crypto';
-import { InviteType } from '@prisma/client';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -17,7 +16,7 @@ describe('Event Invitation System', () => {
   let organizerToken: string;
   let attendeeToken: string;
   let organizerId: string;
-  let attendeeId: string;
+  let _attendeeId: string;
   let eventId: string;
   let invitationId: string;
   let invitationToken: string;
@@ -118,7 +117,7 @@ describe('Event Invitation System', () => {
         isEmailVerified: true,
       },
     });
-    attendeeId = attendee.id;
+    _attendeeId = attendee.id;
     attendeeToken = generateAccessToken({
       userId: attendee.id,
       email: attendee.email,

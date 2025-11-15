@@ -51,7 +51,7 @@ export class UserService {
       // Calculate total spent (only from paid events with completed payment)
       const paidRegistrations = registrations.filter(reg => 
         !reg.event.isFree && 
-        reg.paymentStatus === 'COMPLETED'
+        reg.paymentStatus === 'COMPLETED',
       );
       
       const totalSpent = paidRegistrations.reduce((sum, reg) => {

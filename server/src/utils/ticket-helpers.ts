@@ -6,7 +6,7 @@ export const isTicketTypeAvailable = (
     availableFrom?: string;
     availableUntil?: string;
   },
-  currentDate: Date = new Date()
+  currentDate: Date = new Date(),
 ): { available: boolean; reason?: string } => {
   const now = currentDate;
 

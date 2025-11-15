@@ -597,7 +597,7 @@ describe('Authentication System', () => {
       }
 
       // Create user with failed attempts
-      const hashedPassword = await hashPassword('Test123!@$');
+      const _hashedPassword = await hashPassword('Test123!@$');
       await prisma.user.update({
         where: { email: 'login@test.com' },
         data: {
@@ -1512,7 +1512,7 @@ describe('Authentication System', () => {
 
       // Create organizer
       const hashedPassword = await hashPassword('Test123!@$');
-      const organizer = await prisma.user.create({
+      const _organizer = await prisma.user.create({
         data: {
           email: 'organizerprofile@test.com',
           password: hashedPassword,

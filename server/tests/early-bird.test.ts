@@ -15,7 +15,7 @@ describe('Early Bird Tickets', () => {
   let organizerToken: string;
   let attendeeToken: string;
   let organizerId: string;
-  let attendeeId: string;
+  let _attendeeId: string;
   let eventId: string;
 
   beforeAll(async () => {
@@ -24,7 +24,7 @@ describe('Early Bird Tickets', () => {
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
       logger.info('✅ Test database connected');
-    } catch (error) {
+    } catch {
       logger.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }
@@ -80,7 +80,7 @@ describe('Early Bird Tickets', () => {
         isEmailVerified: true,
       },
     });
-    attendeeId = attendee.id;
+    _attendeeId = attendee.id;
     attendeeToken = generateAccessToken({
       userId: attendee.id,
       email: attendee.email,

@@ -3,7 +3,7 @@
  */
 export const calculateDiscountPercentage = (
   originalPrice: number,
-  currentPrice: number
+  currentPrice: number,
 ): number => {
   if (!originalPrice || originalPrice === 0) return 0;
   if (!currentPrice || currentPrice < 0) return 0;
@@ -15,7 +15,7 @@ export const calculateDiscountPercentage = (
  */
 export const calculateDiscountAmount = (
   originalPrice: number,
-  currentPrice: number
+  currentPrice: number,
 ): number => {
   if (!originalPrice || !currentPrice) return 0;
   return Math.max(0, originalPrice - currentPrice);
@@ -26,7 +26,7 @@ export const calculateDiscountAmount = (
  */
 export const validateDiscount = (
   originalPrice: number,
-  currentPrice: number
+  currentPrice: number,
 ): { valid: boolean; error?: string } => {
   if (originalPrice <= 0) {
     return { valid: false, error: 'Original price must be greater than 0' };

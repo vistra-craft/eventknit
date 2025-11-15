@@ -63,6 +63,11 @@ enum InviteType {
   GUEST // Guest/VIP invitation
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
 enum DataAccessLevel {
   RESTRICTED // Summary cards only (total attendees, total revenue)
   STANDARD // Attendee list + payment summaries (no transaction IDs)
@@ -127,6 +132,8 @@ model User {
   invitationsCreated    EventInvitation[]   @relation("InvitationCreator")
   templatesCreated      TicketTemplate[]    @relation("TemplateCreator")
   featuredEventsCreated FeaturedEvent[]     @relation("FeaturedEventCreator")
+  promoCodesCreated     PromoCode[]         @relation("PromoCodeOrganizer")
+  promoCodeRedemptions  PromoCodeRedemption[] @relation("PromoCodeUser")
 
   @@index([email])
   @@index([role])
@@ -324,6 +331,7 @@ model Event {
   invitations     EventInvitation[]
   ticketTemplates TicketTemplate[]
   featuredEvents  FeaturedEvent[]
+  promoCodes      PromoCode[]         @relation("PromoCodeEvent")
 
   @@index([organizerId])
   @@index([status])
@@ -368,6 +376,9 @@ model EventRegistration {
   updatedAt   DateTime  @updatedAt
   cancelledAt DateTime?
   cancelledBy String?
+
+  // Relations
+  promoCodeRedemption PromoCodeRedemption? @relation("PromoCodeRedemption")
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
@@ -481,4 +492,62 @@ model FeaturedEvent {
   @@index([displayStartDate])
   @@index([displayEndDate])
   @@index([createdAt])
+}
+
+model PromoCode {
+  id              String       @id @default(uuid())
+  code            String       @unique
+  organizerId     String
+  eventId         String?
+  event           Event?       @relation("PromoCodeEvent", fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Discount details
+  discountType    DiscountType
+  discountValue   Decimal      @db.Decimal(10, 2) // 30 for 30%, or 50 for $50 off
+  minOrderAmount  Decimal?     @db.Decimal(10, 2) // Minimum purchase required
+  maxDiscount     Decimal?     @db.Decimal(10, 2) // Cap on discount amount
+
+  // Applicability
+  applicableTicketTypes String[] // Which ticket types it applies to (empty = all)
+  isActive        Boolean      @default(true)
+
+  // Limits
+  usageLimit      Int?         // Max number of uses (null = unlimited)
+  usedCount       Int          @default(0)
+  maxUsesPerUser  Int?         @default(1) // How many times one user can use it
+
+  // Validity
+  validFrom       DateTime
+  validUntil      DateTime
+
+  // Tracking
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  organizer       User         @relation("PromoCodeOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  redemptions     PromoCodeRedemption[]
+
+  @@index([code])
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([isActive, validFrom, validUntil])
+}
+
+model PromoCodeRedemption {
+  id              String       @id @default(uuid())
+  promoCodeId     String
+  promoCode       PromoCode    @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  registrationId  String       @unique
+  registration    EventRegistration @relation("PromoCodeRedemption", fields: [registrationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User         @relation("PromoCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+  discountAmount  Decimal      @db.Decimal(10, 2)
+  originalAmount  Decimal      @db.Decimal(10, 2)
+  finalAmount     Decimal      @db.Decimal(10, 2)
+  redeemedAt      DateTime     @default(now())
+
+  @@unique([promoCodeId, registrationId])
+  @@index([userId])
+  @@index([promoCodeId])
 }

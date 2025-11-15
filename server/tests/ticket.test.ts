@@ -17,7 +17,7 @@ describe('Ticket Management System', () => {
   let organizerId: string;
   let attendeeId: string;
   let registrationId: string;
-  let eventId: string;
+  let _eventId: string;
 
   beforeAll(async () => {
     try {
@@ -135,7 +135,7 @@ describe('Ticket Management System', () => {
         capacity: 100,
       },
     });
-    eventId = event.id;
+    _eventId = event.id;
 
     const registration = await prisma.eventRegistration.create({
       data: {
