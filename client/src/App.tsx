@@ -46,6 +46,8 @@ import {
 } from "./pages/organizer/team";
 // Event Templates import
 import EventTemplates from "./pages/organizer/EventTemplates";
+// Marketing imports
+import PromoCodeManager from "./pages/organizer/marketing/PromoCodeManager";
 // Admin Dashboard imports
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarketingPage from "./pages/admin/AdminMarketingPage";
@@ -194,6 +196,8 @@ const App = () => (
       <Route path="/organizer/profile" element={<OrganizerSettingsPage />} />
       {/* Event Templates and Drafts */}
       <Route path="/organizer/events/templates" element={<EventTemplates />} />
+      {/* Marketing Routes */}
+      <Route path="/organizer/marketing/promo-codes" element={<PromoCodeManager />} />
       {/* Admin Dashboard Routes */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       {/* Admin Events Routes */}

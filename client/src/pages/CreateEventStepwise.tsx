@@ -25,7 +25,10 @@ import {
   Eye,
   Upload,
   Globe,
-  MapPin
+  MapPin,
+  Clock,
+  Percent,
+  Gift
 } from 'lucide-react';
 import { createEvent, type CreateEventData, EventType } from '@/lib/event-api';
 import { useAuth } from '@/hooks/useAuth';
@@ -57,7 +60,13 @@ interface TicketType {
   name: string;
   type: 'free' | 'paid';
   price: string;
+  originalPrice?: string;
+  discountLabel?: string;
   quantity: string;
+  isComplementary?: boolean;
+  requiresInvitation?: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
 }
 
 interface EventData {
@@ -364,7 +373,9 @@ export default function CreateEventStepwise() {
       name: "", 
       type: "paid", 
       price: "", 
-      quantity: "" 
+      quantity: "",
+      isComplementary: false,
+      requiresInvitation: false,
     }]);
   };
 
@@ -514,8 +525,14 @@ export default function CreateEventStepwise() {
     const apiTicketTypes = ticketTypes.map(ticket => ({
       name: ticket.name.trim(),
       price: ticket.type === 'free' ? 0 : parseFloat(ticket.price) || 0,
+      originalPrice: ticket.originalPrice ? parseFloat(ticket.originalPrice) : undefined,
+      discountLabel: ticket.discountLabel?.trim() || undefined,
       quantity: ticket.quantity ? parseInt(ticket.quantity, 10) : undefined,
-      features: []
+      features: [],
+      isComplementary: ticket.isComplementary || false,
+      requiresInvitation: ticket.requiresInvitation || false,
+      availableFrom: ticket.availableFrom || undefined,
+      availableUntil: ticket.availableUntil || undefined,
     }));
 
     // Build start date with time and timezone (ISO format)
@@ -984,11 +1001,194 @@ export default function CreateEventStepwise() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Complementary Ticket Option */}
+              {ticket.type === 'paid' && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`complementary-${ticket.id}`}
+                      checked={ticket.isComplementary || false}
+                      onChange={(e) => {
+                        const updatedTickets = [...ticketTypes];
+                        if (e.target.checked) {
+                          updatedTickets[index] = {
+                            ...ticket,
+                            isComplementary: true,
+                            requiresInvitation: true,
+                            price: '0',
+                          };
+                        } else {
+                          updatedTickets[index] = {
+                            ...ticket,
+                            isComplementary: false,
+                            requiresInvitation: false,
+                          };
+                        }
+                        setTicketTypes(updatedTickets);
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor={`complementary-${ticket.id}`} className="flex items-center gap-2">
+                      <Gift className="w-4 h-4" />
+                      This is a complementary ticket
+                    </Label>
+                  </div>
+                  {ticket.isComplementary && (
+                    <div className="pl-6 space-y-2 border-l-2 border-primary">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`invitation-${ticket.id}`}
+                          checked={ticket.requiresInvitation || false}
+                          onChange={(e) => {
+                            const updatedTickets = [...ticketTypes];
+                            updatedTickets[index] = {
+                              ...ticket,
+                              requiresInvitation: e.target.checked,
+                            };
+                            setTicketTypes(updatedTickets);
+                          }}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor={`invitation-${ticket.id}`}>
+                          Requires invitation
+                        </Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Complementary tickets can only be issued via invitations
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Discount Option */}
+              {ticket.type === 'paid' && !ticket.isComplementary && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`discount-${ticket.id}`}
+                      checked={!!ticket.originalPrice}
+                      onChange={(e) => {
+                        const updatedTickets = [...ticketTypes];
+                        if (e.target.checked) {
+                          updatedTickets[index] = {
+                            ...ticket,
+                            originalPrice: ticket.price || '0',
+                          };
+                        } else {
+                          updatedTickets[index] = {
+                            ...ticket,
+                            originalPrice: undefined,
+                            discountLabel: undefined,
+                          };
+                        }
+                        setTicketTypes(updatedTickets);
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor={`discount-${ticket.id}`} className="flex items-center gap-2">
+                      <Percent className="w-4 h-4" />
+                      This ticket is discounted
+                    </Label>
+                  </div>
+
+                  {ticket.originalPrice && (
+                    <div className="space-y-4 pl-6 border-l-2 border-primary">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Original Price</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="149.99"
+                            value={ticket.originalPrice}
+                            onChange={(e) => {
+                              const updatedTickets = [...ticketTypes];
+                              updatedTickets[index] = {
+                                ...ticket,
+                                originalPrice: e.target.value,
+                              };
+                              setTicketTypes(updatedTickets);
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Price before discount
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Current Price</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="99.99"
+                            value={ticket.price}
+                            onChange={(e) => {
+                              const updatedTickets = [...ticketTypes];
+                              updatedTickets[index] = { ...ticket, price: e.target.value };
+                              setTicketTypes(updatedTickets);
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Price attendees pay
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Discount Preview */}
+                      {ticket.originalPrice && ticket.price && 
+                       parseFloat(ticket.originalPrice) > parseFloat(ticket.price) && (
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-semibold text-green-900">
+                                Discount Preview
+                              </p>
+                              <p className="text-xs text-green-700">
+                                {Math.round(((parseFloat(ticket.originalPrice) - parseFloat(ticket.price)) / parseFloat(ticket.originalPrice)) * 100)}% OFF
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-green-900">
+                                Save ${(parseFloat(ticket.originalPrice) - parseFloat(ticket.price)).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label>Discount Label (Optional)</Label>
+                        <Input
+                          placeholder="e.g., Student Discount, Early Bird, Limited Time"
+                          value={ticket.discountLabel || ''}
+                          onChange={(e) => {
+                            const updatedTickets = [...ticketTypes];
+                            updatedTickets[index] = {
+                              ...ticket,
+                              discountLabel: e.target.value,
+                            };
+                            setTicketTypes(updatedTickets);
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Shown as a badge on the ticket
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Regular Price Field (when not discounted or complementary) */}
+              {ticket.type === 'paid' && !ticket.originalPrice && !ticket.isComplementary && (
                 <div className="space-y-2">
                   <Label>Price</Label>
-                  <Input 
+                  <Input
                     type="number"
+                    step="0.01"
                     placeholder="0.00"
                     value={ticket.price}
                     onChange={(e) => {
@@ -996,22 +1196,68 @@ export default function CreateEventStepwise() {
                       updatedTickets[index] = { ...ticket, price: e.target.value };
                       setTicketTypes(updatedTickets);
                     }}
-                    disabled={ticket.type === 'free'}
+                    disabled={false}
                   />
                 </div>
+              )}
+
+              {/* Early Bird Availability */}
+              {ticket.type === 'paid' && (
                 <div className="space-y-2">
-                  <Label>Quantity Available</Label>
-                  <Input 
-                    type="number"
-                    placeholder="100"
-                    value={ticket.quantity}
-                    onChange={(e) => {
-                      const updatedTickets = [...ticketTypes];
-                      updatedTickets[index] = { ...ticket, quantity: e.target.value };
-                      setTicketTypes(updatedTickets);
-                    }}
-                  />
+                  <Label className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Early Bird Availability (Optional)
+                  </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Available From</Label>
+                      <Input
+                        type="datetime-local"
+                        value={ticket.availableFrom || ''}
+                        onChange={(e) => {
+                          const updatedTickets = [...ticketTypes];
+                          updatedTickets[index] = {
+                            ...ticket,
+                            availableFrom: e.target.value,
+                          };
+                          setTicketTypes(updatedTickets);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Available Until</Label>
+                      <Input
+                        type="datetime-local"
+                        value={ticket.availableUntil || ''}
+                        onChange={(e) => {
+                          const updatedTickets = [...ticketTypes];
+                          updatedTickets[index] = {
+                            ...ticket,
+                            availableUntil: e.target.value,
+                          };
+                          setTicketTypes(updatedTickets);
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Set time windows for early bird pricing
+                  </p>
                 </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Quantity Available</Label>
+                <Input
+                  type="number"
+                  placeholder="100"
+                  value={ticket.quantity}
+                  onChange={(e) => {
+                    const updatedTickets = [...ticketTypes];
+                    updatedTickets[index] = { ...ticket, quantity: e.target.value };
+                    setTicketTypes(updatedTickets);
+                  }}
+                />
               </div>
             </CardContent>
           </Card>

@@ -102,6 +102,8 @@ export interface RegisterForEventData {
   ticketType?: string;
   quantity?: number;
   registrationData?: Record<string, unknown>;
+  invitationId?: string;
+  promoCode?: string;
 }
 
 /**

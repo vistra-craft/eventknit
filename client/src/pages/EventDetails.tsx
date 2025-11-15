@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, User, Mail, Building, Info, Settings, CheckCircle, Mic, Users2, Calendar as CalendarIcon, FileText, Network, Bell, BarChart3, Ticket, Badge as BadgeIcon, Copy, Check } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Share2, ExternalLink, Plus, Minus, Clock, User, Mail, Building, Info, Settings, CheckCircle, Mic, Users2, Calendar as CalendarIcon, FileText, Network, Bell, BarChart3, Ticket, Badge as BadgeIcon, Copy, Check, Crown, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useEvent } from "@/hooks/useEvent";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import type { EventData } from "@/types/event";
+import { isVIPTicket, calculateDiscountPercentage, calculateDiscountAmount, isTicketTypeAvailable, calculateTimeRemaining, hasDiscount } from "@/utils/ticket-helpers";
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -692,70 +693,285 @@ const EventDetails = () => {
             </Card>
             
             {/* Ticket Selection */}
-            <div className="w-full max-w-[280px] space-y-2">
+            <div className="w-full max-w-[280px] space-y-4">
               <h2 className="text-sm font-semibold text-foreground">Tickets</h2>
               
-              {eventData.ticketTypes?.map((ticket, index) => {
-                const quantity = ticketQuantities[ticket.name] || 0;
-                const isSelected = quantity > 0;
+              {/* Separate VIP and Regular Tickets */}
+              {(() => {
+                const vipTickets = eventData.ticketTypes?.filter(t => isVIPTicket(t.name)) || [];
+                const regularTickets = eventData.ticketTypes?.filter(t => !isVIPTicket(t.name)) || [];
                 
                 return (
-                  <div 
-                    key={index}
-                    className={`p-2 border rounded-md text-xs ${
-                      isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-xs">{ticket.name}</h3>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          +${(ticket.price * 0.08).toFixed(2)} service fee
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-xs">${ticket.price}</div>
-                        <div className="text-[10px] text-muted-foreground">per ticket</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-[11px] text-muted-foreground">Quantity</span>
-                      <div className="flex items-center gap-0.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-5 w-5 p-0 rounded-full"
-                          onClick={() => updateQuantity(ticket.name, -1)}
-                          disabled={!quantity}
-                        >
-                          <Minus className="w-2.5 h-2.5" />
-                        </Button>
-                        <span className="w-4 text-center text-xs">{quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-5 w-5 p-0 rounded-full"
-                          onClick={() => updateQuantity(ticket.name, 1)}
-                        >
-                          <Plus className="w-2.5 h-2.5" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {isSelected && (
-                      <div className="mt-1.5 pt-1.5 border-t text-sm">
-                        <div className="flex justify-between">
-                          <span>Subtotal:</span>
-                          <span className="font-medium">
-                            ${((ticket.price + ticket.price * 0.08) * quantity).toFixed(2)}
-                          </span>
+                  <>
+                    {/* VIP Tickets Section */}
+                    {vipTickets.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Crown className="w-4 h-4 text-amber-500" />
+                          <h3 className="text-xs font-semibold text-amber-700">VIP Experience</h3>
                         </div>
+                        {vipTickets.map((ticket, index) => {
+                          const quantity = ticketQuantities[ticket.name] || 0;
+                          const isSelected = quantity > 0;
+                          const availability = isTicketTypeAvailable(ticket);
+                          const isAvailable = availability.available;
+                          
+                          return (
+                            <div 
+                              key={`vip-${index}`}
+                              className={`relative p-3 border-2 rounded-lg text-xs ${
+                                isSelected 
+                                  ? 'border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50' 
+                                  : 'border-amber-300 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 hover:border-amber-400'
+                              } ${!isAvailable ? 'opacity-60' : ''}`}
+                            >
+                              {/* VIP Badge */}
+                              <Badge className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white border-2 border-white shadow-lg text-[10px] px-1.5 py-0.5">
+                                <Crown className="w-2.5 h-2.5 mr-0.5" />
+                                VIP
+                              </Badge>
+                              
+                              {/* Discount Badge */}
+                              {hasDiscount(ticket) && ticket.originalPrice && (
+                                <Badge className="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5">
+                                  {calculateDiscountPercentage(ticket.originalPrice, ticket.price)}% OFF
+                                </Badge>
+                              )}
+                              
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex-1 pr-2">
+                                  <h3 className="font-semibold text-xs text-amber-900">{ticket.name}</h3>
+                                  {ticket.features && ticket.features.length > 0 && (
+                                    <div className="mt-1 space-y-0.5">
+                                      {ticket.features.slice(0, 2).map((feature, idx) => (
+                                        <div key={idx} className="flex items-center gap-1 text-[10px] text-amber-700">
+                                          <CheckCircle className="w-2.5 h-2.5 text-amber-600" />
+                                          <span>{feature}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  {hasDiscount(ticket) && ticket.originalPrice ? (
+                                    <div>
+                                      <div className="text-[10px] text-muted-foreground line-through">
+                                        ${ticket.originalPrice}
+                                      </div>
+                                      <div className="font-bold text-xs text-amber-900">${ticket.price}</div>
+                                    </div>
+                                  ) : (
+                                    <div className="font-bold text-xs text-amber-900">${ticket.price}</div>
+                                  )}
+                                  <div className="text-[10px] text-muted-foreground">per ticket</div>
+                                </div>
+                              </div>
+                              
+                              {/* Early Bird Countdown */}
+                              {ticket.availableUntil && (
+                                <div className="mb-2">
+                                  {new Date(ticket.availableUntil) > new Date() ? (
+                                    <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-100 px-2 py-1 rounded">
+                                      <Clock className="w-2.5 h-2.5" />
+                                      <span>Ends in {calculateTimeRemaining(ticket.availableUntil)}</span>
+                                    </div>
+                                  ) : (
+                                    <Badge variant="secondary" className="text-[10px]">Early Bird Ended</Badge>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Availability Warning */}
+                              {!isAvailable && (
+                                <div className="mb-2 flex items-center gap-1 text-[10px] text-red-600">
+                                  <AlertCircle className="w-2.5 h-2.5" />
+                                  <span>{availability.reason}</span>
+                                </div>
+                              )}
+                              
+                              {/* Limited Availability */}
+                              {ticket.quantity && ticket.quantity < 50 && (
+                                <div className="mb-2 flex items-center gap-1 text-[10px] text-amber-600">
+                                  <AlertCircle className="w-2.5 h-2.5" />
+                                  <span>Only {ticket.quantity} remaining</span>
+                                </div>
+                              )}
+                              
+                              {isAvailable && (
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className="text-[11px] text-muted-foreground">Quantity</span>
+                                  <div className="flex items-center gap-0.5">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 rounded-full"
+                                      onClick={() => updateQuantity(ticket.name, -1)}
+                                      disabled={!quantity}
+                                    >
+                                      <Minus className="w-2.5 h-2.5" />
+                                    </Button>
+                                    <span className="w-4 text-center text-xs">{quantity}</span>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 rounded-full"
+                                      onClick={() => updateQuantity(ticket.name, 1)}
+                                      disabled={ticket.quantity ? quantity >= ticket.quantity : false}
+                                    >
+                                      <Plus className="w-2.5 h-2.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {isSelected && isAvailable && (
+                                <div className="mt-2 pt-2 border-t border-amber-200 text-xs">
+                                  <div className="flex justify-between">
+                                    <span>Subtotal:</span>
+                                    <span className="font-medium">
+                                      ${((ticket.price + ticket.price * 0.08) * quantity).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  {hasDiscount(ticket) && ticket.originalPrice && (
+                                    <div className="flex justify-between text-[10px] text-green-600 mt-0.5">
+                                      <span>You save:</span>
+                                      <span>${(calculateDiscountAmount(ticket.originalPrice, ticket.price) * quantity).toFixed(2)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
-                  </div>
+                    
+                    {/* Regular Tickets Section */}
+                    {regularTickets.length > 0 && (
+                      <div className="space-y-2">
+                        {vipTickets.length > 0 && (
+                          <h3 className="text-xs font-semibold mb-2">Standard Tickets</h3>
+                        )}
+                        {regularTickets.map((ticket, index) => {
+                          const quantity = ticketQuantities[ticket.name] || 0;
+                          const isSelected = quantity > 0;
+                          const availability = isTicketTypeAvailable(ticket);
+                          const isAvailable = availability.available;
+                          
+                          return (
+                            <div 
+                              key={`regular-${index}`}
+                              className={`relative p-2 border rounded-md text-xs ${
+                                isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50'
+                              } ${!isAvailable ? 'opacity-60' : ''}`}
+                            >
+                              {/* Discount Badge */}
+                              {hasDiscount(ticket) && ticket.originalPrice && (
+                                <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5">
+                                  {calculateDiscountPercentage(ticket.originalPrice, ticket.price)}% OFF
+                                </Badge>
+                              )}
+                              
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h3 className="font-medium text-xs">{ticket.name}</h3>
+                                  {hasDiscount(ticket) && ticket.originalPrice && (
+                                    <p className="text-[10px] text-green-600 mt-0.5">
+                                      Save ${calculateDiscountAmount(ticket.originalPrice, ticket.price).toFixed(2)}
+                                    </p>
+                                  )}
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    +${(ticket.price * 0.08).toFixed(2)} service fee
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  {hasDiscount(ticket) && ticket.originalPrice ? (
+                                    <div>
+                                      <div className="text-[10px] text-muted-foreground line-through">
+                                        ${ticket.originalPrice}
+                                      </div>
+                                      <div className="font-bold text-xs">${ticket.price}</div>
+                                    </div>
+                                  ) : (
+                                    <div className="font-bold text-xs">${ticket.price}</div>
+                                  )}
+                                  <div className="text-[10px] text-muted-foreground">per ticket</div>
+                                </div>
+                              </div>
+                              
+                              {/* Early Bird Countdown */}
+                              {ticket.availableUntil && (
+                                <div className="mt-1.5">
+                                  {new Date(ticket.availableUntil) > new Date() ? (
+                                    <div className="flex items-center gap-1 text-[10px] text-amber-600">
+                                      <Clock className="w-2.5 h-2.5" />
+                                      <span>Early bird ends in {calculateTimeRemaining(ticket.availableUntil)}</span>
+                                    </div>
+                                  ) : (
+                                    <Badge variant="secondary" className="text-[10px]">Early Bird Sale Ended</Badge>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Availability Warning */}
+                              {!isAvailable && (
+                                <div className="mt-1.5 flex items-center gap-1 text-[10px] text-red-600">
+                                  <AlertCircle className="w-2.5 h-2.5" />
+                                  <span>{availability.reason}</span>
+                                </div>
+                              )}
+                              
+                              {isAvailable && (
+                                <div className="flex items-center justify-between mt-1.5">
+                                  <span className="text-[11px] text-muted-foreground">Quantity</span>
+                                  <div className="flex items-center gap-0.5">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 rounded-full"
+                                      onClick={() => updateQuantity(ticket.name, -1)}
+                                      disabled={!quantity}
+                                    >
+                                      <Minus className="w-2.5 h-2.5" />
+                                    </Button>
+                                    <span className="w-4 text-center text-xs">{quantity}</span>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 rounded-full"
+                                      onClick={() => updateQuantity(ticket.name, 1)}
+                                      disabled={ticket.quantity ? quantity >= ticket.quantity : false}
+                                    >
+                                      <Plus className="w-2.5 h-2.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {isSelected && isAvailable && (
+                                <div className="mt-1.5 pt-1.5 border-t text-xs">
+                                  <div className="flex justify-between">
+                                    <span>Subtotal:</span>
+                                    <span className="font-medium">
+                                      ${((ticket.price + ticket.price * 0.08) * quantity).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  {hasDiscount(ticket) && ticket.originalPrice && (
+                                    <div className="flex justify-between text-[10px] text-green-600 mt-0.5">
+                                      <span>You save:</span>
+                                      <span>${(calculateDiscountAmount(ticket.originalPrice, ticket.price) * quantity).toFixed(2)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
                 );
-              })}
+              })()}
               
               <Button 
                 className="w-full bg-primary hover:bg-primary/90 py-6 text-lg font-medium mt-4"

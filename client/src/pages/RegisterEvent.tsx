@@ -20,7 +20,9 @@ import Footer from "@/components/Footer";
 import { useEvent } from "@/hooks/useEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { registerForEvent, registerAsGuest } from "@/lib/event-api";
+import { validatePromoCode } from "@/lib/promo-code-api";
 import type { RegistrationField } from "@/types/event";
+import { Ticket, CheckCircle, X } from "lucide-react";
 
 interface FormData {
   [key: string]: string | number | boolean;
@@ -43,6 +45,10 @@ const EventRegistration = () => {
   const [selectedTicketType, setSelectedTicketType] = useState<string>('');
   const [ticketQuantity, setTicketQuantity] = useState<number>(1);
   const [isGuestRegistration, setIsGuestRegistration] = useState(false);
+  const [promoCode, setPromoCode] = useState<string>('');
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [applyingCode, setApplyingCode] = useState(false);
 
   // Fetch event data
   useEffect(() => {
@@ -78,6 +84,49 @@ const EventRegistration = () => {
         [fieldId]: "",
       }));
     }
+  };
+
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim() || !event || !eventId) return;
+
+    setApplyingCode(true);
+    setPromoError(null);
+
+    try {
+      // Calculate total amount
+      const selectedTicket = event.ticketTypes?.find(t => t.name === selectedTicketType);
+      const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
+      const totalAmount = ticketPrice * ticketQuantity;
+
+      const response = await validatePromoCode(
+        promoCode.trim(),
+        eventId,
+        selectedTicketType || null,
+        totalAmount
+      );
+
+      if (response.success && response.data?.valid) {
+        setAppliedDiscount({
+          code: response.data.promoCode?.code || promoCode.toUpperCase(),
+          amount: response.data.discountAmount || 0,
+        });
+        setPromoError(null);
+      } else {
+        setAppliedDiscount(null);
+        setPromoError(response.message || 'Invalid promo code');
+      }
+    } catch {
+      setAppliedDiscount(null);
+      setPromoError('Failed to validate promo code');
+    } finally {
+      setApplyingCode(false);
+    }
+  };
+
+  const handleRemovePromoCode = () => {
+    setPromoCode('');
+    setAppliedDiscount(null);
+    setPromoError(null);
   };
 
 
@@ -254,6 +303,7 @@ const EventRegistration = () => {
         ticketType,
         quantity,
         registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
+        promoCode: appliedDiscount ? promoCode : undefined,
       });
 
       if (response.success && response.data) {
@@ -269,7 +319,9 @@ const EventRegistration = () => {
           // Calculate total price
           const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
           const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
-          const totalPrice = ticketPrice * quantity;
+          const subtotal = ticketPrice * quantity;
+          const discount = appliedDiscount?.amount || 0;
+          const totalPrice = subtotal - discount;
 
           // Paid event - navigate to payment page with registration ID
           navigate(`/event/${eventId}/payment`, {
@@ -283,6 +335,8 @@ const EventRegistration = () => {
                 price: t.price
               })).filter(t => t.quantity > 0) || [],
               totalPrice: totalPrice,
+              discount: discount,
+              promoCode: appliedDiscount ? promoCode : undefined,
             }
           });
         }
@@ -711,6 +765,76 @@ const EventRegistration = () => {
                             +
                           </Button>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Promo Code Section */}
+                    {!event.isFree && (
+                      <div className="mt-6 pt-6 border-t space-y-3">
+                        <Label className="flex items-center gap-2">
+                          <Ticket className="w-4 h-4" />
+                          Have a promo code?
+                        </Label>
+                        {!appliedDiscount ? (
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter code"
+                              value={promoCode}
+                              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                              className="flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleApplyPromoCode();
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleApplyPromoCode}
+                              disabled={!promoCode.trim() || applyingCode}
+                              variant="outline"
+                            >
+                              {applyingCode ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                'Apply'
+                              )}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                <span className="text-sm font-medium">{appliedDiscount.code}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-green-700">
+                                  -${appliedDiscount.amount.toFixed(2)}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleRemovePromoCode}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-green-700 mt-1">
+                              You saved ${appliedDiscount.amount.toFixed(2)}!
+                            </p>
+                          </div>
+                        )}
+                        {promoError && (
+                          <Alert variant="destructive" className="text-sm">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{promoError}</AlertDescription>
+                          </Alert>
+                        )}
                       </div>
                     )}
                   </CardContent>
