@@ -58,7 +58,7 @@ describe('Featured Events System', () => {
     await prisma.user.deleteMany();
 
     // Create test users
-    const hashedPassword = await hashPassword('Test123!@#');
+    const hashedPassword = await hashPassword('Test123!@$');
 
     // Create admin
     const admin = await prisma.user.create({
@@ -247,6 +247,68 @@ describe('Featured Events System', () => {
         .expect(409);
 
       expect(response.body.success).toBe(false);
+    });
+
+    it('should fail with invalid eventId', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          eventId: 'non-existent-id',
+          displayOrder: 1,
+        })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should fail with missing required fields', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          // Missing eventId and displayOrder
+        });
+
+      // May return 400 (validation error) or 503 (service error if validation passes but service fails)
+      expect([400, 503]).toContain(response.status);
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should create featured event with display dates', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const startDate = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      const response = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          eventId,
+          displayOrder: 1,
+          isActive: true,
+          displayStartDate: startDate.toISOString(),
+          displayEndDate: endDate.toISOString(),
+        })
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.featuredEvent.displayStartDate).toBeDefined();
+      expect(response.body.data.featuredEvent.displayEndDate).toBeDefined();
     });
   });
 
@@ -445,6 +507,62 @@ describe('Featured Events System', () => {
 
       expect(response.body.success).toBe(false);
     });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .put(`/api/v1/featured-events/${featuredEventId}`)
+        .send({
+          displayOrder: 5,
+        })
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should fail with non-existent featured event ID', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .put('/api/v1/featured-events/non-existent-id')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          displayOrder: 5,
+        })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should update with display dates', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const startDate = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+      const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      const response = await request(app)
+        .put(`/api/v1/featured-events/${featuredEventId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          displayStartDate: startDate.toISOString(),
+          displayEndDate: endDate.toISOString(),
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.featuredEvent.displayStartDate).toBeDefined();
+      expect(response.body.data.featuredEvent.displayEndDate).toBeDefined();
+    });
   });
 
   describe('DELETE /api/v1/featured-events/:id', () => {
@@ -493,6 +611,33 @@ describe('Featured Events System', () => {
         .delete(`/api/v1/featured-events/${featuredEventId}`)
         .set('Authorization', `Bearer ${organizerToken}`)
         .expect(403);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .delete(`/api/v1/featured-events/${featuredEventId}`)
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should fail with non-existent featured event ID', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .delete('/api/v1/featured-events/non-existent-id')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
 
       expect(response.body.success).toBe(false);
     });

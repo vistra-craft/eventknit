@@ -62,7 +62,7 @@ describe('Organizer Data Access Control', () => {
     await prisma.user.deleteMany();
 
     // Create test users
-    const hashedPassword = await hashPassword('Test123!@#');
+    const hashedPassword = await hashPassword('Test123!@$');
 
     // Create organizer
     const organizer = await prisma.user.create({
@@ -435,6 +435,7 @@ describe('Organizer Data Access Control', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Events not found');
+      // Error message includes missing IDs: "Events not found: non-existent-id"
     });
 
     it('should create audit logs for each event', async () => {
