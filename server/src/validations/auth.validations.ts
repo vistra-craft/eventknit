@@ -233,6 +233,9 @@ export const authValidations = {
     businessEmail: Joi.string().email().optional().allow(null, '').messages({
       'string.email': 'Please provide a valid business email address',
     }),
+    email: Joi.string().email().optional().messages({
+      'string.email': 'Please provide a valid email address',
+    }),
   }),
 
   requestMagicLink: Joi.object({

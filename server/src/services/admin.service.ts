@@ -765,27 +765,6 @@ export class AdminService {
           isEmailVerified: true,
           createdAt: true,
           updatedAt: true,
-          registrations: {
-            select: {
-              id: true,
-              eventId: true,
-              event: {
-                select: {
-                  id: true,
-                  title: true,
-                  startDate: true,
-                  endDate: true,
-                },
-              },
-              status: true,
-              totalAmount: true,
-              createdAt: true,
-            },
-            orderBy: {
-              createdAt: 'desc',
-            },
-            take: 10, // Limit registration history per attendee
-          },
         },
         skip,
         take: limit,
@@ -794,8 +773,39 @@ export class AdminService {
       prisma.user.count({ where }),
     ]);
 
+    // Fetch registrations separately for each attendee
+    const attendeesWithRegistrations = await Promise.all(
+      attendees.map(async (attendee) => {
+        const registrations = await prisma.eventRegistration.findMany({
+          where: { attendeeId: attendee.id },
+          select: {
+            id: true,
+            eventId: true,
+            event: {
+              select: {
+                id: true,
+                title: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+            status: true,
+            totalAmount: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10, // Limit registration history per attendee
+        });
+
+        return {
+          ...attendee,
+          registrations,
+        };
+      }),
+    );
+
     return {
-      attendees,
+      attendees: attendeesWithRegistrations,
       pagination: {
         page,
         limit,

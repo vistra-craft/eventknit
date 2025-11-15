@@ -47,7 +47,7 @@ export const ensureSuperAdmin = async (): Promise<void> => {
     logger.info('📝 Creating super admin user...');
     const hashedPassword = await hashPassword(SUPERVISOR_CREDENTIALS.password);
 
-    const superuser = await prisma.user.create({
+    await prisma.user.create({
       data: {
         email: SUPERVISOR_CREDENTIALS.email,
         password: hashedPassword,
@@ -60,7 +60,7 @@ export const ensureSuperAdmin = async (): Promise<void> => {
       },
     });
 
-    logger.info(`✅ Super admin created successfully`);
+    logger.info('✅ Super admin created successfully');
     logger.info(`   Email: ${SUPERVISOR_CREDENTIALS.email}`);
     logger.info(`   Password: ${SUPERVISOR_CREDENTIALS.password}`);
   } catch (error) {

@@ -547,7 +547,7 @@ export class OrganizerService {
     filters?: {
       page?: number;
       limit?: number;
-    }
+    },
   ) {
     // Validate organizer can view dashboard
     if (organizerRole !== UserRole.ORGANIZER &&

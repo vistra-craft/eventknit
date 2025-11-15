@@ -823,8 +823,19 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
-    await prisma.refreshToken.create({
-      data: {
+    // Use upsert to handle potential duplicate tokens (shouldn't happen but safety measure)
+    await prisma.refreshToken.upsert({
+      where: { token },
+      update: {
+        userId,
+        expiresAt,
+        ipAddress,
+        userAgent,
+        revoked: false,
+        revokedAt: null,
+        revokedReason: null,
+      },
+      create: {
         userId,
         token,
         expiresAt,

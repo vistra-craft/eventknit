@@ -642,6 +642,332 @@ export class TicketService {
       ticketData,
     };
   }
+
+  /**
+   * Generate ticket PDF
+   * Creates a professional PDF ticket that can be downloaded and printed
+   * Uses puppeteer for HTML to PDF conversion (Eventbrite-style)
+   */
+  static async generateTicketPDF(registrationId: string): Promise<Buffer> {
+    try {
+      // Get ticket data
+      const ticketData = await this.getTicketByRegistrationId(registrationId);
+      const { registration, qrCode, ticketData: ticketDataString } = ticketData;
+      const { event, attendee } = registration;
+
+      // Format event date
+      const eventDate = this.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime);
+
+      // Generate HTML content for PDF
+      // Note: For production, install puppeteer for server-side PDF generation:
+      // npm install puppeteer
+      // Otherwise, return HTML that frontend can convert to PDF
+      const htmlContent = this.generateTicketHTML(registration, event, attendee, eventDate, qrCode);
+      
+      // Try to use puppeteer for PDF generation (if available)
+      // Check if puppeteer module exists using require.resolve
+      try {
+        // Use Function constructor to avoid TypeScript checking the import
+        const requirePuppeteer = new Function('moduleName', 'return require(moduleName)');
+        const puppeteer = requirePuppeteer('puppeteer');
+        
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+        
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        
+        // Generate PDF
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20px',
+            right: '20px',
+            bottom: '20px',
+            left: '20px',
+          },
+        });
+        
+        await browser.close();
+        return Buffer.from(pdfBuffer);
+      } catch (puppeteerError) {
+        // If puppeteer is not available, return HTML
+        // Frontend can use browser's print-to-PDF or a client-side library
+        logger.warn('Puppeteer not available, returning HTML for client-side PDF conversion');
+        const htmlBuffer = Buffer.from(htmlContent, 'utf-8');
+        return htmlBuffer;
+      }
+    } catch (error) {
+      logger.error('Failed to generate ticket PDF:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate HTML content for ticket (used for PDF generation)
+   */
+  private static generateTicketHTML(
+    registration: any,
+    event: any,
+    attendee: any,
+    eventDate: string,
+    qrCode: string,
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #1a1a1a;
+          }
+          .ticket {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+          }
+          .header h1 {
+            color: #667eea;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+          }
+          .header p {
+            color: #666;
+            margin: 5px 0 0 0;
+            font-size: 16px;
+          }
+          .event-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 20px 0;
+            color: #1a1a1a;
+            text-align: center;
+          }
+          .ticket-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+          }
+          .info-row:last-child {
+            border-bottom: none;
+          }
+          .info-label {
+            color: #666;
+            font-size: 14px;
+            flex: 1;
+          }
+          .info-value {
+            color: #1a1a1a;
+            font-weight: 600;
+            font-size: 14px;
+            flex: 2;
+            text-align: right;
+          }
+          .qr-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+          }
+          .qr-section h3 {
+            margin: 0 0 15px 0;
+            color: #1a1a1a;
+            font-size: 18px;
+            font-weight: 600;
+          }
+          .qr-code {
+            max-width: 200px;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            display: block;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+          }
+          .backup-code {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            text-align: center;
+          }
+          .backup-code-label {
+            font-size: 12px;
+            color: #856404;
+            margin-bottom: 5px;
+            font-weight: 600;
+          }
+          .backup-code-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #856404;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+          }
+          .backup-code-note {
+            font-size: 11px;
+            color: #856404;
+            margin-top: 5px;
+          }
+          .event-description {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+          }
+          .event-description h3 {
+            margin: 0 0 10px 0;
+            color: #1a1a1a;
+            font-size: 16px;
+            font-weight: 600;
+          }
+          .event-description p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+          }
+          .footer p {
+            margin: 5px 0;
+          }
+          @media print {
+            body {
+              background: white;
+              padding: 0;
+            }
+            .ticket {
+              box-shadow: none;
+              border: 1px solid #e9ecef;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ticket">
+          <div class="header">
+            <h1>EventKnit</h1>
+            <p>Your Event Ticket</p>
+          </div>
+          
+          <div class="event-title">${event.title}</div>
+          
+          <div class="ticket-info">
+            <div class="info-row">
+              <span class="info-label">📅 Date & Time</span>
+              <span class="info-value">${eventDate}</span>
+            </div>
+            ${event.venue ? `
+            <div class="info-row">
+              <span class="info-label">📍 Venue</span>
+              <span class="info-value">${event.venue}</span>
+            </div>
+            ` : ''}
+            <div class="info-row">
+              <span class="info-label">📍 Location</span>
+              <span class="info-value">${event.location}</span>
+            </div>
+            ${event.isOnline && event.onlineLink ? `
+            <div class="info-row">
+              <span class="info-label">🔗 Online Link</span>
+              <span class="info-value">${event.onlineLink}</span>
+            </div>
+            ` : ''}
+            <div class="info-row">
+              <span class="info-label">👤 Attendee</span>
+              <span class="info-value">${attendee.firstName || ''} ${attendee.lastName || ''}</span>
+            </div>
+            ${attendee.companyAffiliation ? `
+            <div class="info-row">
+              <span class="info-label">🏢 Company</span>
+              <span class="info-value">${attendee.companyAffiliation}</span>
+            </div>
+            ` : ''}
+            <div class="info-row">
+              <span class="info-label">🎫 Ticket Type</span>
+              <span class="info-value">${registration.ticketType || 'General Admission'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">🔢 Quantity</span>
+              <span class="info-value">${registration.quantity}</span>
+            </div>
+            ${Number(registration.totalAmount) > 0 ? `
+            <div class="info-row">
+              <span class="info-label">💰 Amount Paid</span>
+              <span class="info-value">$${Number(registration.totalAmount).toFixed(2)}</span>
+            </div>
+            ` : ''}
+          </div>
+          
+          <div class="qr-section">
+            <h3>Scan QR Code for Entry</h3>
+            <img src="${qrCode}" alt="Ticket QR Code" class="qr-code" />
+            ${registration.backupCode ? `
+            <div class="backup-code">
+              <div class="backup-code-label">BACKUP ENTRY CODE</div>
+              <div class="backup-code-value">${registration.backupCode}</div>
+              <div class="backup-code-note">Use this code if QR scanning fails</div>
+            </div>
+            ` : ''}
+          </div>
+          
+          ${event.description ? `
+          <div class="event-description">
+            <h3>About This Event</h3>
+            <p>${event.description}</p>
+          </div>
+          ` : ''}
+          
+          <div class="footer">
+            <p><strong>Organized by:</strong> ${event.organizer.organizationName || `${event.organizer.firstName || ''} ${event.organizer.lastName || ''}`}</p>
+            <p><strong>Contact:</strong> ${event.organizer.email}</p>
+            <p style="margin-top: 10px;">© ${new Date().getFullYear()} EventKnit. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 }
 
 

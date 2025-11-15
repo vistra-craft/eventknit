@@ -369,7 +369,7 @@ export class EventController {
         req.params.id,
         req.user.id,
         req.user.role,
-        req.body.reason,
+        req.body?.reason,
         ipAddress,
         userAgent,
       );

@@ -1,5 +1,11 @@
 import rateLimit from 'express-rate-limit';
+import { Request, Response } from 'express';
 import { config } from '../config/index.js';
+
+// Skip rate limiting in test environment
+const skipRateLimit = (_req: Request, _res: Response): boolean => {
+  return config.env === 'test' || process.env.NODE_ENV === 'test';
+};
 
 /**
  * General rate limiter
@@ -10,6 +16,7 @@ export const rateLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipRateLimit, // Skip rate limiting in test environment
 });
 
 /**
@@ -22,6 +29,7 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
+  skip: skipRateLimit, // Skip rate limiting in test environment
 });
 
 /**
@@ -35,6 +43,7 @@ export const guestRegistrationRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false, // Count all requests (successful or not)
+  skip: skipRateLimit, // Skip rate limiting in test environment
 });
 
 /**
@@ -48,6 +57,7 @@ export const guestPaymentRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false, // Count all requests (successful or not)
+  skip: skipRateLimit, // Skip rate limiting in test environment
 });
 
 

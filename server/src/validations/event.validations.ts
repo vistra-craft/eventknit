@@ -206,9 +206,31 @@ export const eventValidations = {
       Joi.object({
         name: Joi.string().trim().min(1).max(100).required(),
         price: Joi.number().min(0).precision(2).required(),
+        originalPrice: Joi.number().min(0).precision(2).optional().allow(null),
+        discountLabel: Joi.string().trim().max(100).optional().allow('', null),
         quantity: Joi.number().integer().min(1).optional().allow(null),
         features: Joi.array().items(Joi.string().trim().max(200)).optional(),
-      }),
+        isComplementary: Joi.boolean().optional(),
+        requiresInvitation: Joi.boolean().optional(),
+        availableFrom: Joi.string().isoDate().optional().allow('', null),
+        availableUntil: Joi.string().isoDate().optional().allow('', null),
+      }).custom((value, helpers) => {
+        // Validate discount: if originalPrice exists, it must be > price
+        if (value.originalPrice && value.price) {
+          if (value.originalPrice <= value.price) {
+            return helpers.error('any.invalid', {
+              message: 'Original price must be greater than current price for discounts',
+            });
+          }
+        }
+        // Validate complementary tickets
+        if (value.isComplementary && value.price !== 0) {
+          return helpers.error('any.invalid', {
+            message: 'Complementary tickets must have price of 0',
+          });
+        }
+        return value;
+      }, 'ticket type validation'),
     ).optional(),
     capacity: Joi.number().integer().min(1).optional().allow(null),
     image: Joi.string().uri().optional().allow('', null).messages({
@@ -263,6 +285,9 @@ export const eventValidations = {
       'number.base': 'Quantity must be a valid number',
     }),
     registrationData: Joi.object().optional().allow(null),
+    invitationId: Joi.string().uuid().optional().allow('', null).messages({
+      'string.guid': 'Invalid invitation ID format',
+    }),
   }),
 
   registerAsGuest: Joi.object({

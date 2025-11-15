@@ -44,8 +44,14 @@ export interface EventData {
   ticketTypes?: Array<{
     name: string;
     price: number;
+    originalPrice?: number; // Original price before discount
+    discountLabel?: string; // Badge text (e.g., "Student Discount", "Early Bird")
     quantity?: number | null;
     features?: string[];
+    isComplementary?: boolean; // Free ticket requiring invitation
+    requiresInvitation?: boolean; // Whether invitation is required
+    availableFrom?: string; // ISO date string for early bird
+    availableUntil?: string; // ISO date string for early bird
   }> | null;
   
   // Capacity

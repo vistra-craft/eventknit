@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
+import { AuthenticationError } from '../utils/errors.js';
 
 export interface TokenPayload {
   userId: string;
@@ -45,7 +46,7 @@ export const verifyRefreshToken = (token: string): TokenPayload => {
   try {
     return jwt.verify(token, config.jwt.refreshSecret) as TokenPayload;
   } catch {
-    throw new Error('Invalid or expired refresh token');
+    throw new AuthenticationError('Invalid or expired refresh token');
   }
 };
 

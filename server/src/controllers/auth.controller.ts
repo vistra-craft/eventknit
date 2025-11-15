@@ -41,6 +41,7 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
+          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
       });
@@ -90,6 +91,7 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
+          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
       });
@@ -399,6 +401,7 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
+          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
       });
@@ -598,6 +601,7 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
+          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
       });

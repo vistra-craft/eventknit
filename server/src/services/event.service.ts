@@ -69,6 +69,7 @@ export interface RegisterForEventData {
   ticketType?: string;
   quantity?: number;
   registrationData?: Record<string, unknown>;
+  invitationId?: string; // For complementary tickets
 }
 
 export class EventService {
@@ -760,12 +761,46 @@ export class EventService {
 
     if (!event.isFree) {
       if (data.ticketType && event.ticketTypes) {
-        const ticketTypes = event.ticketTypes as Array<{ name: string; price: number }>;
+        const ticketTypes = event.ticketTypes as Array<{
+          name: string;
+          price: number;
+          originalPrice?: number;
+          isComplementary?: boolean;
+          requiresInvitation?: boolean;
+          availableFrom?: string;
+          availableUntil?: string;
+        }>;
         const selectedTicket = ticketTypes.find(t => t.name === data.ticketType);
         if (!selectedTicket) {
           throw new ValidationError('Invalid ticket type');
         }
-        totalAmount = new Decimal(Number(selectedTicket.price) * quantity);
+
+        // Check if ticket is complementary and requires invitation
+        if (selectedTicket.isComplementary || selectedTicket.requiresInvitation) {
+          if (!data.invitationId) {
+            throw new ValidationError(
+              'This ticket type requires an invitation. Please use the invitation link provided.'
+            );
+          }
+          // Verify invitation is valid and matches ticket type
+          const invitation = await prisma.eventInvitation.findUnique({
+            where: { id: data.invitationId },
+          });
+          if (!invitation || invitation.eventId !== eventId || !invitation.isActive) {
+            throw new ValidationError('Invalid or expired invitation');
+          }
+        }
+
+        // Check early bird availability
+        const { isTicketTypeAvailable } = await import('../utils/ticket-helpers');
+        const availability = isTicketTypeAvailable(selectedTicket);
+        if (!availability.available) {
+          throw new ValidationError(availability.reason || 'Ticket is not available');
+        }
+
+        // Use current price (discounted price if originalPrice exists)
+        const ticketPrice = selectedTicket.price;
+        totalAmount = new Decimal(Number(ticketPrice) * quantity);
       } else if (event.price) {
         totalAmount = new Decimal(Number(event.price) * quantity);
       } else {
@@ -805,6 +840,7 @@ export class EventService {
         registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
         status: registrationStatus,
         paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+        invitationId: data.invitationId || null,
       },
       include: {
         event: {
@@ -980,6 +1016,10 @@ export class EventService {
       throw new ValidationError('Event is already rejected');
     }
 
+    if (event.status === EventStatus.APPROVED) {
+      throw new ValidationError('Cannot reject an approved event. Use recall instead.');
+    }
+
     // Reject event
     const rejectedEvent = await prisma.event.update({
       where: { id: eventId },
@@ -1064,9 +1104,12 @@ export class EventService {
     }
 
     // Check if event has already started
-    const now = new Date();
-    if (event.startDate && new Date(event.startDate) < now) {
-      throw new ValidationError('Cannot cancel an event that has already started');
+    if (event.startDate) {
+      const startDate = event.startDate instanceof Date ? event.startDate : new Date(event.startDate);
+      const now = new Date();
+      if (startDate < now) {
+        throw new ValidationError('Cannot cancel an event that has already started');
+      }
     }
 
     // Cancel event
@@ -1517,7 +1560,7 @@ export class EventService {
     filters?: {
       page?: number;
       limit?: number;
-    }
+    },
   ) {
     const limit = filters?.limit || 12; // Default 12 for infinite scroll
     const page = filters?.page || 1;
