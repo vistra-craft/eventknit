@@ -256,13 +256,33 @@ export interface EventAttendeesResponse {
 }
 
 /**
+ * Ticket Scan Record
+ */
+export interface TicketScanRecord {
+  id: string;
+  registrationId: string;
+  eventId: string;
+  scanType: ScanType;
+  scannedAt: Date | string;
+  facility: string | null;
+  attendeeName: string;
+  ticketType: string | null;
+  isReEntry: boolean;
+  isValid: boolean;
+  scannedBy: string;
+}
+
+/**
  * Scan History Filters
  */
 export interface ScanHistoryFilters {
   facility?: string | null;
-  status?: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT' | null;
-  dateFrom?: Date | null;
-  dateTo?: Date | null;
+  scanType?: ScanType | null;
+  status?: ScanType | null; // Alias for scanType (backward compatibility)
+  dateFrom?: Date | string | null;
+  dateTo?: Date | string | null;
+  startDate?: Date | string | null; // Alias for dateFrom (component compatibility)
+  endDate?: Date | string | null; // Alias for dateTo (component compatibility)
   page?: number;
   limit?: number;
 }
@@ -273,19 +293,7 @@ export interface ScanHistoryFilters {
 export interface EventScansResponse {
   success: boolean;
   data: {
-    scans: Array<{
-      id: string;
-      registrationId: string;
-      eventId: string;
-      scanType: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
-      scannedAt: Date;
-      facility: string | null;
-      attendeeName: string;
-      ticketType: string | null;
-      isReEntry: boolean;
-      isValid: boolean;
-      scannedBy: string;
-    }>;
+    scans: TicketScanRecord[];
     total: number;
     pagination?: {
       page: number;
@@ -579,16 +587,24 @@ export const getEventScans = async (
     params.append('facility', filters.facility);
   }
 
-  if (filters?.status) {
-    params.append('status', filters.status);
+  // Handle scanType filter (support both scanType and status)
+  const scanType = filters?.scanType || filters?.status;
+  if (scanType) {
+    params.append('status', scanType);
   }
 
-  if (filters?.dateFrom) {
-    params.append('dateFrom', filters.dateFrom.toISOString());
+  // Handle date filters (support both dateFrom/dateTo and startDate/endDate)
+  const dateFrom = filters?.dateFrom || filters?.startDate;
+  const dateTo = filters?.dateTo || filters?.endDate;
+
+  if (dateFrom) {
+    const date = dateFrom instanceof Date ? dateFrom : new Date(dateFrom);
+    params.append('dateFrom', date.toISOString());
   }
 
-  if (filters?.dateTo) {
-    params.append('dateTo', filters.dateTo.toISOString());
+  if (dateTo) {
+    const date = dateTo instanceof Date ? dateTo : new Date(dateTo);
+    params.append('dateTo', date.toISOString());
   }
 
   if (filters?.page) {
