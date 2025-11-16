@@ -355,13 +355,30 @@ describe('Workstation Concurrency Tests', () => {
         return;
       }
 
-      // Create 20 registrations
+      // Create 20 registrations with unique attendees
+      const attendees = await Promise.all(
+        Array.from({ length: 20 }, async (_, i) => {
+          const attendee = await prisma.user.create({
+            data: {
+              email: `attendee${i}@test.com`,
+              password: 'hashedpassword',
+              firstName: `Attendee${i}`,
+              lastName: 'User',
+              role: 'ATTENDEE',
+              status: 'ACTIVE',
+              isEmailVerified: true,
+            },
+          });
+          return attendee.id;
+        }),
+      );
+
       const registrations = await Promise.all(
         Array.from({ length: 20 }, async (_, i) => {
           const reg = await prisma.eventRegistration.create({
             data: {
               eventId: testEventId,
-              attendeeId: testAttendeeId,
+              attendeeId: attendees[i],
               status: 'CONFIRMED',
               totalAmount: 0,
               ticketStatus: TicketStatus.ACTIVE,
