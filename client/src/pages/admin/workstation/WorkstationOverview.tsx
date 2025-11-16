@@ -13,8 +13,7 @@ import {
   MapPin,
   Building2,
   ArrowRight,
-  Activity,
-  TrendingUp
+  Activity
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import { getEvents, type EventData } from "../../../lib/event-api";

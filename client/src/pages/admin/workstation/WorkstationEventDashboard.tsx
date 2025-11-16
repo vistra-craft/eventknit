@@ -19,13 +19,11 @@ import {
   ArrowLeft,
   Activity,
   Zap,
-  Target,
   Settings,
   Gift,
   Utensils,
   Car,
   Shield,
-  UserPlus,
   Download
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";

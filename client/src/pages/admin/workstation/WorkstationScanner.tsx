@@ -31,12 +31,8 @@ import {
   LogOut,
   AlertTriangle,
   User,
-  Mail,
-  Phone,
-  Wifi,
   WifiOff,
   Cloud,
-  CloudOff,
   RefreshCw,
   Upload
 } from "lucide-react";
@@ -62,11 +58,8 @@ import {
   addToOfflineQueue,
   syncOfflineQueue,
   getSyncStatus,
-  getQueueStats,
-  clearFailedItems,
   isOnline,
   type SyncStatus,
-  type OfflineScanItem,
 } from "../../../lib/offline-sync";
 
 // Scan result interface
@@ -190,7 +183,7 @@ const WorkstationScanner: React.FC = () => {
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const userAgent = navigator.userAgent || navigator.vendor || (window as { opera?: string }).opera;
       const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
       const isSmallScreen = window.innerWidth < 768;
       setIsMobile(isMobileDevice || isSmallScreen);
@@ -218,7 +211,7 @@ const WorkstationScanner: React.FC = () => {
           stream.getTracks().forEach(track => track.stop());
           setCameraPermission('granted');
         }
-      } catch (error) {
+      } catch {
         setCameraPermission('denied');
       }
     };
@@ -655,7 +648,7 @@ const WorkstationScanner: React.FC = () => {
           stopScanning();
           processCode(decodedText);
         },
-        (errorMessage) => {
+        () => {
           // Ignore scanning errors (they're expected during scanning)
         }
       );
@@ -669,7 +662,7 @@ const WorkstationScanner: React.FC = () => {
         variant: "destructive",
       });
     }
-  }, [processCode, toast, cameraPermission, isMobile]);
+  }, [processCode, toast, cameraPermission, isMobile, stopScanning]);
 
   // Stop QR scanning
   const stopScanning = useCallback(() => {

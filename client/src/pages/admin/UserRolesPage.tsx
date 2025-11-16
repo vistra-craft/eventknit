@@ -15,9 +15,7 @@ import {
   Database,
   Megaphone,
   CheckCircle,
-  Copy,
   Star,
-  UserPlus,
   Download,
   Send,
   FileText
@@ -27,12 +25,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "./AdminLayout";
 import { getRoles, type RoleInfo } from "@/lib/admin-api";
-import { useCanModifyUser, useCanDeleteUser } from "@/hooks/usePermissions";
+import { useCanModifyUser } from "@/hooks/usePermissions";
 import { UserRole as UserRoleEnum } from "@/types/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
@@ -58,7 +53,6 @@ const UserRolesPage = () => {
   const [editingRole, setEditingRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
-  const [currentUserRole, setCurrentUserRole] = useState<UserRoleEnum | null>(null);
 
   // Define all available page permissions
   const pagePermissions: PagePermission[] = [
@@ -175,13 +169,14 @@ const UserRolesPage = () => {
   const filteredRoles = roles.filter((role) => {
     const matchesSearch =
       role.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      role.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         role.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
   // Note: Create/Edit/Delete role functionality is not yet implemented in backend
-  // These handlers are kept for future implementation
-  const handleCreateRole = () => {
+  // These handlers are kept for future implementation (prefixed with _ to indicate unused)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleCreateRole = () => {
     toast({
       title: "Not Available",
       description: "Custom role creation is not yet available. This feature will be implemented in the future.",
@@ -190,7 +185,7 @@ const UserRolesPage = () => {
     setShowCreateModal(false);
   };
 
-  const handleEditRole = (role: UserRole) => {
+  const handleEditRole = () => {
     toast({
       title: "Not Available",
       description: "Role editing is not yet available. This feature will be implemented in the future.",
@@ -199,7 +194,8 @@ const UserRolesPage = () => {
     setShowEditModal(false);
   };
 
-  const handleUpdateRole = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleUpdateRole = () => {
     toast({
       title: "Not Available",
       description: "Role updates are not yet available. This feature will be implemented in the future.",
@@ -209,7 +205,8 @@ const UserRolesPage = () => {
     setEditingRole(null);
   };
 
-  const handleDeleteRole = (roleId: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleDeleteRole = (_roleId: string) => {
     toast({
       title: "Not Available",
       description: "Role deletion is not yet available. This feature will be implemented in the future.",
@@ -217,7 +214,8 @@ const UserRolesPage = () => {
     });
   };
 
-  const handleDuplicateRole = (role: UserRole) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleDuplicateRole = (_role: UserRole) => {
     toast({
       title: "Not Available",
       description: "Role duplication is not yet available. This feature will be implemented in the future.",
@@ -225,8 +223,9 @@ const UserRolesPage = () => {
     });
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _getCategoryIcon = (_category: string) => {
+    switch (_category) {
       case "Dashboard": return BarChart3;
       case "Events": return Calendar;
       case "Users": return Users;
@@ -240,7 +239,8 @@ const UserRolesPage = () => {
     }
   };
 
-  const groupedPermissions = pagePermissions.reduce((acc, permission) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _groupedPermissions = pagePermissions.reduce((acc, permission) => {
     if (!acc[permission.category]) {
       acc[permission.category] = [];
     }
@@ -303,7 +303,7 @@ const UserRolesPage = () => {
 
         {/* Roles Grid */}
         {!loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRoles.map((role) => {
               const canModify = canModifyRole(role.role);
               const getRoleColor = (roleType: UserRoleEnum) => {
@@ -323,22 +323,22 @@ const UserRolesPage = () => {
 
               return (
                 <Card key={role.role} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Shield className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Shield className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
                           <CardTitle className="text-lg">{role.displayName}</CardTitle>
                           <Badge className={getRoleColor(role.role)} variant="secondary">
                             Hierarchy: {role.hierarchy}
-                          </Badge>
-                        </div>
-                      </div>
+                      </Badge>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
                     <p className="text-sm text-muted-foreground">{role.description}</p>
 
                     <div className="space-y-2">
@@ -354,21 +354,21 @@ const UserRolesPage = () => {
                           {role.canModify ? "Yes" : "No"}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Can Delete:</span>
                         <Badge variant={role.canDelete ? "default" : "secondary"}>
                           {role.canDelete ? "Yes" : "No"}
                         </Badge>
                       </div>
-                    </div>
-
+                </div>
+                
                     {role.creatableRoles.length > 0 && (
                       <div className="text-sm">
                         <span className="text-muted-foreground">Can Create: </span>
                         <span className="font-medium">
                           {role.creatableRoles.length} role(s)
                         </span>
-                      </div>
+                </div>
                     )}
 
                     {role.modifiableRoles.length > 0 && (
@@ -377,26 +377,26 @@ const UserRolesPage = () => {
                         <span className="font-medium">
                           {role.modifiableRoles.length} role(s)
                         </span>
-                      </div>
+                </div>
                     )}
-
+                
                     {canModify && (
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => handleEditRole(role)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleEditRole(role)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Details
+                </Button>
                     )}
                     {!canModify && (
                       <div className="text-xs text-muted-foreground text-center p-2">
                         You don't have permission to modify this role
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+              </CardContent>
+            </Card>
               );
             })}
           </div>
@@ -406,7 +406,7 @@ const UserRolesPage = () => {
         {!loading && filteredRoles.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             No roles found matching your search.
-          </div>
+        </div>
         )}
 
         {/* Create Role Modal - Feature not yet available */}

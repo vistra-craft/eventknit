@@ -10,7 +10,6 @@ import {
   ArrowLeft,
   CheckCircle,
   XCircle,
-  AlertCircle,
   Clock,
   QrCode,
   Building2,
@@ -21,14 +20,13 @@ import {
   Shield,
   Zap,
   Target,
-  Activity,
   TrendingUp,
   BarChart3,
   RefreshCw,
   MoreHorizontal
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
-import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType, TicketStatus } from "../../../lib/workstation-api";
+import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
 import { useToast } from "../../../hooks/use-toast";
 
@@ -122,12 +120,13 @@ const WorkstationHistory: React.FC = () => {
               startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               filters.startDate = startDate.toISOString();
               break;
-            case 'yesterday':
+            case 'yesterday': {
               startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
               const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               filters.startDate = startDate.toISOString();
               filters.endDate = endDate.toISOString();
               break;
+            }
             case 'week':
               startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
               filters.startDate = startDate.toISOString();

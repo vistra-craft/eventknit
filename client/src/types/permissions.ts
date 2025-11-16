@@ -21,8 +21,10 @@ export const roleHierarchy: Record<UserRole, number> = {
 
 /**
  * Roles that can create users with specific roles
+ * (Currently unused, kept for future reference)
  */
-const roleCreationRules: Record<UserRole, UserRole[]> = {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _roleCreationRules: Record<UserRole, UserRole[]> = {
   [UserRole.SUPERADMIN]: [
     UserRole.SUPERADMIN,
     UserRole.ADMIN_STAFF,

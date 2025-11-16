@@ -1048,7 +1048,7 @@ const EventManagement = () => {
           </div>
         );
 
-      case "scan-settings":
+      case "scan-settings": {
         const handleSaveScanConfig = async () => {
           if (!eventId || !scanConfig) return;
 
@@ -1230,6 +1230,7 @@ const EventManagement = () => {
             )}
           </div>
         );
+      }
 
       default: // overview
         return (

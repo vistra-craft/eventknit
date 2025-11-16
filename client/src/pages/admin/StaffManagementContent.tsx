@@ -26,7 +26,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
 import { UserRole as UserRoleEnum } from "@/types/auth";
-import { useCanModifyUser, useCanDeleteUser } from "@/hooks/usePermissions";
+import { useCanModifyUser } from "@/hooks/usePermissions";
 
 // Staff roles that exist in the enum but not in the admin-api UserRole type
 type StaffRole = UserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
@@ -54,12 +54,6 @@ const StaffManagementContent = () => {
   const canModifyMarketer = useCanModifyUser(UserRoleEnum.MARKETER);
   const canModifySupport = useCanModifyUser(UserRoleEnum.SUPPORT);
   const canModifyTeller = useCanModifyUser(UserRoleEnum.TELLER);
-  
-  const canDeleteSuperAdmin = useCanDeleteUser(UserRoleEnum.SUPERADMIN);
-  const canDeleteAdminStaff = useCanDeleteUser(UserRoleEnum.ADMIN_STAFF);
-  const canDeleteMarketer = useCanDeleteUser(UserRoleEnum.MARKETER);
-  const canDeleteSupport = useCanDeleteUser(UserRoleEnum.SUPPORT);
-  const canDeleteTeller = useCanDeleteUser(UserRoleEnum.TELLER);
 
   // Helper function to check if user can modify a staff member
   const canModifyStaff = (staffRole: UserRole): boolean => {
@@ -79,23 +73,6 @@ const StaffManagementContent = () => {
     }
   };
 
-  // Helper function to check if user can delete a staff member
-  const canDeleteStaff = (staffRole: UserRole): boolean => {
-    switch (staffRole) {
-      case UserRoleEnum.SUPERADMIN:
-        return canDeleteSuperAdmin;
-      case UserRoleEnum.ADMIN_STAFF:
-        return canDeleteAdminStaff;
-      case UserRoleEnum.MARKETER:
-        return canDeleteMarketer;
-      case UserRoleEnum.SUPPORT:
-        return canDeleteSupport;
-      case UserRoleEnum.TELLER:
-        return canDeleteTeller;
-      default:
-        return false;
-    }
-  };
 
   // Fetch staff members (ADMIN_STAFF, SUPERADMIN, etc.)
   useEffect(() => {
