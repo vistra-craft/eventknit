@@ -113,3 +113,8 @@ ssl/
 *.key
 *.crt
 
+# Documentation files (except README files)
+*.md
+!README.md
+!**/README.md
+
