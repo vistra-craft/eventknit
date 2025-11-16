@@ -4,6 +4,7 @@ import { emailService } from './email.service.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import { Decimal } from '@prisma/client/runtime/library';
+import { TicketSecurityService } from './ticket-security.service.js';
 
 interface TicketEmailData {
   registration: {
@@ -71,24 +72,32 @@ export class TicketService {
 
   /**
    * Generate ticket data string for QR code
+   * Format: registrationId|eventId|email|timestamp|signature
    */
   static generateTicketData(registrationId: string, eventId: string, attendeeEmail: string): string {
     // Format: registrationId|eventId|email|timestamp
     const timestamp = Date.now();
-    return `${registrationId}|${eventId}|${attendeeEmail}|${timestamp}`;
+    const payload = `${registrationId}|${eventId}|${attendeeEmail}|${timestamp}`;
+    
+    // Generate signature using TicketSecurityService
+    const signature = TicketSecurityService.generateSignature(payload);
+    
+    // Return signed ticket data
+    return `${payload}|${signature}`;
   }
 
   /**
    * Generate backup ticket code for manual entry (if QR code fails)
-   * Format: Short, random alphanumeric code (e.g., A7K9M2)
+   * Format: 10-character alphanumeric code (e.g., ABCDEFGHJK)
    * Hard to guess, easy to read and type
+   * Excludes similar-looking characters: 0, O, I, 1, L
    */
   static generateBackupTicketCode(): string {
-    // Generate 6-character alphanumeric code (uppercase letters + numbers)
+    // Generate 10-character alphanumeric code (uppercase letters + numbers)
     // Excludes similar-looking characters: 0, O, I, 1, L
     const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
     let code = '';
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 10; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
@@ -346,7 +355,7 @@ export class TicketService {
                           <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; margin-top: 15px; border: 1px solid #e9ecef;">
                             <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-align: center; font-weight: 600;">BACKUP ENTRY CODE</p>
                             <p style="margin: 0; color: #1a1a1a; font-size: 24px; font-weight: 700; text-align: center; letter-spacing: 4px; font-family: 'Courier New', monospace;">${registration.backupCode}</p>
-                            <p style="margin: 8px 0 0 0; color: #999; font-size: 11px; text-align: center;">Use this code if QR scanning fails</p>
+                            <p style="margin: 8px 0 0 0; color: #999; font-size: 11px; text-align: center;">Use this code if QR scanning fails. Keep this code secure.</p>
                           </div>
                           ` : ''}
                         </div>
@@ -953,7 +962,7 @@ export class TicketService {
             <div class="backup-code">
               <div class="backup-code-label">BACKUP ENTRY CODE</div>
               <div class="backup-code-value">${registration.backupCode}</div>
-              <div class="backup-code-note">Use this code if QR scanning fails</div>
+              <div class="backup-code-note">Use this code if QR scanning fails. Keep this code secure.</div>
             </div>
             ` : ''}
           </div>
