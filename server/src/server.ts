@@ -4,6 +4,8 @@ import { logger } from './utils/logger.js';
 import app from './app.js';
 import { initializeJobs, stopJobs } from './jobs/index.js';
 import { ensureSuperAdmin } from './utils/ensureSuperAdmin.js';
+import { createServer } from 'http';
+import { websocketService } from './services/websocket.service.js';
 
 const PORT = config.port;
 const HOST = config.host;
@@ -17,10 +19,10 @@ const startServer = async () => {
       // Ensure super admin exists (only if database is connected)
       try {
         await ensureSuperAdmin();
-      } catch (error) {
+      } catch {
         // Already logged in ensureSuperAdmin, continue startup
       }
-    } catch (error) {
+    } catch {
       // Already handled in connectDB, but catch here to ensure server still starts
     }
 
@@ -32,8 +34,14 @@ const startServer = async () => {
       // Don't fail server startup if jobs fail to initialize
     }
 
-    // Start Express server
-    const server = app.listen(PORT, HOST, () => {
+    // Create HTTP server
+    const httpServer = createServer(app);
+
+    // Initialize WebSocket service
+    websocketService.initialize(httpServer);
+
+    // Start HTTP server
+    httpServer.listen(PORT, HOST, () => {
       logger.info(`🚀 EventKnit Server running on http://${HOST}:${PORT}`);
       logger.info(`📊 Environment: ${config.env}`);
       logger.info(`🌐 CORS Origin: ${JSON.stringify(config.cors.origin)}`);
@@ -41,7 +49,10 @@ const startServer = async () => {
       logger.info(`🔍 Health check: http://localhost:${PORT}/health`);
       logger.info(`📋 API status: http://localhost:${PORT}/api/v1/status`);
       logger.info(`🔐 Auth routes: http://localhost:${PORT}/api/v1/auth`);
+      logger.info('🔌 WebSocket server initialized');
     });
+
+    const server = httpServer;
 
     // Graceful shutdown handler
     const gracefulShutdown = async (signal: string) => {

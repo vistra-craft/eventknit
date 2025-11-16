@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { ValidationError, NotFoundError } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
 import { Prisma, TicketStatus, ScanType } from '@prisma/client';
+import { websocketService } from '../services/websocket.service.js';
 
 export class WorkstationController {
   /**
@@ -88,21 +89,43 @@ export class WorkstationController {
       const codeType = validation.codeType || 'UNKNOWN';
       const signatureValid = validation.signatureVerified ?? false;
 
-      res.status(200).json({
-        success: true,
-        data: {
-          scanId: scanRecord?.id,
+      const responseData = {
+        scanId: scanRecord?.id,
+        registrationId: result.registrationId,
+        eventId: result.eventId,
+        attendeeName: result.attendeeName,
+        ticketType: result.ticketType,
+        scanType: scanRecord?.scanType,
+        facility: facility || null,
+        scannedAt: result.checkedInAt,
+        isReEntry: scanRecord?.isReEntry || false,
+        signatureValid,
+        codeType,
+      };
+
+      // Emit WebSocket event for real-time updates
+      if (scanRecord?.id) {
+        websocketService.emitScanEvent(eventId, {
+          scanId: scanRecord.id,
           registrationId: result.registrationId,
           eventId: result.eventId,
-          attendeeName: result.attendeeName,
-          ticketType: result.ticketType,
-          scanType: scanRecord?.scanType,
+          scanType: scanRecord.scanType || 'CHECK_IN',
           facility: facility || null,
           scannedAt: result.checkedInAt,
-          isReEntry: scanRecord?.isReEntry || false,
+          attendeeName: result.attendeeName,
+          ticketType: result.ticketType || null,
+          isReEntry: scanRecord.isReEntry || false,
           signatureValid,
           codeType,
-        },
+        });
+
+        // Send statistics update
+        await websocketService.sendStatisticsUpdate(eventId);
+      }
+
+      res.status(200).json({
+        success: true,
+        data: responseData,
       });
     } catch (error) {
       next(error);
@@ -199,17 +222,45 @@ export class WorkstationController {
       const codeType = checkoutValidation.codeType || 'UNKNOWN';
       const signatureValid = checkoutValidation.signatureVerified ?? false;
 
+      const responseData = {
+        scanId: scanRecord?.id,
+        registrationId: result.registrationId,
+        scanType: scanRecord?.scanType,
+        facility: facility || null,
+        checkedOutAt: result.checkedOutAt,
+        signatureValid,
+        codeType,
+      };
+
+      // Emit WebSocket event for real-time updates
+      if (scanRecord?.id) {
+        // Get event ID from registration
+        const registration = await prisma.eventRegistration.findUnique({
+          where: { id: result.registrationId },
+          select: { eventId: true },
+        });
+
+        if (registration) {
+          websocketService.emitScanEvent(registration.eventId, {
+            scanId: scanRecord.id,
+            registrationId: result.registrationId,
+            eventId: registration.eventId,
+            scanType: scanRecord.scanType || 'CHECK_OUT',
+            facility: facility || null,
+            scannedAt: result.checkedOutAt,
+            isReEntry: false,
+            signatureValid,
+            codeType,
+          });
+
+          // Send statistics update
+          await websocketService.sendStatisticsUpdate(registration.eventId);
+        }
+      }
+
       res.status(200).json({
         success: true,
-        data: {
-          scanId: scanRecord?.id,
-          registrationId: result.registrationId,
-          scanType: scanRecord?.scanType,
-          facility: facility || null,
-          checkedOutAt: result.checkedOutAt,
-          signatureValid,
-          codeType,
-        },
+        data: responseData,
       });
     } catch (error) {
       next(error);
@@ -391,21 +442,43 @@ export class WorkstationController {
         signatureValid = validation.signatureVerified ?? false;
       }
 
-      res.status(200).json({
-        success: true,
-        data: {
-          scanId: scanRecord?.id,
+      const responseData = {
+        scanId: scanRecord?.id,
+        registrationId: result.registrationId,
+        eventId: result.eventId,
+        attendeeName: result.attendeeName,
+        ticketType: result.ticketType,
+        scanType: scanRecord?.scanType,
+        facility: facility || null,
+        checkedInAt: result.checkedInAt,
+        isReEntry: scanRecord?.isReEntry || false,
+        signatureValid,
+        isManual: true,
+      };
+
+      // Emit WebSocket event for real-time updates
+      if (scanRecord?.id) {
+        websocketService.emitScanEvent(eventId, {
+          scanId: scanRecord.id,
           registrationId: result.registrationId,
           eventId: result.eventId,
-          attendeeName: result.attendeeName,
-          ticketType: result.ticketType,
-          scanType: scanRecord?.scanType,
+          scanType: scanRecord.scanType || 'MANUAL_CHECK_IN',
           facility: facility || null,
-          checkedInAt: result.checkedInAt,
-          isReEntry: scanRecord?.isReEntry || false,
+          scannedAt: result.checkedInAt,
+          attendeeName: result.attendeeName,
+          ticketType: result.ticketType || null,
+          isReEntry: scanRecord.isReEntry || false,
           signatureValid,
-          isManual: true,
-        },
+          codeType: code ? 'QR_CODE' : undefined,
+        });
+
+        // Send statistics update
+        await websocketService.sendStatisticsUpdate(eventId);
+      }
+
+      res.status(200).json({
+        success: true,
+        data: responseData,
       });
     } catch (error) {
       next(error);
@@ -485,17 +558,37 @@ export class WorkstationController {
         signatureValid = validation.signatureVerified ?? false;
       }
 
+      const responseData = {
+        scanId: scanRecord?.id,
+        registrationId: result.registrationId,
+        scanType: scanRecord?.scanType,
+        facility: facility || null,
+        checkedOutAt: result.checkedOutAt,
+        signatureValid,
+        isManual: true,
+      };
+
+      // Emit WebSocket event for real-time updates
+      if (scanRecord?.id) {
+        websocketService.emitScanEvent(eventId, {
+          scanId: scanRecord.id,
+          registrationId: result.registrationId,
+          eventId: eventId,
+          scanType: scanRecord.scanType || 'MANUAL_CHECK_OUT',
+          facility: facility || null,
+          scannedAt: result.checkedOutAt,
+          isReEntry: false,
+          signatureValid,
+          codeType: code ? 'QR_CODE' : undefined,
+        });
+
+        // Send statistics update
+        await websocketService.sendStatisticsUpdate(eventId);
+      }
+
       res.status(200).json({
         success: true,
-        data: {
-          scanId: scanRecord?.id,
-          registrationId: result.registrationId,
-          scanType: scanRecord?.scanType,
-          facility: facility || null,
-          checkedOutAt: result.checkedOutAt,
-          signatureValid,
-          isManual: true,
-        },
+        data: responseData,
       });
     } catch (error) {
       next(error);
