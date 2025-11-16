@@ -209,7 +209,7 @@ describe('Workstation Schema - Phase 1.1', () => {
       if (!dbConnected) return;
 
       // Create initial check-in scan
-      const checkInScan = await prisma.ticketScan.create({
+      await prisma.ticketScan.create({
         data: {
           registrationId: testRegistrationId,
           eventId: testEventId,
@@ -304,20 +304,48 @@ describe('Workstation Schema - Phase 1.1', () => {
 
       const statuses: TicketStatus[] = ['ACTIVE', 'DEACTIVATED', 'EXPIRED', 'CANCELLED'];
 
-      for (const status of statuses) {
-        const registration = await prisma.eventRegistration.create({
+      // Create a new event for this test to avoid unique constraint issues
+      const testEvent = await prisma.event.create({
+        data: {
+          title: 'Enum Test Event',
+          description: 'Test',
+          location: 'Test',
+          startDate: new Date('2024-12-01'),
+          organizerId: testUserId,
+          status: 'APPROVED',
+        },
+      });
+
+      // Create a new user for each registration to avoid unique constraint
+      for (let i = 0; i < statuses.length; i++) {
+        const testUser = await prisma.user.create({
           data: {
-            eventId: testEventId,
-            attendeeId: testUserId,
-            status: 'CONFIRMED',
-            totalAmount: 0,
-            ticketStatus: status,
+            email: `enumtest${i}@example.com`,
+            password: 'hashedpassword',
+            firstName: 'Test',
+            lastName: `User${i}`,
+            role: 'ATTENDEE',
+            status: 'ACTIVE',
+            isEmailVerified: true,
           },
         });
 
-        expect(registration.ticketStatus).toBe(status);
+        const registration = await prisma.eventRegistration.create({
+          data: {
+            eventId: testEvent.id,
+            attendeeId: testUser.id,
+            status: 'CONFIRMED',
+            totalAmount: 0,
+            ticketStatus: statuses[i],
+          },
+        });
+
+        expect(registration.ticketStatus).toBe(statuses[i]);
         await prisma.eventRegistration.delete({ where: { id: registration.id } });
+        await prisma.user.delete({ where: { id: testUser.id } });
       }
+
+      await prisma.event.delete({ where: { id: testEvent.id } });
     });
 
     it('should use ScanType enum correctly', async () => {
