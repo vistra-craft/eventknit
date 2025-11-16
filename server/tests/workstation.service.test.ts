@@ -1,0 +1,462 @@
+import { WorkstationService } from '../src/services/workstation.service.js';
+import { TicketService } from '../src/services/ticket.service.js';
+import { prisma } from '../src/config/database.js';
+import { logger } from '../src/utils/logger.js';
+
+describe('WorkstationService', () => {
+  let dbConnected = false;
+  let testEventId: string;
+  let testUserId: string;
+  let testAttendeeId: string;
+  let testRegistrationId: string;
+  let testBackupCode: string;
+  let testQRCode: string;
+  let testScannerId: string;
+  const originalEnv = process.env.TICKET_SECRET_KEY;
+
+  beforeAll(async () => {
+    // Set test secret key
+    process.env.TICKET_SECRET_KEY = 'test-secret-key-for-workstation-service-minimum-32-bytes-long';
+    try {
+      await prisma.$connect();
+      await prisma.$queryRaw`SELECT 1`;
+      dbConnected = true;
+      logger.info('✅ Test database connected');
+    } catch (error) {
+      logger.warn('⚠️  Database not available. Tests will be skipped.');
+      logger.warn(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      dbConnected = false;
+    }
+  });
+
+  afterAll(async () => {
+    // Restore original environment
+    if (originalEnv) {
+      process.env.TICKET_SECRET_KEY = originalEnv;
+    } else {
+      delete process.env.TICKET_SECRET_KEY;
+    }
+
+    if (dbConnected) {
+      try {
+        await prisma.$disconnect();
+      } catch {
+        // Ignore disconnection errors
+      }
+    }
+  });
+
+  beforeEach(async () => {
+    if (!dbConnected) return;
+
+    // Clean up
+    await prisma.$transaction(async (tx) => {
+      await tx.ticketScan.deleteMany();
+      await tx.eventRegistration.deleteMany();
+      await tx.event.deleteMany();
+      await tx.user.deleteMany();
+    });
+
+    // Create test organizer
+    const organizer = await prisma.user.create({
+      data: {
+        email: 'organizer@example.com',
+        password: 'hashedpassword',
+        firstName: 'Test',
+        lastName: 'Organizer',
+        role: 'ORGANIZER',
+        status: 'ACTIVE',
+        isEmailVerified: true,
+      },
+    });
+    testUserId = organizer.id;
+
+    // Create test attendee
+    const attendee = await prisma.user.create({
+      data: {
+        email: 'attendee@example.com',
+        password: 'hashedpassword',
+        firstName: 'Test',
+        lastName: 'Attendee',
+        role: 'ATTENDEE',
+        status: 'ACTIVE',
+        isEmailVerified: true,
+      },
+    });
+    testAttendeeId = attendee.id;
+
+    // Create test scanner (staff)
+    const scanner = await prisma.user.create({
+      data: {
+        email: 'scanner@example.com',
+        password: 'hashedpassword',
+        firstName: 'Test',
+        lastName: 'Scanner',
+        role: 'ORGANIZER_STAFF',
+        status: 'ACTIVE',
+        isEmailVerified: true,
+      },
+    });
+    testScannerId = scanner.id;
+
+    // Create test event
+    const event = await prisma.event.create({
+      data: {
+        title: 'Test Event',
+        description: 'Test Description',
+        location: 'Test Location',
+        startDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+        endDate: new Date(Date.now() + 25 * 60 * 60 * 1000), // Day after tomorrow
+        organizerId: testUserId,
+        status: 'APPROVED',
+        allowReEntry: true,
+        requireCheckOut: false,
+      },
+    });
+    testEventId = event.id;
+
+    // Create test registration
+    testBackupCode = TicketService.generateBackupTicketCode();
+    const registration = await prisma.eventRegistration.create({
+      data: {
+        eventId: testEventId,
+        attendeeId: testAttendeeId,
+        status: 'CONFIRMED',
+        totalAmount: 0,
+        ticketStatus: 'ACTIVE',
+        backupCode: testBackupCode,
+      },
+    });
+    testRegistrationId = registration.id;
+
+    // Generate QR code
+    testQRCode = TicketService.generateTicketData(
+      testRegistrationId,
+      testEventId,
+      'attendee@example.com',
+    );
+  });
+
+  describe('validateTicket', () => {
+    it('should validate a valid QR code ticket', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.validateTicket(testQRCode, testEventId);
+
+      expect(result.isValid).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+      expect(result.eventId).toBe(testEventId);
+      expect(result.codeType).toBe('QR_CODE');
+      expect(result.signatureVerified).toBe(true);
+    });
+
+    it('should validate a valid backup code', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.validateTicket(testBackupCode, testEventId);
+
+      expect(result.isValid).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+      expect(result.eventId).toBe(testEventId);
+      expect(result.codeType).toBe('BACKUP_CODE');
+    });
+
+    it('should reject QR code with invalid signature', async () => {
+      if (!dbConnected) return;
+
+      const invalidQR = `${testRegistrationId}|${testEventId}|attendee@example.com|${Date.now()}|invalid-signature`;
+      const result = await WorkstationService.validateTicket(invalidQR, testEventId);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errorCode).toBe('INVALID_SIGNATURE');
+    });
+
+    it('should reject invalid backup code', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.validateTicket('INVALID123', testEventId);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errorCode).toBe('INVALID_TICKET');
+    });
+
+    it('should reject ticket for wrong event', async () => {
+      if (!dbConnected) return;
+
+      // Create another event
+      const otherEvent = await prisma.event.create({
+        data: {
+          title: 'Other Event',
+          description: 'Test',
+          location: 'Test',
+          startDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          organizerId: testUserId,
+          status: 'APPROVED',
+        },
+      });
+
+      const result = await WorkstationService.validateTicket(testQRCode, otherEvent.id);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errorCode).toBe('WRONG_EVENT');
+
+      await prisma.event.delete({ where: { id: otherEvent.id } });
+    });
+
+    it('should reject ticket with expired status', async () => {
+      if (!dbConnected) return;
+
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { ticketStatus: 'EXPIRED' },
+      });
+
+      const result = await WorkstationService.validateTicket(testQRCode, testEventId);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errorCode).toBe('EXPIRED');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { ticketStatus: 'ACTIVE' },
+      });
+    });
+
+    it('should reject ticket with cancelled status', async () => {
+      if (!dbConnected) return;
+
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { ticketStatus: 'CANCELLED' },
+      });
+
+      const result = await WorkstationService.validateTicket(testQRCode, testEventId);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errorCode).toBe('RESTRICTED');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { ticketStatus: 'ACTIVE' },
+      });
+    });
+
+    it('should reject ticket for unconfirmed registration', async () => {
+      if (!dbConnected) return;
+
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { status: 'PENDING' },
+      });
+
+      const result = await WorkstationService.validateTicket(testQRCode, testEventId);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errorCode).toBe('RESTRICTED');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { status: 'CONFIRMED' },
+      });
+    });
+  });
+
+  describe('scanTicket', () => {
+    it('should successfully scan a QR code ticket', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.scanTicket(
+        testQRCode,
+        testEventId,
+        testScannerId,
+        'Main Entrance',
+        'device-123',
+        'MOBILE',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+      expect(result.checkedInAt).toBeDefined();
+
+      // Verify registration was updated
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: testRegistrationId },
+      });
+
+      expect(registration?.checkedInAt).toBeDefined();
+      expect(registration?.checkedInBy).toBe(testScannerId);
+      expect(registration?.ticketStatus).toBe('DEACTIVATED');
+      expect(registration?.isCurrentlyInside).toBe(true);
+      expect(registration?.lastScanFacility).toBe('Main Entrance');
+
+      // Verify scan record was created
+      const scan = await prisma.ticketScan.findFirst({
+        where: { registrationId: testRegistrationId },
+      });
+
+      expect(scan).toBeDefined();
+      expect(scan?.scanType).toBe('CHECK_IN');
+      expect(scan?.scannedBy).toBe(testScannerId);
+      expect(scan?.facility).toBe('Main Entrance');
+      expect(scan?.deviceId).toBe('device-123');
+      expect(scan?.deviceType).toBe('MOBILE');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+          lastScanFacility: null,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should successfully scan a backup code', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.scanTicket(
+        testBackupCode,
+        testEventId,
+        testScannerId,
+        'Side Entrance',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+          lastScanFacility: null,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should reject scanning an already scanned ticket', async () => {
+      if (!dbConnected) return;
+
+      // First scan
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      // Try to scan again
+      const result = await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('ALREADY_SCANNED');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should reject invalid ticket code', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.scanTicket(
+        'INVALID123',
+        testEventId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBeDefined();
+    });
+  });
+
+  describe('checkOut', () => {
+    it('should successfully check out a ticket', async () => {
+      if (!dbConnected) return;
+
+      // First check in
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      // Check out
+      const result = await WorkstationService.checkOut(
+        testRegistrationId,
+        testScannerId,
+        'Main Exit',
+        'device-123',
+        'MOBILE',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+      expect(result.checkedOutAt).toBeDefined();
+
+      // Verify registration was updated
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: testRegistrationId },
+      });
+
+      expect(registration?.checkedOutAt).toBeDefined();
+      expect(registration?.checkedOutBy).toBe(testScannerId);
+      expect(registration?.isCurrentlyInside).toBe(false);
+      expect(registration?.ticketStatus).toBe('ACTIVE'); // Set to ACTIVE for re-entry
+
+      // Verify scan record was created
+      const scan = await prisma.ticketScan.findFirst({
+        where: {
+          registrationId: testRegistrationId,
+          scanType: 'CHECK_OUT',
+        },
+      });
+
+      expect(scan).toBeDefined();
+      expect(scan?.scanType).toBe('CHECK_OUT');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          checkedOutBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should reject checkout for ticket not checked in', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.checkOut(testRegistrationId, testScannerId);
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NOT_CHECKED_IN');
+    });
+
+    it('should reject checkout for non-existent registration', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.checkOut('non-existent-id', testScannerId);
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('INVALID_TICKET');
+    });
+  });
+});
+
