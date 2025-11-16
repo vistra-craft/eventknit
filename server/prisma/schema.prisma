@@ -74,6 +74,20 @@ enum DataAccessLevel {
   FULL // Everything except transaction IDs (detailed payment info)
 }
 
+enum TicketStatus {
+  ACTIVE // Ticket is active and can be used
+  DEACTIVATED // Ticket has been scanned/checked in
+  EXPIRED // Ticket has expired
+  CANCELLED // Ticket has been cancelled
+}
+
+enum ScanType {
+  CHECK_IN // Standard check-in scan
+  CHECK_OUT // Standard check-out scan
+  MANUAL_CHECK_IN // Manual check-in by staff
+  MANUAL_CHECK_OUT // Manual check-out by staff
+}
+
 model User {
   id                 String     @id @default(uuid())
   email              String     @unique
@@ -319,6 +333,12 @@ model Event {
   // Organizer data access control (admin-controlled)
   organizerDataAccess DataAccessLevel @default(RESTRICTED) // What data organizers can see
 
+  // Scan configuration
+  allowReEntry   Boolean @default(false) // Allow attendees to re-enter after check-out
+  requireCheckOut Boolean @default(false) // Require check-out before re-entry
+  maxReEntries   Int? // Maximum number of re-entries allowed (null = unlimited)
+  scanSettings   Json? // Additional scan settings for future extensibility
+
   // Audit fields
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -332,6 +352,7 @@ model Event {
   ticketTemplates TicketTemplate[]
   featuredEvents  FeaturedEvent[]
   promoCodes      PromoCode[]         @relation("PromoCodeEvent")
+  ticketScans     TicketScan[]
 
   @@index([organizerId])
   @@index([status])
@@ -371,6 +392,16 @@ model EventRegistration {
   paymentMethod        String? // STRIPE, PAYPAL, etc.
   paymentTransactionId String?
 
+  // Scan-related fields
+  ticketStatus      TicketStatus @default(ACTIVE) // Ticket status for scanning
+  checkedInAt       DateTime? // When ticket was checked in
+  checkedInBy       String? // User ID who checked in the ticket
+  checkedOutAt      DateTime? // When ticket was checked out
+  checkedOutBy      String? // User ID who checked out the ticket
+  reEntryCount      Int      @default(0) // Number of re-entries
+  lastScanFacility  String? // Last facility/station where ticket was scanned
+  isCurrentlyInside Boolean  @default(false) // Whether attendee is currently inside the venue
+
   // Audit fields
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -379,12 +410,16 @@ model EventRegistration {
 
   // Relations
   promoCodeRedemption PromoCodeRedemption? @relation("PromoCodeRedemption")
+  ticketScans         TicketScan[]
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
   @@index([attendeeId])
   @@index([status])
   @@index([createdAt])
+  @@index([ticketStatus])
+  @@index([checkedInAt])
+  @@index([isCurrentlyInside])
 }
 
 model EventInvitation {
@@ -550,4 +585,42 @@ model PromoCodeRedemption {
   @@unique([promoCodeId, registrationId])
   @@index([userId])
   @@index([promoCodeId])
+}
+
+model TicketScan {
+  id            String   @id @default(uuid())
+  registrationId String
+  registration  EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId       String
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Core scan fields
+  scanType      ScanType // Type of scan operation
+  scannedBy     String // User ID who performed the scan
+  scannedAt     DateTime @default(now())
+
+  // Facility tracking
+  facility      String? // Facility/station where scan occurred
+  deviceId      String? // Device ID that performed the scan
+  deviceType    String? // Type of device (MOBILE, TABLET, DESKTOP, etc.)
+
+  // Validation
+  isValid       Boolean  @default(true) // Whether scan was valid
+  errorCode     String? // Error code if scan failed
+  errorMessage  String? // Error message if scan failed
+
+  // Re-entry tracking
+  isReEntry     Boolean  @default(false) // Whether this is a re-entry scan
+  previousScanId String? // ID of previous scan (for re-entry chain)
+
+  // Metadata
+  ipAddress     String? // IP address of scanning device
+  userAgent     String? // User agent of scanning device
+  location      Json? // GPS location data if available
+
+  @@index([registrationId])
+  @@index([eventId])
+  @@index([scannedAt])
+  @@index([scannedBy])
+  @@index([facility])
 }
