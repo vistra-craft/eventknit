@@ -13,6 +13,7 @@ import {
 } from '../utils/privileges.js';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 import { logger } from '../utils/logger.js';
+import { emailService } from './email.service.js';
 
 export interface CreateUserData {
   email: string;
@@ -116,6 +117,7 @@ export class AdminService {
     createdByRole: UserRole,
     ipAddress?: string,
     userAgent?: string,
+    sendEmailNotification?: boolean,
   ) {
     // Validate role creation permission
     validateRoleCreation(createdByRole, data.role);
@@ -185,6 +187,23 @@ export class AdminService {
     });
 
     logger.info(`User created by admin: ${user.email} with role ${user.role}`);
+
+    // Send email notification if requested (for organizer accounts)
+    if (sendEmailNotification && data.role === UserRole.ORGANIZER) {
+      try {
+        await emailService.sendAdminCreatedAccountEmail(
+          user.email,
+          user.firstName || 'User',
+          data.password, // Send the plain password (temporary)
+          user.role,
+          user.organizationName || undefined,
+        );
+        logger.info(`Welcome email sent to ${user.email}`);
+      } catch (error) {
+        // Log error but don't fail user creation if email fails
+        logger.error(`Failed to send welcome email to ${user.email}:`, error);
+      }
+    }
 
     return user;
   }

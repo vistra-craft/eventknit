@@ -125,6 +125,13 @@ router.post('/users/:id/activate', AdminController.activateUser);
  */
 router.post('/events/:id/recall', AdminController.recallEvent);
 
+/**
+ * @route   GET /api/v1/admin/roles
+ * @desc    Get all roles with permissions information
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/roles', AdminController.getRoles);
+
 export default router;
 
 

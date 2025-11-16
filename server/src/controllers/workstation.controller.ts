@@ -573,7 +573,7 @@ export class WorkstationController {
         websocketService.emitScanEvent(eventId, {
           scanId: scanRecord.id,
           registrationId: result.registrationId,
-          eventId: eventId,
+          eventId,
           scanType: scanRecord.scanType || 'MANUAL_CHECK_OUT',
           facility: facility || null,
           scannedAt: result.checkedOutAt,

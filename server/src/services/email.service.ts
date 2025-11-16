@@ -296,6 +296,99 @@ class EmailService {
       throw new Error(`Failed to send magic link email after ${result.attempts} attempts: ${result.error?.message}`);
     }
   }
+
+  /**
+   * Send email notification when admin creates an account
+   * Option A: Includes temporary password with instructions to change on first login
+   */
+  async sendAdminCreatedAccountEmail(
+    email: string,
+    firstName: string,
+    password: string,
+    role: string,
+    organizationName?: string,
+  ): Promise<void> {
+    const loginUrl = `${config.frontend.url}/auth/login`;
+    const supportEmail = config.email.from || 'support@eventknit.com';
+
+    const roleDisplayName = role === 'ORGANIZER' ? 'Organizer' : role;
+    const organizationSection = organizationName
+      ? `
+            <p><strong>Organization:</strong> ${organizationName}</p>
+          `
+      : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Welcome to EventKnit</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Welcome to EventKnit, ${firstName}!</h1>
+            <p>An administrator has created an account for you on EventKnit. Your account details are below:</p>
+            
+            <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Role:</strong> ${roleDisplayName}</p>
+              ${organizationSection}
+              <p><strong>Temporary Password:</strong> <code style="background-color: #fff; padding: 4px 8px; border-radius: 4px; font-family: monospace;">${password}</code></p>
+            </div>
+
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0;"><strong>⚠️ Security Notice:</strong> Please change your password immediately after your first login for security purposes.</p>
+            </div>
+
+            <h2 style="color: #4a6cf7; margin-top: 30px;">Getting Started</h2>
+            <ol>
+              <li>Click the button below to log in to your account</li>
+              <li>Use your email and the temporary password provided above</li>
+              <li>You will be prompted to change your password on first login</li>
+              <li>Start creating and managing your events!</li>
+            </ol>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Login to EventKnit</a>
+            </div>
+
+            <p>Or visit: <a href="${loginUrl}" style="color: #4a6cf7;">${loginUrl}</a></p>
+
+            <h2 style="color: #4a6cf7; margin-top: 30px;">Security Best Practices</h2>
+            <ul>
+              <li>Change your password immediately after first login</li>
+              <li>Use a strong, unique password</li>
+              <li>Never share your password with anyone</li>
+              <li>Enable two-factor authentication if available</li>
+              <li>Log out when using shared devices</li>
+            </ul>
+
+            <h2 style="color: #4a6cf7; margin-top: 30px;">Need Help?</h2>
+            <p>If you have any questions or need assistance, please contact our support team:</p>
+            <p><strong>Support Email:</strong> <a href="mailto:${supportEmail}" style="color: #4a6cf7;">${supportEmail}</a></p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply to this email.</p>
+            <p style="font-size: 12px; color: #666;">If you did not expect this email, please contact support immediately.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Welcome to EventKnit - Your Account Has Been Created',
+      html,
+      isCritical: true, // Account creation notification is critical
+    });
+
+    if (!result.success) {
+      throw new Error(
+        `Failed to send admin-created account email after ${result.attempts} attempts: ${result.error?.message}`,
+      );
+    }
+  }
 }
 
 export const emailService = new EmailService();

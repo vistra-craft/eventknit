@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AdminService } from '../services/admin.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { UserRole, UserStatus } from '@prisma/client';
+import { roleHierarchy, canCreateRole, canModifyUser, canDeleteUser } from '../utils/privileges.js';
 
 export class AdminController {
   /**
@@ -20,12 +21,16 @@ export class AdminController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
+      // Extract sendEmailNotification from request body (optional, defaults to false)
+      const { sendEmailNotification, ...userData } = req.body;
+
       const user = await AdminService.createUser(
-        req.body,
+        userData,
         req.user.id,
         req.user.role,
         ipAddress,
         userAgent,
+        sendEmailNotification === true || sendEmailNotification === 'true',
       );
 
       res.status(201).json({
@@ -448,5 +453,89 @@ export class AdminController {
       next(error);
     }
   }
+
+  /**
+   * Get all roles
+   */
+  static async getRoles(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      // Get all available roles
+      const allRoles = Object.values(UserRole);
+      const currentUserRole = req.user.role;
+
+      // Build role information with permissions
+      const roles = allRoles.map((role) => {
+        const hierarchy = roleHierarchy[role];
+        const canCreate = canCreateRole(currentUserRole, role);
+        const canModify = canModifyUser(currentUserRole, role);
+        const canDelete = canDeleteUser(currentUserRole, role);
+
+        // Get roles that this role can create
+        const creatableRoles: UserRole[] = [];
+        allRoles.forEach((targetRole) => {
+          if (canCreateRole(role, targetRole)) {
+            creatableRoles.push(targetRole);
+          }
+        });
+
+        // Get roles that this role can modify
+        const modifiableRoles: UserRole[] = [];
+        allRoles.forEach((targetRole) => {
+          if (canModifyUser(role, targetRole)) {
+            modifiableRoles.push(targetRole);
+          }
+        });
+
+        return {
+          role,
+          hierarchy,
+          displayName: role.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+          description: getRoleDescription(role),
+          canCreate,
+          canModify,
+          canDelete,
+          creatableRoles,
+          modifiableRoles,
+        };
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          roles,
+          currentUserRole,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+/**
+ * Get role description
+ */
+function getRoleDescription(role: UserRole): string {
+  const descriptions: Record<UserRole, string> = {
+    [UserRole.SUPERADMIN]: 'Full system access with all permissions',
+    [UserRole.ADMIN_STAFF]: 'Administrative staff with management capabilities',
+    [UserRole.MARKETER]: 'Marketing team member with event promotion access',
+    [UserRole.SUPPORT]: 'Customer support team member',
+    [UserRole.TELLER]: 'Event staff member for ticket scanning and check-in',
+    [UserRole.ORGANIZER]: 'Event organizer with full event management capabilities',
+    [UserRole.ORGANIZER_STAFF]: 'Organizer staff member with limited event management',
+    [UserRole.ORGANIZER_TELLER]: 'Organizer teller for ticket scanning at specific events',
+    [UserRole.ATTENDEE]: 'Regular event attendee',
+  };
+
+  return descriptions[role] || 'No description available';
 }
 
