@@ -1,7 +1,6 @@
 /**
  * Workstation API Client
- * Handles all workstation-related API calls including ticket scanning,
- * manual operations, and event configuration.
+ * Handles all workstation-related API calls including ticket scanning, manual operations, and event management
  */
 
 import { apiGet, apiPost, apiPut } from './api';
@@ -9,31 +8,7 @@ import { apiGet, apiPost, apiPut } from './api';
 /**
  * Code Type Enum
  */
-export enum CodeType {
-  QR_CODE = 'QR_CODE',
-  BACKUP_CODE = 'BACKUP_CODE',
-  UNKNOWN = 'UNKNOWN',
-}
-
-/**
- * Scan Type Enum
- */
-export enum ScanType {
-  CHECK_IN = 'CHECK_IN',
-  CHECK_OUT = 'CHECK_OUT',
-  MANUAL_CHECK_IN = 'MANUAL_CHECK_IN',
-  MANUAL_CHECK_OUT = 'MANUAL_CHECK_OUT',
-}
-
-/**
- * Ticket Status Enum
- */
-export enum TicketStatus {
-  ACTIVE = 'ACTIVE',
-  DEACTIVATED = 'DEACTIVATED',
-  EXPIRED = 'EXPIRED',
-  CANCELLED = 'CANCELLED',
-}
+export type CodeType = 'QR_CODE' | 'BACKUP_CODE' | 'UNKNOWN';
 
 /**
  * Scan Request
@@ -43,28 +18,39 @@ export interface ScanRequest {
   eventId: string;
   facility?: string | null;
   deviceId?: string | null;
-  deviceType?: string | null;
+  deviceType?: 'MOBILE' | 'TABLET' | 'DESKTOP' | 'KIOSK' | null;
 }
 
 /**
  * Scan Response
  */
 export interface ScanResponse {
-  scanId: string;
-  registrationId: string;
-  eventId: string;
-  attendeeName: string;
-  ticketType: string | null;
-  scanType: ScanType;
-  facility: string | null;
-  scannedAt: string; // ISO date string
-  isReEntry: boolean;
-  signatureValid: boolean;
-  codeType: CodeType;
+  success: boolean;
+  data: {
+    scanId: string;
+    registrationId: string;
+    eventId: string;
+    attendeeName: string;
+    ticketType: string | null;
+    scanType: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
+    facility: string | null;
+    scannedAt: Date;
+    isReEntry: boolean;
+    signatureValid: boolean;
+    codeType: CodeType;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details?: {
+      registrationId?: string;
+      eventId?: string;
+    };
+  };
 }
 
 /**
- * Manual Check-In/Out Request
+ * Manual Operation Request
  */
 export interface ManualOperationRequest {
   searchTerm: string;
@@ -77,17 +63,28 @@ export interface ManualOperationRequest {
  * Manual Operation Response
  */
 export interface ManualOperationResponse {
-  scanId: string;
-  registrationId: string;
-  eventId: string;
-  attendeeName: string;
-  ticketType: string | null;
-  scanType: ScanType;
-  facility: string | null;
-  scannedAt: string; // ISO date string
-  isReEntry: boolean;
-  signatureValid?: boolean;
-  codeType?: CodeType;
+  success: boolean;
+  data: {
+    scanId: string;
+    registrationId: string;
+    eventId: string;
+    attendeeName: string;
+    ticketType: string | null;
+    scanType: 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
+    facility: string | null;
+    scannedAt: Date;
+    isReEntry: boolean;
+    signatureValid?: boolean;
+    codeType?: CodeType;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details?: {
+      registrationId?: string;
+      eventId?: string;
+    };
+  };
 }
 
 /**
@@ -110,11 +107,12 @@ export interface AttendeeSearchResult {
   email: string;
   phoneNumber: string | null;
   ticketType: string | null;
-  ticketStatus: TicketStatus;
-  checkedInAt: string | null; // ISO date string
-  checkedOutAt: string | null; // ISO date string
+  ticketStatus: 'ACTIVE' | 'DEACTIVATED' | 'EXPIRED' | 'CANCELLED';
+  checkedInAt: Date | null;
+  checkedOutAt: Date | null;
   isCurrentlyInside: boolean;
   reEntryCount: number;
+  lastScanFacility: string | null;
   signatureValid?: boolean;
   codeType?: CodeType;
 }
@@ -131,32 +129,42 @@ export interface SearchAttendeesResponse {
 }
 
 /**
+ * Ticket Details Response
+ */
+export interface TicketDetailsResponse {
+  success: boolean;
+  data: {
+    registrationId: string;
+    eventId: string;
+    attendeeName: string;
+    email: string;
+    phoneNumber: string | null;
+    ticketType: string | null;
+    ticketStatus: 'ACTIVE' | 'DEACTIVATED' | 'EXPIRED' | 'CANCELLED';
+    checkedInAt: Date | null;
+    checkedOutAt: Date | null;
+    isCurrentlyInside: boolean;
+    reEntryCount: number;
+    lastScanFacility: string | null;
+    scans: Array<{
+      id: string;
+      scanType: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
+      scannedAt: Date;
+      facility: string | null;
+      isReEntry: boolean;
+      isValid: boolean;
+    }>;
+  };
+}
+
+/**
  * Event Scan Configuration
  */
 export interface EventScanConfig {
   allowReEntry: boolean;
   requireCheckOut: boolean;
   maxReEntries: number | null;
-  scanSettings: {
-    [key: string]: unknown;
-  } | null;
-}
-
-/**
- * Event Statistics
- */
-export interface EventStatistics {
-  totalAttendees: number;
-  checkedIn: number;
-  currentlyInside: number;
-  checkedOut: number;
-  reEntries: number;
-  scansToday: number;
-  facilitiesData: Array<{
-    facility: string | null;
-    checkedIn: number;
-    currentlyInside: number;
-  }>;
+  scanSettings: Record<string, unknown> | null;
 }
 
 /**
@@ -165,47 +173,43 @@ export interface EventStatistics {
 export interface EventResponse {
   success: boolean;
   data: {
-    event: {
-      id: string;
-      title: string;
-      description: string | null;
-      startDate: string;
-      endDate: string;
-      scanConfig: EventScanConfig;
+    eventId: string;
+    eventTitle: string;
+    config: EventScanConfig;
+    statistics: {
+      totalAttendees: number;
+      checkedIn: number;
+      currentlyInside: number;
+      checkedOut: number;
+      reEntries: number;
+      scansToday: number;
     };
-    statistics: EventStatistics;
   };
 }
 
 /**
- * Event Attendee
+ * Event Attendees Response
  */
-export interface EventAttendee {
-  registrationId: string;
-  attendeeId: string;
-  attendeeName: string;
-  email: string;
-  phoneNumber: string | null;
-  ticketType: string | null;
-  ticketStatus: TicketStatus;
-  checkedInAt: string | null;
-  checkedOutAt: string | null;
-  isCurrentlyInside: boolean;
-  reEntryCount: number;
-  lastScanFacility: string | null;
-}
-
-/**
- * Get Event Attendees Response
- */
-export interface GetEventAttendeesResponse {
+export interface EventAttendeesResponse {
   success: boolean;
   data: {
-    attendees: EventAttendee[];
-    pagination: {
+    attendees: Array<{
+      registrationId: string;
+      attendeeName: string;
+      email: string;
+      phoneNumber: string | null;
+      ticketType: string | null;
+      ticketStatus: 'ACTIVE' | 'DEACTIVATED' | 'EXPIRED' | 'CANCELLED';
+      checkedInAt: Date | null;
+      checkedOutAt: Date | null;
+      isCurrentlyInside: boolean;
+      reEntryCount: number;
+      lastScanFacility: string | null;
+    }>;
+    total: number;
+    pagination?: {
       page: number;
       limit: number;
-      total: number;
       totalPages: number;
     };
   };
@@ -216,47 +220,36 @@ export interface GetEventAttendeesResponse {
  */
 export interface ScanHistoryFilters {
   facility?: string | null;
-  status?: TicketStatus | null;
-  scanType?: ScanType | null;
-  startDate?: string | null;
-  endDate?: string | null;
+  status?: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT' | null;
+  dateFrom?: Date | null;
+  dateTo?: Date | null;
   page?: number;
   limit?: number;
 }
 
 /**
- * Ticket Scan Record
+ * Event Scans Response
  */
-export interface TicketScanRecord {
-  id: string;
-  registrationId: string;
-  eventId: string;
-  scanType: ScanType;
-  scannedBy: string;
-  scannedAt: string; // ISO date string
-  facility: string | null;
-  deviceId: string | null;
-  deviceType: string | null;
-  isValid: boolean;
-  errorCode: string | null;
-  errorMessage: string | null;
-  isReEntry: boolean;
-  previousScanId: string | null;
-  attendeeName: string;
-  ticketType: string | null;
-}
-
-/**
- * Get Event Scans Response
- */
-export interface GetEventScansResponse {
+export interface EventScansResponse {
   success: boolean;
   data: {
-    scans: TicketScanRecord[];
-    pagination: {
+    scans: Array<{
+      id: string;
+      registrationId: string;
+      eventId: string;
+      scanType: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
+      scannedAt: Date;
+      facility: string | null;
+      attendeeName: string;
+      ticketType: string | null;
+      isReEntry: boolean;
+      isValid: boolean;
+      scannedBy: string;
+    }>;
+    total: number;
+    pagination?: {
       page: number;
       limit: number;
-      total: number;
       totalPages: number;
     };
   };
@@ -269,135 +262,213 @@ export interface UpdateEventConfigRequest {
   allowReEntry?: boolean;
   requireCheckOut?: boolean;
   maxReEntries?: number | null;
-  scanSettings?: {
-    [key: string]: unknown;
-  } | null;
+  scanSettings?: Record<string, unknown> | null;
 }
 
 /**
- * API Error Response
+ * Update Event Config Response
  */
-export interface WorkstationApiError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: {
-      registrationId?: string;
-      eventId?: string;
-    };
+export interface UpdateEventConfigResponse {
+  success: boolean;
+  data: {
+    eventId: string;
+    config: EventScanConfig;
   };
 }
 
 /**
- * API Success Response
+ * QR Code Detection
+ * Checks if a code string is a QR code format
  */
-export interface WorkstationApiSuccess<T> {
-  success: true;
-  data: T;
-}
+export const isQRCode = (code: string): boolean => {
+  return code.includes('|') && code.split('|').length >= 5;
+};
 
 /**
- * Scan ticket (check-in)
+ * Backup Code Validation
+ * Validates if a code string is a valid backup code format (Option A: 10 characters, alphanumeric)
+ */
+export const isValidBackupCode = (code: string): boolean => {
+  // Option A: 10 characters, alphanumeric
+  return /^[A-Z0-9]{10}$/.test(code.toUpperCase());
+  // Option B: 8-char code + 6-char signature (not implemented)
+  // return /^[A-Z0-9]{8}-[A-Z0-9]{6}$/.test(code.toUpperCase());
+};
+
+/**
+ * Detect Code Type
+ * Determines if a code is a QR code or backup code
+ */
+export const detectCodeType = (code: string): CodeType => {
+  if (isQRCode(code)) {
+    return 'QR_CODE';
+  }
+  if (isValidBackupCode(code)) {
+    return 'BACKUP_CODE';
+  }
+  return 'UNKNOWN';
+};
+
+/**
+ * Format Backup Code
+ * Formats a backup code to uppercase and removes spaces
+ */
+export const formatBackupCode = (code: string): string => {
+  return code.toUpperCase().replace(/\s+/g, '');
+};
+
+/**
+ * Scan Ticket (Check-in)
  * POST /api/v1/workstation/scan
+ * Accepts QR code or backup code
  */
-export const scanTicket = async (
-  request: ScanRequest,
-): Promise<WorkstationApiSuccess<ScanResponse> | WorkstationApiError> => {
+export const scanTicket = async (request: ScanRequest): Promise<ScanResponse> => {
   try {
-    const response = await apiPost<WorkstationApiSuccess<ScanResponse>>('/workstation/scan', request);
+    const response = await apiPost<ScanResponse>('/workstation/scan', {
+      code: request.code,
+      eventId: request.eventId,
+      facility: request.facility || null,
+      deviceId: request.deviceId || null,
+      deviceType: request.deviceType || null,
+    });
+
+    // Log signature verification failures
+    if (response.data && !response.data.signatureValid) {
+      console.warn('Signature verification failed for scan:', {
+        codeType: response.data.codeType,
+        registrationId: response.data.registrationId,
+      });
+    }
+
     return response;
-  } catch (error: unknown) {
-    // Handle signature verification failures
-    if (error && typeof error === 'object' && 'error' in error) {
-      const apiError = error as WorkstationApiError;
-      if (apiError.error?.code === 'INVALID_SIGNATURE') {
-        console.warn('Signature verification failed:', apiError.error.message);
-      }
-      return apiError;
+  } catch (error) {
+    // Handle INVALID_SIGNATURE errors specifically
+    const apiError = error as { error?: { code?: string; message?: string } };
+    if (apiError.error?.code === 'INVALID_SIGNATURE') {
+      console.error('Security warning: Invalid signature detected', apiError);
     }
     throw error;
   }
 };
 
 /**
- * Scan out (check-out)
+ * Scan Out (Check-out)
  * POST /api/v1/workstation/scan-out
+ * Accepts QR code or backup code
  */
-export const scanOut = async (
-  request: ScanRequest,
-): Promise<WorkstationApiSuccess<ScanResponse> | WorkstationApiError> => {
+export const scanOut = async (request: ScanRequest): Promise<ScanResponse> => {
   try {
-    const response = await apiPost<WorkstationApiSuccess<ScanResponse>>('/workstation/scan-out', request);
+    const response = await apiPost<ScanResponse>('/workstation/scan-out', {
+      code: request.code,
+      eventId: request.eventId,
+      facility: request.facility || null,
+      deviceId: request.deviceId || null,
+      deviceType: request.deviceType || null,
+    });
+
+    // Log signature verification failures
+    if (response.data && !response.data.signatureValid) {
+      console.warn('Signature verification failed for scan-out:', {
+        codeType: response.data.codeType,
+        registrationId: response.data.registrationId,
+      });
+    }
+
     return response;
-  } catch (error: unknown) {
-    // Handle signature verification failures
-    if (error && typeof error === 'object' && 'error' in error) {
-      const apiError = error as WorkstationApiError;
-      if (apiError.error?.code === 'INVALID_SIGNATURE') {
-        console.warn('Signature verification failed:', apiError.error.message);
-      }
-      return apiError;
+  } catch (error) {
+    // Handle INVALID_SIGNATURE errors specifically
+    const apiError = error as { error?: { code?: string; message?: string } };
+    if (apiError.error?.code === 'INVALID_SIGNATURE') {
+      console.error('Security warning: Invalid signature detected', apiError);
     }
     throw error;
   }
 };
 
 /**
- * Manual check-in
+ * Get Ticket Details
+ * GET /api/v1/workstation/tickets/:ticketId
+ */
+export const getTicketDetails = async (ticketId: string): Promise<TicketDetailsResponse> => {
+  return apiGet<TicketDetailsResponse>(`/workstation/tickets/${ticketId}`);
+};
+
+/**
+ * Manual Check-in
  * POST /api/v1/workstation/manual-check-in
+ * Requires: ADMIN_STAFF or higher
+ * Optional code parameter for signature verification
  */
 export const manualCheckIn = async (
   request: ManualOperationRequest,
-): Promise<WorkstationApiSuccess<ManualOperationResponse> | WorkstationApiError> => {
+): Promise<ManualOperationResponse> => {
   try {
-    const response = await apiPost<WorkstationApiSuccess<ManualOperationResponse>>(
-      '/workstation/manual-check-in',
-      request,
-    );
+    const response = await apiPost<ManualOperationResponse>('/workstation/manual-check-in', {
+      searchTerm: request.searchTerm,
+      eventId: request.eventId,
+      facility: request.facility || null,
+      code: request.code || null,
+    });
+
+    // Log signature verification failures if code was provided
+    if (request.code && response.data && !response.data.signatureValid) {
+      console.warn('Signature verification failed for manual check-in:', {
+        codeType: response.data.codeType,
+        registrationId: response.data.registrationId,
+      });
+    }
+
     return response;
-  } catch (error: unknown) {
-    // Handle signature verification failures
-    if (error && typeof error === 'object' && 'error' in error) {
-      const apiError = error as WorkstationApiError;
-      if (apiError.error?.code === 'INVALID_SIGNATURE') {
-        console.warn('Signature verification failed:', apiError.error.message);
-      }
-      return apiError;
+  } catch (error) {
+    // Handle INVALID_SIGNATURE errors specifically
+    const apiError = error as { error?: { code?: string; message?: string } };
+    if (apiError.error?.code === 'INVALID_SIGNATURE') {
+      console.error('Security warning: Invalid signature detected', apiError);
     }
     throw error;
   }
 };
 
 /**
- * Manual check-out
+ * Manual Check-out
  * POST /api/v1/workstation/manual-check-out
+ * Requires: ADMIN_STAFF or higher
+ * Optional code parameter for signature verification
  */
 export const manualCheckOut = async (
   request: ManualOperationRequest,
-): Promise<WorkstationApiSuccess<ManualOperationResponse> | WorkstationApiError> => {
+): Promise<ManualOperationResponse> => {
   try {
-    const response = await apiPost<WorkstationApiSuccess<ManualOperationResponse>>(
-      '/workstation/manual-check-out',
-      request,
-    );
+    const response = await apiPost<ManualOperationResponse>('/workstation/manual-check-out', {
+      searchTerm: request.searchTerm,
+      eventId: request.eventId,
+      facility: request.facility || null,
+      code: request.code || null,
+    });
+
+    // Log signature verification failures if code was provided
+    if (request.code && response.data && !response.data.signatureValid) {
+      console.warn('Signature verification failed for manual check-out:', {
+        codeType: response.data.codeType,
+        registrationId: response.data.registrationId,
+      });
+    }
+
     return response;
-  } catch (error: unknown) {
-    // Handle signature verification failures
-    if (error && typeof error === 'object' && 'error' in error) {
-      const apiError = error as WorkstationApiError;
-      if (apiError.error?.code === 'INVALID_SIGNATURE') {
-        console.warn('Signature verification failed:', apiError.error.message);
-      }
-      return apiError;
+  } catch (error) {
+    // Handle INVALID_SIGNATURE errors specifically
+    const apiError = error as { error?: { code?: string; message?: string } };
+    if (apiError.error?.code === 'INVALID_SIGNATURE') {
+      console.error('Security warning: Invalid signature detected', apiError);
     }
     throw error;
   }
 };
 
 /**
- * Search attendees
+ * Search Attendees
  * GET /api/v1/workstation/search
+ * Optional code parameter for signature verification
  */
 export const searchAttendees = async (
   request: SearchAttendeesRequest,
@@ -405,171 +476,98 @@ export const searchAttendees = async (
   const params = new URLSearchParams({
     searchTerm: request.searchTerm,
     eventId: request.eventId,
-    ...(request.limit && { limit: request.limit.toString() }),
-    ...(request.code && { code: request.code }),
   });
+
+  if (request.code) {
+    params.append('code', request.code);
+  }
+
+  if (request.limit) {
+    params.append('limit', request.limit.toString());
+  }
 
   return apiGet<SearchAttendeesResponse>(`/workstation/search?${params.toString()}`);
 };
 
 /**
- * Get event with scan configuration and statistics
+ * Get Event with Configuration and Statistics
  * GET /api/v1/workstation/events/:eventId
  */
-export const getEvent = async (eventId: string): Promise<EventResponse> => {
+export const getEventConfig = async (eventId: string): Promise<EventResponse> => {
   return apiGet<EventResponse>(`/workstation/events/${eventId}`);
 };
 
 /**
- * Get event attendees with scan status
+ * Get Event Attendees
  * GET /api/v1/workstation/events/:eventId/attendees
  */
 export const getEventAttendees = async (
   eventId: string,
-  page: number = 1,
-  limit: number = 25,
-  status?: TicketStatus | null,
-): Promise<GetEventAttendeesResponse> => {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    limit: limit.toString(),
-    ...(status && { status }),
-  });
+  page?: number,
+  limit?: number,
+): Promise<EventAttendeesResponse> => {
+  const params = new URLSearchParams();
+  if (page !== undefined) {
+    params.append('page', page.toString());
+  }
+  if (limit !== undefined) {
+    params.append('limit', limit.toString());
+  }
 
-  return apiGet<GetEventAttendeesResponse>(`/workstation/events/${eventId}/attendees?${params.toString()}`);
+  const queryString = params.toString();
+  return apiGet<EventAttendeesResponse>(
+    `/workstation/events/${eventId}/attendees${queryString ? `?${queryString}` : ''}`,
+  );
 };
 
 /**
- * Get scan history for event
+ * Get Event Scans (Scan History)
  * GET /api/v1/workstation/events/:eventId/scans
  */
 export const getEventScans = async (
   eventId: string,
-  filters: ScanHistoryFilters = {},
-): Promise<GetEventScansResponse> => {
-  const params = new URLSearchParams({
-    page: (filters.page || 1).toString(),
-    limit: (filters.limit || 25).toString(),
-    ...(filters.facility && { facility: filters.facility }),
-    ...(filters.status && { status: filters.status }),
-    ...(filters.scanType && { scanType: filters.scanType }),
-    ...(filters.startDate && { startDate: filters.startDate }),
-    ...(filters.endDate && { endDate: filters.endDate }),
-  });
+  filters?: ScanHistoryFilters,
+): Promise<EventScansResponse> => {
+  const params = new URLSearchParams();
 
-  return apiGet<GetEventScansResponse>(`/workstation/events/${eventId}/scans?${params.toString()}`);
+  if (filters?.facility) {
+    params.append('facility', filters.facility);
+  }
+
+  if (filters?.status) {
+    params.append('status', filters.status);
+  }
+
+  if (filters?.dateFrom) {
+    params.append('dateFrom', filters.dateFrom.toISOString());
+  }
+
+  if (filters?.dateTo) {
+    params.append('dateTo', filters.dateTo.toISOString());
+  }
+
+  if (filters?.page) {
+    params.append('page', filters.page.toString());
+  }
+
+  if (filters?.limit) {
+    params.append('limit', filters.limit.toString());
+  }
+
+  const queryString = params.toString();
+  return apiGet<EventScansResponse>(
+    `/workstation/events/${eventId}/scans${queryString ? `?${queryString}` : ''}`,
+  );
 };
 
 /**
- * Get event scan configuration
- * GET /api/v1/workstation/events/:eventId/config
- */
-export const getEventConfig = async (eventId: string): Promise<{
-  success: boolean;
-  data: {
-    config: EventScanConfig;
-  };
-}> => {
-  return apiGet<{
-    success: boolean;
-    data: {
-      config: EventScanConfig;
-    };
-  }>(`/workstation/events/${eventId}/config`);
-};
-
-/**
- * Update event scan configuration
+ * Update Event Scan Configuration
  * PUT /api/v1/workstation/events/:eventId/config
+ * Requires: ADMIN_STAFF or higher
  */
 export const updateEventConfig = async (
   eventId: string,
   config: UpdateEventConfigRequest,
-): Promise<{
-  success: boolean;
-  data: {
-    config: EventScanConfig;
-  };
-}> => {
-  return apiPut<{
-    success: boolean;
-    data: {
-      config: EventScanConfig;
-    };
-  }>(`/workstation/events/${eventId}/config`, config);
+): Promise<UpdateEventConfigResponse> => {
+  return apiPut<UpdateEventConfigResponse>(`/workstation/events/${eventId}/config`, config);
 };
-
-/**
- * Get ticket details with scan history
- * GET /api/v1/workstation/tickets/:ticketId
- */
-export const getTicketDetails = async (ticketId: string): Promise<{
-  success: boolean;
-  data: {
-    registration: {
-      id: string;
-      eventId: string;
-      attendeeName: string;
-      email: string;
-      ticketType: string | null;
-      ticketStatus: TicketStatus;
-      checkedInAt: string | null;
-      checkedOutAt: string | null;
-      isCurrentlyInside: boolean;
-      reEntryCount: number;
-    };
-    scans: TicketScanRecord[];
-  };
-}> => {
-  return apiGet<{
-    success: boolean;
-    data: {
-      registration: {
-        id: string;
-        eventId: string;
-        attendeeName: string;
-        email: string;
-        ticketType: string | null;
-        ticketStatus: TicketStatus;
-        checkedInAt: string | null;
-        checkedOutAt: string | null;
-        isCurrentlyInside: boolean;
-        reEntryCount: number;
-      };
-      scans: TicketScanRecord[];
-    };
-  }>(`/workstation/tickets/${ticketId}`);
-};
-
-/**
- * Utility function to detect if a code is a QR code or backup code
- */
-export const detectCodeType = (code: string): CodeType => {
-  // QR Code Detection: Contains pipe separator and has at least 5 parts
-  if (code.includes('|') && code.split('|').length >= 5) {
-    return CodeType.QR_CODE;
-  }
-
-  // Backup Code Validation: 10 characters, alphanumeric (Option A)
-  if (/^[A-Z0-9]{10}$/.test(code.toUpperCase())) {
-    return CodeType.BACKUP_CODE;
-  }
-
-  return CodeType.UNKNOWN;
-};
-
-/**
- * Utility function to validate backup code format
- */
-export const isValidBackupCode = (code: string): boolean => {
-  // Option A: 10 characters, alphanumeric
-  return /^[A-Z0-9]{10}$/.test(code.toUpperCase());
-};
-
-/**
- * Utility function to format backup code (uppercase, remove spaces)
- */
-export const formatBackupCode = (code: string): string => {
-  return code.toUpperCase().replace(/\s+/g, '');
-};
-
