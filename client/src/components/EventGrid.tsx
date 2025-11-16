@@ -64,14 +64,14 @@ export const EventGrid = () => {
           </div>
           
           {/* Bottom row with filters and info */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             {/* Left side - Time Filter Selector */}
-            <div className="bg-primary/5 rounded-full p-1 flex gap-1 shadow-sm border border-border/50">
+            <div className="bg-primary/5 rounded-full p-1 flex gap-1 shadow-sm border border-border/50 w-full sm:w-auto overflow-x-auto sm:overflow-visible scrollbar-hide">
               {timeFilters.map((filter) => (
                 <button
                   key={filter.id}
                   onClick={() => handleFilterChange(filter.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                  className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
                     selectedFilter === filter.id
                       ? 'bg-primary text-primary-foreground shadow-sm scale-105'
                       : 'text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:scale-105'
@@ -83,15 +83,18 @@ export const EventGrid = () => {
             </div>
             
             {/* Right side - Calendar icon, live events text, and trending badge */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 sm:gap-6 w-full sm:w-auto justify-end sm:justify-start">
               {/* Calendar icon and live events text */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center group">
-                  <Calendar className="w-5 h-5 text-primary group-hover:scale-110 transition-transform duration-300" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center group flex-shrink-0">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                  <span className="text-sm text-muted-foreground">Live events happening now</span>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary animate-pulse flex-shrink-0" />
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                    <span className="hidden sm:inline">Live events happening now</span>
+                    <span className="sm:hidden">Live now</span>
+                  </span>
                 </div>
               </div>
             </div>
