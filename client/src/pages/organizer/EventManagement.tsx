@@ -46,6 +46,10 @@ import type { EventData } from "../../types/event";
 import { shareEvent } from "../../lib/utils/share";
 import { exportEventData } from "../../lib/utils/export";
 import { useToast } from "../../hooks/use-toast";
+import { getEventConfig, updateEventConfig, type EventScanConfig } from "../../lib/workstation-api";
+import { Switch } from "../../components/ui/switch";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 
 const EventManagement = () => {
   const { eventId } = useParams();
@@ -62,6 +66,35 @@ const EventManagement = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [attendeesPage, setAttendeesPage] = useState(1);
   const [attendeesLimit, setAttendeesLimit] = useState(25);
+  const [scanConfig, setScanConfig] = useState<EventScanConfig | null>(null);
+  const [scanConfigLoading, setScanConfigLoading] = useState(false);
+  const [scanConfigSaving, setScanConfigSaving] = useState(false);
+
+  // Load scan config when scan-settings section is active
+  useEffect(() => {
+    const loadScanConfig = async () => {
+      if (!eventId || activeSection !== 'scan-settings') return;
+
+      try {
+        setScanConfigLoading(true);
+        const response = await getEventConfig(eventId);
+        if (response.success && response.data) {
+          setScanConfig(response.data.config);
+        }
+      } catch (error) {
+        console.error('Error loading scan config:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load scan settings",
+          variant: "destructive",
+        });
+      } finally {
+        setScanConfigLoading(false);
+      }
+    };
+
+    loadScanConfig();
+  }, [eventId, activeSection, toast]);
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -347,6 +380,7 @@ const EventManagement = () => {
     { key: "revenue", label: "Revenue", icon: DollarSign },
     { key: "agenda", label: "Sessions", icon: Calendar },
     { key: "abstracts", label: "Abstracts", icon: FileText },
+    { key: "scan-settings", label: "Scan Settings", icon: Settings },
   ];
 
   const getStatusColor = (status: string) => {
@@ -1011,6 +1045,189 @@ const EventManagement = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        );
+
+      case "scan-settings":
+        const handleSaveScanConfig = async () => {
+          if (!eventId || !scanConfig) return;
+
+          try {
+            setScanConfigSaving(true);
+            const response = await updateEventConfig(eventId, {
+              allowReEntry: scanConfig.allowReEntry,
+              requireCheckOut: scanConfig.requireCheckOut,
+              maxReEntries: scanConfig.maxReEntries,
+              scanSettings: scanConfig.scanSettings,
+            });
+
+            if (response.success) {
+              toast({
+                title: "Success",
+                description: "Scan settings saved successfully",
+              });
+              setScanConfig(response.data.config);
+            } else {
+              throw new Error('Failed to save scan settings');
+            }
+          } catch (error) {
+            console.error('Error saving scan config:', error);
+            toast({
+              title: "Error",
+              description: "Failed to save scan settings",
+              variant: "destructive",
+            });
+          } finally {
+            setScanConfigSaving(false);
+          }
+        };
+
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold">Scan Settings</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Configure how tickets are scanned and validated for this event
+                </p>
+              </div>
+            </div>
+
+            {scanConfigLoading ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading scan settings...</p>
+                </CardContent>
+              </Card>
+            ) : scanConfig ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ticket Scanning Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Allow Re-entry */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="allowReEntry" className="text-base font-medium">
+                        Allow Re-entry
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Allow attendees to leave and re-enter the event
+                      </p>
+                    </div>
+                    <Switch
+                      id="allowReEntry"
+                      checked={scanConfig.allowReEntry}
+                      onCheckedChange={(checked) =>
+                        setScanConfig({ ...scanConfig, allowReEntry: checked })
+                      }
+                    />
+                  </div>
+
+                  {/* Require Check-out */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="requireCheckOut" className="text-base font-medium">
+                        Require Check-out
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Require attendees to check out before leaving the event
+                      </p>
+                    </div>
+                    <Switch
+                      id="requireCheckOut"
+                      checked={scanConfig.requireCheckOut}
+                      onCheckedChange={(checked) =>
+                        setScanConfig({ ...scanConfig, requireCheckOut: checked })
+                      }
+                    />
+                  </div>
+
+                  {/* Max Re-entries */}
+                  {scanConfig.allowReEntry && (
+                    <div className="space-y-2">
+                      <Label htmlFor="maxReEntries" className="text-base font-medium">
+                        Maximum Re-entries
+                      </Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Maximum number of times an attendee can re-enter. Leave empty for unlimited.
+                      </p>
+                      <Input
+                        id="maxReEntries"
+                        type="number"
+                        min="0"
+                        value={scanConfig.maxReEntries ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setScanConfig({
+                            ...scanConfig,
+                            maxReEntries: value === '' ? null : parseInt(value, 10) || 0,
+                          });
+                        }}
+                        placeholder="Unlimited"
+                        className="max-w-xs"
+                      />
+                    </div>
+                  )}
+
+                  {/* Current Configuration Display */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-medium mb-3">Current Configuration</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Re-entry allowed:</span>
+                        <Badge variant={scanConfig.allowReEntry ? "default" : "secondary"}>
+                          {scanConfig.allowReEntry ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Check-out required:</span>
+                        <Badge variant={scanConfig.requireCheckOut ? "default" : "secondary"}>
+                          {scanConfig.requireCheckOut ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      {scanConfig.allowReEntry && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Max re-entries:</span>
+                          <span className="font-medium">
+                            {scanConfig.maxReEntries === null ? "Unlimited" : scanConfig.maxReEntries}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="pt-4 border-t">
+                    <Button
+                      onClick={handleSaveScanConfig}
+                      disabled={scanConfigSaving}
+                      className="w-full sm:w-auto"
+                    >
+                      {scanConfigSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Save Settings
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <AlertCircle className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Failed to load scan settings</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
 
