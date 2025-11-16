@@ -11,6 +11,26 @@ import { apiGet, apiPost, apiPut } from './api';
 export type CodeType = 'QR_CODE' | 'BACKUP_CODE' | 'UNKNOWN';
 
 /**
+ * Scan Type Enum
+ */
+export type ScanType = 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
+
+/**
+ * Workstation API Error
+ */
+export interface WorkstationApiError {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: {
+      registrationId?: string;
+      eventId?: string;
+    };
+  };
+}
+
+/**
  * Scan Request
  */
 export interface ScanRequest {
@@ -496,6 +516,11 @@ export const searchAttendees = async (
 export const getEventConfig = async (eventId: string): Promise<EventResponse> => {
   return apiGet<EventResponse>(`/workstation/events/${eventId}`);
 };
+
+/**
+ * Alias for getEventConfig (for backward compatibility)
+ */
+export const getEvent = getEventConfig;
 
 /**
  * Get Event Attendees
