@@ -703,5 +703,235 @@ describe('WorkstationService', () => {
       await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
     });
   });
+
+  describe('Manual Operations', () => {
+    it('should search attendees by registration ID', async () => {
+      if (!dbConnected) return;
+
+      const results = await WorkstationService.searchAttendees(testRegistrationId, testEventId);
+
+      expect(results.length).toBe(1);
+      expect(results[0].registrationId).toBe(testRegistrationId);
+      expect(results[0].attendeeEmail).toBe('attendee@example.com');
+    });
+
+    it('should search attendees by backup code', async () => {
+      if (!dbConnected) return;
+
+      const results = await WorkstationService.searchAttendees(testBackupCode, testEventId);
+
+      expect(results.length).toBe(1);
+      expect(results[0].registrationId).toBe(testRegistrationId);
+      expect(results[0].backupCode).toBe(testBackupCode);
+    });
+
+    it('should search attendees by email', async () => {
+      if (!dbConnected) return;
+
+      const results = await WorkstationService.searchAttendees('attendee@example.com', testEventId);
+
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0].attendeeEmail).toContain('attendee@example.com');
+    });
+
+    it('should search attendees by name', async () => {
+      if (!dbConnected) return;
+
+      const results = await WorkstationService.searchAttendees('Test Attendee', testEventId);
+
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0].attendeeName).toContain('Test');
+    });
+
+    it('should return empty array for non-existent search term', async () => {
+      if (!dbConnected) return;
+
+      const results = await WorkstationService.searchAttendees('nonexistent@example.com', testEventId);
+
+      expect(results.length).toBe(0);
+    });
+
+    it('should perform manual check-in by backup code', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.manualCheckIn(
+        testBackupCode,
+        testEventId,
+        testScannerId,
+        'Manual Entry',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isManual).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+
+      // Verify scan record is marked as manual
+      const scan = await prisma.ticketScan.findFirst({
+        where: {
+          registrationId: testRegistrationId,
+          scanType: 'MANUAL_CHECK_IN',
+        },
+      });
+
+      expect(scan).toBeDefined();
+      expect(scan?.scanType).toBe('MANUAL_CHECK_IN');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should perform manual check-in by registration ID', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.manualCheckIn(
+        testRegistrationId,
+        testEventId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isManual).toBe(true);
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should reject manual check-in for non-existent attendee', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.manualCheckIn(
+        'NONEXISTENT123',
+        testEventId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NOT_FOUND');
+      expect(result.isManual).toBe(true);
+    });
+
+    it('should perform manual check-out', async () => {
+      if (!dbConnected) return;
+
+      // First check in
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      // Manual check out
+      const result = await WorkstationService.manualCheckOut(
+        testBackupCode,
+        testEventId,
+        testScannerId,
+        'Manual Exit',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isManual).toBe(true);
+
+      // Verify scan record is marked as manual
+      const scan = await prisma.ticketScan.findFirst({
+        where: {
+          registrationId: testRegistrationId,
+          scanType: 'MANUAL_CHECK_OUT',
+        },
+      });
+
+      expect(scan).toBeDefined();
+      expect(scan?.scanType).toBe('MANUAL_CHECK_OUT');
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          checkedOutBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should reject manual check-out for non-existent attendee', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.manualCheckOut(
+        'NONEXISTENT123',
+        testEventId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NOT_FOUND');
+      expect(result.isManual).toBe(true);
+    });
+
+    it('should handle multiple matches in search', async () => {
+      if (!dbConnected) return;
+
+      // Create another attendee with similar name
+      const anotherAttendee = await prisma.user.create({
+        data: {
+          email: 'another@example.com',
+          password: 'hashedpassword',
+          firstName: 'Test',
+          lastName: 'Attendee',
+          role: 'ATTENDEE',
+          status: 'ACTIVE',
+          isEmailVerified: true,
+        },
+      });
+
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: testEventId,
+          attendeeId: anotherAttendee.id,
+          status: 'CONFIRMED',
+          totalAmount: 0,
+          ticketStatus: 'ACTIVE',
+          backupCode: TicketService.generateBackupTicketCode(),
+        },
+      });
+
+      // Search should return multiple results
+      const results = await WorkstationService.searchAttendees('Test Attendee', testEventId);
+      expect(results.length).toBeGreaterThan(1);
+
+      // Manual check-in should fail with multiple matches
+      const result = await WorkstationService.manualCheckIn(
+        'Test Attendee',
+        testEventId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('MULTIPLE_MATCHES');
+
+      // Cleanup
+      await prisma.eventRegistration.deleteMany({
+        where: { attendeeId: anotherAttendee.id },
+      });
+      await prisma.user.delete({ where: { id: anotherAttendee.id } });
+    });
+  });
 });
 

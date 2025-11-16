@@ -38,6 +38,28 @@ export interface EventScanConfig {
   maxReEntries: number | null;
 }
 
+export interface AttendeeSearchResult {
+  registrationId: string;
+  eventId: string;
+  attendeeName: string;
+  attendeeEmail: string;
+  ticketType: string | null;
+  ticketStatus: TicketStatus;
+  isCurrentlyInside: boolean;
+  checkedInAt: Date | null;
+  checkedOutAt: Date | null;
+  reEntryCount: number;
+  backupCode: string | null;
+}
+
+export interface ManualCheckInResult extends ScanResult {
+  isManual: boolean;
+}
+
+export interface ManualCheckOutResult extends CheckOutResult {
+  isManual: boolean;
+}
+
 export class WorkstationService {
   /**
    * Detect code type (QR code or backup code)
@@ -639,6 +661,390 @@ export class WorkstationService {
         checkedOutAt: new Date(),
         errorCode: 'CHECKOUT_ERROR',
         errorMessage: error instanceof Error ? error.message : 'Unknown error during checkout',
+      };
+    }
+  }
+
+  /**
+   * Search attendees by various criteria
+   */
+  static async searchAttendees(
+    searchTerm: string,
+    eventId: string,
+    limit: number = 20,
+  ): Promise<AttendeeSearchResult[]> {
+    try {
+      // Try to find by registration ID first (exact match)
+      if (searchTerm.length > 10) {
+        const byRegistrationId = await prisma.eventRegistration.findFirst({
+          where: {
+            id: searchTerm,
+            eventId,
+          },
+          include: {
+            attendee: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+                phoneNumber: true,
+              },
+            },
+          },
+        });
+
+        if (byRegistrationId) {
+          return [
+            {
+              registrationId: byRegistrationId.id,
+              eventId: byRegistrationId.eventId,
+              attendeeName: `${byRegistrationId.attendee.firstName || ''} ${byRegistrationId.attendee.lastName || ''}`.trim(),
+              attendeeEmail: byRegistrationId.attendee.email,
+              ticketType: byRegistrationId.ticketType,
+              ticketStatus: byRegistrationId.ticketStatus,
+              isCurrentlyInside: byRegistrationId.isCurrentlyInside,
+              checkedInAt: byRegistrationId.checkedInAt,
+              checkedOutAt: byRegistrationId.checkedOutAt,
+              reEntryCount: byRegistrationId.reEntryCount,
+              backupCode: byRegistrationId.backupCode,
+            },
+          ];
+        }
+      }
+
+      // Try to find by backup code (exact match)
+      const byBackupCode = await prisma.eventRegistration.findFirst({
+        where: {
+          backupCode: searchTerm,
+          eventId,
+        },
+        include: {
+          attendee: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              phoneNumber: true,
+            },
+          },
+        },
+      });
+
+      if (byBackupCode) {
+        return [
+          {
+            registrationId: byBackupCode.id,
+            eventId: byBackupCode.eventId,
+            attendeeName: `${byBackupCode.attendee.firstName || ''} ${byBackupCode.attendee.lastName || ''}`.trim(),
+            attendeeEmail: byBackupCode.attendee.email,
+            ticketType: byBackupCode.ticketType,
+            ticketStatus: byBackupCode.ticketStatus,
+            isCurrentlyInside: byBackupCode.isCurrentlyInside,
+            checkedInAt: byBackupCode.checkedInAt,
+            checkedOutAt: byBackupCode.checkedOutAt,
+            reEntryCount: byBackupCode.reEntryCount,
+            backupCode: byBackupCode.backupCode,
+          },
+        ];
+      }
+
+      // Search by name, email, or phone (partial match)
+      // Split search term to handle full names (e.g., "John Doe" -> ["John", "Doe"])
+      const searchTerms = searchTerm.trim().split(/\s+/);
+      const firstNameTerm = searchTerms[0] || '';
+      const lastNameTerm = searchTerms.length > 1 ? searchTerms.slice(1).join(' ') : '';
+
+      // Build OR conditions for attendee search
+      const attendeeConditions: any[] = [
+        // Match email
+        {
+          email: {
+            contains: searchTerm,
+            mode: 'insensitive' as const,
+          },
+        },
+        // Match phone
+        {
+          phoneNumber: {
+            contains: searchTerm,
+            mode: 'insensitive' as const,
+          },
+        },
+      ];
+
+      // Add first name condition if we have a first name term
+      if (firstNameTerm) {
+        attendeeConditions.push({
+          firstName: {
+            contains: firstNameTerm,
+            mode: 'insensitive' as const,
+          },
+        });
+      }
+
+      // Add last name condition if we have a last name term
+      if (lastNameTerm) {
+        attendeeConditions.push({
+          lastName: {
+            contains: lastNameTerm,
+            mode: 'insensitive' as const,
+          },
+        });
+      }
+
+      // Add full name AND condition if we have both
+      if (firstNameTerm && lastNameTerm) {
+        attendeeConditions.push({
+          AND: [
+            {
+              firstName: {
+                contains: firstNameTerm,
+                mode: 'insensitive' as const,
+              },
+            },
+            {
+              lastName: {
+                contains: lastNameTerm,
+                mode: 'insensitive' as const,
+              },
+            },
+          ],
+        });
+      }
+
+      const registrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          OR: [
+            {
+              attendee: {
+                OR: attendeeConditions,
+              },
+            },
+          ],
+        },
+        include: {
+          attendee: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              phoneNumber: true,
+            },
+          },
+        },
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return registrations.map((reg) => ({
+        registrationId: reg.id,
+        eventId: reg.eventId,
+        attendeeName: `${reg.attendee.firstName || ''} ${reg.attendee.lastName || ''}`.trim(),
+        attendeeEmail: reg.attendee.email,
+        ticketType: reg.ticketType,
+        ticketStatus: reg.ticketStatus,
+        isCurrentlyInside: reg.isCurrentlyInside,
+        checkedInAt: reg.checkedInAt,
+        checkedOutAt: reg.checkedOutAt,
+        reEntryCount: reg.reEntryCount,
+        backupCode: reg.backupCode,
+      }));
+    } catch (error) {
+      logger.error('Error searching attendees:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Manual check-in by search term
+   */
+  static async manualCheckIn(
+    searchTerm: string,
+    eventId: string,
+    scannedBy: string,
+    facility?: string,
+    deviceId?: string,
+    deviceType?: string,
+  ): Promise<ManualCheckInResult> {
+    try {
+      // Search for registration - use limit 2 to detect multiple matches
+      const results = await this.searchAttendees(searchTerm, eventId, 2);
+
+      if (results.length === 0) {
+        return {
+          success: false,
+          registrationId: '',
+          eventId,
+          checkedInAt: new Date(),
+          errorCode: 'NOT_FOUND',
+          errorMessage: 'No registration found matching search term',
+          isManual: true,
+        };
+      }
+
+      if (results.length > 1) {
+        return {
+          success: false,
+          registrationId: '',
+          eventId,
+          checkedInAt: new Date(),
+          errorCode: 'MULTIPLE_MATCHES',
+          errorMessage: 'Multiple registrations found. Please be more specific.',
+          isManual: true,
+        };
+      }
+
+      const registration = results[0];
+
+      // Check if search term is a QR code - verify signature if so
+      let signatureVerified: boolean | undefined;
+      if (this.detectCodeType(searchTerm) === 'QR_CODE') {
+        const verification = TicketSecurityService.verifyTicketSignature(searchTerm);
+        signatureVerified = verification.isValid;
+        
+        if (!signatureVerified) {
+          logger.warn(`Manual check-in attempted with invalid QR code signature: registrationId=${registration.registrationId}, eventId=${eventId}`);
+        }
+      }
+
+      // Perform check-in using scanTicket logic
+      // We'll use the registration ID directly since we found it
+      const scanResult = await this.scanTicket(
+        registration.backupCode || registration.registrationId,
+        eventId,
+        scannedBy,
+        facility,
+        deviceId,
+        deviceType,
+      );
+
+      if (!scanResult.success) {
+        return {
+          ...scanResult,
+          isManual: true,
+        };
+      }
+
+      // Update the scan record to mark it as manual
+      await prisma.ticketScan.updateMany({
+        where: {
+          registrationId: registration.registrationId,
+          eventId,
+          scannedBy,
+          scanType: ScanType.CHECK_IN,
+        },
+        data: {
+          scanType: ScanType.MANUAL_CHECK_IN,
+        },
+      });
+
+      // Log signature verification status for audit
+      if (signatureVerified !== undefined) {
+        logger.info(`Manual check-in signature verification: registrationId=${registration.registrationId}, verified=${signatureVerified}`);
+      }
+
+      return {
+        ...scanResult,
+        isManual: true,
+      };
+    } catch (error) {
+      logger.error('Error performing manual check-in:', error);
+      return {
+        success: false,
+        registrationId: '',
+        eventId,
+        checkedInAt: new Date(),
+        errorCode: 'MANUAL_CHECKIN_ERROR',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error during manual check-in',
+        isManual: true,
+      };
+    }
+  }
+
+  /**
+   * Manual check-out by search term
+   */
+  static async manualCheckOut(
+    searchTerm: string,
+    eventId: string,
+    scannedBy: string,
+    facility?: string,
+    deviceId?: string,
+    deviceType?: string,
+  ): Promise<ManualCheckOutResult> {
+    try {
+      // Search for registration - use limit 2 to detect multiple matches
+      const results = await this.searchAttendees(searchTerm, eventId, 2);
+
+      if (results.length === 0) {
+        return {
+          success: false,
+          registrationId: '',
+          checkedOutAt: new Date(),
+          errorCode: 'NOT_FOUND',
+          errorMessage: 'No registration found matching search term',
+          isManual: true,
+        };
+      }
+
+      if (results.length > 1) {
+        return {
+          success: false,
+          registrationId: '',
+          checkedOutAt: new Date(),
+          errorCode: 'MULTIPLE_MATCHES',
+          errorMessage: 'Multiple registrations found. Please be more specific.',
+          isManual: true,
+        };
+      }
+
+      const registration = results[0];
+
+      // Perform check-out using checkOut logic
+      const checkoutResult = await this.checkOut(
+        registration.registrationId,
+        scannedBy,
+        facility,
+        deviceId,
+        deviceType,
+      );
+
+      if (!checkoutResult.success) {
+        return {
+          ...checkoutResult,
+          isManual: true,
+        };
+      }
+
+      // Update the scan record to mark it as manual
+      await prisma.ticketScan.updateMany({
+        where: {
+          registrationId: registration.registrationId,
+          eventId,
+          scannedBy,
+          scanType: ScanType.CHECK_OUT,
+        },
+        data: {
+          scanType: ScanType.MANUAL_CHECK_OUT,
+        },
+      });
+
+      return {
+        ...checkoutResult,
+        isManual: true,
+      };
+    } catch (error) {
+      logger.error('Error performing manual check-out:', error);
+      return {
+        success: false,
+        registrationId: '',
+        checkedOutAt: new Date(),
+        errorCode: 'MANUAL_CHECKOUT_ERROR',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error during manual check-out',
+        isManual: true,
       };
     }
   }
