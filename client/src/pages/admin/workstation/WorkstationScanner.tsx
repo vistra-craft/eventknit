@@ -158,11 +158,52 @@ const WorkstationScanner: React.FC = () => {
   const [searchResults, setSearchResults] = useState<AttendeeSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchCode, setSearchCode] = useState(""); // Optional QR code for signature verification in search
+  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
+  const [isMobile, setIsMobile] = useState(false);
   
   // Refs
   const html5QrCodeRef = useRef<Html5QrcodeScanner | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
   const deviceId = getDeviceId();
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobile(isMobileDevice || isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Check camera permissions
+  useEffect(() => {
+    const checkCameraPermission = async () => {
+      try {
+        if (navigator.permissions && navigator.permissions.query) {
+          const permission = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          setCameraPermission(permission.state);
+          
+          permission.onchange = () => {
+            setCameraPermission(permission.state);
+          };
+        } else {
+          // Fallback: try to access camera
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop());
+          setCameraPermission('granted');
+        }
+      } catch (error) {
+        setCameraPermission('denied');
+      }
+    };
+
+    checkCameraPermission();
+  }, []);
 
   // Facilities
   const facilities: Facility[] = [
@@ -384,18 +425,57 @@ const WorkstationScanner: React.FC = () => {
   }, [eventId, selectedFacility, scanMode, soundEnabled, toast, deviceId]);
 
   // Start QR scanning
-  const startScanning = useCallback(() => {
+  const startScanning = useCallback(async () => {
     if (!scannerContainerRef.current) return;
 
+    // Check camera permission first
+    if (cameraPermission === 'denied') {
+      toast({
+        title: "Camera Permission Denied",
+        description: "Please enable camera access in your browser settings to use the scanner.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      // Request camera permission if not granted
+      if (cameraPermission !== 'granted') {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream.getTracks().forEach(track => track.stop());
+          setCameraPermission('granted');
+        } catch (permError) {
+          console.error('Camera permission error:', permError);
+          toast({
+            title: "Camera Access Required",
+            description: "Please allow camera access to use the scanner. You can use manual entry instead.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Mobile-optimized scanner configuration
+      const scannerConfig = isMobile
+        ? {
+            fps: 5, // Lower FPS for mobile performance
+            qrbox: { width: Math.min(300, window.innerWidth - 40), height: Math.min(300, window.innerWidth - 40) },
+            aspectRatio: 1.0,
+            supportedScanTypes: [0, 1], // QR_CODE and BARCODE (Code128, Code39)
+            showTorchButtonIfSupported: true,
+            showZoomSliderIfSupported: true,
+          }
+        : {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            supportedScanTypes: [0, 1], // QR_CODE and BARCODE
+          };
+
       const html5QrCode = new Html5QrcodeScanner(
         scannerContainerRef.current.id,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          supportedScanTypes: [],
-        },
+        scannerConfig,
         false // verbose
       );
 
@@ -417,11 +497,11 @@ const WorkstationScanner: React.FC = () => {
       console.error('Error starting scanner:', error);
       toast({
         title: "Error",
-        description: "Failed to start camera. Please check permissions.",
+        description: "Failed to start camera. Please check permissions or use manual entry.",
         variant: "destructive",
       });
     }
-  }, [processCode, toast]);
+  }, [processCode, toast, cameraPermission, isMobile]);
 
   // Stop QR scanning
   const stopScanning = useCallback(() => {
@@ -714,53 +794,74 @@ const WorkstationScanner: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {/* Camera View */}
+                    {/* Camera View - Mobile Optimized */}
                     <div 
-                      className={`relative bg-gray-100 rounded-lg overflow-hidden aspect-video ${
+                      className={`relative bg-gray-100 rounded-lg overflow-hidden ${
+                        isMobile ? 'aspect-square' : 'aspect-video'
+                      } ${
                         flashStatus === 'success' ? 'bg-green-200' : 
                         flashStatus === 'error' ? 'bg-red-200' : ''
                       } transition-colors duration-500`}
                     >
                       <div id="qr-reader" ref={scannerContainerRef} className="w-full h-full" />
                       {!isScanning && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <QrCode className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600">Camera not active</p>
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                          <div className="text-center p-4">
+                            <QrCode className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} text-gray-400 mx-auto mb-4`} />
+                            <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600 mb-2`}>
+                              Camera not active
+                            </p>
+                            {cameraPermission === 'denied' && (
+                              <p className="text-xs text-red-600 mt-2">
+                                Camera access denied. Please enable in browser settings.
+                              </p>
+                            )}
+                            {cameraPermission === 'prompt' && (
+                              <p className="text-xs text-amber-600 mt-2">
+                                Click "Start Scanning" to request camera access.
+                              </p>
+                            )}
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Scanner Controls */}
-                    <div className="flex gap-3">
+                    {/* Scanner Controls - Touch-friendly for mobile */}
+                    <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-3'}`}>
                       {!isScanning ? (
                         <Button 
                           onClick={startScanning}
-                          className="flex-1"
-                          disabled={!eventId}
+                          className={`${isMobile ? 'w-full h-12 text-base' : 'flex-1'}`}
+                          disabled={!eventId || cameraPermission === 'denied'}
+                          size={isMobile ? 'lg' : 'default'}
                         >
-                          <Camera className="w-4 h-4 mr-2" />
+                          <Camera className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
                           Start Scanning
                         </Button>
                       ) : (
                         <Button 
                           onClick={stopScanning}
                           variant="destructive"
-                          className="flex-1"
+                          className={`${isMobile ? 'w-full h-12 text-base' : 'flex-1'}`}
+                          size={isMobile ? 'lg' : 'default'}
                         >
-                          <XCircle className="w-4 h-4 mr-2" />
+                          <XCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
                           Stop Scanning
                         </Button>
                       )}
+                      {cameraPermission === 'denied' && (
+                        <p className="text-xs text-muted-foreground text-center mt-1">
+                          Camera access denied. Use manual entry below.
+                        </p>
+                      )}
                     </div>
 
-                    {/* Manual Input */}
+                    {/* Manual Input - Mobile Optimized */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">
+                      <label className={`${isMobile ? 'text-base' : 'text-sm'} font-medium`}>
                         Manual Input (QR Code or Backup Code)
                       </label>
-                      <div className="flex gap-2">
+                      <div className={`flex ${isMobile ? 'flex-col' : 'gap-2'}`}>
                         <Input
                           placeholder="Enter QR code or 10-character backup code..."
                           value={manualInput}
@@ -770,12 +871,20 @@ const WorkstationScanner: React.FC = () => {
                           }}
                           onKeyPress={(e) => e.key === 'Enter' && handleManualScan()}
                           maxLength={100}
+                          className={isMobile ? 'text-base h-12' : ''}
+                          autoComplete="off"
+                          autoCorrect="off"
+                          autoCapitalize="off"
+                          spellCheck="false"
                         />
                         <Button 
                           onClick={handleManualScan}
                           disabled={!manualInput.trim() || !eventId}
+                          className={isMobile ? 'w-full h-12 text-base mt-2' : ''}
+                          size={isMobile ? 'lg' : 'default'}
                         >
-                          <Scan className="w-4 h-4" />
+                          <Scan className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
+                          {isMobile ? 'Scan Code' : ''}
                         </Button>
                       </div>
                       {manualInput && detectCodeType(manualInput) === CodeType.UNKNOWN && (
