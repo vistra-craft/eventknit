@@ -83,14 +83,18 @@ describe('Workstation Concurrency Tests', () => {
     });
     testAttendeeId = attendee.id;
 
-    // Create test event
+    // Create test event with future dates
+    const now = new Date();
+    const startDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Tomorrow
+    const endDate = new Date(now.getTime() + 48 * 60 * 60 * 1000); // Day after tomorrow
+    
     const event = await prisma.event.create({
       data: {
         title: 'Test Event',
         description: 'Test Description',
         location: 'Test Location',
-        startDate: new Date('2024-12-01'),
-        endDate: new Date('2024-12-02'),
+        startDate,
+        endDate,
         organizerId: testUserId,
         status: 'APPROVED',
         allowReEntry: true,

@@ -234,6 +234,17 @@ const WorkstationHistory: React.FC = () => {
     return true;
   });
 
+  // Helper function to get facility icon
+  const getFacilityIconFromName = React.useCallback((facilityName: string): React.ReactNode => {
+    const name = facilityName.toLowerCase();
+    if (name.includes('entrance')) return <Shield className="w-4 h-4" />;
+    if (name.includes('lunch')) return <Utensils className="w-4 h-4" />;
+    if (name.includes('gift')) return <Gift className="w-4 h-4" />;
+    if (name.includes('vip')) return <Star className="w-4 h-4" />;
+    if (name.includes('parking')) return <Car className="w-4 h-4" />;
+    return <Building2 className="w-4 h-4" />;
+  }, []);
+
   // Get unique facilities from scans
   const facilities = React.useMemo(() => {
     const facilitySet = new Set<string>();
@@ -253,17 +264,7 @@ const WorkstationHistory: React.FC = () => {
       { id: "all", name: "All Facilities", icon: <Building2 className="w-4 h-4" /> },
       ...facilityList,
     ];
-  }, [scans]);
-
-  const getFacilityIconFromName = (facilityName: string): React.ReactNode => {
-    const name = facilityName.toLowerCase();
-    if (name.includes('entrance')) return <Shield className="w-4 h-4" />;
-    if (name.includes('lunch')) return <Utensils className="w-4 h-4" />;
-    if (name.includes('gift')) return <Gift className="w-4 h-4" />;
-    if (name.includes('vip')) return <Star className="w-4 h-4" />;
-    if (name.includes('parking')) return <Car className="w-4 h-4" />;
-    return <Building2 className="w-4 h-4" />;
-  };
+  }, [scans, getFacilityIconFromName]);
 
   const getStatusColor = (isValid: boolean) => {
     return isValid 
@@ -360,10 +361,10 @@ const WorkstationHistory: React.FC = () => {
 
   const scanTypes = [
     { id: "all", name: "All Types" },
-    { id: ScanType.CHECK_IN, name: "Check In" },
-    { id: ScanType.CHECK_OUT, name: "Check Out" },
-    { id: ScanType.MANUAL_CHECK_IN, name: "Manual Check In" },
-    { id: ScanType.MANUAL_CHECK_OUT, name: "Manual Check Out" },
+    { id: "CHECK_IN" as ScanType, name: "Check In" },
+    { id: "CHECK_OUT" as ScanType, name: "Check Out" },
+    { id: "MANUAL_CHECK_IN" as ScanType, name: "Manual Check In" },
+    { id: "MANUAL_CHECK_OUT" as ScanType, name: "Manual Check Out" },
   ];
 
   const statuses = [

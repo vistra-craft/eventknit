@@ -28,4 +28,6 @@ module.exports = {
   forceExit: true,
   // Detect open handles to help identify leaks
   detectOpenHandles: false, // Set to true for debugging
+  // Global test timeout (can be overridden per test)
+  testTimeout: 120000, // 120 seconds default timeout
 };

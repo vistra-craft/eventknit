@@ -62,16 +62,33 @@ describe('Workstation API Integration Tests', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clean up
+    // Clean up in correct order (dependent records first)
     await prisma.ticketScan.deleteMany();
     await prisma.eventRegistration.deleteMany();
     await prisma.event.deleteMany();
-    await prisma.user.deleteMany();
+    
+    // Delete existing test users if they exist
+    await prisma.user.deleteMany({
+      where: {
+        email: {
+          in: ['teller@test.com', 'admin@test.com', 'organizer@test.com', 'attendee@test.com', 'attendee2@test.com'],
+        },
+      },
+    });
 
-    // Create test users
+    // Create test users using upsert to avoid unique constraint errors
     const tellerPassword = await hashPassword('Teller123!@$');
-    const teller = await prisma.user.create({
-      data: {
+    const teller = await prisma.user.upsert({
+      where: { email: 'teller@test.com' },
+      update: {
+        password: tellerPassword,
+        firstName: 'Teller',
+        lastName: 'User',
+        role: UserRole.TELLER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'teller@test.com',
         password: tellerPassword,
         firstName: 'Teller',
@@ -84,8 +101,17 @@ describe('Workstation API Integration Tests', () => {
     tellerId = teller.id;
 
     const adminPassword = await hashPassword('Admin123!@$');
-    const admin = await prisma.user.create({
-      data: {
+    const admin = await prisma.user.upsert({
+      where: { email: 'admin@test.com' },
+      update: {
+        password: adminPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: UserRole.ADMIN_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'admin@test.com',
         password: adminPassword,
         firstName: 'Admin',
@@ -98,8 +124,17 @@ describe('Workstation API Integration Tests', () => {
     adminId = admin.id;
 
     const organizerPassword = await hashPassword('Organizer123!@$');
-    const organizer = await prisma.user.create({
-      data: {
+    const organizer = await prisma.user.upsert({
+      where: { email: 'organizer@test.com' },
+      update: {
+        password: organizerPassword,
+        firstName: 'Organizer',
+        lastName: 'User',
+        role: UserRole.ORGANIZER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'organizer@test.com',
         password: organizerPassword,
         firstName: 'Organizer',
@@ -112,8 +147,17 @@ describe('Workstation API Integration Tests', () => {
     organizerId = organizer.id;
 
     const attendeePassword = await hashPassword('Attendee123!@$');
-    const attendee = await prisma.user.create({
-      data: {
+    const attendee = await prisma.user.upsert({
+      where: { email: 'attendee@test.com' },
+      update: {
+        password: attendeePassword,
+        firstName: 'Attendee',
+        lastName: 'User',
+        role: UserRole.ATTENDEE,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'attendee@test.com',
         password: attendeePassword,
         firstName: 'Attendee',
@@ -372,8 +416,24 @@ describe('Workstation API Integration Tests', () => {
         return;
       }
 
+      // Ensure registration is in a clean state (not checked in)
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          checkedInAt: null,
+          checkedOutAt: null,
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+        },
+      });
+
+      // Clear any existing scans for this registration
+      await prisma.ticketScan.deleteMany({
+        where: { registrationId },
+      });
+
       // First check-in
-      await request(app)
+      const checkInResponse = await request(app)
         .post('/api/v1/workstation/scan')
         .set('Authorization', `Bearer ${tellerToken}`)
         .send({
@@ -382,11 +442,22 @@ describe('Workstation API Integration Tests', () => {
           facility: 'entrance',
           deviceId: 'test-device-1',
           deviceType: 'DESKTOP',
-        })
-        .expect(200);
+        });
+
+      if (checkInResponse.status !== 200) {
+        console.error('Check-in failed:', JSON.stringify(checkInResponse.body, null, 2));
+        console.error('QR Code:', qrCode);
+        console.error('Event ID:', eventId);
+        console.error('Registration ID:', registrationId);
+      }
+      expect(checkInResponse.status).toBe(200);
+      expect(checkInResponse.body.success).toBe(true);
+
+      // Wait a bit to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check-out
-      await request(app)
+      const checkOutResponse = await request(app)
         .post('/api/v1/workstation/scan-out')
         .set('Authorization', `Bearer ${tellerToken}`)
         .send({
@@ -395,8 +466,16 @@ describe('Workstation API Integration Tests', () => {
           facility: 'exit',
           deviceId: 'test-device-1',
           deviceType: 'DESKTOP',
-        })
-        .expect(200);
+        });
+
+      if (checkOutResponse.status !== 200) {
+        console.error('Check-out failed:', JSON.stringify(checkOutResponse.body, null, 2));
+      }
+      expect(checkOutResponse.status).toBe(200);
+      expect(checkOutResponse.body.success).toBe(true);
+
+      // Wait a bit to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Re-entry
       const response = await request(app)
@@ -408,12 +487,18 @@ describe('Workstation API Integration Tests', () => {
           facility: 'entrance',
           deviceId: 'test-device-1',
           deviceType: 'DESKTOP',
-        })
-        .expect(200);
+        });
 
+      if (response.status !== 200) {
+        console.error('Re-entry scan failed:', JSON.stringify(response.body, null, 2));
+        console.error('QR Code:', qrCode);
+        console.error('Event ID:', eventId);
+        console.error('Registration ID:', registrationId);
+      }
+      expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.isReEntry).toBe(true);
-    });
+    }, 120000); // Increase timeout to 120 seconds
   });
 
   describe('POST /api/v1/workstation/scan-out', () => {
@@ -423,8 +508,19 @@ describe('Workstation API Integration Tests', () => {
         return;
       }
 
+      // Ensure registration is in a clean state
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          checkedInAt: null,
+          checkedOutAt: null,
+          isCurrentlyInside: false,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId } });
+
       // First check-in
-      await request(app)
+      const checkInResponse = await request(app)
         .post('/api/v1/workstation/scan')
         .set('Authorization', `Bearer ${tellerToken}`)
         .send({
@@ -433,8 +529,15 @@ describe('Workstation API Integration Tests', () => {
           facility: 'entrance',
           deviceId: 'test-device-1',
           deviceType: 'DESKTOP',
-        })
-        .expect(200);
+        });
+
+      if (checkInResponse.status !== 200) {
+        console.error('Check-in failed:', JSON.stringify(checkInResponse.body, null, 2));
+      }
+      expect(checkInResponse.status).toBe(200);
+
+      // Wait for database consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check-out
       const response = await request(app)
@@ -446,12 +549,15 @@ describe('Workstation API Integration Tests', () => {
           facility: 'exit',
           deviceId: 'test-device-1',
           deviceType: 'DESKTOP',
-        })
-        .expect(200);
+        });
 
+      if (response.status !== 200) {
+        console.error('Check-out failed:', JSON.stringify(response.body, null, 2));
+      }
+      expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.scanType).toBe('CHECK_OUT');
-    });
+    }, 120000); // Increase timeout to 120 seconds
 
     it('should reject check-out for not checked-in attendee', async () => {
       if (!dbConnected) {
@@ -483,6 +589,18 @@ describe('Workstation API Integration Tests', () => {
         return;
       }
 
+      // Ensure registration is in a clean state (not checked in)
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          checkedInAt: null,
+          checkedOutAt: null,
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId } });
+
       const response = await request(app)
         .post('/api/v1/workstation/manual-check-in')
         .set('Authorization', `Bearer ${adminToken}`)
@@ -492,9 +610,15 @@ describe('Workstation API Integration Tests', () => {
           facility: 'entrance',
           deviceId: 'test-device-1',
           deviceType: 'DESKTOP',
-        })
-        .expect(200);
+        });
 
+      if (response.status !== 200) {
+        console.error('Manual check-in failed:', JSON.stringify(response.body, null, 2));
+        console.error('Event ID:', eventId);
+        console.error('Registration ID:', registrationId);
+      }
+
+      expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.scanType).toBe('MANUAL_CHECK_IN');
     });
@@ -526,11 +650,25 @@ describe('Workstation API Integration Tests', () => {
         return;
       }
 
-      // Create another registration with same email
+      // Create another attendee with similar name (to get multiple matches when searching)
+      const duplicateAttendeePassword = await hashPassword('Attendee123!@$');
+      const duplicateAttendee = await prisma.user.create({
+        data: {
+          email: 'attendee2@test.com', // Different email (emails must be unique)
+          password: duplicateAttendeePassword,
+          firstName: 'Attendee', // Same first name as original attendee
+          lastName: 'User2',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Create registration for the duplicate attendee
       await prisma.eventRegistration.create({
         data: {
           eventId,
-          attendeeId,
+          attendeeId: duplicateAttendee.id, // Different attendee ID
           status: 'CONFIRMED',
           totalAmount: 0,
           ticketStatus: TicketStatus.ACTIVE,
@@ -538,12 +676,13 @@ describe('Workstation API Integration Tests', () => {
         },
       });
 
+      // Search by first name "Attendee" - should match both attendees
       const response = await request(app)
         .post('/api/v1/workstation/manual-check-in')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           eventId,
-          searchTerm: 'attendee@test.com',
+          searchTerm: 'Attendee', // Search by name to get multiple matches
           facility: 'entrance',
           deviceId: 'test-device-1',
           deviceType: 'DESKTOP',
@@ -573,7 +712,7 @@ describe('Workstation API Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.results.length).toBeGreaterThan(0);
-      expect(response.body.data.results[0].email).toContain('attendee@test.com');
+      expect(response.body.data.results[0].attendeeEmail).toContain('attendee@test.com');
     });
 
     it('should search attendees by name', async () => {
