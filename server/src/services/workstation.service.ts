@@ -32,6 +32,12 @@ export interface CheckOutResult {
   errorMessage?: string;
 }
 
+export interface EventScanConfig {
+  allowReEntry: boolean;
+  requireCheckOut: boolean;
+  maxReEntries: number | null;
+}
+
 export class WorkstationService {
   /**
    * Detect code type (QR code or backup code)
@@ -97,6 +103,35 @@ export class WorkstationService {
       registrationId: registration.id,
       eventId: registration.eventId,
     };
+  }
+
+  /**
+   * Get event scan configuration
+   */
+  static async getEventScanConfig(eventId: string): Promise<EventScanConfig | null> {
+    try {
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: {
+          allowReEntry: true,
+          requireCheckOut: true,
+          maxReEntries: true,
+        },
+      });
+
+      if (!event) {
+        return null;
+      }
+
+      return {
+        allowReEntry: event.allowReEntry,
+        requireCheckOut: event.requireCheckOut,
+        maxReEntries: event.maxReEntries,
+      };
+    } catch (error) {
+      logger.error('Error fetching event scan config:', error);
+      return null;
+    }
   }
 
   /**
@@ -301,6 +336,19 @@ export class WorkstationService {
 
       const registrationId = validation.registrationId;
 
+      // Get event scan configuration
+      const scanConfig = await this.getEventScanConfig(eventId);
+      if (!scanConfig) {
+        return {
+          success: false,
+          registrationId,
+          eventId,
+          checkedInAt: new Date(),
+          errorCode: 'INVALID_EVENT',
+          errorMessage: 'Event not found',
+        };
+      }
+
       // Check if already scanned (prevent double scan)
       const existingRegistration = await prisma.eventRegistration.findUnique({
         where: { id: registrationId },
@@ -308,6 +356,8 @@ export class WorkstationService {
           isCurrentlyInside: true,
           ticketStatus: true,
           checkedInAt: true,
+          reEntryCount: true,
+          checkedOutAt: true,
         },
       });
 
@@ -322,7 +372,7 @@ export class WorkstationService {
         };
       }
 
-      // Check if already checked in
+      // Check if already checked in (not a re-entry)
       if (existingRegistration.isCurrentlyInside) {
         return {
           success: false,
@@ -334,28 +384,102 @@ export class WorkstationService {
         };
       }
 
-      // Check if ticket is already deactivated (but not currently inside - edge case)
-      if (
-        existingRegistration.ticketStatus === TicketStatus.DEACTIVATED &&
-        !existingRegistration.isCurrentlyInside
-      ) {
-        // Allow re-entry if ticket is ACTIVE (will be handled in re-entry logic)
-        // For now, if it's DEACTIVATED and not inside, it's an error state
-        logger.warn(`Registration ${registrationId} is DEACTIVATED but not inside - potential error state`);
+      // Handle re-entry scenario (ticket was previously checked in but is not currently inside)
+      // This covers both ACTIVE (re-entry allowed) and DEACTIVATED (re-entry not allowed) cases
+      const isReEntry = existingRegistration.checkedInAt !== null && !existingRegistration.isCurrentlyInside;
+
+      if (isReEntry) {
+        // Verify signature on re-entry (prevent replay attacks)
+        if (validation.codeType === 'QR_CODE' && validation.signatureVerified === false) {
+          return {
+            success: false,
+            registrationId,
+            eventId,
+            checkedInAt: new Date(),
+            errorCode: 'INVALID_SIGNATURE',
+            errorMessage: 'Invalid signature for re-entry',
+          };
+        }
+
+        // Check if re-entry is allowed
+        if (!scanConfig.allowReEntry) {
+          return {
+            success: false,
+            registrationId,
+            eventId,
+            checkedInAt: new Date(),
+            errorCode: 'REENTRY_NOT_ALLOWED',
+            errorMessage: 'Re-entry is not allowed for this event',
+          };
+        }
+
+        // Check if check-out is required before re-entry
+        if (scanConfig.requireCheckOut && !existingRegistration.checkedOutAt) {
+          return {
+            success: false,
+            registrationId,
+            eventId,
+            checkedInAt: new Date(),
+            errorCode: 'CHECKOUT_REQUIRED',
+            errorMessage: 'Ticket must be checked out before re-entry',
+          };
+        }
+
+        // Validate re-entry count against maxReEntries
+        if (scanConfig.maxReEntries !== null && existingRegistration.reEntryCount >= scanConfig.maxReEntries) {
+          return {
+            success: false,
+            registrationId,
+            eventId,
+            checkedInAt: new Date(),
+            errorCode: 'MAX_REENTRIES_EXCEEDED',
+            errorMessage: `Maximum re-entries (${scanConfig.maxReEntries}) exceeded`,
+          };
+        }
       }
 
       const now = new Date();
 
+      // Find previous scan for re-entry linking
+      let previousScanId: string | undefined;
+      if (isReEntry) {
+        const previousScan = await prisma.ticketScan.findFirst({
+          where: {
+            registrationId,
+            eventId,
+            scanType: ScanType.CHECK_OUT,
+          },
+          orderBy: {
+            scannedAt: 'desc',
+          },
+        });
+        previousScanId = previousScan?.id;
+      }
+
       // Update registration
+      const updateData: {
+        checkedInAt: Date;
+        checkedInBy: string;
+        ticketStatus: TicketStatus;
+        isCurrentlyInside: boolean;
+        lastScanFacility: string | null;
+        reEntryCount?: { increment: number };
+      } = {
+        checkedInAt: now,
+        checkedInBy: scannedBy,
+        ticketStatus: TicketStatus.DEACTIVATED,
+        isCurrentlyInside: true,
+        lastScanFacility: facility || null,
+      };
+
+      // Increment re-entry count if this is a re-entry
+      if (isReEntry) {
+        updateData.reEntryCount = { increment: 1 };
+      }
+
       const updatedRegistration = await prisma.eventRegistration.update({
         where: { id: registrationId },
-        data: {
-          checkedInAt: now,
-          checkedInBy: scannedBy,
-          ticketStatus: TicketStatus.DEACTIVATED,
-          isCurrentlyInside: true,
-          lastScanFacility: facility || null,
-        },
+        data: updateData,
         include: {
           attendee: {
             select: {
@@ -377,7 +501,8 @@ export class WorkstationService {
           deviceId: deviceId || null,
           deviceType: deviceType || null,
           isValid: true,
-          isReEntry: false,
+          isReEntry,
+          previousScanId: previousScanId || null,
           ipAddress: ipAddress || null,
           userAgent: userAgent || null,
           location: location || undefined,
@@ -430,11 +555,6 @@ export class WorkstationService {
         select: {
           isCurrentlyInside: true,
           eventId: true,
-          event: {
-            select: {
-              allowReEntry: true,
-            },
-          },
         },
       });
 
@@ -458,16 +578,33 @@ export class WorkstationService {
         };
       }
 
+      // Get event scan configuration
+      const scanConfig = await this.getEventScanConfig(registration.eventId);
+      if (!scanConfig) {
+        return {
+          success: false,
+          registrationId,
+          checkedOutAt: new Date(),
+          errorCode: 'INVALID_EVENT',
+          errorMessage: 'Event not found',
+        };
+      }
+
+      // Verify allowReEntry is enabled (checkout is only meaningful if re-entry is allowed)
+      // However, we still allow checkout even if re-entry isn't allowed (they just can't come back)
+      // This is useful for tracking purposes
+
       const now = new Date();
 
       // Update registration
+      // Set ticketStatus to ACTIVE only if re-entry is allowed, otherwise keep it DEACTIVATED
       await prisma.eventRegistration.update({
         where: { id: registrationId },
         data: {
           checkedOutAt: now,
           checkedOutBy: scannedBy,
           isCurrentlyInside: false,
-          ticketStatus: TicketStatus.ACTIVE, // Set to ACTIVE for re-entry
+          ticketStatus: scanConfig.allowReEntry ? TicketStatus.ACTIVE : TicketStatus.DEACTIVATED,
         },
       });
 

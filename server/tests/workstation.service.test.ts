@@ -458,5 +458,250 @@ describe('WorkstationService', () => {
       expect(result.errorCode).toBe('INVALID_TICKET');
     });
   });
+
+  describe('Re-entry Support', () => {
+    it('should get event scan configuration', async () => {
+      if (!dbConnected) return;
+
+      const config = await WorkstationService.getEventScanConfig(testEventId);
+
+      expect(config).toBeDefined();
+      expect(config?.allowReEntry).toBe(true);
+      expect(config?.requireCheckOut).toBe(false);
+      expect(config?.maxReEntries).toBeNull();
+    });
+
+    it('should allow re-entry when configured', async () => {
+      if (!dbConnected) return;
+
+      // First check in
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      // Check out
+      await WorkstationService.checkOut(testRegistrationId, testScannerId);
+
+      // Re-entry should work
+      const result = await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      expect(result.success).toBe(true);
+
+      // Verify re-entry count was incremented
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: testRegistrationId },
+      });
+
+      expect(registration?.reEntryCount).toBe(1);
+
+      // Verify scan record is marked as re-entry
+      const scan = await prisma.ticketScan.findFirst({
+        where: {
+          registrationId: testRegistrationId,
+          isReEntry: true,
+        },
+      });
+
+      expect(scan).toBeDefined();
+      expect(scan?.isReEntry).toBe(true);
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          checkedOutBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should reject re-entry when not allowed', async () => {
+      if (!dbConnected) return;
+
+      // Update event to disallow re-entry
+      await prisma.event.update({
+        where: { id: testEventId },
+        data: { allowReEntry: false },
+      });
+
+      // First check in
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      // Check out
+      await WorkstationService.checkOut(testRegistrationId, testScannerId);
+
+      // Re-entry should fail
+      const result = await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('REENTRY_NOT_ALLOWED');
+
+      // Reset
+      await prisma.event.update({
+        where: { id: testEventId },
+        data: { allowReEntry: true },
+      });
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          checkedOutBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should enforce max re-entries limit', async () => {
+      if (!dbConnected) return;
+
+      // Update event to allow max 2 re-entries
+      await prisma.event.update({
+        where: { id: testEventId },
+        data: { maxReEntries: 2 },
+      });
+
+      // First check in
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+      await WorkstationService.checkOut(testRegistrationId, testScannerId);
+
+      // First re-entry
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+      await WorkstationService.checkOut(testRegistrationId, testScannerId);
+
+      // Second re-entry
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+      await WorkstationService.checkOut(testRegistrationId, testScannerId);
+
+      // Third re-entry should fail
+      const result = await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('MAX_REENTRIES_EXCEEDED');
+
+      // Reset
+      await prisma.event.update({
+        where: { id: testEventId },
+        data: { maxReEntries: null },
+      });
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          checkedOutBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should require check-out before re-entry when configured', async () => {
+      if (!dbConnected) return;
+
+      // Update event to require check-out
+      await prisma.event.update({
+        where: { id: testEventId },
+        data: { requireCheckOut: true },
+      });
+
+      // First check in
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      // Try to re-enter without checking out (should fail)
+      // First, manually set ticket to ACTIVE without checking out
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+        },
+      });
+
+      const result = await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('CHECKOUT_REQUIRED');
+
+      // Reset
+      await prisma.event.update({
+        where: { id: testEventId },
+        data: { requireCheckOut: false },
+      });
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          checkedOutBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+
+    it('should link re-entry scan to previous check-out scan', async () => {
+      if (!dbConnected) return;
+
+      // First check in
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      // Check out
+      const checkoutResult = await WorkstationService.checkOut(testRegistrationId, testScannerId);
+      expect(checkoutResult.success).toBe(true);
+
+      // Get the check-out scan ID
+      const checkoutScan = await prisma.ticketScan.findFirst({
+        where: {
+          registrationId: testRegistrationId,
+          scanType: 'CHECK_OUT',
+        },
+      });
+
+      // Re-entry
+      const result = await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+      expect(result.success).toBe(true);
+
+      // Verify re-entry scan is linked to check-out scan
+      const reEntryScan = await prisma.ticketScan.findFirst({
+        where: {
+          registrationId: testRegistrationId,
+          isReEntry: true,
+        },
+      });
+
+      expect(reEntryScan).toBeDefined();
+      expect(reEntryScan?.previousScanId).toBe(checkoutScan?.id);
+
+      // Reset
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          checkedOutBy: null,
+          ticketStatus: 'ACTIVE',
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
+    });
+  });
 });
 
