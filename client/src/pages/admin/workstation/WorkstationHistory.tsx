@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -28,24 +28,9 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
-
-interface ScanResult {
-  id: string;
-  attendeeId: string;
-  attendeeName: string;
-  email: string;
-  ticketType: string;
-  qrCode: string;
-  scannedAt: string;
-  facility: string;
-  facilityType: 'entrance' | 'lunch' | 'gifts' | 'parking' | 'vip' | 'registration' | 'materials';
-  status: 'approved' | 'rejected';
-  reason?: string;
-  scannedBy: string;
-  eventId: string;
-  eventName: string;
-  avatar?: string;
-}
+import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType, TicketStatus } from "../../../lib/workstation-api";
+import { getEvents, type EventData } from "../../../lib/event-api";
+import { useToast } from "../../../hooks/use-toast";
 
 interface ScanStats {
   totalScans: number;
@@ -54,116 +39,317 @@ interface ScanStats {
   scansByFacility: Record<string, number>;
   scansByHour: Record<string, number>;
   scansByDay: Record<string, number>;
-  averageScanTime: number;
   peakScanHour: string;
+  reEntryCount: number;
+  errorRate: number;
 }
 
 const WorkstationHistory: React.FC = () => {
   const navigate = useNavigate();
+  const { eventId } = useParams<{ eventId?: string }>();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFacility, setSelectedFacility] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedScanType, setSelectedScanType] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<string>("all");
   const [viewMode, setViewMode] = useState<'list' | 'stats'>('list');
+  const [loading, setLoading] = useState(true);
+  const [scans, setScans] = useState<TicketScanRecord[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+  });
+  const [stats, setStats] = useState<ScanStats>({
+    totalScans: 0,
+    approvedScans: 0,
+    rejectedScans: 0,
+    scansByFacility: {},
+    scansByHour: {},
+    scansByDay: {},
+    peakScanHour: '',
+    reEntryCount: 0,
+    errorRate: 0,
+  });
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string>(eventId || searchParams.get('event') || '');
 
-  // Mock scan history data
-  const scanHistory: ScanResult[] = [
-    {
-      id: "1",
-      attendeeId: "1",
-      attendeeName: "Sarah Johnson",
-      email: "sarah@example.com",
-      ticketType: "VIP",
-      qrCode: "QR123456789",
-      scannedAt: "2024-07-02T09:15:30Z",
-      facility: "Main Entrance",
-      facilityType: "entrance",
-      status: "approved",
-      scannedBy: "Scanner User 1",
-      eventId: "1",
-      eventName: "Seamless East Africa 2025",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
-    },
-    {
-      id: "2",
-      attendeeId: "2",
-      attendeeName: "Michael Chen",
-      email: "michael@example.com",
-      ticketType: "Standard",
-      qrCode: "QR234567890",
-      scannedAt: "2024-07-02T09:20:15Z",
-      facility: "Main Entrance",
-      facilityType: "entrance",
-      status: "approved",
-      scannedBy: "Scanner User 1",
-      eventId: "1",
-      eventName: "Seamless East Africa 2025",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
-    },
-    {
-      id: "3",
-      attendeeId: "3",
-      attendeeName: "Emma Wilson",
-      email: "emma@example.com",
-      ticketType: "Student",
-      qrCode: "QR345678901",
-      scannedAt: "2024-07-02T10:30:45Z",
-      facility: "Lunch Area",
-      facilityType: "lunch",
-      status: "approved",
-      scannedBy: "Scanner User 2",
-      eventId: "1",
-      eventName: "Seamless East Africa 2025",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
-    },
-    {
-      id: "4",
-      attendeeId: "4",
-      attendeeName: "David Kim",
-      email: "david@example.com",
-      ticketType: "VIP",
-      qrCode: "QR456789012",
-      scannedAt: "2024-07-02T11:45:20Z",
-      facility: "VIP Lounge",
-      facilityType: "vip",
-      status: "approved",
-      scannedBy: "Scanner User 3",
-      eventId: "1",
-      eventName: "Seamless East Africa 2025",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
-    },
-    {
-      id: "5",
-      attendeeId: "5",
-      attendeeName: "Invalid QR Code",
-      email: "",
-      ticketType: "",
-      qrCode: "INVALID123",
-      scannedAt: "2024-07-02T12:15:10Z",
-      facility: "Main Entrance",
-      facilityType: "entrance",
-      status: "rejected",
-      reason: "Invalid QR code",
-      scannedBy: "Scanner User 1",
-      eventId: "1",
-      eventName: "Seamless East Africa 2025"
+  // Load events for event selector
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const response = await getEvents({ limit: 100 });
+        if (response.success && response.data) {
+          setEvents(response.data.events);
+        }
+      } catch (error) {
+        console.error('Error loading events:', error);
+      }
+    };
+
+    loadEvents();
+  }, []);
+
+  // Load scans when filters change
+  useEffect(() => {
+    const loadScans = async () => {
+      if (!selectedEventId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        const filters: ScanHistoryFilters = {
+          page: pagination.page,
+          limit: pagination.limit,
+          facility: selectedFacility !== 'all' ? selectedFacility : undefined,
+          scanType: selectedScanType !== 'all' ? (selectedScanType as ScanType) : undefined,
+        };
+
+        // Apply date range filter
+        if (selectedDate !== 'all') {
+          const now = new Date();
+          let startDate: Date;
+          
+          switch (selectedDate) {
+            case 'today':
+              startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              filters.startDate = startDate.toISOString();
+              break;
+            case 'yesterday':
+              startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+              const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              filters.startDate = startDate.toISOString();
+              filters.endDate = endDate.toISOString();
+              break;
+            case 'week':
+              startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+              filters.startDate = startDate.toISOString();
+              break;
+            case 'month':
+              startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+              filters.startDate = startDate.toISOString();
+              break;
+          }
+        }
+
+        const response = await getEventScans(selectedEventId, filters);
+        
+        if (response.success && response.data) {
+          setScans(response.data.scans);
+          setPagination(response.data.pagination);
+          
+          // Calculate statistics
+          calculateStats(response.data.scans);
+        }
+      } catch (error) {
+        console.error('Error loading scans:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load scan history",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadScans();
+  }, [selectedEventId, selectedFacility, selectedScanType, selectedDate, pagination.page, pagination.limit, toast]);
+
+  const calculateStats = (scanData: TicketScanRecord[]) => {
+    const totalScans = scanData.length;
+    const approvedScans = scanData.filter(s => s.isValid).length;
+    const rejectedScans = scanData.filter(s => !s.isValid).length;
+    const reEntryCount = scanData.filter(s => s.isReEntry).length;
+    
+    const scansByFacility: Record<string, number> = {};
+    const scansByHour: Record<string, number> = {};
+    const scansByDay: Record<string, number> = {};
+    
+    scanData.forEach(scan => {
+      // Facility stats
+      const facility = scan.facility || 'Unknown';
+      scansByFacility[facility] = (scansByFacility[facility] || 0) + 1;
+      
+      // Hour stats
+      const hour = new Date(scan.scannedAt).getHours();
+      scansByHour[hour] = (scansByHour[hour] || 0) + 1;
+      
+      // Day stats
+      const day = new Date(scan.scannedAt).toDateString();
+      scansByDay[day] = (scansByDay[day] || 0) + 1;
+    });
+
+    // Find peak hour
+    let peakHour = 0;
+    let maxScans = 0;
+    Object.entries(scansByHour).forEach(([hour, count]) => {
+      if (count > maxScans) {
+        maxScans = count;
+        peakHour = parseInt(hour);
+      }
+    });
+
+    const peakScanHour = `${peakHour < 10 ? '0' : ''}${peakHour}:00`;
+    const errorRate = totalScans > 0 ? (rejectedScans / totalScans) * 100 : 0;
+
+    setStats({
+      totalScans,
+      approvedScans,
+      rejectedScans,
+      scansByFacility,
+      scansByHour,
+      scansByDay,
+      peakScanHour,
+      reEntryCount,
+      errorRate,
+    });
+  };
+
+  // Filter scans by search term and status
+  const filteredScans = scans.filter(scan => {
+    // Search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = (
+        scan.attendeeName.toLowerCase().includes(searchLower) ||
+        scan.registrationId.toLowerCase().includes(searchLower) ||
+        (scan.ticketType && scan.ticketType.toLowerCase().includes(searchLower))
+      );
+      if (!matchesSearch) return false;
     }
-  ];
+    
+    // Status filter (frontend-only, since backend doesn't support it)
+    if (selectedStatus !== 'all') {
+      if (selectedStatus === 'valid' && !scan.isValid) return false;
+      if (selectedStatus === 'invalid' && scan.isValid) return false;
+    }
+    
+    return true;
+  });
 
-  const facilities = [
-    { id: "all", name: "All Facilities", icon: <Building2 className="w-4 h-4" /> },
-    { id: "entrance", name: "Main Entrance", icon: <Shield className="w-4 h-4" /> },
-    { id: "lunch", name: "Lunch Area", icon: <Utensils className="w-4 h-4" /> },
-    { id: "gifts", name: "Gifts Desk", icon: <Gift className="w-4 h-4" /> },
-    { id: "vip", name: "VIP Lounge", icon: <Star className="w-4 h-4" /> },
-    { id: "parking", name: "Parking", icon: <Car className="w-4 h-4" /> }
-  ];
+  // Get unique facilities from scans
+  const facilities = React.useMemo(() => {
+    const facilitySet = new Set<string>();
+    scans.forEach(scan => {
+      if (scan.facility) {
+        facilitySet.add(scan.facility);
+      }
+    });
+    
+    const facilityList = Array.from(facilitySet).map(facility => ({
+      id: facility,
+      name: facility,
+      icon: getFacilityIconFromName(facility),
+    }));
 
-  const statuses = [
-    { id: "all", name: "All Status", icon: <Activity className="w-4 h-4" /> },
-    { id: "approved", name: "Approved", icon: <CheckCircle className="w-4 h-4" /> },
-    { id: "rejected", name: "Rejected", icon: <XCircle className="w-4 h-4" /> }
-  ];
+    return [
+      { id: "all", name: "All Facilities", icon: <Building2 className="w-4 h-4" /> },
+      ...facilityList,
+    ];
+  }, [scans]);
+
+  const getFacilityIconFromName = (facilityName: string): React.ReactNode => {
+    const name = facilityName.toLowerCase();
+    if (name.includes('entrance')) return <Shield className="w-4 h-4" />;
+    if (name.includes('lunch')) return <Utensils className="w-4 h-4" />;
+    if (name.includes('gift')) return <Gift className="w-4 h-4" />;
+    if (name.includes('vip')) return <Star className="w-4 h-4" />;
+    if (name.includes('parking')) return <Car className="w-4 h-4" />;
+    return <Building2 className="w-4 h-4" />;
+  };
+
+  const getStatusColor = (isValid: boolean) => {
+    return isValid 
+      ? "bg-green-100 text-green-800 border-green-200"
+      : "bg-red-100 text-red-800 border-red-200";
+  };
+
+  const getStatusIcon = (isValid: boolean) => {
+    return isValid 
+      ? <CheckCircle className="w-4 h-4" />
+      : <XCircle className="w-4 h-4" />;
+  };
+
+  const getScanTypeColor = (scanType: ScanType) => {
+    switch (scanType) {
+      case ScanType.CHECK_IN:
+        return "bg-blue-100 text-blue-800";
+      case ScanType.CHECK_OUT:
+        return "bg-purple-100 text-purple-800";
+      case ScanType.MANUAL_CHECK_IN:
+      case ScanType.MANUAL_CHECK_OUT:
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const exportToCSV = () => {
+    if (filteredScans.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No scans to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = [
+      'Scan ID',
+      'Registration ID',
+      'Attendee Name',
+      'Ticket Type',
+      'Scan Type',
+      'Facility',
+      'Scanned At',
+      'Scanned By',
+      'Valid',
+      'Is Re-Entry',
+      'Error Message',
+    ];
+
+    const rows = filteredScans.map(scan => [
+      scan.id,
+      scan.registrationId,
+      scan.attendeeName,
+      scan.ticketType || '',
+      scan.scanType,
+      scan.facility || '',
+      new Date(scan.scannedAt).toISOString(),
+      scan.scannedBy,
+      scan.isValid ? 'Yes' : 'No',
+      scan.isReEntry ? 'Yes' : 'No',
+      scan.errorMessage || '',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `scan-history-${selectedEventId || 'all'}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export Successful",
+      description: "Scan history exported to CSV",
+    });
+  };
 
   const dates = [
     { id: "all", name: "All Time" },
@@ -173,78 +359,19 @@ const WorkstationHistory: React.FC = () => {
     { id: "month", name: "This Month" }
   ];
 
-  // Calculate stats
-  const stats: ScanStats = {
-    totalScans: scanHistory.length,
-    approvedScans: scanHistory.filter(s => s.status === 'approved').length,
-    rejectedScans: scanHistory.filter(s => s.status === 'rejected').length,
-    scansByFacility: scanHistory.reduce((acc, scan) => {
-      acc[scan.facility] = (acc[scan.facility] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>),
-    scansByHour: scanHistory.reduce((acc, scan) => {
-      const hour = new Date(scan.scannedAt).getHours();
-      acc[hour] = (acc[hour] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>),
-    scansByDay: scanHistory.reduce((acc, scan) => {
-      const day = new Date(scan.scannedAt).toDateString();
-      acc[day] = (acc[day] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>),
-    averageScanTime: 2.5, // Mock data
-    peakScanHour: "10:00 AM"
-  };
+  const scanTypes = [
+    { id: "all", name: "All Types" },
+    { id: ScanType.CHECK_IN, name: "Check In" },
+    { id: ScanType.CHECK_OUT, name: "Check Out" },
+    { id: ScanType.MANUAL_CHECK_IN, name: "Manual Check In" },
+    { id: ScanType.MANUAL_CHECK_OUT, name: "Manual Check Out" },
+  ];
 
-  const filteredScans = scanHistory.filter(scan => {
-    const matchesSearch = scan.attendeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         scan.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         scan.qrCode.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFacility = selectedFacility === "all" || scan.facilityType === selectedFacility;
-    const matchesStatus = selectedStatus === "all" || scan.status === selectedStatus;
-    
-    return matchesSearch && matchesFacility && matchesStatus;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return "bg-green-100 text-green-800 border-green-200";
-      case 'rejected':
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'rejected':
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
-    }
-  };
-
-  const getFacilityIcon = (facilityType: string) => {
-    switch (facilityType) {
-      case 'entrance':
-        return <Shield className="w-4 h-4" />;
-      case 'lunch':
-        return <Utensils className="w-4 h-4" />;
-      case 'gifts':
-        return <Gift className="w-4 h-4" />;
-      case 'vip':
-        return <Star className="w-4 h-4" />;
-      case 'parking':
-        return <Car className="w-4 h-4" />;
-      default:
-        return <Building2 className="w-4 h-4" />;
-    }
-  };
+  const statuses = [
+    { id: "all", name: "All Status" },
+    { id: "valid", name: "Valid" },
+    { id: "invalid", name: "Invalid" },
+  ];
 
   return (
     <AdminLayout>
@@ -259,307 +386,416 @@ const WorkstationHistory: React.FC = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Workstation
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900">Scan History</h1>
             <p className="text-gray-600 mt-2">View and analyze all QR code scans</p>
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Event Selector */}
+        {!eventId && (
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Scans</p>
-                  <p className="text-2xl font-bold">{stats.totalScans}</p>
-                </div>
-                <QrCode className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Approved</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.approvedScans}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Rejected</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.rejectedScans}</p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-                  <p className="text-2xl font-bold">
-                    {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%
-                  </p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Controls */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search scans..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-2">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium">Select Event:</label>
                 <select
-                  value={selectedFacility}
-                  onChange={(e) => setSelectedFacility(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md text-sm"
+                  value={selectedEventId}
+                  onChange={(e) => {
+                    setSelectedEventId(e.target.value);
+                    setPagination({ ...pagination, page: 1 });
+                  }}
+                  className="px-3 py-2 border border-border rounded-md text-sm flex-1 max-w-md"
                 >
-                  {facilities.map(facility => (
-                    <option key={facility.id} value={facility.id}>{facility.name}</option>
+                  <option value="">-- Select an event --</option>
+                  {events.map(event => (
+                    <option key={event.id} value={event.id}>{event.title}</option>
                   ))}
                 </select>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md text-sm"
-                >
-                  {statuses.map(status => (
-                    <option key={status.id} value={status.id}>{status.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md text-sm"
-                >
-                  {dates.map(date => (
-                    <option key={date.id} value={date.id}>{date.name}</option>
-                  ))}
-                </select>
-                <Button
-                  variant="outline"
-                  onClick={() => setViewMode(viewMode === 'list' ? 'stats' : 'list')}
-                >
-                  {viewMode === 'list' ? <BarChart3 className="w-4 h-4" /> : <History className="w-4 h-4" />}
-                </Button>
-                <Button variant="outline">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {viewMode === 'list' ? (
-          /* Scan History List */
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <History className="w-5 h-5 mr-2" />
-                  Scan History ({filteredScans.length})
-                </div>
-                <Button variant="outline" size="sm">
-                  <RefreshCw className="w-4 h-4" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {filteredScans.map((scan) => (
-                  <div key={scan.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        {scan.avatar ? (
-                          <img 
-                            src={scan.avatar} 
-                            alt={scan.attendeeName}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-medium text-primary">
-                            {scan.attendeeName.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{scan.attendeeName}</h4>
-                        <p className="text-sm text-gray-600">{scan.email}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex items-center gap-1">
-                            {getFacilityIcon(scan.facilityType)}
-                            <span className="text-xs text-gray-500">{scan.facility}</span>
-                          </div>
-                          <span className="text-xs text-gray-400">•</span>
-                          <span className="text-xs text-gray-500">{scan.scannedBy}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <Badge className={`text-xs ${getStatusColor(scan.status)}`}>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon(scan.status)}
-                            <span>{scan.status}</span>
-                          </div>
-                        </Badge>
-                        <p className="text-sm text-gray-600 mt-1">{scan.ticketType}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(scan.scannedAt).toLocaleString()}
-                        </p>
-                        {scan.reason && (
-                          <p className="text-xs text-red-600 mt-1">{scan.reason}</p>
-                        )}
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
-        ) : (
-          /* Statistics View */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Scans by Facility */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  Scans by Facility
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Object.entries(stats.scansByFacility).map(([facility, count]) => (
-                    <div key={facility} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {getFacilityIcon(facility)}
-                        <span className="text-sm font-medium">{facility}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full"
-                            style={{ 
-                              width: `${(count / Math.max(...Object.values(stats.scansByFacility))) * 100}%` 
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold w-8 text-right">{count}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+        )}
 
-            {/* Scans by Hour */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Clock className="w-5 h-5 mr-2" />
-                  Scans by Hour
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {Object.entries(stats.scansByHour)
-                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                    .map(([hour, count]) => (
-                    <div key={hour} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        {parseInt(hour) < 10 ? `0${hour}:00` : `${hour}:00`}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full"
-                            style={{ 
-                              width: `${(count / Math.max(...Object.values(stats.scansByHour))) * 100}%` 
-                            }}
-                          ></div>
-                        </div>
-                        <span className="text-sm font-semibold w-8 text-right">{count}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+        {!selectedEventId && !eventId && (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-gray-600">Please select an event to view scan history</p>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Peak Hours */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2" />
-                  Peak Scan Time
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Clock className="w-8 h-8 text-primary" />
+        {selectedEventId && (
+          <>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Scans</p>
+                      <p className="text-2xl font-bold">{stats.totalScans}</p>
+                    </div>
+                    <QrCode className="h-8 w-8 text-primary" />
                   </div>
-                  <h3 className="text-2xl font-bold">{stats.peakScanHour}</h3>
-                  <p className="text-sm text-gray-600 mt-2">Most active scanning hour</p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Average Scan Time */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Target className="w-5 h-5 mr-2" />
-                  Performance Metrics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Zap className="w-8 h-8 text-green-600" />
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Valid Scans</p>
+                      <p className="text-2xl font-bold text-green-600">{stats.approvedScans}</p>
                     </div>
-                    <h3 className="text-2xl font-bold">{stats.averageScanTime}s</h3>
-                    <p className="text-sm text-gray-600">Average scan time</p>
+                    <CheckCircle className="h-8 w-8 text-green-600" />
                   </div>
-                  <div className="pt-4 border-t">
-                    <div className="flex justify-between text-sm">
-                      <span>Success Rate</span>
-                      <span className="font-semibold">
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Invalid Scans</p>
+                      <p className="text-2xl font-bold text-red-600">{stats.rejectedScans}</p>
+                    </div>
+                    <XCircle className="h-8 w-8 text-red-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                      <p className="text-2xl font-bold">
                         {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%
-                      </span>
+                      </p>
                     </div>
+                    <TrendingUp className="h-8 w-8 text-primary" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Controls */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search by attendee name, registration ID, or ticket type..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <select
+                      value={selectedFacility}
+                      onChange={(e) => setSelectedFacility(e.target.value)}
+                      className="px-3 py-2 border border-border rounded-md text-sm"
+                    >
+                      {facilities.map(facility => (
+                        <option key={facility.id} value={facility.id}>{facility.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="px-3 py-2 border border-border rounded-md text-sm"
+                    >
+                      {statuses.map(status => (
+                        <option key={status.id} value={status.id}>{status.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedScanType}
+                      onChange={(e) => setSelectedScanType(e.target.value)}
+                      className="px-3 py-2 border border-border rounded-md text-sm"
+                    >
+                      {scanTypes.map(type => (
+                        <option key={type.id} value={type.id}>{type.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="px-3 py-2 border border-border rounded-md text-sm"
+                    >
+                      {dates.map(date => (
+                        <option key={date.id} value={date.id}>{date.name}</option>
+                      ))}
+                    </select>
+                    <Button
+                      variant="outline"
+                      onClick={() => setViewMode(viewMode === 'list' ? 'stats' : 'list')}
+                    >
+                      {viewMode === 'list' ? <BarChart3 className="w-4 h-4" /> : <History className="w-4 h-4" />}
+                    </Button>
+                    <Button variant="outline" onClick={exportToCSV}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
+
+            {loading ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <div className="text-gray-600">Loading scan history...</div>
+                </CardContent>
+              </Card>
+            ) : viewMode === 'list' ? (
+              /* Scan History List */
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <History className="w-5 h-5 mr-2" />
+                      Scan History ({filteredScans.length} of {pagination.total})
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setPagination({ ...pagination, page: 1 });
+                      }}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {filteredScans.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-gray-600">No scans found</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        {filteredScans.map((scan) => (
+                          <div key={scan.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary">
+                                  {scan.attendeeName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">{scan.attendeeName}</h4>
+                                <p className="text-sm text-gray-600">Registration: {scan.registrationId}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <div className="flex items-center gap-1">
+                                    {getFacilityIconFromName(scan.facility || '')}
+                                    <span className="text-xs text-gray-500">{scan.facility || 'Unknown'}</span>
+                                  </div>
+                                  <span className="text-xs text-gray-400">•</span>
+                                  <span className="text-xs text-gray-500">{scan.scannedBy}</span>
+                                  {scan.isReEntry && (
+                                    <>
+                                      <span className="text-xs text-gray-400">•</span>
+                                      <Badge variant="secondary" className="text-xs">Re-entry</Badge>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <Badge className={`text-xs ${getStatusColor(scan.isValid)}`}>
+                                  <div className="flex items-center gap-1">
+                                    {getStatusIcon(scan.isValid)}
+                                    <span>{scan.isValid ? 'Valid' : 'Invalid'}</span>
+                                  </div>
+                                </Badge>
+                                <Badge className={`text-xs mt-1 ${getScanTypeColor(scan.scanType)}`}>
+                                  {scan.scanType.replace('_', ' ')}
+                                </Badge>
+                                {scan.ticketType && (
+                                  <p className="text-sm text-gray-600 mt-1">{scan.ticketType}</p>
+                                )}
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {new Date(scan.scannedAt).toLocaleString()}
+                                </p>
+                                {scan.errorMessage && (
+                                  <p className="text-xs text-red-600 mt-1">{scan.errorMessage}</p>
+                                )}
+                              </div>
+                              <Button variant="outline" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Pagination */}
+                      {pagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                          <div className="text-sm text-gray-600">
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} scans
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={pagination.page === 1}
+                              onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                            >
+                              Previous
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={pagination.page === pagination.totalPages}
+                              onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              /* Statistics View */
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Scans by Facility */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="w-5 h-5 mr-2" />
+                      Scans by Facility
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {Object.keys(stats.scansByFacility).length === 0 ? (
+                      <div className="text-center py-8 text-gray-600">No facility data available</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {Object.entries(stats.scansByFacility)
+                          .sort(([, a], [, b]) => b - a)
+                          .map(([facility, count]) => (
+                            <div key={facility} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {getFacilityIconFromName(facility)}
+                                <span className="text-sm font-medium">{facility}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-primary h-2 rounded-full"
+                                    style={{ 
+                                      width: `${(count / Math.max(...Object.values(stats.scansByFacility))) * 100}%` 
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold w-8 text-right">{count}</span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Scans by Hour */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Clock className="w-5 h-5 mr-2" />
+                      Scans by Hour
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {Object.keys(stats.scansByHour).length === 0 ? (
+                      <div className="text-center py-8 text-gray-600">No hourly data available</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {Object.entries(stats.scansByHour)
+                          .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                          .map(([hour, count]) => (
+                            <div key={hour} className="flex items-center justify-between">
+                              <span className="text-sm font-medium">
+                                {parseInt(hour) < 10 ? `0${hour}:00` : `${hour}:00`}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-32 bg-gray-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-primary h-2 rounded-full"
+                                    style={{ 
+                                      width: `${(count / Math.max(...Object.values(stats.scansByHour))) * 100}%` 
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold w-8 text-right">{count}</span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Peak Hours */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <TrendingUp className="w-5 h-5 mr-2" />
+                      Peak Scan Time
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Clock className="w-8 h-8 text-primary" />
+                      </div>
+                      <h3 className="text-2xl font-bold">{stats.peakScanHour || 'N/A'}</h3>
+                      <p className="text-sm text-gray-600 mt-2">Most active scanning hour</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Performance Metrics */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Target className="w-5 h-5 mr-2" />
+                      Performance Metrics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Zap className="w-8 h-8 text-green-600" />
+                        </div>
+                        <h3 className="text-2xl font-bold">
+                          {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%
+                        </h3>
+                        <p className="text-sm text-gray-600">Success Rate</p>
+                      </div>
+                      <div className="pt-4 border-t space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Re-entries</span>
+                          <span className="font-semibold">{stats.reEntryCount}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Error Rate</span>
+                          <span className="font-semibold">{stats.errorRate.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </>
         )}
       </div>
     </AdminLayout>
