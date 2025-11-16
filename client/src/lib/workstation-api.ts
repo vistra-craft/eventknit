@@ -16,6 +16,16 @@ export type CodeType = 'QR_CODE' | 'BACKUP_CODE' | 'UNKNOWN';
 export type ScanType = 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
 
 /**
+ * Ticket Status Enum
+ */
+export enum TicketStatus {
+  ACTIVE = 'ACTIVE',
+  DEACTIVATED = 'DEACTIVATED',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED',
+}
+
+/**
  * Workstation API Error
  */
 export interface WorkstationApiError {
@@ -188,6 +198,18 @@ export interface EventScanConfig {
 }
 
 /**
+ * Event Statistics
+ */
+export interface EventStatistics {
+  totalAttendees: number;
+  checkedIn: number;
+  currentlyInside: number;
+  checkedOut: number;
+  reEntries: number;
+  scansToday: number;
+}
+
+/**
  * Event Response
  */
 export interface EventResponse {
@@ -196,15 +218,25 @@ export interface EventResponse {
     eventId: string;
     eventTitle: string;
     config: EventScanConfig;
-    statistics: {
-      totalAttendees: number;
-      checkedIn: number;
-      currentlyInside: number;
-      checkedOut: number;
-      reEntries: number;
-      scansToday: number;
-    };
+    statistics: EventStatistics;
   };
+}
+
+/**
+ * Event Attendee
+ */
+export interface EventAttendee {
+  registrationId: string;
+  attendeeName: string;
+  email: string;
+  phoneNumber: string | null;
+  ticketType: string | null;
+  ticketStatus: TicketStatus;
+  checkedInAt: Date | null;
+  checkedOutAt: Date | null;
+  isCurrentlyInside: boolean;
+  reEntryCount: number;
+  lastScanFacility: string | null;
 }
 
 /**
@@ -213,19 +245,7 @@ export interface EventResponse {
 export interface EventAttendeesResponse {
   success: boolean;
   data: {
-    attendees: Array<{
-      registrationId: string;
-      attendeeName: string;
-      email: string;
-      phoneNumber: string | null;
-      ticketType: string | null;
-      ticketStatus: 'ACTIVE' | 'DEACTIVATED' | 'EXPIRED' | 'CANCELLED';
-      checkedInAt: Date | null;
-      checkedOutAt: Date | null;
-      isCurrentlyInside: boolean;
-      reEntryCount: number;
-      lastScanFacility: string | null;
-    }>;
+    attendees: EventAttendee[];
     total: number;
     pagination?: {
       page: number;
