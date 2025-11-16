@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -29,117 +29,135 @@ import {
   Download
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
-
-interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  venue: string;
-  image: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
-  attendees: number;
-  capacity: number;
-  organizer: string;
-  category: string;
-  revenue?: number;
-  scannedTickets?: number;
-  facilities?: Facility[];
-  attendeesList?: Attendee[];
-}
+import { getEvent, getEventAttendees, type EventAttendee, type EventStatistics, TicketStatus } from "../../../lib/workstation-api";
+import { getEvents, type EventData } from "../../../lib/event-api";
+import { useToast } from "../../../hooks/use-toast";
 
 interface Facility {
-  id: string;
   name: string;
-  type: 'entrance' | 'lunch' | 'gifts' | 'parking' | 'vip' | 'registration' | 'materials';
-  capacity?: number;
-  currentCount: number;
+  checkedIn: number;
+  currentlyInside: number;
   icon: React.ReactNode;
-}
-
-interface Attendee {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  ticketType: string;
-  status: 'registered' | 'checked_in' | 'scanned';
-  registeredDate: string;
-  checkedInDate?: string;
-  scannedAt?: string;
-  facilities?: string[];
-  qrCode: string;
-  avatar?: string;
 }
 
 const WorkstationEventDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { eventId } = useParams();
+  const { eventId } = useParams<{ eventId: string }>();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'attendees' | 'facilities'>('overview');
+  const [loading, setLoading] = useState(true);
+  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [statistics, setStatistics] = useState<EventStatistics | null>(null);
+  const [attendees, setAttendees] = useState<EventAttendee[]>([]);
+  const [attendeesLoading, setAttendeesLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+  });
 
-  // Mock event data
-  const eventData: EventData = {
-    id: eventId || "1",
-    title: "Seamless East Africa 2025",
-    date: "July 2-3, 2025",
-    time: "9:00 AM - 6:00 PM",
-    location: "Nairobi, Kenya",
-    venue: "Kenyatta International Convention Centre",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-    status: "upcoming",
-    attendees: 485,
-    capacity: 500,
-    organizer: "EventKnit",
-    category: "Technology",
-    revenue: 145200,
-    scannedTickets: 0,
-    facilities: [
-      { id: "1", name: "Main Entrance", type: "entrance", capacity: 500, currentCount: 0, icon: <Shield className="w-4 h-4" /> },
-      { id: "2", name: "Lunch Area", type: "lunch", capacity: 300, currentCount: 0, icon: <Utensils className="w-4 h-4" /> },
-      { id: "3", name: "Gifts Desk", type: "gifts", capacity: 200, currentCount: 0, icon: <Gift className="w-4 h-4" /> },
-      { id: "4", name: "VIP Lounge", type: "vip", capacity: 50, currentCount: 0, icon: <Star className="w-4 h-4" /> },
-      { id: "5", name: "Parking", type: "parking", capacity: 100, currentCount: 0, icon: <Car className="w-4 h-4" /> }
-    ],
-    attendeesList: [
-      {
-        id: "1",
-        name: "Sarah Johnson",
-        email: "sarah@example.com",
-        phone: "+254 700 123 456",
-        ticketType: "VIP",
-        status: "registered",
-        registeredDate: "2024-01-15",
-        qrCode: "QR123456789",
-        avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
-      },
-      {
-        id: "2",
-        name: "Michael Chen",
-        email: "michael@example.com",
-        phone: "+254 700 234 567",
-        ticketType: "Standard",
-        status: "checked_in",
-        registeredDate: "2024-01-20",
-        checkedInDate: "2024-07-02T09:15:00Z",
-        qrCode: "QR234567890",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
-      },
-      {
-        id: "3",
-        name: "Emma Wilson",
-        email: "emma@example.com",
-        phone: "+254 700 345 678",
-        ticketType: "Student",
-        status: "scanned",
-        registeredDate: "2024-02-01",
-        checkedInDate: "2024-07-02T08:45:00Z",
-        scannedAt: "2024-07-02T09:30:00Z",
-        facilities: ["Main Entrance", "Lunch Area"],
-        qrCode: "QR345678901",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
+  // Load event data and statistics
+  useEffect(() => {
+    const loadEventData = async () => {
+      if (!eventId) {
+        toast({
+          title: "Error",
+          description: "Event ID is required",
+          variant: "destructive",
+        });
+        navigate('/admin/workstation');
+        return;
       }
-    ]
+
+      try {
+        setLoading(true);
+        
+        // Load event details from event API
+        const eventsResponse = await getEvents({ limit: 1000 });
+        const event = eventsResponse.success && eventsResponse.data 
+          ? eventsResponse.data.events.find(e => e.id === eventId)
+          : null;
+
+        if (!event) {
+          toast({
+            title: "Error",
+            description: "Event not found",
+            variant: "destructive",
+          });
+          navigate('/admin/workstation');
+          return;
+        }
+
+        setEventData(event);
+
+        // Load workstation statistics
+        const workstationResponse = await getEvent(eventId);
+        if (workstationResponse.success && workstationResponse.data) {
+          setStatistics(workstationResponse.data.statistics);
+        }
+      } catch (error) {
+        console.error('Error loading event data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load event data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEventData();
+  }, [eventId, navigate, toast]);
+
+  // Load attendees when attendees tab is active
+  useEffect(() => {
+    const loadAttendees = async () => {
+      if (!eventId || activeTab !== 'attendees') return;
+
+      try {
+        setAttendeesLoading(true);
+        const response = await getEventAttendees(
+          eventId,
+          pagination.page,
+          pagination.limit
+        );
+
+        if (response.success && response.data) {
+          setAttendees(response.data.attendees);
+          setPagination(response.data.pagination);
+        }
+      } catch (error) {
+        console.error('Error loading attendees:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load attendees",
+          variant: "destructive",
+        });
+      } finally {
+        setAttendeesLoading(false);
+      }
+    };
+
+    loadAttendees();
+  }, [eventId, activeTab, pagination.page, pagination.limit, toast]);
+
+  // Determine event status
+  const getEventStatus = (): 'upcoming' | 'ongoing' | 'completed' => {
+    if (!eventData) return 'upcoming';
+    
+    const now = new Date();
+    const startDate = new Date(eventData.startDate);
+    const endDate = eventData.endDate ? new Date(eventData.endDate) : null;
+    
+    if (endDate && now > endDate) {
+      return 'completed';
+    } else if (now >= startDate && (!endDate || now <= endDate)) {
+      return 'ongoing';
+    } else {
+      return 'upcoming';
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -168,18 +186,92 @@ const WorkstationEventDashboard: React.FC = () => {
     }
   };
 
-  const getAttendeeStatusColor = (status: string) => {
+  const getTicketStatusColor = (status: TicketStatus) => {
     switch (status) {
-      case 'registered':
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case 'checked_in':
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case 'scanned':
+      case TicketStatus.ACTIVE:
         return "bg-green-100 text-green-800 border-green-200";
+      case TicketStatus.DEACTIVATED:
+        return "bg-red-100 text-red-800 border-red-200";
+      case TicketStatus.EXPIRED:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      case TicketStatus.CANCELLED:
+        return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
+  // Format facilities from statistics
+  const getFacilities = (): Facility[] => {
+    if (!statistics?.facilitiesData) return [];
+
+    const facilityIcons: Record<string, React.ReactNode> = {
+      'Main Entrance': <Shield className="w-4 h-4" />,
+      'Entrance': <Shield className="w-4 h-4" />,
+      'Lunch': <Utensils className="w-4 h-4" />,
+      'Lunch Area': <Utensils className="w-4 h-4" />,
+      'Gifts': <Gift className="w-4 h-4" />,
+      'Gifts Desk': <Gift className="w-4 h-4" />,
+      'VIP': <Star className="w-4 h-4" />,
+      'VIP Lounge': <Star className="w-4 h-4" />,
+      'Parking': <Car className="w-4 h-4" />,
+    };
+
+    return statistics.facilitiesData.map(facility => ({
+      name: facility.facility || 'Unknown',
+      checkedIn: facility.checkedIn,
+      currentlyInside: facility.currentlyInside,
+      icon: facilityIcons[facility.facility || ''] || <Building2 className="w-4 h-4" />,
+    }));
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  // Format time range
+  const formatTimeRange = () => {
+    if (!eventData) return '';
+    
+    const startDate = new Date(eventData.startDate);
+    const endDate = eventData.endDate ? new Date(eventData.endDate) : null;
+    
+    if (endDate && startDate.toDateString() !== endDate.toDateString()) {
+      return `${formatDate(eventData.startDate)} - ${formatDate(eventData.endDate)}`;
+    } else {
+      return formatDate(eventData.startDate);
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-600">Loading event data...</div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!eventData) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-600">Event not found</div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const status = getEventStatus();
+  const imageUrl = eventData.image || eventData.images?.[0] || '/placeholder-event.jpg';
+  const organizerName = eventData.organizer?.organizationName || eventData.organizer?.firstName || 'Unknown';
+  const facilities = getFacilities();
 
   return (
     <AdminLayout>
@@ -196,7 +288,7 @@ const WorkstationEventDashboard: React.FC = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900">{eventData.title}</h1>
-            <p className="text-gray-600 mt-2">{eventData.organizer} • {eventData.date} • {eventData.location}</p>
+            <p className="text-gray-600 mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
           </div>
           <div className="flex gap-3">
             <Button 
@@ -222,44 +314,51 @@ const WorkstationEventDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <img 
-                  src={eventData.image}
+                  src={imageUrl}
                   alt={eventData.title}
                   className="w-20 h-20 object-cover rounded-lg"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder-event.jpg';
+                  }}
                 />
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge className={`${getStatusColor(eventData.status)} border-0`}>
+                    <Badge className={`${getStatusColor(status)} border-0`}>
                       <div className="flex items-center gap-1">
-                        {getStatusIcon(eventData.status)}
-                        <span className="capitalize">{eventData.status}</span>
+                        {getStatusIcon(status)}
+                        <span className="capitalize">{status}</span>
                       </div>
                     </Badge>
-                    <Badge variant="secondary">{eventData.category}</Badge>
+                    {eventData.category && (
+                      <Badge variant="secondary">{eventData.category}</Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{eventData.date}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{eventData.time}</span>
+                      <span>{formatTimeRange()}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
                       <span>{eventData.location}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Building2 className="w-4 h-4" />
-                      <span>{eventData.venue}</span>
-                    </div>
+                    {eventData.venue && (
+                      <div className="flex items-center gap-1">
+                        <Building2 className="w-4 h-4" />
+                        <span>{eventData.venue}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Attendees</p>
-                <p className="text-2xl font-bold">{eventData.attendees}/{eventData.capacity}</p>
-                <p className="text-sm text-gray-500">Scanned: {eventData.scannedTickets}</p>
+                <p className="text-sm text-gray-600">Total Attendees</p>
+                <p className="text-2xl font-bold">
+                  {statistics?.totalAttendees || 0}
+                </p>
+                <p className="text-sm text-gray-500">
+                  Checked In: {statistics?.checkedIn || 0}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -344,7 +443,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
-                    <p className="text-2xl font-bold">{eventData.attendees}</p>
+                    <p className="text-2xl font-bold">{statistics?.totalAttendees || 0}</p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -356,9 +455,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Checked In</p>
-                    <p className="text-2xl font-bold">
-                      {eventData.attendeesList?.filter(a => a.status === 'checked_in' || a.status === 'scanned').length || 0}
-                    </p>
+                    <p className="text-2xl font-bold">{statistics?.checkedIn || 0}</p>
                   </div>
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
@@ -369,12 +466,10 @@ const WorkstationEventDashboard: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Scanned</p>
-                    <p className="text-2xl font-bold">
-                      {eventData.attendeesList?.filter(a => a.status === 'scanned').length || 0}
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">Currently Inside</p>
+                    <p className="text-2xl font-bold">{statistics?.currentlyInside || 0}</p>
                   </div>
-                  <QrCode className="h-8 w-8 text-blue-600" />
+                  <Activity className="h-8 w-8 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
@@ -383,10 +478,10 @@ const WorkstationEventDashboard: React.FC = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Capacity</p>
-                    <p className="text-2xl font-bold">{eventData.capacity}</p>
+                    <p className="text-sm font-medium text-muted-foreground">Scans Today</p>
+                    <p className="text-2xl font-bold">{statistics?.scansToday || 0}</p>
                   </div>
-                  <Target className="h-8 w-8 text-orange-600" />
+                  <QrCode className="h-8 w-8 text-orange-600" />
                 </div>
               </CardContent>
             </Card>
@@ -403,10 +498,6 @@ const WorkstationEventDashboard: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm">
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add Attendee
-                  </Button>
-                  <Button variant="outline" size="sm">
                     <Download className="w-4 h-4 mr-2" />
                     Export
                   </Button>
@@ -414,53 +505,90 @@ const WorkstationEventDashboard: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {eventData.attendeesList?.map((attendee) => (
-                  <div key={attendee.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        {attendee.avatar ? (
-                          <img 
-                            src={attendee.avatar} 
-                            alt={attendee.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
+              {attendeesLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-gray-600">Loading attendees...</div>
+                </div>
+              ) : attendees.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-gray-600">No attendees found</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {attendees.map((attendee) => (
+                    <div 
+                      key={attendee.registrationId} 
+                      className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-medium text-primary">
-                            {attendee.name.split(' ').map(n => n[0]).join('')}
+                            {attendee.attendeeName.split(' ').map(n => n[0]).join('').toUpperCase()}
                           </span>
-                        )}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">{attendee.attendeeName}</h4>
+                          <p className="text-sm text-gray-600">{attendee.email}</p>
+                          {attendee.phoneNumber && (
+                            <p className="text-sm text-gray-500">{attendee.phoneNumber}</p>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{attendee.name}</h4>
-                        <p className="text-sm text-gray-600">{attendee.email}</p>
-                        {attendee.phone && (
-                          <p className="text-sm text-gray-500">{attendee.phone}</p>
+                      <div className="flex items-center gap-4">
+                        <Badge className={`text-xs ${getTicketStatusColor(attendee.ticketStatus)}`}>
+                          {attendee.ticketStatus}
+                        </Badge>
+                        {attendee.ticketType && (
+                          <Badge variant="outline" className="text-xs">
+                            {attendee.ticketType}
+                          </Badge>
                         )}
+                        {attendee.isCurrentlyInside && (
+                          <Badge variant="secondary" className="text-xs">
+                            Inside
+                          </Badge>
+                        )}
+                        <span className="text-sm text-gray-600">
+                          {attendee.checkedInAt 
+                            ? new Date(attendee.checkedInAt).toLocaleString()
+                            : 'Not checked in'
+                          }
+                        </span>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Badge className={`text-xs ${getAttendeeStatusColor(attendee.status)}`}>
-                        {attendee.status.replace('_', ' ')}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {attendee.ticketType}
-                      </Badge>
-                      <span className="text-sm text-gray-600">
-                        {attendee.status === 'scanned' && attendee.scannedAt 
-                          ? new Date(attendee.scannedAt).toLocaleTimeString()
-                          : attendee.status === 'checked_in' && attendee.checkedInDate
-                          ? new Date(attendee.checkedInDate).toLocaleTimeString()
-                          : new Date(attendee.registeredDate).toLocaleDateString()
-                        }
-                      </span>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                  ))}
+                  
+                  {/* Pagination */}
+                  {pagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                      <div className="text-sm text-gray-600">
+                        Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} attendees
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pagination.page === 1}
+                          onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pagination.page === pagination.totalPages}
+                          onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                        >
+                          Next
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -483,31 +611,43 @@ const WorkstationEventDashboard: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {eventData.facilities?.map((facility) => (
-                  <Card key={facility.id} className="cursor-pointer transition-all duration-200 hover:shadow-md">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {facility.icon}
-                          <span className="font-medium">{facility.name}</span>
+              {facilities.length === 0 ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="text-gray-600">No facilities data available</div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {facilities.map((facility, index) => (
+                    <Card key={index} className="cursor-pointer transition-all duration-200 hover:shadow-md">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {facility.icon}
+                            <span className="font-medium">{facility.name}</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {facility.currentlyInside} inside
+                          </Badge>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          {facility.currentCount}/{facility.capacity || '∞'}
-                        </Badge>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300"
-                          style={{ 
-                            width: `${facility.capacity ? (facility.currentCount / facility.capacity) * 100 : 0}%` 
-                          }}
-                        ></div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          <div>Checked In: {facility.checkedIn}</div>
+                          <div>Currently Inside: {facility.currentlyInside}</div>
+                        </div>
+                        {facility.checkedIn > 0 && (
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${Math.min((facility.currentlyInside / facility.checkedIn) * 100, 100)}%` 
+                              }}
+                            ></div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -17,82 +17,100 @@ import {
   TrendingUp
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import { getEvents, type EventData } from "../../../lib/event-api";
+import { getEvent, type EventStatistics } from "../../../lib/workstation-api";
+import { useToast } from "../../../hooks/use-toast";
 
-interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  venue: string;
-  image: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
-  attendees: number;
-  capacity: number;
-  organizer: string;
-  category: string;
-  revenue?: number;
-  scannedTickets?: number;
-  facilities?: string[];
+interface EventWithStats extends EventData {
+  statistics?: EventStatistics;
 }
 
 const WorkstationOverview: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [events, setEvents] = useState<EventWithStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalEvents: 0,
+    totalAttendees: 0,
+    totalScanned: 0,
+    totalRevenue: 0,
+  });
 
-  // Mock data for events
-  const events: EventData[] = [
-    {
-      id: "1",
-      title: "Seamless East Africa 2025",
-      date: "July 2-3, 2025",
-      time: "9:00 AM - 6:00 PM",
-      location: "Nairobi, Kenya",
-      venue: "Kenyatta International Convention Centre",
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-      status: "upcoming",
-      attendees: 485,
-      capacity: 500,
-      organizer: "EventKnit",
-      category: "Technology",
-      revenue: 145200,
-      scannedTickets: 0,
-      facilities: ["Registration", "Lunch", "Gifts", "VIP Lounge"]
-    },
-    {
-      id: "2",
-      title: "Tech Innovation Summit 2024",
-      date: "March 15-17, 2024",
-      time: "9:00 AM - 5:00 PM",
-      location: "San Francisco, CA",
-      venue: "Moscone Center",
-      image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=400&h=300&fit=crop",
-      status: "ongoing",
-      attendees: 1200,
-      capacity: 1500,
-      organizer: "TechCorp",
-      category: "Technology",
-      revenue: 360000,
-      scannedTickets: 1150,
-      facilities: ["Registration", "Lunch", "Gifts", "VIP Lounge", "Parking"]
-    },
-    {
-      id: "3",
-      title: "Digital Marketing Workshop",
-      date: "February 28, 2024",
-      time: "10:00 AM - 4:00 PM",
-      location: "London, UK",
-      venue: "London Business School",
-      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop",
-      status: "completed",
-      attendees: 85,
-      capacity: 100,
-      organizer: "MarketingPro",
-      category: "Marketing",
-      revenue: 25500,
-      scannedTickets: 85,
-      facilities: ["Registration", "Lunch", "Materials"]
+  // Load events with statistics
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await getEvents({ limit: 100 });
+        if (response.success && response.data) {
+          const eventsWithStats: EventWithStats[] = [];
+          
+          // Load statistics for each event
+          for (const event of response.data.events) {
+            try {
+              const eventResponse = await getEvent(event.id);
+              if (eventResponse.success && eventResponse.data) {
+                eventsWithStats.push({
+                  ...event,
+                  statistics: eventResponse.data.statistics,
+                });
+              } else {
+                eventsWithStats.push(event);
+              }
+            } catch (error) {
+              console.error(`Error loading statistics for event ${event.id}:`, error);
+              eventsWithStats.push(event);
+            }
+          }
+          
+          setEvents(eventsWithStats);
+          
+          // Calculate totals
+          const totalEvents = eventsWithStats.length;
+          const totalAttendees = eventsWithStats.reduce((sum, event) => 
+            sum + (event.statistics?.totalAttendees || 0), 0
+          );
+          const totalScanned = eventsWithStats.reduce((sum, event) => 
+            sum + (event.statistics?.checkedIn || 0), 0
+          );
+          
+          setStats({
+            totalEvents,
+            totalAttendees,
+            totalScanned,
+            totalRevenue: 0, // Revenue not available from workstation API
+          });
+        }
+      } catch (error) {
+        console.error('Error loading events:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load events",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, [toast]);
+
+  // Determine event status
+  const getEventStatus = (event: EventWithStats): 'upcoming' | 'ongoing' | 'completed' => {
+    const now = new Date();
+    const startDate = new Date(event.startDate);
+    const endDate = event.endDate ? new Date(event.endDate) : null;
+    
+    if (endDate && now > endDate) {
+      return 'completed';
+    } else if (now >= startDate && (!endDate || now <= endDate)) {
+      return 'ongoing';
+    } else {
+      return 'upcoming';
     }
-  ];
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -120,10 +138,26 @@ const WorkstationOverview: React.FC = () => {
     }
   };
 
-  const totalEvents = events.length;
-  const totalAttendees = events.reduce((sum, event) => sum + event.attendees, 0);
-  const totalRevenue = events.reduce((sum, event) => sum + (event.revenue || 0), 0);
-  const totalScanned = events.reduce((sum, event) => sum + (event.scannedTickets || 0), 0);
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  // Format time range
+  const formatTimeRange = (event: EventWithStats) => {
+    const startDate = new Date(event.startDate);
+    const endDate = event.endDate ? new Date(event.endDate) : null;
+    
+    if (endDate && startDate.toDateString() !== endDate.toDateString()) {
+      return `${formatDate(event.startDate)} - ${formatDate(event.endDate)}`;
+    } else {
+      return formatDate(event.startDate);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -136,56 +170,69 @@ const WorkstationOverview: React.FC = () => {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-600">Loading events...</div>
+          </div>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Events</p>
-                  <p className="text-2xl font-bold">{totalEvents}</p>
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Events</p>
+                    <p className="text-2xl font-bold">{stats.totalEvents}</p>
+                  </div>
+                  <Calendar className="h-8 w-8 text-primary" />
                 </div>
-                <Calendar className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
-                  <p className="text-2xl font-bold">{totalAttendees.toLocaleString()}</p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
+                    <p className="text-2xl font-bold">{stats.totalAttendees.toLocaleString()}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-primary" />
                 </div>
-                <Users className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tickets Scanned</p>
-                  <p className="text-2xl font-bold">{totalScanned.toLocaleString()}</p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Tickets Scanned</p>
+                    <p className="text-2xl font-bold">{stats.totalScanned.toLocaleString()}</p>
+                  </div>
+                  <QrCode className="h-8 w-8 text-primary" />
                 </div>
-                <QrCode className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                  <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Currently Inside</p>
+                    <p className="text-2xl font-bold">
+                      {events.reduce((sum, event) => 
+                        sum + (event.statistics?.currentlyInside || 0), 0
+                      ).toLocaleString()}
+                    </p>
+                  </div>
+                  <Activity className="h-8 w-8 text-primary" />
                 </div>
-                <TrendingUp className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
 
         {/* Events Grid */}
@@ -201,101 +248,106 @@ const WorkstationOverview: React.FC = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <Card 
-                key={event.id} 
-                className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                onClick={() => navigate(`/admin/workstation/event/${event.id}`)}
-              >
-                <div className="relative overflow-hidden">
-                  <img 
-                    src={event.image}
-                    alt={event.title}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <Badge className={`${getStatusColor(event.status)} border-0`}>
-                      <div className="flex items-center gap-1">
-                        {getStatusIcon(event.status)}
-                        <span className="capitalize">{event.status}</span>
-                      </div>
-                    </Badge>
-                  </div>
-                  <div className="absolute top-4 right-4">
-                    <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                      {event.category}
-                    </Badge>
-                  </div>
-                </div>
+          {!loading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.map((event) => {
+                const status = getEventStatus(event);
+                const imageUrl = event.image || event.images?.[0] || '/placeholder-event.jpg';
+                const organizerName = event.organizer?.organizationName || event.organizer?.firstName || 'Unknown';
                 
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary transition-colors">
-                        {event.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">{event.organizer}</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="w-4 h-4" />
-                        <span>{event.date}</span>
+                return (
+                  <Card 
+                    key={event.id} 
+                    className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                    onClick={() => navigate(`/admin/workstation/event/${event.id}`)}
+                  >
+                    <div className="relative overflow-hidden">
+                      <img 
+                        src={imageUrl}
+                        alt={event.title}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-event.jpg';
+                        }}
+                      />
+                      <div className="absolute top-4 left-4">
+                        <Badge className={`${getStatusColor(status)} border-0`}>
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon(status)}
+                            <span className="capitalize">{status}</span>
+                          </div>
+                        </Badge>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Clock className="w-4 h-4" />
-                        <span>{event.time}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <MapPin className="w-4 h-4" />
-                        <span>{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Building2 className="w-4 h-4" />
-                        <span>{event.venue}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-4 border-t">
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <p className="text-sm text-gray-600">Attendees</p>
-                          <p className="font-semibold">{event.attendees}/{event.capacity}</p>
+                      {event.category && (
+                        <div className="absolute top-4 right-4">
+                          <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                            {event.category}
+                          </Badge>
                         </div>
-                        <div className="text-center">
-                          <p className="text-sm text-gray-600">Scanned</p>
-                          <p className="font-semibold">{event.scannedTickets}</p>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4 mr-2" />
-                        Manage
-                      </Button>
+                      )}
                     </div>
+                    
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary transition-colors">
+                            {event.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 mt-1">{organizerName}</p>
+                        </div>
 
-                    {event.facilities && event.facilities.length > 0 && (
-                      <div className="pt-2">
-                        <p className="text-sm text-gray-600 mb-2">Facilities:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {event.facilities.slice(0, 3).map((facility, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {facility}
-                            </Badge>
-                          ))}
-                          {event.facilities.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{event.facilities.length - 3} more
-                            </Badge>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Calendar className="w-4 h-4" />
+                            <span>{formatTimeRange(event)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin className="w-4 h-4" />
+                            <span>{event.location}</span>
+                          </div>
+                          {event.venue && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Building2 className="w-4 h-4" />
+                              <span>{event.venue}</span>
+                            </div>
                           )}
                         </div>
+
+                        <div className="flex justify-between items-center pt-4 border-t">
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600">Total</p>
+                              <p className="font-semibold">{event.statistics?.totalAttendees || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600">Checked In</p>
+                              <p className="font-semibold">{event.statistics?.checkedIn || 0}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600">Inside</p>
+                              <p className="font-semibold text-green-600">{event.statistics?.currentlyInside || 0}</p>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            <Eye className="w-4 h-4 mr-2" />
+                            Manage
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {!loading && events.length === 0 && (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <p className="text-gray-600">No events found</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </AdminLayout>
