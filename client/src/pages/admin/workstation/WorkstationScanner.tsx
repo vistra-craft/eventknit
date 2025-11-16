@@ -32,7 +32,13 @@ import {
   AlertTriangle,
   User,
   Mail,
-  Phone
+  Phone,
+  Wifi,
+  WifiOff,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  Upload
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import { useToast } from "../../../hooks/use-toast";
@@ -49,8 +55,19 @@ import {
   type ScanType,
   type AttendeeSearchResult,
   type WorkstationApiError,
+  type ScanRequest,
 } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
+import {
+  addToOfflineQueue,
+  syncOfflineQueue,
+  getSyncStatus,
+  getQueueStats,
+  clearFailedItems,
+  isOnline,
+  type SyncStatus,
+  type OfflineScanItem,
+} from "../../../lib/offline-sync";
 
 // Scan result interface
 interface ScanResult {
@@ -160,6 +177,10 @@ const WorkstationScanner: React.FC = () => {
   const [searchCode, setSearchCode] = useState(""); // Optional QR code for signature verification in search
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
   const [isMobile, setIsMobile] = useState(false);
+  const [isOnlineState, setIsOnlineState] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus());
+  const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState({ synced: 0, total: 0 });
   
   // Refs
   const html5QrCodeRef = useRef<Html5QrcodeScanner | null>(null);
@@ -203,6 +224,47 @@ const WorkstationScanner: React.FC = () => {
     };
 
     checkCameraPermission();
+  }, []);
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      const online = isOnline();
+      setIsOnlineState(online);
+      setSyncStatus(getSyncStatus());
+    };
+
+    updateOnlineStatus();
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
+  }, []);
+
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (isOnlineState && syncStatus.queueLength > 0 && !syncing) {
+      // Delay sync slightly to ensure connection is stable
+      const timeoutId = setTimeout(() => {
+        if (isOnline() && getSyncStatus().queueLength > 0) {
+          handleSync();
+        }
+      }, 2000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOnlineState, syncStatus.queueLength, syncing, handleSync]);
+
+  // Update sync status periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSyncStatus(getSyncStatus());
+    }, 5000); // Update every 5 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   // Facilities
@@ -303,25 +365,65 @@ const WorkstationScanner: React.FC = () => {
       return;
     }
 
+    // Prepare scan request
+    const scanRequest: ScanRequest = {
+      code: formattedCode,
+      eventId,
+      facility: selectedFacility,
+      deviceId,
+      deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
+    };
+
+    // Check if offline - store in queue instead
+    if (!isOnlineState) {
+      const offlineItem = addToOfflineQueue(
+        scanRequest,
+        scanMode,
+        undefined, // signatureValid will be set when synced
+        codeType,
+      );
+
+      // Create a pending scan result
+      const scanResult: ScanResult = {
+        id: offlineItem.id,
+        registrationId: 'pending',
+        attendeeName: 'Pending sync...',
+        ticketType: null,
+        scannedAt: offlineItem.timestamp.toISOString(),
+        facility: selectedFacility,
+        status: 'success', // Show as success but indicate it's pending
+        signatureValid: false,
+        codeType,
+        scanType: scanMode === 'check-in' ? 'CHECK_IN' : 'CHECK_OUT',
+        isReEntry: false,
+      };
+
+      setScanResults(prev => [scanResult, ...prev]);
+      setSyncStatus(getSyncStatus());
+
+      toast({
+        title: "Scan Queued",
+        description: "Device is offline. Scan will be synced when connection is restored.",
+      });
+
+      // Visual feedback
+      setFlashStatus('success');
+      setTimeout(() => setFlashStatus('none'), 500);
+
+      if (soundEnabled) {
+        playSuccessSound();
+      }
+
+      return;
+    }
+
     try {
       let response: { success: true; data: ScanResponse } | WorkstationApiError;
 
       if (scanMode === 'check-in') {
-        response = await scanTicket({
-          code: formattedCode,
-          eventId,
-          facility: selectedFacility,
-          deviceId,
-          deviceType: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
-        });
+        response = await scanTicket(scanRequest);
       } else {
-        response = await scanOut({
-          code: formattedCode,
-          eventId,
-          facility: selectedFacility,
-          deviceId,
-          deviceType: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
-        });
+        response = await scanOut(scanRequest);
       }
 
       if (response.success) {
@@ -422,7 +524,73 @@ const WorkstationScanner: React.FC = () => {
         variant: "destructive",
       });
     }
-  }, [eventId, selectedFacility, scanMode, soundEnabled, toast, deviceId]);
+  }, [eventId, selectedFacility, scanMode, soundEnabled, toast, deviceId, isOnlineState, isMobile]);
+
+  // Handle sync
+  const handleSync = useCallback(async () => {
+    if (!isOnlineState) {
+      toast({
+        title: "Offline",
+        description: "Cannot sync while offline. Please check your connection.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (syncStatus.queueLength === 0) {
+      toast({
+        title: "Nothing to Sync",
+        description: "No pending scans in queue.",
+      });
+      return;
+    }
+
+    try {
+      setSyncing(true);
+      setSyncProgress({ synced: 0, total: syncStatus.queueLength });
+
+      const result = await syncOfflineQueue(
+        (synced, total) => {
+          setSyncProgress({ synced, total });
+        },
+        (item, success) => {
+          if (success) {
+            // Remove from scan results if it was a pending item
+            setScanResults(prev =>
+              prev.filter(r => r.id !== item.id)
+            );
+          }
+        },
+      );
+
+      setSyncStatus(getSyncStatus());
+
+      if (result.synced > 0) {
+        toast({
+          title: "Sync Complete",
+          description: `Successfully synced ${result.synced} scan(s). ${result.failed > 0 ? `${result.failed} failed.` : ''}`,
+        });
+      }
+
+      if (result.failed > 0 && result.synced === 0) {
+        toast({
+          title: "Sync Failed",
+          description: `Failed to sync ${result.failed} scan(s). Please try again later.`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error syncing:', error);
+      toast({
+        title: "Sync Error",
+        description: error instanceof Error ? error.message : "Failed to sync scans",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+      setSyncProgress({ synced: 0, total: 0 });
+    }
+  }, [isOnlineState, syncStatus.queueLength, toast]);
 
   // Start QR scanning
   const startScanning = useCallback(async () => {
@@ -557,22 +725,18 @@ const WorkstationScanner: React.FC = () => {
     try {
       let response: { success: true; data: ScanResponse } | WorkstationApiError;
 
+      const manualRequest: ScanRequest = {
+        code: attendee.registrationId, // Use registration ID as code
+        eventId,
+        facility: selectedFacility,
+        deviceId,
+        deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
+      };
+
       if (scanMode === 'check-in') {
-        response = await scanTicket({
-          code: attendee.registrationId, // Use registration ID as code
-          eventId,
-          facility: selectedFacility,
-          deviceId,
-          deviceType: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
-        });
+        response = await scanTicket(manualRequest);
       } else {
-        response = await scanOut({
-          code: attendee.registrationId,
-          eventId,
-          facility: selectedFacility,
-          deviceId,
-          deviceType: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
-        });
+        response = await scanOut(manualRequest);
       }
 
       if (response.success) {
@@ -707,6 +871,76 @@ const WorkstationScanner: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Scanner Section */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Offline Indicator & Sync Status */}
+              {(!isOnlineState || syncStatus.queueLength > 0) && (
+                <Card className={!isOnlineState ? 'border-amber-500 bg-amber-50' : 'border-blue-500 bg-blue-50'}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {!isOnlineState ? (
+                          <>
+                            <WifiOff className="w-5 h-5 text-amber-600" />
+                            <div>
+                              <p className="text-sm font-medium text-amber-900">Offline Mode</p>
+                              <p className="text-xs text-amber-700">
+                                Scans will be queued and synced when connection is restored
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <Cloud className="w-5 h-5 text-blue-600" />
+                            <div>
+                              <p className="text-sm font-medium text-blue-900">
+                                {syncStatus.queueLength} scan(s) pending sync
+                              </p>
+                              {syncStatus.failedItems > 0 && (
+                                <p className="text-xs text-red-700">
+                                  {syncStatus.failedItems} failed - check sync details
+                                </p>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      {isOnlineState && syncStatus.queueLength > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSync}
+                          disabled={syncing}
+                        >
+                          {syncing ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                              Syncing... ({syncProgress.synced}/{syncProgress.total})
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Sync Now
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    {syncing && syncProgress.total > 0 && (
+                      <div className="mt-3">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${(syncProgress.synced / syncProgress.total) * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1 text-center">
+                          Syncing {syncProgress.synced} of {syncProgress.total} scans...
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Scan Mode Toggle */}
               <Card>
                 <CardContent className="p-4">
