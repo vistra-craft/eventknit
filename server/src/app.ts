@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { config } from './config/index.js';
-import { logger, stream } from './utils/logger.js';
+import { stream } from './utils/logger.js';
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import organizerRoutes from './routes/organizer.routes.js';
@@ -16,6 +16,7 @@ import paymentRoutes from './routes/payment.routes.js';
 import ticketRoutes from './routes/ticket.routes.js';
 import userRoutes from './routes/user.routes.js';
 import promoCodeRoutes from './routes/promo-code.routes.js';
+import workstationRoutes from './routes/workstation.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -35,7 +36,7 @@ app.use(cors({
 
 // Security middleware
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -93,6 +94,7 @@ app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/tickets', ticketRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/promo-codes', promoCodeRoutes);
+app.use('/api/v1/workstation', workstationRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
