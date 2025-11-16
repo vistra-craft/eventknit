@@ -476,3 +476,36 @@ export const recallEvent = async (
   return apiPost<RecallEventResponse>(`/admin/events/${eventId}/recall`, { action, reason });
 };
 
+/**
+ * Role information from backend
+ */
+export interface RoleInfo {
+  role: UserRole;
+  hierarchy: number;
+  displayName: string;
+  description: string;
+  canCreate: boolean;
+  canModify: boolean;
+  canDelete: boolean;
+  creatableRoles: UserRole[];
+  modifiableRoles: UserRole[];
+}
+
+/**
+ * Get Roles Response
+ */
+export interface GetRolesResponse {
+  success: boolean;
+  data: {
+    roles: RoleInfo[];
+    currentUserRole: UserRole;
+  };
+}
+
+/**
+ * Get all roles with permissions information
+ */
+export const getRoles = async (): Promise<GetRolesResponse> => {
+  return apiGet<GetRolesResponse>('/admin/roles');
+};
+

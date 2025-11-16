@@ -26,6 +26,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
 import { UserRole as UserRoleEnum } from "@/types/auth";
+import { useCanModifyUser, useCanDeleteUser } from "@/hooks/usePermissions";
 
 // Staff roles that exist in the enum but not in the admin-api UserRole type
 type StaffRole = UserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
@@ -46,6 +47,55 @@ const StaffManagementContent = () => {
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // Permission hooks for all staff roles
+  const canModifySuperAdmin = useCanModifyUser(UserRoleEnum.SUPERADMIN);
+  const canModifyAdminStaff = useCanModifyUser(UserRoleEnum.ADMIN_STAFF);
+  const canModifyMarketer = useCanModifyUser(UserRoleEnum.MARKETER);
+  const canModifySupport = useCanModifyUser(UserRoleEnum.SUPPORT);
+  const canModifyTeller = useCanModifyUser(UserRoleEnum.TELLER);
+  
+  const canDeleteSuperAdmin = useCanDeleteUser(UserRoleEnum.SUPERADMIN);
+  const canDeleteAdminStaff = useCanDeleteUser(UserRoleEnum.ADMIN_STAFF);
+  const canDeleteMarketer = useCanDeleteUser(UserRoleEnum.MARKETER);
+  const canDeleteSupport = useCanDeleteUser(UserRoleEnum.SUPPORT);
+  const canDeleteTeller = useCanDeleteUser(UserRoleEnum.TELLER);
+
+  // Helper function to check if user can modify a staff member
+  const canModifyStaff = (staffRole: UserRole): boolean => {
+    switch (staffRole) {
+      case UserRoleEnum.SUPERADMIN:
+        return canModifySuperAdmin;
+      case UserRoleEnum.ADMIN_STAFF:
+        return canModifyAdminStaff;
+      case UserRoleEnum.MARKETER:
+        return canModifyMarketer;
+      case UserRoleEnum.SUPPORT:
+        return canModifySupport;
+      case UserRoleEnum.TELLER:
+        return canModifyTeller;
+      default:
+        return false;
+    }
+  };
+
+  // Helper function to check if user can delete a staff member
+  const canDeleteStaff = (staffRole: UserRole): boolean => {
+    switch (staffRole) {
+      case UserRoleEnum.SUPERADMIN:
+        return canDeleteSuperAdmin;
+      case UserRoleEnum.ADMIN_STAFF:
+        return canDeleteAdminStaff;
+      case UserRoleEnum.MARKETER:
+        return canDeleteMarketer;
+      case UserRoleEnum.SUPPORT:
+        return canDeleteSupport;
+      case UserRoleEnum.TELLER:
+        return canDeleteTeller;
+      default:
+        return false;
+    }
+  };
 
   // Fetch staff members (ADMIN_STAFF, SUPERADMIN, etc.)
   useEffect(() => {
@@ -415,15 +465,17 @@ const StaffManagementContent = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditStaff(staff.id)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      {staff.status === "ACTIVE" && (
+                      {canModifyStaff(staff.role) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditStaff(staff.id)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                      {staff.status === "ACTIVE" && canModifyStaff(staff.role) && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -436,19 +488,19 @@ const StaffManagementContent = () => {
                           Suspend
                         </Button>
                       )}
-                      {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleActivateStaff(staff.id)}
-                          className="text-green-600 border-green-200 hover:bg-green-50"
-                          title="Activate Staff"
-                          disabled={actionLoading === staff.id}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Activate
-                        </Button>
-                      )}
+                          {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && canModifyStaff(staff.role) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleActivateStaff(staff.id)}
+                              className="text-green-600 border-green-200 hover:bg-green-50"
+                              title="Activate Staff"
+                              disabled={actionLoading === staff.id}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Activate
+                            </Button>
+                          )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -460,12 +512,14 @@ const StaffManagementContent = () => {
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditStaff(staff.id)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Staff
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {staff.status === "ACTIVE" && (
+                          {canModifyStaff(staff.role) && (
+                            <DropdownMenuItem onClick={() => handleEditStaff(staff.id)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Staff
+                            </DropdownMenuItem>
+                          )}
+                          {canModifyStaff(staff.role) && <DropdownMenuSeparator />}
+                          {staff.status === "ACTIVE" && canModifyStaff(staff.role) && (
                             <>
                               <DropdownMenuItem 
                                 onClick={() => handleSuspendStaff(staff.id)}
@@ -483,7 +537,7 @@ const StaffManagementContent = () => {
                               </DropdownMenuItem>
                             </>
                           )}
-                          {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && (
+                          {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && canModifyStaff(staff.role) && (
                             <DropdownMenuItem 
                               onClick={() => handleActivateStaff(staff.id)}
                               disabled={actionLoading === staff.id}
@@ -621,13 +675,15 @@ const StaffManagementContent = () => {
                 <Button variant="outline" onClick={() => setPreviewStaff(null)}>
                   Close
                 </Button>
-                <Button onClick={() => {
-                  setPreviewStaff(null);
-                  handleEditStaff(previewStaff.id);
-                }}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Staff
-                </Button>
+                {previewStaff && canModifyStaff(previewStaff.role) && (
+                  <Button onClick={() => {
+                    setPreviewStaff(null);
+                    handleEditStaff(previewStaff.id);
+                  }}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Staff
+                  </Button>
+                )}
               </DialogFooter>
             </div>
           )}

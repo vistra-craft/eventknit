@@ -22,6 +22,8 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
 import { exportUserData } from "@/lib/utils/export";
+import { useCanModifyUser } from "@/hooks/usePermissions";
+import { UserRole } from "@/types/auth";
 
 const OrganizersContent = () => {
   const navigate = useNavigate();
@@ -36,6 +38,9 @@ const OrganizersContent = () => {
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // Permission check for organizers
+  const canModifyOrganizer = useCanModifyUser(UserRole.ORGANIZER);
 
   // Fetch organizers
   useEffect(() => {
@@ -378,15 +383,17 @@ const OrganizersContent = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditOrganizer(organizer.id)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      {organizer.status === "ACTIVE" && (
+                      {canModifyOrganizer && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditOrganizer(organizer.id)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                      {organizer.status === "ACTIVE" && canModifyOrganizer && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -399,7 +406,7 @@ const OrganizersContent = () => {
                           Suspend
                         </Button>
                       )}
-                      {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && (
+                      {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && canModifyOrganizer && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -423,12 +430,14 @@ const OrganizersContent = () => {
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditOrganizer(organizer.id)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Organizer
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {organizer.status === "ACTIVE" && (
+                          {canModifyOrganizer && (
+                            <DropdownMenuItem onClick={() => handleEditOrganizer(organizer.id)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Organizer
+                            </DropdownMenuItem>
+                          )}
+                          {canModifyOrganizer && <DropdownMenuSeparator />}
+                          {organizer.status === "ACTIVE" && canModifyOrganizer && (
                             <>
                               <DropdownMenuItem 
                                 onClick={() => handleSuspendOrganizer(organizer.id)}
@@ -446,7 +455,7 @@ const OrganizersContent = () => {
                               </DropdownMenuItem>
                             </>
                           )}
-                          {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && (
+                          {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && canModifyOrganizer && (
                             <DropdownMenuItem 
                               onClick={() => handleActivateOrganizer(organizer.id)}
                               disabled={actionLoading === organizer.id}

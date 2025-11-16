@@ -31,6 +31,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "./AdminLayout";
+import { getRoles, type RoleInfo } from "@/lib/admin-api";
+import { useCanModifyUser, useCanDeleteUser } from "@/hooks/usePermissions";
+import { UserRole as UserRoleEnum } from "@/types/auth";
+import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 // Define all available pages/permissions based on the website structure
 export interface PagePermission {
@@ -41,24 +46,19 @@ export interface PagePermission {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-export interface UserRole {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  permissions: string[];
-  userCount: number;
-  createdAt: string;
-  updatedAt: string;
-  isDefault?: boolean;
-}
+// Use RoleInfo from backend API instead of mock UserRole
+type UserRole = RoleInfo;
 
 const UserRolesPage = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingRole, setEditingRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [roles, setRoles] = useState<UserRole[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRoleEnum | null>(null);
 
   // Define all available page permissions
   const pagePermissions: PagePermission[] = [
@@ -109,174 +109,120 @@ const UserRolesPage = () => {
     { id: "system_backups", name: "Manage Backups", category: "System", description: "Manage system backups", icon: Database },
   ];
 
-  // Mock data for existing roles
-  const [roles, setRoles] = useState<UserRole[]>([
-    {
-      id: "super_admin",
-      name: "Super Administrator",
-      description: "Full access to all platform features and settings",
-      color: "bg-red-100 text-red-800",
-      permissions: pagePermissions.map(p => p.id),
-      userCount: 2,
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-15",
-      isDefault: true
-    },
-    {
-      id: "event_manager",
-      name: "Event Manager",
-      description: "Manage events and oversee event operations",
-      color: "bg-blue-100 text-blue-800",
-      permissions: [
-        "dashboard_view", "events_view", "events_create", "events_edit", 
-        "events_approve", "events_feature", "users_view", "analytics_view"
-      ],
-      userCount: 5,
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-10"
-    },
-    {
-      id: "content_moderator",
-      name: "Content Moderator",
-      description: "Moderate content and manage user reports",
-      color: "bg-yellow-100 text-yellow-800",
-      permissions: [
-        "dashboard_view", "events_view", "moderation_view", "moderation_manage",
-        "users_view", "communications_view"
-      ],
-      userCount: 3,
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-08"
-    },
-    {
-      id: "finance_manager",
-      name: "Finance Manager",
-      description: "Manage financial operations and transactions",
-      color: "bg-green-100 text-green-800",
-      permissions: [
-        "dashboard_view", "finance_view", "finance_manage", "finance_export",
-        "analytics_view", "analytics_export"
-      ],
-      userCount: 2,
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-12"
-    },
-    {
-      id: "support_staff",
-      name: "Support Staff",
-      description: "Provide customer support and basic user management",
-      color: "bg-purple-100 text-purple-800",
-      permissions: [
-        "dashboard_view", "users_view", "users_edit", "communications_view",
-        "communications_send"
-      ],
-      userCount: 8,
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-05"
-    },
-    {
-      id: "marketing_specialist",
-      name: "Marketing Specialist",
-      description: "Manage marketing campaigns and promotions",
-      color: "bg-pink-100 text-pink-800",
-      permissions: [
-        "dashboard_view", "marketing_view", "marketing_create", "marketing_edit",
-        "analytics_view", "events_view"
-      ],
-      userCount: 4,
-      createdAt: "2024-01-01",
-      updatedAt: "2024-01-07"
+  // Fetch roles from backend API
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        setLoading(true);
+        const response = await getRoles();
+        if (response.success && response.data) {
+          setRoles(response.data.roles);
+          setCurrentUserRole(response.data.currentUserRole);
+        }
+      } catch (err: unknown) {
+        console.error("Error fetching roles:", err);
+        const message = err instanceof Error ? err.message : "Failed to load roles";
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoles();
+  }, [toast]);
+
+  // Permission hooks for role management
+  const canModifySuperAdmin = useCanModifyUser(UserRoleEnum.SUPERADMIN);
+  const canModifyAdminStaff = useCanModifyUser(UserRoleEnum.ADMIN_STAFF);
+  const canModifyMarketer = useCanModifyUser(UserRoleEnum.MARKETER);
+  const canModifySupport = useCanModifyUser(UserRoleEnum.SUPPORT);
+  const canModifyTeller = useCanModifyUser(UserRoleEnum.TELLER);
+  const canModifyOrganizer = useCanModifyUser(UserRoleEnum.ORGANIZER);
+  const canModifyOrganizerStaff = useCanModifyUser(UserRoleEnum.ORGANIZER_STAFF);
+  const canModifyOrganizerTeller = useCanModifyUser(UserRoleEnum.ORGANIZER_TELLER);
+  const canModifyAttendee = useCanModifyUser(UserRoleEnum.ATTENDEE);
+
+  // Helper to check if current user can modify a role
+  const canModifyRole = (role: UserRoleEnum): boolean => {
+    switch (role) {
+      case UserRoleEnum.SUPERADMIN:
+        return canModifySuperAdmin;
+      case UserRoleEnum.ADMIN_STAFF:
+        return canModifyAdminStaff;
+      case UserRoleEnum.MARKETER:
+        return canModifyMarketer;
+      case UserRoleEnum.SUPPORT:
+        return canModifySupport;
+      case UserRoleEnum.TELLER:
+        return canModifyTeller;
+      case UserRoleEnum.ORGANIZER:
+        return canModifyOrganizer;
+      case UserRoleEnum.ORGANIZER_STAFF:
+        return canModifyOrganizerStaff;
+      case UserRoleEnum.ORGANIZER_TELLER:
+        return canModifyOrganizerTeller;
+      case UserRoleEnum.ATTENDEE:
+        return canModifyAttendee;
+      default:
+        return false;
     }
-  ]);
+  };
 
-  const [newRole, setNewRole] = useState<UserRole>({
-    id: "",
-    name: "",
-    description: "",
-    color: "bg-gray-100 text-gray-800",
-    permissions: [],
-    userCount: 0,
-    createdAt: new Date().toISOString().split('T')[0],
-    updatedAt: new Date().toISOString().split('T')[0]
-  });
-
-  const filteredRoles = roles.filter(role => {
-    const matchesSearch = role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         role.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredRoles = roles.filter((role) => {
+    const matchesSearch =
+      role.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      role.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
+  // Note: Create/Edit/Delete role functionality is not yet implemented in backend
+  // These handlers are kept for future implementation
   const handleCreateRole = () => {
-    if (!newRole.name.trim()) return;
-    
-    const role: UserRole = {
-      ...newRole,
-      id: newRole.name.toLowerCase().replace(/\s+/g, '_'),
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
-    
-    setRoles([...roles, role]);
-    setNewRole({
-      id: "",
-      name: "",
-      description: "",
-      color: "bg-gray-100 text-gray-800",
-      permissions: [],
-      userCount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
+    toast({
+      title: "Not Available",
+      description: "Custom role creation is not yet available. This feature will be implemented in the future.",
+      variant: "default",
     });
     setShowCreateModal(false);
   };
 
   const handleEditRole = (role: UserRole) => {
-    setEditingRole({ ...role });
-    setShowEditModal(true);
+    toast({
+      title: "Not Available",
+      description: "Role editing is not yet available. This feature will be implemented in the future.",
+      variant: "default",
+    });
+    setShowEditModal(false);
   };
 
   const handleUpdateRole = () => {
-    if (!editingRole) return;
-    
-    setRoles(roles.map(role => 
-      role.id === editingRole.id 
-        ? { ...editingRole, updatedAt: new Date().toISOString().split('T')[0] }
-        : role
-    ));
+    toast({
+      title: "Not Available",
+      description: "Role updates are not yet available. This feature will be implemented in the future.",
+      variant: "default",
+    });
     setShowEditModal(false);
     setEditingRole(null);
   };
 
   const handleDeleteRole = (roleId: string) => {
-    if (roles.find(r => r.id === roleId)?.isDefault) {
-      alert("Cannot delete default roles");
-      return;
-    }
-    setRoles(roles.filter(role => role.id !== roleId));
+    toast({
+      title: "Not Available",
+      description: "Role deletion is not yet available. This feature will be implemented in the future.",
+      variant: "default",
+    });
   };
 
   const handleDuplicateRole = (role: UserRole) => {
-    const duplicatedRole: UserRole = {
-      ...role,
-      id: `${role.id}_copy`,
-      name: `${role.name} (Copy)`,
-      userCount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
-      isDefault: false
-    };
-    setRoles([...roles, duplicatedRole]);
-  };
-
-  const togglePermission = (role: UserRole, permissionId: string) => {
-    const updatedPermissions = role.permissions.includes(permissionId)
-      ? role.permissions.filter(p => p !== permissionId)
-      : [...role.permissions, permissionId];
-    
-    if (editingRole) {
-      setEditingRole({ ...editingRole, permissions: updatedPermissions });
-    } else {
-      setNewRole({ ...newRole, permissions: updatedPermissions });
-    }
+    toast({
+      title: "Not Available",
+      description: "Role duplication is not yet available. This feature will be implemented in the future.",
+      variant: "default",
+    });
   };
 
   const getCategoryIcon = (category: string) => {
@@ -348,152 +294,135 @@ const UserRolesPage = () => {
           </CardContent>
         </Card>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-600">Loading roles...</div>
+          </div>
+        )}
+
         {/* Roles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRoles.map((role) => (
-            <Card key={role.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Shield className="h-5 w-5 text-primary" />
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredRoles.map((role) => {
+              const canModify = canModifyRole(role.role);
+              const getRoleColor = (roleType: UserRoleEnum) => {
+                const colors: Record<UserRoleEnum, string> = {
+                  [UserRoleEnum.SUPERADMIN]: "bg-red-100 text-red-800",
+                  [UserRoleEnum.ADMIN_STAFF]: "bg-blue-100 text-blue-800",
+                  [UserRoleEnum.MARKETER]: "bg-pink-100 text-pink-800",
+                  [UserRoleEnum.SUPPORT]: "bg-purple-100 text-purple-800",
+                  [UserRoleEnum.TELLER]: "bg-green-100 text-green-800",
+                  [UserRoleEnum.ORGANIZER]: "bg-yellow-100 text-yellow-800",
+                  [UserRoleEnum.ORGANIZER_STAFF]: "bg-orange-100 text-orange-800",
+                  [UserRoleEnum.ORGANIZER_TELLER]: "bg-teal-100 text-teal-800",
+                  [UserRoleEnum.ATTENDEE]: "bg-gray-100 text-gray-800",
+                };
+                return colors[roleType] || "bg-gray-100 text-gray-800";
+              };
+
+              return (
+                <Card key={role.role} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <Shield className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">{role.displayName}</CardTitle>
+                          <Badge className={getRoleColor(role.role)} variant="secondary">
+                            Hierarchy: {role.hierarchy}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{role.name}</CardTitle>
-                      <Badge className={role.color} variant="secondary">
-                        {role.isDefault ? "Default" : "Custom"}
-                      </Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{role.description}</p>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Can Create:</span>
+                        <Badge variant={role.canCreate ? "default" : "secondary"}>
+                          {role.canCreate ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Can Modify:</span>
+                        <Badge variant={role.canModify ? "default" : "secondary"}>
+                          {role.canModify ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Can Delete:</span>
+                        <Badge variant={role.canDelete ? "default" : "secondary"}>
+                          {role.canDelete ? "Yes" : "No"}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDuplicateRole(role)}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditRole(role)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    {!role.isDefault && (
+
+                    {role.creatableRoles.length > 0 && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Can Create: </span>
+                        <span className="font-medium">
+                          {role.creatableRoles.length} role(s)
+                        </span>
+                      </div>
+                    )}
+
+                    {role.modifiableRoles.length > 0 && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Can Modify: </span>
+                        <span className="font-medium">
+                          {role.modifiableRoles.length} role(s)
+                        </span>
+                      </div>
+                    )}
+
+                    {canModify && (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteRole(role.id)}
-                        className="text-destructive hover:text-destructive"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleEditRole(role)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
                       </Button>
                     )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {role.description}
-                </p>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Users:</span>
-                  <span className="font-medium">{role.userCount}</span>
-                </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Permissions:</span>
-                  <span className="font-medium">{role.permissions.length}</span>
-                </div>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Updated:</span>
-                  <span className="font-medium">{role.updatedAt}</span>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => handleEditRole(role)}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    {!canModify && (
+                      <div className="text-xs text-muted-foreground text-center p-2">
+                        You don't have permission to modify this role
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-        {/* Create Role Modal */}
+        {/* Empty State */}
+        {!loading && filteredRoles.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            No roles found matching your search.
+          </div>
+        )}
+
+        {/* Create Role Modal - Feature not yet available */}
         {showCreateModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+            <Card className="w-full max-w-md">
               <CardHeader>
                 <CardTitle>Create New Role</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="role-name">Role Name</Label>
-                    <Input
-                      id="role-name"
-                      value={newRole.name}
-                      onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
-                      placeholder="Enter role name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="role-description">Description</Label>
-                    <Textarea
-                      id="role-description"
-                      value={newRole.description}
-                      onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
-                      placeholder="Enter role description"
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Permissions</Label>
-                    <div className="space-y-4 mt-2">
-                      {Object.entries(groupedPermissions).map(([category, permissions]) => {
-                        const CategoryIcon = getCategoryIcon(category);
-                        return (
-                          <div key={category} className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <CategoryIcon className="h-4 w-4" />
-                              <h4 className="font-medium">{category}</h4>
-                            </div>
-                            <div className="grid grid-cols-1 gap-2 ml-6">
-                              {permissions.map((permission) => (
-                                <div key={permission.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={permission.id}
-                                    checked={newRole.permissions.includes(permission.id)}
-                                    onCheckedChange={() => togglePermission(newRole, permission.id)}
-                                  />
-                                  <Label htmlFor={permission.id} className="text-sm">
-                                    {permission.name}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end space-x-2">
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Custom role creation is not yet available. This feature will be implemented in the future.
+                </p>
+                <div className="flex justify-end">
                   <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateRole}>
-                    Create Role
+                    Close
                   </Button>
                 </div>
               </CardContent>
@@ -501,74 +430,20 @@ const UserRolesPage = () => {
           </div>
         )}
 
-        {/* Edit Role Modal */}
+        {/* Edit Role Modal - Feature not yet available */}
         {showEditModal && editingRole && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+            <Card className="w-full max-w-md">
               <CardHeader>
-                <CardTitle>Edit Role: {editingRole.name}</CardTitle>
+                <CardTitle>Edit Role: {editingRole.displayName}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="edit-role-name">Role Name</Label>
-                    <Input
-                      id="edit-role-name"
-                      value={editingRole.name}
-                      onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
-                      placeholder="Enter role name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="edit-role-description">Description</Label>
-                    <Textarea
-                      id="edit-role-description"
-                      value={editingRole.description}
-                      onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
-                      placeholder="Enter role description"
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Permissions</Label>
-                    <div className="space-y-4 mt-2">
-                      {Object.entries(groupedPermissions).map(([category, permissions]) => {
-                        const CategoryIcon = getCategoryIcon(category);
-                        return (
-                          <div key={category} className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <CategoryIcon className="h-4 w-4" />
-                              <h4 className="font-medium">{category}</h4>
-                            </div>
-                            <div className="grid grid-cols-1 gap-2 ml-6">
-                              {permissions.map((permission) => (
-                                <div key={permission.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`edit-${permission.id}`}
-                                    checked={editingRole.permissions.includes(permission.id)}
-                                    onCheckedChange={() => togglePermission(editingRole, permission.id)}
-                                  />
-                                  <Label htmlFor={`edit-${permission.id}`} className="text-sm">
-                                    {permission.name}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end space-x-2">
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Role editing is not yet available. This feature will be implemented in the future.
+                </p>
+                <div className="flex justify-end">
                   <Button variant="outline" onClick={() => setShowEditModal(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdateRole}>
-                    Save Changes
+                    Close
                   </Button>
                 </div>
               </CardContent>
