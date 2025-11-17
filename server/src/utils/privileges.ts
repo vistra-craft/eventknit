@@ -168,3 +168,31 @@ export const validateUserDeletion = (userRole: UserRole, targetUserRole: UserRol
   }
 };
 
+/**
+ * Check if user is admin staff (can access all events)
+ */
+export const isAdminStaff = (userRole: UserRole): boolean => {
+  const adminStaffRoles: UserRole[] = [
+    UserRole.SUPERADMIN,
+    UserRole.ADMIN_STAFF,
+    UserRole.MARKETER,
+    UserRole.SUPPORT,
+    UserRole.TELLER,
+  ];
+  return adminStaffRoles.includes(userRole);
+};
+
+/**
+ * Check if user is organizer staff (limited access)
+ */
+export const isOrganizerStaff = (userRole: UserRole): boolean => {
+  return userRole === UserRole.ORGANIZER_STAFF || userRole === UserRole.ORGANIZER_TELLER;
+};
+
+/**
+ * Check if user can access all events (admin staff)
+ */
+export const canAccessAllEvents = (userRole: UserRole): boolean => {
+  return isAdminStaff(userRole);
+};
+

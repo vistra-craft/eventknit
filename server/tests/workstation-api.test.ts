@@ -14,10 +14,10 @@ describe('Workstation API Integration Tests', () => {
   let dbConnected = false;
   let tellerToken: string;
   let adminToken: string;
-  let organizerToken: string;
+  let _organizerToken: string;
   let attendeeToken: string;
-  let tellerId: string;
-  let adminId: string;
+  let _tellerId: string;
+  let _adminId: string;
   let organizerId: string;
   let attendeeId: string;
   let eventId: string;
@@ -98,7 +98,7 @@ describe('Workstation API Integration Tests', () => {
         isEmailVerified: true,
       },
     });
-    tellerId = teller.id;
+    _tellerId = teller.id; // Used in tests - keep for future use
 
     const adminPassword = await hashPassword('Admin123!@$');
     const admin = await prisma.user.upsert({
@@ -121,7 +121,7 @@ describe('Workstation API Integration Tests', () => {
         isEmailVerified: true,
       },
     });
-    adminId = admin.id;
+    _adminId = admin.id;
 
     const organizerPassword = await hashPassword('Organizer123!@$');
     const organizer = await prisma.user.upsert({
@@ -192,7 +192,7 @@ describe('Workstation API Integration Tests', () => {
         email: 'organizer@test.com',
         password: 'Organizer123!@$',
       });
-    organizerToken = organizerLogin.body.data?.accessToken || '';
+    _organizerToken = organizerLogin.body.data?.accessToken || '';
 
     const attendeeLogin = await request(app)
       .post('/api/v1/auth/login')
@@ -454,6 +454,7 @@ describe('Workstation API Integration Tests', () => {
       expect(checkInResponse.body.success).toBe(true);
 
       // Wait a bit to ensure database consistency
+      // eslint-disable-next-line no-undef
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check-out
@@ -475,6 +476,7 @@ describe('Workstation API Integration Tests', () => {
       expect(checkOutResponse.body.success).toBe(true);
 
       // Wait a bit to ensure database consistency
+      // eslint-disable-next-line no-undef
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Re-entry
@@ -537,7 +539,11 @@ describe('Workstation API Integration Tests', () => {
       expect(checkInResponse.status).toBe(200);
 
       // Wait for database consistency
-      await new Promise(resolve => setTimeout(resolve, 100));
+       
+      await new Promise((resolve) => {
+        // eslint-disable-next-line no-undef
+        setTimeout(resolve, 100);
+      });
 
       // Check-out
       const response = await request(app)

@@ -1,108 +1,99 @@
-import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Calendar,
-  Settings,
-  MessageCircle,
   Home,
   Menu,
-  UserPlus,
   TrendingUp,
   ChevronDown,
   ChevronRight,
-} from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { UserRole } from "@/types/auth";
-import OrganizerStaffSidebar from "./OrganizerStaffSidebar";
+  Monitor,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { UserRole } from '@/types/auth';
 
-interface OrganizerSidebarProps {
+interface OrganizerStaffSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   isMobile?: boolean;
 }
 
-const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, isMobile = false }) => {
+const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
+  isOpen,
+  onToggle,
+  isMobile = false,
+}) => {
+  const location = useLocation();
   const { user } = useAuth();
   const userRole = user?.role;
-  const location = useLocation();
-  
-  // Check if user is organizer staff (not full organizer)
-  const isOrganizerStaff = userRole === UserRole.ORGANIZER_STAFF || 
-                           userRole === UserRole.ORGANIZER_TELLER;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    // Auto-expand events section if on events pages
     events: location.pathname.startsWith('/organizer/events'),
-    // Auto-expand settings section if on settings pages
-    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
+    workstation: location.pathname.startsWith('/organizer/workstation'),
   });
 
-  const navigationItems = [
-    { 
-      id: "dashboard", 
-      label: "Dashboard", 
-      href: "/organizer/dashboard", 
+  // Base navigation items - all organizer staff can see these
+  const baseNavigationItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      href: '/organizer/dashboard',
       icon: Home,
-      group: "main"
+      group: 'main',
     },
-    { 
-      id: "events", 
-      label: "Events", 
+    {
+      id: 'events',
+      label: 'My Events',
       icon: Calendar,
-      group: "main",
+      group: 'main',
       children: [
-        { name: "All Events", href: "/organizer/events" },
-        { name: "Upcoming", href: "/organizer/events/upcoming" },
-        { name: "Past Events", href: "/organizer/events/past" },
-        { name: "Create New", href: "/organizer/events/create" },
-        { name: "Templates", href: "/organizer/events/templates" },
-        { name: "Drafts", href: "/organizer/events/drafts" },
-      ]
-    },
-    { 
-      id: "analytics", 
-      label: "Analytics", 
-      icon: TrendingUp,
-      group: "main",
-      children: [
-        { name: "Overview", href: "/organizer/analytics" },
-        { name: "Event Performance", href: "/organizer/analytics/events" },
-        { name: "Attendee Insights", href: "/organizer/analytics/attendees" },
-        { name: "Revenue Reports", href: "/organizer/analytics/revenue" },
-      ]
-    },
-    { 
-      id: "communications", 
-      label: "Communications", 
-      href: "/organizer/communications", 
-      icon: MessageCircle,
-      group: "management"
-    },
-    { 
-      id: "team", 
-      label: "Team", 
-      icon: UserPlus,
-      group: "management",
-      children: [
-        { name: "Staff Management", href: "/organizer/team/staff" },
-        { name: "Roles & Permissions", href: "/organizer/team/roles" },
-        { name: "Team Calendar", href: "/organizer/team/calendar" },
-        { name: "Performance", href: "/organizer/team/performance" },
-      ]
-    },
-    { 
-      id: "settings", 
-      label: "Settings", 
-      icon: Settings,
-      group: "management",
-      children: [
-        { name: "Profile", href: "/organizer/settings/profile" },
-        { name: "Notifications", href: "/organizer/settings/notifications" },
-        { name: "Security", href: "/organizer/settings/security" },
-        { name: "Appearance", href: "/organizer/settings/appearance" },
-      ]
+        { name: 'Assigned Events', href: '/organizer/events/assigned' },
+        { name: 'Today\'s Events', href: '/organizer/events/today' },
+        { name: 'Upcoming Events', href: '/organizer/events/upcoming' },
+      ],
     },
   ];
+
+  // Role-specific navigation items
+  const getRoleSpecificItems = () => {
+    if (!userRole) return [];
+
+    switch (userRole) {
+      case UserRole.ORGANIZER_TELLER:
+        return [
+          {
+            id: 'workstation',
+            label: 'Workstation',
+            icon: Monitor,
+            group: 'main',
+            children: [
+              { name: 'Events Overview', href: '/organizer/workstation' },
+              { name: 'QR Scanner', href: '/organizer/workstation/scanner' },
+              { name: 'Scan History', href: '/organizer/workstation/history' },
+            ],
+          },
+        ];
+
+      case UserRole.ORGANIZER_STAFF:
+        return [
+          {
+            id: 'analytics',
+            label: 'Analytics',
+            icon: TrendingUp,
+            group: 'main',
+            children: [
+              { name: 'Event Performance', href: '/organizer/analytics/events' },
+              { name: 'Assigned Events', href: '/organizer/analytics/assigned' },
+            ],
+          },
+        ];
+
+      default:
+        return [];
+    }
+  };
+
+  const navigationItems = [...baseNavigationItems, ...getRoleSpecificItems()];
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems((prev) => ({
@@ -111,23 +102,19 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     }));
   };
 
-  // Update expanded state when location changes
-  useEffect(() => {
-    if (!isOrganizerStaff) {
-      setExpandedItems(prev => ({
-        ...prev,
-        events: location.pathname.startsWith('/organizer/events'),
-        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
-      }));
-    }
-  }, [location.pathname, isOrganizerStaff]);
-
-  // Handle navigation clicks - only close sidebar on mobile
   const handleNavigationClick = () => {
     if (isMobile) {
       onToggle();
     }
   };
+
+  useEffect(() => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      events: location.pathname.startsWith('/organizer/events'),
+      workstation: location.pathname.startsWith('/organizer/workstation'),
+    }));
+  }, [location.pathname]);
 
   const isActive = (href: string, exact = false) => {
     if (exact) {
@@ -137,34 +124,37 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   };
 
   const isChildActive = (href: string) => {
-    // For child items, use exact matching to prevent parent highlighting
     return location.pathname === href;
   };
 
-  const groupedItems = navigationItems.reduce((acc, item) => {
-    if (!acc[item.group]) {
-      acc[item.group] = [];
-    }
-    acc[item.group].push(item);
-    return acc;
-  }, {} as Record<string, typeof navigationItems>);
+  const groupedItems = navigationItems.reduce(
+    (acc, item) => {
+      if (!acc[item.group]) {
+        acc[item.group] = [];
+      }
+      acc[item.group].push(item);
+      return acc;
+    },
+    {} as Record<string, typeof navigationItems>,
+  );
 
   const groupLabels = {
-    main: "Main",
-    management: "Management", 
-    account: "Account"
+    main: 'Main',
+    management: 'Management',
+    account: 'Account',
   };
 
-  // If organizer staff, render role-specific sidebar (after all hooks)
-  if (isOrganizerStaff) {
-    return <OrganizerStaffSidebar isOpen={isOpen} onToggle={onToggle} isMobile={isMobile} />;
-  }
-
   return (
-    <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}>
+    <div
+      className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}
+    >
       <div className="p-4">
-        <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
-          {isOpen && <h2 className="text-lg font-semibold text-eventknit">EventKnit</h2>}
+        <div
+          className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}
+        >
+          {isOpen && (
+            <h2 className="text-lg font-semibold text-eventknit">EventKnit</h2>
+          )}
           {isMobile && (
             <button
               onClick={onToggle}
@@ -174,8 +164,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
             </button>
           )}
         </div>
-        
-        
+
         {/* Navigation */}
         <nav className="space-y-4">
           {Object.entries(groupedItems).map(([groupKey, items]) => (
@@ -189,7 +178,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                 {items.map((item) => {
                   const hasChildren = item.children && item.children.length > 0;
                   const isExpanded = expandedItems[item.id];
-                  // For parent items with children, only highlight if we're on the exact parent route
                   const isItemActive = item.href ? isActive(item.href, true) : false;
 
                   if (hasChildren) {
@@ -207,7 +195,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                           <item.icon className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
                           {isOpen && (
                             <>
-                              <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+                              <span className="text-sm font-medium flex-1 text-left">
+                                {item.label}
+                              </span>
                               {isExpanded ? (
                                 <ChevronDown className="h-4 w-4" />
                               ) : (
@@ -245,8 +235,8 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                       to={item.href!}
                       onClick={handleNavigationClick}
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
-                        isItemActive 
-                          ? 'bg-primary text-primary-foreground' 
+                        isItemActive
+                          ? 'bg-primary text-primary-foreground'
                           : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       }`}
                       title={!isOpen ? item.label : undefined}
@@ -263,9 +253,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
           ))}
         </nav>
       </div>
-      
     </div>
   );
 };
 
-export default OrganizerSidebar;
+export default OrganizerStaffSidebar;
+

@@ -50,6 +50,7 @@ import { getEventConfig, updateEventConfig, type EventScanConfig } from "../../l
 import { Switch } from "../../components/ui/switch";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { OrganizerEventStaffAssignment } from "../../components/OrganizerEventStaffAssignment";
 
 const EventManagement = () => {
   const { eventId } = useParams();
@@ -380,6 +381,7 @@ const EventManagement = () => {
     { key: "revenue", label: "Revenue", icon: DollarSign },
     { key: "agenda", label: "Sessions", icon: Calendar },
     { key: "abstracts", label: "Abstracts", icon: FileText },
+    { key: "staff", label: "Assigned Staff", icon: UserPlus },
     { key: "scan-settings", label: "Scan Settings", icon: Settings },
   ];
 
@@ -1232,7 +1234,8 @@ const EventManagement = () => {
         );
       }
 
-      default: // overview
+      case "overview":
+      default:
         return (
           <div className="space-y-8">
             {/* Hero Section with Image Left, Content Right */}
@@ -1545,6 +1548,18 @@ const EventManagement = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        );
+
+      case "staff":
+        return (
+          <div className="space-y-6">
+            {eventId && (
+              <OrganizerEventStaffAssignment
+                eventId={eventId}
+                eventTitle={eventData?.title}
+              />
+            )}
           </div>
         );
     }

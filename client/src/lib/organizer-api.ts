@@ -232,3 +232,356 @@ export const cancelEvent = async (
   return apiPost<CancelEventResponse>(`/events/${eventId}/cancel`, { reason });
 };
 
+/**
+ * Organizer Staff Types
+ */
+export interface OrganizerStaff {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  role: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  status: 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
+  isEmailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GetOrganizerStaffResponse {
+  success: boolean;
+  data: {
+    staff: OrganizerStaff[];
+  };
+}
+
+/**
+ * Get organizer staff
+ */
+export const getOrganizerStaff = async (): Promise<GetOrganizerStaffResponse> => {
+  return apiGet<GetOrganizerStaffResponse>('/organizer/staff');
+};
+
+/**
+ * Event Staff Assignment Types (for organizers)
+ */
+export type EventStaffRole = 'SCANNER' | 'SUPPORT' | 'MANAGER' | 'COORDINATOR' | 'SUPERVISOR' | 'TICKET_SELLER';
+
+export interface EventStaffAssignment {
+  id: string;
+  eventId: string;
+  staffId: string;
+  role: EventStaffRole;
+  staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+  assignedAt: string;
+  assignedBy: string;
+  notes?: string;
+  isActive: boolean;
+  shiftStart?: string;
+  shiftEnd?: string;
+  facility?: string;
+  staff: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    phoneNumber?: string;
+  };
+  event?: {
+    id: string;
+    title: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  };
+}
+
+export interface AssignOrganizerStaffToEventData {
+  staffId: string;
+  role: EventStaffRole;
+  notes?: string;
+  shiftStart?: string;
+  shiftEnd?: string;
+  facility?: string;
+}
+
+export interface UpdateOrganizerStaffAssignmentData {
+  role?: EventStaffRole;
+  notes?: string;
+  isActive?: boolean;
+  shiftStart?: string | null;
+  shiftEnd?: string | null;
+  facility?: string | null;
+}
+
+export interface GetOrganizerEventStaffResponse {
+  success: boolean;
+  data: {
+    assignments: EventStaffAssignment[];
+  };
+}
+
+export interface GetOrganizerStaffEventsResponse {
+  success: boolean;
+  data: {
+    assignments: EventStaffAssignment[];
+  };
+}
+
+export interface GetOrganizerStaffAssignmentsResponse {
+  success: boolean;
+  data: {
+    assignments: EventStaffAssignment[];
+  };
+}
+
+/**
+ * Assign organizer staff to event
+ */
+export const assignOrganizerStaffToEvent = async (
+  eventId: string,
+  data: AssignOrganizerStaffToEventData
+): Promise<{ success: boolean; message: string; data: { assignment: EventStaffAssignment } }> => {
+  return apiPost(`/organizer/events/${eventId}/staff`, data);
+};
+
+/**
+ * Get organizer staff assigned to event
+ */
+export const getOrganizerEventStaff = async (
+  eventId: string,
+  filters?: {
+    role?: string;
+    isActive?: boolean;
+  }
+): Promise<GetOrganizerEventStaffResponse> => {
+  const params = new URLSearchParams();
+  if (filters?.role) params.append('role', filters.role);
+  if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
+  
+  const queryString = params.toString();
+  return apiGet<GetOrganizerEventStaffResponse>(`/organizer/events/${eventId}/staff${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Get events where organizer staff is assigned
+ */
+export const getOrganizerStaffEvents = async (
+  staffId: string,
+  filters?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<GetOrganizerStaffEventsResponse> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  
+  const queryString = params.toString();
+  return apiGet<GetOrganizerStaffEventsResponse>(`/organizer/staff/${staffId}/events${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Update organizer staff assignment
+ */
+export const updateOrganizerStaffAssignment = async (
+  eventId: string,
+  staffId: string,
+  updates: UpdateOrganizerStaffAssignmentData
+): Promise<{ success: boolean; message: string; data: { assignment: EventStaffAssignment } }> => {
+  return apiPut(`/organizer/events/${eventId}/staff/${staffId}`, updates);
+};
+
+/**
+ * Remove organizer staff from event
+ */
+export const removeOrganizerStaffFromEvent = async (
+  eventId: string,
+  staffId: string
+): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer/events/${eventId}/staff/${staffId}`);
+};
+
+/**
+ * Get all staff assignments for organizer's events
+ */
+export const getOrganizerStaffAssignments = async (
+  filters?: {
+    eventId?: string;
+    staffId?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<GetOrganizerStaffAssignmentsResponse> => {
+  const params = new URLSearchParams();
+  if (filters?.eventId) params.append('eventId', filters.eventId);
+  if (filters?.staffId) params.append('staffId', filters.staffId);
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  
+  const queryString = params.toString();
+  return apiGet<GetOrganizerStaffAssignmentsResponse>(`/organizer/staff/assignments${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Staff Performance Types (Organizer)
+ */
+export type PerformancePeriod = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all';
+
+export interface StaffPerformanceMetrics {
+  staffId: string;
+  staffName: string;
+  staffEmail: string;
+  role: string;
+  eventsAssigned: number;
+  eventsCompleted: number;
+  eventsActive: number;
+  totalScans: number;
+  successfulScans: number;
+  failedScans: number;
+  averageScansPerEvent: number;
+  reEntryScans: number;
+  totalShifts: number;
+  completedShifts: number;
+  attendanceRate: number;
+  totalHoursWorked: number;
+  averageHoursPerEvent: number;
+  responseTime?: number;
+  campaignEngagement?: number;
+  lastScanAt?: string;
+  lastEventAt?: string;
+}
+
+export interface TeamPerformanceSummary {
+  totalStaff: number;
+  activeStaff: number;
+  totalEvents: number;
+  totalScans: number;
+  averageScansPerStaff: number;
+  averageAttendanceRate: number;
+  topPerformers: StaffPerformanceMetrics[];
+}
+
+export interface PerformanceTrend {
+  date: string;
+  scans: number;
+  events: number;
+}
+
+export interface StaffUtilization {
+  totalStaff: number;
+  activeStaff: number;
+  utilizationRate: number;
+  averageEventsPerStaff: number;
+  averageHoursPerStaff: number;
+  underutilizedStaff: StaffPerformanceMetrics[];
+  overutilizedStaff: StaffPerformanceMetrics[];
+}
+
+export interface EventCoverage {
+  totalEvents: number;
+  eventsWithStaff: number;
+  eventsWithoutStaff: number;
+  averageStaffPerEvent: number;
+  eventsByCoverage: {
+    eventId: string;
+    eventTitle: string;
+    staffCount: number;
+    totalScans: number;
+    coverageStatus: 'adequate' | 'understaffed' | 'overstaffed';
+  }[];
+}
+
+export interface StaffAvailability {
+  staffAvailability: {
+    staffId: string;
+    staffName: string;
+    totalShifts: number;
+    completedShifts: number;
+    availabilityRate: number;
+    averageShiftDuration: number;
+    preferredDays: string[];
+    preferredTimes: string[];
+  }[];
+  overallAvailability: {
+    totalShifts: number;
+    completedShifts: number;
+    averageAvailabilityRate: number;
+    peakDays: string[];
+  };
+}
+
+/**
+ * Get staff performance metrics (organizer)
+ */
+export const getOrganizerStaffPerformance = async (
+  staffId: string,
+  period: PerformancePeriod = 'all',
+): Promise<{ success: boolean; data: StaffPerformanceMetrics }> => {
+  return apiGet(`/organizer/staff-performance/${staffId}?period=${period}`);
+};
+
+/**
+ * Get team performance metrics (organizer)
+ */
+export const getOrganizerTeamPerformance = async (
+  period: PerformancePeriod = 'all',
+  limit?: number,
+): Promise<{ success: boolean; data: { performances: StaffPerformanceMetrics[]; count: number } }> => {
+  const params = new URLSearchParams();
+  params.append('period', period);
+  if (limit) params.append('limit', limit.toString());
+  return apiGet(`/organizer/staff-performance/team?${params.toString()}`);
+};
+
+/**
+ * Get team performance summary (organizer)
+ */
+export const getOrganizerTeamSummary = async (
+  period: PerformancePeriod = 'all',
+): Promise<{ success: boolean; data: TeamPerformanceSummary }> => {
+  return apiGet(`/organizer/staff-performance/team/summary?period=${period}`);
+};
+
+/**
+ * Get performance trends for a staff member (organizer)
+ */
+export const getOrganizerPerformanceTrends = async (
+  staffId: string,
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: PerformanceTrend[] }> => {
+  return apiGet(`/organizer/staff-performance/${staffId}/trends?period=${period}`);
+};
+
+/**
+ * Get organizer staff utilization metrics
+ */
+export const getOrganizerStaffUtilization = async (
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: StaffUtilization }> => {
+  return apiGet(`/organizer/staff-performance/utilization?period=${period}`);
+};
+
+/**
+ * Get event coverage analysis
+ */
+export const getEventCoverageAnalysis = async (
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: EventCoverage }> => {
+  return apiGet(`/organizer/staff-performance/coverage?period=${period}`);
+};
+
+/**
+ * Get staff availability tracking
+ */
+export const getStaffAvailability = async (
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: StaffAvailability }> => {
+  return apiGet(`/organizer/staff-performance/availability?period=${period}`);
+};
+

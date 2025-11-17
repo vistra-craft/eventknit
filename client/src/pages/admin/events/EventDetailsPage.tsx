@@ -34,6 +34,8 @@ import { exportEventData } from "@/lib/utils/export";
 import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/workstation-api";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { EventStaffAssignment } from "@/components/EventStaffAssignment";
+import { usePermissionsEnhanced } from "@/hooks/usePermissions";
 
 interface EventDetails {
   id: string;
@@ -124,6 +126,7 @@ interface Registration {
 const EventDetailsPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const permissions = usePermissionsEnhanced();
   const [activeTab, setActiveTab] = useState("details");
   const [eventData, setEventData] = useState<EventDetails | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -135,6 +138,7 @@ const EventDetailsPage = () => {
   const [scanConfigSaving, setScanConfigSaving] = useState(false);
   const [paymentSearch, setPaymentSearch] = useState("");
   const [updatingAccess, setUpdatingAccess] = useState(false);
+  const [canAccessEvent, setCanAccessEvent] = useState(true);
   const { toast } = useToast();
 
   // Load scan config when scan-settings tab is active
@@ -163,10 +167,33 @@ const EventDetailsPage = () => {
     loadScanConfig();
   }, [eventId, activeTab, toast]);
 
+  // Check event access permission
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!eventId) return;
+
+      if (permissions.canAccessAllEvents) {
+        setCanAccessEvent(true);
+        return;
+      }
+
+      const hasAccess = await permissions.isAssignedToEvent(eventId);
+      setCanAccessEvent(hasAccess);
+
+      if (!hasAccess) {
+        setError('You do not have permission to access this event');
+        setLoading(false);
+      }
+    };
+
+    checkAccess();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, permissions.canAccessAllEvents]);
+
   // Fetch event data and registrations
   useEffect(() => {
     const fetchData = async () => {
-      if (!eventId) return;
+      if (!eventId || !canAccessEvent) return;
 
       try {
         setLoading(true);
@@ -263,7 +290,7 @@ const EventDetailsPage = () => {
     };
 
     fetchData();
-  }, [eventId]);
+  }, [eventId, canAccessEvent]);
 
   // Calculate payment metrics from registrations
   const metrics: EventMetrics = (() => {
@@ -545,12 +572,17 @@ const EventDetailsPage = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className={`grid w-full ${permissions.canAccessAllEvents ? 'grid-cols-7' : 'grid-cols-5'}`}>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
-            <TabsTrigger value="refunds">Refunds</TabsTrigger>
-            <TabsTrigger value="remittance">Remittance</TabsTrigger>
+            {permissions.canAccessAllEvents && (
+              <>
+                <TabsTrigger value="refunds">Refunds</TabsTrigger>
+                <TabsTrigger value="remittance">Remittance</TabsTrigger>
+                <TabsTrigger value="staff">Assigned Staff</TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="scan-settings">Scan Settings</TabsTrigger>
           </TabsList>
 
@@ -646,11 +678,12 @@ const EventDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                {/* Organizer Data Access Control */}
-                <Card className="border-border bg-card">
-                  <CardHeader>
-                    <CardTitle>Organizer Data Access Control</CardTitle>
-                  </CardHeader>
+                {/* Organizer Data Access Control - Only for ADMIN_STAFF and SUPERADMIN */}
+                {permissions.canAccessAllEvents && (
+                  <Card className="border-border bg-card">
+                    <CardHeader>
+                      <CardTitle>Organizer Data Access Control</CardTitle>
+                    </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-gray-600 mb-2 block">
@@ -723,6 +756,7 @@ const EventDetailsPage = () => {
                     </div>
                   </CardContent>
                 </Card>
+                )}
               </div>
 
               {/* Event Image and Stats */}
@@ -1164,8 +1198,9 @@ const EventDetailsPage = () => {
             </Card>
           </TabsContent>
 
-          {/* Refunds Tab */}
-          <TabsContent value="refunds" className="space-y-6">
+          {/* Refunds Tab - Only for ADMIN_STAFF and SUPERADMIN */}
+          {permissions.canAccessAllEvents && (
+            <TabsContent value="refunds" className="space-y-6">
             {/* Refunds Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-border bg-card">
@@ -1278,9 +1313,11 @@ const EventDetailsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
-          {/* Remittance Tab */}
-          <TabsContent value="remittance" className="space-y-6">
+          {/* Remittance Tab - Only for ADMIN_STAFF and SUPERADMIN */}
+          {permissions.canAccessAllEvents && (
+            <TabsContent value="remittance" className="space-y-6">
             {/* Remittance Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-border bg-card">
@@ -1460,6 +1497,19 @@ const EventDetailsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
+
+          {/* Assigned Staff Tab - Only for ADMIN_STAFF and SUPERADMIN */}
+          {permissions.canAccessAllEvents && (
+            <TabsContent value="staff" className="space-y-6">
+            {eventId && (
+              <EventStaffAssignment
+                eventId={eventId}
+                eventTitle={eventData?.title}
+              />
+            )}
+          </TabsContent>
+          )}
 
           {/* Scan Settings Tab */}
           <TabsContent value="scan-settings" className="space-y-6">

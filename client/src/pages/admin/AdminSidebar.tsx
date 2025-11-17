@@ -14,6 +14,9 @@ import {
   HeadphonesIcon,
   Monitor,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { UserRole } from "@/types/auth";
+import AdminStaffSidebar from "./AdminStaffSidebar";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -22,6 +25,8 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile = false }) => {
+  const { user } = useAuth();
+  const userRole = user?.role;
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     // Auto-expand events section if on events pages
@@ -31,7 +36,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand finance section if on finance pages
     finance: location.pathname.startsWith('/admin/finance'),
     // Auto-expand users section if on users pages
-    users: location.pathname.startsWith('/admin/users'),
+    users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     // Auto-expand settings section if on settings pages
     settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/moderation'),
     // Auto-expand support section if on support pages
@@ -69,6 +74,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       children: [
         { name: "All Users", href: "/admin/users" },
         { name: "Staff", href: "/admin/users/staff" },
+        { name: "Staff Performance", href: "/admin/staff-performance" },
         { name: "Organizers", href: "/admin/users/organizers" },
         { name: "Attendees", href: "/admin/users/attendees" },
         { name: "User Roles", href: "/admin/users/roles" },
@@ -204,6 +210,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     management: "Management", 
     account: "Account"
   };
+
+  // Check if user is admin staff (not full admin)
+  const isAdminStaff = userRole === UserRole.MARKETER || 
+                       userRole === UserRole.SUPPORT || 
+                       userRole === UserRole.TELLER;
+
+  // If admin staff, render role-specific sidebar
+  if (isAdminStaff) {
+    return <AdminStaffSidebar isOpen={isOpen} onToggle={onToggle} isMobile={isMobile} />;
+  }
 
   return (
     <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}>

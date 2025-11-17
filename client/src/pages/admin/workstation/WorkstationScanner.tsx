@@ -34,10 +34,13 @@ import {
   WifiOff,
   Cloud,
   RefreshCw,
-  Upload
+  Upload,
+  Zap,
+  ZapOff
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import { useToast } from "../../../hooks/use-toast";
+import { useIsMobile } from "../../../hooks/use-mobile";
 import {
   scanTicket,
   scanOut,
@@ -143,6 +146,21 @@ const playErrorSound = (): void => {
   oscillator.stop(audioContext.currentTime + 0.3);
 };
 
+// Haptic feedback (vibration API)
+const vibrateSuccess = (): void => {
+  if ('vibrate' in navigator) {
+    // Short vibration pattern for success
+    navigator.vibrate([50]);
+  }
+};
+
+const vibrateError = (): void => {
+  if ('vibrate' in navigator) {
+    // Longer vibration pattern for error
+    navigator.vibrate([100, 50, 100]);
+  }
+};
+
 const WorkstationScanner: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -169,8 +187,9 @@ const WorkstationScanner: React.FC = () => {
   const [searching, setSearching] = useState(false);
   const [searchCode, setSearchCode] = useState(""); // Optional QR code for signature verification in search
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt' | 'checking'>('checking');
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [isOnlineState, setIsOnlineState] = useState(true);
+  const [flashlightEnabled, setFlashlightEnabled] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus());
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ synced: 0, total: 0 });
@@ -179,20 +198,6 @@ const WorkstationScanner: React.FC = () => {
   const html5QrCodeRef = useRef<Html5QrcodeScanner | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
   const deviceId = getDeviceId();
-
-  // Detect mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as { opera?: string }).opera;
-      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
-      const isSmallScreen = window.innerWidth < 768;
-      setIsMobile(isMobileDevice || isSmallScreen);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Check camera permissions
   useEffect(() => {
@@ -403,9 +408,13 @@ const WorkstationScanner: React.FC = () => {
       setFlashStatus('success');
       setTimeout(() => setFlashStatus('none'), 500);
 
+      // Audio feedback
       if (soundEnabled) {
         playSuccessSound();
       }
+
+      // Haptic feedback
+      vibrateSuccess();
 
       return;
     }
@@ -445,6 +454,9 @@ const WorkstationScanner: React.FC = () => {
           playSuccessSound();
         }
 
+        // Haptic feedback
+        vibrateSuccess();
+
         toast({
           title: "Scan Successful",
           description: `${scanMode === 'check-in' ? 'Checked in' : 'Checked out'}: ${response.data.attendeeName}`,
@@ -481,12 +493,15 @@ const WorkstationScanner: React.FC = () => {
         
         // Visual feedback
         setFlashStatus('error');
-        setTimeout(() => setFlashStatus('none'), 500);
+        setTimeout(() => setFlashStatus('none'), 1000);
         
         // Audio feedback
         if (soundEnabled) {
           playErrorSound();
         }
+
+        // Haptic feedback
+        vibrateError();
 
         // Show specific error messages
         let errorTitle = "Scan Failed";
@@ -995,10 +1010,28 @@ const WorkstationScanner: React.FC = () => {
                       Ticket Scanner
                     </div>
                     <div className="flex gap-2">
+                      {isMobile && isScanning && (
+                        <Button
+                          variant={flashlightEnabled ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => {
+                            setFlashlightEnabled(!flashlightEnabled);
+                            // Note: html5-qrcode handles torch internally via showTorchButtonIfSupported
+                            // This button is for visual feedback and future programmatic control
+                            toast({
+                              title: flashlightEnabled ? "Flashlight Off" : "Flashlight On",
+                              description: "Use the torch button in the camera view to control flashlight",
+                            });
+                          }}
+                        >
+                          {flashlightEnabled ? <Zap className="w-4 h-4" /> : <ZapOff className="w-4 h-4" />}
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setSoundEnabled(!soundEnabled)}
+                        title={soundEnabled ? "Disable sound" : "Enable sound"}
                       >
                         {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                       </Button>
@@ -1006,6 +1039,7 @@ const WorkstationScanner: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => setScanResults([])}
+                        title="Clear scan history"
                       >
                         <RotateCcw className="w-4 h-4" />
                       </Button>
@@ -1013,6 +1047,7 @@ const WorkstationScanner: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => setShowSearchModal(true)}
+                        title="Search attendees"
                       >
                         <Search className="w-4 h-4" />
                       </Button>
@@ -1058,7 +1093,7 @@ const WorkstationScanner: React.FC = () => {
                       {!isScanning ? (
                         <Button 
                           onClick={startScanning}
-                          className={`${isMobile ? 'w-full h-12 text-base' : 'flex-1'}`}
+                          className={`${isMobile ? 'w-full h-14 text-base font-semibold' : 'flex-1'}`}
                           disabled={!eventId || cameraPermission === 'denied'}
                           size={isMobile ? 'lg' : 'default'}
                         >
@@ -1066,15 +1101,22 @@ const WorkstationScanner: React.FC = () => {
                           Start Scanning
                         </Button>
                       ) : (
-                        <Button 
-                          onClick={stopScanning}
-                          variant="destructive"
-                          className={`${isMobile ? 'w-full h-12 text-base' : 'flex-1'}`}
-                          size={isMobile ? 'lg' : 'default'}
-                        >
-                          <XCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
-                          Stop Scanning
-                        </Button>
+                        <>
+                          <Button 
+                            onClick={stopScanning}
+                            variant="destructive"
+                            className={`${isMobile ? 'w-full h-14 text-base font-semibold' : 'flex-1'}`}
+                            size={isMobile ? 'lg' : 'default'}
+                          >
+                            <XCircle className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
+                            Stop Scanning
+                          </Button>
+                          {isMobile && (
+                            <p className="text-xs text-center text-muted-foreground mt-1">
+                              Point camera at QR code or enter code manually below
+                            </p>
+                          )}
+                        </>
                       )}
                       {cameraPermission === 'denied' && (
                         <p className="text-xs text-muted-foreground text-center mt-1">

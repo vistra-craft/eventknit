@@ -13,10 +13,12 @@ import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
-import { bulkUpdateOrganizerDataAccess } from "../../../lib/admin-api";
+import { bulkUpdateOrganizerDataAccess, getAdminStaffEvents } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/use-toast";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
+import { usePermissionsEnhanced } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Event {
   id: string;
@@ -38,6 +40,8 @@ interface Event {
 
 const AllEventsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const permissions = usePermissionsEnhanced();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,11 +59,35 @@ const AllEventsPage = () => {
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [assignedEventIds, setAssignedEventIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const handlePreviewEvent = (eventId: string) => {
     navigate(`/admin/events/${eventId}/preview`);
   };
+
+  // Fetch assigned events for staff members
+  useEffect(() => {
+    const fetchAssignedEvents = async () => {
+      if (!user?.id || permissions.canAccessAllEvents) return;
+
+      try {
+        const response = await getAdminStaffEvents(user.id);
+        if (response.success && response.data) {
+          const eventIds = new Set(
+            response.data.assignments
+              .map((assignment) => assignment.eventId)
+              .filter(Boolean)
+          );
+          setAssignedEventIds(eventIds);
+        }
+      } catch (error) {
+        console.error('Error fetching assigned events:', error);
+      }
+    };
+
+    fetchAssignedEvents();
+  }, [user?.id, permissions.canAccessAllEvents]);
 
   // Fetch all events
   useEffect(() => {
@@ -105,7 +133,7 @@ const AllEventsPage = () => {
         const response = await getEvents(filters);
         if (response.success && response.data) {
           if (response.data.events) {
-          const mappedEvents = response.data.events.map(event => {
+          let mappedEvents = response.data.events.map(event => {
             const now = new Date();
             let status: "active" | "pending" | "cancelled" | "completed" | "declined" = "pending";
             
@@ -141,6 +169,14 @@ const AllEventsPage = () => {
               description: event.description || undefined,
             };
           });
+
+          // Filter to assigned events only for staff members
+          if (!permissions.canAccessAllEvents && assignedEventIds.size > 0) {
+            mappedEvents = mappedEvents.filter((event) =>
+              assignedEventIds.has(event.id)
+            );
+          }
+
           setEvents(mappedEvents);
           }
           
@@ -161,7 +197,7 @@ const AllEventsPage = () => {
     };
 
     fetchEvents();
-  }, [statusFilter, categoryFilter, typeFilter, priceFilter, searchTerm, page, limit]);
+  }, [statusFilter, categoryFilter, typeFilter, priceFilter, searchTerm, page, limit, permissions.canAccessAllEvents, assignedEventIds]);
 
   // Filter events by location on frontend (other filters are handled by backend)
   const filteredEvents = events.filter(event => {
@@ -282,8 +318,14 @@ const AllEventsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">All Events</h1>
-            <p className="text-gray-600">Manage and monitor all platform events</p>
+            <h1 className="text-lg font-semibold text-gray-900">
+              {permissions.canAccessAllEvents ? 'All Events' : 'My Assigned Events'}
+            </h1>
+            <p className="text-gray-600">
+              {permissions.canAccessAllEvents
+                ? 'Manage and monitor all platform events'
+                : 'View and manage events you are assigned to'}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-500">
@@ -382,8 +424,8 @@ const AllEventsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Bulk Actions Toolbar */}
-        {selectedEvents.size > 0 && (
+        {/* Bulk Actions Toolbar - Only for ADMIN_STAFF and SUPERADMIN */}
+        {selectedEvents.size > 0 && permissions.canAccessAllEvents && (
           <Card className="border-primary bg-primary/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -413,8 +455,8 @@ const AllEventsPage = () => {
 
         {/* Events List */}
         <div className="space-y-3">
-          {/* Select All Checkbox */}
-          {filteredEvents.length > 0 && (
+          {/* Select All Checkbox - Only for ADMIN_STAFF and SUPERADMIN */}
+          {filteredEvents.length > 0 && permissions.canAccessAllEvents && (
             <div className="flex items-center gap-2 pb-2 border-b">
               <Button
                 variant="ghost"
@@ -441,21 +483,23 @@ const AllEventsPage = () => {
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectEvent(event.id, !selectedEvents.has(event.id));
-                    }}
-                    className="h-6 w-6 p-0 flex-shrink-0"
-                  >
-                    {selectedEvents.has(event.id) ? (
-                      <CheckSquare className="h-4 w-4" />
-                    ) : (
-                      <Square className="h-4 w-4" />
-                    )}
-                  </Button>
+                  {permissions.canAccessAllEvents && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectEvent(event.id, !selectedEvents.has(event.id));
+                      }}
+                      className="h-6 w-6 p-0 flex-shrink-0"
+                    >
+                      {selectedEvents.has(event.id) ? (
+                        <CheckSquare className="h-4 w-4" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
                   <EventThumbnail
                     src={event.image}
                     alt={event.title}

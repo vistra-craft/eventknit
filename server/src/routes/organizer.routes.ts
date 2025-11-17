@@ -1,5 +1,7 @@
 import { Router, Response, NextFunction } from 'express';
 import { OrganizerController } from '../controllers/organizer.controller.js';
+import { EventStaffController } from '../controllers/event-staff.controller.js';
+import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { canManageStaff } from '../utils/privileges.js';
 import { AuthorizationError } from '../utils/errors.js';
@@ -79,6 +81,97 @@ router.get('/dashboard/events', OrganizerController.getDashboardEvents);
  * @access  Private (ORGANIZER+)
  */
 router.get('/events', OrganizerController.getOrganizerEvents);
+
+/**
+ * @route   POST /api/v1/organizer/events/:eventId/staff
+ * @desc    Assign organizer staff to event
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/events/:eventId/staff', EventStaffController.assignOrganizerStaffToEvent);
+
+/**
+ * @route   GET /api/v1/organizer/events/:eventId/staff
+ * @desc    Get organizer staff assigned to event
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/events/:eventId/staff', EventStaffController.getOrganizerEventStaff);
+
+/**
+ * @route   GET /api/v1/organizer/staff/:staffId/events
+ * @desc    Get events where organizer staff is assigned
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff/:staffId/events', EventStaffController.getOrganizerStaffEvents);
+
+/**
+ * @route   PUT /api/v1/organizer/events/:eventId/staff/:staffId
+ * @desc    Update organizer staff assignment
+ * @access  Private (ORGANIZER+)
+ */
+router.put('/events/:eventId/staff/:staffId', EventStaffController.updateOrganizerStaffAssignment);
+
+/**
+ * @route   DELETE /api/v1/organizer/events/:eventId/staff/:staffId
+ * @desc    Remove organizer staff from event
+ * @access  Private (ORGANIZER+)
+ */
+router.delete('/events/:eventId/staff/:staffId', EventStaffController.removeOrganizerStaffFromEvent);
+
+/**
+ * @route   GET /api/v1/organizer/staff/assignments
+ * @desc    Get all staff assignments for organizer's events
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff/assignments', EventStaffController.getOrganizerStaffAssignments);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/:staffId
+ * @desc    Get performance metrics for a specific staff member
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/:staffId', StaffPerformanceController.getStaffPerformance);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/team
+ * @desc    Get team performance metrics
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/team', StaffPerformanceController.getTeamPerformance);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/team/summary
+ * @desc    Get team performance summary
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/team/summary', StaffPerformanceController.getTeamSummary);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/:staffId/trends
+ * @desc    Get performance trends for a staff member
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/:staffId/trends', StaffPerformanceController.getPerformanceTrends);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/utilization
+ * @desc    Get organizer staff utilization metrics
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/utilization', StaffPerformanceController.getOrganizerStaffUtilization);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/coverage
+ * @desc    Get event coverage analysis
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/coverage', StaffPerformanceController.getEventCoverageAnalysis);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/availability
+ * @desc    Get staff availability tracking
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/availability', StaffPerformanceController.getStaffAvailability);
 
 export default router;
 

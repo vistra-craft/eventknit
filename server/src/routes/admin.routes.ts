@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller.js';
+import { EventStaffController } from '../controllers/event-staff.controller.js';
+import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireMinRole } from '../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
@@ -131,6 +133,76 @@ router.post('/events/:id/recall', AdminController.recallEvent);
  * @access  Private (ADMIN_STAFF+)
  */
 router.get('/roles', AdminController.getRoles);
+
+/**
+ * @route   POST /api/v1/admin/events/:eventId/staff
+ * @desc    Assign admin staff to event
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/events/:eventId/staff', EventStaffController.assignStaffToEvent);
+
+/**
+ * @route   GET /api/v1/admin/events/:eventId/staff
+ * @desc    Get staff assigned to event
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/events/:eventId/staff', EventStaffController.getEventStaff);
+
+/**
+ * @route   GET /api/v1/admin/staff/:staffId/events
+ * @desc    Get events assigned to staff member
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/staff/:staffId/events', EventStaffController.getStaffEvents);
+
+/**
+ * @route   PUT /api/v1/admin/events/:eventId/staff/:staffId
+ * @desc    Update staff assignment
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put('/events/:eventId/staff/:staffId', EventStaffController.updateStaffAssignment);
+
+/**
+ * @route   DELETE /api/v1/admin/events/:eventId/staff/:staffId
+ * @desc    Remove staff from event
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.delete('/events/:eventId/staff/:staffId', EventStaffController.removeStaffFromEvent);
+
+/**
+ * @route   POST /api/v1/admin/events/:eventId/staff/bulk
+ * @desc    Bulk assign staff to event
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/events/:eventId/staff/bulk', EventStaffController.bulkAssignStaff);
+
+/**
+ * @route   GET /api/v1/admin/staff-performance/:staffId
+ * @desc    Get performance metrics for a specific staff member
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/staff-performance/:staffId', StaffPerformanceController.getStaffPerformance);
+
+/**
+ * @route   GET /api/v1/admin/staff-performance/team
+ * @desc    Get team performance metrics
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/staff-performance/team', StaffPerformanceController.getTeamPerformance);
+
+/**
+ * @route   GET /api/v1/admin/staff-performance/team/summary
+ * @desc    Get team performance summary
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/staff-performance/team/summary', StaffPerformanceController.getTeamSummary);
+
+/**
+ * @route   GET /api/v1/admin/staff-performance/:staffId/trends
+ * @desc    Get performance trends for a staff member
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/staff-performance/:staffId/trends', StaffPerformanceController.getPerformanceTrends);
 
 export default router;
 

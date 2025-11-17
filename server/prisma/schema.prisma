@@ -148,6 +148,7 @@ model User {
   featuredEventsCreated FeaturedEvent[]     @relation("FeaturedEventCreator")
   promoCodesCreated     PromoCode[]         @relation("PromoCodeOrganizer")
   promoCodeRedemptions  PromoCodeRedemption[] @relation("PromoCodeUser")
+  eventAssignments      EventStaff[]        @relation("EventStaff")
 
   @@index([email])
   @@index([role])
@@ -353,6 +354,7 @@ model Event {
   featuredEvents  FeaturedEvent[]
   promoCodes      PromoCode[]         @relation("PromoCodeEvent")
   ticketScans     TicketScan[]
+  assignedStaff   EventStaff[]        @relation("EventStaff")
 
   @@index([organizerId])
   @@index([status])
@@ -623,4 +625,32 @@ model TicketScan {
   @@index([scannedAt])
   @@index([scannedBy])
   @@index([facility])
+}
+
+model EventStaff {
+  id          String   @id @default(cuid())
+  eventId    String
+  staffId    String
+  role       String   // Event-specific role: "SCANNER", "SUPPORT", "MANAGER", "COORDINATOR", "SUPERVISOR", "TICKET_SELLER"
+  staffType  String   // "ADMIN_STAFF" or "ORGANIZER_STAFF" - tracks which type of staff
+  assignedAt DateTime @default(now())
+  assignedBy String   // User ID who assigned (admin or organizer)
+  notes      String?  // Optional notes about assignment
+  isActive   Boolean  @default(true)
+
+  // Optional scheduling fields
+  shiftStart DateTime? // When staff should start (for multi-day events)
+  shiftEnd   DateTime? // When staff should end
+  facility   String?   // Specific facility/station assignment
+
+  event Event @relation("EventStaff", fields: [eventId], references: [id], onDelete: Cascade)
+  staff User  @relation("EventStaff", fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, staffId])
+  @@index([eventId])
+  @@index([staffId])
+  @@index([role])
+  @@index([staffType])
+  @@index([isActive])
+  @@index([assignedAt])
 }

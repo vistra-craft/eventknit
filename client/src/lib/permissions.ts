@@ -159,5 +159,33 @@ export const buildRoleInfo = (
   };
 };
 
+/**
+ * Check if user is admin staff (can access all events)
+ */
+export const isAdminStaff = (userRole: UserRole): boolean => {
+  const adminStaffRoles: UserRole[] = [
+    UserRole.SUPERADMIN,
+    UserRole.ADMIN_STAFF,
+    UserRole.MARKETER,
+    UserRole.SUPPORT,
+    UserRole.TELLER,
+  ];
+  return adminStaffRoles.includes(userRole);
+};
+
+/**
+ * Check if user is organizer staff (limited access)
+ */
+export const isOrganizerStaff = (userRole: UserRole): boolean => {
+  return userRole === UserRole.ORGANIZER_STAFF || userRole === UserRole.ORGANIZER_TELLER;
+};
+
+/**
+ * Check if user can access all events (only SUPERADMIN and ADMIN_STAFF)
+ */
+export const canAccessAllEvents = (userRole: UserRole): boolean => {
+  return userRole === UserRole.SUPERADMIN || userRole === UserRole.ADMIN_STAFF;
+};
+
 
 

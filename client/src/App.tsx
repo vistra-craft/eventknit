@@ -79,6 +79,8 @@ import OrganizerDetailsPage from "./pages/admin/OrganizerDetailsPage";
 import OrganizerEditPage from "./pages/admin/OrganizerEditPage";
 import StaffDetailsPage from "./pages/admin/StaffDetailsPage";
 import StaffEditPage from "./pages/admin/StaffEditPage";
+import StaffPerformanceDashboard from "./pages/admin/StaffPerformanceDashboard";
+import StaffPerformanceDetail from "./pages/admin/StaffPerformanceDetail";
 import UserRolesPage from "./pages/admin/UserRolesPage";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 // Admin System imports
@@ -222,6 +224,9 @@ const App = () => (
       <Route path="/admin/users/organizers/:organizerId" element={<OrganizerDetailsPage />} />
       <Route path="/admin/users/organizers/:organizerId/edit" element={<OrganizerEditPage />} />
       <Route path="/admin/users/roles" element={<UserRolesPage />} />
+      {/* Admin Staff Performance Routes */}
+      <Route path="/admin/staff-performance" element={<StaffPerformanceDashboard />} />
+      <Route path="/admin/staff-performance/:staffId" element={<StaffPerformanceDetail />} />
       <Route path="/admin/settings" element={<AdminSettingsPage />} />
       <Route path="/admin/profile" element={<AdminProfilePage />} />
       {/* Admin System Routes */}

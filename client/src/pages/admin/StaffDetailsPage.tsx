@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminLayout from "./AdminLayout";
+import { getAdminStaffEvents, type EventStaffAssignment } from "@/lib/admin-api";
+import { Loader2 } from "lucide-react";
 
 interface StaffDetails {
   id: string;
@@ -75,18 +77,19 @@ interface StaffDetails {
   }>;
 }
 
-interface StaffEvent {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  role: string;
-  hours: number;
-  status: "completed" | "upcoming" | "cancelled";
-  rating?: number;
-  payment: number;
-  organizer: string;
-}
+// Legacy interface - not used anymore, using EventStaffAssignment from API instead
+// interface StaffEvent {
+//   id: string;
+//   title: string;
+//   date: string;
+//   location: string;
+//   role: string;
+//   hours: number;
+//   status: "completed" | "upcoming" | "cancelled";
+//   rating?: number;
+//   payment: number;
+//   organizer: string;
+// }
 
 interface EarningsRecord {
   id: string;
@@ -101,6 +104,29 @@ const StaffDetailsPage = () => {
   const { staffId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [staffEvents, setStaffEvents] = useState<EventStaffAssignment[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
+  // Fetch staff events when events tab is active
+  useEffect(() => {
+    const fetchStaffEvents = async () => {
+      if (!staffId || activeTab !== "events") return;
+
+      try {
+        setLoadingEvents(true);
+        const response = await getAdminStaffEvents(staffId);
+        if (response.success && response.data) {
+          setStaffEvents(response.data.assignments);
+        }
+      } catch (error) {
+        console.error("Error fetching staff events:", error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+
+    fetchStaffEvents();
+  }, [staffId, activeTab]);
 
   // Mock staff data
   const staffData: StaffDetails = {
@@ -164,44 +190,44 @@ const StaffDetailsPage = () => {
     ]
   };
 
-  // Mock events data
-  const staffEvents: StaffEvent[] = [
-    {
-      id: "EVT-001",
-      title: "Tech Innovation Summit 2024",
-      date: "2024-03-15",
-      location: "San Francisco, CA",
-      role: "Event Manager",
-      hours: 12,
-      status: "upcoming",
-      payment: 540,
-      organizer: "Tech Events Inc."
-    },
-    {
-      id: "EVT-002",
-      title: "AI & Machine Learning Workshop",
-      date: "2024-02-20",
-      location: "San Francisco, CA",
-      role: "Event Manager",
-      hours: 8,
-      status: "completed",
-      rating: 4.9,
-      payment: 360,
-      organizer: "Tech Events Inc."
-    },
-    {
-      id: "EVT-003",
-      title: "Startup Networking Event",
-      date: "2024-01-25",
-      location: "San Francisco, CA",
-      role: "Event Manager",
-      hours: 6,
-      status: "completed",
-      rating: 4.7,
-      payment: 270,
-      organizer: "Tech Events Inc."
-    }
-  ];
+  // Mock events data (legacy - not used anymore, using API instead)
+  // const mockStaffEvents: StaffEvent[] = [
+  //   {
+  //     id: "EVT-001",
+  //     title: "Tech Innovation Summit 2024",
+  //     date: "2024-03-15",
+  //     location: "San Francisco, CA",
+  //     role: "Event Manager",
+  //     hours: 12,
+  //     status: "upcoming",
+  //     payment: 540,
+  //     organizer: "Tech Events Inc."
+  //   },
+  //   {
+  //     id: "EVT-002",
+  //     title: "AI & Machine Learning Workshop",
+  //     date: "2024-02-20",
+  //     location: "San Francisco, CA",
+  //     role: "Event Manager",
+  //     hours: 8,
+  //     status: "completed",
+  //     rating: 4.9,
+  //     payment: 360,
+  //     organizer: "Tech Events Inc."
+  //   },
+  //   {
+  //     id: "EVT-003",
+  //     title: "Startup Networking Event",
+  //     date: "2024-01-25",
+  //     location: "San Francisco, CA",
+  //     role: "Event Manager",
+  //     hours: 6,
+  //     status: "completed",
+  //     rating: 4.7,
+  //     payment: 270,
+  //     organizer: "Tech Events Inc."
+  //   }
+  // ];
 
   // Mock earnings data
   const earningsRecords: EarningsRecord[] = [
@@ -259,14 +285,6 @@ const StaffDetailsPage = () => {
     return variants[role as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
-  const getEventStatusBadge = (status: string) => {
-    const variants = {
-      completed: "bg-green-100 text-green-800 border-green-200",
-      upcoming: "bg-blue-100 text-blue-800 border-blue-200",
-      cancelled: "bg-red-100 text-red-800 border-red-200"
-    };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
-  };
 
   const getEarningsStatusBadge = (status: string) => {
     const variants = {
@@ -660,52 +678,77 @@ const StaffDetailsPage = () => {
           <TabsContent value="events" className="space-y-6">
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle>Event Participation ({staffEvents.length})</CardTitle>
+                <CardTitle>Event Assignments ({staffEvents.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {staffEvents.map((event) => (
-                    <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Calendar className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{event.title}</h4>
-                          <p className="text-sm text-gray-600">{event.date} • {event.location}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge className={`text-xs ${getEventStatusBadge(event.status)}`}>
-                              {event.status}
-                            </Badge>
-                            <span className="text-xs text-gray-600">{event.role}</span>
-                            {event.rating && (
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                                <span className="text-xs text-gray-600">{event.rating}</span>
-                              </div>
+                {loadingEvents ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : staffEvents.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <p>No event assignments found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {staffEvents.map((assignment) => (
+                      <div key={assignment.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              {assignment.event?.title || "Event"}
+                            </h4>
+                            {assignment.event?.startDate && (
+                              <p className="text-sm text-gray-600">
+                                {new Date(assignment.event.startDate).toLocaleDateString()}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                                {assignment.role}
+                              </Badge>
+                              {assignment.isActive ? (
+                                <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
+                                  Active
+                                </Badge>
+                              ) : (
+                                <Badge className="text-xs bg-gray-100 text-gray-800 border-gray-200">
+                                  Inactive
+                                </Badge>
+                              )}
+                            </div>
+                            {assignment.notes && (
+                              <p className="text-xs text-gray-500 mt-1">{assignment.notes}</p>
                             )}
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900">
-                            {event.hours}h
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            {assignment.facility && (
+                              <div className="text-sm text-gray-600">
+                                {assignment.facility}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500">
+                              Assigned {new Date(assignment.assignedAt).toLocaleDateString()}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {formatCurrency(event.payment)}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {event.organizer}
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/admin/events/${assignment.eventId}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
