@@ -8,6 +8,8 @@ import { TicketService } from './ticket.service.js';
 import { EventService } from './event.service.js';
 import { generatePaymentTransactionNumber } from '../utils/transaction-helpers.js';
 import { PlatformFeeService } from './platform-fee.service.js';
+import { NotificationService } from './notification.service.js';
+import { NotificationType, NotificationPriority } from '@prisma/client';
 
 export interface InitializePaymentData {
   registrationId: string;
@@ -448,6 +450,46 @@ export class PaymentService {
           // Don't fail the webhook if email fails
         }
 
+        // Send payment success notifications
+        try {
+          // Notify attendee
+          await NotificationService.sendNotification({
+            userId: registration.attendeeId,
+            type: NotificationType.PAYMENT_SUCCESS,
+            title: `Payment Successful: ${registration.event.title}`,
+            message: `Your payment of ₦${verification.amount.toLocaleString()} for "${registration.event.title}" has been confirmed. Your ticket has been sent to your email.`,
+            priority: NotificationPriority.HIGH,
+            eventId: registration.eventId,
+            registrationId: registration.id,
+            data: {
+              amount: verification.amount,
+              currency: 'NGN',
+              transactionReference: reference,
+            },
+          });
+
+          // Notify organizer
+          await NotificationService.sendNotification({
+            userId: registration.event.organizerId,
+            type: NotificationType.PAYMENT_RECEIVED,
+            title: `Payment Received: ${registration.event.title}`,
+            message: `A payment of ₦${verification.amount.toLocaleString()} has been received for "${registration.event.title}" from ${registration.attendee.firstName || registration.attendee.email}.`,
+            priority: NotificationPriority.MEDIUM,
+            eventId: registration.eventId,
+            registrationId: registration.id,
+            relatedUserId: registration.attendeeId,
+            data: {
+              amount: verification.amount,
+              currency: 'NGN',
+              attendeeName: registration.attendee.firstName && registration.attendee.lastName
+                ? `${registration.attendee.firstName} ${registration.attendee.lastName}`
+                : registration.attendee.email,
+            },
+          });
+        } catch (error) {
+          logger.error('Failed to send payment success notifications:', error);
+        }
+
         logger.info(`Payment completed: ${reference} for registration: ${registration.id}`);
       }
     } else if (event === 'charge.failed') {
@@ -466,6 +508,25 @@ export class PaymentService {
         });
 
         if (registration) {
+          // Get full registration details for notification
+          const fullRegistration = await prisma.eventRegistration.findUnique({
+            where: { id: registration.id },
+            include: {
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                },
+              },
+              attendee: {
+                select: {
+                  id: true,
+                  email: true,
+                },
+              },
+            },
+          });
+
           // Use status validation to ensure consistency
           const syncedStatus = EventService.validateAndSyncStatus(
             registration.status,
@@ -480,6 +541,27 @@ export class PaymentService {
               paymentStatus: syncedStatus.paymentStatus,
             },
           });
+
+          // Send payment failed notification
+          if (fullRegistration) {
+            try {
+              await NotificationService.sendNotification({
+                userId: fullRegistration.attendeeId,
+                type: NotificationType.PAYMENT_FAILED,
+                title: `Payment Failed: ${fullRegistration.event.title}`,
+                message: `Your payment for "${fullRegistration.event.title}" has failed. Please try again or contact support if the issue persists.`,
+                priority: NotificationPriority.HIGH,
+                eventId: fullRegistration.eventId,
+                registrationId: registration.id,
+                data: {
+                  transactionReference: reference,
+                },
+              });
+            } catch (error) {
+              logger.error('Failed to send payment failed notification:', error);
+            }
+          }
+
           logger.info(`Payment failed: ${reference} for registration: ${registration.id}`);
         } else {
           logger.warn(`Payment failed webhook: Registration not found for reference: ${reference}`);

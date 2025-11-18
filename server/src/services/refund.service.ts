@@ -7,6 +7,8 @@ import { Prisma } from '@prisma/client';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 import Paystack from 'paystack';
 import { config } from '../config/index.js';
+import { NotificationService } from './notification.service.js';
+import { NotificationType, NotificationPriority } from '@prisma/client';
 
 export interface CreateRefundData {
   transactionId: string;
@@ -270,9 +272,25 @@ export class RefundService {
         transaction: {
           include: {
             registration: {
-              select: {
-                id: true,
-                status: true,
+              include: {
+                attendee: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+                event: {
+                  include: {
+                    organizer: {
+                      select: {
+                        id: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -281,6 +299,7 @@ export class RefundService {
           select: {
             id: true,
             title: true,
+            organizerId: true,
           },
         },
       },
@@ -342,6 +361,55 @@ export class RefundService {
     });
 
     logger.info(`Refund completed: ${refundId} by user: ${completedBy}`);
+
+    // Send refund completion notifications
+    try {
+      const registration = refund.transaction.registration;
+      const attendee = registration.attendee;
+      const event = refund.event;
+
+      // Notify attendee
+      if (attendee) {
+        await NotificationService.sendNotification({
+          userId: attendee.id,
+          type: NotificationType.REFUND_RECEIVED,
+          title: `Refund Processed: ${event.title}`,
+          message: `Your refund of ₦${Number(refund.refundAmount).toLocaleString()} for "${event.title}" has been processed and will be credited to your account within 3-5 business days.`,
+          priority: NotificationPriority.HIGH,
+          eventId: event.id,
+          registrationId: registration.id,
+          data: {
+            refundAmount: Number(refund.refundAmount),
+            currency: refund.currency,
+            refundReference,
+            refundReason: refund.refundReason,
+          },
+        });
+      }
+
+      // Notify organizer
+      if (event.organizerId) {
+        await NotificationService.sendNotification({
+          userId: event.organizerId,
+          type: NotificationType.REFUND_PROCESSED,
+          title: `Refund Processed: ${event.title}`,
+          message: `A refund of ₦${Number(refund.refundAmount).toLocaleString()} has been processed for "${event.title}"${attendee ? ` (${attendee.firstName || attendee.email})` : ''}.`,
+          priority: NotificationPriority.MEDIUM,
+          eventId: event.id,
+          registrationId: registration.id,
+          relatedUserId: attendee?.id,
+          data: {
+            refundAmount: Number(refund.refundAmount),
+            currency: refund.currency,
+            attendeeName: attendee?.firstName && attendee?.lastName
+              ? `${attendee.firstName} ${attendee.lastName}`
+              : attendee?.email,
+          },
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to send refund completion notifications:', error);
+    }
 
     return prisma.refund.findUnique({
       where: { id: refundId },
