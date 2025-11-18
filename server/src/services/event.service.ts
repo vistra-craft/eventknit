@@ -14,6 +14,8 @@ import { hashPassword } from '../utils/password.js';
 import crypto from 'crypto';
 import { emailService } from './email.service.js';
 import { TicketService } from './ticket.service.js';
+import { NotificationService } from './notification.service.js';
+import { NotificationType, NotificationPriority } from '@prisma/client';
 
 export interface CreateEventData {
   title: string;
@@ -683,6 +685,15 @@ export class EventService {
       },
     });
 
+    // Track what changed for notifications
+    const changes: string[] = [];
+    if (data.title !== undefined) changes.push('title');
+    if (data.startDate !== undefined || data.startTime !== undefined) changes.push('date/time');
+    if (data.venue !== undefined || data.location !== undefined || data.address !== undefined) changes.push('venue/location');
+    if (data.description !== undefined || data.fullDescription !== undefined) changes.push('description');
+    if (data.capacity !== undefined) changes.push('capacity');
+    if (data.price !== undefined || data.ticketTypes !== undefined) changes.push('pricing');
+
     // Audit log
     await createAuditLog({
       userId: organizerId,
@@ -697,6 +708,42 @@ export class EventService {
     });
 
     logger.info(`Event updated: ${eventId} by organizer: ${organizerId}`);
+
+    // Send notifications if event was approved and has registered attendees
+    if (event.status === EventStatus.APPROVED && changes.length > 0) {
+      try {
+        const changesText = changes.join(', ');
+        const isTimeChange = changes.includes('date/time');
+        const isVenueChange = changes.includes('venue/location');
+
+        // Notify registered attendees
+        await NotificationService.sendEventNotification(
+          eventId,
+          isTimeChange ? NotificationType.EVENT_TIME_CHANGED : isVenueChange ? NotificationType.EVENT_VENUE_CHANGED : NotificationType.EVENT_UPDATE,
+          `Event Updated: ${updatedEvent.title}`,
+          `The event "${updatedEvent.title}" has been updated. Changes: ${changesText}.${isTimeChange ? ' Please check the new date and time.' : ''}${isVenueChange ? ' Please check the new venue/location.' : ''}`,
+          'attendees',
+          undefined,
+          NotificationPriority.MEDIUM,
+          { changes },
+        );
+
+        // Notify assigned staff
+        await NotificationService.sendEventNotification(
+          eventId,
+          NotificationType.EVENT_UPDATE_FOR_STAFF,
+          `Event Updated: ${updatedEvent.title}`,
+          `The event "${updatedEvent.title}" you are assigned to has been updated. Changes: ${changesText}.`,
+          'staff',
+          undefined,
+          NotificationPriority.MEDIUM,
+          { changes },
+        );
+      } catch (error) {
+        // Log error but don't fail the update
+        logger.error('Failed to send event update notifications:', error);
+      }
+    }
 
     return updatedEvent;
   }
@@ -1090,6 +1137,25 @@ export class EventService {
 
     logger.info(`Event approved: ${eventId} by admin: ${adminId}`);
 
+    // Send notification to organizer
+    try {
+      await NotificationService.sendNotification({
+        userId: approvedEvent.organizerId,
+        type: NotificationType.EVENT_APPROVED,
+        title: `Event Approved: ${approvedEvent.title}`,
+        message: `Your event "${approvedEvent.title}" has been approved and is now live on EventKnit. Attendees can now register for your event.`,
+        priority: NotificationPriority.HIGH,
+        eventId,
+        data: {
+          eventTitle: approvedEvent.title,
+          approvedAt: approvedEvent.approvedAt,
+        },
+      });
+    } catch (error) {
+      // Log error but don't fail the approval
+      logger.error('Failed to send event approval notification:', error);
+    }
+
     return approvedEvent;
   }
 
@@ -1171,6 +1237,26 @@ export class EventService {
     });
 
     logger.info(`Event rejected: ${eventId} by admin: ${adminId}`);
+
+    // Send notification to organizer
+    try {
+      await NotificationService.sendNotification({
+        userId: rejectedEvent.organizerId,
+        type: NotificationType.EVENT_REJECTED,
+        title: `Event Rejected: ${rejectedEvent.title}`,
+        message: `Your event "${rejectedEvent.title}" has been rejected.\n\nReason: ${rejectionReason}\n\nYou can review the feedback and resubmit your event for approval.`,
+        priority: NotificationPriority.HIGH,
+        eventId,
+        data: {
+          eventTitle: rejectedEvent.title,
+          rejectionReason,
+          rejectedAt: rejectedEvent.rejectedAt,
+        },
+      });
+    } catch (error) {
+      // Log error but don't fail the rejection
+      logger.error('Failed to send event rejection notification:', error);
+    }
 
     return rejectedEvent;
   }
@@ -1262,6 +1348,36 @@ export class EventService {
     });
 
     logger.info(`Event cancelled: ${eventId} by organizer: ${organizerId}`);
+
+    // Send notifications
+    try {
+      // Notify all registered attendees
+      await NotificationService.sendEventNotification(
+        eventId,
+        NotificationType.EVENT_CANCELLED,
+        `Event Cancelled: ${cancelledEvent.title}`,
+        `The event "${cancelledEvent.title}" has been cancelled.${reason ? `\n\nReason: ${reason}` : ''}\n\nIf you paid for this event, you will receive a full refund.`,
+        'attendees',
+        undefined,
+        NotificationPriority.HIGH,
+        { reason: reason || null },
+      );
+
+      // Notify assigned staff
+      await NotificationService.sendEventNotification(
+        eventId,
+        NotificationType.EVENT_CANCELLED_FOR_STAFF,
+        `Event Cancelled: ${cancelledEvent.title}`,
+        `The event "${cancelledEvent.title}" you were assigned to has been cancelled.${reason ? `\n\nReason: ${reason}` : ''}`,
+        'staff',
+        undefined,
+        NotificationPriority.MEDIUM,
+        { reason: reason || null },
+      );
+    } catch (error) {
+      // Log error but don't fail the cancellation
+      logger.error('Failed to send event cancellation notifications:', error);
+    }
 
     return cancelledEvent;
   }
