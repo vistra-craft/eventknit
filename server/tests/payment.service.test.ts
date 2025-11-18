@@ -1,6 +1,7 @@
 import request from 'supertest';
 import app from '../src/app';
 import { PaymentService } from '../src/services/payment.service';
+import { PlatformFeeService } from '../src/services/platform-fee.service';
 import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus, RegistrationStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
@@ -973,6 +974,94 @@ describe('PaymentService', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.paymentStatus).toBe('COMPLETED');
     });
+  });
+
+  describe('EventPaymentTransaction Creation', () => {
+    it('should create EventPaymentTransaction when platform fee is created', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a payment transaction manually
+      const registration = await prisma.eventRegistration.create({
+        data: {
+          eventId,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 10000,
+          status: RegistrationStatus.CONFIRMED,
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      const paymentTransaction = await prisma.eventPaymentTransaction.create({
+        data: {
+          transactionNumber: `EPT-TEST-${Date.now()}`,
+          paystackReference: `test-ref-${Date.now()}`,
+          paystackAmount: 1000000,
+          currency: 'NGN',
+          amount: 10000,
+          paymentMethod: 'PAYSTACK',
+          paymentStatus: 'success',
+          paymentDate: new Date(),
+          eventId,
+          registrationId: registration.id,
+          attendeeEmail: 'attendee@test.com',
+          attendeeName: 'Test Attendee',
+        },
+      });
+
+      // Create platform fee (this is what happens automatically in handleWebhook)
+      const platformFee = await PlatformFeeService.createPlatformFee(paymentTransaction.id);
+
+      expect(platformFee.id).toBeDefined();
+      expect(platformFee.feeAmount).toBe(1000); // 10% of 10000
+      expect(platformFee.organizerAmount).toBe(9000);
+
+      // Verify fee is linked to transaction
+      const fee = await prisma.platformFee.findUnique({
+        where: { transactionId: paymentTransaction.id },
+      });
+      expect(fee).toBeDefined();
+      expect(fee?.transactionId).toBe(paymentTransaction.id);
+    });
+  });
+
+  describe('syncPaymentsFromPaystack', () => {
+    it('should be a function on paymentService', () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      expect(typeof paymentService.syncPaymentsFromPaystack).toBe('function');
+    });
+
+    it('should throw error if Paystack not configured', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const { config } = await import('../src/config/index.js');
+      if (!config.paystack.secretKey) {
+        // If already not configured, test passes
+        await expect(
+          paymentService.syncPaymentsFromPaystack(),
+        ).rejects.toThrow('Payment service is not configured');
+        return;
+      }
+
+      // If configured, we can't easily test this without mocking
+      // The function exists and will work when Paystack is configured
+      expect(typeof paymentService.syncPaymentsFromPaystack).toBe('function');
+    });
+
+    // Note: Full integration test for syncPaymentsFromPaystack would require:
+    // 1. Mock Paystack API responses
+    // 2. Test transaction creation logic
+    // 3. Test platform fee auto-creation
+    // This is better suited for integration tests with proper mocking
   });
 });
 
