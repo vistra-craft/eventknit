@@ -148,7 +148,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       icon: DollarSign,
       group: "management",
       children: [
-        { name: "Dashboard", href: "/admin/finance" },
+        { name: "Event Finance", href: "/admin/finance/events" },
+        { name: "Payment Transactions", href: "/admin/finance/payments" },
+        { name: "Disbursements", href: "/admin/finance/disbursements" },
+        { name: "Refunds", href: "/admin/finance/refunds" },
+        { name: "Reconciliation", href: "/admin/finance/reconciliation" },
+        { name: "Dashboard (Legacy)", href: "/admin/finance" },
         { name: "Expenses", href: "/admin/finance/expenses" },
         { name: "Income", href: "/admin/finance/income" },
         { name: "Wages", href: "/admin/finance/wages" },

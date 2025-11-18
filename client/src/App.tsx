@@ -102,6 +102,11 @@ import SupportPage from "./pages/admin/SupportPage";
 // Admin Finance imports
 import { 
   FinanceDashboard,
+  EventFinanceDashboard,
+  PaymentTransactionsPage,
+  DisbursementsPage,
+  RefundsPage,
+  ReconciliationPage,
   ExpensesPage,
   IncomePage,
   WagesPage,
@@ -243,6 +248,11 @@ const App = () => (
       <Route path="/admin/support" element={<SupportPage />} />
       {/* Admin Finance Routes */}
       <Route path="/admin/finance" element={<FinanceDashboard />} />
+      <Route path="/admin/finance/events" element={<EventFinanceDashboard />} />
+      <Route path="/admin/finance/payments" element={<PaymentTransactionsPage />} />
+      <Route path="/admin/finance/disbursements" element={<DisbursementsPage />} />
+      <Route path="/admin/finance/refunds" element={<RefundsPage />} />
+      <Route path="/admin/finance/reconciliation" element={<ReconciliationPage />} />
       <Route path="/admin/finance/expenses" element={<ExpensesPage />} />
       <Route path="/admin/finance/income" element={<IncomePage />} />
       <Route path="/admin/finance/wages" element={<WagesPage />} />
