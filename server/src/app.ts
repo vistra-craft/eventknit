@@ -17,6 +17,7 @@ import ticketRoutes from './routes/ticket.routes.js';
 import userRoutes from './routes/user.routes.js';
 import promoCodeRoutes from './routes/promo-code.routes.js';
 import workstationRoutes from './routes/workstation.routes.js';
+import financialRoutes from './routes/financial.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -95,6 +96,7 @@ app.use('/api/v1/tickets', ticketRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/promo-codes', promoCodeRoutes);
 app.use('/api/v1/workstation', workstationRoutes);
+app.use('/api/v1/admin/finance', financialRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
