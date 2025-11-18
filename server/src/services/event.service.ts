@@ -1022,14 +1022,138 @@ export class EventService {
     }
 
     // Update available slots if capacity exists
+    let newAvailableSlots: number | null = null;
     if (event.capacity !== null) {
-      const newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
+      newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
       await prisma.event.update({
         where: { id: eventId },
         data: {
           availableSlots: Math.max(0, newAvailableSlots),
         },
       });
+
+      // Check for capacity milestones and notify organizer
+      if (event.capacity > 0 && newAvailableSlots >= 0) {
+        const currentRegistrations = event.capacity - newAvailableSlots;
+        const capacityPercentage = (currentRegistrations / event.capacity) * 100;
+
+        try {
+          // Get event with organizer info
+          const eventWithOrganizer = await prisma.event.findUnique({
+            where: { id: eventId },
+            select: {
+              organizerId: true,
+              title: true,
+            },
+          });
+
+          if (eventWithOrganizer) {
+            // 50% milestone
+            if (capacityPercentage >= 50 && capacityPercentage < 75) {
+              // Check if 50% notification already sent
+              const existingNotification = await prisma.notification.findFirst({
+                where: {
+                  eventId,
+                  type: NotificationType.REGISTRATION_MILESTONE_50,
+                  createdAt: {
+                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
+                  },
+                },
+              });
+
+              if (!existingNotification) {
+                await NotificationService.sendNotification({
+                  userId: eventWithOrganizer.organizerId,
+                  type: NotificationType.REGISTRATION_MILESTONE_50,
+                  title: `50% Capacity Reached: ${eventWithOrganizer.title}`,
+                  message: `Great news! Your event "${eventWithOrganizer.title}" has reached 50% capacity (${currentRegistrations}/${event.capacity} registrations).`,
+                  priority: NotificationPriority.MEDIUM,
+                  eventId,
+                  data: {
+                    currentRegistrations,
+                    capacity: event.capacity,
+                    percentage: 50,
+                  },
+                });
+              }
+            }
+
+            // 75% milestone
+            if (capacityPercentage >= 75 && capacityPercentage < 100) {
+              // Check if 75% notification already sent
+              const existingNotification = await prisma.notification.findFirst({
+                where: {
+                  eventId,
+                  type: NotificationType.REGISTRATION_MILESTONE_75,
+                  createdAt: {
+                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
+                  },
+                },
+              });
+
+              if (!existingNotification) {
+                await NotificationService.sendNotification({
+                  userId: eventWithOrganizer.organizerId,
+                  type: NotificationType.REGISTRATION_MILESTONE_75,
+                  title: `75% Capacity Reached: ${eventWithOrganizer.title}`,
+                  message: `Excellent! Your event "${eventWithOrganizer.title}" has reached 75% capacity (${currentRegistrations}/${event.capacity} registrations).`,
+                  priority: NotificationPriority.MEDIUM,
+                  eventId,
+                  data: {
+                    currentRegistrations,
+                    capacity: event.capacity,
+                    percentage: 75,
+                  },
+                });
+              }
+            }
+
+            // 100% capacity reached
+            if (newAvailableSlots === 0) {
+              // Check if 100% notification already sent
+              const existingNotification = await prisma.notification.findFirst({
+                where: {
+                  eventId,
+                  type: NotificationType.REGISTRATION_MILESTONE_100,
+                  createdAt: {
+                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
+                  },
+                },
+              });
+
+              if (!existingNotification) {
+                await NotificationService.sendNotification({
+                  userId: eventWithOrganizer.organizerId,
+                  type: NotificationType.REGISTRATION_MILESTONE_100,
+                  title: `Event Sold Out: ${eventWithOrganizer.title}`,
+                  message: `Congratulations! Your event "${eventWithOrganizer.title}" is now sold out (${currentRegistrations}/${event.capacity} registrations).`,
+                  priority: NotificationPriority.HIGH,
+                  eventId,
+                  data: {
+                    currentRegistrations,
+                    capacity: event.capacity,
+                    percentage: 100,
+                  },
+                });
+
+                // Also notify attendees that event is full (for waitlist)
+                await NotificationService.sendEventNotification(
+                  eventId,
+                  NotificationType.CAPACITY_FULL,
+                  `Event Sold Out: ${eventWithOrganizer.title}`,
+                  `The event "${eventWithOrganizer.title}" has reached full capacity. If you haven't registered yet, you can join the waitlist to be notified if spots become available.`,
+                  'attendees',
+                  undefined,
+                  NotificationPriority.MEDIUM,
+                );
+              }
+            }
+          }
+        } catch (error) {
+          // Log error but don't fail registration
+          logger.error('Failed to send capacity milestone notifications:', error);
+        }
+      }
     }
 
     // Audit log
