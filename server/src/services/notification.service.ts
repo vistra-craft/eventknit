@@ -276,13 +276,8 @@ export class NotificationService {
         )
         : false;
 
-      const shouldSendSMS = channels.sms
-        ? await NotificationPreferenceService.shouldSendNotification(
-          notification.userId,
-          notification.type,
-          'sms',
-        )
-        : false;
+      // SMS is disabled in this system - skip SMS delivery
+      // const shouldSendSMS = false;
 
       const shouldSendPush = channels.push
         ? await NotificationPreferenceService.shouldSendNotification(

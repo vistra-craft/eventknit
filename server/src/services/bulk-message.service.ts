@@ -134,51 +134,51 @@ export class BulkMessageService {
   ): Promise<number> {
     try {
       switch (targetAudience) {
-        case BulkMessageTargetAudience.ALL:
-          return await prisma.user.count({
-            where: {
-              deletedAt: null,
-              status: 'ACTIVE',
-            },
-          });
+      case BulkMessageTargetAudience.ALL:
+        return await prisma.user.count({
+          where: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        });
 
-        case BulkMessageTargetAudience.ORGANIZERS:
-          return await prisma.user.count({
-            where: {
-              role: UserRole.ORGANIZER,
-              deletedAt: null,
-              status: 'ACTIVE',
-            },
-          });
+      case BulkMessageTargetAudience.ORGANIZERS:
+        return await prisma.user.count({
+          where: {
+            role: UserRole.ORGANIZER,
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        });
 
-        case BulkMessageTargetAudience.ATTENDEES:
-          return await prisma.user.count({
-            where: {
-              role: UserRole.ATTENDEE,
-              deletedAt: null,
-              status: 'ACTIVE',
-            },
-          });
+      case BulkMessageTargetAudience.ATTENDEES:
+        return await prisma.user.count({
+          where: {
+            role: UserRole.ATTENDEE,
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        });
 
-        case BulkMessageTargetAudience.STAFF:
-          return await prisma.user.count({
-            where: {
-              role: {
-                in: [
-                  UserRole.ADMIN_STAFF,
-                  UserRole.MARKETER,
-                  UserRole.SUPPORT,
-                  UserRole.TELLER,
-                  UserRole.ORGANIZER_STAFF,
-                  UserRole.ORGANIZER_TELLER,
-                ],
-              },
-              deletedAt: null,
-              status: 'ACTIVE',
+      case BulkMessageTargetAudience.STAFF:
+        return await prisma.user.count({
+          where: {
+            role: {
+              in: [
+                UserRole.ADMIN_STAFF,
+                UserRole.MARKETER,
+                UserRole.SUPPORT,
+                UserRole.TELLER,
+                UserRole.ORGANIZER_STAFF,
+                UserRole.ORGANIZER_TELLER,
+              ],
             },
-          });
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+        });
 
-        case BulkMessageTargetAudience.SPECIFIC_EVENT:
+        case BulkMessageTargetAudience.SPECIFIC_EVENT: {
           if (!eventId) {
             return 0;
           }
@@ -188,9 +188,10 @@ export class BulkMessageService {
               status: 'CONFIRMED',
             },
           });
+        }
 
-        default:
-          return 0;
+      default:
+        return 0;
       }
     } catch (error) {
       logger.error('Failed to calculate recipients:', error);
@@ -342,7 +343,9 @@ export class BulkMessageService {
       if (data.content !== undefined) updateData.content = data.content;
       if (data.type !== undefined) updateData.type = data.type;
       if (data.targetAudience !== undefined) updateData.targetAudience = data.targetAudience;
-      if (data.eventId !== undefined) updateData.eventId = data.eventId;
+      if (data.eventId !== undefined) {
+        updateData.event = data.eventId ? { connect: { id: data.eventId } } : { disconnect: true };
+      }
       if (data.status !== undefined) updateData.status = data.status;
 
       if (data.channels) {
@@ -433,7 +436,7 @@ export class BulkMessageService {
       });
 
       // Get recipients
-      const recipients = await this.getRecipients(message.targetAudience, message.eventId);
+      const recipients = await this.getRecipients(message.targetAudience, message.eventId ?? undefined);
 
       logger.info(`Sending bulk message ${messageId} to ${recipients.length} recipients`);
 
@@ -485,7 +488,10 @@ export class BulkMessageService {
 
         // Small delay between batches to avoid rate limiting
         if (i + batchSize < recipients.length) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          await new Promise((resolve) => {
+            // eslint-disable-next-line no-undef
+            setTimeout(resolve, 100);
+          });
         }
       }
 
@@ -533,73 +539,78 @@ export class BulkMessageService {
   ): Promise<string[]> {
     try {
       switch (targetAudience) {
-        case BulkMessageTargetAudience.ALL:
-          const allUsers = await prisma.user.findMany({
-            where: {
-              deletedAt: null,
-              status: 'ACTIVE',
-            },
-            select: { id: true },
-          });
-          return allUsers.map((u) => u.id);
+      case BulkMessageTargetAudience.ALL: {
+        const allUsers = await prisma.user.findMany({
+          where: {
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        });
+        return allUsers.map((u) => u.id);
+      }
 
-        case BulkMessageTargetAudience.ORGANIZERS:
-          const organizers = await prisma.user.findMany({
-            where: {
-              role: UserRole.ORGANIZER,
-              deletedAt: null,
-              status: 'ACTIVE',
-            },
-            select: { id: true },
-          });
-          return organizers.map((u) => u.id);
+      case BulkMessageTargetAudience.ORGANIZERS: {
+        const organizers = await prisma.user.findMany({
+          where: {
+            role: UserRole.ORGANIZER,
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        });
+        return organizers.map((u) => u.id);
+      }
 
-        case BulkMessageTargetAudience.ATTENDEES:
-          const attendees = await prisma.user.findMany({
-            where: {
-              role: UserRole.ATTENDEE,
-              deletedAt: null,
-              status: 'ACTIVE',
-            },
-            select: { id: true },
-          });
-          return attendees.map((u) => u.id);
+      case BulkMessageTargetAudience.ATTENDEES: {
+        const attendees = await prisma.user.findMany({
+          where: {
+            role: UserRole.ATTENDEE,
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        });
+        return attendees.map((u) => u.id);
+      }
 
-        case BulkMessageTargetAudience.STAFF:
-          const staff = await prisma.user.findMany({
-            where: {
-              role: {
-                in: [
-                  UserRole.ADMIN_STAFF,
-                  UserRole.MARKETER,
-                  UserRole.SUPPORT,
-                  UserRole.TELLER,
-                  UserRole.ORGANIZER_STAFF,
-                  UserRole.ORGANIZER_TELLER,
-                ],
-              },
-              deletedAt: null,
-              status: 'ACTIVE',
+      case BulkMessageTargetAudience.STAFF: {
+        const staff = await prisma.user.findMany({
+          where: {
+            role: {
+              in: [
+                UserRole.ADMIN_STAFF,
+                UserRole.MARKETER,
+                UserRole.SUPPORT,
+                UserRole.TELLER,
+                UserRole.ORGANIZER_STAFF,
+                UserRole.ORGANIZER_TELLER,
+              ],
             },
-            select: { id: true },
-          });
-          return staff.map((u) => u.id);
+            deletedAt: null,
+            status: 'ACTIVE',
+          },
+          select: { id: true },
+        });
+        return staff.map((u) => u.id);
+      }
 
-        case BulkMessageTargetAudience.SPECIFIC_EVENT:
-          if (!eventId) {
-            return [];
-          }
-          const registrations = await prisma.eventRegistration.findMany({
-            where: {
-              eventId,
-              status: 'CONFIRMED',
-            },
-            select: { attendeeId: true },
-          });
-          return registrations.map((r) => r.attendeeId);
-
-        default:
+      case BulkMessageTargetAudience.SPECIFIC_EVENT: {
+        if (!eventId) {
           return [];
+        }
+        const registrations = await prisma.eventRegistration.findMany({
+          where: {
+            eventId,
+            status: 'CONFIRMED',
+          },
+          select: { attendeeId: true },
+        });
+        return registrations.map((r) => r.attendeeId);
+      }
+
+      default:
+        return [];
       }
     } catch (error) {
       logger.error('Failed to get recipients:', error);
