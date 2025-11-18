@@ -108,31 +108,34 @@ export class NotificationPreferenceService {
         where: { userId },
       });
 
+      // Force SMS to be disabled (we don't use SMS in this system)
+      const smsEnabled = false; // Always disabled - email only system
+
       const preferences = existingPreferences
         ? await prisma.notificationPreference.update({
-          where: { userId },
-          data: {
-            emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
-            smsEnabled: data.smsEnabled ?? existingPreferences.smsEnabled,
-            pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
-            inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
-            eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
-            eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
-            eventCancellations:
+            where: { userId },
+            data: {
+              emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
+              smsEnabled, // Always false - SMS not used
+              pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
+              inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
+              eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
+              eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
+              eventCancellations:
                 data.eventCancellations ?? existingPreferences.eventCancellations,
-            paymentNotifications:
+              paymentNotifications:
                 data.paymentNotifications ?? existingPreferences.paymentNotifications,
-            marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
-            systemAnnouncements:
+              marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
+              systemAnnouncements:
                 data.systemAnnouncements ?? existingPreferences.systemAnnouncements,
-            registrationUpdates:
+              registrationUpdates:
                 data.registrationUpdates ?? existingPreferences.registrationUpdates,
-            staffNotifications:
+              staffNotifications:
                 data.staffNotifications ?? existingPreferences.staffNotifications,
-            reminderFrequency:
+              reminderFrequency:
                 data.reminderFrequency ?? existingPreferences.reminderFrequency,
-          },
-        })
+            },
+          })
         : await this.createDefaultPreferences(userId);
 
       logger.info(`Updated notification preferences for user ${userId}`);
@@ -159,26 +162,24 @@ export class NotificationPreferenceService {
 
       // Check channel preference
       switch (channel) {
-      case 'email':
-        if (!preferences.emailEnabled) {
+        case 'email':
+          if (!preferences.emailEnabled) {
+            return false;
+          }
+          break;
+        case 'sms':
+          // SMS is not used in this system - always return false
           return false;
-        }
-        break;
-      case 'sms':
-        if (!preferences.smsEnabled) {
-          return false;
-        }
-        break;
-      case 'push':
-        if (!preferences.pushEnabled) {
-          return false;
-        }
-        break;
-      case 'inApp':
-        if (!preferences.inAppEnabled) {
-          return false;
-        }
-        break;
+        case 'push':
+          if (!preferences.pushEnabled) {
+            return false;
+          }
+          break;
+        case 'inApp':
+          if (!preferences.inAppEnabled) {
+            return false;
+          }
+          break;
       }
 
       // Check category preferences based on notification type
