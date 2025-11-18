@@ -1,6 +1,8 @@
 import { logger } from '../utils/logger.js';
 import { TokenCleanupJob } from './token-cleanup.job.js';
 import { PaymentTimeoutJob } from './payment-timeout.job.js';
+import { BulkMessageSchedulerJob } from './bulk-message-scheduler.job.js';
+import { EventReminderJob } from './event-reminder.job.js';
 
 /**
  * Initialize all scheduled jobs
@@ -14,6 +16,12 @@ export function initializeJobs(): void {
     
     // Start payment timeout job
     PaymentTimeoutJob.start();
+    
+    // Start bulk message scheduler job
+    BulkMessageSchedulerJob.start();
+    
+    // Start event reminder job
+    EventReminderJob.start();
     
     logger.info('✅ All scheduled jobs initialized');
   } catch (error) {
@@ -31,6 +39,8 @@ export function stopJobs(): void {
     
     TokenCleanupJob.stop();
     PaymentTimeoutJob.stop();
+    BulkMessageSchedulerJob.stop();
+    EventReminderJob.stop();
     
     logger.info('✅ All scheduled jobs stopped');
   } catch (error) {
@@ -41,4 +51,6 @@ export function stopJobs(): void {
 // Export individual jobs for direct access if needed
 export { TokenCleanupJob } from './token-cleanup.job.js';
 export { PaymentTimeoutJob } from './payment-timeout.job.js';
+export { BulkMessageSchedulerJob } from './bulk-message-scheduler.job.js';
+export { EventReminderJob } from './event-reminder.job.js';
 
