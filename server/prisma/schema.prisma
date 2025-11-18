@@ -135,20 +135,26 @@ model User {
   deletedAt DateTime?
 
   // Relations
-  refreshTokens         RefreshToken[]
-  emailVerifications    EmailVerification[]
-  passwordResets        PasswordReset[]
-  magicLinkTokens       MagicLinkToken[]
-  kycDocuments          KYCDocument[]
-  auditLogs             AuditLog[]
-  eventsCreated         Event[]             @relation("EventOrganizer")
-  eventRegistrations    EventRegistration[]
-  invitationsCreated    EventInvitation[]   @relation("InvitationCreator")
-  templatesCreated      TicketTemplate[]    @relation("TemplateCreator")
-  featuredEventsCreated FeaturedEvent[]     @relation("FeaturedEventCreator")
-  promoCodesCreated     PromoCode[]         @relation("PromoCodeOrganizer")
-  promoCodeRedemptions  PromoCodeRedemption[] @relation("PromoCodeUser")
-  eventAssignments      EventStaff[]        @relation("EventStaff")
+  refreshTokens          RefreshToken[]
+  emailVerifications     EmailVerification[]
+  passwordResets         PasswordReset[]
+  magicLinkTokens        MagicLinkToken[]
+  kycDocuments           KYCDocument[]
+  auditLogs              AuditLog[]
+  eventsCreated          Event[]                 @relation("EventOrganizer")
+  eventRegistrations     EventRegistration[]
+  invitationsCreated     EventInvitation[]       @relation("InvitationCreator")
+  templatesCreated       TicketTemplate[]        @relation("TemplateCreator")
+  featuredEventsCreated  FeaturedEvent[]         @relation("FeaturedEventCreator")
+  promoCodesCreated      PromoCode[]             @relation("PromoCodeOrganizer")
+  promoCodeRedemptions   PromoCodeRedemption[]   @relation("PromoCodeUser")
+  eventAssignments       EventStaff[]            @relation("EventStaff")
+  // Event Payment Relations
+  organizerDisbursements OrganizerDisbursement[] @relation("OrganizerDisbursements")
+  disbursementsCreated   OrganizerDisbursement[] @relation("DisbursementCreator")
+  refundsRequested       Refund[]                @relation("RefundRequester")
+  refundsProcessed       Refund[]                @relation("RefundProcessor")
+  reconciliationsCreated PaymentReconciliation[] @relation("PaymentReconciler")
 
   @@index([email])
   @@index([role])
@@ -335,10 +341,10 @@ model Event {
   organizerDataAccess DataAccessLevel @default(RESTRICTED) // What data organizers can see
 
   // Scan configuration
-  allowReEntry   Boolean @default(false) // Allow attendees to re-enter after check-out
+  allowReEntry    Boolean @default(false) // Allow attendees to re-enter after check-out
   requireCheckOut Boolean @default(false) // Require check-out before re-entry
-  maxReEntries   Int? // Maximum number of re-entries allowed (null = unlimited)
-  scanSettings   Json? // Additional scan settings for future extensibility
+  maxReEntries    Int? // Maximum number of re-entries allowed (null = unlimited)
+  scanSettings    Json? // Additional scan settings for future extensibility
 
   // Audit fields
   createdAt DateTime  @default(now())
@@ -348,13 +354,19 @@ model Event {
   deletedAt DateTime?
 
   // Relations
-  registrations   EventRegistration[]
-  invitations     EventInvitation[]
-  ticketTemplates TicketTemplate[]
-  featuredEvents  FeaturedEvent[]
-  promoCodes      PromoCode[]         @relation("PromoCodeEvent")
-  ticketScans     TicketScan[]
-  assignedStaff   EventStaff[]        @relation("EventStaff")
+  registrations          EventRegistration[]
+  invitations            EventInvitation[]
+  ticketTemplates        TicketTemplate[]
+  featuredEvents         FeaturedEvent[]
+  promoCodes             PromoCode[]               @relation("PromoCodeEvent")
+  ticketScans            TicketScan[]
+  assignedStaff          EventStaff[]              @relation("EventStaff")
+  // Event Payment Relations
+  paymentTransactions    EventPaymentTransaction[]
+  platformFees           PlatformFee[]
+  organizerDisbursements OrganizerDisbursement[]
+  refunds                Refund[]
+  paymentReconciliations PaymentReconciliation[]
 
   @@index([organizerId])
   @@index([status])
@@ -384,7 +396,7 @@ model EventRegistration {
 
   // Registration form data
   registrationData Json? // Custom form data submitted by attendee
-  backupCode String? // Backup ticket code for manual entry (if QR code fails)
+  backupCode       String? // Backup ticket code for manual entry (if QR code fails)
 
   // Status
   status RegistrationStatus @default(PENDING)
@@ -400,9 +412,9 @@ model EventRegistration {
   checkedInBy       String? // User ID who checked in the ticket
   checkedOutAt      DateTime? // When ticket was checked out
   checkedOutBy      String? // User ID who checked out the ticket
-  reEntryCount      Int      @default(0) // Number of re-entries
+  reEntryCount      Int          @default(0) // Number of re-entries
   lastScanFacility  String? // Last facility/station where ticket was scanned
-  isCurrentlyInside Boolean  @default(false) // Whether attendee is currently inside the venue
+  isCurrentlyInside Boolean      @default(false) // Whether attendee is currently inside the venue
 
   // Audit fields
   createdAt   DateTime  @default(now())
@@ -411,8 +423,12 @@ model EventRegistration {
   cancelledBy String?
 
   // Relations
-  promoCodeRedemption PromoCodeRedemption? @relation("PromoCodeRedemption")
+  promoCodeRedemption PromoCodeRedemption?     @relation("PromoCodeRedemption")
   ticketScans         TicketScan[]
+  // Event Payment Relations
+  paymentTransaction  EventPaymentTransaction?
+  platformFee         PlatformFee?
+  refund              Refund?
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
@@ -532,38 +548,38 @@ model FeaturedEvent {
 }
 
 model PromoCode {
-  id              String       @id @default(uuid())
-  code            String       @unique
-  organizerId     String
-  eventId         String?
-  event           Event?       @relation("PromoCodeEvent", fields: [eventId], references: [id], onDelete: Cascade)
+  id          String  @id @default(uuid())
+  code        String  @unique
+  organizerId String
+  eventId     String?
+  event       Event?  @relation("PromoCodeEvent", fields: [eventId], references: [id], onDelete: Cascade)
 
   // Discount details
-  discountType    DiscountType
-  discountValue   Decimal      @db.Decimal(10, 2) // 30 for 30%, or 50 for $50 off
-  minOrderAmount  Decimal?     @db.Decimal(10, 2) // Minimum purchase required
-  maxDiscount     Decimal?     @db.Decimal(10, 2) // Cap on discount amount
+  discountType   DiscountType
+  discountValue  Decimal      @db.Decimal(10, 2) // 30 for 30%, or 50 for $50 off
+  minOrderAmount Decimal?     @db.Decimal(10, 2) // Minimum purchase required
+  maxDiscount    Decimal?     @db.Decimal(10, 2) // Cap on discount amount
 
   // Applicability
   applicableTicketTypes String[] // Which ticket types it applies to (empty = all)
-  isActive        Boolean      @default(true)
+  isActive              Boolean  @default(true)
 
   // Limits
-  usageLimit      Int?         // Max number of uses (null = unlimited)
-  usedCount       Int          @default(0)
-  maxUsesPerUser  Int?         @default(1) // How many times one user can use it
+  usageLimit     Int? // Max number of uses (null = unlimited)
+  usedCount      Int  @default(0)
+  maxUsesPerUser Int? @default(1) // How many times one user can use it
 
   // Validity
-  validFrom       DateTime
-  validUntil      DateTime
+  validFrom  DateTime
+  validUntil DateTime
 
   // Tracking
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  organizer       User         @relation("PromoCodeOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
-  redemptions     PromoCodeRedemption[]
+  organizer   User                  @relation("PromoCodeOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  redemptions PromoCodeRedemption[]
 
   @@index([code])
   @@index([organizerId])
@@ -572,17 +588,17 @@ model PromoCode {
 }
 
 model PromoCodeRedemption {
-  id              String       @id @default(uuid())
-  promoCodeId     String
-  promoCode       PromoCode    @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
-  registrationId  String       @unique
-  registration    EventRegistration @relation("PromoCodeRedemption", fields: [registrationId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User         @relation("PromoCodeUser", fields: [userId], references: [id], onDelete: Cascade)
-  discountAmount  Decimal      @db.Decimal(10, 2)
-  originalAmount  Decimal      @db.Decimal(10, 2)
-  finalAmount     Decimal      @db.Decimal(10, 2)
-  redeemedAt      DateTime     @default(now())
+  id             String            @id @default(uuid())
+  promoCodeId    String
+  promoCode      PromoCode         @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  registrationId String            @unique
+  registration   EventRegistration @relation("PromoCodeRedemption", fields: [registrationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User              @relation("PromoCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+  discountAmount Decimal           @db.Decimal(10, 2)
+  originalAmount Decimal           @db.Decimal(10, 2)
+  finalAmount    Decimal           @db.Decimal(10, 2)
+  redeemedAt     DateTime          @default(now())
 
   @@unique([promoCodeId, registrationId])
   @@index([userId])
@@ -590,35 +606,35 @@ model PromoCodeRedemption {
 }
 
 model TicketScan {
-  id            String   @id @default(uuid())
+  id             String            @id @default(uuid())
   registrationId String
-  registration  EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  eventId       String
-  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId        String
+  event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   // Core scan fields
-  scanType      ScanType // Type of scan operation
-  scannedBy     String // User ID who performed the scan
-  scannedAt     DateTime @default(now())
+  scanType  ScanType // Type of scan operation
+  scannedBy String // User ID who performed the scan
+  scannedAt DateTime @default(now())
 
   // Facility tracking
-  facility      String? // Facility/station where scan occurred
-  deviceId      String? // Device ID that performed the scan
-  deviceType    String? // Type of device (MOBILE, TABLET, DESKTOP, etc.)
+  facility   String? // Facility/station where scan occurred
+  deviceId   String? // Device ID that performed the scan
+  deviceType String? // Type of device (MOBILE, TABLET, DESKTOP, etc.)
 
   // Validation
-  isValid       Boolean  @default(true) // Whether scan was valid
-  errorCode     String? // Error code if scan failed
-  errorMessage  String? // Error message if scan failed
+  isValid      Boolean @default(true) // Whether scan was valid
+  errorCode    String? // Error code if scan failed
+  errorMessage String? // Error message if scan failed
 
   // Re-entry tracking
-  isReEntry     Boolean  @default(false) // Whether this is a re-entry scan
+  isReEntry      Boolean @default(false) // Whether this is a re-entry scan
   previousScanId String? // ID of previous scan (for re-entry chain)
 
   // Metadata
-  ipAddress     String? // IP address of scanning device
-  userAgent     String? // User agent of scanning device
-  location      Json? // GPS location data if available
+  ipAddress String? // IP address of scanning device
+  userAgent String? // User agent of scanning device
+  location  Json? // GPS location data if available
 
   @@index([registrationId])
   @@index([eventId])
@@ -628,20 +644,20 @@ model TicketScan {
 }
 
 model EventStaff {
-  id          String   @id @default(cuid())
+  id         String   @id @default(cuid())
   eventId    String
   staffId    String
-  role       String   // Event-specific role: "SCANNER", "SUPPORT", "MANAGER", "COORDINATOR", "SUPERVISOR", "TICKET_SELLER"
-  staffType  String   // "ADMIN_STAFF" or "ORGANIZER_STAFF" - tracks which type of staff
+  role       String // Event-specific role: "SCANNER", "SUPPORT", "MANAGER", "COORDINATOR", "SUPERVISOR", "TICKET_SELLER"
+  staffType  String // "ADMIN_STAFF" or "ORGANIZER_STAFF" - tracks which type of staff
   assignedAt DateTime @default(now())
-  assignedBy String   // User ID who assigned (admin or organizer)
-  notes      String?  // Optional notes about assignment
+  assignedBy String // User ID who assigned (admin or organizer)
+  notes      String? // Optional notes about assignment
   isActive   Boolean  @default(true)
 
   // Optional scheduling fields
   shiftStart DateTime? // When staff should start (for multi-day events)
   shiftEnd   DateTime? // When staff should end
-  facility   String?   // Specific facility/station assignment
+  facility   String? // Specific facility/station assignment
 
   event Event @relation("EventStaff", fields: [eventId], references: [id], onDelete: Cascade)
   staff User  @relation("EventStaff", fields: [staffId], references: [id], onDelete: Cascade)
@@ -653,4 +669,244 @@ model EventStaff {
   @@index([staffType])
   @@index([isActive])
   @@index([assignedAt])
+}
+
+// ============================================
+// Event Payment Accounting Models
+// ============================================
+
+model EventPaymentTransaction {
+  id                String @id @default(uuid())
+  transactionNumber String @unique // Auto-generated (e.g., "EPT-2024-001")
+
+  // Paystack Details
+  paystackReference String  @unique // Paystack transaction reference
+  paystackAmount    Decimal @db.Decimal(10, 2) // Amount from Paystack (in kobo/cents)
+  currency          String  @default("NGN")
+
+  // Payment Details
+  amount        Decimal   @db.Decimal(10, 2) // Actual amount paid
+  paymentMethod String    @default("PAYSTACK")
+  paymentStatus String // pending, success, failed, cancelled
+  paymentDate   DateTime?
+
+  // Related Entities
+  eventId        String
+  event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrationId String            @unique
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  // Attendee Info
+  attendeeEmail String
+  attendeeName  String?
+
+  // Metadata
+  paystackMetadata Json? // Full Paystack response data
+  notes            String? @db.Text
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  platformFee PlatformFee?
+  refund      Refund?
+
+  @@index([paystackReference])
+  @@index([eventId])
+  @@index([registrationId])
+  @@index([paymentStatus])
+  @@index([paymentDate])
+}
+
+model PlatformFee {
+  id        String @id @default(uuid())
+  feeNumber String @unique // Auto-generated (e.g., "PF-2024-001")
+
+  // Fee Calculation
+  transactionId String                  @unique
+  transaction   EventPaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  // Amounts
+  grossAmount     Decimal @db.Decimal(10, 2) // Total payment amount
+  feePercentage   Decimal @db.Decimal(5, 2) // Platform fee percentage (e.g., 10.00)
+  feeAmount       Decimal @db.Decimal(10, 2) // Calculated platform fee
+  organizerAmount Decimal @db.Decimal(10, 2) // Amount to organizer (grossAmount - feeAmount)
+  currency        String  @default("NGN")
+
+  // Status
+  status       String   @default("calculated") // calculated, disbursed, pending
+  calculatedAt DateTime @default(now())
+
+  // Related Entities
+  eventId        String
+  event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrationId String            @unique
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  // Disbursement Link
+  disbursementId String?
+  disbursement   OrganizerDisbursement? @relation(fields: [disbursementId], references: [id], onDelete: SetNull)
+
+  // Metadata
+  notes String? @db.Text
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([registrationId])
+  @@index([status])
+  @@index([disbursementId])
+}
+
+model OrganizerDisbursement {
+  id                 String @id @default(uuid())
+  disbursementNumber String @unique // Auto-generated (e.g., "DISB-2024-001")
+
+  // Organizer Info
+  organizerId String
+  organizer   User   @relation("OrganizerDisbursements", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  // Event Info
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Amounts
+  totalAmount Decimal @db.Decimal(10, 2) // Total amount to disburse
+  currency    String  @default("NGN")
+
+  // Payment Details
+  paymentMethod String // bank_transfer, paystack_transfer, etc.
+  bankAccount   String? // Bank account details
+  bankName      String?
+  accountName   String?
+  accountNumber String?
+
+  // Status
+  status        String    @default("pending") // pending, processing, completed, failed, cancelled
+  scheduledDate DateTime? // When to process disbursement
+  processedAt   DateTime?
+  completedAt   DateTime?
+
+  // Payment Reference
+  paymentReference String? // External payment reference (e.g., Paystack transfer reference)
+  failureReason    String? @db.Text
+
+  // Platform Fees Included
+  platformFees PlatformFee[]
+
+  // Metadata
+  notes    String? @db.Text
+  metadata Json? // Additional payment metadata
+
+  // Audit
+  createdBy String
+  creator   User     @relation("DisbursementCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([status])
+  @@index([scheduledDate])
+}
+
+model Refund {
+  id           String @id @default(uuid())
+  refundNumber String @unique // Auto-generated (e.g., "REF-2024-001")
+
+  // Related Transaction
+  transactionId String                  @unique
+  transaction   EventPaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  // Refund Details
+  refundAmount Decimal @db.Decimal(10, 2) // Amount to refund
+  currency     String  @default("NGN")
+  refundReason String  @db.Text // Reason for refund
+  refundType   String // full, partial
+
+  // Status
+  status      String    @default("pending") // pending, processing, completed, failed, cancelled
+  requestedAt DateTime  @default(now())
+  processedAt DateTime?
+  completedAt DateTime?
+
+  // Payment Details
+  paymentMethod   String // paystack_refund, manual_refund, etc.
+  refundReference String? // External refund reference (e.g., Paystack refund reference)
+  failureReason   String? @db.Text
+
+  // Related Entities
+  eventId        String
+  event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrationId String            @unique
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  // Platform Fee Adjustment
+  platformFeeRefund Decimal? @db.Decimal(10, 2) // Platform fee to refund/adjust
+
+  // Metadata
+  notes    String? @db.Text
+  metadata Json? // Additional refund metadata
+
+  // Audit
+  requestedBy String
+  requester   User     @relation("RefundRequester", fields: [requestedBy], references: [id], onDelete: SetNull)
+  processedBy String?
+  processor   User?    @relation("RefundProcessor", fields: [processedBy], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([transactionId])
+  @@index([eventId])
+  @@index([registrationId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+model PaymentReconciliation {
+  id                   String @id @default(uuid())
+  reconciliationNumber String @unique // Auto-generated (e.g., "REC-2024-001")
+
+  // Reconciliation Period
+  startDate          DateTime
+  endDate            DateTime
+  reconciliationDate DateTime @default(now())
+
+  // Summary
+  totalPaystackTransactions Int // Count from Paystack
+  totalSystemTransactions   Int // Count from system
+  matchedTransactions       Int
+  unmatchedTransactions     Int
+
+  // Amounts
+  totalPaystackAmount Decimal @db.Decimal(10, 2)
+  totalSystemAmount   Decimal @db.Decimal(10, 2)
+  discrepancyAmount   Decimal @db.Decimal(10, 2) // Difference
+
+  // Status
+  status        String @default("pending") // pending, in_progress, completed, discrepancies_found
+  discrepancies Json? // Array of discrepancies found
+
+  // Related Event (if event-specific)
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  // Metadata
+  notes        String? @db.Text
+  paystackData Json? // Paystack transaction data used for reconciliation
+
+  // Audit
+  reconciledBy String
+  reconciler   User     @relation("PaymentReconciler", fields: [reconciledBy], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([startDate])
+  @@index([endDate])
+  @@index([eventId])
+  @@index([status])
 }

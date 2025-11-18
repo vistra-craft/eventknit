@@ -1,11 +1,13 @@
 import Paystack from 'paystack';
 import { config } from '../config/index.js';
 import { prisma } from '../config/database.js';
-import { RegistrationStatus } from '@prisma/client';
+import { RegistrationStatus, Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { TicketService } from './ticket.service.js';
 import { EventService } from './event.service.js';
+import { generatePaymentTransactionNumber } from '../utils/transaction-helpers.js';
+import { PlatformFeeService } from './platform-fee.service.js';
 
 export interface InitializePaymentData {
   registrationId: string;
@@ -365,22 +367,71 @@ export class PaymentService {
           // Admin can review if needed
         }
 
-        // All validations passed - update registration status
-        // Use status validation to ensure consistency
-        const syncedStatus = EventService.validateAndSyncStatus(
-          registration.status,
-          registration.paymentStatus || 'PENDING',
-          'COMPLETED',
-          RegistrationStatus.CONFIRMED,
-        );
+        // All validations passed - create payment transaction and update registration
+        // Use transaction to ensure atomicity
+        await prisma.$transaction(async (tx) => {
+          // Use status validation to ensure consistency
+          const syncedStatus = EventService.validateAndSyncStatus(
+            registration.status,
+            registration.paymentStatus || 'PENDING',
+            'COMPLETED',
+            RegistrationStatus.CONFIRMED,
+          );
 
-        await prisma.eventRegistration.update({
-          where: { id: registration.id },
-          data: {
-            status: syncedStatus.status,
-            paymentStatus: syncedStatus.paymentStatus,
-            paymentMethod: 'PAYSTACK',
-          },
+          // Generate transaction number
+          let transactionNumber = generatePaymentTransactionNumber();
+          // Ensure uniqueness (retry if collision)
+          let attempts = 0;
+          while (attempts < 10) {
+            const existing = await tx.eventPaymentTransaction.findUnique({
+              where: { transactionNumber },
+            });
+            if (!existing) break;
+            transactionNumber = generatePaymentTransactionNumber();
+            attempts++;
+          }
+
+          // Create payment transaction record
+          const paymentTransaction = await tx.eventPaymentTransaction.create({
+            data: {
+              transactionNumber,
+              paystackReference: reference,
+              paystackAmount: verification.amount * 100, // Store in kobo/cents
+              currency: 'NGN',
+              amount: verification.amount,
+              paymentMethod: 'PAYSTACK',
+              paymentStatus: 'success',
+              paymentDate: new Date(),
+              eventId: registration.eventId,
+              registrationId: registration.id,
+              attendeeEmail: registration.attendee.email || verification.customer.email || '',
+              attendeeName: registration.attendee.firstName && registration.attendee.lastName
+                ? `${registration.attendee.firstName} ${registration.attendee.lastName}`
+                : null,
+              paystackMetadata: data as Prisma.InputJsonValue,
+            },
+          });
+
+          // Update registration status
+          await tx.eventRegistration.update({
+            where: { id: registration.id },
+            data: {
+              status: syncedStatus.status,
+              paymentStatus: syncedStatus.paymentStatus,
+              paymentMethod: 'PAYSTACK',
+            },
+          });
+
+          logger.info(`Payment transaction created: ${paymentTransaction.id} for registration: ${registration.id}`);
+
+          // Automatically calculate and create platform fee
+          try {
+            await PlatformFeeService.createPlatformFee(paymentTransaction.id);
+            logger.info(`Platform fee calculated for transaction: ${paymentTransaction.id}`);
+          } catch (feeError) {
+            // Log error but don't fail the payment - fee can be calculated later
+            logger.error(`Failed to calculate platform fee for transaction ${paymentTransaction.id}:`, feeError);
+          }
         });
 
         // Send ticket email
@@ -448,6 +499,231 @@ export class PaymentService {
       .update(payload)
       .digest('hex');
     return hash === signature;
+  }
+
+  /**
+   * Sync payment transactions from Paystack
+   * This fetches transactions from Paystack API and creates records for any missing ones
+   * Use this for:
+   * - Historical data migration (payments before this system)
+   * - Reconciliation (catch missed webhooks)
+   * - Manual sync by admin
+   * 
+   * @param startDate - Start date for fetching transactions (optional)
+   * @param endDate - End date for fetching transactions (optional)
+   * @param eventId - Optional: Only sync payments for a specific event
+   * @returns Summary of sync operation
+   */
+  async syncPaymentsFromPaystack(
+    startDate?: Date,
+    endDate?: Date,
+    eventId?: string,
+  ): Promise<{
+    totalFetched: number;
+    created: number;
+    skipped: number;
+    errors: number;
+    details: Array<{ reference: string; action: string; reason?: string }>;
+  }> {
+    if (!config.paystack.secretKey) {
+      throw new ValidationError('Payment service is not configured');
+    }
+
+    const result = {
+      totalFetched: 0,
+      created: 0,
+      skipped: 0,
+      errors: 0,
+      details: [] as Array<{ reference: string; action: string; reason?: string }>,
+    };
+
+    try {
+      // Fetch transactions from Paystack
+      // Note: Paystack API pagination - fetch in batches
+      let page = 1;
+      let hasMore = true;
+      const perPage = 50; // Paystack max per page
+
+      while (hasMore) {
+        const params: Record<string, unknown> = {
+          perPage,
+          page,
+        };
+
+        if (startDate) {
+          params.from = startDate.toISOString();
+        }
+        if (endDate) {
+          params.to = endDate.toISOString();
+        }
+
+        const response = await this.paystack.transaction.list(params);
+        const transactions = response.data as Array<{
+          id: number;
+          reference: string;
+          amount: number;
+          status: string;
+          customer?: { email?: string };
+          metadata?: Record<string, unknown>;
+          paid_at?: string;
+          created_at: string;
+        }>;
+
+        if (!transactions || transactions.length === 0) {
+          hasMore = false;
+          break;
+        }
+
+        result.totalFetched += transactions.length;
+
+        // Process each transaction
+        for (const paystackTx of transactions) {
+          try {
+            // Skip if not successful
+            if (paystackTx.status !== 'success') {
+              result.skipped++;
+              result.details.push({
+                reference: paystackTx.reference,
+                action: 'skipped',
+                reason: `Status: ${paystackTx.status}`,
+              });
+              continue;
+            }
+
+            // Check if we already have this transaction
+            const existing = await prisma.eventPaymentTransaction.findUnique({
+              where: { paystackReference: paystackTx.reference },
+            });
+
+            if (existing) {
+              result.skipped++;
+              result.details.push({
+                reference: paystackTx.reference,
+                action: 'skipped',
+                reason: 'Already exists',
+              });
+              continue;
+            }
+
+            // Try to find registration by reference
+            const registration = await prisma.eventRegistration.findFirst({
+              where: {
+                paymentTransactionId: paystackTx.reference,
+              },
+              include: {
+                event: {
+                  select: {
+                    id: true,
+                    organizerId: true,
+                  },
+                },
+                attendee: {
+                  select: {
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                  },
+                },
+              },
+            });
+
+            // Skip if no registration found (might be non-event payment)
+            if (!registration) {
+              result.skipped++;
+              result.details.push({
+                reference: paystackTx.reference,
+                action: 'skipped',
+                reason: 'No matching registration found',
+              });
+              continue;
+            }
+
+            // Filter by eventId if specified
+            if (eventId && registration.eventId !== eventId) {
+              result.skipped++;
+              result.details.push({
+                reference: paystackTx.reference,
+                action: 'skipped',
+                reason: 'Event ID mismatch',
+              });
+              continue;
+            }
+
+            // Create payment transaction record
+            const amount = paystackTx.amount / 100; // Convert from kobo to main unit
+
+            let transactionNumber = generatePaymentTransactionNumber();
+            let attempts = 0;
+            while (attempts < 10) {
+              const existingNumber = await prisma.eventPaymentTransaction.findUnique({
+                where: { transactionNumber },
+              });
+              if (!existingNumber) break;
+              transactionNumber = generatePaymentTransactionNumber();
+              attempts++;
+            }
+
+            const paymentTransaction = await prisma.eventPaymentTransaction.create({
+              data: {
+                transactionNumber,
+                paystackReference: paystackTx.reference,
+                paystackAmount: paystackTx.amount,
+                currency: 'NGN',
+                amount,
+                paymentMethod: 'PAYSTACK',
+                paymentStatus: 'success',
+                paymentDate: paystackTx.paid_at ? new Date(paystackTx.paid_at) : new Date(paystackTx.created_at),
+                eventId: registration.eventId,
+                registrationId: registration.id,
+                attendeeEmail: registration.attendee.email || paystackTx.customer?.email || '',
+                attendeeName:
+                  registration.attendee.firstName && registration.attendee.lastName
+                    ? `${registration.attendee.firstName} ${registration.attendee.lastName}`
+                    : null,
+                paystackMetadata: (paystackTx.metadata || {}) as Prisma.InputJsonValue,
+              },
+            });
+
+            result.created++;
+            result.details.push({
+              reference: paystackTx.reference,
+              action: 'created',
+            });
+
+            logger.info(`Synced payment transaction: ${paymentTransaction.id} for registration: ${registration.id}`);
+
+            // Automatically calculate platform fee for synced payment
+            try {
+              await PlatformFeeService.createPlatformFee(paymentTransaction.id);
+              logger.info(`Platform fee calculated for synced transaction: ${paystackTx.reference}`);
+            } catch (feeError) {
+              logger.error(`Failed to calculate platform fee for synced transaction ${paystackTx.reference}:`, feeError);
+            }
+          } catch (error) {
+            result.errors++;
+            result.details.push({
+              reference: paystackTx.reference,
+              action: 'error',
+              reason: error instanceof Error ? error.message : 'Unknown error',
+            });
+            logger.error(`Error syncing payment ${paystackTx.reference}:`, error);
+          }
+        }
+
+        // Check if there are more pages
+        if (transactions.length < perPage) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+
+      logger.info(`Payment sync completed: ${result.created} created, ${result.skipped} skipped, ${result.errors} errors`);
+      return result;
+    } catch (error) {
+      logger.error('Failed to sync payments from Paystack:', error);
+      throw new ValidationError('Failed to sync payments from Paystack');
+    }
   }
 }
 
