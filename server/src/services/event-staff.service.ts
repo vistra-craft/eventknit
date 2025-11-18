@@ -323,7 +323,7 @@ export class EventStaffService {
       });
     } catch (error) {
       // Log error but don't fail the assignment
-      logger.error(`Failed to send staff assignment notification:`, error);
+      logger.error('Failed to send staff assignment notification:', error);
     }
 
     return assignment;
@@ -647,7 +647,7 @@ export class EventStaffService {
       }
     } catch (error) {
       // Log error but don't fail the removal
-      logger.error(`Failed to send staff removal notification:`, error);
+      logger.error('Failed to send staff removal notification:', error);
     }
   }
 
@@ -937,7 +937,7 @@ export class EventStaffService {
       }
     } catch (error) {
       // Log error but don't fail the update
-      logger.error(`Failed to send staff assignment update notification:`, error);
+      logger.error('Failed to send staff assignment update notification:', error);
     }
 
     return updated;

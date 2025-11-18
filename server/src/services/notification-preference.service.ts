@@ -102,29 +102,29 @@ export class NotificationPreferenceService {
 
       const preferences = existingPreferences
         ? await prisma.notificationPreference.update({
-            where: { userId },
-            data: {
-              emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
-              smsEnabled: data.smsEnabled ?? existingPreferences.smsEnabled,
-              pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
-              inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
-              eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
-              eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
-              eventCancellations:
+          where: { userId },
+          data: {
+            emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
+            smsEnabled: data.smsEnabled ?? existingPreferences.smsEnabled,
+            pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
+            inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
+            eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
+            eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
+            eventCancellations:
                 data.eventCancellations ?? existingPreferences.eventCancellations,
-              paymentNotifications:
+            paymentNotifications:
                 data.paymentNotifications ?? existingPreferences.paymentNotifications,
-              marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
-              systemAnnouncements:
+            marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
+            systemAnnouncements:
                 data.systemAnnouncements ?? existingPreferences.systemAnnouncements,
-              registrationUpdates:
+            registrationUpdates:
                 data.registrationUpdates ?? existingPreferences.registrationUpdates,
-              staffNotifications:
+            staffNotifications:
                 data.staffNotifications ?? existingPreferences.staffNotifications,
-              reminderFrequency:
+            reminderFrequency:
                 data.reminderFrequency ?? existingPreferences.reminderFrequency,
-            },
-          })
+          },
+        })
         : await this.createDefaultPreferences(userId);
 
       logger.info(`Updated notification preferences for user ${userId}`);
@@ -151,26 +151,26 @@ export class NotificationPreferenceService {
 
       // Check channel preference
       switch (channel) {
-        case 'email':
-          if (!preferences.emailEnabled) {
-            return false;
-          }
-          break;
-        case 'sms':
-          if (!preferences.smsEnabled) {
-            return false;
-          }
-          break;
-        case 'push':
-          if (!preferences.pushEnabled) {
-            return false;
-          }
-          break;
-        case 'inApp':
-          if (!preferences.inAppEnabled) {
-            return false;
-          }
-          break;
+      case 'email':
+        if (!preferences.emailEnabled) {
+          return false;
+        }
+        break;
+      case 'sms':
+        if (!preferences.smsEnabled) {
+          return false;
+        }
+        break;
+      case 'push':
+        if (!preferences.pushEnabled) {
+          return false;
+        }
+        break;
+      case 'inApp':
+        if (!preferences.inAppEnabled) {
+          return false;
+        }
+        break;
       }
 
       // Check category preferences based on notification type
@@ -207,125 +207,115 @@ export class NotificationPreferenceService {
     },
   ): boolean {
     // Event reminders
-    if (
-      [
-        NotificationType.EVENT_REMINDER_24H,
-        NotificationType.EVENT_REMINDER_1H,
-        NotificationType.EVENT_REMINDER_FOR_STAFF,
-        NotificationType.REGISTRATION_DEADLINE_REMINDER,
-      ].includes(notificationType)
-    ) {
+    const reminderTypes: NotificationType[] = [
+      NotificationType.EVENT_REMINDER_24H,
+      NotificationType.EVENT_REMINDER_1H,
+      NotificationType.EVENT_REMINDER_FOR_STAFF,
+      NotificationType.REGISTRATION_DEADLINE_REMINDER,
+    ];
+    if (reminderTypes.includes(notificationType)) {
       return preferences.eventReminders;
     }
 
     // Event updates
-    if (
-      [
-        NotificationType.EVENT_UPDATE,
-        NotificationType.EVENT_VENUE_CHANGED,
-        NotificationType.EVENT_TIME_CHANGED,
-        NotificationType.EVENT_POSTPONED,
-        NotificationType.EVENT_UPDATE_FOR_STAFF,
-      ].includes(notificationType)
-    ) {
+    const updateTypes: NotificationType[] = [
+      NotificationType.EVENT_UPDATE,
+      NotificationType.EVENT_VENUE_CHANGED,
+      NotificationType.EVENT_TIME_CHANGED,
+      NotificationType.EVENT_POSTPONED,
+      NotificationType.EVENT_UPDATE_FOR_STAFF,
+    ];
+    if (updateTypes.includes(notificationType)) {
       return preferences.eventUpdates;
     }
 
     // Event cancellations
-    if (
-      [
-        NotificationType.EVENT_CANCELLED,
-        NotificationType.EVENT_CANCELLED_BY_ADMIN,
-        NotificationType.EVENT_CANCELLED_FOR_STAFF,
-      ].includes(notificationType)
-    ) {
+    const cancellationTypes: NotificationType[] = [
+      NotificationType.EVENT_CANCELLED,
+      NotificationType.EVENT_CANCELLED_BY_ADMIN,
+      NotificationType.EVENT_CANCELLED_FOR_STAFF,
+    ];
+    if (cancellationTypes.includes(notificationType)) {
       return preferences.eventCancellations;
     }
 
     // Payment notifications
-    if (
-      [
-        NotificationType.PAYMENT_PENDING,
-        NotificationType.PAYMENT_FAILED,
-        NotificationType.PAYMENT_SUCCESS,
-        NotificationType.PAYMENT_RECEIVED,
-        NotificationType.REFUND_RECEIVED,
-        NotificationType.REFUND_PROCESSED,
-      ].includes(notificationType)
-    ) {
+    const paymentTypes: NotificationType[] = [
+      NotificationType.PAYMENT_PENDING,
+      NotificationType.PAYMENT_FAILED,
+      NotificationType.PAYMENT_SUCCESS,
+      NotificationType.PAYMENT_RECEIVED,
+      NotificationType.REFUND_RECEIVED,
+      NotificationType.REFUND_PROCESSED,
+    ];
+    if (paymentTypes.includes(notificationType)) {
       return preferences.paymentNotifications;
     }
 
     // Registration updates
-    if (
-      [
-        NotificationType.REGISTRATION_CONFIRMED,
-        NotificationType.REGISTRATION_CANCELLED,
-        NotificationType.WAITLIST_AVAILABLE,
-      ].includes(notificationType)
-    ) {
+    const registrationTypes: NotificationType[] = [
+      NotificationType.REGISTRATION_CONFIRMED,
+      NotificationType.REGISTRATION_CANCELLED,
+      NotificationType.WAITLIST_AVAILABLE,
+    ];
+    if (registrationTypes.includes(notificationType)) {
       return preferences.registrationUpdates;
     }
 
     // Staff notifications
-    if (
-      [
-        NotificationType.STAFF_ASSIGNED_TO_EVENT,
-        NotificationType.STAFF_REMOVED_FROM_EVENT,
-        NotificationType.STAFF_ASSIGNMENT_UPDATED,
-      ].includes(notificationType)
-    ) {
+    const staffTypes: NotificationType[] = [
+      NotificationType.STAFF_ASSIGNED_TO_EVENT,
+      NotificationType.STAFF_REMOVED_FROM_EVENT,
+      NotificationType.STAFF_ASSIGNMENT_UPDATED,
+    ];
+    if (staffTypes.includes(notificationType)) {
       return preferences.staffNotifications;
     }
 
     // Marketing
-    if (
-      [
-        NotificationType.NEW_EVENT_AVAILABLE,
-        NotificationType.PROMOTION_OFFER,
-        NotificationType.EARLY_BIRD_REMINDER,
-      ].includes(notificationType)
-    ) {
+    const marketingTypes: NotificationType[] = [
+      NotificationType.NEW_EVENT_AVAILABLE,
+      NotificationType.PROMOTION_OFFER,
+      NotificationType.EARLY_BIRD_REMINDER,
+    ];
+    if (marketingTypes.includes(notificationType)) {
       return preferences.marketingEmails;
     }
 
     // System announcements
-    if (
-      [
-        NotificationType.SYSTEM_ANNOUNCEMENT,
-        NotificationType.PLATFORM_UPDATE,
-        NotificationType.MAINTENANCE_SCHEDULED,
-        NotificationType.SECURITY_ALERT,
-      ].includes(notificationType)
-    ) {
+    const systemTypes: NotificationType[] = [
+      NotificationType.SYSTEM_ANNOUNCEMENT,
+      NotificationType.PLATFORM_UPDATE,
+      NotificationType.MAINTENANCE_SCHEDULED,
+      NotificationType.SECURITY_ALERT,
+    ];
+    if (systemTypes.includes(notificationType)) {
       return preferences.systemAnnouncements;
     }
 
     // Account-related notifications are always allowed (security)
-    if (
-      [
-        NotificationType.ACCOUNT_VERIFIED,
-        NotificationType.PASSWORD_CHANGED,
-        NotificationType.LOGIN_ATTEMPT,
-        NotificationType.ACCOUNT_SUSPENDED,
-        NotificationType.ACCOUNT_ACTIVATED,
-      ].includes(notificationType)
-    ) {
+    const accountTypes: NotificationType[] = [
+      NotificationType.ACCOUNT_VERIFIED,
+      NotificationType.PASSWORD_CHANGED,
+      NotificationType.LOGIN_ATTEMPT,
+      NotificationType.ACCOUNT_SUSPENDED,
+      NotificationType.ACCOUNT_ACTIVATED,
+    ];
+    if (accountTypes.includes(notificationType)) {
       return true; // Always allow security-related notifications
     }
 
     // Event-related organizer notifications are always allowed
-    if (
-      [
-        NotificationType.EVENT_APPROVED,
-        NotificationType.EVENT_REJECTED,
-        NotificationType.REGISTRATION_MILESTONE_50,
-        NotificationType.REGISTRATION_MILESTONE_75,
-        NotificationType.REGISTRATION_MILESTONE_100,
-        NotificationType.CAPACITY_REACHED,
-        NotificationType.EVENT_PERFORMANCE_SUMMARY,
-      ].includes(notificationType)
-    ) {
+    const organizerTypes: NotificationType[] = [
+      NotificationType.EVENT_APPROVED,
+      NotificationType.EVENT_REJECTED,
+      NotificationType.REGISTRATION_MILESTONE_50,
+      NotificationType.REGISTRATION_MILESTONE_75,
+      NotificationType.REGISTRATION_MILESTONE_100,
+      NotificationType.CAPACITY_REACHED,
+      NotificationType.EVENT_PERFORMANCE_SUMMARY,
+    ];
+    if (organizerTypes.includes(notificationType)) {
       return true; // Always allow important organizer notifications
     }
 

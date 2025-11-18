@@ -76,8 +76,8 @@ export class NotificationService {
           eventId: data.eventId,
           registrationId: data.registrationId,
           relatedUserId: data.relatedUserId,
-          data: data.data ? (data.data as Prisma.InputJsonValue) : null,
-          metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : null,
+          data: data.data ? (data.data as Prisma.InputJsonValue) : undefined,
+          metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : undefined,
           // Set initial delivery status
           emailStatus: channels.email ? DeliveryStatus.PENDING : null,
           smsStatus: channels.sms ? DeliveryStatus.PENDING : null,
@@ -269,26 +269,26 @@ export class NotificationService {
       // Check user preferences before sending
       const shouldSendEmail = channels.email
         ? await NotificationPreferenceService.shouldSendNotification(
-            notification.userId,
-            notification.type,
-            'email',
-          )
+          notification.userId,
+          notification.type,
+          'email',
+        )
         : false;
 
       const shouldSendSMS = channels.sms
         ? await NotificationPreferenceService.shouldSendNotification(
-            notification.userId,
-            notification.type,
-            'sms',
-          )
+          notification.userId,
+          notification.type,
+          'sms',
+        )
         : false;
 
       const shouldSendPush = channels.push
         ? await NotificationPreferenceService.shouldSendNotification(
-            notification.userId,
-            notification.type,
-            'push',
-          )
+          notification.userId,
+          notification.type,
+          'push',
+        )
         : false;
 
       // Deliver via email
