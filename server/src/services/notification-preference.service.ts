@@ -42,6 +42,14 @@ export class NotificationPreferenceService {
         preferences = await this.createDefaultPreferences(userId);
       }
 
+      // Ensure SMS is always disabled (we don't use SMS in this system)
+      if (preferences.smsEnabled) {
+        preferences = await prisma.notificationPreference.update({
+          where: { userId },
+          data: { smsEnabled: false },
+        });
+      }
+
       return preferences;
     } catch (error) {
       logger.error(`Failed to get notification preferences for user ${userId}:`, error);
@@ -58,7 +66,7 @@ export class NotificationPreferenceService {
         data: {
           userId,
           emailEnabled: true,
-          smsEnabled: false,
+          smsEnabled: false, // SMS not used in this system - email only
           pushEnabled: true,
           inAppEnabled: true,
           eventReminders: true,
@@ -325,11 +333,12 @@ export class NotificationPreferenceService {
 
   /**
    * Get default notification preferences
+   * Note: SMS is disabled by default as we only use email notifications
    */
   static getDefaultPreferences() {
     return {
       emailEnabled: true,
-      smsEnabled: false,
+      smsEnabled: false, // SMS not used in this system
       pushEnabled: true,
       inAppEnabled: true,
       eventReminders: true,

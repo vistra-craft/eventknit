@@ -54,9 +54,10 @@ export class NotificationService {
       }
 
       // Get user preferences to determine default channels
+      // Note: SMS is disabled - we only use email notifications
       const defaultChannels: NotificationChannels = {
         email: true,
-        sms: false,
+        sms: false, // SMS not used in this system
         push: true,
         inApp: true,
       };
@@ -314,22 +315,14 @@ export class NotificationService {
         });
       }
 
-      // Deliver via SMS (placeholder - implement when SMS service is available)
-      if (shouldSendSMS && notification.user.phoneNumber) {
-        try {
-          // TODO: Implement SMS delivery
-          // await this.deliverSMS(notification);
-          await prisma.notification.update({
-            where: { id: notificationId },
-            data: { smsStatus: DeliveryStatus.SENT },
-          });
-        } catch (error) {
-          logger.error(`Failed to send SMS for notification ${notificationId}:`, error);
-          await prisma.notification.update({
-            where: { id: notificationId },
-            data: { smsStatus: DeliveryStatus.FAILED },
-          });
-        }
+      // SMS delivery is disabled - we only use email notifications
+      // Mark SMS as not sent if it was requested
+      if (channels.sms) {
+        await prisma.notification.update({
+          where: { id: notificationId },
+          data: { smsStatus: DeliveryStatus.FAILED },
+        });
+        logger.debug(`SMS delivery skipped for notification ${notificationId} - SMS not enabled in this system`);
       }
 
       // Deliver via push (placeholder - implement when push service is available)
