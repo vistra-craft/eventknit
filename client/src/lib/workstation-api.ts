@@ -13,7 +13,14 @@ export type CodeType = 'QR_CODE' | 'BACKUP_CODE' | 'UNKNOWN';
 /**
  * Scan Type Enum
  */
-export type ScanType = 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
+export const ScanType = {
+  CHECK_IN: 'CHECK_IN',
+  CHECK_OUT: 'CHECK_OUT',
+  MANUAL_CHECK_IN: 'MANUAL_CHECK_IN',
+  MANUAL_CHECK_OUT: 'MANUAL_CHECK_OUT',
+} as const;
+
+export type ScanType = typeof ScanType[keyof typeof ScanType];
 
 /**
  * Ticket Status Enum

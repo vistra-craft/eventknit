@@ -51,7 +51,8 @@ import {
   isValidBackupCode,
   type ScanResponse,
   type CodeType,
-  type ScanType,
+  ScanType,
+  type ScanType as ScanTypeType,
   type AttendeeSearchResult,
   type WorkstationApiError,
   type ScanRequest,
@@ -78,7 +79,7 @@ interface ScanResult {
   errorMessage?: string;
   signatureValid: boolean;
   codeType: CodeType;
-  scanType: ScanType;
+  scanType: ScanTypeType;
   isReEntry: boolean;
 }
 

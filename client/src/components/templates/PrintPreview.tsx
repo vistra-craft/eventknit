@@ -149,14 +149,14 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
           </div>
         );
       case 'image':
-        return (
+        return element.content ? (
           <img
             key={element.id}
-            src={element.content || ''}
+            src={element.content}
             alt=""
             style={style}
           />
-        );
+        ) : null;
       case 'rectangle':
         return (
           <div
