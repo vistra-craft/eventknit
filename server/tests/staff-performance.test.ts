@@ -143,7 +143,7 @@ describe('Staff Performance & Analytics', () => {
         startDate: new Date('2024-12-01T10:00:00Z'),
         endDate: new Date('2024-12-01T18:00:00Z'),
         location: 'Test Location',
-        organizerId: organizerId,
+        organizerId,
         status: EventStatus.APPROVED,
         capacity: 100,
       },
@@ -153,7 +153,7 @@ describe('Staff Performance & Analytics', () => {
     // Create staff assignment
     await prisma.eventStaff.create({
       data: {
-        eventId: eventId,
+        eventId,
         staffId: adminStaffId,
         staffType: 'ADMIN_STAFF' as const,
         role: 'SCANNER' as const,
@@ -167,7 +167,7 @@ describe('Staff Performance & Analytics', () => {
     // Create organizer staff assignment
     await prisma.eventStaff.create({
       data: {
-        eventId: eventId,
+        eventId,
         staffId: organizerStaffId,
         staffType: 'ORGANIZER_STAFF' as const,
         role: 'SCANNER' as const,

@@ -1,5 +1,4 @@
 import { ReconciliationService } from '../src/services/reconciliation.service';
-import { paymentService } from '../src/services/payment.service';
 import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus, RegistrationStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
@@ -15,7 +14,7 @@ describe('ReconciliationService', () => {
   let adminId: string;
   let eventId: string;
   let registrationId: string;
-  let paymentTransactionId: string;
+  let _paymentTransactionId: string;
 
   beforeAll(async () => {
     try {
@@ -143,7 +142,7 @@ describe('ReconciliationService', () => {
         attendeeName: 'Organizer Test',
       },
     });
-    paymentTransactionId = paymentTransaction.id;
+    _paymentTransactionId = paymentTransaction.id;
   });
 
   describe('getReconciliation', () => {

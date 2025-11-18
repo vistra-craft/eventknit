@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 import { generateFeeNumber } from '../utils/transaction-helpers.js';
 import { Decimal } from '@prisma/client/runtime/library';
 

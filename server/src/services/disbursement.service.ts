@@ -472,7 +472,7 @@ export class DisbursementService {
     await prisma.$transaction(async (tx) => {
       await tx.platformFee.updateMany({
         where: {
-          disbursementId: disbursementId,
+          disbursementId,
         },
         data: {
           disbursementId: null,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { DollarSign, Search, Eye, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Search, Eye, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ const DisbursementsPage = () => {
 
   useEffect(() => {
     loadDisbursements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.status, filters.organizerId, filters.eventId]);
 
   const loadDisbursements = async () => {
@@ -56,7 +57,7 @@ const DisbursementsPage = () => {
           setSummary(summaryResponse.data);
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load disbursements",

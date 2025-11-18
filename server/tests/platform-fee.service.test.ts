@@ -1,5 +1,4 @@
 import { PlatformFeeService } from '../src/services/platform-fee.service';
-import { paymentService } from '../src/services/payment.service';
 import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus, RegistrationStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';

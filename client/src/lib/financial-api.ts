@@ -3,7 +3,7 @@
  * Handles all API calls related to event payment accounting and financial management
  */
 
-import { apiGet, apiPost, apiPut, apiDelete, ApiResponse } from './api';
+import { apiGet, apiPost, ApiResponse } from './api';
 
 // ==================== Types ====================
 

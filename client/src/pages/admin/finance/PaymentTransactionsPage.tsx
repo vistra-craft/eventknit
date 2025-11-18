@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { DollarSign, Search, Download, RefreshCw, Eye } from "lucide-react";
+import { Search, Download, RefreshCw, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ const PaymentTransactionsPage = () => {
 
   useEffect(() => {
     loadTransactions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.page, filters.status, filters.eventId]);
 
   const loadTransactions = async () => {
@@ -49,7 +50,7 @@ const PaymentTransactionsPage = () => {
         setTransactions(response.data.transactions);
         setPagination(response.data.pagination);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load payment transactions",
@@ -76,7 +77,7 @@ const PaymentTransactionsPage = () => {
         });
         loadTransactions();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to sync payments from Paystack",

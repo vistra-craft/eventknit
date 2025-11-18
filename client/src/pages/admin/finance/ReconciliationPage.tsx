@@ -35,6 +35,7 @@ const ReconciliationPage = () => {
 
   useEffect(() => {
     loadReconciliations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.status, filters.eventId]);
 
   const loadReconciliations = async () => {
@@ -48,7 +49,7 @@ const ReconciliationPage = () => {
       if (response.success && response.data) {
         setReconciliations(response.data);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load reconciliations",
@@ -85,7 +86,7 @@ const ReconciliationPage = () => {
         setCreateForm({ startDate: "", endDate: "", eventId: "" });
         loadReconciliations();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create reconciliation",
@@ -106,7 +107,7 @@ const ReconciliationPage = () => {
         });
         loadReconciliations();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to auto-fix reconciliation",

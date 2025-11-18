@@ -91,7 +91,8 @@ const TeamPerformance = () => {
     return `${num.toFixed(1)}%`;
   };
 
-  const getPerformanceColor = (value: number, type: "accuracy" | "time") => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _getPerformanceColor = (value: number, type: "accuracy" | "time") => {
     if (type === "accuracy") {
       if (value >= 95) return "text-green-600";
       if (value >= 90) return "text-yellow-600";

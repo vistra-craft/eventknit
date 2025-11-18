@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw, Search, Eye, Plus } from "lucide-react";
+import { Search, Eye, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ const RefundsPage = () => {
     if (filters.eventId) {
       loadRefunds();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.eventId, filters.status]);
 
   const loadRefunds = async () => {
@@ -56,7 +57,7 @@ const RefundsPage = () => {
       if (summaryResponse.success && summaryResponse.data) {
         setSummary(summaryResponse.data);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load refunds",

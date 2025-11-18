@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../../../../contexts/AuthContext';
 import WorkstationHistory from '../WorkstationHistory';
@@ -177,7 +177,7 @@ describe('WorkstationHistory', () => {
   });
 
   it('should handle empty scan history', async () => {
-    const mockGetEvents = vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
+    vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
       success: true,
       data: {
         events: [
@@ -228,7 +228,7 @@ describe('WorkstationHistory', () => {
   });
 
   it('should handle API errors gracefully', async () => {
-    const mockGetEvents = vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
+    vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
       success: true,
       data: { events: [] },
     });
@@ -289,7 +289,7 @@ describe('WorkstationHistory', () => {
       },
     ];
 
-    const mockGetEvents = vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
+    vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
       success: true,
       data: {
         events: [
@@ -363,7 +363,7 @@ describe('WorkstationHistory', () => {
       },
     ];
 
-    const mockGetEvents = vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
+    vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
       success: true,
       data: {
         events: [
@@ -417,7 +417,7 @@ describe('WorkstationHistory', () => {
   });
 
   it('should work with eventId from search params', async () => {
-    const mockGetEvents = vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
+    vi.spyOn(eventApi, 'getEvents').mockResolvedValue({
       success: true,
       data: { events: [] },
     });

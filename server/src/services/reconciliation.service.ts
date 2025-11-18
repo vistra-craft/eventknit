@@ -316,7 +316,7 @@ export class ReconciliationService {
         totalSystemAmount: Number(updated.totalSystemAmount),
         discrepancyAmount: Number(updated.discrepancyAmount),
         status: updated.status,
-        discrepancies: discrepancies,
+        discrepancies,
       };
     } catch (error) {
       // Update status to failed
@@ -423,7 +423,7 @@ export class ReconciliationService {
    * Auto-fix discrepancies by syncing missing transactions
    * This will attempt to create missing EventPaymentTransaction records
    */
-  static async autoFixDiscrepancies(reconciliationId: string, fixedBy: string) {
+  static async autoFixDiscrepancies(reconciliationId: string, _fixedBy: string) {
     const reconciliation = await prisma.paymentReconciliation.findUnique({
       where: { id: reconciliationId },
     });

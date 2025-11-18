@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Mail, Lock, Calendar } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Eye, EyeOff, Calendar, Linkedin, Facebook, Instagram, Twitter } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, facebookAuth } from '@/lib/auth-api';
+import loginImage from '@/assets/login.jpeg';
 
 const SignIn = () => {
   const { login, isLoading, error: authError, clearError, isAuthenticated } = useAuth();
@@ -19,6 +21,7 @@ const SignIn = () => {
     email: '',
     password: ''
   });
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Clear loading state and reset form when component mounts or when navigating to login
   // This ensures the form is immediately accessible after logout
@@ -158,126 +161,118 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-6">
-        <div className="flex min-h-screen">
-          {/* Left Panel - Informational Content */}
-          <div className="hidden lg:flex lg:w-1/2 bg-background relative overflow-hidden">
-            {/* Decorative background element */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 opacity-5">
-              <svg viewBox="0 0 400 400" className="w-full h-full">
-                <path d="M200 50C150 50 100 100 100 150C100 200 150 250 200 250C250 250 300 200 300 150C300 100 250 50 200 50Z" fill="currentColor" className="text-eventknit"/>
-                <path d="M200 150C180 150 160 170 160 190C160 210 180 230 200 230C220 230 240 210 240 190C240 170 220 150 200 150Z" fill="currentColor" className="text-eventknit"/>
-              </svg>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Navbar */}
+      <nav className="bg-white border-b border-gray-200 py-4 px-6">
+        <div className="max-w-7xl mx-auto">
+          <Link to="/" className="inline-flex items-center gap-2">
+            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-white" />
             </div>
+            <span className="text-xl font-bold text-gray-900">EventKnit</span>
+          </Link>
+        </div>
+      </nav>
 
-            <div className="relative z-10 flex flex-col justify-between py-6 w-full px-6 h-full">
-              {/* Top section - Reserved for logo */}
-              <div className="flex items-start pt-6">
-                {/* Logo placeholder - will be embedded here */}
-              </div>
-
-              {/* Main content - positioned to align with right panel */}
-              <div className="max-w-sm mt-64">
-                <h1 className="text-3xl font-bold text-foreground mb-4 leading-tight">
-                  Welcome back to <span className="text-eventknit">EventKnit</span>
-                </h1>
-                <p className="text-base text-muted-foreground leading-relaxed mb-6">
-                  EventKnit is your comprehensive event management platform that helps you create, manage, and promote amazing events. From planning to execution, we've got you covered.
-                </p>
-                
-                {/* Feature highlights */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 bg-eventknit rounded-full"></div>
-                    <span className="text-sm text-muted-foreground">Create and manage events effortlessly</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 bg-eventknit rounded-full"></div>
-                    <span className="text-sm text-muted-foreground">Connect with attendees and organizers</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 bg-eventknit rounded-full"></div>
-                    <span className="text-sm text-muted-foreground">Track analytics and insights</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer links - positioned at bottom */}
-              <div className="flex gap-6 text-sm text-muted-foreground pb-6">
-                <Link to="/about" className="hover:text-nav-hover transition-colors">About</Link>
-                <Link to="/terms-of-service" className="hover:text-nav-hover transition-colors">Terms</Link>
-                <Link to="/privacy-policy" className="hover:text-nav-hover transition-colors">Privacy</Link>
-                <Link to="/support" className="hover:text-nav-hover transition-colors">Support</Link>
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-6xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row min-h-[500px] max-h-[700px]">
+          {/* Left Panel - Image with Overlay */}
+          <div className="hidden lg:flex lg:w-1/2 relative">
+            <img 
+              src={loginImage} 
+              alt="Welcome to EventKnit" 
+              className="w-full h-full object-cover"
+            />
+            {/* Overlay Text - Centered */}
+            <div className="absolute inset-0 flex items-center justify-center p-8">
+              <div className="text-center">
+                <h2 className="text-white text-3xl font-bold mb-2">Your Event Management Hub</h2>
+                <p className="text-white/90 text-lg">Sign in to manage your events and ticketing</p>
               </div>
             </div>
           </div>
 
           {/* Right Panel - Sign In Form */}
-          <div className="w-full lg:w-1/2 flex items-center justify-center py-6 px-6">
-            <div className="w-full max-w-sm">
-              {/* Logo */}
-              <div className="text-center mb-6">
+          <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8">
+            <div className="w-full max-w-md mx-auto">
+              {/* Logo at top */}
+              <div className="mb-6">
                 <Link to="/" className="inline-flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 bg-eventknit rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-eventknit-foreground" />
+                  <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-xl font-bold text-eventknit">EventKnit</span>
+                  <span className="text-2xl font-bold text-gray-900">EventKnit</span>
                 </Link>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Sign in</h2>
-                <p className="text-sm text-muted-foreground">Sign in to your account to continue</p>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">Log in to your account</h1>
+                <p className="text-sm text-gray-600">Welcome back! Please enter your details.</p>
               </div>
 
               {/* Sign In Form */}
-              <div className="bg-background rounded-lg p-6">
-                {/* OAuth Sign In */}
-                <div className="space-y-3 mb-4">
-                  <Button
-                    variant="outline"
-                    className="w-full h-11 flex items-center gap-3"
-                    onClick={handleFacebookSignIn}
-                    disabled={isLoading}
-                  >
-                    <svg className="w-4 h-4" fill="#1877F2" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                    Continue with Facebook
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    className="w-full h-11 flex items-center gap-3"
-                    onClick={() => {
-                      if (!showEmailOAuthForm) {
-                        setShowEmailOAuthForm(true);
-                        // Focus email input after a brief delay to ensure it's rendered
-                        setTimeout(() => {
-                          const emailInput = document.getElementById('email-oauth-input');
-                          if (emailInput) {
-                            emailInput.focus();
-                          }
-                        }, 100);
-                      } else if (emailOAuthEmail) {
-                        handleEmailOAuthRequest({ preventDefault: () => {} } as React.FormEvent);
-                      }
-                    }}
-                    disabled={isLoading}
-                  >
-                    <Mail className="w-4 h-4" />
-                    Continue with Email
-                  </Button>
-                  
-                  {!emailOAuthCodeSent ? (
-                    showEmailOAuthForm && (
-                      <form onSubmit={handleEmailOAuthRequest} className="w-full space-y-2">
+              <div className="space-y-4">
+                {/* OAuth Options - Hidden by default, can be shown if needed */}
+                {(showEmailOAuthForm || emailOAuthCodeSent) && (
+                  <div className="space-y-3">
+                    {!emailOAuthCodeSent ? (
+                      showEmailOAuthForm && (
+                        <form onSubmit={handleEmailOAuthRequest} className="w-full space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              id="email-oauth-input"
+                              type="email"
+                              placeholder="Enter your email"
+                              value={emailOAuthEmail}
+                              onChange={(e) => setEmailOAuthEmail(e.target.value)}
+                              className="flex-1 h-11"
+                              required
+                              disabled={isLoading}
+                            />
+                            <Button
+                              type="submit"
+                              variant="outline"
+                              className="h-11 px-4"
+                              disabled={isLoading || !emailOAuthEmail}
+                            >
+                              Send Code
+                            </Button>
+                          </div>
+                          <div className="flex gap-2 text-xs text-muted-foreground">
+                            <label className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="emailOAuthRole"
+                                value="ATTENDEE"
+                                checked={emailOAuthRole === 'ATTENDEE'}
+                                onChange={(e) => setEmailOAuthRole(e.target.value as 'ATTENDEE' | 'ORGANIZER')}
+                                className="w-3 h-3"
+                              />
+                              Attendee
+                            </label>
+                            <label className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="emailOAuthRole"
+                                value="ORGANIZER"
+                                checked={emailOAuthRole === 'ORGANIZER'}
+                                onChange={(e) => setEmailOAuthRole(e.target.value as 'ATTENDEE' | 'ORGANIZER')}
+                                className="w-3 h-3"
+                              />
+                              Organizer
+                            </label>
+                          </div>
+                        </form>
+                      )
+                    ) : (
+                      <form onSubmit={handleEmailOAuthVerify} className="w-full space-y-2">
                         <div className="flex gap-2">
                           <Input
-                            id="email-oauth-input"
-                            type="email"
-                            placeholder="Enter your email"
-                            value={emailOAuthEmail}
-                            onChange={(e) => setEmailOAuthEmail(e.target.value)}
-                            className="flex-1 h-11"
+                            type="text"
+                            placeholder="Enter 6-digit code"
+                            value={emailOAuthCode}
+                            onChange={(e) => setEmailOAuthCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className="flex-1 h-11 text-center text-lg tracking-widest"
+                            maxLength={6}
                             required
                             disabled={isLoading}
                           />
@@ -285,183 +280,217 @@ const SignIn = () => {
                             type="submit"
                             variant="outline"
                             className="h-11 px-4"
-                            disabled={isLoading || !emailOAuthEmail}
+                            disabled={isLoading || emailOAuthCode.length !== 6}
                           >
-                            Send Code
+                            Verify
                           </Button>
                         </div>
-                        <div className="flex gap-2 text-xs text-muted-foreground">
-                          <label className="flex items-center gap-1 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="emailOAuthRole"
-                              value="ATTENDEE"
-                              checked={emailOAuthRole === 'ATTENDEE'}
-                              onChange={(e) => setEmailOAuthRole(e.target.value as 'ATTENDEE' | 'ORGANIZER')}
-                              className="w-3 h-3"
-                            />
-                            Attendee
-                          </label>
-                          <label className="flex items-center gap-1 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="emailOAuthRole"
-                              value="ORGANIZER"
-                              checked={emailOAuthRole === 'ORGANIZER'}
-                              onChange={(e) => setEmailOAuthRole(e.target.value as 'ATTENDEE' | 'ORGANIZER')}
-                              className="w-3 h-3"
-                            />
-                            Organizer
-                          </label>
+                        <div className="text-xs text-muted-foreground text-center">
+                          Code sent to {emailOAuthEmail}
                         </div>
-                      </form>
-                    )
-                  ) : (
-                    <form onSubmit={handleEmailOAuthVerify} className="w-full space-y-2">
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          placeholder="Enter 6-digit code"
-                          value={emailOAuthCode}
-                          onChange={(e) => setEmailOAuthCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="flex-1 h-11 text-center text-lg tracking-widest"
-                          maxLength={6}
-                          required
-                          disabled={isLoading}
-                        />
                         <Button
-                          type="submit"
-                          variant="outline"
-                          className="h-11 px-4"
-                          disabled={isLoading || emailOAuthCode.length !== 6}
+                          type="button"
+                          variant="ghost"
+                          className="w-full h-9 text-xs"
+                          onClick={() => {
+                            setEmailOAuthCodeSent(false);
+                            setEmailOAuthCode('');
+                            setShowEmailOAuthForm(false);
+                          }}
+                          disabled={isLoading}
                         >
-                          Verify
+                          Use a different email
                         </Button>
-                      </div>
-                      <div className="text-xs text-muted-foreground text-center">
-                        Code sent to {emailOAuthEmail}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="w-full h-9 text-xs"
-                        onClick={() => {
-                          setEmailOAuthCodeSent(false);
-                          setEmailOAuthCode('');
-                          setShowEmailOAuthForm(false);
-                        }}
-                        disabled={isLoading}
-                      >
-                        Use a different email
-                      </Button>
-                    </form>
-                  )}
-
-                </div>
-
-                {/* Divider */}
-                <div className="relative mb-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border"></div>
+                      </form>
+                    )}
                   </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-background text-muted-foreground">Or</span>
-                  </div>
-                </div>
+                )}
 
-                {/* Sign In Form */}
+                {/* Main Sign In Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {authError && (
-                    <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
                       {authError}
                     </div>
                   )}
                   
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="pl-10 h-11"
-                        style={{ borderColor: '#4285F4' }}
-                        required
-                        disabled={isLoading}
-                      />
-                    </div>
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="letsdesignabrar@gmail.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="h-12 border-gray-300 focus:border-gray-900 focus:ring-gray-900"
+                      required
+                      disabled={isLoading}
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                    <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Enter your password"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="pl-10 pr-10 h-11"
-                        style={{ borderColor: '#1877F2' }}
+                        className="h-12 pr-10 border-gray-300 focus:border-gray-900 focus:ring-gray-900"
                         required
                         disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         disabled={isLoading}
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
                   </div>
 
+                  {/* Remember me and Forgot password */}
                   <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="remember"
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      />
+                      <Label
+                        htmlFor="remember"
+                        className="text-sm font-normal text-gray-700 cursor-pointer"
+                      >
+                        Remember for 30 days
+                      </Label>
+                    </div>
                     <Link 
                       to="/auth/forgot-password" 
-                      className="text-sm text-eventknit hover:text-eventknit/80 transition-colors"
+                      className="text-sm text-gray-600 hover:text-gray-900 hover:underline"
                     >
                       Forgot password?
                     </Link>
                   </div>
 
+                  {/* Log In Button */}
                   <Button 
                     type="submit" 
-                    className="w-full h-11 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground font-medium"
+                    className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white font-medium"
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                    {isLoading ? 'Signing in...' : 'Log In'}
                   </Button>
                 </form>
 
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-muted-foreground">
+                {/* Continue with Google Button */}
+                <Button
+                  variant="outline"
+                  className="w-full h-12 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium flex items-center justify-center gap-3"
+                  onClick={handleFacebookSignIn}
+                  disabled={isLoading}
+                  type="button"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Continue with Google
+                </Button>
+
+                {/* Sign up link */}
+                <div className="text-center pt-2">
+                  <p className="text-sm text-gray-600">
                     Don't have an account?{' '}
-                    <Link to="/auth/signup" className="text-eventknit hover:text-eventknit/80 transition-colors font-medium">
+                    <Link to="/auth/signup" className="text-gray-900 font-medium hover:underline">
                       Sign up
                     </Link>
                   </p>
                 </div>
               </div>
-
-              {/* Legal text - moved to same level as footer links */}
-              <div className="mt-6 text-center">
-                <p className="text-xs text-muted-foreground">
-                  By continuing, you acknowledge that you understand and agree to the{' '}
-                  <Link to="/terms-of-service" className="text-foreground underline hover:no-underline hover:text-nav-hover transition-colors">Terms & Conditions</Link>
-                  {' '}and{' '}
-                  <Link to="/privacy-policy" className="text-foreground underline hover:no-underline hover:text-nav-hover transition-colors">Privacy Policy</Link>
-                </p>
-              </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-3 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Left Side - Copyright and Links */}
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span>© EventKnit {new Date().getFullYear()}</span>
+            <Link 
+              to="/privacy-policy" 
+              className="hover:text-gray-300 transition-colors"
+            >
+              Privacy policy
+            </Link>
+            <Link 
+              to="/terms-of-service" 
+              className="hover:text-gray-300 transition-colors"
+            >
+              Terms & Conditions
+            </Link>
+          </div>
+
+          {/* Right Side - Social Media Icons */}
+          <div className="flex items-center gap-4">
+            <a
+              href="https://linkedin.com/company/eventknit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="LinkedIn"
+            >
+              <Linkedin className="w-5 h-5" />
+            </a>
+            <a
+              href="https://facebook.com/eventknit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="Facebook"
+            >
+              <Facebook className="w-5 h-5" />
+            </a>
+            <a
+              href="https://instagram.com/eventknit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-5 h-5" />
+            </a>
+            <a
+              href="https://twitter.com/eventknit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-white transition-colors"
+              aria-label="Twitter"
+            >
+              <Twitter className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

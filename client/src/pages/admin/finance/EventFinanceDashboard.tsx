@@ -27,6 +27,7 @@ const EventFinanceDashboard = () => {
 
   useEffect(() => {
     loadFinancialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadFinancialData = async () => {
@@ -82,7 +83,7 @@ const EventFinanceDashboard = () => {
         totalRefunds,
         recentTransactions: transactions.slice(0, 5),
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load financial data",
