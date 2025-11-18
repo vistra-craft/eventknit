@@ -75,25 +75,9 @@ class WebSocketService {
           return next(new Error('User not found'));
         }
 
-        // Check if user has minimum role (TELLER or higher)
-        const roleHierarchy: Record<UserRole, number> = {
-          SUPERADMIN: 9,
-          ADMIN_STAFF: 8,
-          MARKETER: 7,
-          SUPPORT: 6,
-          TELLER: 5,
-          ORGANIZER: 4,
-          ORGANIZER_STAFF: 3,
-          ORGANIZER_TELLER: 2,
-          ATTENDEE: 1,
-        };
-
-        const userLevel = roleHierarchy[user.role] || 0;
-        const requiredLevel = roleHierarchy[UserRole.TELLER] || 0;
-
-        if (userLevel < requiredLevel) {
-          return next(new Error('Insufficient permissions'));
-        }
+        // For notification rooms, allow all authenticated users
+        // For event rooms, require TELLER or higher
+        // This will be checked when joining specific rooms
 
         // Attach user info to socket
         socket.userId = user.id;
@@ -112,6 +96,32 @@ class WebSocketService {
       this.connectedClients.set(clientId, socket);
 
       logger.info(`WebSocket client connected: ${clientId} (user: ${socket.userId})`);
+
+      // Handle joining notification room
+      socket.on('join:notifications', async () => {
+        try {
+          if (!socket.userId) {
+            socket.emit('error', { message: 'User ID not found' });
+            return;
+          }
+
+          // Join user's personal notification room
+          socket.join(`user:${socket.userId}:notifications`);
+          logger.info(`Client ${clientId} joined notification room for user: ${socket.userId}`);
+          socket.emit('joined:notifications', { userId: socket.userId });
+        } catch (error) {
+          logger.error('Error joining notification room:', error);
+          socket.emit('error', { message: 'Failed to join notification room' });
+        }
+      });
+
+      // Handle leaving notification room
+      socket.on('leave:notifications', () => {
+        if (socket.userId) {
+          socket.leave(`user:${socket.userId}:notifications`);
+          logger.info(`Client ${clientId} left notification room for user: ${socket.userId}`);
+        }
+      });
 
       // Handle joining event room
       socket.on('join:event', async (data: { eventId: string }) => {
@@ -255,6 +265,80 @@ class WebSocketService {
     });
 
     return count;
+  }
+
+  /**
+   * Send notification to user via WebSocket
+   */
+  sendNotification(userId: string, notification: {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    priority: string;
+    createdAt: Date;
+    eventId?: string | null;
+    isRead: boolean;
+  }): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot send notification');
+      return;
+    }
+
+    this.io.to(`user:${userId}:notifications`).emit('notification:new', notification);
+    logger.debug(`Sent notification to user ${userId} via WebSocket`, { notificationId: notification.id });
+  }
+
+  /**
+   * Send unread count update to user
+   */
+  sendUnreadCountUpdate(userId: string, count: number): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot send unread count update');
+      return;
+    }
+
+    this.io.to(`user:${userId}:notifications`).emit('notification:unread-count', { count });
+    logger.debug(`Sent unread count update to user ${userId}`, { count });
+  }
+
+  /**
+   * Notify user that a notification was marked as read
+   */
+  notifyNotificationRead(userId: string, notificationId: string): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot notify notification read');
+      return;
+    }
+
+    this.io.to(`user:${userId}:notifications`).emit('notification:read', { notificationId });
+    logger.debug(`Notified user ${userId} that notification ${notificationId} was read`);
+  }
+
+  /**
+   * Notify user that all notifications were marked as read
+   */
+  notifyAllNotificationsRead(userId: string): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot notify all read');
+      return;
+    }
+
+    this.io.to(`user:${userId}:notifications`).emit('notification:all-read');
+    logger.debug(`Notified user ${userId} that all notifications were read`);
+  }
+
+  /**
+   * Notify user that a notification was deleted
+   */
+  notifyNotificationDeleted(userId: string, notificationId: string): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot notify notification deleted');
+      return;
+    }
+
+    this.io.to(`user:${userId}:notifications`).emit('notification:deleted', { notificationId });
+    logger.debug(`Notified user ${userId} that notification ${notificationId} was deleted`);
   }
 
   /**

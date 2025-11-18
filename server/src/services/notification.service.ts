@@ -9,6 +9,7 @@ import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { emailService } from './email.service.js';
 import { NotificationPreferenceService, NotificationChannels } from './notification-preference.service.js';
+import { websocketService } from './websocket.service.js';
 
 export interface SendNotificationData {
   userId: string;
@@ -88,6 +89,24 @@ export class NotificationService {
       });
 
       logger.info(`Notification created: ${notification.id} for user ${data.userId}, type: ${data.type}`);
+
+      // Send real-time notification via WebSocket if in-app channel is enabled
+      if (channels.inApp) {
+        try {
+          websocketService.sendNotification(data.userId, {
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            priority: notification.priority,
+            createdAt: notification.createdAt,
+            eventId: notification.eventId,
+            isRead: notification.isRead,
+          });
+        } catch (error) {
+          logger.error(`Failed to send WebSocket notification ${notification.id}:`, error);
+        }
+      }
 
       // Deliver via channels (async, don't await)
       this.deliverNotification(notification.id, channels).catch((error) => {
@@ -468,6 +487,17 @@ export class NotificationService {
       });
 
       logger.info(`Notification ${notificationId} marked as read by user ${userId}`);
+
+      // Notify via WebSocket
+      try {
+        websocketService.notifyNotificationRead(userId, notificationId);
+        // Also send updated unread count
+        const unreadCount = await this.getUnreadCount(userId);
+        websocketService.sendUnreadCountUpdate(userId, unreadCount);
+      } catch (error) {
+        logger.error(`Failed to send WebSocket notification for read status:`, error);
+      }
+
       return updated;
     } catch (error) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
@@ -495,6 +525,16 @@ export class NotificationService {
       });
 
       logger.info(`Marked ${result.count} notifications as read for user ${userId}`);
+
+      // Notify via WebSocket
+      try {
+        websocketService.notifyAllNotificationsRead(userId);
+        // Also send updated unread count (should be 0)
+        websocketService.sendUnreadCountUpdate(userId, 0);
+      } catch (error) {
+        logger.error(`Failed to send WebSocket notification for all read:`, error);
+      }
+
       return result;
     } catch (error) {
       logger.error(`Failed to mark all notifications as read for user ${userId}:`, error);
@@ -524,6 +564,17 @@ export class NotificationService {
       });
 
       logger.info(`Notification ${notificationId} deleted by user ${userId}`);
+
+      // Notify via WebSocket
+      try {
+        websocketService.notifyNotificationDeleted(userId, notificationId);
+        // Also send updated unread count
+        const unreadCount = await this.getUnreadCount(userId);
+        websocketService.sendUnreadCountUpdate(userId, unreadCount);
+      } catch (error) {
+        logger.error(`Failed to send WebSocket notification for deletion:`, error);
+      }
+
       return { success: true };
     } catch (error) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
