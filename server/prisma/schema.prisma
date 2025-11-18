@@ -159,6 +159,9 @@ model User {
   notifications          Notification[]          @relation("UserNotifications")
   notificationPreference NotificationPreference? @relation("UserNotificationPreference")
   bulkMessagesCreated    BulkMessage[]           @relation("BulkMessageCreator")
+  // Social Media & Support Relations
+  assignedSupportQueries SocialMessage[]         @relation("AssignedSupportQueries")
+  supportResponses       SupportResponse[]       @relation("SupportResponses")
 
   @@index([email])
   @@index([role])
@@ -1129,4 +1132,208 @@ model BulkMessage {
   @@index([createdBy])
   @@index([eventId])
   @@index([targetAudience])
+}
+
+// ============================================
+// Social Media & Support Models
+// ============================================
+
+enum SocialPlatform {
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  LINKEDIN
+  YOUTUBE
+  WHATSAPP
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+}
+
+enum MessageType {
+  COMMENT
+  DIRECT_MESSAGE
+  MENTION
+  REVIEW
+}
+
+enum SupportQueryStatus {
+  NEW
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+enum SupportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SocialAccount {
+  id            String   @id @default(cuid())
+  platform      SocialPlatform
+  accountId     String   // Platform-specific account ID
+  accountName   String
+  accountHandle String?  // @username or handle
+  accessToken   String?  @db.Text // Encrypted
+  refreshToken  String?  @db.Text // Encrypted
+  tokenExpiry   DateTime?
+  followers     Int      @default(0)
+  following     Int      @default(0)
+  isActive      Boolean  @default(true)
+  connectedAt   DateTime @default(now())
+  lastSyncedAt  DateTime?
+  metadata      Json?    // Additional platform-specific data
+
+  posts         SocialPost[]
+  messages      SocialMessage[]
+  analytics     SocialAnalytics[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([platform, accountId])
+  @@index([platform])
+  @@index([isActive])
+}
+
+model SocialPost {
+  id              String     @id @default(cuid())
+  socialAccountId String
+  platform        SocialPlatform
+  postId          String?    // Platform-specific post ID (null for drafts)
+  content         String?    @db.Text
+  mediaUrls       Json?      // Array of media URLs
+  status          PostStatus @default(DRAFT)
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
+  campaignId      String?    // Link to marketing campaign (future)
+  createdBy       String?    // User who created the post
+  metadata        Json?      // Additional platform-specific data
+
+  socialAccount   SocialAccount    @relation("SocialAccountPosts", fields: [socialAccountId], references: [id], onDelete: Cascade)
+  metrics         SocialPostMetrics?
+  relatedMessages SocialMessage[]  @relation("PostMessages")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([platform, postId])
+  @@index([socialAccountId])
+  @@index([platform])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([publishedAt])
+  @@index([campaignId])
+}
+
+model SocialPostMetrics {
+  id        String   @id @default(cuid())
+  postId    String   @unique
+  likes     Int      @default(0)
+  comments  Int      @default(0)
+  shares    Int      @default(0)
+  views     Int      @default(0)
+  clicks    Int      @default(0)
+  reach     Int      @default(0)
+  impressions Int    @default(0)
+  engagementRate Float? // Calculated: (likes + comments + shares) / reach
+  lastUpdated DateTime @default(now()) @updatedAt
+
+  post SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([lastUpdated])
+}
+
+model SocialMessage {
+  id              String            @id @default(cuid())
+  socialAccountId String
+  platform        SocialPlatform
+  messageId       String           // Platform-specific message ID
+  senderId        String           // Platform-specific sender ID
+  senderName      String
+  senderHandle    String?
+  senderEmail     String?
+  message         String           @db.Text
+  messageType     MessageType
+  postId          String?          // If related to a post
+  status          SupportQueryStatus @default(NEW)
+  priority        SupportPriority  @default(MEDIUM)
+  category        String?          // e.g., "billing", "technical", "general"
+  assignedTo      String?          // User ID of assigned agent
+  assignedAt      DateTime?
+  resolvedAt      DateTime?
+  campaignId      String?          // Link to marketing campaign if query related
+  metadata        Json?            // Additional platform-specific data
+
+  socialAccount   SocialAccount    @relation("SocialAccountMessages", fields: [socialAccountId], references: [id], onDelete: Cascade)
+  socialPost      SocialPost?      @relation("PostMessages", fields: [postId], references: [id], onDelete: SetNull)
+  assignedAgent   User?            @relation("AssignedSupportQueries", fields: [assignedTo], references: [id], onDelete: SetNull)
+  responses       SupportResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([platform, messageId])
+  @@index([socialAccountId])
+  @@index([platform])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedTo])
+  @@index([postId])
+  @@index([createdAt])
+}
+
+model SupportResponse {
+  id          String   @id @default(cuid())
+  messageId   String
+  response    String   @db.Text
+  sentBy      String   // User ID of agent who sent response
+  sentAt      DateTime @default(now())
+  isInternal Boolean  @default(false) // Internal note vs customer-facing response
+  metadata    Json?    // Additional data (delivery status, etc.)
+
+  message SocialMessage @relation("MessageResponses", fields: [messageId], references: [id], onDelete: Cascade)
+  agent   User          @relation("SupportResponses", fields: [sentBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@index([sentBy])
+  @@index([sentAt])
+}
+
+model SocialAnalytics {
+  id            String   @id @default(cuid())
+  socialAccountId String
+  date          DateTime @db.Date
+  platform      SocialPlatform
+  followers     Int      @default(0)
+  following     Int      @default(0)
+  posts         Int      @default(0)
+  likes         Int      @default(0)
+  comments      Int      @default(0)
+  shares        Int      @default(0)
+  views         Int      @default(0)
+  reach         Int      @default(0)
+  impressions   Int      @default(0)
+  engagement    Int      @default(0) // Total engagements
+  metadata      Json?    // Additional metrics
+
+  socialAccount SocialAccount @relation("SocialAccountAnalytics", fields: [socialAccountId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([socialAccountId, date, platform])
+  @@index([socialAccountId])
+  @@index([date])
+  @@index([platform])
 }
