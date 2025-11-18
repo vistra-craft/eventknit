@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { UserRole, UserStatus, EventStatus, Prisma } from '@prisma/client';
+import { UserRole, UserStatus, EventStatus, Prisma, NotificationType, NotificationPriority } from '@prisma/client';
 import {
   NotFoundError,
   ConflictError,
@@ -8,6 +8,7 @@ import {
 } from '../utils/errors.js';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 import { logger } from '../utils/logger.js';
+import { NotificationService } from './notification.service.js';
 
 // Valid event-specific roles
 export const EVENT_STAFF_ROLES = [
@@ -302,6 +303,28 @@ export class EventStaffService {
     });
 
     logger.info(`Staff ${data.staffId} assigned to event ${eventId} with role ${data.role}`);
+
+    // Send notification to staff member (Section 3 Phase 3 integration)
+    try {
+      await NotificationService.sendNotification({
+        userId: data.staffId,
+        type: NotificationType.STAFF_ASSIGNED_TO_EVENT,
+        title: `Assigned to Event: ${assignment.event.title}`,
+        message: `You have been assigned to the event "${assignment.event.title}" with the role of ${data.role}.${assignment.shiftStart ? ` Your shift starts on ${new Date(assignment.shiftStart).toLocaleString()}.` : ''}${data.notes ? `\n\nNotes: ${data.notes}` : ''}`,
+        priority: NotificationPriority.HIGH,
+        eventId,
+        data: {
+          assignmentId: assignment.id,
+          role: data.role,
+          shiftStart: assignment.shiftStart,
+          shiftEnd: assignment.shiftEnd,
+          facility: assignment.facility,
+        },
+      });
+    } catch (error) {
+      // Log error but don't fail the assignment
+      logger.error(`Failed to send staff assignment notification:`, error);
+    }
 
     return assignment;
   }
@@ -604,6 +627,28 @@ export class EventStaffService {
     });
 
     logger.info(`Staff ${staffId} removed from event ${eventId}`);
+
+    // Send notification to staff member (Section 3 Phase 3 integration)
+    try {
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { id: true, title: true },
+      });
+
+      if (event) {
+        await NotificationService.sendNotification({
+          userId: staffId,
+          type: NotificationType.STAFF_REMOVED_FROM_EVENT,
+          title: `Removed from Event: ${event.title}`,
+          message: `You have been removed from the event "${event.title}". If you have questions, please contact the event organizer.`,
+          priority: NotificationPriority.MEDIUM,
+          eventId,
+        });
+      }
+    } catch (error) {
+      // Log error but don't fail the removal
+      logger.error(`Failed to send staff removal notification:`, error);
+    }
   }
 
   /**
@@ -852,6 +897,48 @@ export class EventStaffService {
     });
 
     logger.info(`Staff assignment ${assignment.id} updated for event ${eventId}`);
+
+    // Send notification to staff member (Section 3 Phase 3 integration)
+    try {
+      const changes: string[] = [];
+      if (updates.role && updates.role !== assignment.role) {
+        changes.push(`Role changed to ${updates.role}`);
+      }
+      if (updates.shiftStart !== undefined || updates.shiftEnd !== undefined) {
+        changes.push('Shift times updated');
+      }
+      if (updates.facility !== undefined) {
+        changes.push(`Facility changed to ${updates.facility}`);
+      }
+      if (updates.notes !== undefined) {
+        changes.push('Notes updated');
+      }
+      if (updates.isActive !== undefined) {
+        changes.push(updates.isActive ? 'Assignment activated' : 'Assignment deactivated');
+      }
+
+      if (changes.length > 0) {
+        await NotificationService.sendNotification({
+          userId: staffId,
+          type: NotificationType.STAFF_ASSIGNMENT_UPDATED,
+          title: `Assignment Updated: ${updated.event.title}`,
+          message: `Your assignment for the event "${updated.event.title}" has been updated:\n\n${changes.join('\n')}${updates.notes ? `\n\nNew notes: ${updates.notes}` : ''}`,
+          priority: NotificationPriority.MEDIUM,
+          eventId,
+          data: {
+            assignmentId: updated.id,
+            changes,
+            role: updated.role,
+            shiftStart: updated.shiftStart,
+            shiftEnd: updated.shiftEnd,
+            facility: updated.facility,
+          },
+        });
+      }
+    } catch (error) {
+      // Log error but don't fail the update
+      logger.error(`Failed to send staff assignment update notification:`, error);
+    }
 
     return updated;
   }
