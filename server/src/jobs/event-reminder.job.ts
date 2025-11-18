@@ -94,6 +94,17 @@ export class EventReminderJob {
             NotificationPriority.MEDIUM,
           );
 
+          // Also send reminder to assigned staff
+          await NotificationService.sendEventNotification(
+            event.id,
+            NotificationType.EVENT_REMINDER_FOR_STAFF,
+            `Event Reminder: ${event.title}`,
+            `Reminder: The event "${event.title}" you are assigned to is happening tomorrow. Please review your assignment details and be prepared.`,
+            'staff',
+            undefined,
+            NotificationPriority.MEDIUM,
+          );
+
           reminders24hSent++;
           logger.info(`Sent 24h reminder for event: ${event.id} (${event.title})`);
         } catch (error) {
@@ -126,6 +137,17 @@ export class EventReminderJob {
             `Event Starting Soon: ${event.title}`,
             `"${event.title}" is starting in about 1 hour. See you soon!`,
             'attendees',
+            undefined,
+            NotificationPriority.HIGH,
+          );
+
+          // Also send reminder to assigned staff
+          await NotificationService.sendEventNotification(
+            event.id,
+            NotificationType.EVENT_REMINDER_FOR_STAFF,
+            `Event Starting Soon: ${event.title}`,
+            `The event "${event.title}" you are assigned to is starting in about 1 hour. Please be ready at your assigned location.`,
+            'staff',
             undefined,
             NotificationPriority.HIGH,
           );
