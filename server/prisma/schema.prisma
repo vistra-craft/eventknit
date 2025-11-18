@@ -1192,9 +1192,9 @@ model SocialAccount {
   lastSyncedAt  DateTime?
   metadata      Json?    // Additional platform-specific data
 
-  posts         SocialPost[]
-  messages      SocialMessage[]
-  analytics     SocialAnalytics[]
+  posts         SocialPost[]         @relation("SocialAccountPosts")
+  messages      SocialMessage[]     @relation("SocialAccountMessages")
+  analytics     SocialAnalytics[]    @relation("SocialAccountAnalytics")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1275,8 +1275,8 @@ model SocialMessage {
 
   socialAccount   SocialAccount    @relation("SocialAccountMessages", fields: [socialAccountId], references: [id], onDelete: Cascade)
   socialPost      SocialPost?      @relation("PostMessages", fields: [postId], references: [id], onDelete: SetNull)
-  assignedAgent   User?            @relation("AssignedSupportQueries", fields: [assignedTo], references: [id], onDelete: SetNull)
-  responses       SupportResponse[]
+  assignedAgent   User?            @relation("AssignedSupportQueries", fields: [assignedTo], references: [id], onDelete: Restrict)
+  responses       SupportResponse[]  @relation("MessageResponses")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1301,7 +1301,7 @@ model SupportResponse {
   metadata    Json?    // Additional data (delivery status, etc.)
 
   message SocialMessage @relation("MessageResponses", fields: [messageId], references: [id], onDelete: Cascade)
-  agent   User          @relation("SupportResponses", fields: [sentBy], references: [id], onDelete: SetNull)
+  agent   User          @relation("SupportResponses", fields: [sentBy], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
 
