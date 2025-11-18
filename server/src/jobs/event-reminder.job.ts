@@ -1,7 +1,7 @@
 import * as cron from 'node-cron';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { EventStatus, RegistrationStatus, NotificationType, NotificationPriority } from '@prisma/client';
+import { EventStatus, NotificationType, NotificationPriority } from '@prisma/client';
 import { NotificationService } from '../services/notification.service.js';
 
 /**
