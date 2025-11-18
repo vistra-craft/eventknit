@@ -1,0 +1,357 @@
+import { prisma } from '../config/database.js';
+import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
+import { NotificationType } from '@prisma/client';
+
+export interface NotificationChannels {
+  email?: boolean;
+  sms?: boolean;
+  push?: boolean;
+  inApp?: boolean;
+}
+
+export interface NotificationPreferenceData {
+  emailEnabled?: boolean;
+  smsEnabled?: boolean;
+  pushEnabled?: boolean;
+  inAppEnabled?: boolean;
+  eventReminders?: boolean;
+  eventUpdates?: boolean;
+  eventCancellations?: boolean;
+  paymentNotifications?: boolean;
+  marketingEmails?: boolean;
+  systemAnnouncements?: boolean;
+  registrationUpdates?: boolean;
+  staffNotifications?: boolean;
+  reminderFrequency?: 'all' | 'daily_digest' | 'weekly_digest' | 'none';
+}
+
+export class NotificationPreferenceService {
+  /**
+   * Get user notification preferences
+   * Creates default preferences if they don't exist
+   */
+  static async getUserPreferences(userId: string) {
+    try {
+      let preferences = await prisma.notificationPreference.findUnique({
+        where: { userId },
+      });
+
+      // Create default preferences if they don't exist
+      if (!preferences) {
+        preferences = await this.createDefaultPreferences(userId);
+      }
+
+      return preferences;
+    } catch (error) {
+      logger.error(`Failed to get notification preferences for user ${userId}:`, error);
+      throw new ValidationError('Failed to retrieve notification preferences');
+    }
+  }
+
+  /**
+   * Create default notification preferences for a user
+   */
+  static async createDefaultPreferences(userId: string) {
+    try {
+      const preferences = await prisma.notificationPreference.create({
+        data: {
+          userId,
+          emailEnabled: true,
+          smsEnabled: false,
+          pushEnabled: true,
+          inAppEnabled: true,
+          eventReminders: true,
+          eventUpdates: true,
+          eventCancellations: true,
+          paymentNotifications: true,
+          marketingEmails: true,
+          systemAnnouncements: true,
+          registrationUpdates: true,
+          staffNotifications: true,
+          reminderFrequency: 'all',
+        },
+      });
+
+      logger.info(`Created default notification preferences for user ${userId}`);
+      return preferences;
+    } catch (error) {
+      logger.error(`Failed to create default notification preferences for user ${userId}:`, error);
+      throw new ValidationError('Failed to create notification preferences');
+    }
+  }
+
+  /**
+   * Update user notification preferences
+   */
+  static async updatePreferences(userId: string, data: NotificationPreferenceData) {
+    try {
+      // Verify user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Get or create preferences
+      const existingPreferences = await prisma.notificationPreference.findUnique({
+        where: { userId },
+      });
+
+      const preferences = existingPreferences
+        ? await prisma.notificationPreference.update({
+            where: { userId },
+            data: {
+              emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
+              smsEnabled: data.smsEnabled ?? existingPreferences.smsEnabled,
+              pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
+              inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
+              eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
+              eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
+              eventCancellations:
+                data.eventCancellations ?? existingPreferences.eventCancellations,
+              paymentNotifications:
+                data.paymentNotifications ?? existingPreferences.paymentNotifications,
+              marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
+              systemAnnouncements:
+                data.systemAnnouncements ?? existingPreferences.systemAnnouncements,
+              registrationUpdates:
+                data.registrationUpdates ?? existingPreferences.registrationUpdates,
+              staffNotifications:
+                data.staffNotifications ?? existingPreferences.staffNotifications,
+              reminderFrequency:
+                data.reminderFrequency ?? existingPreferences.reminderFrequency,
+            },
+          })
+        : await this.createDefaultPreferences(userId);
+
+      logger.info(`Updated notification preferences for user ${userId}`);
+      return preferences;
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      logger.error(`Failed to update notification preferences for user ${userId}:`, error);
+      throw new ValidationError('Failed to update notification preferences');
+    }
+  }
+
+  /**
+   * Check if notification should be sent based on user preferences
+   */
+  static async shouldSendNotification(
+    userId: string,
+    notificationType: NotificationType,
+    channel: 'email' | 'sms' | 'push' | 'inApp',
+  ): Promise<boolean> {
+    try {
+      const preferences = await this.getUserPreferences(userId);
+
+      // Check channel preference
+      switch (channel) {
+        case 'email':
+          if (!preferences.emailEnabled) {
+            return false;
+          }
+          break;
+        case 'sms':
+          if (!preferences.smsEnabled) {
+            return false;
+          }
+          break;
+        case 'push':
+          if (!preferences.pushEnabled) {
+            return false;
+          }
+          break;
+        case 'inApp':
+          if (!preferences.inAppEnabled) {
+            return false;
+          }
+          break;
+      }
+
+      // Check category preferences based on notification type
+      const categoryAllowed = this.isCategoryAllowed(notificationType, preferences);
+      if (!categoryAllowed) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      logger.error(
+        `Failed to check notification preference for user ${userId}, type ${notificationType}, channel ${channel}:`,
+        error,
+      );
+      // Default to allowing notification if preference check fails
+      return true;
+    }
+  }
+
+  /**
+   * Check if notification category is allowed based on type
+   */
+  private static isCategoryAllowed(
+    notificationType: NotificationType,
+    preferences: {
+      eventReminders: boolean;
+      eventUpdates: boolean;
+      eventCancellations: boolean;
+      paymentNotifications: boolean;
+      marketingEmails: boolean;
+      systemAnnouncements: boolean;
+      registrationUpdates: boolean;
+      staffNotifications: boolean;
+    },
+  ): boolean {
+    // Event reminders
+    if (
+      [
+        NotificationType.EVENT_REMINDER_24H,
+        NotificationType.EVENT_REMINDER_1H,
+        NotificationType.EVENT_REMINDER_FOR_STAFF,
+        NotificationType.REGISTRATION_DEADLINE_REMINDER,
+      ].includes(notificationType)
+    ) {
+      return preferences.eventReminders;
+    }
+
+    // Event updates
+    if (
+      [
+        NotificationType.EVENT_UPDATE,
+        NotificationType.EVENT_VENUE_CHANGED,
+        NotificationType.EVENT_TIME_CHANGED,
+        NotificationType.EVENT_POSTPONED,
+        NotificationType.EVENT_UPDATE_FOR_STAFF,
+      ].includes(notificationType)
+    ) {
+      return preferences.eventUpdates;
+    }
+
+    // Event cancellations
+    if (
+      [
+        NotificationType.EVENT_CANCELLED,
+        NotificationType.EVENT_CANCELLED_BY_ADMIN,
+        NotificationType.EVENT_CANCELLED_FOR_STAFF,
+      ].includes(notificationType)
+    ) {
+      return preferences.eventCancellations;
+    }
+
+    // Payment notifications
+    if (
+      [
+        NotificationType.PAYMENT_PENDING,
+        NotificationType.PAYMENT_FAILED,
+        NotificationType.PAYMENT_SUCCESS,
+        NotificationType.PAYMENT_RECEIVED,
+        NotificationType.REFUND_RECEIVED,
+        NotificationType.REFUND_PROCESSED,
+      ].includes(notificationType)
+    ) {
+      return preferences.paymentNotifications;
+    }
+
+    // Registration updates
+    if (
+      [
+        NotificationType.REGISTRATION_CONFIRMED,
+        NotificationType.REGISTRATION_CANCELLED,
+        NotificationType.WAITLIST_AVAILABLE,
+      ].includes(notificationType)
+    ) {
+      return preferences.registrationUpdates;
+    }
+
+    // Staff notifications
+    if (
+      [
+        NotificationType.STAFF_ASSIGNED_TO_EVENT,
+        NotificationType.STAFF_REMOVED_FROM_EVENT,
+        NotificationType.STAFF_ASSIGNMENT_UPDATED,
+      ].includes(notificationType)
+    ) {
+      return preferences.staffNotifications;
+    }
+
+    // Marketing
+    if (
+      [
+        NotificationType.NEW_EVENT_AVAILABLE,
+        NotificationType.PROMOTION_OFFER,
+        NotificationType.EARLY_BIRD_REMINDER,
+      ].includes(notificationType)
+    ) {
+      return preferences.marketingEmails;
+    }
+
+    // System announcements
+    if (
+      [
+        NotificationType.SYSTEM_ANNOUNCEMENT,
+        NotificationType.PLATFORM_UPDATE,
+        NotificationType.MAINTENANCE_SCHEDULED,
+        NotificationType.SECURITY_ALERT,
+      ].includes(notificationType)
+    ) {
+      return preferences.systemAnnouncements;
+    }
+
+    // Account-related notifications are always allowed (security)
+    if (
+      [
+        NotificationType.ACCOUNT_VERIFIED,
+        NotificationType.PASSWORD_CHANGED,
+        NotificationType.LOGIN_ATTEMPT,
+        NotificationType.ACCOUNT_SUSPENDED,
+        NotificationType.ACCOUNT_ACTIVATED,
+      ].includes(notificationType)
+    ) {
+      return true; // Always allow security-related notifications
+    }
+
+    // Event-related organizer notifications are always allowed
+    if (
+      [
+        NotificationType.EVENT_APPROVED,
+        NotificationType.EVENT_REJECTED,
+        NotificationType.REGISTRATION_MILESTONE_50,
+        NotificationType.REGISTRATION_MILESTONE_75,
+        NotificationType.REGISTRATION_MILESTONE_100,
+        NotificationType.CAPACITY_REACHED,
+        NotificationType.EVENT_PERFORMANCE_SUMMARY,
+      ].includes(notificationType)
+    ) {
+      return true; // Always allow important organizer notifications
+    }
+
+    // Default to allowing if type doesn't match any category
+    return true;
+  }
+
+  /**
+   * Get default notification preferences
+   */
+  static getDefaultPreferences() {
+    return {
+      emailEnabled: true,
+      smsEnabled: false,
+      pushEnabled: true,
+      inAppEnabled: true,
+      eventReminders: true,
+      eventUpdates: true,
+      eventCancellations: true,
+      paymentNotifications: true,
+      marketingEmails: true,
+      systemAnnouncements: true,
+      registrationUpdates: true,
+      staffNotifications: true,
+      reminderFrequency: 'all' as const,
+    };
+  }
+}
+

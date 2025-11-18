@@ -155,6 +155,10 @@ model User {
   refundsRequested       Refund[]                @relation("RefundRequester")
   refundsProcessed       Refund[]                @relation("RefundProcessor")
   reconciliationsCreated PaymentReconciliation[] @relation("PaymentReconciler")
+  // Notification Relations
+  notifications          Notification[]          @relation("UserNotifications")
+  notificationPreference NotificationPreference? @relation("UserNotificationPreference")
+  bulkMessagesCreated    BulkMessage[]           @relation("BulkMessageCreator")
 
   @@index([email])
   @@index([role])
@@ -367,6 +371,9 @@ model Event {
   organizerDisbursements OrganizerDisbursement[]
   refunds                Refund[]
   paymentReconciliations PaymentReconciliation[]
+  // Notification Relations
+  notifications          Notification[]            @relation("EventNotifications")
+  bulkMessages           BulkMessage[]             @relation("EventBulkMessages")
 
   @@index([organizerId])
   @@index([status])
@@ -429,6 +436,8 @@ model EventRegistration {
   paymentTransaction  EventPaymentTransaction?
   platformFee         PlatformFee?
   refund              Refund?
+  // Notification Relations
+  notifications       Notification[]           @relation("RegistrationNotifications")
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
@@ -909,4 +918,213 @@ model PaymentReconciliation {
   @@index([endDate])
   @@index([eventId])
   @@index([status])
+}
+
+// ============================================
+// Notification & Communication Models
+// ============================================
+
+enum NotificationType {
+  // Event-related (to attendees)
+  EVENT_REMINDER_24H
+  EVENT_REMINDER_1H
+  EVENT_UPDATE
+  EVENT_CANCELLED
+  EVENT_POSTPONED
+  EVENT_VENUE_CHANGED
+  EVENT_TIME_CHANGED
+  REGISTRATION_DEADLINE_REMINDER
+  WAITLIST_AVAILABLE
+  CAPACITY_FULL
+  EVENT_COMPLETED
+
+  // Event-related (to organizers)
+  EVENT_APPROVED
+  EVENT_REJECTED
+  EVENT_CANCELLED_BY_ADMIN
+  REGISTRATION_MILESTONE_50
+  REGISTRATION_MILESTONE_75
+  REGISTRATION_MILESTONE_100
+  CAPACITY_REACHED
+  PAYMENT_RECEIVED
+  REFUND_PROCESSED
+  EVENT_PERFORMANCE_SUMMARY
+
+  // Registration-related
+  REGISTRATION_CONFIRMED
+  REGISTRATION_CANCELLED
+  PAYMENT_PENDING
+  PAYMENT_FAILED
+  PAYMENT_SUCCESS
+  REFUND_RECEIVED
+
+  // Staff-related (Section 3 Phase 3 integration)
+  STAFF_ASSIGNED_TO_EVENT
+  STAFF_REMOVED_FROM_EVENT
+  STAFF_ASSIGNMENT_UPDATED
+  EVENT_UPDATE_FOR_STAFF
+  EVENT_CANCELLED_FOR_STAFF
+  EVENT_REMINDER_FOR_STAFF
+
+  // System notifications
+  SYSTEM_ANNOUNCEMENT
+  PLATFORM_UPDATE
+  MAINTENANCE_SCHEDULED
+  SECURITY_ALERT
+
+  // Marketing
+  NEW_EVENT_AVAILABLE
+  PROMOTION_OFFER
+  EARLY_BIRD_REMINDER
+
+  // Account-related
+  ACCOUNT_VERIFIED
+  PASSWORD_CHANGED
+  LOGIN_ATTEMPT
+  ACCOUNT_SUSPENDED
+  ACCOUNT_ACTIVATED
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum BulkMessageStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  CANCELLED
+}
+
+enum BulkMessageTargetAudience {
+  ALL
+  ORGANIZERS
+  ATTENDEES
+  STAFF
+  SPECIFIC_EVENT
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String           @db.Text
+  data    Json? // Additional data (eventId, registrationId, etc.)
+
+  // Channels
+  channels Json // { email: boolean, sms: boolean, push: boolean, inApp: boolean }
+
+  // Delivery Status
+  emailStatus DeliveryStatus?
+  smsStatus   DeliveryStatus?
+  pushStatus  DeliveryStatus?
+  inAppStatus DeliveryStatus? @default(DELIVERED)
+
+  // Read Status
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  // Priority & Expiry
+  priority  NotificationPriority @default(MEDIUM)
+  expiresAt DateTime?
+
+  // Related Entities
+  eventId        String?
+  registrationId String?
+  relatedUserId  String?
+
+  // Metadata
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User               @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  event        Event?             @relation("EventNotifications", fields: [eventId], references: [id], onDelete: SetNull)
+  registration EventRegistration? @relation("RegistrationNotifications", fields: [registrationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([type])
+  @@index([eventId])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([priority])
+}
+
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // Channel Preferences
+  emailEnabled Boolean @default(true)
+  smsEnabled   Boolean @default(false)
+  pushEnabled  Boolean @default(true)
+  inAppEnabled Boolean @default(true)
+
+  // Category Preferences
+  eventReminders       Boolean @default(true)
+  eventUpdates         Boolean @default(true)
+  eventCancellations   Boolean @default(true)
+  paymentNotifications Boolean @default(true)
+  marketingEmails      Boolean @default(true)
+  systemAnnouncements  Boolean @default(true)
+  registrationUpdates  Boolean @default(true)
+  staffNotifications   Boolean @default(true) // For staff assignment notifications
+
+  // Frequency Preferences
+  reminderFrequency String @default("all") // all, daily_digest, weekly_digest, none
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserNotificationPreference", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BulkMessage {
+  id             String                    @id @default(cuid())
+  title          String
+  content        String                    @db.Text
+  type           String // announcement, marketing, system, event_update
+  targetAudience BulkMessageTargetAudience
+  eventId        String? // If targeting specific event
+
+  // Channels
+  channels Json // { email: boolean, sms: boolean, push: boolean, inApp: boolean }
+
+  // Status
+  status      BulkMessageStatus @default(DRAFT)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+
+  // Recipients
+  totalRecipients Int @default(0)
+  sentCount       Int @default(0)
+  failedCount     Int @default(0)
+
+  // Created by
+  createdBy String
+  creator   User   @relation("BulkMessageCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event? @relation("EventBulkMessages", fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([status, scheduledAt])
+  @@index([createdBy])
+  @@index([eventId])
+  @@index([targetAudience])
 }
