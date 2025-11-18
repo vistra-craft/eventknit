@@ -495,7 +495,7 @@ export class NotificationService {
         const unreadCount = await this.getUnreadCount(userId);
         websocketService.sendUnreadCountUpdate(userId, unreadCount);
       } catch (error) {
-        logger.error(`Failed to send WebSocket notification for read status:`, error);
+        logger.error('Failed to send WebSocket notification for read status:', error);
       }
 
       return updated;
@@ -532,7 +532,7 @@ export class NotificationService {
         // Also send updated unread count (should be 0)
         websocketService.sendUnreadCountUpdate(userId, 0);
       } catch (error) {
-        logger.error(`Failed to send WebSocket notification for all read:`, error);
+        logger.error('Failed to send WebSocket notification for all read:', error);
       }
 
       return result;
@@ -572,7 +572,7 @@ export class NotificationService {
         const unreadCount = await this.getUnreadCount(userId);
         websocketService.sendUnreadCountUpdate(userId, unreadCount);
       } catch (error) {
-        logger.error(`Failed to send WebSocket notification for deletion:`, error);
+        logger.error('Failed to send WebSocket notification for deletion:', error);
       }
 
       return { success: true };
