@@ -452,7 +452,25 @@ export class PaymentService {
 
         // Send payment success notifications
         try {
-          // Notify attendee
+          // Notify attendee - Registration Confirmed
+          await NotificationService.sendNotification({
+            userId: registration.attendeeId,
+            type: NotificationType.REGISTRATION_CONFIRMED,
+            title: `Registration Confirmed: ${registration.event.title}`,
+            message: `Your registration for "${registration.event.title}" has been confirmed! Your payment of ₦${verification.amount.toLocaleString()} was successful. Your ticket has been sent to your email.`,
+            priority: NotificationPriority.HIGH,
+            eventId: registration.eventId,
+            registrationId: registration.id,
+            data: {
+              amount: verification.amount,
+              currency: 'NGN',
+              transactionReference: reference,
+              eventDate: registration.event.startDate,
+              eventTime: registration.event.startTime,
+            },
+          });
+
+          // Notify attendee - Payment Success (separate notification)
           await NotificationService.sendNotification({
             userId: registration.attendeeId,
             type: NotificationType.PAYMENT_SUCCESS,
