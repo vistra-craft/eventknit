@@ -30,6 +30,14 @@ import * as authApi from "@/lib/auth-api";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
+import { useTheme } from "@/hooks/useTheme";
+import { useToast } from "@/hooks/use-toast";
+import {
+  getUserPreferences,
+  updateUserPreferences,
+  resetPreferences,
+  type UserPreferences as UserPreferencesType,
+} from "@/lib/user-preferences-api";
 
 interface OrganizerSettingsData {
   // Profile Settings
@@ -73,6 +81,8 @@ interface OrganizerSettingsData {
 const OrganizerSettingsPage = () => {
   const location = useLocation();
   const { user, refreshProfile } = useAuth();
+  const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -105,6 +115,54 @@ const OrganizerSettingsPage = () => {
   useEffect(() => {
     setActiveTab(getActiveTabFromUrl());
   }, [getActiveTabFromUrl]);
+
+  // Load user preferences from API
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user) return;
+
+      try {
+        const response = await getUserPreferences();
+        if (response.success && response.data?.preferences) {
+          const prefs = response.data.preferences;
+          setSettings(prev => ({
+            ...prev,
+            // Appearance
+            theme: prefs.theme || "system",
+            dashboardLayout: prefs.dashboardLayout || "spacious",
+            showMetrics: prefs.showMetrics ?? true,
+            showCharts: prefs.showCharts ?? true,
+            // Security
+            twoFactorAuth: prefs.twoFactorAuth ?? false,
+            sessionTimeout: prefs.sessionTimeout || 30,
+            loginAlerts: prefs.loginAlerts ?? true,
+            // Notifications
+            emailNotifications: prefs.eventNotifications ?? true,
+            eventUpdates: prefs.eventUpdates ?? true,
+            attendeeRegistrations: prefs.registrationNotifications ?? true,
+            paymentNotifications: prefs.paymentNotifications ?? true,
+            marketingEmails: prefs.marketingEmails ?? false,
+            weeklyDigest: prefs.weeklyDigest ?? true,
+          }));
+
+          // Sync theme with ThemeContext
+          if (prefs.theme && prefs.theme !== currentTheme) {
+            setThemeContext(prefs.theme);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load preferences:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load preferences. Using default values.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadPreferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Load user profile data from API
   useEffect(() => {
@@ -314,12 +372,52 @@ const OrganizerSettingsPage = () => {
         } else {
           throw new Error("Failed to update profile");
         }
-      } else {
-        // Other settings (notifications, appearance) - save locally for now
-        // TODO: Implement API endpoints for these settings
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setSaveStatus("success");
-        setSaveMessage("Settings saved successfully");
+      } else if (activeTab === "appearance" || activeTab === "security") {
+        // Save appearance and security preferences
+        const preferencesToUpdate: Partial<UserPreferencesType> = {};
+        
+        if (activeTab === "appearance") {
+          preferencesToUpdate.theme = settings.theme;
+          preferencesToUpdate.dashboardLayout = settings.dashboardLayout;
+          preferencesToUpdate.showMetrics = settings.showMetrics;
+          preferencesToUpdate.showCharts = settings.showCharts;
+        } else if (activeTab === "security") {
+          preferencesToUpdate.twoFactorAuth = settings.twoFactorAuth;
+          preferencesToUpdate.sessionTimeout = settings.sessionTimeout;
+          preferencesToUpdate.loginAlerts = settings.loginAlerts;
+        }
+
+        const response = await updateUserPreferences(preferencesToUpdate);
+        
+        if (response.success) {
+          // Sync theme with ThemeContext if it changed
+          if (preferencesToUpdate.theme && preferencesToUpdate.theme !== currentTheme) {
+            setThemeContext(preferencesToUpdate.theme);
+          }
+          setSaveStatus("success");
+          setSaveMessage("Settings saved successfully");
+        } else {
+          throw new Error("Failed to update preferences");
+        }
+      } else if (activeTab === "notifications") {
+        // Save notification preferences
+        const preferencesToUpdate: Partial<UserPreferencesType> = {
+          eventNotifications: settings.emailNotifications,
+          eventUpdates: settings.eventUpdates,
+          registrationNotifications: settings.attendeeRegistrations,
+          paymentNotifications: settings.paymentNotifications,
+          marketingEmails: settings.marketingEmails,
+          weeklyDigest: settings.weeklyDigest,
+        };
+
+        const response = await updateUserPreferences(preferencesToUpdate);
+        
+        if (response.success) {
+          setSaveStatus("success");
+          setSaveMessage("Settings saved successfully");
+        } else {
+          throw new Error("Failed to update preferences");
+        }
       }
       
       setTimeout(() => {
@@ -341,19 +439,72 @@ const OrganizerSettingsPage = () => {
     }
   };
 
-  const handleReset = () => {
-    // Reset to default values
-    setSettings({
-      ...settings,
-      theme: "system",
-      dashboardLayout: "spacious",
-      showMetrics: true,
-      showCharts: true,
-    });
+  const handleReset = async () => {
+    if (activeTab === "appearance" || activeTab === "security" || activeTab === "notifications") {
+      try {
+        setIsSaving(true);
+        const response = await resetPreferences();
+        if (response.success && response.data?.preferences) {
+          const prefs = response.data.preferences;
+          setSettings(prev => ({
+            ...prev,
+            // Appearance
+            theme: prefs.theme || "system",
+            dashboardLayout: prefs.dashboardLayout || "spacious",
+            showMetrics: prefs.showMetrics ?? true,
+            showCharts: prefs.showCharts ?? true,
+            // Security
+            twoFactorAuth: prefs.twoFactorAuth ?? false,
+            sessionTimeout: prefs.sessionTimeout || 30,
+            loginAlerts: prefs.loginAlerts ?? true,
+            // Notifications
+            emailNotifications: prefs.eventNotifications ?? true,
+            eventUpdates: prefs.eventUpdates ?? true,
+            attendeeRegistrations: prefs.registrationNotifications ?? true,
+            paymentNotifications: prefs.paymentNotifications ?? true,
+            marketingEmails: prefs.marketingEmails ?? false,
+            weeklyDigest: prefs.weeklyDigest ?? true,
+          }));
+
+          // Sync theme with ThemeContext
+          if (prefs.theme && prefs.theme !== currentTheme) {
+            setThemeContext(prefs.theme);
+          }
+
+          toast({
+            title: "Success",
+            description: "Preferences reset to defaults",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to reset preferences:", error);
+        toast({
+          title: "Error",
+          description: "Failed to reset preferences",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      // Reset to default values for profile
+      setSettings({
+        ...settings,
+        theme: "system",
+        dashboardLayout: "spacious",
+        showMetrics: true,
+        showCharts: true,
+      });
+    }
   };
 
   const updateSetting = (key: keyof OrganizerSettingsData, value: string | number | boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+    
+    // If theme changed, update ThemeContext immediately
+    if (key === "theme" && typeof value === "string") {
+      setThemeContext(value as "light" | "dark" | "system");
+    }
   };
 
   const renderProfileSettings = () => (
