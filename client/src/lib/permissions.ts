@@ -1,14 +1,9 @@
-/**
- * Client-side Permission Checking Functions
- * Mirrors backend logic from server/src/utils/privileges.ts
- */
-
-import { UserRole } from '@/types/auth';
-import { roleHierarchy, roleCreationRules } from '@/types/permissions';
-import type { PermissionResult, RoleInfo } from '@/types/permissions';
+import { UserRole } from "@/types/auth";
+import { roleHierarchy, roleCreationRules } from "@/types/permissions";
 
 /**
  * Check if a user role can create another user with a specific role
+ * (Mirrors backend canCreateRole)
  */
 export const canCreateRole = (userRole: UserRole, targetRole: UserRole): boolean => {
   const allowedRoles = roleCreationRules[userRole] || [];
@@ -17,6 +12,7 @@ export const canCreateRole = (userRole: UserRole, targetRole: UserRole): boolean
 
 /**
  * Check if a user can modify another user based on roles
+ * (Mirrors backend canModifyUser)
  */
 export const canModifyUser = (userRole: UserRole, targetUserRole: UserRole): boolean => {
   // SUPERADMIN can modify anyone
@@ -28,18 +24,14 @@ export const canModifyUser = (userRole: UserRole, targetUserRole: UserRole): boo
   }
 
   // MARKETER cannot modify SUPERADMIN or ADMIN_STAFF
-  if (
-    userRole === UserRole.MARKETER &&
-    (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)
-  ) {
+  if (userRole === UserRole.MARKETER &&
+      (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
     return false;
   }
 
   // ORGANIZER can only modify their staff
   if (userRole === UserRole.ORGANIZER) {
-    return (
-      targetUserRole === UserRole.ORGANIZER_STAFF || targetUserRole === UserRole.ORGANIZER_TELLER
-    );
+    return targetUserRole === UserRole.ORGANIZER_STAFF || targetUserRole === UserRole.ORGANIZER_TELLER;
   }
 
   // Otherwise, check role hierarchy
@@ -48,6 +40,7 @@ export const canModifyUser = (userRole: UserRole, targetUserRole: UserRole): boo
 
 /**
  * Check if a user can delete another user
+ * (Mirrors backend canDeleteUser)
  */
 export const canDeleteUser = (userRole: UserRole, targetUserRole: UserRole): boolean => {
   // SUPERADMIN can delete anyone (including other SUPERADMINs)
@@ -59,18 +52,14 @@ export const canDeleteUser = (userRole: UserRole, targetUserRole: UserRole): boo
   }
 
   // MARKETER cannot delete SUPERADMIN or ADMIN_STAFF
-  if (
-    userRole === UserRole.MARKETER &&
-    (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)
-  ) {
+  if (userRole === UserRole.MARKETER &&
+      (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
     return false;
   }
 
   // ORGANIZER can only delete their staff
   if (userRole === UserRole.ORGANIZER) {
-    return (
-      targetUserRole === UserRole.ORGANIZER_STAFF || targetUserRole === UserRole.ORGANIZER_TELLER
-    );
+    return targetUserRole === UserRole.ORGANIZER_STAFF || targetUserRole === UserRole.ORGANIZER_TELLER;
   }
 
   // For now, only admins can delete
@@ -78,89 +67,22 @@ export const canDeleteUser = (userRole: UserRole, targetUserRole: UserRole): boo
 };
 
 /**
- * Get all permissions for a role against a target role
+ * Check if a user can manage staff (for organizers)
+ * (Mirrors backend canManageStaff)
  */
-export const getPermissions = (
-  userRole: UserRole,
-  targetRole: UserRole,
-): PermissionResult => {
-  return {
-    canCreate: canCreateRole(userRole, targetRole),
-    canModify: canModifyUser(userRole, targetRole),
-    canDelete: canDeleteUser(userRole, targetRole),
-  };
-};
-
-/**
- * Get role description
- */
-export const getRoleDescription = (role: UserRole): string => {
-  const descriptions: Record<UserRole, string> = {
-    [UserRole.SUPERADMIN]: 'Full system access with all permissions',
-    [UserRole.ADMIN_STAFF]: 'Administrative staff with management capabilities',
-    [UserRole.MARKETER]: 'Marketing team member with event promotion access',
-    [UserRole.SUPPORT]: 'Customer support team member',
-    [UserRole.TELLER]: 'Event staff member for ticket scanning and check-in',
-    [UserRole.ORGANIZER]: 'Event organizer with full event management capabilities',
-    [UserRole.ORGANIZER_STAFF]: 'Organizer staff member with limited event management',
-    [UserRole.ORGANIZER_TELLER]: 'Organizer teller for ticket scanning at specific events',
-    [UserRole.ATTENDEE]: 'Regular event attendee',
-  };
-
-  return descriptions[role] || 'No description available';
-};
-
-/**
- * Get display name for a role
- */
-export const getRoleDisplayName = (role: UserRole): string => {
-  return role.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-};
-
-/**
- * Build role information with permissions
- */
-export const buildRoleInfo = (
-  role: UserRole,
-  currentUserRole: UserRole,
-  allRoles: UserRole[],
-): RoleInfo => {
-  const hierarchy = roleHierarchy[role];
-  const canCreate = canCreateRole(currentUserRole, role);
-  const canModify = canModifyUser(currentUserRole, role);
-  const canDelete = canDeleteUser(currentUserRole, role);
-
-  // Get roles that this role can create
-  const creatableRoles: UserRole[] = [];
-  allRoles.forEach((targetRole) => {
-    if (canCreateRole(role, targetRole)) {
-      creatableRoles.push(targetRole);
-    }
-  });
-
-  // Get roles that this role can modify
-  const modifiableRoles: UserRole[] = [];
-  allRoles.forEach((targetRole) => {
-    if (canModifyUser(role, targetRole)) {
-      modifiableRoles.push(targetRole);
-    }
-  });
-
-  return {
-    role,
-    hierarchy,
-    displayName: getRoleDisplayName(role),
-    description: getRoleDescription(role),
-    canCreate,
-    canModify,
-    canDelete,
-    creatableRoles,
-    modifiableRoles,
-  };
+export const canManageStaff = (userRole: UserRole): boolean => {
+  const allowedRoles: UserRole[] = [
+    UserRole.SUPERADMIN,
+    UserRole.ADMIN_STAFF,
+    UserRole.MARKETER,
+    UserRole.ORGANIZER,
+  ];
+  return allowedRoles.includes(userRole);
 };
 
 /**
  * Check if user is admin staff (can access all events)
+ * (Mirrors backend isAdminStaff)
  */
 export const isAdminStaff = (userRole: UserRole): boolean => {
   const adminStaffRoles: UserRole[] = [
@@ -175,17 +97,39 @@ export const isAdminStaff = (userRole: UserRole): boolean => {
 
 /**
  * Check if user is organizer staff (limited access)
+ * (Mirrors backend isOrganizerStaff)
  */
 export const isOrganizerStaff = (userRole: UserRole): boolean => {
   return userRole === UserRole.ORGANIZER_STAFF || userRole === UserRole.ORGANIZER_TELLER;
 };
 
 /**
- * Check if user can access all events (only SUPERADMIN and ADMIN_STAFF)
+ * Check if user can access all events (admin staff)
+ * (Mirrors backend canAccessAllEvents)
  */
 export const canAccessAllEvents = (userRole: UserRole): boolean => {
-  return userRole === UserRole.SUPERADMIN || userRole === UserRole.ADMIN_STAFF;
+  return isAdminStaff(userRole);
 };
 
+/**
+ * Get all roles that a user can create
+ */
+export const getCreatableRoles = (userRole: UserRole): UserRole[] => {
+  return roleCreationRules[userRole] || [];
+};
 
+/**
+ * Get all roles that a user can modify
+ */
+export const getModifiableRoles = (userRole: UserRole): UserRole[] => {
+  const allRoles = Object.values(UserRole);
+  return allRoles.filter((role) => canModifyUser(userRole, role));
+};
 
+/**
+ * Get all roles that a user can delete
+ */
+export const getDeletableRoles = (userRole: UserRole): UserRole[] => {
+  const allRoles = Object.values(UserRole);
+  return allRoles.filter((role) => canDeleteUser(userRole, role));
+};

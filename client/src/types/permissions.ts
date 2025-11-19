@@ -1,29 +1,35 @@
-/**
- * Permission Types
- */
+import { UserRole } from "@/types/auth";
 
-import { UserRole } from './auth';
+/**
+ * Permission check result
+ */
+export interface PermissionResult {
+  allowed: boolean;
+  reason?: string;
+}
 
 /**
  * Role hierarchy for privilege checking
+ * (Mirrors backend roleHierarchy)
  */
 export const roleHierarchy: Record<UserRole, number> = {
-  [UserRole.SUPERADMIN]: 9,
-  [UserRole.ADMIN_STAFF]: 8,
-  [UserRole.MARKETER]: 7,
-  [UserRole.SUPPORT]: 6,
-  [UserRole.TELLER]: 5,
-  [UserRole.ORGANIZER]: 4,
-  [UserRole.ORGANIZER_STAFF]: 3,
-  [UserRole.ORGANIZER_TELLER]: 2,
-  [UserRole.ATTENDEE]: 1,
+  SUPERADMIN: 9,
+  ADMIN_STAFF: 8,
+  MARKETER: 7,
+  SUPPORT: 6,
+  TELLER: 5,
+  ORGANIZER: 4,
+  ORGANIZER_STAFF: 3,
+  ORGANIZER_TELLER: 2,
+  ATTENDEE: 1,
 };
 
 /**
  * Roles that can create users with specific roles
+ * (Mirrors backend roleCreationRules)
  */
 export const roleCreationRules: Record<UserRole, UserRole[]> = {
-  [UserRole.SUPERADMIN]: [
+  SUPERADMIN: [
     UserRole.SUPERADMIN,
     UserRole.ADMIN_STAFF,
     UserRole.MARKETER,
@@ -34,7 +40,7 @@ export const roleCreationRules: Record<UserRole, UserRole[]> = {
     UserRole.ORGANIZER_TELLER,
     UserRole.ATTENDEE,
   ],
-  [UserRole.ADMIN_STAFF]: [
+  ADMIN_STAFF: [
     UserRole.ADMIN_STAFF,
     UserRole.MARKETER,
     UserRole.SUPPORT,
@@ -44,7 +50,7 @@ export const roleCreationRules: Record<UserRole, UserRole[]> = {
     UserRole.ORGANIZER_TELLER,
     UserRole.ATTENDEE,
   ],
-  [UserRole.MARKETER]: [
+  MARKETER: [
     UserRole.MARKETER,
     UserRole.SUPPORT,
     UserRole.ORGANIZER,
@@ -52,38 +58,13 @@ export const roleCreationRules: Record<UserRole, UserRole[]> = {
     UserRole.ORGANIZER_TELLER,
     UserRole.ATTENDEE,
   ],
-  [UserRole.SUPPORT]: [],
-  [UserRole.TELLER]: [],
-  [UserRole.ORGANIZER]: [
+  SUPPORT: [],
+  TELLER: [],
+  ORGANIZER: [
     UserRole.ORGANIZER_STAFF,
     UserRole.ORGANIZER_TELLER,
   ],
-  [UserRole.ORGANIZER_STAFF]: [],
-  [UserRole.ORGANIZER_TELLER]: [],
-  [UserRole.ATTENDEE]: [],
+  ORGANIZER_STAFF: [],
+  ORGANIZER_TELLER: [],
+  ATTENDEE: [],
 };
-
-/**
- * Permission check result
- */
-export interface PermissionResult {
-  canCreate: boolean;
-  canModify: boolean;
-  canDelete: boolean;
-}
-
-/**
- * Role information with permissions
- */
-export interface RoleInfo {
-  role: UserRole;
-  hierarchy: number;
-  displayName: string;
-  description: string;
-  canCreate: boolean;
-  canModify: boolean;
-  canDelete: boolean;
-  creatableRoles: UserRole[];
-  modifiableRoles: UserRole[];
-}
-
