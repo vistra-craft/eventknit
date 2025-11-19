@@ -462,11 +462,11 @@ export class SupportService {
             sentBy: agentId,
             ...(filters?.startDate || filters?.endDate
               ? {
-                  sentAt: {
-                    ...(filters.startDate ? { gte: new Date(filters.startDate) } : {}),
-                    ...(filters.endDate ? { lte: new Date(filters.endDate) } : {}),
-                  },
-                }
+                sentAt: {
+                  ...(filters.startDate ? { gte: new Date(filters.startDate) } : {}),
+                  ...(filters.endDate ? { lte: new Date(filters.endDate) } : {}),
+                },
+              }
               : {}),
           },
         }),
