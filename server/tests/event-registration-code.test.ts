@@ -26,7 +26,7 @@ describe('EventService - Registration Code', () => {
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
       logger.info('✅ Test database connected');
-    } catch (error) {
+    } catch (_error) {
       logger.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }

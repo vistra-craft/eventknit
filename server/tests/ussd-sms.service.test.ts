@@ -914,7 +914,7 @@ describe('USSDSMSService', () => {
       if (!dbConnected) return;
 
       // Create event with passed deadline
-      const closedEvent = await prisma.event.create({
+      await prisma.event.create({
         data: {
           title: 'Closed Event',
           description: 'Test',

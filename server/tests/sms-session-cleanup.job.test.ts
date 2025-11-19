@@ -22,7 +22,7 @@ describe('SMSSessionCleanupJob', () => {
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
       logger.info('✅ Test database connected');
-    } catch (error) {
+    } catch (_error) {
       logger.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }
@@ -60,7 +60,6 @@ describe('SMSSessionCleanupJob', () => {
 
     it('should not start job if already running', () => {
       SMSSessionCleanupJob.start();
-      const firstCallCount = (logger.info as jest.Mock).mock.calls.length;
 
       SMSSessionCleanupJob.start();
 
@@ -110,7 +109,7 @@ describe('SMSSessionCleanupJob', () => {
 
       try {
         await USSDSMSService.cleanupExpiredSessions();
-      } catch (e) {
+      } catch (_e) {
         // Error should be caught and logged by the job
       }
 
