@@ -7,6 +7,7 @@ import {
   Trash2,
   Shield,
   Users,
+  UserPlus,
   Settings,
   Calendar,
   DollarSign,
@@ -27,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import AdminLayout from "./AdminLayout";
 import { getRoles, type RoleInfo } from "@/lib/admin-api";
-import { useCanModifyUser } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole as UserRoleEnum } from "@/types/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
@@ -53,6 +54,7 @@ const UserRolesPage = () => {
   const [editingRole, setEditingRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<UserRoleEnum | null>(null);
 
   // Define all available page permissions
   const pagePermissions: PagePermission[] = [
@@ -129,41 +131,12 @@ const UserRolesPage = () => {
     fetchRoles();
   }, [toast]);
 
-  // Permission hooks for role management
-  const canModifySuperAdmin = useCanModifyUser(UserRoleEnum.SUPERADMIN);
-  const canModifyAdminStaff = useCanModifyUser(UserRoleEnum.ADMIN_STAFF);
-  const canModifyMarketer = useCanModifyUser(UserRoleEnum.MARKETER);
-  const canModifySupport = useCanModifyUser(UserRoleEnum.SUPPORT);
-  const canModifyTeller = useCanModifyUser(UserRoleEnum.TELLER);
-  const canModifyOrganizer = useCanModifyUser(UserRoleEnum.ORGANIZER);
-  const canModifyOrganizerStaff = useCanModifyUser(UserRoleEnum.ORGANIZER_STAFF);
-  const canModifyOrganizerTeller = useCanModifyUser(UserRoleEnum.ORGANIZER_TELLER);
-  const canModifyAttendee = useCanModifyUser(UserRoleEnum.ATTENDEE);
+  // Permission hooks
+  const { canModifyUser } = usePermissions();
 
   // Helper to check if current user can modify a role
   const canModifyRole = (role: UserRoleEnum): boolean => {
-    switch (role) {
-      case UserRoleEnum.SUPERADMIN:
-        return canModifySuperAdmin;
-      case UserRoleEnum.ADMIN_STAFF:
-        return canModifyAdminStaff;
-      case UserRoleEnum.MARKETER:
-        return canModifyMarketer;
-      case UserRoleEnum.SUPPORT:
-        return canModifySupport;
-      case UserRoleEnum.TELLER:
-        return canModifyTeller;
-      case UserRoleEnum.ORGANIZER:
-        return canModifyOrganizer;
-      case UserRoleEnum.ORGANIZER_STAFF:
-        return canModifyOrganizerStaff;
-      case UserRoleEnum.ORGANIZER_TELLER:
-        return canModifyOrganizerTeller;
-      case UserRoleEnum.ATTENDEE:
-        return canModifyAttendee;
-      default:
-        return false;
-    }
+    return canModifyUser(role);
   };
 
   const filteredRoles = roles.filter((role) => {
@@ -185,13 +158,14 @@ const UserRolesPage = () => {
     setShowCreateModal(false);
   };
 
-  const handleEditRole = () => {
+  const handleEditRole = (role: UserRole) => {
+    setEditingRole(role);
+    setShowEditModal(true);
     toast({
       title: "Not Available",
       description: "Role editing is not yet available. This feature will be implemented in the future.",
       variant: "default",
     });
-    setShowEditModal(false);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
