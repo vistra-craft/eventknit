@@ -513,7 +513,10 @@ describe('PaymentService', () => {
       await paymentService.handleWebhook(mockWebhookData.event, mockWebhookData.data);
 
       // Wait a bit for async notification processing
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => {
+        // eslint-disable-next-line no-undef
+        setTimeout(resolve, 100);
+      });
 
       // Verify REGISTRATION_CONFIRMED notification was sent
       const notification = await prisma.notification.findFirst({

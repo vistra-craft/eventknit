@@ -508,12 +508,13 @@ export class NotificationService {
         ? `URGENT: ${event.title} time changed. Check email for new time.`
         : `URGENT: Time changed. ${notification.message}`;
 
-    case NotificationType.PAYMENT_SUCCESS:
+    case NotificationType.PAYMENT_SUCCESS: {
       const amount = data?.amount as number | undefined;
       const currency = (data?.currency as string) || 'NGN';
       return amount
         ? `Payment confirmed: ${currency} ${amount.toFixed(2)}. Your ticket is confirmed!`
         : notification.message;
+    }
 
     case NotificationType.PAYMENT_FAILED:
       return 'Payment failed. Please try again or contact support.';
@@ -528,12 +529,13 @@ export class NotificationService {
         ? `Spot available for ${event.title}! You have 24h to register. Visit EventKnit now.`
         : notification.message;
 
-    case NotificationType.REFUND_RECEIVED:
+    case NotificationType.REFUND_RECEIVED: {
       const refundAmount = data?.amount as number | undefined;
       const refundCurrency = (data?.currency as string) || 'NGN';
       return refundAmount
         ? `Refund processed: ${refundCurrency} ${refundAmount.toFixed(2)}. Check your account.`
         : notification.message;
+    }
 
     case NotificationType.REGISTRATION_DEADLINE_24H:
     case NotificationType.REGISTRATION_DEADLINE_1H:
@@ -544,11 +546,12 @@ export class NotificationService {
     case NotificationType.SECURITY_ALERT:
       return `Security Alert: ${notification.message}. If this wasn't you, secure your account.`;
 
-    case NotificationType.LOGIN_ATTEMPT:
+    case NotificationType.LOGIN_ATTEMPT: {
       const location = data?.location as string | undefined;
       return location
         ? `Login attempt from ${location}. If this wasn't you, secure your account.`
         : 'Login attempt detected. If this wasn\'t you, secure your account.';
+    }
 
     default:
       // Generic SMS message - truncate if too long

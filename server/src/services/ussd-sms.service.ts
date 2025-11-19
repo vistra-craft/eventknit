@@ -49,6 +49,13 @@ export interface IncomingSMS {
   messageId?: string; // Provider message ID
 }
 
+// Type for session parameter in sendStepMessage
+type SessionForMessage = {
+  id: string;
+  currentStep: string | null;
+  state: Prisma.JsonValue | SMSRegistrationState;
+};
+
 export class USSDSMSService {
   private static readonly SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
   private static readonly MAX_RETRIES = 3;
@@ -279,7 +286,10 @@ export class USSDSMSService {
         await this.handleConfirmStep(session.id, state, message);
         break;
       default:
-        await this.sendStepMessage({ id: session.id, currentStep: step, state } as any, step);
+        await this.sendStepMessage(
+          { id: session.id, currentStep: step, state },
+          step,
+        );
       }
     } catch (error) {
       logger.error('Failed to process session response:', error);
@@ -298,7 +308,7 @@ export class USSDSMSService {
     // Welcome message already sent, move to first name
     await this.updateSessionStep(sessionId, 'first_name', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'first_name', state } as any,
+      { id: sessionId, currentStep: 'first_name', state },
       'first_name',
     );
   }
@@ -322,7 +332,7 @@ export class USSDSMSService {
     state.firstName = message;
     await this.updateSessionStep(sessionId, 'last_name', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'last_name', state } as any,
+      { id: sessionId, currentStep: 'last_name', state },
       'last_name',
     );
   }
@@ -346,7 +356,7 @@ export class USSDSMSService {
     state.lastName = message;
     await this.updateSessionStep(sessionId, 'email', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'email', state } as any,
+      { id: sessionId, currentStep: 'email', state },
       'email',
     );
   }
@@ -387,7 +397,7 @@ export class USSDSMSService {
     state.email = email;
     await this.updateSessionStep(sessionId, 'phone_confirm', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'phone_confirm', state } as any,
+      { id: sessionId, currentStep: 'phone_confirm', state },
       'phone_confirm',
     );
   }
@@ -413,7 +423,7 @@ export class USSDSMSService {
     // Phone confirmed, move to company
     await this.updateSessionStep(sessionId, 'company', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'company', state } as any,
+      { id: sessionId, currentStep: 'company', state },
       'company',
     );
   }
@@ -434,7 +444,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'industry', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'industry', state } as any,
+      { id: sessionId, currentStep: 'industry', state },
       'industry',
     );
   }
@@ -476,7 +486,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'job_title', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'job_title', state } as any,
+      { id: sessionId, currentStep: 'job_title', state },
       'job_title',
     );
   }
@@ -497,7 +507,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'address', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'address', state } as any,
+      { id: sessionId, currentStep: 'address', state },
       'address',
     );
   }
@@ -518,7 +528,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'city', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'city', state } as any,
+      { id: sessionId, currentStep: 'city', state },
       'city',
     );
   }
@@ -539,7 +549,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'state', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'state', state } as any,
+      { id: sessionId, currentStep: 'state', state },
       'state',
     );
   }
@@ -560,7 +570,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'country', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'country', state } as any,
+      { id: sessionId, currentStep: 'country', state },
       'country',
     );
   }
@@ -581,7 +591,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'postal_code', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'postal_code', state } as any,
+      { id: sessionId, currentStep: 'postal_code', state },
       'postal_code',
     );
   }
@@ -605,14 +615,14 @@ export class USSDSMSService {
       // Event code already provided, go to confirm
       await this.updateSessionStep(sessionId, 'confirm', state);
       await this.sendStepMessage(
-        { id: sessionId, currentStep: 'confirm', state } as any,
+        { id: sessionId, currentStep: 'confirm', state },
         'confirm',
       );
     } else {
       // Ask if they want to register for an event
       await this.updateSessionStep(sessionId, 'event_code', state);
       await this.sendStepMessage(
-        { id: sessionId, currentStep: 'event_code', state } as any,
+        { id: sessionId, currentStep: 'event_code', state },
         'event_code',
       );
     }
@@ -655,7 +665,7 @@ export class USSDSMSService {
 
     await this.updateSessionStep(sessionId, 'confirm', state);
     await this.sendStepMessage(
-      { id: sessionId, currentStep: 'confirm', state } as any,
+      { id: sessionId, currentStep: 'confirm', state },
       'confirm',
     );
   }
@@ -806,7 +816,7 @@ export class USSDSMSService {
    * Send step-specific message
    */
   private static async sendStepMessage(
-    session: { id: string; currentStep: string | null; state: Prisma.JsonValue },
+    session: SessionForMessage,
     step: RegistrationStep,
   ): Promise<void> {
     const state = session.state as unknown as SMSRegistrationState;

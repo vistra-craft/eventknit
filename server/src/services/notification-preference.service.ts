@@ -68,7 +68,7 @@ export class NotificationPreferenceService {
       let defaultPrefs;
       try {
         defaultPrefs = await AdminNotificationSettingsService.getDefaultPreferences();
-      } catch (error) {
+      } catch (_error) {
         // If system defaults not available, use hardcoded defaults
         logger.warn('Failed to get system default preferences, using hardcoded defaults');
         defaultPrefs = {
@@ -188,9 +188,11 @@ export class NotificationPreferenceService {
           return false;
         }
         // Also check if SMS service is enabled globally
-        const { smsService } = await import('./sms.service.js');
-        if (!smsService.isEnabled()) {
-          return false;
+        {
+          const { smsService } = await import('./sms.service.js');
+          if (!smsService.isEnabled()) {
+            return false;
+          }
         }
         break;
       case 'push':

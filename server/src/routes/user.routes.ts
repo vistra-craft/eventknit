@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { NotificationController } from '../controllers/notification.controller.js';
+import { UserPreferencesController } from '../controllers/user-preferences.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 
 const router = Router();
@@ -20,5 +21,40 @@ router.get('/me/notification-preferences', NotificationController.getPreferences
  * @access  Private
  */
 router.put('/me/notification-preferences', NotificationController.updatePreferences);
+
+/**
+ * @route   GET /api/v1/user/me/preferences
+ * @desc    Get current user's preferences
+ * @access  Private
+ */
+router.get('/me/preferences', UserPreferencesController.getPreferences);
+
+/**
+ * @route   PUT /api/v1/user/me/preferences
+ * @desc    Update current user's preferences
+ * @access  Private
+ */
+router.put('/me/preferences', UserPreferencesController.updatePreferences);
+
+/**
+ * @route   PATCH /api/v1/user/me/preferences/:key
+ * @desc    Update a single preference
+ * @access  Private
+ */
+router.patch('/me/preferences/:key', UserPreferencesController.updatePreference);
+
+/**
+ * @route   POST /api/v1/user/me/preferences/reset
+ * @desc    Reset preferences to defaults
+ * @access  Private
+ */
+router.post('/me/preferences/reset', UserPreferencesController.resetPreferences);
+
+/**
+ * @route   GET /api/v1/user/me/preferences/defaults
+ * @desc    Get default preferences for current user's role
+ * @access  Private
+ */
+router.get('/me/preferences/defaults', UserPreferencesController.getDefaults);
 
 export default router;

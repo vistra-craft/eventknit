@@ -14,10 +14,12 @@ export type SettingCategory =
   | 'api'
   | 'maintenance';
 
+export type SettingValue = string | number | boolean | Record<string, unknown> | unknown[];
+
 export interface SystemSetting {
   id: string;
   key: string;
-  value: any;
+  value: SettingValue;
   type: SettingType;
   category: SettingCategory;
   description?: string;
@@ -31,8 +33,8 @@ export interface SystemSetting {
 export interface SettingHistory {
   id: string;
   key: string;
-  oldValue?: any;
-  newValue: any;
+  oldValue?: SettingValue;
+  newValue: SettingValue;
   changedBy: string;
   changeReason?: string;
   createdAt: Date;
@@ -44,7 +46,7 @@ export class SystemSettingsService {
    */
   private static validateSettingValue(
     key: string,
-    value: any,
+    value: unknown,
     type: SettingType,
   ): void {
     switch (type) {
@@ -90,7 +92,7 @@ export class SystemSettingsService {
   /**
    * Serialize value for storage
    */
-  private static serializeValue(value: any, type: SettingType): string {
+  private static serializeValue(value: unknown, type: SettingType): string {
     switch (type) {
     case 'string':
       return String(value);
@@ -112,7 +114,7 @@ export class SystemSettingsService {
     value: string,
     type: SettingType,
     isEncrypted: boolean,
-  ): any {
+  ): SettingValue {
     let decryptedValue = value;
 
     // Decrypt if needed
@@ -212,7 +214,7 @@ export class SystemSettingsService {
     environment?: string,
   ): Promise<SystemSetting[]> {
     try {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
 
       if (category) {
         where.category = category;
@@ -259,7 +261,7 @@ export class SystemSettingsService {
    */
   static async setSetting(
     key: string,
-    value: any,
+    value: unknown,
     type: SettingType,
     category: SettingCategory,
     userId: string,
@@ -368,7 +370,7 @@ export class SystemSettingsService {
   static async setSettings(
     settings: Array<{
       key: string;
-      value: any;
+      value: unknown;
       type: SettingType;
       category: SettingCategory;
       description?: string;
@@ -449,13 +451,13 @@ export class SystemSettingsService {
   /**
    * Get public settings (no auth required)
    */
-  static async getPublicSettings(): Promise<Record<string, any>> {
+  static async getPublicSettings(): Promise<Record<string, SettingValue>> {
     try {
       const settings = await prisma.systemSettings.findMany({
         where: { isPublic: true },
       });
 
-      const result: Record<string, any> = {};
+      const result: Record<string, SettingValue> = {};
 
       for (const setting of settings) {
         const value = this.deserializeValue(
@@ -488,8 +490,8 @@ export class SystemSettingsService {
       });
 
       return history.map((entry) => {
-        let oldValue: any = undefined;
-        let newValue: any = undefined;
+        let oldValue: SettingValue | undefined = undefined;
+        let newValue: SettingValue = '';
 
         try {
           if (entry.oldValue) {
@@ -497,11 +499,14 @@ export class SystemSettingsService {
           }
           if (entry.newValue) {
             newValue = JSON.parse(entry.newValue);
+          } else {
+            // If newValue is null, use empty string as default
+            newValue = '';
           }
         } catch {
           // If parsing fails, use raw string
           oldValue = entry.oldValue || undefined;
-          newValue = entry.newValue;
+          newValue = entry.newValue || '';
         }
 
         return {

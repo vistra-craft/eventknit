@@ -2938,6 +2938,7 @@ export class EventService {
       if (attempts >= maxAttempts) {
         throw new Error('Failed to generate unique registration code after multiple attempts');
       }
+      // eslint-disable-next-line no-constant-condition
     } while (true);
 
     // Update event with new code

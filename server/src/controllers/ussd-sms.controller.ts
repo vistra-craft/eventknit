@@ -10,7 +10,7 @@ export class USSDSMSController {
   static async handleIncomingSMS(
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> {
     try {
       // Twilio webhook format
@@ -59,7 +59,7 @@ export class USSDSMSController {
   static async handleUSSD(
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> {
     try {
       const phoneNumber = req.body.phoneNumber || req.body.msisdn;
