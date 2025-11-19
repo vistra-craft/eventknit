@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Settings,
   User,
@@ -21,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "./AdminLayout";
+import { useToast } from "@/hooks/use-toast";
+import { getSettings, setSettings, type SystemSetting } from "@/lib/system-settings-api";
 
 interface SettingsData {
   // General Settings
@@ -77,12 +79,14 @@ interface SettingsData {
 }
 
 const AdminSettingsPage = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
   
-  // Mock settings data - in a real app, this would come from your API
-  const [settings, setSettings] = useState<SettingsData>({
+  // Default settings data
+  const [settings, setSettingsState] = useState<SettingsData>({
     siteName: "EventKnit",
     siteDescription: "Professional Event Management Platform",
     siteUrl: "https://eventknit.com",
@@ -121,6 +125,105 @@ const AdminSettingsPage = () => {
     maintenanceMessage: "We're currently performing maintenance. Please check back later."
   });
 
+  // Mapping between frontend keys and backend setting keys
+  const settingKeyMap: Record<keyof SettingsData, { key: string; category: SystemSetting['category']; type: SystemSetting['type']; isEncrypted?: boolean }> = {
+    // General
+    siteName: { key: 'site.name', category: 'general', type: 'string' },
+    siteDescription: { key: 'site.description', category: 'general', type: 'string' },
+    siteUrl: { key: 'site.url', category: 'general', type: 'string' },
+    timezone: { key: 'site.timezone', category: 'general', type: 'string' },
+    language: { key: 'site.language', category: 'general', type: 'string' },
+    dateFormat: { key: 'site.dateFormat', category: 'general', type: 'string' },
+    timeFormat: { key: 'site.timeFormat', category: 'general', type: 'string' },
+    
+    // Users
+    allowRegistration: { key: 'users.allowRegistration', category: 'users', type: 'boolean' },
+    requireEmailVerification: { key: 'users.requireEmailVerification', category: 'users', type: 'boolean' },
+    defaultUserRole: { key: 'users.defaultRole', category: 'users', type: 'string' },
+    sessionTimeout: { key: 'users.sessionTimeout', category: 'users', type: 'number' },
+    
+    // Notifications
+    emailNotifications: { key: 'notifications.email.enabled', category: 'notifications', type: 'boolean' },
+    smsNotifications: { key: 'notifications.sms.enabled', category: 'notifications', type: 'boolean' },
+    pushNotifications: { key: 'notifications.push.enabled', category: 'notifications', type: 'boolean' },
+    notificationEmail: { key: 'notifications.email.address', category: 'notifications', type: 'string' },
+    
+    // Security
+    passwordMinLength: { key: 'security.password.minLength', category: 'security', type: 'number' },
+    requireSpecialChars: { key: 'security.password.requireSpecialChars', category: 'security', type: 'boolean' },
+    sessionSecurity: { key: 'security.session.enabled', category: 'security', type: 'boolean' },
+    twoFactorAuth: { key: 'security.twoFactorAuth.required', category: 'security', type: 'boolean' },
+    loginAttempts: { key: 'security.login.maxAttempts', category: 'security', type: 'number' },
+    
+    // Appearance
+    theme: { key: 'appearance.theme', category: 'appearance', type: 'string' },
+    primaryColor: { key: 'appearance.primaryColor', category: 'appearance', type: 'string' },
+    logoUrl: { key: 'appearance.logoUrl', category: 'appearance', type: 'string' },
+    faviconUrl: { key: 'appearance.faviconUrl', category: 'appearance', type: 'string' },
+    
+    // Email
+    smtpHost: { key: 'email.smtp.host', category: 'email', type: 'string' },
+    smtpPort: { key: 'email.smtp.port', category: 'email', type: 'number' },
+    smtpUsername: { key: 'email.smtp.username', category: 'email', type: 'string' },
+    smtpPassword: { key: 'email.smtp.password', category: 'email', type: 'string', isEncrypted: true },
+    smtpSecure: { key: 'email.smtp.secure', category: 'email', type: 'boolean' },
+    fromEmail: { key: 'email.from.address', category: 'email', type: 'string' },
+    fromName: { key: 'email.from.name', category: 'email', type: 'string' },
+    
+    // API
+    apiRateLimit: { key: 'api.rateLimit', category: 'api', type: 'number' },
+    apiKeyExpiry: { key: 'api.keyExpiry', category: 'api', type: 'number' },
+    webhookUrl: { key: 'api.webhookUrl', category: 'api', type: 'string' },
+    
+    // Maintenance
+    maintenanceMode: { key: 'maintenance.enabled', category: 'maintenance', type: 'boolean' },
+    maintenanceMessage: { key: 'maintenance.message', category: 'maintenance', type: 'string' },
+  };
+
+  // Load settings from API
+  useEffect(() => {
+    const loadSettings = async () => {
+      setIsLoading(true);
+      try {
+        const response = await getSettings();
+        if (response.success && response.data?.settings) {
+          const backendSettings = response.data.settings;
+          
+          // Convert backend settings to frontend format
+          const frontendSettings: Partial<SettingsData> = {};
+          
+          // Create reverse mapping
+          const keyToFrontendKey: Record<string, keyof SettingsData> = {};
+          Object.entries(settingKeyMap).forEach(([frontendKey, backendConfig]) => {
+            keyToFrontendKey[backendConfig.key] = frontendKey as keyof SettingsData;
+          });
+          
+          // Map backend settings to frontend
+          backendSettings.forEach((setting) => {
+            const frontendKey = keyToFrontendKey[setting.key];
+            if (frontendKey) {
+              frontendSettings[frontendKey] = setting.value as never;
+            }
+          });
+          
+          setSettingsState(prev => ({ ...prev, ...frontendSettings }));
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load settings. Using default values.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const tabs = [
     { id: "general", label: "General", icon: Settings },
     { id: "users", label: "Users", icon: User },
@@ -137,34 +240,85 @@ const AdminSettingsPage = () => {
     setSaveStatus("idle");
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSaveStatus("success");
-      setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch {
+      // Convert frontend settings to backend format
+      const backendSettings = Object.entries(settingKeyMap).map(([frontendKey, backendConfig]) => {
+        const value = settings[frontendKey as keyof SettingsData];
+        return {
+          key: backendConfig.key,
+          value: value as string | number | boolean,
+          type: backendConfig.type,
+          category: backendConfig.category,
+          isEncrypted: backendConfig.isEncrypted || false,
+        };
+      });
+      
+      const response = await setSettings(backendSettings, 'Updated via admin settings page');
+      
+      if (response.success) {
+        setSaveStatus("success");
+        toast({
+          title: 'Success',
+          description: 'Settings saved successfully',
+        });
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      } else {
+        throw new Error(response.message || 'Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Failed to save settings:', error);
       setSaveStatus("error");
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save settings. Please try again.',
+        variant: 'destructive',
+      });
       setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleReset = () => {
-    // Reset to default values
-    setSettings({
-      ...settings,
-      siteName: "EventKnit",
-      siteDescription: "Professional Event Management Platform",
-      siteUrl: "https://eventknit.com",
-      timezone: "America/New_York",
-      language: "en",
-      dateFormat: "MM/DD/YYYY",
-      timeFormat: "12h"
-    });
+  const handleReset = async () => {
+    try {
+      setIsLoading(true);
+      // Reload settings from API
+      const response = await getSettings();
+      if (response.success && response.data?.settings) {
+        const backendSettings = response.data.settings;
+        const frontendSettings: Partial<SettingsData> = {};
+        
+        const keyToFrontendKey: Record<string, keyof SettingsData> = {};
+        Object.entries(settingKeyMap).forEach(([frontendKey, backendConfig]) => {
+          keyToFrontendKey[backendConfig.key] = frontendKey as keyof SettingsData;
+        });
+        
+        backendSettings.forEach((setting) => {
+          const frontendKey = keyToFrontendKey[setting.key];
+          if (frontendKey) {
+            frontendSettings[frontendKey] = setting.value as never;
+          }
+        });
+        
+        setSettingsState(prev => ({ ...prev, ...frontendSettings }));
+        toast({
+          title: 'Success',
+          description: 'Settings reset to saved values',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to reset settings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to reset settings',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateSetting = (key: keyof SettingsData, value: string | number | boolean) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettingsState(prev => ({ ...prev, [key]: value }));
   };
 
   const renderGeneralSettings = () => (
@@ -657,6 +811,16 @@ const AdminSettingsPage = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -669,11 +833,11 @@ const AdminSettingsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={handleReset}>
+            <Button variant="outline" onClick={handleReset} disabled={isLoading}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Reset
             </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button onClick={handleSave} disabled={isSaving || isLoading}>
               {isSaving ? (
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
               ) : (
