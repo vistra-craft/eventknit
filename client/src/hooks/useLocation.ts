@@ -46,9 +46,10 @@ export const useLocation = (): UseLocationReturn => {
             };
           },
           // Service 2: ip-api.com (free tier: 45 requests/minute)
-          // Note: ip-api.com doesn't support HTTPS on free tier, but we'll try it anyway
+          // Note: ip-api.com free tier only supports HTTP, not HTTPS
           async () => {
-            const response = await fetch('https://ip-api.com/json/?fields=status,message,city,country,countryCode,region,regionName', {
+            // Use HTTP for ip-api.com free tier (mixed content warning is acceptable for this use case)
+            const response = await fetch('http://ip-api.com/json/?fields=status,message,city,country,countryCode,region,regionName', {
               signal: AbortSignal.timeout(5000),
             });
             if (!response.ok) throw new Error('Service 2 failed');
