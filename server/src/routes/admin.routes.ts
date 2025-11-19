@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { AdminController } from '../controllers/admin.controller.js';
 import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
+import { AdminNotificationSettingsController } from '../controllers/admin-notification-settings.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireMinRole } from '../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
@@ -203,6 +204,69 @@ router.get('/staff-performance/team/summary', StaffPerformanceController.getTeam
  * @access  Private (ADMIN_STAFF+)
  */
 router.get('/staff-performance/:staffId/trends', StaffPerformanceController.getPerformanceTrends);
+
+/**
+ * @route   GET /api/v1/admin/notification-settings/defaults
+ * @desc    Get default notification preferences
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/notification-settings/defaults', AdminNotificationSettingsController.getDefaultPreferences);
+
+/**
+ * @route   PUT /api/v1/admin/notification-settings/defaults
+ * @desc    Update default notification preferences
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put('/notification-settings/defaults', AdminNotificationSettingsController.updateDefaultPreferences);
+
+/**
+ * @route   GET /api/v1/admin/notification-settings/system
+ * @desc    Get system-wide notification configuration
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/notification-settings/system', AdminNotificationSettingsController.getSystemConfig);
+
+/**
+ * @route   PUT /api/v1/admin/notification-settings/system
+ * @desc    Update system-wide notification configuration
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put('/notification-settings/system', AdminNotificationSettingsController.updateSystemConfig);
+
+/**
+ * @route   GET /api/v1/admin/notification-settings/templates
+ * @desc    Get all notification templates
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/notification-settings/templates', AdminNotificationSettingsController.getTemplates);
+
+/**
+ * @route   GET /api/v1/admin/notification-settings/templates/:type
+ * @desc    Get a specific notification template
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/notification-settings/templates/:type', AdminNotificationSettingsController.getTemplate);
+
+/**
+ * @route   PUT /api/v1/admin/notification-settings/templates/:type
+ * @desc    Create or update a notification template
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put('/notification-settings/templates/:type', AdminNotificationSettingsController.saveTemplate);
+
+/**
+ * @route   DELETE /api/v1/admin/notification-settings/templates/:type
+ * @desc    Delete a notification template
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.delete('/notification-settings/templates/:type', AdminNotificationSettingsController.deleteTemplate);
+
+/**
+ * @route   GET /api/v1/admin/notification-settings/analytics
+ * @desc    Get notification analytics summary
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/notification-settings/analytics', AdminNotificationSettingsController.getAnalytics);
 
 export default router;
 

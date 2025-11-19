@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { BulkMessageService } from './bulk-message.service.js';
 import { EmailTemplateService } from './email-template.service.js';
 import { NotificationService } from './notification.service.js';
-import { NotificationType, NotificationPriority } from '@prisma/client';
+import { NotificationType, NotificationPriority, BulkMessageTargetAudience } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -24,6 +24,28 @@ export interface UnifiedMessageData {
 }
 
 export class UnifiedMessagingService {
+  /**
+   * Map string target audience to BulkMessageTargetAudience enum
+   */
+  private static mapTargetAudience(
+    audience: 'all' | 'organizers' | 'attendees' | 'staff' | 'specific_event',
+  ): BulkMessageTargetAudience {
+    switch (audience) {
+    case 'all':
+      return BulkMessageTargetAudience.ALL;
+    case 'organizers':
+      return BulkMessageTargetAudience.ORGANIZERS;
+    case 'attendees':
+      return BulkMessageTargetAudience.ATTENDEES;
+    case 'staff':
+      return BulkMessageTargetAudience.STAFF;
+    case 'specific_event':
+      return BulkMessageTargetAudience.SPECIFIC_EVENT;
+    default:
+      return BulkMessageTargetAudience.ALL;
+    }
+  }
+
   /**
    * Send unified message across all channels
    * This is the single interface for all outbound communications
@@ -65,7 +87,7 @@ export class UnifiedMessagingService {
           title: subject,
           content: htmlContent,
           type: data.type,
-          targetAudience: data.targetAudience || 'all',
+          targetAudience: this.mapTargetAudience(data.targetAudience || 'all'),
           eventId: data.eventId,
           channels: {
             email: data.channels.email ?? true,
@@ -91,7 +113,7 @@ export class UnifiedMessagingService {
 
       // If not scheduled, send immediately
       if (!data.scheduledAt) {
-        await BulkMessageService.sendBulkMessage(bulkMessage.id, createdBy);
+        await BulkMessageService.sendBulkMessage(bulkMessage.id);
       }
 
       logger.info(
@@ -113,9 +135,9 @@ export class UnifiedMessagingService {
     templateId: string,
     targetAudience: 'all' | 'organizers' | 'attendees' | 'staff' | 'specific_event',
     variables: Record<string, string | number | boolean>,
+    createdBy: string,
     eventId?: string,
     scheduledAt?: Date | string,
-    createdBy: string,
   ) {
     try {
       return await this.sendUnifiedMessage(
@@ -149,12 +171,12 @@ export class UnifiedMessagingService {
   static async sendAnnouncement(
     title: string,
     content: string,
+    createdBy: string,
     templateId?: string,
     targetAudience: 'all' | 'organizers' | 'attendees' | 'staff' = 'all',
     campaignId?: string,
     variables?: Record<string, string | number | boolean>,
     scheduledAt?: Date | string,
-    createdBy: string,
   ) {
     try {
       return await this.sendUnifiedMessage(
@@ -268,7 +290,7 @@ export class UnifiedMessagingService {
         users = await prisma.user.findMany({
           where: {
             status: 'ACTIVE',
-            registrations: {
+            eventRegistrations: {
               some: {},
             },
           },
@@ -299,11 +321,11 @@ export class UnifiedMessagingService {
             eventId,
           },
           select: {
-            userId: true,
+            attendeeId: true,
           },
-          distinct: ['userId'],
+          distinct: ['attendeeId'],
         });
-        return registrations.map((r) => r.userId);
+        return registrations.map((r) => r.attendeeId);
       }
       default:
         return [];

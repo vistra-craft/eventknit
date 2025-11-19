@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { NotificationType } from '@prisma/client';
+import { AdminNotificationSettingsService } from './admin-notification-settings.service.js';
 
 export interface NotificationChannels {
   email?: boolean;
@@ -59,14 +60,20 @@ export class NotificationPreferenceService {
 
   /**
    * Create default notification preferences for a user
+   * Uses system-wide default preferences if configured, otherwise uses hardcoded defaults
    */
   static async createDefaultPreferences(userId: string) {
     try {
-      const preferences = await prisma.notificationPreference.create({
-        data: {
-          userId,
+      // Get system default preferences
+      let defaultPrefs;
+      try {
+        defaultPrefs = await AdminNotificationSettingsService.getDefaultPreferences();
+      } catch (error) {
+        // If system defaults not available, use hardcoded defaults
+        logger.warn('Failed to get system default preferences, using hardcoded defaults');
+        defaultPrefs = {
           emailEnabled: true,
-          smsEnabled: false, // SMS not used in this system - email only
+          smsEnabled: false,
           pushEnabled: true,
           inAppEnabled: true,
           eventReminders: true,
@@ -77,7 +84,14 @@ export class NotificationPreferenceService {
           systemAnnouncements: true,
           registrationUpdates: true,
           staffNotifications: true,
-          reminderFrequency: 'all',
+          reminderFrequency: 'all' as const,
+        };
+      }
+
+      const preferences = await prisma.notificationPreference.create({
+        data: {
+          userId,
+          ...defaultPrefs,
         },
       });
 

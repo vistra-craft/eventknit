@@ -96,6 +96,7 @@ import {
 import ModerationPage from "./pages/admin/ModerationPage";
 // Admin Communications import
 import AdminCommunicationsPage from "./pages/admin/CommunicationsPage";
+import AdminNotificationSettingsPage from "./pages/admin/AdminNotificationSettingsPage";
 // Admin Analytics imports
 import { AdminAnalyticsOverview } from "./pages/admin/analytics";
 // Admin Support import
@@ -246,6 +247,8 @@ const App = () => (
       <Route path="/admin/moderation" element={<ModerationPage />} />
       {/* Admin Communications Route */}
       <Route path="/admin/communications" element={<AdminCommunicationsPage />} />
+      {/* Admin Notification Settings Route */}
+      <Route path="/admin/notification-settings" element={<AdminNotificationSettingsPage />} />
       {/* Admin Support Route */}
       <Route path="/admin/support" element={<SupportPage />} />
       {/* Admin Finance Routes */}

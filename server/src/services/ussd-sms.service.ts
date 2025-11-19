@@ -1,9 +1,8 @@
 import { prisma } from '../config/database.js';
 import { smsService } from './sms.service.js';
-import { emailService } from './email.service.js';
 import { AuthService } from './auth.service.js';
 import { EventService } from './event.service.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Prisma, UserRole } from '@prisma/client';
 
@@ -294,7 +293,7 @@ export class USSDSMSService {
   private static async handleWelcomeStep(
     sessionId: string,
     state: SMSRegistrationState,
-    message: string,
+    _message: string,
   ): Promise<void> {
     // Welcome message already sent, move to first name
     await this.updateSessionStep(sessionId, 'first_name', state);

@@ -37,9 +37,7 @@ describe('NotificationService - Comprehensive Tests', () => {
   let attendeeId1: string;
   let attendeeId2: string;
   let attendeeId3: string;
-  let eventId: string;
-  let registrationId1: string;
-  let registrationId2: string;
+  let _eventId: string;
 
   beforeAll(async () => {
     try {
@@ -47,7 +45,7 @@ describe('NotificationService - Comprehensive Tests', () => {
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
       logger.info('✅ Test database connected');
-    } catch (error) {
+    } catch (_error) {
       logger.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }
@@ -150,12 +148,12 @@ describe('NotificationService - Comprehensive Tests', () => {
         availableSlots: 100,
       },
     });
-    eventId = event.id;
+    _eventId = event.id;
 
     // Create test registrations
-    const registration1 = await prisma.eventRegistration.create({
+    await prisma.eventRegistration.create({
       data: {
-        eventId,
+        eventId: _eventId,
         attendeeId: attendeeId1,
         quantity: 1,
         totalAmount: 0,
@@ -163,11 +161,10 @@ describe('NotificationService - Comprehensive Tests', () => {
         paymentStatus: 'COMPLETED',
       },
     });
-    registrationId1 = registration1.id;
 
-    const registration2 = await prisma.eventRegistration.create({
+    await prisma.eventRegistration.create({
       data: {
-        eventId,
+        eventId: _eventId,
         attendeeId: attendeeId2,
         quantity: 1,
         totalAmount: 0,
@@ -175,7 +172,6 @@ describe('NotificationService - Comprehensive Tests', () => {
         paymentStatus: 'COMPLETED',
       },
     });
-    registrationId2 = registration2.id;
 
     // Reset mocks
     jest.clearAllMocks();
@@ -296,7 +292,7 @@ describe('NotificationService - Comprehensive Tests', () => {
       // Assign staff to event
       await prisma.eventStaff.create({
         data: {
-          eventId,
+          eventId: _eventId,
           staffId: staff.id,
           staffType: 'ADMIN_STAFF',
           role: 'SUPERVISOR',
@@ -306,7 +302,7 @@ describe('NotificationService - Comprehensive Tests', () => {
       });
 
       await NotificationService.sendEventNotification(
-        eventId,
+        _eventId,
         NotificationType.EVENT_UPDATE,
         'Event Updated',
         'The event has been updated',
@@ -317,7 +313,7 @@ describe('NotificationService - Comprehensive Tests', () => {
 
       const notifications = await prisma.notification.findMany({
         where: {
-          eventId,
+          eventId: _eventId,
           userId: staff.id,
           type: NotificationType.EVENT_UPDATE,
         },
@@ -406,7 +402,7 @@ describe('NotificationService - Comprehensive Tests', () => {
         title: 'Event Update',
         message: 'Message 2',
         priority: NotificationPriority.HIGH,
-        eventId,
+        eventId: _eventId,
       });
 
       await NotificationService.sendNotification({
@@ -467,12 +463,12 @@ describe('NotificationService - Comprehensive Tests', () => {
       if (!dbConnected) return;
 
       const eventNotifications = await NotificationService.getUserNotifications(attendeeId1, {
-        eventId,
+        eventId: _eventId,
       });
 
       expect(eventNotifications.length).toBeGreaterThan(0);
       eventNotifications.forEach((n) => {
-        expect(n.eventId).toBe(eventId);
+        expect(n.eventId).toBe(_eventId);
       });
     });
 
