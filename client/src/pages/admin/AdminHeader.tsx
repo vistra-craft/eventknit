@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Shield, AlertTriangle } from "lucide-react";
+import { Menu, User, ChevronDown, LogOut, Shield, AlertTriangle, Moon, Sun } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../hooks/useTheme";
 import NotificationBell from "../../components/NotificationBell";
 
 interface AdminHeaderProps {
@@ -14,6 +15,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Mock admin user data - replace with actual user data
@@ -55,6 +57,21 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-4">
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="text-muted-foreground hover:text-foreground"
+            title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {resolvedTheme === 'light' ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </Button>
+
           {/* System Alerts */}
           <Button variant="ghost" size="sm" className="relative">
             <AlertTriangle className="h-5 w-5" />

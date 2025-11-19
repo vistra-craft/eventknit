@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Building2 } from "lucide-react";
+import { Menu, User, ChevronDown, LogOut, Building2, Moon, Sun } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../hooks/useTheme";
 import NotificationBell from "../../components/NotificationBell";
 
 interface OrganizerHeaderProps {
@@ -14,6 +15,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Mock user data - replace with actual user data
@@ -54,6 +56,21 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-4">
+          {/* Theme Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="text-muted-foreground hover:text-foreground"
+            title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {resolvedTheme === 'light' ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </Button>
+
           <NotificationBell />
           
           {/* Profile Dropdown */}

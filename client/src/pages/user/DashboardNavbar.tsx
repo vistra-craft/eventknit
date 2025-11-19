@@ -14,9 +14,12 @@ import {
   Building2,
   CalendarDays,
   Badge,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../hooks/useTheme";
 import NotificationBell from "../../components/NotificationBell";
 
 interface User {
@@ -35,6 +38,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -107,6 +111,21 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
             {/* Message Icon */}
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               <MessageCircle className="h-5 w-5" />
+            </Button>
+
+            {/* Theme Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="text-muted-foreground hover:text-foreground"
+              title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {resolvedTheme === 'light' ? (
+                <Moon className="h-5 w-5" />
+              ) : (
+                <Sun className="h-5 w-5" />
+              )}
             </Button>
 
             {/* Notification Bell */}
