@@ -1,5 +1,8 @@
 import { Response, NextFunction } from 'express';
-import { SystemSettingsService } from '../services/system-settings.service.js';
+import {
+  SystemSettingsService,
+  SettingCategory,
+} from '../services/system-settings.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { AuthorizationError } from '../utils/errors.js';
 import { UserRole } from '@prisma/client';
