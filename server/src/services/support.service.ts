@@ -177,7 +177,7 @@ export class SupportService {
   /**
    * Get support query by ID
    */
-  static async getQueryById(queryId: string, channel?: SupportChannel) {
+  static async getQueryById(queryId: string, _channel?: SupportChannel) {
     try {
       // For now, assume it's a social media message
       // In the future, check channel and route accordingly
@@ -215,7 +215,7 @@ export class SupportService {
   /**
    * Assign query to agent
    */
-  static async assignQuery(queryId: string, agentId: string, channel?: SupportChannel) {
+  static async assignQuery(queryId: string, agentId: string, _channel?: SupportChannel) {
     try {
       // For now, assume it's a social media message
       const message = await SocialMediaService.assignMessage(queryId, agentId);
@@ -245,7 +245,7 @@ export class SupportService {
   static async updateQueryStatus(
     queryId: string,
     status: SupportQueryStatus,
-    channel?: SupportChannel,
+    _channel?: SupportChannel,
   ) {
     try {
       // For now, assume it's a social media message
@@ -273,7 +273,7 @@ export class SupportService {
     response: string,
     agentId: string,
     isInternal: boolean = false,
-    channel?: SupportChannel,
+    _channel?: SupportChannel,
   ) {
     try {
       // For now, assume it's a social media message
