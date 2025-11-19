@@ -135,35 +135,36 @@ model User {
   deletedAt DateTime?
 
   // Relations
-  refreshTokens          RefreshToken[]
-  emailVerifications     EmailVerification[]
-  passwordResets         PasswordReset[]
-  magicLinkTokens        MagicLinkToken[]
-  kycDocuments           KYCDocument[]
-  auditLogs              AuditLog[]
-  eventsCreated          Event[]                 @relation("EventOrganizer")
-  eventRegistrations     EventRegistration[]
-  invitationsCreated     EventInvitation[]       @relation("InvitationCreator")
-  templatesCreated       TicketTemplate[]        @relation("TemplateCreator")
-  featuredEventsCreated  FeaturedEvent[]         @relation("FeaturedEventCreator")
-  promoCodesCreated      PromoCode[]             @relation("PromoCodeOrganizer")
-  promoCodeRedemptions   PromoCodeRedemption[]   @relation("PromoCodeUser")
-  eventAssignments       EventStaff[]            @relation("EventStaff")
+  refreshTokens                     RefreshToken[]
+  emailVerifications                EmailVerification[]
+  passwordResets                    PasswordReset[]
+  magicLinkTokens                   MagicLinkToken[]
+  kycDocuments                      KYCDocument[]
+  auditLogs                         AuditLog[]
+  eventsCreated                     Event[]                      @relation("EventOrganizer")
+  eventRegistrations                EventRegistration[]
+  invitationsCreated                EventInvitation[]            @relation("InvitationCreator")
+  templatesCreated                  TicketTemplate[]             @relation("TemplateCreator")
+  featuredEventsCreated             FeaturedEvent[]              @relation("FeaturedEventCreator")
+  promoCodesCreated                 PromoCode[]                  @relation("PromoCodeOrganizer")
+  promoCodeRedemptions              PromoCodeRedemption[]        @relation("PromoCodeUser")
+  eventAssignments                  EventStaff[]                 @relation("EventStaff")
   // Event Payment Relations
-  organizerDisbursements OrganizerDisbursement[] @relation("OrganizerDisbursements")
-  disbursementsCreated   OrganizerDisbursement[] @relation("DisbursementCreator")
-  refundsRequested       Refund[]                @relation("RefundRequester")
-  refundsProcessed       Refund[]                @relation("RefundProcessor")
-  reconciliationsCreated PaymentReconciliation[] @relation("PaymentReconciler")
+  organizerDisbursements            OrganizerDisbursement[]      @relation("OrganizerDisbursements")
+  disbursementsCreated              OrganizerDisbursement[]      @relation("DisbursementCreator")
+  refundsRequested                  Refund[]                     @relation("RefundRequester")
+  refundsProcessed                  Refund[]                     @relation("RefundProcessor")
+  reconciliationsCreated            PaymentReconciliation[]      @relation("PaymentReconciler")
   // Notification Relations
-  notifications          Notification[]          @relation("UserNotifications")
-  notificationPreference NotificationPreference? @relation("UserNotificationPreference")
+  notifications                     Notification[]               @relation("UserNotifications")
+  notificationPreference            NotificationPreference?      @relation("UserNotificationPreference")
   systemNotificationSettingsUpdated SystemNotificationSettings[] @relation("SystemNotificationSettingsUpdatedBy")
-  bulkMessagesCreated    BulkMessage[]           @relation("BulkMessageCreator")
-  emailTemplatesCreated  EmailTemplate[]         @relation("EmailTemplateCreator")
+  bulkMessagesCreated               BulkMessage[]                @relation("BulkMessageCreator")
+  preferences                       UserPreferences?             @relation("UserPreferences")
+  emailTemplatesCreated             EmailTemplate[]              @relation("EmailTemplateCreator")
   // Social Media & Support Relations
-  assignedSupportQueries SocialMessage[]         @relation("AssignedSupportQueries")
-  supportResponses       SupportResponse[]       @relation("SupportResponses")
+  assignedSupportQueries            SocialMessage[]              @relation("AssignedSupportQueries")
+  supportResponses                  SupportResponse[]            @relation("SupportResponses")
 
   @@index([email])
   @@index([role])
@@ -1105,20 +1106,115 @@ model NotificationPreference {
 }
 
 model SystemNotificationSettings {
-  id        String   @id @default(cuid())
-  key       String   @unique // e.g., "default.emailEnabled", "system.smsEnabled"
-  value     String   @db.Text // JSON string for complex values, or simple string for primitives
-  category  String   // e.g., "defaults", "system", "templates", "analytics"
-  description String? @db.Text
-  updatedBy String? // User ID who last updated this setting
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "default.emailEnabled", "system.smsEnabled"
+  value       String   @db.Text // JSON string for complex values, or simple string for primitives
+  category    String // e.g., "defaults", "system", "templates", "analytics"
+  description String?  @db.Text
+  updatedBy   String? // User ID who last updated this setting
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   updatedByUser User? @relation("SystemNotificationSettingsUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
   @@index([key])
   @@index([category])
   @@index([updatedBy])
+}
+
+model SystemSettings {
+  id          String  @id @default(cuid())
+  key         String  @unique // e.g., "site.name", "email.smtp.host"
+  value       String  @db.Text // JSON string for complex values
+  type        String // string, number, boolean, json
+  category    String // general, users, notifications, security, appearance, email, api, maintenance
+  description String? @db.Text
+  isPublic    Boolean @default(false) // Can be accessed without auth
+  isEncrypted Boolean @default(false) // Sensitive data (passwords, keys)
+  environment String? // dev, staging, production (null = all)
+
+  // Audit
+  createdBy String?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  history SettingsHistory[]
+
+  @@index([key])
+  @@index([category])
+  @@index([environment])
+  @@index([createdBy])
+  @@index([updatedBy])
+}
+
+model UserPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // Appearance
+  theme           String  @default("system") // light, dark, system
+  primaryColor    String? // Custom primary color
+  dashboardLayout String  @default("spacious") // compact, spacious
+  showMetrics     Boolean @default(true)
+  showCharts      Boolean @default(true)
+  language        String  @default("en")
+  timezone        String?
+  dateFormat      String  @default("MM/DD/YYYY")
+  timeFormat      String  @default("12h") // 12h, 24h
+
+  // Privacy
+  profileVisibility String  @default("public") // public, private, friends
+  showEmail         Boolean @default(false)
+  showPhone         Boolean @default(false)
+  allowMessages     Boolean @default(true)
+
+  // Account
+  sessionTimeout Int     @default(30) // minutes
+  loginAlerts    Boolean @default(true)
+  twoFactorAuth  Boolean @default(false)
+
+  // Organizer-specific
+  eventNotifications        Boolean @default(true)
+  registrationNotifications Boolean @default(true)
+  paymentNotifications      Boolean @default(true)
+  marketingEmails           Boolean @default(false)
+  weeklyDigest              Boolean @default(true)
+
+  // Attendee-specific
+  eventReminders    Boolean @default(true)
+  eventUpdates      Boolean @default(true)
+  promotionalOffers Boolean @default(true)
+
+  // Metadata
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SettingsHistory {
+  id           String   @id @default(cuid())
+  settingId    String? // SystemSettings ID (if system setting)
+  userId       String? // User ID (if user preference)
+  key          String // Setting key
+  oldValue     String?  @db.Text
+  newValue     String   @db.Text
+  changedBy    String
+  changeReason String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  // Relations
+  systemSetting SystemSettings? @relation(fields: [settingId], references: [id], onDelete: SetNull)
+
+  @@index([settingId])
+  @@index([userId])
+  @@index([key])
+  @@index([createdAt])
 }
 
 model BulkMessage {
@@ -1128,8 +1224,8 @@ model BulkMessage {
   type           String // announcement, marketing, system, event_update
   targetAudience BulkMessageTargetAudience
   eventId        String? // If targeting specific event
-  campaignId    String? // Link to marketing campaign
-  templateId    String? // Link to email template
+  campaignId     String? // Link to marketing campaign
+  templateId     String? // Link to email template
 
   // Channels
   channels Json // { email: boolean, sms: boolean, push: boolean, inApp: boolean }
@@ -1145,8 +1241,8 @@ model BulkMessage {
   failedCount     Int @default(0)
 
   // Engagement tracking
-  openedCount     Int @default(0) // Email opens
-  clickedCount    Int @default(0) // Link clicks
+  openedCount       Int @default(0) // Email opens
+  clickedCount      Int @default(0) // Link clicks
   unsubscribedCount Int @default(0) // Unsubscribes
 
   // Created by
@@ -1156,8 +1252,8 @@ model BulkMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  event     Event?        @relation("EventBulkMessages", fields: [eventId], references: [id], onDelete: SetNull)
-  template  EmailTemplate? @relation("BulkMessageTemplate", fields: [templateId], references: [id], onDelete: SetNull)
+  event    Event?         @relation("EventBulkMessages", fields: [eventId], references: [id], onDelete: SetNull)
+  template EmailTemplate? @relation("BulkMessageTemplate", fields: [templateId], references: [id], onDelete: SetNull)
 
   @@index([status, scheduledAt])
   @@index([createdBy])
@@ -1168,16 +1264,16 @@ model BulkMessage {
 }
 
 model EmailTemplate {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  subject     String?  // Email subject template
-  htmlContent String   @db.Text // HTML email template with variables
-  textContent String?  @db.Text // Plain text version
-  description String?  @db.Text
-  category    String?  // campaign, announcement, notification, system
-  variables   Json?    // Available template variables (e.g., {name}, {eventTitle})
-  isActive    Boolean  @default(true)
-  isDefault   Boolean  @default(false)
+  subject     String? // Email subject template
+  htmlContent String  @db.Text // HTML email template with variables
+  textContent String? @db.Text // Plain text version
+  description String? @db.Text
+  category    String? // campaign, announcement, notification, system
+  variables   Json? // Available template variables (e.g., {name}, {eventTitle})
+  isActive    Boolean @default(true)
+  isDefault   Boolean @default(false)
 
   // Created by
   createdBy String
@@ -1198,11 +1294,11 @@ model EmailTemplate {
 
 model SMSSession {
   id          String   @id @default(cuid())
-  phoneNumber String   // User's phone number
-  sessionType String   // registration, event_code, support, etc.
-  currentStep String?  // Current step in conversation flow
-  state       Json?    // Session state data (user inputs, eventId, etc.)
-  eventCode   String?  // Event code if registering for specific event
+  phoneNumber String // User's phone number
+  sessionType String // registration, event_code, support, etc.
+  currentStep String? // Current step in conversation flow
+  state       Json? // Session state data (user inputs, eventId, etc.)
+  eventCode   String? // Event code if registering for specific event
   expiresAt   DateTime // Session expiry (typically 10-15 minutes)
   completed   Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -1257,24 +1353,24 @@ enum SupportPriority {
 }
 
 model SocialAccount {
-  id            String   @id @default(cuid())
+  id            String         @id @default(cuid())
   platform      SocialPlatform
-  accountId     String   // Platform-specific account ID
+  accountId     String // Platform-specific account ID
   accountName   String
-  accountHandle String?  // @username or handle
-  accessToken   String?  @db.Text // Encrypted
-  refreshToken  String?  @db.Text // Encrypted
+  accountHandle String? // @username or handle
+  accessToken   String?        @db.Text // Encrypted
+  refreshToken  String?        @db.Text // Encrypted
   tokenExpiry   DateTime?
-  followers     Int      @default(0)
-  following     Int      @default(0)
-  isActive      Boolean  @default(true)
-  connectedAt   DateTime @default(now())
+  followers     Int            @default(0)
+  following     Int            @default(0)
+  isActive      Boolean        @default(true)
+  connectedAt   DateTime       @default(now())
   lastSyncedAt  DateTime?
-  metadata      Json?    // Additional platform-specific data
+  metadata      Json? // Additional platform-specific data
 
-  posts         SocialPost[]         @relation("SocialAccountPosts")
-  messages      SocialMessage[]     @relation("SocialAccountMessages")
-  analytics     SocialAnalytics[]    @relation("SocialAccountAnalytics")
+  posts     SocialPost[]      @relation("SocialAccountPosts")
+  messages  SocialMessage[]   @relation("SocialAccountMessages")
+  analytics SocialAnalytics[] @relation("SocialAccountAnalytics")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1285,22 +1381,22 @@ model SocialAccount {
 }
 
 model SocialPost {
-  id              String     @id @default(cuid())
+  id              String         @id @default(cuid())
   socialAccountId String
   platform        SocialPlatform
-  postId          String?    // Platform-specific post ID (null for drafts)
-  content         String?    @db.Text
-  mediaUrls       Json?      // Array of media URLs
-  status          PostStatus @default(DRAFT)
+  postId          String? // Platform-specific post ID (null for drafts)
+  content         String?        @db.Text
+  mediaUrls       Json? // Array of media URLs
+  status          PostStatus     @default(DRAFT)
   publishedAt     DateTime?
   scheduledAt     DateTime?
-  campaignId      String?    // Link to marketing campaign (future)
-  createdBy       String?    // User who created the post
-  metadata        Json?      // Additional platform-specific data
+  campaignId      String? // Link to marketing campaign (future)
+  createdBy       String? // User who created the post
+  metadata        Json? // Additional platform-specific data
 
-  socialAccount   SocialAccount    @relation("SocialAccountPosts", fields: [socialAccountId], references: [id], onDelete: Cascade)
+  socialAccount   SocialAccount      @relation("SocialAccountPosts", fields: [socialAccountId], references: [id], onDelete: Cascade)
   metrics         SocialPostMetrics?
-  relatedMessages SocialMessage[]  @relation("PostMessages")
+  relatedMessages SocialMessage[]    @relation("PostMessages")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1315,17 +1411,17 @@ model SocialPost {
 }
 
 model SocialPostMetrics {
-  id        String   @id @default(cuid())
-  postId    String   @unique
-  likes     Int      @default(0)
-  comments  Int      @default(0)
-  shares    Int      @default(0)
-  views     Int      @default(0)
-  clicks    Int      @default(0)
-  reach     Int      @default(0)
-  impressions Int    @default(0)
+  id             String   @id @default(cuid())
+  postId         String   @unique
+  likes          Int      @default(0)
+  comments       Int      @default(0)
+  shares         Int      @default(0)
+  views          Int      @default(0)
+  clicks         Int      @default(0)
+  reach          Int      @default(0)
+  impressions    Int      @default(0)
   engagementRate Float? // Calculated: (likes + comments + shares) / reach
-  lastUpdated DateTime @default(now()) @updatedAt
+  lastUpdated    DateTime @default(now()) @updatedAt
 
   post SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
@@ -1333,30 +1429,30 @@ model SocialPostMetrics {
 }
 
 model SocialMessage {
-  id              String            @id @default(cuid())
+  id              String             @id @default(cuid())
   socialAccountId String
   platform        SocialPlatform
-  messageId       String           // Platform-specific message ID
-  senderId        String           // Platform-specific sender ID
+  messageId       String // Platform-specific message ID
+  senderId        String // Platform-specific sender ID
   senderName      String
   senderHandle    String?
   senderEmail     String?
-  message         String           @db.Text
+  message         String             @db.Text
   messageType     MessageType
-  postId          String?          // If related to a post
+  postId          String? // If related to a post
   status          SupportQueryStatus @default(NEW)
-  priority        SupportPriority  @default(MEDIUM)
-  category        String?          // e.g., "billing", "technical", "general"
-  assignedTo      String?          // User ID of assigned agent
+  priority        SupportPriority    @default(MEDIUM)
+  category        String? // e.g., "billing", "technical", "general"
+  assignedTo      String? // User ID of assigned agent
   assignedAt      DateTime?
   resolvedAt      DateTime?
-  campaignId      String?          // Link to marketing campaign if query related
-  metadata        Json?            // Additional platform-specific data
+  campaignId      String? // Link to marketing campaign if query related
+  metadata        Json? // Additional platform-specific data
 
-  socialAccount   SocialAccount    @relation("SocialAccountMessages", fields: [socialAccountId], references: [id], onDelete: Cascade)
-  socialPost      SocialPost?      @relation("PostMessages", fields: [postId], references: [id], onDelete: SetNull)
-  assignedAgent   User?            @relation("AssignedSupportQueries", fields: [assignedTo], references: [id], onDelete: Restrict)
-  responses       SupportResponse[]  @relation("MessageResponses")
+  socialAccount SocialAccount     @relation("SocialAccountMessages", fields: [socialAccountId], references: [id], onDelete: Cascade)
+  socialPost    SocialPost?       @relation("PostMessages", fields: [postId], references: [id], onDelete: SetNull)
+  assignedAgent User?             @relation("AssignedSupportQueries", fields: [assignedTo], references: [id], onDelete: Restrict)
+  responses     SupportResponse[] @relation("MessageResponses")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1372,13 +1468,13 @@ model SocialMessage {
 }
 
 model SupportResponse {
-  id          String   @id @default(cuid())
-  messageId   String
-  response    String   @db.Text
-  sentBy      String   // User ID of agent who sent response
-  sentAt      DateTime @default(now())
+  id         String   @id @default(cuid())
+  messageId  String
+  response   String   @db.Text
+  sentBy     String // User ID of agent who sent response
+  sentAt     DateTime @default(now())
   isInternal Boolean  @default(false) // Internal note vs customer-facing response
-  metadata    Json?    // Additional data (delivery status, etc.)
+  metadata   Json? // Additional data (delivery status, etc.)
 
   message SocialMessage @relation("MessageResponses", fields: [messageId], references: [id], onDelete: Cascade)
   agent   User          @relation("SupportResponses", fields: [sentBy], references: [id], onDelete: Restrict)
@@ -1391,21 +1487,21 @@ model SupportResponse {
 }
 
 model SocialAnalytics {
-  id            String   @id @default(cuid())
+  id              String         @id @default(cuid())
   socialAccountId String
-  date          DateTime @db.Date
-  platform      SocialPlatform
-  followers     Int      @default(0)
-  following     Int      @default(0)
-  posts         Int      @default(0)
-  likes         Int      @default(0)
-  comments      Int      @default(0)
-  shares        Int      @default(0)
-  views         Int      @default(0)
-  reach         Int      @default(0)
-  impressions   Int      @default(0)
-  engagement    Int      @default(0) // Total engagements
-  metadata      Json?    // Additional metrics
+  date            DateTime       @db.Date
+  platform        SocialPlatform
+  followers       Int            @default(0)
+  following       Int            @default(0)
+  posts           Int            @default(0)
+  likes           Int            @default(0)
+  comments        Int            @default(0)
+  shares          Int            @default(0)
+  views           Int            @default(0)
+  reach           Int            @default(0)
+  impressions     Int            @default(0)
+  engagement      Int            @default(0) // Total engagements
+  metadata        Json? // Additional metrics
 
   socialAccount SocialAccount @relation("SocialAccountAnalytics", fields: [socialAccountId], references: [id], onDelete: Cascade)
 

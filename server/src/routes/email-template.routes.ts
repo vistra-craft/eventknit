@@ -47,3 +47,5 @@ router.delete('/:id', EmailTemplateController.deleteTemplate);
 export default router;
 
 
+
+

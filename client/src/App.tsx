@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleViewProvider } from "./contexts/RoleViewContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
 import type { ReactNode } from "react";
@@ -155,10 +156,11 @@ const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
 };
 
 const App = () => (
-  <AuthProvider>
-    <BrowserRouter>
-      <RoleViewWrapper>
-        <Routes>
+  <ThemeProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <RoleViewWrapper>
+          <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -308,7 +310,8 @@ const App = () => (
       </RoleViewWrapper>
       <Toaster />
     </BrowserRouter>
-  </AuthProvider>
+    </AuthProvider>
+  </ThemeProvider>
 );
 
 export default App;

@@ -108,28 +108,63 @@
   .dark {
     --background: 222 47% 11%;
     --foreground: 240 100% 100%;
+    --surface: 222 47% 13%;
 
-    /* EventKnit Brand Color - Same in dark mode */
-    --eventknit-brand: 263 46% 51%;
-    --eventknit-brand-foreground: 240 100% 100%;
-
-    /* Navigation Hover Color - Same in dark mode */
-    /* --nav-hover: 217 91% 60%; */ /* Original blue hover color - commented for easy revert */
-    --nav-hover: 215 45% 44%; /* New blue hover color: #3D52A0 (matches EventKnit brand) */
-
-    --card: 222 47% 11%;
-    --card-foreground: 240 100% 100%;
-
-    --popover: 222 47% 11%;
-    --popover-foreground: 240 100% 100%;
-
+    /* Primary Brand Colors - Dark Theme */
     --primary: 194 48% 87%;
     --primary-foreground: 222 47% 11%;
+    --primary-glow: 194 48% 60%;
+    --primary-dark: 222 47% 8%;
 
-    --secondary: 194 48% 87%;
-    --secondary-foreground: 222 47% 11%;
+    /* EventKnit Brand Color - Same in dark mode */
+    --eventknit-brand: 215 45% 44%;
+    --eventknit-brand-foreground: 240 100% 100%;
 
-    --muted: 194 48% 87%;
+    /* Royal Purple - Premium accent color */
+    --royal-purple: 263 46% 51%;
+    --royal-purple-foreground: 240 100% 100%;
+
+    /* Navigation Hover Color - Same in dark mode */
+    --nav-hover: 215 45% 44%;
+
+    /* Accent Colors - Dark Theme */
+    --accent-electric: 194 48% 60%;
+    --accent-neon: 194 48% 60%;
+    --accent-coral: 194 48% 60%;
+
+    /* Event Card Colors - Dark Theme */
+    --card-surface: 222 47% 13%;
+    --card-border: 194 48% 30%;
+    --card-hover: 222 47% 15%;
+
+    /* Gradients - Dark Theme */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-neon)) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(194 48% 30%) 50%, hsl(222 47% 11%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card-surface)) 0%, hsl(222 47% 11%) 100%);
+    --gradient-card-hover: linear-gradient(145deg, hsl(var(--card-hover)) 0%, hsl(194 48% 30%) 100%);
+    --gradient-accent: linear-gradient(90deg, hsl(var(--accent-electric)) 0%, hsl(var(--primary)) 50%, hsl(var(--accent-neon)) 100%);
+
+    /* Glass Effects - Dark Theme */
+    --glass-bg: hsl(222 47% 11% / 0.8);
+    --glass-border: hsl(194 48% 30% / 0.5);
+
+    /* Shadows & Glows - Dark Theme */
+    --shadow-primary: 0 20px 40px -12px hsl(var(--primary) / 0.3);
+    --shadow-card: 0 8px 32px -8px hsl(194 48% 30% / 0.2);
+    --shadow-card-hover: 0 12px 24px -8px hsl(var(--primary) / 0.2);
+    --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.3);
+    --shadow-elevated: 0 25px 50px -12px hsl(194 48% 30% / 0.3);
+
+    --card: 222 47% 13%;
+    --card-foreground: 240 100% 100%;
+
+    --popover: 222 47% 13%;
+    --popover-foreground: 240 100% 100%;
+
+    --secondary: 194 48% 30%;
+    --secondary-foreground: 240 100% 100%;
+
+    --muted: 194 48% 30%;
     --muted-foreground: 240 100% 100%;
 
     --accent: 194 48% 87%;
@@ -138,15 +173,15 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 240 100% 100%;
 
-    --border: 194 48% 87%;
-    --input: 222 47% 11%;
+    --border: 194 48% 30%;
+    --input: 222 47% 13%;
     --ring: 194 48% 87%;
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 240 100% 100%;
     --sidebar-primary: 194 48% 87%;
-    --sidebar-primary-foreground: 240 100% 100%;
-    --sidebar-accent: 194 48% 87%;
-    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 194 48% 30%;
+    --sidebar-accent-foreground: 240 100% 100%;
     --sidebar-border: 194 48% 87%;
     --sidebar-ring: 194 48% 87%;
   }
