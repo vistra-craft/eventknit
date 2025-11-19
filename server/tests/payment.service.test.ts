@@ -3,7 +3,7 @@ import app from '../src/app';
 import { PaymentService } from '../src/services/payment.service';
 import { PlatformFeeService } from '../src/services/platform-fee.service';
 import { prisma } from '../src/config/database';
-import { UserRole, UserStatus, EventStatus, RegistrationStatus } from '@prisma/client';
+import { UserRole, UserStatus, EventStatus, RegistrationStatus, NotificationType } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 
@@ -47,6 +47,9 @@ describe('PaymentService', () => {
 
     // Clear all tables in correct order to respect foreign keys
     await prisma.$transaction(async (tx) => {
+      await tx.notification.deleteMany();
+      await tx.eventPaymentTransaction.deleteMany();
+      await tx.platformFee.deleteMany();
       await tx.eventRegistration.deleteMany();
       await tx.eventInvitation.deleteMany();
       await tx.ticketTemplate.deleteMany();
@@ -457,6 +460,77 @@ describe('PaymentService', () => {
       });
       expect(registration?.paymentStatus).toBe('COMPLETED');
       expect(registration?.status).toBe(RegistrationStatus.CONFIRMED);
+    });
+
+    it('should send REGISTRATION_CONFIRMED notification after successful payment', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Skip if payment service is not configured
+      const { config } = await import('../src/config/index.js');
+      if (!config.paystack.secretKey) {
+        logger.info('⏭️  Skipping test - payment service not configured');
+        return;
+      }
+
+      // Create a fresh registration for this test
+      await prisma.eventRegistration.deleteMany({
+        where: { eventId, attendeeId },
+      });
+
+      const testRegistration = await prisma.eventRegistration.create({
+        data: {
+          eventId,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 100,
+          status: RegistrationStatus.PENDING,
+          paymentStatus: 'PENDING',
+          paymentTransactionId: `test-ref-notif-${Date.now()}`,
+        },
+      });
+
+      // Mock Paystack verification to return success
+      const mockVerifyPayment = jest.spyOn(paymentService, 'verifyPayment');
+      mockVerifyPayment.mockResolvedValue({
+        success: true,
+        reference: testRegistration.paymentTransactionId!,
+        amount: 100,
+        status: 'success',
+        customer: { email: 'attendee@test.com' },
+        metadata: {},
+      });
+
+      const mockWebhookData = {
+        event: 'charge.success',
+        data: {
+          reference: testRegistration.paymentTransactionId!,
+        },
+      };
+
+      await paymentService.handleWebhook(mockWebhookData.event, mockWebhookData.data);
+
+      // Wait a bit for async notification processing
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Verify REGISTRATION_CONFIRMED notification was sent
+      const notification = await prisma.notification.findFirst({
+        where: {
+          userId: attendeeId,
+          eventId: eventId,
+          type: NotificationType.REGISTRATION_CONFIRMED,
+          registrationId: testRegistration.id,
+        },
+      });
+
+      expect(notification).toBeDefined();
+      expect(notification?.title).toContain('Registration Confirmed');
+      expect(notification?.type).toBe(NotificationType.REGISTRATION_CONFIRMED);
+
+      // Cleanup
+      mockVerifyPayment.mockRestore();
     });
   });
 

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/database';
-import { UserRole, UserStatus, EventStatus } from '@prisma/client';
+import { UserRole, UserStatus, EventStatus, NotificationType } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
@@ -45,6 +45,7 @@ describe('Event Registration System', () => {
 
     // Clear all tables in correct order to respect foreign keys
     await prisma.$transaction(async (tx) => {
+      await tx.notification.deleteMany();
       await tx.featuredEvent.deleteMany();
       await tx.eventRegistration.deleteMany();
       await tx.eventInvitation.deleteMany();
@@ -158,6 +159,17 @@ describe('Event Registration System', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.registration.status).toBe('CONFIRMED');
+
+      // Verify REGISTRATION_CONFIRMED notification was sent
+      const notification = await prisma.notification.findFirst({
+        where: {
+          userId: attendeeId,
+          eventId: event.id,
+          type: NotificationType.REGISTRATION_CONFIRMED,
+        },
+      });
+      expect(notification).toBeDefined();
+      expect(notification?.title).toContain('Registration Confirmed');
     });
 
     it('should register for a paid event (pending payment)', async () => {
