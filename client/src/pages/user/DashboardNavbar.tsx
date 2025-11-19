@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  Bell,
   MessageCircle,
   Home,
   User,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../hooks/useAuth";
+import NotificationBell from "../../components/NotificationBell";
 
 interface User {
   name: string;
@@ -110,9 +110,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
             </Button>
 
             {/* Notification Bell */}
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationBell />
 
             {/* Profile Dropdown */}
             <div className="relative">

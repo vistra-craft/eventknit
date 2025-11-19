@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Bell, Menu, User, ChevronDown, LogOut, Shield, AlertTriangle } from "lucide-react";
+import { Menu, User, ChevronDown, LogOut, Shield, AlertTriangle } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import NotificationBell from "../../components/NotificationBell";
 
 interface AdminHeaderProps {
   onMenuToggle?: () => void;
@@ -63,12 +64,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
           </Button>
           
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-white text-xs rounded-full flex items-center justify-center">
-              5
-            </span>
-          </Button>
+          <NotificationBell />
           
           {/* Profile Dropdown */}
           <div className="relative">
