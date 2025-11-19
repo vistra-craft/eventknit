@@ -315,6 +315,16 @@ export const apiPut = <T>(endpoint: string, body?: unknown): Promise<T> => {
 };
 
 /**
+ * PATCH request
+ */
+export const apiPatch = <T>(endpoint: string, body?: unknown): Promise<T> => {
+  return apiRequest<T>(endpoint, {
+    method: 'PATCH',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+};
+
+/**
  * DELETE request
  */
 export const apiDelete = <T>(endpoint: string): Promise<T> => {
