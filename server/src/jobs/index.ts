@@ -3,6 +3,7 @@ import { TokenCleanupJob } from './token-cleanup.job.js';
 import { PaymentTimeoutJob } from './payment-timeout.job.js';
 import { BulkMessageSchedulerJob } from './bulk-message-scheduler.job.js';
 import { EventReminderJob } from './event-reminder.job.js';
+import { SMSSessionCleanupJob } from './sms-session-cleanup.job.js';
 
 /**
  * Initialize all scheduled jobs
@@ -23,6 +24,9 @@ export function initializeJobs(): void {
     // Start event reminder job
     EventReminderJob.start();
     
+    // Start SMS session cleanup job
+    SMSSessionCleanupJob.start();
+    
     logger.info('✅ All scheduled jobs initialized');
   } catch (error) {
     logger.error('Failed to initialize scheduled jobs:', error);
@@ -41,6 +45,7 @@ export function stopJobs(): void {
     PaymentTimeoutJob.stop();
     BulkMessageSchedulerJob.stop();
     EventReminderJob.stop();
+    SMSSessionCleanupJob.stop();
     
     logger.info('✅ All scheduled jobs stopped');
   } catch (error) {
@@ -53,4 +58,5 @@ export { TokenCleanupJob } from './token-cleanup.job.js';
 export { PaymentTimeoutJob } from './payment-timeout.job.js';
 export { BulkMessageSchedulerJob } from './bulk-message-scheduler.job.js';
 export { EventReminderJob } from './event-reminder.job.js';
+export { SMSSessionCleanupJob } from './sms-session-cleanup.job.js';
 

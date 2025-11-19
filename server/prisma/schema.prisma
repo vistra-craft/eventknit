@@ -348,6 +348,9 @@ model Event {
   // Organizer data access control (admin-controlled)
   organizerDataAccess DataAccessLevel @default(RESTRICTED) // What data organizers can see
 
+  // Registration code for SMS/USSD registration
+  registrationCode String? @unique // Short code for SMS/USSD registration (e.g., "EVENT1")
+
   // Scan configuration
   allowReEntry    Boolean @default(false) // Allow attendees to re-enter after check-out
   requireCheckOut Boolean @default(false) // Require check-out before re-entry
@@ -386,6 +389,7 @@ model Event {
   @@index([isFree])
   @@index([deletedAt])
   @@index([createdAt])
+  @@index([registrationCode])
 }
 
 model EventRegistration {
@@ -1172,6 +1176,24 @@ model EmailTemplate {
   @@index([category])
   @@index([isActive])
   @@index([createdBy])
+}
+
+model SMSSession {
+  id          String   @id @default(cuid())
+  phoneNumber String   // User's phone number
+  sessionType String   // registration, event_code, support, etc.
+  currentStep String?  // Current step in conversation flow
+  state       Json?    // Session state data (user inputs, eventId, etc.)
+  eventCode   String?  // Event code if registering for specific event
+  expiresAt   DateTime // Session expiry (typically 10-15 minutes)
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([phoneNumber, sessionType])
+  @@index([eventCode])
+  @@index([expiresAt])
+  @@index([completed])
 }
 
 // ============================================

@@ -67,6 +67,7 @@ export interface CreateEventData {
     placeholder?: string;
     options?: string[];
   }>;
+  generateRegistrationCode?: boolean; // Auto-generate registration code (default: true)
 }
 
 export interface UpdateEventData extends Partial<CreateEventData> {
@@ -344,6 +345,7 @@ export class EventService {
         sponsors: data.sponsors || undefined,
         faqs: data.faqs || undefined,
         registrationFields: data.registrationFields || undefined,
+        registrationCode: data.generateRegistrationCode !== false ? this.generateRegistrationCode() : null,
         organizerId,
         createdBy: organizerId,
       },
@@ -2844,6 +2846,87 @@ export class EventService {
       },
       // No magic link token - user must use account invitation link or ticket email link
     };
+  }
+
+  /**
+   * Generate a unique registration code for SMS/USSD registration
+   * Format: 6-8 alphanumeric characters (uppercase)
+   */
+  static generateRegistrationCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars (0, O, I, 1)
+    let code = '';
+    
+    // Generate 6-8 character code
+    const length = 6 + Math.floor(Math.random() * 3); // 6, 7, or 8 characters
+    
+    for (let i = 0; i < length; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    return code;
+  }
+
+  /**
+   * Generate or regenerate registration code for an event
+   */
+  static async generateEventRegistrationCode(
+    eventId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<string> {
+    // Verify user has permission
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: {
+        organizerId: true,
+        status: true,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Only organizer, admin, or superadmin can generate codes
+    if (
+      event.organizerId !== userId &&
+      userRole !== UserRole.SUPERADMIN &&
+      userRole !== UserRole.ADMIN_STAFF
+    ) {
+      throw new AuthorizationError('Only event organizer or admin can generate registration codes');
+    }
+
+    // Generate unique code (retry if collision)
+    let code: string;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    do {
+      code = this.generateRegistrationCode();
+      const existing = await prisma.event.findUnique({
+        where: { registrationCode: code },
+        select: { id: true },
+      });
+
+      if (!existing) {
+        break; // Code is unique
+      }
+
+      attempts++;
+      if (attempts >= maxAttempts) {
+        throw new Error('Failed to generate unique registration code after multiple attempts');
+      }
+    } while (true);
+
+    // Update event with new code
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { registrationCode: code },
+    });
+
+    logger.info(`Generated registration code ${code} for event ${eventId}`);
+
+    return code;
   }
 }
 

@@ -264,7 +264,7 @@ class SMSService {
       if (eventTitle) {
         message += ` for ${eventTitle}`;
       }
-      message += '. We'll notify you once confirmed.';
+      message += ". We'll notify you once confirmed.";
     }
 
     return this.sendSMS({
@@ -339,7 +339,7 @@ class SMSService {
     if (details) {
       message += `. ${details}`;
     }
-    message += '. If this wasn't you, secure your account immediately.';
+    message += ". If this wasn't you, secure your account immediately.";
 
     return this.sendSMS({
       to: phoneNumber,

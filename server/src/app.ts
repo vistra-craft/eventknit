@@ -25,6 +25,7 @@ import supportRoutes from './routes/support.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import emailTemplateRoutes from './routes/email-template.routes.js';
 import unifiedMessagingRoutes from './routes/unified-messaging.routes.js';
+import { smsRouter, ussdRouter } from './routes/ussd-sms.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -111,6 +112,8 @@ app.use('/api/v1/admin/support', supportRoutes);
 app.use('/api/v1/admin/analytics', analyticsRoutes);
 app.use('/api/v1/admin/communications/email-templates', emailTemplateRoutes);
 app.use('/api/v1/admin/communications', unifiedMessagingRoutes);
+app.use('/api/v1/sms', smsRouter);
+app.use('/api/v1/ussd', ussdRouter);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
