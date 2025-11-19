@@ -116,7 +116,7 @@ export class SocialMediaService {
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
           tokenExpiry: data.tokenExpiry ? new Date(data.tokenExpiry) : undefined,
-          metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : null,
+          metadata: data.metadata,
           isActive: true,
         });
       }
@@ -235,7 +235,7 @@ export class SocialMediaService {
         updateData.lastSyncedAt = data.lastSyncedAt ? new Date(data.lastSyncedAt) : null;
       }
       if (data.metadata !== undefined) {
-        updateData.metadata = data.metadata as Prisma.InputJsonValue;
+        updateData.metadata = data.metadata ? (data.metadata as Prisma.InputJsonValue) : Prisma.JsonNull;
       }
 
       const updated = await prisma.socialAccount.update({
