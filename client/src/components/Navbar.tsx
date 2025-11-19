@@ -15,7 +15,11 @@ interface NavItem {
   dropdown?: string[];
 }
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  onSearch?: (searchTerm: string, location: string) => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onSearch }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const { activeViewRole } = useRoleView();
@@ -250,7 +254,7 @@ const Navbar: React.FC = () => {
 
             {/* Search Bar - Full Width */}
             <div className="hidden lg:flex flex-1">
-              <SearchBar />
+              <SearchBar onSearch={onSearch} />
             </div>
 
             {/* Desktop Navigation & Actions */}

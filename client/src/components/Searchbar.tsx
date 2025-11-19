@@ -1,8 +1,41 @@
+import { useState, useEffect } from "react";
 import { MapPin, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useLocation, getCapitalCity } from "@/hooks/useLocation";
 
-const SearchBar = () => {
+interface SearchBarProps {
+  onSearch?: (searchTerm: string, location: string) => void;
+  initialSearch?: string;
+  initialLocation?: string;
+}
+
+const SearchBar = ({ onSearch, initialSearch = "", initialLocation }: SearchBarProps) => {
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [location, setLocation] = useState(initialLocation || "Nairobi");
+  const { location: detectedLocation, isLoading: isDetectingLocation } = useLocation();
+
+  // Update location when detected
+  useEffect(() => {
+    if (detectedLocation && !initialLocation) {
+      // Use detected city, or fallback to capital city of the country
+      const city = detectedLocation.city || getCapitalCity(detectedLocation.countryCode, "Nairobi");
+      setLocation(city);
+    }
+  }, [detectedLocation, initialLocation]);
+
+  const handleSearch = () => {
+    if (onSearch) {
+      onSearch(searchTerm, location);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <div className="flex items-center bg-card-surface rounded-lg shadow-card overflow-hidden border border-card-border">
@@ -11,6 +44,9 @@ const SearchBar = () => {
           <Input
             type="text"
             placeholder="Find artist, genre, event, or venue"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
             className="border-0 bg-transparent text-base placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-auto p-0 text-foreground"
           />
         </div>
@@ -24,13 +60,18 @@ const SearchBar = () => {
           <Input
             type="text"
             placeholder="Location"
-            defaultValue="Nairobi"
-            className="border-0 bg-transparent text-base placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-auto p-0 w-24 text-foreground"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isDetectingLocation}
+            className="border-0 bg-transparent text-base placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-auto p-0 w-24 text-foreground disabled:opacity-50"
+            title={isDetectingLocation ? "Detecting your location..." : "Location"}
           />
         </div>
         
         {/* Search Button */}
         <Button 
+          onClick={handleSearch}
           className="bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground px-6 py-3 h-auto rounded-none rounded-r-lg font-medium"
         >
           Search

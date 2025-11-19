@@ -6,7 +6,14 @@ import { useEvents } from "@/hooks/useEvents";
 import { formatEventDate } from "@/lib/event-utils";
 import { EventStatus } from "@/lib/event-api";
 
-export const EventGrid = () => {
+interface EventGridProps {
+  searchFilters?: {
+    search?: string;
+    location?: string;
+  };
+}
+
+export const EventGrid = ({ searchFilters }: EventGridProps = {}) => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   
   // Get events based on filter
@@ -23,7 +30,7 @@ export const EventGrid = () => {
     clearError();
 
     // Build filters based on selected filter
-    const filters: { status?: EventStatus; limit?: number } = {
+    const filters: { status?: EventStatus; limit?: number; search?: string } = {
       limit: 20,
     };
 
@@ -38,14 +45,27 @@ export const EventGrid = () => {
       filters.status = EventStatus.APPROVED;
     }
 
-    await fetchEvents(filters);
-  }, [fetchEvents, clearError]);
+    // Add search filters if provided
+    // Note: Backend search parameter can include location in the search string
+    if (searchFilters?.search || searchFilters?.location) {
+      const searchParts: string[] = [];
+      if (searchFilters.search) {
+        searchParts.push(searchFilters.search);
+      }
+      if (searchFilters.location) {
+        searchParts.push(searchFilters.location);
+      }
+      filters.search = searchParts.join(" ");
+    }
 
-  // Fetch events on mount
+    await fetchEvents(filters);
+  }, [fetchEvents, clearError, searchFilters]);
+
+  // Fetch events on mount and when search filters change
   useEffect(() => {
-    handleFilterChange("all");
+    handleFilterChange(selectedFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchFilters]);
 
   return (
     <section className="py-16 bg-background relative overflow-hidden" data-section="events">
