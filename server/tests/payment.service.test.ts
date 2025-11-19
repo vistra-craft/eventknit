@@ -519,7 +519,7 @@ describe('PaymentService', () => {
       const notification = await prisma.notification.findFirst({
         where: {
           userId: attendeeId,
-          eventId: eventId,
+          eventId,
           type: NotificationType.REGISTRATION_CONFIRMED,
           registrationId: testRegistration.id,
         },

@@ -338,15 +338,15 @@ export class AdminNotificationSettingsService {
       const startDate = new Date();
       
       switch (period) {
-        case 'day':
-          startDate.setDate(now.getDate() - 1);
-          break;
-        case 'week':
-          startDate.setDate(now.getDate() - 7);
-          break;
-        case 'month':
-          startDate.setMonth(now.getMonth() - 1);
-          break;
+      case 'day':
+        startDate.setDate(now.getDate() - 1);
+        break;
+      case 'week':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
       }
 
       // Get all notifications in the period

@@ -1,8 +1,8 @@
-import { Response, NextFunction } from "express";
-import { SystemSettingsService } from "../services/system-settings.service.js";
-import { AuthenticatedRequest } from "../middleware/auth.middleware.js";
-import { AuthorizationError } from "../utils/errors.js";
-import { UserRole } from "@prisma/client";
+import { Response, NextFunction } from 'express';
+import { SystemSettingsService } from '../services/system-settings.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { AuthorizationError } from '../utils/errors.js';
+import { UserRole } from '@prisma/client';
 
 export class SystemSettingsController {
   /**
@@ -18,7 +18,7 @@ export class SystemSettingsController {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required',
         });
         return;
       }
@@ -28,14 +28,14 @@ export class SystemSettingsController {
         req.user.role !== UserRole.SUPERADMIN &&
         req.user.role !== UserRole.ADMIN_STAFF
       ) {
-        throw new AuthorizationError("Only admins can access system settings");
+        throw new AuthorizationError('Only admins can access system settings');
       }
 
       const category = req.query.category as string | undefined;
       const environment = req.query.environment as string | undefined;
 
       const settings = await SystemSettingsService.getSettings(
-        category as any,
+        category as SettingCategory | undefined,
         environment,
       );
 
@@ -61,7 +61,7 @@ export class SystemSettingsController {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required',
         });
         return;
       }
@@ -71,7 +71,7 @@ export class SystemSettingsController {
         req.user.role !== UserRole.SUPERADMIN &&
         req.user.role !== UserRole.ADMIN_STAFF
       ) {
-        throw new AuthorizationError("Only admins can access system settings");
+        throw new AuthorizationError('Only admins can access system settings');
       }
 
       const { key } = req.params;
@@ -109,7 +109,7 @@ export class SystemSettingsController {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required',
         });
         return;
       }
@@ -119,7 +119,7 @@ export class SystemSettingsController {
         req.user.role !== UserRole.SUPERADMIN &&
         req.user.role !== UserRole.ADMIN_STAFF
       ) {
-        throw new AuthorizationError("Only admins can update system settings");
+        throw new AuthorizationError('Only admins can update system settings');
       }
 
       const { key } = req.params;
@@ -137,7 +137,7 @@ export class SystemSettingsController {
       if (!value || !type || !category) {
         res.status(400).json({
           success: false,
-          message: "value, type, and category are required",
+          message: 'value, type, and category are required',
         });
         return;
       }
@@ -180,7 +180,7 @@ export class SystemSettingsController {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required',
         });
         return;
       }
@@ -190,7 +190,7 @@ export class SystemSettingsController {
         req.user.role !== UserRole.SUPERADMIN &&
         req.user.role !== UserRole.ADMIN_STAFF
       ) {
-        throw new AuthorizationError("Only admins can update system settings");
+        throw new AuthorizationError('Only admins can update system settings');
       }
 
       const { settings, changeReason } = req.body;
@@ -198,7 +198,7 @@ export class SystemSettingsController {
       if (!Array.isArray(settings) || settings.length === 0) {
         res.status(400).json({
           success: false,
-          message: "settings array is required",
+          message: 'settings array is required',
         });
         return;
       }
@@ -232,7 +232,7 @@ export class SystemSettingsController {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required',
         });
         return;
       }
@@ -242,7 +242,7 @@ export class SystemSettingsController {
         req.user.role !== UserRole.SUPERADMIN &&
         req.user.role !== UserRole.ADMIN_STAFF
       ) {
-        throw new AuthorizationError("Only admins can delete system settings");
+        throw new AuthorizationError('Only admins can delete system settings');
       }
 
       const { key } = req.params;
@@ -271,7 +271,7 @@ export class SystemSettingsController {
       if (!req.user) {
         res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required',
         });
         return;
       }
@@ -281,7 +281,7 @@ export class SystemSettingsController {
         req.user.role !== UserRole.SUPERADMIN &&
         req.user.role !== UserRole.ADMIN_STAFF
       ) {
-        throw new AuthorizationError("Only admins can access setting history");
+        throw new AuthorizationError('Only admins can access setting history');
       }
 
       const { key } = req.params;
