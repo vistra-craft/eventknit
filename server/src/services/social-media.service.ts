@@ -116,7 +116,7 @@ export class SocialMediaService {
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
           tokenExpiry: data.tokenExpiry ? new Date(data.tokenExpiry) : undefined,
-          metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : undefined,
+          metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : null,
           isActive: true,
         });
       }
