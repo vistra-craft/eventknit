@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { MessageSquare, Send, Mail, Bell, Search, Eye, Edit, Trash2, Plus, CheckCircle, AlertTriangle, X, Paperclip, Smile, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageSquare, Send, Mail, Bell, Search, Eye, Edit, Trash2, Plus, CheckCircle, AlertTriangle, X, Paperclip, Smile, Save, Clock, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import AdminLayout from "./AdminLayout";
+import { useToast } from "@/hooks/use-toast";
+import {
+  getBulkMessages,
+  createBulkMessage,
+  updateBulkMessage,
+  deleteBulkMessage,
+  sendBulkMessage,
+  cancelBulkMessage,
+  type BulkMessage,
+  type BulkMessageTargetAudience,
+  type BulkMessageType,
+} from "@/lib/bulk-message-api";
 
 interface Announcement {
   id: string;
@@ -354,12 +367,34 @@ interface ChatMessage {
 }
 
 const CommunicationsPage = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [audienceFilter, setAudienceFilter] = useState("all");
   const [showChat, setShowChat] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
+  
+  // Bulk Messages state
+  const [bulkMessages, setBulkMessages] = useState<BulkMessage[]>([]);
+  const [loadingBulkMessages, setLoadingBulkMessages] = useState(false);
+  const [showBulkMessageForm, setShowBulkMessageForm] = useState(false);
+  const [editingBulkMessage, setEditingBulkMessage] = useState<BulkMessage | null>(null);
+  const [viewingBulkMessage, setViewingBulkMessage] = useState<BulkMessage | null>(null);
+  const [bulkMessageForm, setBulkMessageForm] = useState({
+    title: "",
+    content: "",
+    type: "announcement" as BulkMessageType,
+    targetAudience: "ALL" as BulkMessageTargetAudience,
+    eventId: "",
+    channels: {
+      email: true,
+      sms: false,
+      push: true,
+      inApp: true,
+    },
+    scheduledAt: "",
+  });
   
   // State for announcements
   const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
@@ -703,6 +738,190 @@ const CommunicationsPage = () => {
     });
   };
 
+  // Bulk Messages handlers
+  const loadBulkMessages = async () => {
+    try {
+      setLoadingBulkMessages(true);
+      const response = await getBulkMessages();
+      if (response.success && response.data) {
+        setBulkMessages(response.data.messages);
+      }
+    } catch (error) {
+      console.error("Failed to load bulk messages:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load bulk messages. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingBulkMessages(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBulkMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCreateBulkMessage = async () => {
+    try {
+      const response = await createBulkMessage({
+        title: bulkMessageForm.title,
+        content: bulkMessageForm.content,
+        type: bulkMessageForm.type,
+        targetAudience: bulkMessageForm.targetAudience,
+        eventId: bulkMessageForm.eventId || undefined,
+        channels: bulkMessageForm.channels,
+        scheduledAt: bulkMessageForm.scheduledAt || undefined,
+      });
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Bulk message created successfully.",
+        });
+        resetBulkMessageForm();
+        setShowBulkMessageForm(false);
+        loadBulkMessages();
+      }
+    } catch (error) {
+      console.error("Failed to create bulk message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create bulk message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateBulkMessage = async () => {
+    if (!editingBulkMessage) return;
+    try {
+      const response = await updateBulkMessage(editingBulkMessage.id, {
+        title: bulkMessageForm.title,
+        content: bulkMessageForm.content,
+        type: bulkMessageForm.type,
+        targetAudience: bulkMessageForm.targetAudience,
+        eventId: bulkMessageForm.eventId || undefined,
+        channels: bulkMessageForm.channels,
+        scheduledAt: bulkMessageForm.scheduledAt || undefined,
+      });
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Bulk message updated successfully.",
+        });
+        resetBulkMessageForm();
+        setShowBulkMessageForm(false);
+        setEditingBulkMessage(null);
+        loadBulkMessages();
+      }
+    } catch (error) {
+      console.error("Failed to update bulk message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update bulk message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteBulkMessage = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this bulk message? This action cannot be undone.")) {
+      try {
+        const response = await deleteBulkMessage(id);
+        if (response.success) {
+          toast({
+            title: "Success",
+            description: "Bulk message deleted successfully.",
+          });
+          loadBulkMessages();
+        }
+      } catch (error) {
+        console.error("Failed to delete bulk message:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete bulk message. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleSendBulkMessage = async (id: string) => {
+    try {
+      const response = await sendBulkMessage(id);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Bulk message sent successfully.",
+        });
+        loadBulkMessages();
+      }
+    } catch (error) {
+      console.error("Failed to send bulk message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send bulk message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelBulkMessage = async (id: string) => {
+    try {
+      const response = await cancelBulkMessage(id);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Bulk message cancelled successfully.",
+        });
+        loadBulkMessages();
+      }
+    } catch (error) {
+      console.error("Failed to cancel bulk message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel bulk message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditBulkMessage = (message: BulkMessage) => {
+    setEditingBulkMessage(message);
+    setBulkMessageForm({
+      title: message.title,
+      content: message.content,
+      type: message.type,
+      targetAudience: message.targetAudience,
+      eventId: message.eventId || "",
+      channels: message.channels,
+      scheduledAt: message.scheduledAt ? new Date(message.scheduledAt).toISOString().slice(0, 16) : "",
+    });
+    setShowBulkMessageForm(true);
+  };
+
+  const handleViewBulkMessage = (message: BulkMessage) => {
+    setViewingBulkMessage(message);
+  };
+
+  const resetBulkMessageForm = () => {
+    setBulkMessageForm({
+      title: "",
+      content: "",
+      type: "announcement",
+      targetAudience: "ALL",
+      eventId: "",
+      channels: {
+        email: true,
+        sms: false,
+        push: true,
+        inApp: true,
+      },
+      scheduledAt: "",
+    });
+  };
+
   const handleSendChatMessage = () => {
     if (chatMessage.trim()) {
       const newMessage: ChatMessage = {
@@ -803,10 +1022,11 @@ const CommunicationsPage = () => {
 
         {/* Communications Tabs */}
         <Tabs defaultValue="announcements" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="templates">Email Templates</TabsTrigger>
+            <TabsTrigger value="bulk-messages">Bulk Messages</TabsTrigger>
           </TabsList>
 
           <TabsContent value="announcements" className="space-y-6">
@@ -1027,6 +1247,114 @@ const CommunicationsPage = () => {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="bulk-messages" className="space-y-6">
+            {/* Bulk Messages Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Bulk Messages</h2>
+                <p className="text-sm text-gray-600 mt-1">Send messages to multiple users at once</p>
+              </div>
+              <Button onClick={() => { resetBulkMessageForm(); setShowBulkMessageForm(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Bulk Message
+              </Button>
+            </div>
+
+            {/* Bulk Messages List */}
+            {loadingBulkMessages ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">Loading bulk messages...</p>
+                </CardContent>
+              </Card>
+            ) : bulkMessages.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">No bulk messages found. Create your first bulk message to get started.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {bulkMessages.map((message) => (
+                  <Card key={message.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 rounded-lg bg-primary/10">
+                              <Users className="h-5 w-5 text-primary" />
+                            </div>
+                            <h3 className="font-semibold text-gray-900 truncate">{message.title}</h3>
+                            <Badge className={`text-xs ${getStatusBadge(message.status.toLowerCase())}`}>
+                              {message.status}
+                            </Badge>
+                            <Badge className={`text-xs ${getTypeBadge(message.type)}`}>
+                              {message.type}
+                            </Badge>
+                            <Badge className={`text-xs ${getAudienceBadge(message.targetAudience.toLowerCase())}`}>
+                              {message.targetAudience}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{message.content}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>Recipients: {message.totalRecipients.toLocaleString()}</span>
+                            <span>Sent: {message.sentCount.toLocaleString()}</span>
+                            {message.failedCount > 0 && (
+                              <span className="text-red-600">Failed: {message.failedCount.toLocaleString()}</span>
+                            )}
+                            <span>Created: {formatDate(message.createdAt)}</span>
+                            {message.scheduledAt && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Scheduled: {formatDate(message.scheduledAt)}
+                              </span>
+                            )}
+                            {message.sentAt && (
+                              <span>Sent: {formatDate(message.sentAt)}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            {message.channels.email && <Badge variant="secondary" className="text-xs">Email</Badge>}
+                            {message.channels.sms && <Badge variant="secondary" className="text-xs">SMS</Badge>}
+                            {message.channels.push && <Badge variant="secondary" className="text-xs">Push</Badge>}
+                            {message.channels.inApp && <Badge variant="secondary" className="text-xs">In-App</Badge>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button variant="outline" size="sm" onClick={() => handleViewBulkMessage(message)}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          {message.status === "DRAFT" && (
+                            <>
+                              <Button size="sm" onClick={() => handleSendBulkMessage(message.id)}>
+                                <Send className="h-4 w-4 mr-1" />
+                                Send
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleEditBulkMessage(message)}>
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                            </>
+                          )}
+                          {message.status === "SCHEDULED" && (
+                            <Button variant="outline" size="sm" onClick={() => handleCancelBulkMessage(message.id)}>
+                              <X className="h-4 w-4 mr-1" />
+                              Cancel
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteBulkMessage(message.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
@@ -1392,6 +1720,185 @@ const CommunicationsPage = () => {
                   <p>Created: {formatDate(viewingTemplate.createdAt)}</p>
                   <p>Usage: {viewingTemplate.usageCount.toLocaleString()} times</p>
                   <p>Last used: {viewingTemplate.lastUsed ? formatDate(viewingTemplate.lastUsed) : 'Never'}</p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Bulk Message Form Modal */}
+        <Dialog open={showBulkMessageForm} onOpenChange={setShowBulkMessageForm}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingBulkMessage ? "Edit Bulk Message" : "Create New Bulk Message"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="bulk-title">Title</Label>
+                <Input
+                  id="bulk-title"
+                  value={bulkMessageForm.title}
+                  onChange={(e) => setBulkMessageForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter message title"
+                />
+              </div>
+              <div>
+                <Label htmlFor="bulk-content">Content</Label>
+                <Textarea
+                  id="bulk-content"
+                  value={bulkMessageForm.content}
+                  onChange={(e) => setBulkMessageForm(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="Enter message content"
+                  rows={6}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="bulk-type">Type</Label>
+                  <Select value={bulkMessageForm.type} onValueChange={(value) => setBulkMessageForm(prev => ({ ...prev, type: value as BulkMessageType }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="announcement">Announcement</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                      <SelectItem value="event_update">Event Update</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="bulk-audience">Target Audience</Label>
+                  <Select value={bulkMessageForm.targetAudience} onValueChange={(value) => setBulkMessageForm(prev => ({ ...prev, targetAudience: value as BulkMessageTargetAudience }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Users</SelectItem>
+                      <SelectItem value="ORGANIZERS">Organizers</SelectItem>
+                      <SelectItem value="ATTENDEES">Attendees</SelectItem>
+                      <SelectItem value="STAFF">Staff</SelectItem>
+                      <SelectItem value="SPECIFIC_EVENT">Specific Event</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {bulkMessageForm.targetAudience === "SPECIFIC_EVENT" && (
+                <div>
+                  <Label htmlFor="bulk-event-id">Event ID</Label>
+                  <Input
+                    id="bulk-event-id"
+                    value={bulkMessageForm.eventId}
+                    onChange={(e) => setBulkMessageForm(prev => ({ ...prev, eventId: e.target.value }))}
+                    placeholder="Enter event ID"
+                  />
+                </div>
+              )}
+              <div>
+                <Label>Delivery Channels</Label>
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="channel-email" className="cursor-pointer">Email</Label>
+                    <Switch
+                      id="channel-email"
+                      checked={bulkMessageForm.channels.email}
+                      onCheckedChange={(checked) => setBulkMessageForm(prev => ({ ...prev, channels: { ...prev.channels, email: checked } }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="channel-sms" className="cursor-pointer">SMS</Label>
+                    <Switch
+                      id="channel-sms"
+                      checked={bulkMessageForm.channels.sms}
+                      onCheckedChange={(checked) => setBulkMessageForm(prev => ({ ...prev, channels: { ...prev.channels, sms: checked } }))}
+                      disabled={true}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="channel-push" className="cursor-pointer">Push</Label>
+                    <Switch
+                      id="channel-push"
+                      checked={bulkMessageForm.channels.push}
+                      onCheckedChange={(checked) => setBulkMessageForm(prev => ({ ...prev, channels: { ...prev.channels, push: checked } }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="channel-inapp" className="cursor-pointer">In-App</Label>
+                    <Switch
+                      id="channel-inapp"
+                      checked={bulkMessageForm.channels.inApp}
+                      onCheckedChange={(checked) => setBulkMessageForm(prev => ({ ...prev, channels: { ...prev.channels, inApp: checked } }))}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="bulk-scheduled">Schedule (Optional)</Label>
+                <Input
+                  id="bulk-scheduled"
+                  type="datetime-local"
+                  value={bulkMessageForm.scheduledAt}
+                  onChange={(e) => setBulkMessageForm(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty to send immediately</p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => { setShowBulkMessageForm(false); resetBulkMessageForm(); setEditingBulkMessage(null); }}>
+                  Cancel
+                </Button>
+                <Button onClick={editingBulkMessage ? handleUpdateBulkMessage : handleCreateBulkMessage}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {editingBulkMessage ? "Update" : "Create"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Message View Modal */}
+        {viewingBulkMessage && (
+          <Dialog open={!!viewingBulkMessage} onOpenChange={() => setViewingBulkMessage(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{viewingBulkMessage.title}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Badge className={getStatusBadge(viewingBulkMessage.status.toLowerCase())}>
+                    {viewingBulkMessage.status}
+                  </Badge>
+                  <Badge className={getTypeBadge(viewingBulkMessage.type)}>
+                    {viewingBulkMessage.type}
+                  </Badge>
+                  <Badge className={getAudienceBadge(viewingBulkMessage.targetAudience.toLowerCase())}>
+                    {viewingBulkMessage.targetAudience}
+                  </Badge>
+                </div>
+                <div className="prose max-w-none">
+                  <p className="whitespace-pre-wrap">{viewingBulkMessage.content}</p>
+                </div>
+                <div className="text-sm text-gray-500 space-y-1">
+                  <p>Recipients: {viewingBulkMessage.totalRecipients.toLocaleString()}</p>
+                  <p>Sent: {viewingBulkMessage.sentCount.toLocaleString()}</p>
+                  {viewingBulkMessage.failedCount > 0 && (
+                    <p className="text-red-600">Failed: {viewingBulkMessage.failedCount.toLocaleString()}</p>
+                  )}
+                  <p>Created: {formatDate(viewingBulkMessage.createdAt)}</p>
+                  {viewingBulkMessage.scheduledAt && (
+                    <p>Scheduled: {formatDate(viewingBulkMessage.scheduledAt)}</p>
+                  )}
+                  {viewingBulkMessage.sentAt && (
+                    <p>Sent: {formatDate(viewingBulkMessage.sentAt)}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label>Channels:</Label>
+                  {viewingBulkMessage.channels.email && <Badge variant="secondary">Email</Badge>}
+                  {viewingBulkMessage.channels.sms && <Badge variant="secondary">SMS</Badge>}
+                  {viewingBulkMessage.channels.push && <Badge variant="secondary">Push</Badge>}
+                  {viewingBulkMessage.channels.inApp && <Badge variant="secondary">In-App</Badge>}
                 </div>
               </div>
             </DialogContent>
