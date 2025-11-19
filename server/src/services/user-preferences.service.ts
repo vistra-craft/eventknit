@@ -372,7 +372,7 @@ export class UserPreferencesService {
   static async updatePreference(
     userId: string,
     key: keyof UserPreferencesData,
-    value: any,
+    value: unknown,
   ): Promise<UserPreferences> {
     return this.updatePreferences(userId, { [key]: value });
   }
