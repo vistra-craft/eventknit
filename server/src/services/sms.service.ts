@@ -85,7 +85,7 @@ class SMSService {
     }
 
     // Truncate and add ellipsis
-    return message.substring(0, maxLength - 3) + '...';
+    return `${message.substring(0, maxLength - 3)  }...`;
   }
 
   /**
@@ -264,7 +264,7 @@ class SMSService {
       if (eventTitle) {
         message += ` for ${eventTitle}`;
       }
-      message += ". We'll notify you once confirmed.";
+      message += '. We\'ll notify you once confirmed.';
     }
 
     return this.sendSMS({
@@ -285,18 +285,18 @@ class SMSService {
   ): Promise<SMSResult> {
     let message = `URGENT: ${eventTitle} has been `;
     switch (updateType) {
-      case 'cancelled':
-        message += 'CANCELLED';
-        break;
-      case 'postponed':
-        message += 'POSTPONED';
-        break;
-      case 'venue_changed':
-        message += 'VENUE CHANGED';
-        break;
-      case 'time_changed':
-        message += 'TIME CHANGED';
-        break;
+    case 'cancelled':
+      message += 'CANCELLED';
+      break;
+    case 'postponed':
+      message += 'POSTPONED';
+      break;
+    case 'venue_changed':
+      message += 'VENUE CHANGED';
+      break;
+    case 'time_changed':
+      message += 'TIME CHANGED';
+      break;
     }
     if (details) {
       message += `. ${details}`;
@@ -339,7 +339,7 @@ class SMSService {
     if (details) {
       message += `. ${details}`;
     }
-    message += ". If this wasn't you, secure your account immediately.";
+    message += '. If this wasn\'t you, secure your account immediately.';
 
     return this.sendSMS({
       to: phoneNumber,

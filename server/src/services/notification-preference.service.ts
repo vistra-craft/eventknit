@@ -110,7 +110,7 @@ export class NotificationPreferenceService {
 
       // SMS can be enabled if user opts in and SMS service is configured
       // Default to false, but allow users to enable it
-      const smsEnabled = data.smsEnabled ?? existingPreferences.smsEnabled ?? false;
+      const smsEnabled = data.smsEnabled ?? existingPreferences?.smsEnabled ?? false;
 
       const preferences = existingPreferences
         ? await prisma.notificationPreference.update({

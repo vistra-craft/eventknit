@@ -562,7 +562,7 @@ export class NotificationService {
    * Check if notification type is critical (affects retry behavior)
    */
   private static isCriticalNotification(type: NotificationType): boolean {
-    const criticalTypes = [
+    const criticalTypes: string[] = [
       NotificationType.EVENT_CANCELLED,
       NotificationType.EVENT_POSTPONED,
       NotificationType.EVENT_VENUE_CHANGED,
@@ -573,7 +573,7 @@ export class NotificationService {
       NotificationType.WAITLIST_AVAILABLE,
       NotificationType.REGISTRATION_DEADLINE_1H,
     ];
-    return criticalTypes.includes(type);
+    return criticalTypes.includes(type as string);
   }
 
   /**

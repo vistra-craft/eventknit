@@ -283,7 +283,7 @@ export class USSDSMSService {
         await this.sendStepMessage({ id: session.id, currentStep: step, state } as any, step);
       }
     } catch (error) {
-      logger.error(`Failed to process session response:`, error);
+      logger.error('Failed to process session response:', error);
       await this.sendErrorMessage((session.state as unknown as SMSRegistrationState).phoneNumber);
     }
   }
@@ -785,9 +785,9 @@ export class USSDSMSService {
       let successMessage = `Registration successful! Welcome ${state.firstName}!\n\n`;
       successMessage += `Email: ${state.email}\n`;
       if (state.eventCode) {
-        successMessage += `You've been registered for the event.\n`;
+        successMessage += 'You\'ve been registered for the event.\n';
       }
-      successMessage += `Check your email to verify your account and set your password.`;
+      successMessage += 'Check your email to verify your account and set your password.';
 
       await smsService.sendSMS({
         to: state.phoneNumber,
@@ -795,10 +795,10 @@ export class USSDSMSService {
         isCritical: true,
       });
     } catch (error) {
-      logger.error(`Failed to complete registration:`, error);
+      logger.error('Failed to complete registration:', error);
       await smsService.sendSMS({
         to: state.phoneNumber,
-        message: 'Registration failed. Please try again or contact support. Error: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        message: `Registration failed. Please try again or contact support. Error: ${  error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
   }
@@ -817,20 +817,20 @@ export class USSDSMSService {
     switch (step) {
     case 'welcome':
       if (state.eventCode) {
-        message = `Welcome! Let's register you for the event.\n\n`;
+        message = 'Welcome! Let\'s register you for the event.\n\n';
       } else {
-        message = `Welcome to EventKnit Registration!\n\n`;
+        message = 'Welcome to EventKnit Registration!\n\n';
       }
-      message += `We'll collect some information. Reply with your answers.\n\n`;
-      message += `Step 1/12: What is your first name?`;
+      message += 'We\'ll collect some information. Reply with your answers.\n\n';
+      message += 'Step 1/12: What is your first name?';
       break;
 
     case 'first_name':
-      message = `Step 2/12: What is your last name?`;
+      message = 'Step 2/12: What is your last name?';
       break;
 
     case 'last_name':
-      message = `Step 3/12: What is your email address?\n(Example: name@example.com)`;
+      message = 'Step 3/12: What is your email address?\n(Example: name@example.com)';
       break;
 
     case 'phone_confirm':
@@ -838,39 +838,39 @@ export class USSDSMSService {
       break;
 
     case 'company':
-      message = `Step 5/12: What company do you work for?\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 5/12: What company do you work for?\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'industry':
-      message = `Step 6/12: What industry are you in?\n(Examples: Technology, Healthcare, Finance, Education, etc.)\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 6/12: What industry are you in?\n(Examples: Technology, Healthcare, Finance, Education, etc.)\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'job_title':
-      message = `Step 7/12: What is your job title?\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 7/12: What is your job title?\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'address':
-      message = `Step 8/12: What is your street address?\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 8/12: What is your street address?\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'city':
-      message = `Step 9/12: What city do you live in?\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 9/12: What city do you live in?\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'state':
-      message = `Step 10/12: What state/province?\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 10/12: What state/province?\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'country':
-      message = `Step 11/12: What country?\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 11/12: What country?\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'postal_code':
-      message = `Step 12/12: What is your postal/zip code?\n(Reply SKIP or 0 to skip)`;
+      message = 'Step 12/12: What is your postal/zip code?\n(Reply SKIP or 0 to skip)';
       break;
 
     case 'event_code':
-      message = `Do you have an event code to register for?\n(Enter the code or reply SKIP to continue without event registration)`;
+      message = 'Do you have an event code to register for?\n(Enter the code or reply SKIP to continue without event registration)';
       break;
 
     case 'confirm':
@@ -892,7 +892,7 @@ export class USSDSMSService {
    * Build confirmation message with all collected data
    */
   private static buildConfirmationMessage(state: SMSRegistrationState): string {
-    let message = `Please confirm your details:\n\n`;
+    let message = 'Please confirm your details:\n\n';
     message += `Name: ${state.firstName} ${state.lastName}\n`;
     message += `Email: ${state.email}\n`;
     message += `Phone: ${state.phoneNumber}\n`;
@@ -925,7 +925,7 @@ export class USSDSMSService {
       message += `Event Code: ${state.eventCode}\n`;
     }
 
-    message += `\nReply YES to confirm or NO to cancel.`;
+    message += '\nReply YES to confirm or NO to cancel.';
     return message;
   }
 
@@ -1034,11 +1034,11 @@ export class USSDSMSService {
    * Send help message
    */
   private static async sendHelpMessage(phoneNumber: string) {
-    const message = `EventKnit SMS Registration\n\n`;
-    const helpText = `To register, send:\n`;
-    const registerText = `REGISTER or *123#\n\n`;
-    const eventText = `Or send an event code to register for a specific event.\n\n`;
-    const cancelText = `Send CANCEL anytime to exit.`;
+    const message = 'EventKnit SMS Registration\n\n';
+    const helpText = 'To register, send:\n';
+    const registerText = 'REGISTER or *123#\n\n';
+    const eventText = 'Or send an event code to register for a specific event.\n\n';
+    const cancelText = 'Send CANCEL anytime to exit.';
 
     await smsService.sendSMS({
       to: phoneNumber,
