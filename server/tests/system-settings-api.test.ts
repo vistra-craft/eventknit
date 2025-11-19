@@ -14,10 +14,10 @@ describe('System Settings API', () => {
   let dbConnected = false;
   let adminToken: string;
   let organizerToken: string;
-  let attendeeToken: string;
+  let _attendeeToken: string;
   let adminId: string;
-  let organizerId: string;
-  let attendeeId: string;
+  let _organizerId: string;
+  let _attendeeId: string;
 
   beforeAll(async () => {
     try {
@@ -85,7 +85,7 @@ describe('System Settings API', () => {
         emailVerifiedAt: new Date(),
       },
     });
-    organizerId = organizer.id;
+    _organizerId = organizer.id;
     organizerToken = generateAccessToken({
       userId: organizer.id,
       email: organizer.email,
@@ -105,8 +105,8 @@ describe('System Settings API', () => {
         emailVerifiedAt: new Date(),
       },
     });
-    attendeeId = attendee.id;
-    attendeeToken = generateAccessToken({
+    _attendeeId = attendee.id;
+    _attendeeToken = generateAccessToken({
       userId: attendee.id,
       email: attendee.email,
       role: attendee.role,

@@ -39,21 +39,27 @@ describe('UserPreferencesService', () => {
 
   afterEach(async () => {
     // Clean up preferences and users
-    await prisma.userPreferences.deleteMany({
-      where: {
-        userId: {
-          in: [testUserId, testOrganizerId, testAttendeeId],
+    if (testUserId || testOrganizerId || testAttendeeId) {
+      await prisma.userPreferences.deleteMany({
+        where: {
+          userId: {
+            in: [testUserId, testOrganizerId, testAttendeeId].filter(
+              (id) => id !== undefined,
+            ) as string[],
+          },
         },
-      },
-    });
+      });
 
-    await prisma.user.deleteMany({
-      where: {
-        id: {
-          in: [testUserId, testOrganizerId, testAttendeeId],
+      await prisma.user.deleteMany({
+        where: {
+          id: {
+            in: [testUserId, testOrganizerId, testAttendeeId].filter(
+              (id) => id !== undefined,
+            ) as string[],
+          },
         },
-      },
-    });
+      });
+    }
   });
 
   describe('getUserPreferences', () => {
@@ -88,7 +94,7 @@ describe('UserPreferencesService', () => {
 
     it('should throw NotFoundError for non-existent user', async () => {
       await expect(
-        UserPreferencesService.getUserPreferences('non-existent-user-id')
+        UserPreferencesService.getUserPreferences('non-existent-user-id'),
       ).rejects.toThrow(NotFoundError);
     });
   });
@@ -122,7 +128,7 @@ describe('UserPreferencesService', () => {
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           theme: 'invalid' as any,
-        })
+        }),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -130,7 +136,7 @@ describe('UserPreferencesService', () => {
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           dashboardLayout: 'invalid' as any,
-        })
+        }),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -138,7 +144,7 @@ describe('UserPreferencesService', () => {
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           timeFormat: 'invalid' as any,
-        })
+        }),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -146,7 +152,7 @@ describe('UserPreferencesService', () => {
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           profileVisibility: 'invalid' as any,
-        })
+        }),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -154,13 +160,13 @@ describe('UserPreferencesService', () => {
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           sessionTimeout: 0,
-        })
+        }),
       ).rejects.toThrow(ValidationError);
 
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           sessionTimeout: 2000,
-        })
+        }),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -168,7 +174,7 @@ describe('UserPreferencesService', () => {
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           primaryColor: 'not-a-color',
-        })
+        }),
       ).rejects.toThrow(ValidationError);
 
       // Valid hex color should work
@@ -225,7 +231,7 @@ describe('UserPreferencesService', () => {
 
     it('should throw NotFoundError for non-existent user', async () => {
       await expect(
-        UserPreferencesService.resetPreferences('non-existent-user-id')
+        UserPreferencesService.resetPreferences('non-existent-user-id'),
       ).rejects.toThrow(NotFoundError);
     });
   });

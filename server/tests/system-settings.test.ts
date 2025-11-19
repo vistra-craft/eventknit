@@ -24,7 +24,7 @@ describe('SystemSettingsService', () => {
         'string',
         'general',
         'test-user-id',
-        { description: 'Test string setting' }
+        { description: 'Test string setting' },
       );
 
       expect(setting.key).toBe('test.string');
@@ -40,7 +40,7 @@ describe('SystemSettingsService', () => {
         42,
         'number',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       expect(setting.key).toBe('test.number');
@@ -54,7 +54,7 @@ describe('SystemSettingsService', () => {
         true,
         'boolean',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       expect(setting.key).toBe('test.boolean');
@@ -69,7 +69,7 @@ describe('SystemSettingsService', () => {
         jsonValue,
         'json',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       expect(setting.key).toBe('test.json');
@@ -84,7 +84,7 @@ describe('SystemSettingsService', () => {
         'initial',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       // Update it
@@ -93,7 +93,7 @@ describe('SystemSettingsService', () => {
         'updated',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       expect(updated.value).toBe('updated');
@@ -106,8 +106,8 @@ describe('SystemSettingsService', () => {
           123, // number instead of string
           'string',
           'general',
-          'test-user-id'
-        )
+          'test-user-id',
+        ),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -118,8 +118,8 @@ describe('SystemSettingsService', () => {
           'not a number',
           'number',
           'general',
-          'test-user-id'
-        )
+          'test-user-id',
+        ),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -130,8 +130,8 @@ describe('SystemSettingsService', () => {
           'not a boolean',
           'boolean',
           'general',
-          'test-user-id'
-        )
+          'test-user-id',
+        ),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -142,7 +142,7 @@ describe('SystemSettingsService', () => {
         'initial',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       // Update it
@@ -152,7 +152,7 @@ describe('SystemSettingsService', () => {
         'string',
         'general',
         'test-user-id',
-        { changeReason: 'Testing history' }
+        { changeReason: 'Testing history' },
       );
 
       const history = await SystemSettingsService.getSettingsHistory('test.history', 10);
@@ -168,7 +168,7 @@ describe('SystemSettingsService', () => {
         'test value',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       const setting = await SystemSettingsService.getSetting('test.get');
@@ -190,7 +190,7 @@ describe('SystemSettingsService', () => {
         'general value',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       // Create environment-specific setting
@@ -200,7 +200,7 @@ describe('SystemSettingsService', () => {
         'string',
         'general',
         'test-user-id',
-        { environment: 'dev' }
+        { environment: 'dev' },
       );
 
       const setting = await SystemSettingsService.getSetting('test.env', 'dev');
@@ -215,14 +215,14 @@ describe('SystemSettingsService', () => {
         'value1',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
       await SystemSettingsService.setSetting(
         'test.all2',
         'value2',
         'string',
         'users',
-        'test-user-id'
+        'test-user-id',
       );
 
       const settings = await SystemSettingsService.getSettings();
@@ -235,14 +235,14 @@ describe('SystemSettingsService', () => {
         'value1',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
       await SystemSettingsService.setSetting(
         'test.cat2',
         'value2',
         'string',
         'users',
-        'test-user-id'
+        'test-user-id',
       );
 
       const settings = await SystemSettingsService.getSettings('general');
@@ -257,7 +257,7 @@ describe('SystemSettingsService', () => {
         'value',
         'string',
         'general',
-        'test-user-id'
+        'test-user-id',
       );
 
       await SystemSettingsService.deleteSetting('test.delete', 'test-user-id');
@@ -268,7 +268,7 @@ describe('SystemSettingsService', () => {
 
     it('should throw NotFoundError for non-existent setting', async () => {
       await expect(
-        SystemSettingsService.deleteSetting('test.nonexistent', 'test-user-id')
+        SystemSettingsService.deleteSetting('test.nonexistent', 'test-user-id'),
       ).rejects.toThrow(NotFoundError);
     });
   });
@@ -281,7 +281,7 @@ describe('SystemSettingsService', () => {
         'string',
         'general',
         'test-user-id',
-        { isPublic: true }
+        { isPublic: true },
       );
       await SystemSettingsService.setSetting(
         'test.private',
@@ -289,7 +289,7 @@ describe('SystemSettingsService', () => {
         'string',
         'general',
         'test-user-id',
-        { isPublic: false }
+        { isPublic: false },
       );
 
       const publicSettings = await SystemSettingsService.getPublicSettings();
@@ -316,7 +316,7 @@ describe('SystemSettingsService', () => {
           },
         ],
         'test-user-id',
-        'Bulk update test'
+        'Bulk update test',
       );
 
       expect(settings.length).toBe(2);
