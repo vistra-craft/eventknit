@@ -12,9 +12,6 @@ import {
   Eye,
   EyeOff,
   Key,
-  Moon,
-  Sun,
-  Monitor,
   Mail,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +33,7 @@ import {
   resetPreferences,
   type UserPreferences as UserPreferencesType,
 } from "@/lib/user-preferences-api";
+import { SettingsSection, ThemeSelector } from "@/components/settings";
 import DashboardNavbar from "./DashboardNavbar";
 import Footer from "@/components/Footer";
 
@@ -736,38 +734,12 @@ const UserSettingsPage = () => {
 
   const renderAppearanceSettings = () => (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Theme</h3>
-        
-        <div>
-          <Label htmlFor="theme">Color Theme</Label>
-          <Select value={settings.theme} onValueChange={(value) => updateSetting("theme", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select theme" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="light">
-                <div className="flex items-center">
-                  <Sun className="h-4 w-4 mr-2" />
-                  Light
-                </div>
-              </SelectItem>
-              <SelectItem value="dark">
-                <div className="flex items-center">
-                  <Moon className="h-4 w-4 mr-2" />
-                  Dark
-                </div>
-              </SelectItem>
-              <SelectItem value="system">
-                <div className="flex items-center">
-                  <Monitor className="h-4 w-4 mr-2" />
-                  System
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <SettingsSection title="Theme">
+        <ThemeSelector
+          value={settings.theme}
+          onChange={(value) => updateSetting("theme", value)}
+        />
+      </SettingsSection>
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Dashboard Layout</h3>

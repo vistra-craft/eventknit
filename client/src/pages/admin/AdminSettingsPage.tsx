@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "./AdminLayout";
 import { useToast } from "@/hooks/use-toast";
 import { getSettings, setSettings, type SystemSetting } from "@/lib/system-settings-api";
+import { SettingsSection, SettingsField, ThemeSelector, LanguageSelector, TimezoneSelector, DateFormatSelector } from "@/components/settings";
 
 interface SettingsData {
   // General Settings
@@ -323,82 +324,53 @@ const AdminSettingsPage = () => {
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="siteName">Site Name</Label>
-          <Input
-            id="siteName"
-            value={settings.siteName}
-            onChange={(e) => updateSetting("siteName", e.target.value)}
-            placeholder="Enter site name"
+      <SettingsSection title="Site Information">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SettingsField label="Site Name" htmlFor="siteName">
+            <Input
+              id="siteName"
+              value={settings.siteName}
+              onChange={(e) => updateSetting("siteName", e.target.value)}
+              placeholder="Enter site name"
+            />
+          </SettingsField>
+          <SettingsField label="Site URL" htmlFor="siteUrl">
+            <Input
+              id="siteUrl"
+              value={settings.siteUrl}
+              onChange={(e) => updateSetting("siteUrl", e.target.value)}
+              placeholder="https://yoursite.com"
+            />
+          </SettingsField>
+        </div>
+        
+        <SettingsField label="Site Description" htmlFor="siteDescription">
+          <Textarea
+            id="siteDescription"
+            value={settings.siteDescription}
+            onChange={(e) => updateSetting("siteDescription", e.target.value)}
+            placeholder="Enter site description"
+            rows={3}
+          />
+        </SettingsField>
+      </SettingsSection>
+
+      <SettingsSection title="Localization">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <TimezoneSelector
+            value={settings.timezone}
+            onChange={(value) => updateSetting("timezone", value)}
+          />
+          <LanguageSelector
+            value={settings.language}
+            onChange={(value) => updateSetting("language", value)}
+          />
+          <DateFormatSelector
+            value={settings.dateFormat}
+            onChange={(value) => updateSetting("dateFormat", value)}
           />
         </div>
-        <div>
-          <Label htmlFor="siteUrl">Site URL</Label>
-          <Input
-            id="siteUrl"
-            value={settings.siteUrl}
-            onChange={(e) => updateSetting("siteUrl", e.target.value)}
-            placeholder="https://yoursite.com"
-          />
-        </div>
-      </div>
-      
-      <div>
-        <Label htmlFor="siteDescription">Site Description</Label>
-        <Textarea
-          id="siteDescription"
-          value={settings.siteDescription}
-          onChange={(e) => updateSetting("siteDescription", e.target.value)}
-          placeholder="Enter site description"
-          rows={3}
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div>
-          <Label htmlFor="timezone">Timezone</Label>
-          <Select value={settings.timezone} onValueChange={(value) => updateSetting("timezone", value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="America/New_York">Eastern Time</SelectItem>
-              <SelectItem value="America/Chicago">Central Time</SelectItem>
-              <SelectItem value="America/Denver">Mountain Time</SelectItem>
-              <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-              <SelectItem value="UTC">UTC</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="language">Language</Label>
-          <Select value={settings.language} onValueChange={(value) => updateSetting("language", value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="fr">French</SelectItem>
-              <SelectItem value="de">German</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="dateFormat">Date Format</Label>
-          <Select value={settings.dateFormat} onValueChange={(value) => updateSetting("dateFormat", value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-              <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-              <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      </SettingsSection>
     </div>
   );
 
@@ -581,59 +553,52 @@ const AdminSettingsPage = () => {
 
   const renderAppearanceSettings = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="theme">Theme</Label>
-          <Select value={settings.theme} onValueChange={(value) => updateSetting("theme", value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="light">Light</SelectItem>
-              <SelectItem value="dark">Dark</SelectItem>
-              <SelectItem value="auto">Auto</SelectItem>
-            </SelectContent>
-          </Select>
+      <SettingsSection title="Theme">
+        <ThemeSelector
+          value={settings.theme as "light" | "dark" | "system"}
+          onChange={(value) => updateSetting("theme", value)}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Branding">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SettingsField label="Primary Color" htmlFor="primaryColor">
+            <div className="flex items-center space-x-2">
+              <Input
+                id="primaryColor"
+                type="color"
+                value={settings.primaryColor}
+                onChange={(e) => updateSetting("primaryColor", e.target.value)}
+                className="w-16 h-10"
+              />
+              <Input
+                value={settings.primaryColor}
+                onChange={(e) => updateSetting("primaryColor", e.target.value)}
+                placeholder="#3b82f6"
+              />
+            </div>
+          </SettingsField>
         </div>
-        <div>
-          <Label htmlFor="primaryColor">Primary Color</Label>
-          <div className="flex items-center space-x-2">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SettingsField label="Logo URL" htmlFor="logoUrl">
             <Input
-              id="primaryColor"
-              type="color"
-              value={settings.primaryColor}
-              onChange={(e) => updateSetting("primaryColor", e.target.value)}
-              className="w-16 h-10"
+              id="logoUrl"
+              value={settings.logoUrl}
+              onChange={(e) => updateSetting("logoUrl", e.target.value)}
+              placeholder="/logo.png"
             />
+          </SettingsField>
+          <SettingsField label="Favicon URL" htmlFor="faviconUrl">
             <Input
-              value={settings.primaryColor}
-              onChange={(e) => updateSetting("primaryColor", e.target.value)}
-              placeholder="#3b82f6"
+              id="faviconUrl"
+              value={settings.faviconUrl}
+              onChange={(e) => updateSetting("faviconUrl", e.target.value)}
+              placeholder="/favicon.ico"
             />
-          </div>
+          </SettingsField>
         </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="logoUrl">Logo URL</Label>
-          <Input
-            id="logoUrl"
-            value={settings.logoUrl}
-            onChange={(e) => updateSetting("logoUrl", e.target.value)}
-            placeholder="/logo.png"
-          />
-        </div>
-        <div>
-          <Label htmlFor="faviconUrl">Favicon URL</Label>
-          <Input
-            id="faviconUrl"
-            value={settings.faviconUrl}
-            onChange={(e) => updateSetting("faviconUrl", e.target.value)}
-            placeholder="/favicon.ico"
-          />
-        </div>
-      </div>
+      </SettingsSection>
     </div>
   );
 
