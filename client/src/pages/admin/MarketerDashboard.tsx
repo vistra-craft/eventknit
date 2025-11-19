@@ -14,6 +14,7 @@ import { getAdminStaffEvents, type EventStaffAssignment } from '@/lib/admin-api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import EmptyState from '@/components/EmptyState';
 
 const MarketerDashboard = () => {
   const { user } = useAuth();
@@ -258,15 +259,11 @@ const MarketerDashboard = () => {
 
       {/* No Events */}
       {assignedEvents.length === 0 && !loading && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Assigned Events</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              You haven't been assigned to any events yet.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={AlertCircle}
+          title="No Assigned Events"
+          description="You haven't been assigned to any events yet. Once an organizer assigns you to an event, it will appear here."
+        />
       )}
     </div>
   );

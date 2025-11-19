@@ -77,36 +77,41 @@ const AdminNotificationSettingsPage = () => {
   // Load data based on active tab
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, analyticsPeriod]);
 
   const loadData = async () => {
     setLoading(true);
     try {
       switch (activeTab) {
-        case "defaults":
+        case "defaults": {
           const prefsResponse = await getDefaultPreferences();
           if (prefsResponse.success && prefsResponse.data) {
             setDefaultPreferences(prefsResponse.data.preferences);
           }
           break;
-        case "system":
+        }
+        case "system": {
           const configResponse = await getSystemConfig();
           if (configResponse.success && configResponse.data) {
             setSystemConfig(configResponse.data.config);
           }
           break;
-        case "templates":
+        }
+        case "templates": {
           const templatesResponse = await getTemplates();
           if (templatesResponse.success && templatesResponse.data) {
             setTemplates(templatesResponse.data.templates);
           }
           break;
-        case "analytics":
+        }
+        case "analytics": {
           const analyticsResponse = await getAnalytics(analyticsPeriod);
           if (analyticsResponse.success && analyticsResponse.data) {
             setAnalytics(analyticsResponse.data.analytics);
           }
           break;
+        }
       }
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -140,11 +145,11 @@ const AdminNotificationSettingsPage = () => {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+             } catch (error: unknown) {
       setSaveStatus("error");
       toast({
         title: "Error",
-        description: error.message || "Failed to update preferences. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update preferences. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -173,11 +178,11 @@ const AdminNotificationSettingsPage = () => {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+             } catch (error: unknown) {
       setSaveStatus("error");
       toast({
         title: "Error",
-        description: error.message || "Failed to update configuration. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update configuration. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -217,10 +222,10 @@ const AdminNotificationSettingsPage = () => {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+             } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to save template. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save template. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -248,10 +253,10 @@ const AdminNotificationSettingsPage = () => {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+             } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete template. Please try again.",
+                 description: error instanceof Error ? error.message : "Failed to delete template. Please try again.",
         variant: "destructive",
       });
     }
@@ -270,10 +275,10 @@ const AdminNotificationSettingsPage = () => {
         });
         setShowTemplateDialog(true);
       }
-    } catch (error: any) {
+             } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to load template.",
+        description: error instanceof Error ? error.message : "Failed to load template.",
         variant: "destructive",
       });
     }

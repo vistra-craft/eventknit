@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import AdminLayout from "./AdminLayout";
 import { useToast } from "@/hooks/use-toast";
+import EmptyState from "@/components/EmptyState";
 import {
   getBulkMessages,
   createBulkMessage,
@@ -23,6 +24,7 @@ import {
   type BulkMessageTargetAudience,
   type BulkMessageType,
 } from "@/lib/bulk-message-api";
+import { MessageSquare, Bell, Mail, Plus } from "lucide-react";
 
 interface Announcement {
   id: string;
@@ -67,98 +69,8 @@ interface EmailTemplate {
   createdBy: string;
 }
 
-const mockAnnouncements: Announcement[] = [
-  {
-    id: "1",
-    title: "Platform Maintenance Scheduled",
-    content: "We will be performing scheduled maintenance on Sunday, February 4th from 2:00 AM to 4:00 AM EST. During this time, the platform will be temporarily unavailable.",
-    type: "maintenance",
-    status: "sent",
-    targetAudience: "all",
-    sentAt: "2024-01-28 10:00:00",
-    views: 1247,
-    createdAt: "2024-01-28 09:30:00",
-    createdBy: "admin_001"
-  },
-  {
-    id: "2",
-    title: "New Feature: Advanced Analytics",
-    content: "We're excited to announce the launch of our new Advanced Analytics feature. Organizers can now access detailed insights about their events.",
-    type: "feature",
-    status: "scheduled",
-    targetAudience: "organizers",
-    scheduledAt: "2024-01-30 14:00:00",
-    views: 0,
-    createdAt: "2024-01-28 11:15:00",
-    createdBy: "admin_002"
-  },
-  {
-    id: "3",
-    title: "Security Update Required",
-    content: "Please update your passwords and enable two-factor authentication to ensure your account security.",
-    type: "urgent",
-    status: "draft",
-    targetAudience: "all",
-    views: 0,
-    createdAt: "2024-01-28 13:45:00",
-    createdBy: "admin_001"
-  },
-  {
-    id: "4",
-    title: "Monthly Newsletter - January 2024",
-    content: "Check out our monthly newsletter featuring the latest platform updates, success stories, and upcoming events.",
-    type: "general",
-    status: "sent",
-    targetAudience: "all",
-    sentAt: "2024-01-25 09:00:00",
-    views: 3456,
-    createdAt: "2024-01-25 08:30:00",
-    createdBy: "admin_003"
-  }
-];
-
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "Welcome to EventKnit!",
-    message: "Get started by creating your first event or exploring our features.",
-    type: "info",
-    status: "active",
-    targetAudience: "all",
-    startDate: "2024-01-01 00:00:00",
-    views: 8920,
-    clicks: 1240,
-    createdAt: "2024-01-01 00:00:00",
-    createdBy: "system"
-  },
-  {
-    id: "2",
-    title: "Payment Processing Delay",
-    message: "We're experiencing delays in payment processing. Please allow up to 24 hours for payments to be processed.",
-    type: "warning",
-    status: "active",
-    targetAudience: "organizers",
-    startDate: "2024-01-28 12:00:00",
-    views: 456,
-    clicks: 23,
-    createdAt: "2024-01-28 12:00:00",
-    createdBy: "admin_001"
-  },
-  {
-    id: "3",
-    title: "Event Registration Closing Soon",
-    message: "Don't miss out! Event registration closes in 24 hours.",
-    type: "info",
-    status: "expired",
-    targetAudience: "attendees",
-    startDate: "2024-01-20 00:00:00",
-    endDate: "2024-01-25 23:59:59",
-    views: 2340,
-    clicks: 567,
-    createdAt: "2024-01-20 00:00:00",
-    createdBy: "system"
-  }
-];
+// Mock data removed - using bulk messages API instead
+// Announcements and notifications are handled via bulk messages API
 
 const mockEmailTemplates: EmailTemplate[] = [
   {
@@ -396,14 +308,14 @@ const CommunicationsPage = () => {
     scheduledAt: "",
   });
   
-  // State for announcements
-  const [announcements, setAnnouncements] = useState<Announcement[]>(mockAnnouncements);
+  // State for announcements (using bulk messages API - these tabs can be removed or merged with bulk messages)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [viewingAnnouncement, setViewingAnnouncement] = useState<Announcement | null>(null);
   
-  // State for notifications
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  // State for notifications (using bulk messages API - these tabs can be removed or merged with bulk messages)
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotificationForm, setShowNotificationForm] = useState(false);
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
@@ -1086,6 +998,18 @@ const CommunicationsPage = () => {
             </Card>
 
             {/* Announcements List */}
+            {filteredAnnouncements.length === 0 ? (
+              <EmptyState
+                icon={Bell}
+                title="No Announcements"
+                description="Create your first announcement to communicate important updates, maintenance schedules, or new features to your users."
+                action={{
+                  label: "Create Announcement",
+                  onClick: () => setShowAnnouncementForm(true),
+                  icon: Plus,
+                }}
+              />
+            ) : (
             <div className="space-y-3">
               {filteredAnnouncements.map((announcement) => (
                 <Card key={announcement.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
@@ -1146,10 +1070,23 @@ const CommunicationsPage = () => {
                 </Card>
               ))}
             </div>
+            )}
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
             {/* Notifications List */}
+            {notifications.length === 0 ? (
+              <EmptyState
+                icon={Bell}
+                title="No Notifications"
+                description="Set up system notifications to keep users informed about important updates, warnings, or information."
+                action={{
+                  label: "Create Notification",
+                  onClick: () => setShowNotificationForm(true),
+                  icon: Plus,
+                }}
+              />
+            ) : (
             <div className="space-y-3">
               {notifications.map((notification) => (
                 <Card key={notification.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
@@ -1199,10 +1136,23 @@ const CommunicationsPage = () => {
                 </Card>
               ))}
             </div>
+            )}
           </TabsContent>
 
           <TabsContent value="templates" className="space-y-6">
             {/* Email Templates List */}
+            {emailTemplates.length === 0 ? (
+              <EmptyState
+                icon={Mail}
+                title="No Email Templates"
+                description="Create reusable email templates for welcome messages, event confirmations, payment receipts, and more to streamline your communications."
+                action={{
+                  label: "Create Template",
+                  onClick: () => setShowTemplateForm(true),
+                  icon: Plus,
+                }}
+              />
+            ) : (
             <div className="space-y-3">
               {emailTemplates.map((template) => (
                 <Card key={template.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
@@ -1247,6 +1197,7 @@ const CommunicationsPage = () => {
                 </Card>
               ))}
             </div>
+            )}
           </TabsContent>
 
           <TabsContent value="bulk-messages" className="space-y-6">
@@ -1270,11 +1221,16 @@ const CommunicationsPage = () => {
                 </CardContent>
               </Card>
             ) : bulkMessages.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-muted-foreground">No bulk messages found. Create your first bulk message to get started.</p>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={MessageSquare}
+                title="No Bulk Messages"
+                description="Start communicating with your users by creating your first bulk message. Send announcements, updates, or marketing campaigns to all users or specific audiences."
+                action={{
+                  label: "Create Bulk Message",
+                  onClick: () => setShowBulkMessageForm(true),
+                  icon: Plus,
+                }}
+              />
             ) : (
               <div className="space-y-3">
                 {bulkMessages.map((message) => (

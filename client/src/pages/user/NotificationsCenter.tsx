@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import EmptyState from "../../components/EmptyState";
 import {
   getNotifications,
   getUnreadCount,
@@ -279,17 +280,23 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
               </CardContent>
             </Card>
           ) : notifications.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center">
-                <p className="text-muted-foreground">
-                  {activeTab === "unread"
-                    ? "No unread notifications"
-                    : activeTab === "read"
-                    ? "No read notifications"
-                    : "No notifications"}
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Bell}
+              title={
+                activeTab === "unread"
+                  ? "No Unread Notifications"
+                  : activeTab === "read"
+                  ? "No Read Notifications"
+                  : "No Notifications"
+              }
+              description={
+                activeTab === "unread"
+                  ? "You're all caught up! No unread notifications at the moment."
+                  : activeTab === "read"
+                  ? "You haven't read any notifications yet."
+                  : "You don't have any notifications yet. They'll appear here when you receive updates about events, registrations, and more."
+              }
+            />
           ) : (
             notifications.map((notification) => (
               <Card

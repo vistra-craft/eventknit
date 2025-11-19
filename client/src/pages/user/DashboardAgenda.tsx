@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
+import EmptyState from '../../components/EmptyState';
 import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils } from 'lucide-react';
 
 interface EventData {
@@ -281,13 +282,12 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
 
                 {/* Empty State */}
                 {agendaItems.length === 0 && (
-                  <div className="text-center py-12">
-                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Agenda Coming Soon</h3>
-                    <p className="text-muted-foreground">
-                      The detailed agenda will be published closer to the event date.
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={Calendar}
+                    title="Agenda Coming Soon"
+                    description="The detailed agenda will be published closer to the event date. Check back soon for session schedules and activities."
+                    size="sm"
+                  />
                 )}
               </CardContent>
             </Card>

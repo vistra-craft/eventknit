@@ -20,6 +20,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import EmptyState from "../../components/EmptyState";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../components/ui/event-thumbnail";
@@ -401,16 +402,15 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No Events Yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  You haven't registered for any events yet. Start exploring!
-                </p>
-                <Button onClick={() => navigate('/')}>
-                  Browse Events
-                </Button>
-              </div>
+              <EmptyState
+                icon={Calendar}
+                title="No Events Yet"
+                description="You haven't registered for any events yet. Start exploring amazing events and register to attend!"
+                action={{
+                  label: "Browse Events",
+                  onClick: () => navigate('/'),
+                }}
+              />
             )}
 
             {/* Infinite Scroll Loader */}

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import EmptyState from "@/components/EmptyState";
 import AdminLayout from "../AdminLayout";
 import { 
   Megaphone, 
@@ -399,22 +400,24 @@ const AdminCampaignsPage = () => {
       </div>
 
       {filteredCampaigns.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">No campaigns found</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm || filterType !== "all" || filterStatus !== "all" 
-                ? "Try adjusting your search or filters"
-                : "Create your first marketing campaign to get started"
-              }
-            </p>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Campaign
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Megaphone}
+          title="No Campaigns Found"
+          description={
+            searchTerm || filterType !== "all" || filterStatus !== "all"
+              ? "Try adjusting your search or filters to find campaigns."
+              : "Create your first marketing campaign to reach your audience and promote your events."
+          }
+          action={
+            !searchTerm && filterType === "all" && filterStatus === "all"
+              ? {
+                  label: "Create Campaign",
+                  onClick: () => {},
+                  icon: Plus,
+                }
+              : undefined
+          }
+        />
       )}
       </div>
     </AdminLayout>
