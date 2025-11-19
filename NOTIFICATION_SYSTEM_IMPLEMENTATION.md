@@ -13,6 +13,7 @@ All backend components have been implemented, tested, and are ready for frontend
 ## Phase 1: Foundation ✅
 
 ### 1.1 Database Schema
+
 - **Notification Model**: Stores all notifications with multi-channel delivery status
 - **NotificationPreference Model**: User-configurable notification settings
 - **BulkMessage Model**: Bulk messaging system for targeted communications
@@ -24,9 +25,11 @@ All backend components have been implemented, tested, and are ready for frontend
   - `BulkMessageTargetAudience`: ALL, ORGANIZERS, ATTENDEES, STAFF, SPECIFIC_EVENT
 
 ### 1.2 NotificationService
+
 **Location**: `server/src/services/notification.service.ts`
 
 **Key Methods**:
+
 - `sendNotification()` - Send notification to single user
 - `sendBulkNotification()` - Send notification to multiple users
 - `sendEventNotification()` - Send to event attendees/organizers/staff
@@ -37,6 +40,7 @@ All backend components have been implemented, tested, and are ready for frontend
 - `getUnreadCount()` - Get unread notification count
 
 **Features**:
+
 - Multi-channel delivery (email, push, in-app)
 - User preference respect
 - Event and registration linking
@@ -44,15 +48,18 @@ All backend components have been implemented, tested, and are ready for frontend
 - Expiration support
 
 ### 1.3 NotificationPreferenceService
+
 **Location**: `server/src/services/notification-preference.service.ts`
 
 **Key Methods**:
+
 - `getUserPreferences()` - Get or create default preferences
 - `updatePreferences()` - Update user preferences
 - `shouldSendNotification()` - Check if notification should be sent
 - `getDefaultPreferences()` - Get default preference values
 
 **Features**:
+
 - Category-based preferences (event reminders, updates, marketing, etc.)
 - Channel preferences (email, push, in-app)
 - Frequency preferences (all, daily digest, weekly digest)
@@ -63,6 +70,7 @@ All backend components have been implemented, tested, and are ready for frontend
 ## Phase 2: Automated Notifications ✅
 
 ### 2.1 Event Status Change Notifications
+
 **Integrated in**: `server/src/services/event.service.ts`
 
 - **Event Approved**: Notifies organizer
@@ -71,7 +79,9 @@ All backend components have been implemented, tested, and are ready for frontend
 - **Event Updated**: Notifies attendees and staff of changes
 
 ### 2.2 Payment & Refund Notifications
-**Integrated in**: 
+
+**Integrated in**:
+
 - `server/src/services/payment.service.ts`
 - `server/src/services/refund.service.ts`
 
@@ -80,6 +90,7 @@ All backend components have been implemented, tested, and are ready for frontend
 - **Refund Processed**: Notifies attendee and organizer
 
 ### 2.3 Capacity Milestone Notifications
+
 **Integrated in**: `server/src/services/event.service.ts`
 
 - **50% Capacity**: Notifies organizer
@@ -87,6 +98,7 @@ All backend components have been implemented, tested, and are ready for frontend
 - **100% Capacity**: Notifies organizer and attendees (for waitlist)
 
 ### 2.4 Event Reminders
+
 **Job**: `server/src/jobs/event-reminder.job.ts`
 **Schedule**: Every 15 minutes
 
@@ -100,6 +112,7 @@ All backend components have been implemented, tested, and are ready for frontend
 ## Phase 3: Staff Notifications ✅
 
 ### 3.1 Staff Assignment Notifications
+
 **Integrated in**: `server/src/services/event-staff.service.ts`
 
 - **Staff Assigned**: Notifies staff member of new assignment
@@ -111,9 +124,11 @@ All backend components have been implemented, tested, and are ready for frontend
 ## Phase 3: Bulk Messaging System ✅
 
 ### 3.1 BulkMessageService
+
 **Location**: `server/src/services/bulk-message.service.ts`
 
 **Key Methods**:
+
 - `createBulkMessage()` - Create new bulk message
 - `getBulkMessages()` - Retrieve bulk messages with filters
 - `getBulkMessageById()` - Get specific bulk message
@@ -123,6 +138,7 @@ All backend components have been implemented, tested, and are ready for frontend
 - `deleteBulkMessage()` - Delete bulk message
 
 **Features**:
+
 - Recipient targeting (all users, organizers, attendees, staff, specific event)
 - Scheduled delivery
 - Batch processing (50 recipients per batch)
@@ -130,6 +146,7 @@ All backend components have been implemented, tested, and are ready for frontend
 - Status management (DRAFT, SCHEDULED, SENDING, SENT, CANCELLED)
 
 ### 3.2 Bulk Message Scheduler Job
+
 **Job**: `server/src/jobs/bulk-message-scheduler.job.ts`
 **Schedule**: Every 5 minutes
 
@@ -141,15 +158,18 @@ All backend components have been implemented, tested, and are ready for frontend
 ## Phase 4: Real-Time Notifications ✅
 
 ### 4.1 WebSocket Integration
+
 **Location**: `server/src/services/websocket.service.ts`
 
 **Features**:
+
 - User-specific notification rooms (`user:{userId}:notifications`)
 - Real-time notification delivery
 - Unread count updates
 - Notification status updates (read, deleted)
 
 **WebSocket Events**:
+
 - `join:notifications` - Join user's notification room
 - `leave:notifications` - Leave notification room
 - `notification:new` - New notification received
@@ -165,6 +185,7 @@ All backend components have been implemented, tested, and are ready for frontend
 ## API Endpoints
 
 ### User Notification Endpoints
+
 **Base**: `/api/v1/notifications`
 
 - `GET /` - Get user notifications (with filters)
@@ -174,12 +195,14 @@ All backend components have been implemented, tested, and are ready for frontend
 - `DELETE /:id` - Delete notification
 
 ### Notification Preferences Endpoints
+
 **Base**: `/api/v1/user/me`
 
 - `GET /notification-preferences` - Get user preferences
 - `PUT /notification-preferences` - Update user preferences
 
 ### Bulk Messaging Endpoints (Admin Only)
+
 **Base**: `/api/v1/admin/communications/bulk-messages`
 **Required Role**: ADMIN_STAFF or higher
 
@@ -196,6 +219,7 @@ All backend components have been implemented, tested, and are ready for frontend
 ## Testing
 
 ### Test Coverage
+
 **Location**: `server/tests/`
 
 - ✅ `notification.service.test.ts` - 15+ test cases
@@ -205,6 +229,7 @@ All backend components have been implemented, tested, and are ready for frontend
 **Total**: 38 tests, all passing ✅
 
 ### Test Results
+
 ```
 Test Suites: 3 passed, 3 total
 Tests:       38 passed, 38 total
@@ -215,10 +240,12 @@ Tests:       38 passed, 38 total
 ## Code Quality
 
 ### Linting
+
 - ✅ All ESLint errors resolved
 - ✅ Code follows project style guidelines
 
 ### Type Checking
+
 - ✅ TypeScript compilation successful
 - ✅ All types properly defined
 - ⚠️ Pre-existing errors in `staff-permission.service.ts` (unrelated)
@@ -228,28 +255,33 @@ Tests:       38 passed, 38 total
 ## Key Design Decisions
 
 ### 1. Email-Only System
+
 - SMS notifications are disabled throughout the system
 - Validation prevents SMS from being enabled
 - Email is the primary notification channel
 
 ### 2. Multi-Channel Support
+
 - Email: Primary channel (always enabled by default)
 - Push: Placeholder for future web push implementation
 - In-App: Real-time via WebSocket
 - SMS: Disabled
 
 ### 3. User Preferences
+
 - Granular control over notification categories
 - Channel-level preferences
 - Frequency preferences (all, daily digest, weekly digest)
 - Default preferences created automatically
 
 ### 4. Real-Time Updates
+
 - WebSocket integration for instant notifications
 - Automatic unread count updates
 - Status synchronization (read, deleted)
 
 ### 5. Batch Processing
+
 - Bulk messages processed in batches of 50
 - Rate limiting to prevent system overload
 - Progress tracking and error handling
@@ -259,6 +291,7 @@ Tests:       38 passed, 38 total
 ## Scheduled Jobs
 
 1. **Event Reminder Job** (`event-reminder.job.ts`)
+
    - Schedule: Every 15 minutes
    - Handles: Event reminders (24h, 1h) and registration deadline reminders
 
@@ -283,6 +316,7 @@ npx prisma generate
 ## Files Created/Modified
 
 ### New Files
+
 - `server/src/services/notification.service.ts`
 - `server/src/services/notification-preference.service.ts`
 - `server/src/services/bulk-message.service.ts`
@@ -297,6 +331,7 @@ npx prisma generate
 - `server/tests/bulk-message.service.test.ts`
 
 ### Modified Files
+
 - `server/prisma/schema.prisma` - Added notification models and enums
 - `server/src/services/event.service.ts` - Integrated event notifications
 - `server/src/services/payment.service.ts` - Integrated payment notifications
@@ -334,6 +369,7 @@ All changes have been committed to the `development` branch:
 ## Summary
 
 ✅ **Complete Backend Implementation**
+
 - Database schema and models
 - Core notification services
 - Automated event notifications
@@ -343,4 +379,3 @@ All changes have been committed to the `development` branch:
 - All code quality checks passing
 
 The notification system is production-ready and fully integrated with the existing EventKnit platform.
-

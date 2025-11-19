@@ -59,9 +59,13 @@ export interface AuthResponse {
 
 export class AuthService {
   /**
-   * Request registration verification code (email-only registration)
+   * Request registration verification code (email with SMS backup)
    */
-  static async requestRegistrationCode(email: string, role?: UserRole): Promise<void> {
+  static async requestRegistrationCode(
+    email: string,
+    role?: UserRole,
+    phoneNumber?: string,
+  ): Promise<void> {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -121,10 +125,50 @@ export class AuthService {
       },
     });
 
-    // Send verification code email
-    await emailService.sendVerificationCode(email, code);
+    // Send verification code via email (primary)
+    try {
+      await emailService.sendVerificationCode(email, code);
+      logger.info(`Registration code sent via email to: ${email} for role: ${selectedRole}`);
+    } catch (emailError) {
+      logger.warn(`Failed to send verification code via email: ${emailError}`);
+      
+      // If email fails and phone number provided, try SMS as backup
+      if (phoneNumber) {
+        try {
+          const { smsService } = await import('./sms.service.js');
+          if (smsService.isEnabled()) {
+            const smsResult = await smsService.sendVerificationCode(phoneNumber, code);
+            if (smsResult.success) {
+              logger.info(`Registration code sent via SMS backup to: ${phoneNumber} for role: ${selectedRole}`);
+            } else {
+              throw new Error('Both email and SMS delivery failed');
+            }
+          } else {
+            throw emailError; // SMS not enabled, throw original email error
+          }
+        } catch (smsError) {
+          logger.error(`SMS backup also failed: ${smsError}`);
+          throw emailError; // Throw original email error
+        }
+      } else {
+        throw emailError; // No phone number, throw email error
+      }
+    }
 
-    logger.info(`Registration code sent to: ${email} for role: ${selectedRole}`);
+    // If phone number provided and SMS is enabled, also send via SMS (dual send option)
+    if (phoneNumber) {
+      try {
+        const { smsService } = await import('./sms.service.js');
+        if (smsService.isEnabled()) {
+          // Send via SMS as well (dual channel for reliability)
+          await smsService.sendVerificationCode(phoneNumber, code);
+          logger.info(`Registration code also sent via SMS to: ${phoneNumber}`);
+        }
+      } catch (smsError) {
+        // SMS is optional, don't fail if it doesn't work
+        logger.warn(`Optional SMS send failed (non-critical): ${smsError}`);
+      }
+    }
   }
 
   /**

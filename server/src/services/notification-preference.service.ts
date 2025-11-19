@@ -108,34 +108,35 @@ export class NotificationPreferenceService {
         where: { userId },
       });
 
-      // Force SMS to be disabled (we don't use SMS in this system)
-      const smsEnabled = false; // Always disabled - email only system
+      // SMS can be enabled if user opts in and SMS service is configured
+      // Default to false, but allow users to enable it
+      const smsEnabled = data.smsEnabled ?? existingPreferences.smsEnabled ?? false;
 
       const preferences = existingPreferences
         ? await prisma.notificationPreference.update({
-            where: { userId },
-            data: {
-              emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
-              smsEnabled, // Always false - SMS not used
-              pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
-              inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
-              eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
-              eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
-              eventCancellations:
+          where: { userId },
+          data: {
+            emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
+            smsEnabled, // Always false - SMS not used
+            pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
+            inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
+            eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
+            eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
+            eventCancellations:
                 data.eventCancellations ?? existingPreferences.eventCancellations,
-              paymentNotifications:
+            paymentNotifications:
                 data.paymentNotifications ?? existingPreferences.paymentNotifications,
-              marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
-              systemAnnouncements:
+            marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
+            systemAnnouncements:
                 data.systemAnnouncements ?? existingPreferences.systemAnnouncements,
-              registrationUpdates:
+            registrationUpdates:
                 data.registrationUpdates ?? existingPreferences.registrationUpdates,
-              staffNotifications:
+            staffNotifications:
                 data.staffNotifications ?? existingPreferences.staffNotifications,
-              reminderFrequency:
+            reminderFrequency:
                 data.reminderFrequency ?? existingPreferences.reminderFrequency,
-            },
-          })
+          },
+        })
         : await this.createDefaultPreferences(userId);
 
       logger.info(`Updated notification preferences for user ${userId}`);
@@ -162,24 +163,32 @@ export class NotificationPreferenceService {
 
       // Check channel preference
       switch (channel) {
-        case 'email':
-          if (!preferences.emailEnabled) {
-            return false;
-          }
-          break;
-        case 'sms':
-          // SMS is not used in this system - always return false
+      case 'email':
+        if (!preferences.emailEnabled) {
           return false;
-        case 'push':
-          if (!preferences.pushEnabled) {
-            return false;
-          }
-          break;
-        case 'inApp':
-          if (!preferences.inAppEnabled) {
-            return false;
-          }
-          break;
+        }
+        break;
+      case 'sms':
+        // Check if SMS is enabled in system and user preferences
+        if (!preferences.smsEnabled) {
+          return false;
+        }
+        // Also check if SMS service is enabled globally
+        const { smsService } = await import('./sms.service.js');
+        if (!smsService.isEnabled()) {
+          return false;
+        }
+        break;
+      case 'push':
+        if (!preferences.pushEnabled) {
+          return false;
+        }
+        break;
+      case 'inApp':
+        if (!preferences.inAppEnabled) {
+          return false;
+        }
+        break;
       }
 
       // Check category preferences based on notification type

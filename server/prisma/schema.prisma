@@ -159,6 +159,7 @@ model User {
   notifications          Notification[]          @relation("UserNotifications")
   notificationPreference NotificationPreference? @relation("UserNotificationPreference")
   bulkMessagesCreated    BulkMessage[]           @relation("BulkMessageCreator")
+  emailTemplatesCreated  EmailTemplate[]         @relation("EmailTemplateCreator")
   // Social Media & Support Relations
   assignedSupportQueries SocialMessage[]         @relation("AssignedSupportQueries")
   supportResponses       SupportResponse[]       @relation("SupportResponses")
@@ -1105,6 +1106,8 @@ model BulkMessage {
   type           String // announcement, marketing, system, event_update
   targetAudience BulkMessageTargetAudience
   eventId        String? // If targeting specific event
+  campaignId    String? // Link to marketing campaign
+  templateId    String? // Link to email template
 
   // Channels
   channels Json // { email: boolean, sms: boolean, push: boolean, inApp: boolean }
@@ -1119,6 +1122,11 @@ model BulkMessage {
   sentCount       Int @default(0)
   failedCount     Int @default(0)
 
+  // Engagement tracking
+  openedCount     Int @default(0) // Email opens
+  clickedCount    Int @default(0) // Link clicks
+  unsubscribedCount Int @default(0) // Unsubscribes
+
   // Created by
   createdBy String
   creator   User   @relation("BulkMessageCreator", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -1126,12 +1134,44 @@ model BulkMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  event Event? @relation("EventBulkMessages", fields: [eventId], references: [id], onDelete: SetNull)
+  event     Event?        @relation("EventBulkMessages", fields: [eventId], references: [id], onDelete: SetNull)
+  template  EmailTemplate? @relation("BulkMessageTemplate", fields: [templateId], references: [id], onDelete: SetNull)
 
   @@index([status, scheduledAt])
   @@index([createdBy])
   @@index([eventId])
   @@index([targetAudience])
+  @@index([campaignId])
+  @@index([templateId])
+}
+
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  subject     String?  // Email subject template
+  htmlContent String   @db.Text // HTML email template with variables
+  textContent String?  @db.Text // Plain text version
+  description String?  @db.Text
+  category    String?  // campaign, announcement, notification, system
+  variables   Json?    // Available template variables (e.g., {name}, {eventTitle})
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+
+  // Created by
+  createdBy String
+  creator   User   @relation("EmailTemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  // Usage tracking
+  usageCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bulkMessages BulkMessage[] @relation("BulkMessageTemplate")
+
+  @@index([category])
+  @@index([isActive])
+  @@index([createdBy])
 }
 
 // ============================================

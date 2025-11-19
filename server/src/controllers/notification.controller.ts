@@ -245,9 +245,12 @@ export class NotificationController {
         throw new ValidationError('Invalid reminderFrequency. Must be: all, daily_digest, weekly_digest, or none');
       }
 
-      // Force SMS to be disabled (we don't use SMS in this system)
+      // Check if SMS service is enabled globally before allowing SMS preferences
       if (smsEnabled === true) {
-        throw new ValidationError('SMS notifications are not available in this system. Only email notifications are supported.');
+        const { smsService } = await import('../services/sms.service.js');
+        if (!smsService.isEnabled()) {
+          throw new ValidationError('SMS notifications are not enabled in this system. Please contact support to enable SMS.');
+        }
       }
 
       const preferences = await NotificationPreferenceService.updatePreferences(req.user.id, {

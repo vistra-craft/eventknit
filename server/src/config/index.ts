@@ -86,6 +86,15 @@ export const config = {
     publicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
   },
 
+  sms: {
+    enabled: process.env.SMS_ENABLED === 'true',
+    provider: process.env.SMS_PROVIDER || 'twilio',
+    accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+    authToken: process.env.TWILIO_AUTH_TOKEN || '',
+    fromNumber: process.env.TWILIO_PHONE_NUMBER || '',
+    defaultCountryCode: process.env.SMS_DEFAULT_COUNTRY_CODE || '1', // US default
+  },
+
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },
@@ -94,6 +103,12 @@ export const config = {
 // Validate required environment variables in production
 if (config.env === 'production') {
   const required = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'SMTP_USER', 'SMTP_PASSWORD'];
+  
+  // Only require SMS credentials if SMS is enabled
+  if (config.sms.enabled) {
+    required.push('TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER');
+  }
+  
   const missing = required.filter(key => !process.env[key]);
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);

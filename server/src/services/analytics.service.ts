@@ -50,9 +50,9 @@ export class AnalyticsService {
         totalPosts,
         publishedPosts,
         scheduledPosts,
-        totalMessages,
-        newMessages,
-        resolvedMessages,
+        _totalMessages,
+        _newMessages,
+        _resolvedMessages,
         totalAccounts,
         activeAccounts,
       ] = await Promise.all([
@@ -421,11 +421,11 @@ export class AnalyticsService {
         status: msg.status,
         relatedPost: msg.socialPost
           ? {
-              id: msg.socialPost.id,
-              content: msg.socialPost.content,
-              publishedAt: msg.socialPost.publishedAt,
-              campaignId: msg.socialPost.campaignId,
-            }
+            id: msg.socialPost.id,
+            content: msg.socialPost.content,
+            publishedAt: msg.socialPost.publishedAt,
+            campaignId: msg.socialPost.campaignId,
+          }
           : null,
         campaignId: msg.campaignId || msg.socialPost?.campaignId || null,
       }));

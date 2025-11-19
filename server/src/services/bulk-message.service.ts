@@ -16,6 +16,8 @@ export interface CreateBulkMessageData {
   type: string; // announcement, marketing, system, event_update
   targetAudience: BulkMessageTargetAudience;
   eventId?: string;
+  campaignId?: string;
+  templateId?: string;
   channels?: {
     email?: boolean;
     sms?: boolean;
@@ -23,6 +25,7 @@ export interface CreateBulkMessageData {
     inApp?: boolean;
   };
   scheduledAt?: Date | string;
+  variables?: Record<string, string | number | boolean>;
 }
 
 export interface UpdateBulkMessageData {
@@ -31,6 +34,8 @@ export interface UpdateBulkMessageData {
   type?: string;
   targetAudience?: BulkMessageTargetAudience;
   eventId?: string;
+  campaignId?: string;
+  templateId?: string;
   channels?: {
     email?: boolean;
     sms?: boolean;
@@ -39,6 +44,7 @@ export interface UpdateBulkMessageData {
   };
   scheduledAt?: Date | string | null;
   status?: BulkMessageStatus;
+  variables?: Record<string, string | number | boolean>;
 }
 
 export interface BulkMessageFilters {
@@ -77,24 +83,44 @@ export class BulkMessageService {
         throw new ValidationError('Event ID is required when targeting specific event');
       }
 
-      // Default channels (email only, as SMS is disabled)
+      // Default channels (email primary, SMS optional if enabled)
+      const { smsService } = await import('./sms.service.js');
       const defaultChannels = {
         email: true,
-        sms: false,
+        sms: smsService.isEnabled() ? false : false, // Default to false, but allow if enabled
         push: true,
         inApp: true,
       };
 
       const channels = data.channels ?? defaultChannels;
 
-      // Force SMS to be disabled
-      channels.sms = false;
+      // Only allow SMS if service is enabled
+      if (channels.sms && !smsService.isEnabled()) {
+        channels.sms = false;
+        logger.warn('SMS channel requested but SMS service is not enabled');
+      }
 
       // Calculate total recipients (will be updated when message is sent)
       const totalRecipients = await this.calculateRecipients(
         data.targetAudience,
         data.eventId,
       );
+
+      // Validate template exists if templateId provided
+      if (data.templateId) {
+        const template = await prisma.emailTemplate.findUnique({
+          where: { id: data.templateId },
+          select: { id: true, isActive: true },
+        });
+
+        if (!template) {
+          throw new NotFoundError('Email template not found');
+        }
+
+        if (!template.isActive) {
+          throw new ValidationError('Email template is not active');
+        }
+      }
 
       const bulkMessage = await prisma.bulkMessage.create({
         data: {
@@ -103,6 +129,8 @@ export class BulkMessageService {
           type: data.type,
           targetAudience: data.targetAudience,
           eventId: data.eventId,
+          campaignId: data.campaignId,
+          templateId: data.templateId,
           channels: channels as Prisma.InputJsonValue,
           status: data.scheduledAt
             ? BulkMessageStatus.SCHEDULED
@@ -178,17 +206,17 @@ export class BulkMessageService {
           },
         });
 
-        case BulkMessageTargetAudience.SPECIFIC_EVENT: {
-          if (!eventId) {
-            return 0;
-          }
-          return await prisma.eventRegistration.count({
-            where: {
-              eventId,
-              status: 'CONFIRMED',
-            },
-          });
+      case BulkMessageTargetAudience.SPECIFIC_EVENT: {
+        if (!eventId) {
+          return 0;
         }
+        return await prisma.eventRegistration.count({
+          where: {
+            eventId,
+            status: 'CONFIRMED',
+          },
+        });
+      }
 
       default:
         return 0;
@@ -337,6 +365,22 @@ export class BulkMessageService {
         }
       }
 
+      // Validate template if provided
+      if (data.templateId) {
+        const template = await prisma.emailTemplate.findUnique({
+          where: { id: data.templateId },
+          select: { id: true, isActive: true },
+        });
+
+        if (!template) {
+          throw new NotFoundError('Email template not found');
+        }
+
+        if (!template.isActive) {
+          throw new ValidationError('Email template is not active');
+        }
+      }
+
       // Force SMS to be disabled if channels are updated
       const updateData: Prisma.BulkMessageUpdateInput = {};
       if (data.title !== undefined) updateData.title = data.title;
@@ -346,11 +390,22 @@ export class BulkMessageService {
       if (data.eventId !== undefined) {
         updateData.event = data.eventId ? { connect: { id: data.eventId } } : { disconnect: true };
       }
+      if (data.campaignId !== undefined) {
+        updateData.campaignId = data.campaignId;
+      }
+      if (data.templateId !== undefined) {
+        updateData.template = data.templateId ? { connect: { id: data.templateId } } : { disconnect: true };
+      }
       if (data.status !== undefined) updateData.status = data.status;
 
       if (data.channels) {
         const channels = { ...data.channels };
-        channels.sms = false; // Force SMS disabled
+        // Only allow SMS if service is enabled
+        const { smsService } = await import('./sms.service.js');
+        if (channels.sms && !smsService.isEnabled()) {
+          channels.sms = false;
+          logger.warn('SMS channel requested but SMS service is not enabled');
+        }
         updateData.channels = channels as Prisma.InputJsonValue;
       }
 

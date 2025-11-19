@@ -8,6 +8,7 @@ import {
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { emailService } from './email.service.js';
+import { smsService } from './sms.service.js';
 import { NotificationPreferenceService, NotificationChannels } from './notification-preference.service.js';
 import { websocketService } from './websocket.service.js';
 
@@ -279,6 +280,15 @@ export class NotificationService {
               phoneNumber: true,
             },
           },
+          event: {
+            select: {
+              id: true,
+              title: true,
+              startDate: true,
+              venue: true,
+              location: true,
+            },
+          },
         },
       });
 
@@ -295,8 +305,14 @@ export class NotificationService {
         )
         : false;
 
-      // SMS is disabled in this system - skip SMS delivery
-      // const shouldSendSMS = false;
+      // Check SMS preferences and deliver via SMS if enabled
+      const shouldSendSMS = channels.sms
+        ? await NotificationPreferenceService.shouldSendNotification(
+          notification.userId,
+          notification.type,
+          'sms',
+        )
+        : false;
 
       const shouldSendPush = channels.push
         ? await NotificationPreferenceService.shouldSendNotification(
@@ -329,14 +345,34 @@ export class NotificationService {
         });
       }
 
-      // SMS delivery is disabled - we only use email notifications
-      // Mark SMS as not sent if it was requested
-      if (channels.sms) {
+      // Deliver via SMS
+      if (shouldSendSMS && notification.user.phoneNumber && smsService.isEnabled()) {
+        try {
+          await this.deliverSMS(notification);
+          await prisma.notification.update({
+            where: { id: notificationId },
+            data: { smsStatus: DeliveryStatus.SENT },
+          });
+        } catch (error) {
+          logger.error(`Failed to send SMS for notification ${notificationId}:`, error);
+          await prisma.notification.update({
+            where: { id: notificationId },
+            data: { smsStatus: DeliveryStatus.FAILED },
+          });
+        }
+      } else if (channels.sms && !shouldSendSMS) {
+        // User has disabled SMS for this category or SMS service not enabled
         await prisma.notification.update({
           where: { id: notificationId },
           data: { smsStatus: DeliveryStatus.FAILED },
         });
-        logger.debug(`SMS delivery skipped for notification ${notificationId} - SMS not enabled in this system`);
+      } else if (channels.sms && !notification.user.phoneNumber) {
+        // SMS requested but user has no phone number
+        await prisma.notification.update({
+          where: { id: notificationId },
+          data: { smsStatus: DeliveryStatus.FAILED },
+        });
+        logger.debug(`SMS delivery skipped for notification ${notificationId} - user has no phone number`);
       }
 
       // Deliver via push (placeholder - implement when push service is available)
@@ -364,9 +400,6 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Deliver notification via email
-   */
   private static async deliverEmail(notification: {
     id: string;
     type: NotificationType;
@@ -386,6 +419,161 @@ export class NotificationService {
       logger.error(`Failed to send email notification ${notification.id}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Deliver notification via SMS
+   */
+  private static async deliverSMS(notification: {
+    id: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    user: { phoneNumber: string | null };
+    data?: Prisma.JsonValue;
+    event?: { title: string; startDate: Date; venue: string | null; location: string } | null;
+  }) {
+    try {
+      if (!notification.user.phoneNumber) {
+        throw new ValidationError('User phone number is required for SMS delivery');
+      }
+
+      const smsMessage = this.getSMSTemplate(notification);
+      const result = await smsService.sendSMS({
+        to: notification.user.phoneNumber,
+        message: smsMessage,
+        isCritical: this.isCriticalNotification(notification.type),
+      });
+
+      if (!result.success) {
+        throw new Error(result.error?.message || 'Failed to send SMS');
+      }
+    } catch (error) {
+      logger.error(`Failed to send SMS notification ${notification.id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get SMS template for notification (concise format for SMS)
+   */
+  private static getSMSTemplate(notification: {
+    type: NotificationType;
+    title: string;
+    message: string;
+    data?: Prisma.JsonValue;
+    event?: { title: string; startDate: Date; venue: string | null; location: string } | null;
+  }): string {
+    // Extract data if available
+    const data = notification.data as Record<string, unknown> | undefined;
+    const event = notification.event;
+
+    // Generate concise SMS message based on notification type
+    switch (notification.type) {
+    case NotificationType.EVENT_REMINDER_24H:
+    case NotificationType.EVENT_REMINDER_1H:
+    case NotificationType.EVENT_REMINDER_FOR_STAFF: {
+      if (event) {
+        const date = new Date(event.startDate).toLocaleDateString();
+        const time = new Date(event.startDate).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+        let msg = `Reminder: ${event.title} on ${date} at ${time}`;
+        if (event.venue) {
+          msg += `. Venue: ${event.venue}`;
+        }
+        return msg;
+      }
+      return notification.message;
+    }
+
+    case NotificationType.EVENT_CANCELLED:
+      return event
+        ? `URGENT: ${event.title} has been CANCELLED. Check email for details.`
+        : `URGENT: Event cancelled. ${notification.message}`;
+
+    case NotificationType.EVENT_POSTPONED:
+      return event
+        ? `URGENT: ${event.title} has been POSTPONED. Check email for new date.`
+        : `URGENT: Event postponed. ${notification.message}`;
+
+    case NotificationType.EVENT_VENUE_CHANGED:
+      return event
+        ? `URGENT: ${event.title} venue changed. Check email for new location.`
+        : `URGENT: Venue changed. ${notification.message}`;
+
+    case NotificationType.EVENT_TIME_CHANGED:
+      return event
+        ? `URGENT: ${event.title} time changed. Check email for new time.`
+        : `URGENT: Time changed. ${notification.message}`;
+
+    case NotificationType.PAYMENT_SUCCESS:
+      const amount = data?.amount as number | undefined;
+      const currency = (data?.currency as string) || 'NGN';
+      return amount
+        ? `Payment confirmed: ${currency} ${amount.toFixed(2)}. Your ticket is confirmed!`
+        : notification.message;
+
+    case NotificationType.PAYMENT_FAILED:
+      return 'Payment failed. Please try again or contact support.';
+
+    case NotificationType.REGISTRATION_CONFIRMED:
+      return event
+        ? `Registration confirmed for ${event.title}. See you there!`
+        : notification.message;
+
+    case NotificationType.WAITLIST_AVAILABLE:
+      return event
+        ? `Spot available for ${event.title}! You have 24h to register. Visit EventKnit now.`
+        : notification.message;
+
+    case NotificationType.REFUND_RECEIVED:
+      const refundAmount = data?.amount as number | undefined;
+      const refundCurrency = (data?.currency as string) || 'NGN';
+      return refundAmount
+        ? `Refund processed: ${refundCurrency} ${refundAmount.toFixed(2)}. Check your account.`
+        : notification.message;
+
+    case NotificationType.REGISTRATION_DEADLINE_24H:
+    case NotificationType.REGISTRATION_DEADLINE_1H:
+      return event
+        ? `Last chance! Registration for ${event.title} closes soon. Register now!`
+        : notification.message;
+
+    case NotificationType.SECURITY_ALERT:
+      return `Security Alert: ${notification.message}. If this wasn't you, secure your account.`;
+
+    case NotificationType.LOGIN_ATTEMPT:
+      const location = data?.location as string | undefined;
+      return location
+        ? `Login attempt from ${location}. If this wasn't you, secure your account.`
+        : 'Login attempt detected. If this wasn\'t you, secure your account.';
+
+    default:
+      // Generic SMS message - truncate if too long
+      return notification.message.length > 160
+        ? `${notification.message.substring(0, 157)  }...`
+        : notification.message;
+    }
+  }
+
+  /**
+   * Check if notification type is critical (affects retry behavior)
+   */
+  private static isCriticalNotification(type: NotificationType): boolean {
+    const criticalTypes = [
+      NotificationType.EVENT_CANCELLED,
+      NotificationType.EVENT_POSTPONED,
+      NotificationType.EVENT_VENUE_CHANGED,
+      NotificationType.EVENT_TIME_CHANGED,
+      NotificationType.PAYMENT_FAILED,
+      NotificationType.SECURITY_ALERT,
+      NotificationType.LOGIN_ATTEMPT,
+      NotificationType.WAITLIST_AVAILABLE,
+      NotificationType.REGISTRATION_DEADLINE_1H,
+    ];
+    return criticalTypes.includes(type);
   }
 
   /**
