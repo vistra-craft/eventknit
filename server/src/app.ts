@@ -21,6 +21,7 @@ import financialRoutes from './routes/financial.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import bulkMessageRoutes from './routes/bulk-message.routes.js';
 import socialMediaRoutes from './routes/social-media.routes.js';
+import supportRoutes from './routes/support.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -103,6 +104,7 @@ app.use('/api/v1/admin/finance', financialRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/admin/communications/bulk-messages', bulkMessageRoutes);
 app.use('/api/v1/admin/social-media', socialMediaRoutes);
+app.use('/api/v1/admin/support', supportRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
