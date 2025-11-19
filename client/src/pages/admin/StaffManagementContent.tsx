@@ -26,7 +26,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
 import { UserRole as UserRoleEnum } from "@/types/auth";
-import { useCanModifyUser } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // Staff roles that exist in the enum but not in the admin-api UserRole type
 type StaffRole = UserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
@@ -48,29 +48,17 @@ const StaffManagementContent = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Permission hooks for all staff roles
-  const canModifySuperAdmin = useCanModifyUser(UserRoleEnum.SUPERADMIN);
-  const canModifyAdminStaff = useCanModifyUser(UserRoleEnum.ADMIN_STAFF);
-  const canModifyMarketer = useCanModifyUser(UserRoleEnum.MARKETER);
-  const canModifySupport = useCanModifyUser(UserRoleEnum.SUPPORT);
-  const canModifyTeller = useCanModifyUser(UserRoleEnum.TELLER);
+  // Permission hooks
+  const { canModifyUser, canDeleteUser } = usePermissions();
 
   // Helper function to check if user can modify a staff member
   const canModifyStaff = (staffRole: UserRole): boolean => {
-    switch (staffRole) {
-      case UserRoleEnum.SUPERADMIN:
-        return canModifySuperAdmin;
-      case UserRoleEnum.ADMIN_STAFF:
-        return canModifyAdminStaff;
-      case UserRoleEnum.MARKETER:
-        return canModifyMarketer;
-      case UserRoleEnum.SUPPORT:
-        return canModifySupport;
-      case UserRoleEnum.TELLER:
-        return canModifyTeller;
-      default:
-        return false;
-    }
+    return canModifyUser(staffRole);
+  };
+
+  // Helper function to check if user can delete a staff member
+  const canDeleteStaff = (staffRole: UserRole): boolean => {
+    return canDeleteUser(staffRole);
   };
 
 
@@ -442,7 +430,7 @@ const StaffManagementContent = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
                       </Button>
-                      {canModifyStaff(staff.role) && (
+                      {canModifyStaff(staff.role) ? (
                         <Button
                           variant="outline"
                           size="sm"
@@ -451,33 +439,67 @@ const StaffManagementContent = () => {
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                      )}
-                      {staff.status === "ACTIVE" && canModifyStaff(staff.role) && (
+                      ) : (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleSuspendStaff(staff.id)}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          title="Suspend Staff"
-                          disabled={actionLoading === staff.id}
+                          disabled
+                          title={`You do not have permission to modify ${staff.role} users`}
                         >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Suspend
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
                         </Button>
                       )}
-                          {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && canModifyStaff(staff.role) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleActivateStaff(staff.id)}
-                              className="text-green-600 border-green-200 hover:bg-green-50"
-                              title="Activate Staff"
-                              disabled={actionLoading === staff.id}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Activate
-                            </Button>
-                          )}
+                      {staff.status === "ACTIVE" && (
+                        canModifyStaff(staff.role) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSuspendStaff(staff.id)}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            title="Suspend Staff"
+                            disabled={actionLoading === staff.id}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Suspend
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            title={`You do not have permission to suspend ${staff.role} users`}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Suspend
+                          </Button>
+                        )
+                      )}
+                      {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && (
+                        canModifyStaff(staff.role) ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleActivateStaff(staff.id)}
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            title="Activate Staff"
+                            disabled={actionLoading === staff.id}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Activate
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            title={`You do not have permission to activate ${staff.role} users`}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Activate
+                          </Button>
+                        )
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
