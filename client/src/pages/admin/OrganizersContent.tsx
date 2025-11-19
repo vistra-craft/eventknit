@@ -22,7 +22,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
 import { exportUserData } from "@/lib/utils/export";
-import { useCanModifyUser } from "@/hooks/usePermissions";
+import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole } from "@/types/auth";
 
 const OrganizersContent = () => {
@@ -39,8 +39,10 @@ const OrganizersContent = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Permission check for organizers
-  const canModifyOrganizer = useCanModifyUser(UserRole.ORGANIZER);
+  // Permission checks
+  const { canModifyUser, canCreateRole } = usePermissions();
+  const canModifyOrganizer = canModifyUser(UserRole.ORGANIZER);
+  const canCreateOrganizer = canCreateRole(UserRole.ORGANIZER);
 
   // Fetch organizers
   useEffect(() => {
@@ -254,10 +256,21 @@ const OrganizersContent = () => {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button size="sm" onClick={() => navigate("/admin/users/organizers/create")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Organizer
-          </Button>
+          {canCreateOrganizer ? (
+            <Button size="sm" onClick={() => navigate("/admin/users/organizers/create")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Organizer
+            </Button>
+          ) : (
+            <Button 
+              size="sm" 
+              disabled
+              title="You do not have permission to create organizer accounts"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Organizer
+            </Button>
+          )}
         </div>
       </div>
 
@@ -383,7 +396,7 @@ const OrganizersContent = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
                       </Button>
-                      {canModifyOrganizer && (
+                      {canModifyOrganizer ? (
                         <Button
                           variant="outline"
                           size="sm"
@@ -392,32 +405,66 @@ const OrganizersContent = () => {
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                      )}
-                      {organizer.status === "ACTIVE" && canModifyOrganizer && (
+                      ) : (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleSuspendOrganizer(organizer.id)}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          title="Suspend Organizer"
-                          disabled={actionLoading === organizer.id}
+                          disabled
+                          title="You do not have permission to modify organizer accounts"
                         >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Suspend
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
                         </Button>
                       )}
-                      {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && canModifyOrganizer && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleActivateOrganizer(organizer.id)}
-                          className="text-green-600 border-green-200 hover:bg-green-50"
-                          title="Activate Organizer"
-                          disabled={actionLoading === organizer.id}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Activate
-                        </Button>
+                      {organizer.status === "ACTIVE" && (
+                        canModifyOrganizer ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSuspendOrganizer(organizer.id)}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            title="Suspend Organizer"
+                            disabled={actionLoading === organizer.id}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Suspend
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            title="You do not have permission to suspend organizer accounts"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Suspend
+                          </Button>
+                        )
+                      )}
+                      {(organizer.status === "SUSPENDED" || organizer.status === "DEACTIVATED") && (
+                        canModifyOrganizer ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleActivateOrganizer(organizer.id)}
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            title="Activate Organizer"
+                            disabled={actionLoading === organizer.id}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Activate
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            title="You do not have permission to activate organizer accounts"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Activate
+                          </Button>
+                        )
                       )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
