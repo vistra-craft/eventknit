@@ -287,16 +287,8 @@ export class UserPreferencesService {
         throw new NotFoundError(`User ${userId} not found`);
       }
 
-      // Get current preferences
-      const current = await prisma.userPreferences.findUnique({
-        where: { userId },
-      });
-
-      // Get defaults to merge with
-      const defaults = this.getDefaultPreferences(user.role);
-
       // Prepare update data
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
 
       // Only update provided fields
       if (preferences.theme !== undefined) updateData.theme = preferences.theme;
@@ -349,7 +341,7 @@ export class UserPreferencesService {
         updateData.promotionalOffers = preferences.promotionalOffers;
 
       // Upsert preferences
-      const updated = await prisma.userPreferences.upsert({
+      await prisma.userPreferences.upsert({
         where: { userId },
         create: {
           userId,
