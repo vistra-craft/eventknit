@@ -269,15 +269,19 @@ model KYCDocument {
 }
 
 model AuditLog {
-  id        String   @id @default(uuid())
-  userId    String?
-  action    String
-  entity    String? // User, Event, etc.
-  entityId  String?
-  metadata  Json? // Additional data
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entity      String? // User, Event, etc.
+  entityId    String?
+  metadata    Json? // Additional data
+  ipAddress   String?
+  userAgent   String?
+  country     String? // Country name
+  countryCode String? // ISO country code (e.g., "KE", "US")
+  region      String? // Region/state
+  city        String? // City name
+  createdAt   DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -285,6 +289,8 @@ model AuditLog {
   @@index([action])
   @@index([entity])
   @@index([createdAt])
+  @@index([countryCode])
+  @@index([ipAddress])
 }
 
 model Event {

@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logger } from './logger.js';
+import { GeolocationService, type GeolocationData } from '../services/geolocation.service.js';
 
 export interface AuditLogData {
   userId?: string;
@@ -9,13 +10,32 @@ export interface AuditLogData {
   metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
+  country?: string;
+  countryCode?: string;
+  region?: string;
+  city?: string;
+  // If geolocation data is provided, skip auto-detection
+  skipGeolocation?: boolean;
 }
 
 /**
  * Create an audit log entry
+ * Automatically detects geolocation from IP if not provided
  */
 export const createAuditLog = async (data: AuditLogData): Promise<void> => {
   try {
+    let geolocation: GeolocationData | null = null;
+
+    // Auto-detect geolocation from IP if not provided and IP is available
+    if (!data.skipGeolocation && data.ipAddress && !data.countryCode) {
+      try {
+        geolocation = await GeolocationService.getLocationFromIP(data.ipAddress);
+      } catch (error) {
+        // Log but don't fail - geolocation is optional
+        logger.warn('Failed to get geolocation for audit log:', error);
+      }
+    }
+
     await prisma.auditLog.create({
       data: {
         userId: data.userId,
@@ -25,6 +45,10 @@ export const createAuditLog = async (data: AuditLogData): Promise<void> => {
         metadata: data.metadata ? JSON.parse(JSON.stringify(data.metadata)) : null,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
+        country: data.country || geolocation?.country || null,
+        countryCode: data.countryCode || geolocation?.countryCode || null,
+        region: data.region || geolocation?.region || null,
+        city: data.city || geolocation?.city || null,
       },
     });
   } catch (error) {
@@ -102,6 +126,14 @@ export const AuditActions = {
   REFUND_PROCESSED: 'REFUND_PROCESSED',
   REFUND_COMPLETED: 'REFUND_COMPLETED',
   PAYMENT_RECONCILIATION: 'PAYMENT_RECONCILIATION',
+  
+  // Security events
+  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
+  LOGIN_FAILURE: 'LOGIN_FAILURE',
+  LOGIN_ATTEMPT_LOCKED: 'LOGIN_ATTEMPT_LOCKED',
+  SUSPICIOUS_ACTIVITY: 'SUSPICIOUS_ACTIVITY',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  UNAUTHORIZED_ACCESS: 'UNAUTHORIZED_ACCESS',
 } as const;
 
 

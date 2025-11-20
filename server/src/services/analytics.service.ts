@@ -613,5 +613,298 @@ export class AnalyticsService {
       return 0;
     }
   }
+
+  /**
+   * Get user geography analytics from audit logs
+   */
+  static async getUserGeographyAnalytics(filters?: AnalyticsFilters) {
+    try {
+      const where: Prisma.AuditLogWhereInput = {};
+
+      if (filters?.startDate || filters?.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) {
+          where.createdAt.gte = new Date(filters.startDate);
+        }
+        if (filters.endDate) {
+          where.createdAt.lte = new Date(filters.endDate);
+        }
+      }
+
+      // Get country breakdown
+      const countryBreakdown = await prisma.auditLog.groupBy({
+        by: ['countryCode', 'country'],
+        where: {
+          ...where,
+          countryCode: { not: null },
+        },
+        _count: { id: true },
+        orderBy: {
+          _count: {
+            id: 'desc',
+          },
+        },
+      });
+
+      // Get total unique countries
+      const uniqueCountries = await prisma.auditLog.findMany({
+        where: {
+          ...where,
+          countryCode: { not: null },
+        },
+        select: {
+          countryCode: true,
+        },
+        distinct: ['countryCode'],
+      });
+
+      // Get top cities
+      const topCities = await prisma.auditLog.groupBy({
+        by: ['city', 'countryCode'],
+        where: {
+          ...where,
+          city: { not: null },
+        },
+        _count: { id: true },
+        orderBy: {
+          _count: {
+            id: 'desc',
+          },
+        },
+        take: 20,
+      });
+
+      // Get login events by country
+      const loginEventsByCountry = await prisma.auditLog.groupBy({
+        by: ['countryCode', 'action'],
+        where: {
+          ...where,
+          countryCode: { not: null },
+          action: {
+            in: ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGIN_ATTEMPT_LOCKED'],
+          },
+        },
+        _count: { id: true },
+      });
+
+      return {
+        totalUniqueCountries: uniqueCountries.length,
+        countryBreakdown: countryBreakdown.map((item) => ({
+          countryCode: item.countryCode || 'Unknown',
+          country: item.country || 'Unknown',
+          count: item._count.id,
+        })),
+        topCities: topCities.map((item) => ({
+          city: item.city || 'Unknown',
+          countryCode: item.countryCode || 'Unknown',
+          count: item._count.id,
+        })),
+        loginEventsByCountry: loginEventsByCountry.reduce(
+          (acc, item) => {
+            const countryCode = item.countryCode || 'Unknown';
+            if (!acc[countryCode]) {
+              acc[countryCode] = {
+                countryCode,
+                loginSuccess: 0,
+                loginFailure: 0,
+                loginLocked: 0,
+              };
+            }
+            if (item.action === 'LOGIN_SUCCESS') {
+              acc[countryCode].loginSuccess = item._count.id;
+            } else if (item.action === 'LOGIN_FAILURE') {
+              acc[countryCode].loginFailure = item._count.id;
+            } else if (item.action === 'LOGIN_ATTEMPT_LOCKED') {
+              acc[countryCode].loginLocked = item._count.id;
+            }
+            return acc;
+          },
+          {} as Record<
+            string,
+            {
+              countryCode: string;
+              loginSuccess: number;
+              loginFailure: number;
+              loginLocked: number;
+            }
+          >,
+        ),
+      };
+    } catch (error) {
+      logger.error('Failed to get user geography analytics:', error);
+      throw new ValidationError('Failed to retrieve user geography analytics');
+    }
+  }
+
+  /**
+   * Get security events analytics
+   */
+  static async getSecurityEventsAnalytics(filters?: AnalyticsFilters) {
+    try {
+      const where: Prisma.AuditLogWhereInput = {
+        action: {
+          in: [
+            'LOGIN_SUCCESS',
+            'LOGIN_FAILURE',
+            'LOGIN_ATTEMPT_LOCKED',
+            'SUSPICIOUS_ACTIVITY',
+            'RATE_LIMIT_EXCEEDED',
+            'UNAUTHORIZED_ACCESS',
+          ],
+        },
+      };
+
+      if (filters?.startDate || filters?.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) {
+          where.createdAt.gte = new Date(filters.startDate);
+        }
+        if (filters.endDate) {
+          where.createdAt.lte = new Date(filters.endDate);
+        }
+      }
+
+      // Get security events by type
+      const eventsByType = await prisma.auditLog.groupBy({
+        by: ['action'],
+        where,
+        _count: { id: true },
+        orderBy: {
+          _count: {
+            id: 'desc',
+          },
+        },
+      });
+
+      // Get security events by country
+      const eventsByCountry = await prisma.auditLog.groupBy({
+        by: ['countryCode', 'action'],
+        where: {
+          ...where,
+          countryCode: { not: null },
+        },
+        _count: { id: true },
+        orderBy: {
+          _count: {
+            id: 'desc',
+          },
+        },
+      });
+
+      // Get recent suspicious activities
+      const recentSuspicious = await prisma.auditLog.findMany({
+        where: {
+          ...where,
+          action: 'SUSPICIOUS_ACTIVITY',
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 50,
+        select: {
+          id: true,
+          userId: true,
+          action: true,
+          ipAddress: true,
+          country: true,
+          countryCode: true,
+          city: true,
+          userAgent: true,
+          metadata: true,
+          createdAt: true,
+        },
+      });
+
+      return {
+        eventsByType: eventsByType.map((item) => ({
+          action: item.action,
+          count: item._count.id,
+        })),
+        eventsByCountry: eventsByCountry.reduce(
+          (acc, item) => {
+            const countryCode = item.countryCode || 'Unknown';
+            if (!acc[countryCode]) {
+              acc[countryCode] = {};
+            }
+            acc[countryCode][item.action] = item._count.id;
+            return acc;
+          },
+          {} as Record<string, Record<string, number>>,
+        ),
+        recentSuspiciousActivities: recentSuspicious,
+        totalSecurityEvents: eventsByType.reduce((sum, item) => sum + item._count.id, 0),
+      };
+    } catch (error) {
+      logger.error('Failed to get security events analytics:', error);
+      throw new ValidationError('Failed to retrieve security events analytics');
+    }
+  }
+
+  /**
+   * Get user session analytics by country
+   */
+  static async getUserSessionsAnalytics(filters?: AnalyticsFilters) {
+    try {
+      const where: Prisma.AuditLogWhereInput = {
+        action: 'LOGIN_SUCCESS',
+      };
+
+      if (filters?.startDate || filters?.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) {
+          where.createdAt.gte = new Date(filters.startDate);
+        }
+        if (filters.endDate) {
+          where.createdAt.lte = new Date(filters.endDate);
+        }
+      }
+
+      // Get sessions by country
+      const sessionsByCountry = await prisma.auditLog.groupBy({
+        by: ['countryCode', 'country'],
+        where: {
+          ...where,
+          countryCode: { not: null },
+        },
+        _count: { id: true },
+        orderBy: {
+          _count: {
+            id: 'desc',
+          },
+        },
+      });
+
+      // Get unique users by country
+      const uniqueUsersByCountry = await prisma.auditLog.groupBy({
+        by: ['countryCode'],
+        where: {
+          ...where,
+          countryCode: { not: null },
+          userId: { not: null },
+        },
+        _count: {
+          userId: true,
+        },
+      });
+
+      // Get total sessions
+      const totalSessions = await prisma.auditLog.count({ where });
+
+      return {
+        totalSessions,
+        sessionsByCountry: sessionsByCountry.map((item) => ({
+          countryCode: item.countryCode || 'Unknown',
+          country: item.country || 'Unknown',
+          sessionCount: item._count.id,
+          uniqueUsers:
+            uniqueUsersByCountry.find((u) => u.countryCode === item.countryCode)?._count.userId ||
+            0,
+        })),
+      };
+    } catch (error) {
+      logger.error('Failed to get user sessions analytics:', error);
+      throw new ValidationError('Failed to retrieve user sessions analytics');
+    }
+  }
 }
 

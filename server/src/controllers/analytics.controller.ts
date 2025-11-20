@@ -264,6 +264,123 @@ export class AnalyticsController {
       next(error);
     }
   }
+
+  /**
+   * Get user geography analytics
+   * GET /api/v1/admin/analytics/geography
+   */
+  static async getUserGeographyAnalytics(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { startDate, endDate } = req.query;
+
+      const filters: {
+        startDate?: Date | string;
+        endDate?: Date | string;
+      } = {};
+
+      if (startDate) filters.startDate = new Date(startDate as string);
+      if (endDate) filters.endDate = new Date(endDate as string);
+
+      const analytics = await AnalyticsService.getUserGeographyAnalytics(filters);
+
+      res.status(200).json({
+        success: true,
+        data: { analytics },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get security events analytics
+   * GET /api/v1/admin/analytics/security
+   */
+  static async getSecurityEventsAnalytics(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { startDate, endDate } = req.query;
+
+      const filters: {
+        startDate?: Date | string;
+        endDate?: Date | string;
+      } = {};
+
+      if (startDate) filters.startDate = new Date(startDate as string);
+      if (endDate) filters.endDate = new Date(endDate as string);
+
+      const analytics = await AnalyticsService.getSecurityEventsAnalytics(filters);
+
+      res.status(200).json({
+        success: true,
+        data: { analytics },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get user sessions analytics
+   * GET /api/v1/admin/analytics/sessions
+   */
+  static async getUserSessionsAnalytics(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { startDate, endDate } = req.query;
+
+      const filters: {
+        startDate?: Date | string;
+        endDate?: Date | string;
+      } = {};
+
+      if (startDate) filters.startDate = new Date(startDate as string);
+      if (endDate) filters.endDate = new Date(endDate as string);
+
+      const analytics = await AnalyticsService.getUserSessionsAnalytics(filters);
+
+      res.status(200).json({
+        success: true,
+        data: { analytics },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 

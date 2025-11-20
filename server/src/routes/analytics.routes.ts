@@ -51,6 +51,27 @@ router.get('/social-roi', AnalyticsController.getSocialMediaROI);
  */
 router.get('/support-efficiency', AnalyticsController.getSupportEfficiency);
 
+/**
+ * @route   GET /api/v1/admin/analytics/geography
+ * @desc    Get user geography analytics (countries, cities, login events by country)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/geography', AnalyticsController.getUserGeographyAnalytics);
+
+/**
+ * @route   GET /api/v1/admin/analytics/security
+ * @desc    Get security events analytics (login attempts, suspicious activity, etc.)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/security', AnalyticsController.getSecurityEventsAnalytics);
+
+/**
+ * @route   GET /api/v1/admin/analytics/sessions
+ * @desc    Get user sessions analytics by country
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/sessions', AnalyticsController.getUserSessionsAnalytics);
+
 export default router;
 
 

@@ -19,6 +19,7 @@ import {
 import { emailService } from './email.service.js';
 import { UserRole, UserStatus } from '@prisma/client';
 import { config } from '../config/index.js';
+import { createAuditLog, AuditActions } from '../utils/audit.js';
 
 export interface RegisterData {
   email: string;
@@ -527,12 +528,39 @@ export class AuthService {
     });
 
     if (!user) {
+      // Log failed login attempt (user not found)
+      await createAuditLog({
+        action: AuditActions.LOGIN_FAILURE,
+        entity: 'User',
+        metadata: {
+          email: data.email,
+          reason: 'User not found',
+        },
+        ipAddress,
+        userAgent,
+      });
+
       throw new AuthenticationError('Invalid email or password');
     }
 
     // Check if account is locked
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      
+      // Log locked account login attempt
+      await createAuditLog({
+        userId: user.id,
+        action: AuditActions.LOGIN_ATTEMPT_LOCKED,
+        entity: 'User',
+        entityId: user.id,
+        metadata: {
+          email: data.email,
+          minutesLeft,
+        },
+        ipAddress,
+        userAgent,
+      });
+
       throw new AuthenticationError(`Account is locked. Try again in ${minutesLeft} minute(s)`);
     }
 
@@ -540,6 +568,20 @@ export class AuthService {
     // SUSPENDED users cannot login (banned)
     // DEACTIVATED users can login but cannot perform actions
     if (user.status === UserStatus.SUSPENDED) {
+      // Log suspended account login attempt
+      await createAuditLog({
+        userId: user.id,
+        action: AuditActions.SUSPICIOUS_ACTIVITY,
+        entity: 'User',
+        entityId: user.id,
+        metadata: {
+          email: data.email,
+          reason: 'Suspended account login attempt',
+        },
+        ipAddress,
+        userAgent,
+      });
+
       throw new AuthenticationError('Your account has been suspended. Please contact support');
     }
     // DEACTIVATED users can login but will be restricted from actions in middleware
@@ -563,6 +605,21 @@ export class AuthService {
           failedLoginAttempts: failedAttempts,
           lockedUntil: lockUntil,
         },
+      });
+
+      // Log failed login attempt
+      await createAuditLog({
+        userId: user.id,
+        action: lockUntil ? AuditActions.LOGIN_ATTEMPT_LOCKED : AuditActions.LOGIN_FAILURE,
+        entity: 'User',
+        entityId: user.id,
+        metadata: {
+          email: data.email,
+          failedAttempts,
+          locked: !!lockUntil,
+        },
+        ipAddress,
+        userAgent,
       });
 
       throw new AuthenticationError('Invalid email or password');
