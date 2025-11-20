@@ -108,3 +108,4 @@ export const getPublicSettings = async (): Promise<ApiResponse<SettingsResponse>
   return apiGet<ApiResponse<SettingsResponse>>('/admin/settings/public');
 };
 
+

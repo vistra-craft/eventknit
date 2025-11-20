@@ -1,48 +1,99 @@
 import { EventCard } from "./EventCard";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEvents } from "@/hooks/useEvents";
 import { formatEventDate } from "@/lib/event-utils";
 import { EventStatus } from "@/lib/event-api";
+import type { EventData } from "@/types/event";
 
 interface EventGridProps {
   searchFilters?: {
     search?: string;
     location?: string;
   };
+  categoryFilter?: string;
 }
 
-export const EventGrid = ({ searchFilters }: EventGridProps = {}) => {
+export const EventGrid = ({ searchFilters, categoryFilter }: EventGridProps = {}) => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   
   // Get events based on filter
-  const { events, isLoading, error, fetchEvents, clearError } = useEvents();
+  const { events: fetchedEvents, isLoading, error, fetchEvents, clearError } = useEvents();
 
   const timeFilters = [
     { id: "all", label: "All" },
-    { id: "weekend", label: "This Weekend" },
+    { id: "today", label: "Today" },
+    { id: "week", label: "This Week" },
     { id: "month", label: "Next 30 Days" }
   ];
+
+  // Filter events by date range
+  const dateFilteredEvents = useMemo(() => {
+    if (selectedFilter === "all") {
+      return fetchedEvents;
+    }
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Start of today
+
+    let startDate: Date;
+    let endDate: Date;
+
+    switch (selectedFilter) {
+      case "today": {
+        startDate = new Date(now);
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999); // End of today
+        break;
+      }
+      case "week": {
+        startDate = new Date(now);
+        // Get start of week (Sunday)
+        const dayOfWeek = now.getDay();
+        startDate.setDate(now.getDate() - dayOfWeek);
+        // End of week (Saturday)
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      }
+      case "month": {
+        startDate = new Date(now);
+        endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + 30);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      }
+      default:
+        return fetchedEvents;
+    }
+
+    return fetchedEvents.filter((event) => {
+      const eventStartDate = new Date(event.startDate);
+      return eventStartDate >= startDate && eventStartDate <= endDate;
+    });
+  }, [fetchedEvents, selectedFilter]);
 
   const handleFilterChange = useCallback(async (filterId: string) => {
     setSelectedFilter(filterId);
     clearError();
 
     // Build filters based on selected filter
-    const filters: { status?: EventStatus; limit?: number; search?: string } = {
-      limit: 20,
+    const filters: { status?: EventStatus; limit?: number; search?: string; category?: string } = {
+      limit: 100, // Fetch more events to allow client-side date filtering
     };
 
-    // Map filter IDs to API filters
-    if (filterId === "all") {
-      filters.status = EventStatus.APPROVED; // Only show approved events
-    } else if (filterId === "weekend") {
-      // TODO: Add date range filter when backend supports it
-      filters.status = EventStatus.APPROVED;
-    } else if (filterId === "month") {
-      // TODO: Add date range filter when backend supports it
-      filters.status = EventStatus.APPROVED;
+    // Always show approved events
+    filters.status = EventStatus.APPROVED;
+
+    // Add category filter if provided
+    if (categoryFilter && categoryFilter !== "all") {
+      // Handle "featured" category specially - this might need backend support
+      // For now, we'll filter it client-side if needed
+      if (categoryFilter !== "featured") {
+        filters.category = categoryFilter;
+      }
     }
 
     // Add search filters if provided
@@ -59,13 +110,32 @@ export const EventGrid = ({ searchFilters }: EventGridProps = {}) => {
     }
 
     await fetchEvents(filters);
-  }, [fetchEvents, clearError, searchFilters]);
+  }, [fetchEvents, clearError, searchFilters, categoryFilter]);
 
-  // Fetch events on mount and when search filters change
+  // Filter events by category (client-side for "featured" category)
+  const categoryFilteredEvents = useMemo(() => {
+    if (!categoryFilter || categoryFilter === "all") {
+      return dateFilteredEvents;
+    }
+
+    if (categoryFilter === "featured") {
+      // Featured events could be events with specific tags or high ratings
+      // For now, we'll show all events (backend can implement featured logic later)
+      return dateFilteredEvents;
+    }
+
+    return dateFilteredEvents.filter((event) => 
+      event.category?.toLowerCase() === categoryFilter.toLowerCase()
+    );
+  }, [dateFilteredEvents, categoryFilter]);
+
+  const displayEvents = categoryFilteredEvents;
+
+  // Fetch events on mount and when search filters or category change
   useEffect(() => {
     handleFilterChange(selectedFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchFilters]);
+  }, [searchFilters, categoryFilter]);
 
   return (
     <section className="py-16 bg-background relative overflow-hidden" data-section="events">
@@ -138,12 +208,12 @@ export const EventGrid = ({ searchFilters }: EventGridProps = {}) => {
                 Try Again
               </Button>
             </div>
-          ) : events.length === 0 ? (
+          ) : displayEvents.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <p className="text-muted-foreground">No events found</p>
             </div>
           ) : (
-            events.map((event) => (
+            displayEvents.map((event) => (
               <EventCard 
                 key={event.id} 
                 id={event.id}
@@ -163,7 +233,7 @@ export const EventGrid = ({ searchFilters }: EventGridProps = {}) => {
 
         <div className="text-center mt-12">
           <div className="text-sm text-muted-foreground mb-4">
-            Showing {events.length} events
+            Showing {displayEvents.length} events
           </div>
           <Button 
             variant="outline" 

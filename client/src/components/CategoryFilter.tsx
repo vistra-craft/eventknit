@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Music, Mic, Trophy, Palette, Theater, Calendar, Users, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +13,18 @@ const categories = [
   { id: "featured", name: "Featured", icon: Sparkles, color: "accent-neon" },
 ];
 
-export const CategoryFilter = () => {
+interface CategoryFilterProps {
+  selectedCategory?: string;
+  onCategoryChange?: (categoryId: string) => void;
+}
+
+export const CategoryFilter = ({ selectedCategory = "all", onCategoryChange }: CategoryFilterProps) => {
+  const handleCategoryClick = (categoryId: string) => {
+    if (onCategoryChange) {
+      onCategoryChange(categoryId);
+    }
+  };
+
   return (
     <section className="py-12 bg-surface/50 border-b border-card-border">
       <div className="container mx-auto px-6">
@@ -22,12 +34,18 @@ export const CategoryFilter = () => {
         <div className="flex flex-wrap justify-center gap-4">
           {categories.map((category) => {
             const IconComponent = category.icon;
+            const isSelected = selectedCategory === category.id;
             return (
               <Button
                 key={category.id}
                 variant="category"
                 size="lg"
-                className="flex items-center gap-3 px-6 py-3 group"
+                onClick={() => handleCategoryClick(category.id)}
+                className={`flex items-center gap-3 px-6 py-3 group transition-all ${
+                  isSelected 
+                    ? 'bg-primary text-primary-foreground shadow-md scale-105' 
+                    : 'hover:scale-105'
+                }`}
               >
                 <IconComponent className="w-5 h-5 group-hover:scale-105 transition-transform duration-200" />
                 <span>{category.name}</span>

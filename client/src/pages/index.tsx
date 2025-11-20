@@ -7,6 +7,7 @@ import Footer from "../components/Footer";
 
 const Index = () => {
   const [searchFilters, setSearchFilters] = useState<{ search?: string; location?: string }>({});
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const handleSearch = (searchTerm: string, location: string) => {
     setSearchFilters({
@@ -15,12 +16,16 @@ const Index = () => {
     });
   };
 
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar onSearch={handleSearch} />
       <Hero />
-      <CategoryFilter />
-      <EventGrid searchFilters={searchFilters} />
+      <CategoryFilter selectedCategory={selectedCategory} onCategoryChange={handleCategoryChange} />
+      <EventGrid searchFilters={searchFilters} categoryFilter={selectedCategory} />
       <Footer />
     </div>
   );

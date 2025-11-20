@@ -84,3 +84,4 @@ export const getDefaultPreferences = async (): Promise<ApiResponse<UserPreferenc
   return apiGet<ApiResponse<UserPreferencesResponse>>('/user/me/preferences/defaults');
 };
 
+
