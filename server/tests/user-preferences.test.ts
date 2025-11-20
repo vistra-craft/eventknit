@@ -1,15 +1,47 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
 import { prisma } from '../src/config/database.js';
 import { UserPreferencesService } from '../src/services/user-preferences.service.js';
 import { ValidationError, NotFoundError } from '../src/utils/errors.js';
 import { UserRole } from '@prisma/client';
+import { logger } from '../src/utils/logger.js';
 
 describe('UserPreferencesService', () => {
+  let dbConnected = false;
   let testUserId: string;
   let testOrganizerId: string;
   let testAttendeeId: string;
 
+  beforeAll(async () => {
+    // Try to connect to the test database
+    try {
+      await prisma.$connect();
+      // Verify connection with a simple query
+      await prisma.$queryRaw`SELECT 1`;
+      dbConnected = true;
+      logger.info('✅ Test database connected');
+    } catch (error) {
+      logger.warn('⚠️  Database not available. Tests will be skipped.');
+      logger.warn(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      logger.warn('   Start PostgreSQL with: docker compose --env-file .env.development up -d postgres');
+      dbConnected = false;
+    }
+  });
+
+  afterAll(async () => {
+    // Close database connection if it was connected
+    if (dbConnected) {
+      try {
+        await prisma.$disconnect();
+      } catch {
+        // Ignore disconnection errors
+      }
+    }
+  });
+
   beforeEach(async () => {
+    // Skip setup if database is not connected
+    if (!dbConnected) return;
+    
     // Create test users with different roles
     const testUser = await prisma.user.create({
       data: {
@@ -38,6 +70,9 @@ describe('UserPreferencesService', () => {
   });
 
   afterEach(async () => {
+    // Skip cleanup if database is not connected
+    if (!dbConnected) return;
+    
     // Clean up preferences and users
     if (testUserId || testOrganizerId || testAttendeeId) {
       await prisma.userPreferences.deleteMany({
@@ -64,6 +99,7 @@ describe('UserPreferencesService', () => {
 
   describe('getUserPreferences', () => {
     it('should return default preferences for new user', async () => {
+      if (!dbConnected) return;
       const preferences = await UserPreferencesService.getUserPreferences(testUserId);
 
       expect(preferences.theme).toBe('system');
@@ -75,6 +111,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should return role-specific defaults for organizer', async () => {
+      if (!dbConnected) return;
       const preferences = await UserPreferencesService.getUserPreferences(testOrganizerId);
 
       expect(preferences.eventNotifications).toBe(true);
@@ -85,6 +122,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should return role-specific defaults for attendee', async () => {
+      if (!dbConnected) return;
       const preferences = await UserPreferencesService.getUserPreferences(testAttendeeId);
 
       expect(preferences.eventReminders).toBe(true);
@@ -93,6 +131,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should throw NotFoundError for non-existent user', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.getUserPreferences('non-existent-user-id'),
       ).rejects.toThrow(NotFoundError);
@@ -101,6 +140,7 @@ describe('UserPreferencesService', () => {
 
   describe('updatePreferences', () => {
     it('should create preferences if they do not exist', async () => {
+      if (!dbConnected) return;
       const updated = await UserPreferencesService.updatePreferences(testUserId, {
         theme: 'dark',
         dashboardLayout: 'compact',
@@ -111,6 +151,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should update existing preferences', async () => {
+      if (!dbConnected) return;
       // Create initial preferences
       await UserPreferencesService.updatePreferences(testUserId, {
         theme: 'light',
@@ -125,6 +166,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should validate theme value', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           theme: 'invalid' as any,
@@ -133,6 +175,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should validate dashboard layout', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           dashboardLayout: 'invalid' as any,
@@ -141,6 +184,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should validate time format', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           timeFormat: 'invalid' as any,
@@ -149,6 +193,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should validate profile visibility', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           profileVisibility: 'invalid' as any,
@@ -157,6 +202,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should validate session timeout range', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           sessionTimeout: 0,
@@ -171,6 +217,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should validate primary color format', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.updatePreferences(testUserId, {
           primaryColor: 'not-a-color',
@@ -185,6 +232,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should only update provided fields', async () => {
+      if (!dbConnected) return;
       // Set initial preferences
       await UserPreferencesService.updatePreferences(testUserId, {
         theme: 'light',
@@ -205,6 +253,7 @@ describe('UserPreferencesService', () => {
 
   describe('updatePreference', () => {
     it('should update a single preference', async () => {
+      if (!dbConnected) return;
       const updated = await UserPreferencesService.updatePreference(testUserId, 'theme', 'dark');
 
       expect(updated.theme).toBe('dark');
@@ -213,6 +262,7 @@ describe('UserPreferencesService', () => {
 
   describe('resetPreferences', () => {
     it('should reset preferences to defaults', async () => {
+      if (!dbConnected) return;
       // Set custom preferences
       await UserPreferencesService.updatePreferences(testUserId, {
         theme: 'dark',
@@ -230,6 +280,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should throw NotFoundError for non-existent user', async () => {
+      if (!dbConnected) return;
       await expect(
         UserPreferencesService.resetPreferences('non-existent-user-id'),
       ).rejects.toThrow(NotFoundError);

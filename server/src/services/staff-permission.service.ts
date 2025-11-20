@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { UserRole, Prisma } from '@prisma/client';
+import { UserRole, Prisma, EventStatus } from '@prisma/client';
 import { AuthorizationError, NotFoundError } from '../utils/errors.js';
 
 /**
@@ -99,7 +99,7 @@ export class StaffPermissionService {
       const where: Prisma.EventWhereInput = {};
 
       if (filters?.status) {
-        where.status = filters.status as Prisma.EventStatus;
+        where.status = filters.status as EventStatus;
       }
 
       if (filters?.startDate || filters?.endDate) {
@@ -136,7 +136,7 @@ export class StaffPermissionService {
       };
 
       if (filters?.status) {
-        where.status = filters.status as Prisma.EventStatus;
+        where.status = filters.status as EventStatus;
       }
 
       if (filters?.startDate || filters?.endDate) {
@@ -401,7 +401,7 @@ export class StaffPermissionService {
 
     if (filters?.eventStatus) {
       where.event = {
-        status: filters.eventStatus as Prisma.EventStatus,
+        status: filters.eventStatus as EventStatus,
       };
     }
 
