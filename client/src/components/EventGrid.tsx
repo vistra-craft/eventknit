@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useEvents } from "@/hooks/useEvents";
 import { formatEventDate } from "@/lib/event-utils";
 import { EventStatus } from "@/lib/event-api";
-import type { EventData } from "@/types/event";
 
 interface EventGridProps {
   searchFilters?: {

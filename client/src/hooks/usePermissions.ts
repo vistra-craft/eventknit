@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import {
   canCreateRole,
@@ -13,6 +13,7 @@ import {
   getDeletableRoles,
 } from "@/lib/permissions";
 import { UserRole } from "@/types/auth";
+import { getAdminStaffEvents } from "@/lib/admin-api";
 
 /**
  * Hook for checking user permissions
@@ -82,4 +83,46 @@ export const useCanDeleteUser = (targetUserRole: UserRole | null | undefined) =>
   
   if (!targetUserRole) return false;
   return canDeleteUser(targetUserRole);
+};
+
+/**
+ * Enhanced permissions hook with additional event-specific checks
+ */
+export const usePermissionsEnhanced = () => {
+  const basePermissions = usePermissions();
+  const { user } = useAuth();
+
+  const isAssignedToEvent = useCallback(async (eventId: string): Promise<boolean> => {
+    // If user can access all events, they're automatically assigned
+    if (basePermissions.canAccessAllEvents) {
+      return true;
+    }
+
+    // If no user, can't be assigned
+    if (!user?.id) {
+      return false;
+    }
+
+    try {
+      // Check if user is assigned to this event
+      const response = await getAdminStaffEvents(user.id);
+      if (response.success && response.data) {
+        const assignedEventIds = new Set(
+          response.data.assignments
+            .map((assignment) => assignment.eventId)
+            .filter(Boolean)
+        );
+        return assignedEventIds.has(eventId);
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking event assignment:', error);
+      return false;
+    }
+  }, [basePermissions.canAccessAllEvents, user?.id]);
+
+  return {
+    ...basePermissions,
+    isAssignedToEvent,
+  };
 };

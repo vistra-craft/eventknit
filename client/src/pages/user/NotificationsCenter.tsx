@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -211,7 +212,8 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
   // Format notification time
   const formatTime = (dateString: string) => {
     try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+      const distance = formatDistanceToNow(new Date(dateString));
+      return distance ? `${distance} ago` : "Recently";
     } catch {
       return "Recently";
     }

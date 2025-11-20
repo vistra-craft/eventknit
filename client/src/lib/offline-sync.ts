@@ -3,7 +3,8 @@
  * Handles offline scan storage and synchronization
  */
 
-import { ScanRequest, ScanResponse, scanTicket, scanOut } from './workstation-api';
+import { scanTicket, scanOut } from './workstation-api';
+import type { ScanRequest, ScanResponse } from './workstation-api';
 
 /**
  * Offline Scan Queue Item

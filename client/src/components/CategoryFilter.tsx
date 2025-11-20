@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Music, Mic, Trophy, Palette, Theater, Calendar, Users, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

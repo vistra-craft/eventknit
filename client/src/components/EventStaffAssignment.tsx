@@ -32,8 +32,8 @@ import {
   type EventStaffRole,
   type AssignStaffToEventData,
 } from "@/lib/admin-api";
-import { getUsers, type User, type UserRole } from "@/lib/admin-api";
-import { UserRole as UserRoleEnum } from "@/types/auth";
+import { getUsers, type User } from "@/lib/admin-api";
+import { UserRole } from "@/types/auth";
 
 interface EventStaffAssignmentProps {
   eventId: string;
@@ -50,11 +50,11 @@ const EVENT_STAFF_ROLES: EventStaffRole[] = [
 ];
 
 const STAFF_ROLES: UserRole[] = [
-  UserRoleEnum.SUPERADMIN,
-  UserRoleEnum.ADMIN_STAFF,
-  UserRoleEnum.MARKETER,
-  UserRoleEnum.SUPPORT,
-  UserRoleEnum.TELLER,
+  UserRole.SUPERADMIN,
+  UserRole.ADMIN_STAFF,
+  UserRole.MARKETER,
+  UserRole.SUPPORT,
+  UserRole.TELLER,
 ];
 
 export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
@@ -125,7 +125,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
       if (response.success && response.data) {
         // Filter to only staff roles
         const staff = response.data.users.filter((user) =>
-          STAFF_ROLES.includes(user.role)
+          STAFF_ROLES.includes(user.role as UserRole)
         );
         setAvailableStaff(staff);
       }

@@ -152,7 +152,7 @@ const WorkstationOverview: React.FC = () => {
     const endDate = event.endDate ? new Date(event.endDate) : null;
     
     if (endDate && startDate.toDateString() !== endDate.toDateString()) {
-      return `${formatDate(event.startDate)} - ${formatDate(event.endDate)}`;
+      return `${formatDate(event.startDate)} - ${event.endDate ? formatDate(event.endDate) : 'Ongoing'}`;
     } else {
       return formatDate(event.startDate);
     }

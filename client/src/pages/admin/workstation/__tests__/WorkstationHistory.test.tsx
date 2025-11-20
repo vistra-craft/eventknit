@@ -6,6 +6,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../../../../contexts/AuthContext';
+import { ThemeProvider } from '../../../../contexts/ThemeContext';
+import { RoleViewProvider } from '../../../../contexts/RoleViewContext';
+import { UserRole } from '../../../../types/auth';
 import WorkstationHistory from '../WorkstationHistory';
 import * as eventApi from '../../../../lib/event-api';
 import * as workstationApi from '../../../../lib/workstation-api';
@@ -50,12 +53,16 @@ const TestWrapper = ({
   
   return (
     <MemoryRouter initialEntries={initialEntries}>
-      <AuthProvider>
-        <Routes>
-          <Route path="/workstation/history/:eventId" element={children} />
-          <Route path="/workstation/history" element={children} />
-        </Routes>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RoleViewProvider userRole={UserRole.TELLER}>
+            <Routes>
+              <Route path="/workstation/history/:eventId" element={children} />
+              <Route path="/workstation/history" element={children} />
+            </Routes>
+          </RoleViewProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </MemoryRouter>
   );
 };

@@ -54,7 +54,6 @@ import {
   ScanType,
   type ScanType as ScanTypeType,
   type AttendeeSearchResult,
-  type WorkstationApiError,
   type ScanRequest,
 } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
@@ -243,298 +242,6 @@ const WorkstationScanner: React.FC = () => {
     };
   }, []);
 
-  // Auto-sync when coming back online
-  useEffect(() => {
-    if (isOnlineState && syncStatus.queueLength > 0 && !syncing) {
-      // Delay sync slightly to ensure connection is stable
-      const timeoutId = setTimeout(() => {
-        if (isOnline() && getSyncStatus().queueLength > 0) {
-          handleSync();
-        }
-      }, 2000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isOnlineState, syncStatus.queueLength, syncing, handleSync]);
-
-  // Update sync status periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSyncStatus(getSyncStatus());
-    }, 5000); // Update every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Facilities
-  const facilities: Facility[] = [
-    { id: "entrance", name: "Main Entrance", icon: <Shield className="w-4 h-4" /> },
-    { id: "lunch", name: "Lunch Area", icon: <Utensils className="w-4 h-4" /> },
-    { id: "gifts", name: "Gifts Desk", icon: <Gift className="w-4 h-4" /> },
-    { id: "vip", name: "VIP Lounge", icon: <Star className="w-4 h-4" /> },
-    { id: "parking", name: "Parking", icon: <Car className="w-4 h-4" /> },
-  ];
-
-  // Load events
-  useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        setLoading(true);
-        const response = await getEvents({ limit: 100 });
-        if (response.success && response.data) {
-          setEvents(response.data.events);
-          
-          // If eventId is provided, load that event
-          if (eventId) {
-            const event = response.data.events.find(e => e.id === eventId);
-            if (event) {
-              setCurrentEvent(event);
-            } else {
-              // Try to fetch event details
-              try {
-                const eventResponse = await getEvent(eventId);
-                if (eventResponse.success && eventResponse.data) {
-                  setCurrentEvent(eventResponse.data.event);
-                }
-              } catch (error) {
-                console.error('Error fetching event:', error);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading events:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load events",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadEvents();
-  }, [eventId, toast]);
-
-  // Load event details when eventId changes
-  useEffect(() => {
-    if (eventId && !currentEvent) {
-      const loadEventDetails = async () => {
-        try {
-          const response = await getEvent(eventId);
-          if (response.success && response.data) {
-            setCurrentEvent(response.data.event);
-          }
-        } catch (error) {
-          console.error('Error loading event details:', error);
-        }
-      };
-      loadEventDetails();
-    }
-  }, [eventId, currentEvent]);
-
-  // Save facility selection
-  useEffect(() => {
-    setStoredFacility(selectedFacility);
-  }, [selectedFacility]);
-
-  // Process scanned code
-  const processCode = useCallback(async (code: string) => {
-    if (!eventId) {
-      toast({
-        title: "Error",
-        description: "Please select an event first",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Format backup code if needed
-    const formattedCode = formatBackupCode(code);
-    const codeType = detectCodeType(formattedCode);
-
-    // Validate backup code format
-    if (codeType === CodeType.BACKUP_CODE && !isValidBackupCode(formattedCode)) {
-      toast({
-        title: "Invalid Code",
-        description: "Backup code must be exactly 10 alphanumeric characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Prepare scan request
-    const scanRequest: ScanRequest = {
-      code: formattedCode,
-      eventId,
-      facility: selectedFacility,
-      deviceId,
-      deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
-    };
-
-    // Check if offline - store in queue instead
-    if (!isOnlineState) {
-      const offlineItem = addToOfflineQueue(
-        scanRequest,
-        scanMode,
-        undefined, // signatureValid will be set when synced
-        codeType,
-      );
-
-      // Create a pending scan result
-      const scanResult: ScanResult = {
-        id: offlineItem.id,
-        registrationId: 'pending',
-        attendeeName: 'Pending sync...',
-        ticketType: null,
-        scannedAt: offlineItem.timestamp.toISOString(),
-        facility: selectedFacility,
-        status: 'success', // Show as success but indicate it's pending
-        signatureValid: false,
-        codeType,
-        scanType: scanMode === 'check-in' ? 'CHECK_IN' : 'CHECK_OUT',
-        isReEntry: false,
-      };
-
-      setScanResults(prev => [scanResult, ...prev]);
-      setSyncStatus(getSyncStatus());
-
-      toast({
-        title: "Scan Queued",
-        description: "Device is offline. Scan will be synced when connection is restored.",
-      });
-
-      // Visual feedback
-      setFlashStatus('success');
-      setTimeout(() => setFlashStatus('none'), 500);
-
-      // Audio feedback
-      if (soundEnabled) {
-        playSuccessSound();
-      }
-
-      // Haptic feedback
-      vibrateSuccess();
-
-      return;
-    }
-
-    try {
-      let response: { success: true; data: ScanResponse } | WorkstationApiError;
-
-      if (scanMode === 'check-in') {
-        response = await scanTicket(scanRequest);
-      } else {
-        response = await scanOut(scanRequest);
-      }
-
-      if (response.success) {
-        const scanResult: ScanResult = {
-          id: response.data.scanId,
-          registrationId: response.data.registrationId,
-          attendeeName: response.data.attendeeName,
-          ticketType: response.data.ticketType,
-          scannedAt: response.data.scannedAt,
-          facility: response.data.facility,
-          status: 'success',
-          signatureValid: response.data.signatureValid,
-          codeType: response.data.codeType,
-          scanType: response.data.scanType,
-          isReEntry: response.data.isReEntry,
-        };
-
-        setScanResults(prev => [scanResult, ...prev]);
-        
-        // Visual feedback
-        setFlashStatus('success');
-        setTimeout(() => setFlashStatus('none'), 500);
-        
-        // Audio feedback
-        if (soundEnabled) {
-          playSuccessSound();
-        }
-
-        // Haptic feedback
-        vibrateSuccess();
-
-        toast({
-          title: "Scan Successful",
-          description: `${scanMode === 'check-in' ? 'Checked in' : 'Checked out'}: ${response.data.attendeeName}`,
-        });
-
-        // Show signature warning if invalid
-        if (!response.data.signatureValid) {
-          toast({
-            title: "Security Warning",
-            description: "Ticket signature verification failed. This may be a duplicate or invalid ticket.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        // Handle error response
-        const error = response as WorkstationApiError;
-        const scanResult: ScanResult = {
-          id: Date.now().toString(),
-          registrationId: error.error?.details?.registrationId || '',
-          attendeeName: 'Error',
-          ticketType: null,
-          scannedAt: new Date().toISOString(),
-          facility: selectedFacility,
-          status: 'error',
-          errorCode: error.error?.code,
-          errorMessage: error.error?.message,
-          signatureValid: false,
-          codeType: codeType,
-          scanType: scanMode === 'check-in' ? ScanType.CHECK_IN : ScanType.CHECK_OUT,
-          isReEntry: false,
-        };
-
-        setScanResults(prev => [scanResult, ...prev]);
-        
-        // Visual feedback
-        setFlashStatus('error');
-        setTimeout(() => setFlashStatus('none'), 1000);
-        
-        // Audio feedback
-        if (soundEnabled) {
-          playErrorSound();
-        }
-
-        // Haptic feedback
-        vibrateError();
-
-        // Show specific error messages
-        let errorTitle = "Scan Failed";
-        let errorDescription = error.error?.message || "Unknown error";
-        
-        if (error.error?.code === 'INVALID_SIGNATURE') {
-          errorTitle = "Security Warning";
-          errorDescription = "Invalid ticket signature. This ticket may be fraudulent or duplicated.";
-        } else if (error.error?.code === 'INVALID_TICKET') {
-          errorTitle = "Ticket Not Found";
-          errorDescription = "This ticket is not valid for this event.";
-        } else if (error.error?.code === 'ALREADY_SCANNED') {
-          errorTitle = "Already Scanned";
-          errorDescription = "This ticket has already been scanned.";
-        }
-
-        toast({
-          title: errorTitle,
-          description: errorDescription,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error processing code:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process scan. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [eventId, selectedFacility, scanMode, soundEnabled, toast, deviceId, isOnlineState, isMobile]);
-
   // Handle sync
   const handleSync = useCallback(async () => {
     if (!isOnlineState) {
@@ -600,6 +307,318 @@ const WorkstationScanner: React.FC = () => {
       setSyncProgress({ synced: 0, total: 0 });
     }
   }, [isOnlineState, syncStatus.queueLength, toast]);
+
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (isOnlineState && syncStatus.queueLength > 0 && !syncing) {
+      // Delay sync slightly to ensure connection is stable
+      const timeoutId = setTimeout(() => {
+        if (isOnline() && getSyncStatus().queueLength > 0) {
+          handleSync();
+        }
+      }, 2000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOnlineState, syncStatus.queueLength, syncing, handleSync]);
+
+  // Update sync status periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSyncStatus(getSyncStatus());
+    }, 5000); // Update every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Facilities
+  const facilities: Facility[] = [
+    { id: "entrance", name: "Main Entrance", icon: <Shield className="w-4 h-4" /> },
+    { id: "lunch", name: "Lunch Area", icon: <Utensils className="w-4 h-4" /> },
+    { id: "gifts", name: "Gifts Desk", icon: <Gift className="w-4 h-4" /> },
+    { id: "vip", name: "VIP Lounge", icon: <Star className="w-4 h-4" /> },
+    { id: "parking", name: "Parking", icon: <Car className="w-4 h-4" /> },
+  ];
+
+  // Load events
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await getEvents({ limit: 100 });
+        if (response.success && response.data) {
+          setEvents(response.data.events);
+          
+          // If eventId is provided, load that event
+          if (eventId) {
+            const event = response.data.events.find(e => e.id === eventId);
+            if (event) {
+              setCurrentEvent(event);
+            } else {
+              // Try to fetch event details
+              try {
+                const eventResponse = await getEvent(eventId);
+                if (eventResponse.success && eventResponse.data) {
+                  // getEvent returns eventId and eventTitle, not a full event object
+                  // Find the event from the events list or create a minimal event object
+                  const foundEvent = response.data.events.find(e => e.id === eventId);
+                  if (foundEvent) {
+                    setCurrentEvent(foundEvent);
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching event:', error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading events:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load events",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, [eventId, toast]);
+
+  // Load event details when eventId changes
+  useEffect(() => {
+    if (eventId && !currentEvent) {
+      const loadEventDetails = async () => {
+        try {
+          const response = await getEvent(eventId);
+          if (response.success && response.data) {
+            // getEvent returns eventId and eventTitle, need to find full event from events list
+            const foundEvent = events.find(e => e.id === eventId);
+            if (foundEvent) {
+              setCurrentEvent(foundEvent);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading event details:', error);
+        }
+      };
+      loadEventDetails();
+    }
+  }, [eventId, currentEvent, events]);
+
+  // Save facility selection
+  useEffect(() => {
+    setStoredFacility(selectedFacility);
+  }, [selectedFacility]);
+
+  // Process scanned code
+  const processCode = useCallback(async (code: string) => {
+    if (!eventId) {
+      toast({
+        title: "Error",
+        description: "Please select an event first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Format backup code if needed
+    const formattedCode = formatBackupCode(code);
+    const codeType = detectCodeType(formattedCode);
+
+    // Validate backup code format
+    if (codeType === 'BACKUP_CODE' && !isValidBackupCode(formattedCode)) {
+      toast({
+        title: "Invalid Code",
+        description: "Backup code must be exactly 10 alphanumeric characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare scan request
+    const scanRequest: ScanRequest = {
+      code: formattedCode,
+      eventId,
+      facility: selectedFacility,
+      deviceId,
+      deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
+    };
+
+    // Check if offline - store in queue instead
+    if (!isOnlineState) {
+      const offlineItem = addToOfflineQueue(
+        scanRequest,
+        scanMode,
+        undefined, // signatureValid will be set when synced
+        codeType,
+      );
+
+      // Create a pending scan result
+      const scanResult: ScanResult = {
+        id: offlineItem.id,
+        registrationId: 'pending',
+        attendeeName: 'Pending sync...',
+        ticketType: null,
+        scannedAt: offlineItem.timestamp.toISOString(),
+        facility: selectedFacility,
+        status: 'success', // Show as success but indicate it's pending
+        signatureValid: false,
+        codeType,
+        scanType: scanMode === 'check-in' ? 'CHECK_IN' : 'CHECK_OUT',
+        isReEntry: false,
+      };
+
+      setScanResults(prev => [scanResult, ...prev]);
+      setSyncStatus(getSyncStatus());
+
+      toast({
+        title: "Scan Queued",
+        description: "Device is offline. Scan will be synced when connection is restored.",
+      });
+
+      // Visual feedback
+      setFlashStatus('success');
+      setTimeout(() => setFlashStatus('none'), 500);
+
+      // Audio feedback
+      if (soundEnabled) {
+        playSuccessSound();
+      }
+
+      // Haptic feedback
+      vibrateSuccess();
+
+      return;
+    }
+
+    try {
+      let response: ScanResponse;
+
+      if (scanMode === 'check-in') {
+        response = await scanTicket(scanRequest);
+      } else {
+        response = await scanOut(scanRequest);
+      }
+
+      if (response.success) {
+        const scanResult: ScanResult = {
+          id: response.data.scanId,
+          registrationId: response.data.registrationId,
+          attendeeName: response.data.attendeeName,
+          ticketType: response.data.ticketType,
+          scannedAt: response.data.scannedAt instanceof Date ? response.data.scannedAt.toISOString() : response.data.scannedAt,
+          facility: response.data.facility,
+          status: 'success',
+          signatureValid: response.data.signatureValid,
+          codeType: response.data.codeType,
+          scanType: response.data.scanType,
+          isReEntry: response.data.isReEntry,
+        };
+
+        setScanResults(prev => [scanResult, ...prev]);
+        
+        // Visual feedback
+        setFlashStatus('success');
+        setTimeout(() => setFlashStatus('none'), 500);
+        
+        // Audio feedback
+        if (soundEnabled) {
+          playSuccessSound();
+        }
+
+        // Haptic feedback
+        vibrateSuccess();
+
+        toast({
+          title: "Scan Successful",
+          description: `${scanMode === 'check-in' ? 'Checked in' : 'Checked out'}: ${response.data.attendeeName}`,
+        });
+
+        // Show signature warning if invalid
+        if (!response.data.signatureValid) {
+          toast({
+            title: "Security Warning",
+            description: "Ticket signature verification failed. This may be a duplicate or invalid ticket.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Handle error response
+        const error = response.error || { code: 'UNKNOWN', message: 'Scan failed' };
+        const scanResult: ScanResult = {
+          id: Date.now().toString(),
+          registrationId: error.details?.registrationId || '',
+          attendeeName: 'Error',
+          ticketType: null,
+          scannedAt: new Date().toISOString(),
+          facility: selectedFacility,
+          status: 'error',
+          errorCode: error.code,
+          errorMessage: error.message,
+          signatureValid: false,
+          codeType: codeType,
+          scanType: scanMode === 'check-in' ? ScanType.CHECK_IN : ScanType.CHECK_OUT,
+          isReEntry: false,
+        };
+
+        setScanResults(prev => [scanResult, ...prev]);
+        
+        // Visual feedback
+        setFlashStatus('error');
+        setTimeout(() => setFlashStatus('none'), 1000);
+        
+        // Audio feedback
+        if (soundEnabled) {
+          playErrorSound();
+        }
+
+        // Haptic feedback
+        vibrateError();
+
+        // Show specific error messages
+        let errorTitle = "Scan Failed";
+        let errorDescription = error.message || "Unknown error";
+        
+        if (error.code === 'INVALID_SIGNATURE') {
+          errorTitle = "Security Warning";
+          errorDescription = "Invalid ticket signature. This ticket may be fraudulent or duplicated.";
+        } else if (error.code === 'INVALID_TICKET') {
+          errorTitle = "Ticket Not Found";
+          errorDescription = "This ticket is not valid for this event.";
+        } else if (error.code === 'ALREADY_SCANNED') {
+          errorTitle = "Already Scanned";
+          errorDescription = "This ticket has already been scanned.";
+        }
+
+        toast({
+          title: errorTitle,
+          description: errorDescription,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error processing code:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process scan. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [eventId, selectedFacility, scanMode, soundEnabled, toast, deviceId, isOnlineState, isMobile]);
+
+  // Stop QR scanning
+  const stopScanning = useCallback(() => {
+    if (html5QrCodeRef.current) {
+      html5QrCodeRef.current.clear().catch((error) => {
+        console.error('Error stopping scanner:', error);
+      });
+      html5QrCodeRef.current = null;
+    }
+    setIsScanning(false);
+  }, []);
 
   // Start QR scanning
   const startScanning = useCallback(async () => {
@@ -680,17 +699,6 @@ const WorkstationScanner: React.FC = () => {
     }
   }, [processCode, toast, cameraPermission, isMobile, stopScanning]);
 
-  // Stop QR scanning
-  const stopScanning = useCallback(() => {
-    if (html5QrCodeRef.current) {
-      html5QrCodeRef.current.clear().catch((error) => {
-        console.error('Error stopping scanner:', error);
-      });
-      html5QrCodeRef.current = null;
-    }
-    setIsScanning(false);
-  }, []);
-
   // Handle manual scan
   const handleManualScan = () => {
     if (manualInput.trim()) {
@@ -732,7 +740,7 @@ const WorkstationScanner: React.FC = () => {
     if (!eventId) return;
 
     try {
-      let response: { success: true; data: ScanResponse } | WorkstationApiError;
+      let response: ScanResponse;
 
       const manualRequest: ScanRequest = {
         code: attendee.registrationId, // Use registration ID as code
@@ -754,7 +762,7 @@ const WorkstationScanner: React.FC = () => {
           registrationId: response.data.registrationId,
           attendeeName: response.data.attendeeName,
           ticketType: response.data.ticketType,
-          scannedAt: response.data.scannedAt,
+          scannedAt: response.data.scannedAt instanceof Date ? response.data.scannedAt.toISOString() : response.data.scannedAt,
           facility: response.data.facility,
           status: 'success',
           signatureValid: response.data.signatureValid,
@@ -773,10 +781,10 @@ const WorkstationScanner: React.FC = () => {
           description: `${scanMode === 'check-in' ? 'Checked in' : 'Checked out'}: ${response.data.attendeeName}`,
         });
       } else {
-        const error = response as WorkstationApiError;
+        const error = response.error || { code: 'UNKNOWN', message: 'Scan failed' };
         toast({
           title: "Error",
-          description: error.error?.message || "Operation failed",
+          description: error.message || "Operation failed",
           variant: "destructive",
         });
       }
@@ -1157,7 +1165,7 @@ const WorkstationScanner: React.FC = () => {
                           {isMobile ? 'Scan Code' : ''}
                         </Button>
                       </div>
-                      {manualInput && detectCodeType(manualInput) === CodeType.UNKNOWN && (
+                      {manualInput && detectCodeType(manualInput) === 'UNKNOWN' && (
                         <p className="text-xs text-red-600">Invalid code format</p>
                       )}
                     </div>
@@ -1348,7 +1356,7 @@ const WorkstationScanner: React.FC = () => {
                             )}
                             {attendee.checkedInAt && (
                               <Badge variant="secondary" className="text-xs">
-                                Checked In: {formatTime(attendee.checkedInAt)}
+                                Checked In: {formatTime(attendee.checkedInAt instanceof Date ? attendee.checkedInAt.toISOString() : attendee.checkedInAt)}
                               </Badge>
                             )}
                             {attendee.signatureValid === false && (

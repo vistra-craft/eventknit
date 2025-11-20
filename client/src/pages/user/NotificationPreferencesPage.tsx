@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -28,6 +29,7 @@ import DashboardNavbar from "./DashboardNavbar";
 
 const NotificationPreferencesPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -152,7 +154,11 @@ const NotificationPreferencesPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <DashboardNavbar />
+        {user && <DashboardNavbar user={{
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          initials: `${user.firstName[0]}${user.lastName[0]}`.toUpperCase(),
+        }} activeSection="notifications" />}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Card>
             <CardContent className="py-8 text-center">
@@ -167,7 +173,11 @@ const NotificationPreferencesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardNavbar />
+      {user && <DashboardNavbar user={{
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        initials: `${user.firstName[0]}${user.lastName[0]}`.toUpperCase(),
+      }} activeSection="notifications" />}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

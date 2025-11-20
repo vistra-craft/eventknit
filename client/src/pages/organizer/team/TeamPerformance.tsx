@@ -91,7 +91,8 @@ const TeamPerformance = () => {
     return `${num.toFixed(1)}%`;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _getPerformanceColor = (value: number, type: "accuracy" | "time") => {
     if (type === "accuracy") {
       if (value >= 95) return "text-green-600";
@@ -103,6 +104,7 @@ const TeamPerformance = () => {
       return "text-red-600";
     }
   };
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   const getCoverageBadge = (status: "adequate" | "understaffed" | "overstaffed") => {
     switch (status) {

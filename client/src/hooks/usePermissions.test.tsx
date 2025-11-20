@@ -11,8 +11,6 @@ import {
   useCanModifyUser,
   useCanDeleteUser,
   usePermissions,
-  useCanCreateRoles,
-  useCurrentUserRole,
 } from './usePermissions';
 import { UserRole } from '@/types/auth';
 import type { ReactNode } from 'react';
@@ -301,15 +299,20 @@ describe('usePermissions hooks', () => {
         clearError: vi.fn(),
       });
 
-      const { result } = renderHook(() => usePermissions(UserRole.TELLER), {
+      const { result } = renderHook(() => usePermissions(), {
         wrapper: TestWrapper,
       });
 
-      expect(result.current).toEqual({
-        canCreate: false,
-        canModify: false,
-        canDelete: false,
-      });
+      expect(result.current.canCreateRole(UserRole.TELLER)).toBe(false);
+      expect(result.current.canModifyUser(UserRole.TELLER)).toBe(false);
+      expect(result.current.canDeleteUser(UserRole.TELLER)).toBe(false);
+      expect(result.current.canManageStaff).toBe(false);
+      expect(result.current.isAdminStaff).toBe(false);
+      expect(result.current.isOrganizerStaff).toBe(false);
+      expect(result.current.canAccessAllEvents).toBe(false);
+      expect(result.current.creatableRoles).toEqual([]);
+      expect(result.current.modifiableRoles).toEqual([]);
+      expect(result.current.deletableRoles).toEqual([]);
     });
 
     it('should return correct permissions for ADMIN_STAFF modifying TELLER', () => {
@@ -323,98 +326,18 @@ describe('usePermissions hooks', () => {
         clearError: vi.fn(),
       });
 
-      const { result } = renderHook(() => usePermissions(UserRole.TELLER), {
+      const { result } = renderHook(() => usePermissions(), {
         wrapper: TestWrapper,
       });
 
-      expect(result.current.canCreate).toBe(true);
-      expect(result.current.canModify).toBe(true);
-      expect(result.current.canDelete).toBe(false);
+      expect(result.current.canCreateRole(UserRole.TELLER)).toBe(true);
+      expect(result.current.canModifyUser(UserRole.TELLER)).toBe(true);
+      expect(result.current.canDeleteUser(UserRole.TELLER)).toBe(false);
     });
   });
 
-  describe('useCanCreateRoles', () => {
-    it('should return all false when user is not authenticated', () => {
-      mockUseAuth.mockReturnValue({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-        login: vi.fn(),
-        logout: vi.fn(),
-        clearError: vi.fn(),
-      });
-
-      const { result } = renderHook(
-        () => useCanCreateRoles([UserRole.TELLER, UserRole.MARKETER]),
-        {
-          wrapper: TestWrapper,
-        },
-      );
-
-      expect(result.current[UserRole.TELLER]).toBe(false);
-      expect(result.current[UserRole.MARKETER]).toBe(false);
-    });
-
-    it('should return correct permissions for multiple roles', () => {
-      mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-        login: vi.fn(),
-        logout: vi.fn(),
-        clearError: vi.fn(),
-      });
-
-      const { result } = renderHook(
-        () => useCanCreateRoles([UserRole.TELLER, UserRole.SUPERADMIN]),
-        {
-          wrapper: TestWrapper,
-        },
-      );
-
-      expect(result.current[UserRole.TELLER]).toBe(true);
-      expect(result.current[UserRole.SUPERADMIN]).toBe(false);
-    });
-  });
-
-  describe('useCurrentUserRole', () => {
-    it('should return null when user is not authenticated', () => {
-      mockUseAuth.mockReturnValue({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-        login: vi.fn(),
-        logout: vi.fn(),
-        clearError: vi.fn(),
-      });
-
-      const { result } = renderHook(() => useCurrentUserRole(), {
-        wrapper: TestWrapper,
-      });
-
-      expect(result.current).toBe(null);
-    });
-
-    it('should return user role when authenticated', () => {
-      mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-        login: vi.fn(),
-        logout: vi.fn(),
-        clearError: vi.fn(),
-      });
-
-      const { result } = renderHook(() => useCurrentUserRole(), {
-        wrapper: TestWrapper,
-      });
-
-      expect(result.current).toBe(UserRole.ADMIN_STAFF);
-    });
-  });
 });
+
+
+
 

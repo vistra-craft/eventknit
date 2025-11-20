@@ -14,6 +14,7 @@ import {
   Key,
   Mail,
 } from "lucide-react";
+import type { User as UserType } from "@/types/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -172,11 +173,12 @@ const UserSettingsPage = () => {
             email: userData.email || "",
             phone: userData.phoneNumber || "",
             companyAffiliation: "", // Not in User interface yet
-            company: userData.company || "",
-            position: userData.position || "",
-            location: userData.location || "",
-            bio: userData.bio || "",
-            avatar: userData.avatar || "",
+            // Extended user properties not in User type (reserved for future)
+            company: (userData as UserType & { company?: string }).company || "",
+            position: (userData as UserType & { position?: string }).position || "",
+            location: (userData as UserType & { location?: string }).location || "",
+            bio: (userData as UserType & { bio?: string }).bio || "",
+            avatar: (userData as UserType & { avatar?: string }).avatar || "",
           }));
           setAccountInfo({
             role: userData.role,
@@ -332,10 +334,8 @@ const UserSettingsPage = () => {
           otherName: settings.otherName || undefined,
           phoneNumber: settings.phone || undefined,
           companyAffiliation: settings.companyAffiliation || undefined,
-          company: settings.company || undefined,
-          position: settings.position || undefined,
-          location: settings.location || undefined,
-          bio: settings.bio || undefined,
+          // Note: company, position, location, bio are not in RegisterData type
+          // These fields are reserved for future implementation
         };
 
         const response = await authApi.updateProfile(profileData);

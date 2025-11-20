@@ -148,9 +148,19 @@ const apiRequestInternal = async <T>(
     const data = await response.json();
 
     if (!response.ok) {
+      // Provide user-friendly messages for specific status codes
+      let errorMessage = data.message || 'An error occurred';
+      if (response.status === 503) {
+        errorMessage = 'Service temporarily unavailable. The server may be down or overloaded. Please try again later.';
+      } else if (response.status === 500) {
+        errorMessage = 'Internal server error. Please try again later or contact support.';
+      } else if (response.status === 502) {
+        errorMessage = 'Bad gateway. The server is temporarily unavailable. Please try again later.';
+      }
+      
       const error: ApiError = {
         success: false,
-        message: data.message || 'An error occurred',
+        message: errorMessage,
         errors: data.errors,
       };
       // Add status code to error for 401 detection

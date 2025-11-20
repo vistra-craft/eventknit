@@ -142,7 +142,14 @@ const WorkstationHistory: React.FC = () => {
         
         if (response.success && response.data) {
           setScans(response.data.scans);
-          setPagination(response.data.pagination);
+          if (response.data.pagination) {
+            setPagination({
+              page: response.data.pagination.page,
+              limit: response.data.pagination.limit,
+              total: response.data.scans.length, // Use scans length as total
+              totalPages: response.data.pagination.totalPages,
+            });
+          }
           
           // Calculate statistics
           calculateStats(response.data.scans);
@@ -327,7 +334,7 @@ const WorkstationHistory: React.FC = () => {
       scan.scannedBy,
       scan.isValid ? 'Yes' : 'No',
       scan.isReEntry ? 'Yes' : 'No',
-      scan.errorMessage || '',
+      '', // errorMessage not in TicketScanRecord type
     ]);
 
     const csvContent = [
@@ -620,9 +627,7 @@ const WorkstationHistory: React.FC = () => {
                                 <p className="text-xs text-gray-500 mt-1">
                                   {new Date(scan.scannedAt).toLocaleString()}
                                 </p>
-                                {scan.errorMessage && (
-                                  <p className="text-xs text-red-600 mt-1">{scan.errorMessage}</p>
-                                )}
+                                {/* errorMessage not in TicketScanRecord type */}
                               </div>
                               <Button variant="outline" size="sm">
                                 <MoreHorizontal className="h-4 w-4" />

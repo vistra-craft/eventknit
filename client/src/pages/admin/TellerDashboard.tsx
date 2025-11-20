@@ -49,6 +49,7 @@ const TellerDashboard = () => {
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         const todayEvents = events.filter((assignment) => {
+          if (!assignment.event?.startDate) return false;
           const eventDate = new Date(assignment.event.startDate);
           return eventDate >= today && eventDate < tomorrow;
         });
@@ -59,6 +60,7 @@ const TellerDashboard = () => {
         nextWeek.setDate(nextWeek.getDate() + 7);
 
         const upcoming = events.filter((assignment) => {
+          if (!assignment.event?.startDate) return false;
           const eventDate = new Date(assignment.event.startDate);
           return eventDate >= tomorrow && eventDate <= nextWeek;
         });
@@ -225,7 +227,7 @@ const TellerDashboard = () => {
                         <h3 className={`${isMobile ? 'text-base' : ''} font-semibold`}>
                           {assignment.event.title}
                         </h3>
-                        {getEventStatusBadge(assignment.event.status || 'APPROVED')}
+                        {getEventStatusBadge('APPROVED')}
                         <Badge variant="outline" className={isMobile ? 'text-xs' : ''}>
                           {assignment.role}
                         </Badge>
@@ -297,7 +299,7 @@ const TellerDashboard = () => {
                         <h3 className={`${isMobile ? 'text-base' : ''} font-semibold`}>
                           {assignment.event.title}
                         </h3>
-                        {getEventStatusBadge(assignment.event.status || 'APPROVED')}
+                        {getEventStatusBadge('APPROVED')}
                         <Badge variant="outline" className={isMobile ? 'text-xs' : ''}>
                           {assignment.role}
                         </Badge>

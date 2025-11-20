@@ -124,7 +124,14 @@ const WorkstationEventDashboard: React.FC = () => {
 
         if (response.success && response.data) {
           setAttendees(response.data.attendees);
-          setPagination(response.data.pagination);
+          if (response.data.pagination) {
+            setPagination({
+              page: response.data.pagination.page,
+              limit: response.data.pagination.limit,
+              total: response.data.attendees.length, // Use attendees length as total
+              totalPages: response.data.pagination.totalPages,
+            });
+          }
         }
       } catch (error) {
         console.error('Error loading attendees:', error);
@@ -201,7 +208,13 @@ const WorkstationEventDashboard: React.FC = () => {
 
   // Format facilities from statistics
   const getFacilities = (): Facility[] => {
-    if (!statistics?.facilitiesData) return [];
+    // Note: facilitiesData is not currently in EventStatistics type
+    // This functionality is reserved for future implementation
+    interface ExtendedStatistics extends EventStatistics {
+      facilitiesData?: Array<{ facility?: string; checkedIn?: number; currentlyInside?: number }>;
+    }
+    const facilitiesData = (statistics as ExtendedStatistics)?.facilitiesData;
+    if (!facilitiesData) return [];
 
     const facilityIcons: Record<string, React.ReactNode> = {
       'Main Entrance': <Shield className="w-4 h-4" />,
@@ -215,10 +228,10 @@ const WorkstationEventDashboard: React.FC = () => {
       'Parking': <Car className="w-4 h-4" />,
     };
 
-    return statistics.facilitiesData.map(facility => ({
+    return facilitiesData.map((facility) => ({
       name: facility.facility || 'Unknown',
-      checkedIn: facility.checkedIn,
-      currentlyInside: facility.currentlyInside,
+      checkedIn: facility.checkedIn ?? 0,
+      currentlyInside: facility.currentlyInside ?? 0,
       icon: facilityIcons[facility.facility || ''] || <Building2 className="w-4 h-4" />,
     }));
   };
@@ -240,7 +253,7 @@ const WorkstationEventDashboard: React.FC = () => {
     const endDate = eventData.endDate ? new Date(eventData.endDate) : null;
     
     if (endDate && startDate.toDateString() !== endDate.toDateString()) {
-      return `${formatDate(eventData.startDate)} - ${formatDate(eventData.endDate)}`;
+      return `${formatDate(eventData.startDate)} - ${eventData.endDate ? formatDate(eventData.endDate) : 'Ongoing'}`;
     } else {
       return formatDate(eventData.startDate);
     }

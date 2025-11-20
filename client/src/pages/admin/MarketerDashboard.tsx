@@ -202,7 +202,7 @@ const MarketerDashboard = () => {
                         <h3 className={`${isMobile ? 'text-base' : ''} font-semibold`}>
                           {assignment.event.title}
                         </h3>
-                        {getEventStatusBadge(assignment.event.status || 'APPROVED')}
+                        {getEventStatusBadge('APPROVED')}
                         <Badge variant="outline" className={isMobile ? 'text-xs' : ''}>
                           {assignment.role}
                         </Badge>

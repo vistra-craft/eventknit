@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from '../../../../contexts/AuthContext';
 import AllEventsPage from '../AllEventsPage';
 import * as eventApi from '../../../../lib/event-api';
 import * as adminApi from '../../../../lib/admin-api';
@@ -29,6 +30,13 @@ vi.mock('../../../../lib/admin-api', () => ({
 vi.mock('../../../../hooks/use-toast', () => ({
   useToast: vi.fn(() => ({
     toast: vi.fn(),
+  })),
+}));
+
+vi.mock('../../../../hooks/usePermissions', () => ({
+  usePermissionsEnhanced: vi.fn(() => ({
+    canAccessAllEvents: true,
+    isAssignedToEvent: vi.fn().mockResolvedValue(false),
   })),
 }));
 
@@ -110,7 +118,9 @@ describe('AllEventsPage - Bulk Update', () => {
   const renderComponent = () => {
     return render(
       <BrowserRouter>
-        <AllEventsPage />
+        <AuthProvider>
+          <AllEventsPage />
+        </AuthProvider>
       </BrowserRouter>
     );
   };

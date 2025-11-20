@@ -203,7 +203,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                 {items.map((item) => {
                   const hasChildren = item.children && item.children.length > 0;
                   const isExpanded = expandedItems[item.id];
-                  const isItemActive = item.href ? isActive(item.href, true) : false;
+                  const isItemActive = 'href' in item && item.href ? isActive(item.href, true) : false;
 
                   if (hasChildren) {
                     return (
@@ -257,7 +257,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                   return (
                     <Link
                       key={item.id}
-                      to={item.href!}
+                      to={'href' in item ? item.href : '#'}
                       onClick={handleNavigationClick}
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                         isItemActive

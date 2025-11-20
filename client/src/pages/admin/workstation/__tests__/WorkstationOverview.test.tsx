@@ -6,6 +6,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../../../contexts/AuthContext';
+import { ThemeProvider } from '../../../../contexts/ThemeContext';
+import { RoleViewProvider } from '../../../../contexts/RoleViewContext';
+import { UserRole } from '../../../../types/auth';
 import WorkstationOverview from '../WorkstationOverview';
 import * as eventApi from '../../../../lib/event-api';
 import * as workstationApi from '../../../../lib/workstation-api';
@@ -32,7 +35,13 @@ vi.mock('react-router-dom', async () => {
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <BrowserRouter>
-      <AuthProvider>{children}</AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RoleViewProvider userRole={UserRole.TELLER}>
+            {children}
+          </RoleViewProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 };

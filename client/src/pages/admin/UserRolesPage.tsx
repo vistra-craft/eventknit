@@ -54,7 +54,6 @@ const UserRolesPage = () => {
   const [editingRole, setEditingRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
-  const [currentUserRole, setCurrentUserRole] = useState<UserRoleEnum | null>(null);
 
   // Define all available page permissions
   const pagePermissions: PagePermission[] = [
@@ -113,7 +112,6 @@ const UserRolesPage = () => {
         const response = await getRoles();
         if (response.success && response.data) {
           setRoles(response.data.roles);
-          setCurrentUserRole(response.data.currentUserRole);
         }
       } catch (err: unknown) {
         console.error("Error fetching roles:", err);
@@ -148,7 +146,8 @@ const UserRolesPage = () => {
 
   // Note: Create/Edit/Delete role functionality is not yet implemented in backend
   // These handlers are kept for future implementation (prefixed with _ to indicate unused)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _handleCreateRole = () => {
     toast({
       title: "Not Available",
@@ -168,7 +167,7 @@ const UserRolesPage = () => {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _handleUpdateRole = () => {
     toast({
       title: "Not Available",
@@ -179,7 +178,7 @@ const UserRolesPage = () => {
     setEditingRole(null);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _handleDeleteRole = (_roleId: string) => {
     toast({
       title: "Not Available",
@@ -188,7 +187,7 @@ const UserRolesPage = () => {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _handleDuplicateRole = (_role: UserRole) => {
     toast({
       title: "Not Available",
@@ -197,7 +196,7 @@ const UserRolesPage = () => {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _getCategoryIcon = (_category: string) => {
     switch (_category) {
       case "Dashboard": return BarChart3;
@@ -213,7 +212,7 @@ const UserRolesPage = () => {
     }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _groupedPermissions = pagePermissions.reduce((acc, permission) => {
     if (!acc[permission.category]) {
       acc[permission.category] = [];
@@ -221,6 +220,7 @@ const UserRolesPage = () => {
     acc[permission.category].push(permission);
     return acc;
   }, {} as Record<string, PagePermission[]>);
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   return (
     <AdminLayout>
@@ -279,7 +279,7 @@ const UserRolesPage = () => {
         {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRoles.map((role) => {
-              const canModify = canModifyRole(role.role);
+              const canModify = canModifyRole(role.role as UserRoleEnum);
               const getRoleColor = (roleType: UserRoleEnum) => {
                 const colors: Record<UserRoleEnum, string> = {
                   [UserRoleEnum.SUPERADMIN]: "bg-red-100 text-red-800",
@@ -305,7 +305,7 @@ const UserRolesPage = () => {
                     </div>
                     <div>
                           <CardTitle className="text-lg">{role.displayName}</CardTitle>
-                          <Badge className={getRoleColor(role.role)} variant="secondary">
+                          <Badge className={getRoleColor(role.role as UserRoleEnum)} variant="secondary">
                             Hierarchy: {role.hierarchy}
                       </Badge>
                     </div>

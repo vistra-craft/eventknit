@@ -42,7 +42,7 @@ export function useIsMobileDevice(): boolean {
   const [isMobileDevice] = useState<boolean>(() => {
     if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
       const userAgent = navigator.userAgent || navigator.vendor || (window as { opera?: string }).opera;
-      return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      return userAgent ? /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase()) : false;
     }
     return false;
   });

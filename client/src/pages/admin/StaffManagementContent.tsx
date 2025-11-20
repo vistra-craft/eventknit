@@ -24,12 +24,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
-import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole } from "@/lib/admin-api";
-import { UserRole as UserRoleEnum } from "@/types/auth";
+import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole as AdminApiUserRole } from "@/lib/admin-api";
+import { UserRole } from "@/types/auth";
 import { usePermissions } from "@/hooks/usePermissions";
 
 // Staff roles that exist in the enum but not in the admin-api UserRole type
-type StaffRole = UserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
+type StaffRole = AdminApiUserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
 import { exportUserData } from "@/lib/utils/export";
 
 const StaffManagementContent = () => {
@@ -49,16 +49,11 @@ const StaffManagementContent = () => {
   const [total, setTotal] = useState(0);
 
   // Permission hooks
-  const { canModifyUser, canDeleteUser } = usePermissions();
+  const { canModifyUser } = usePermissions();
 
   // Helper function to check if user can modify a staff member
-  const canModifyStaff = (staffRole: UserRole): boolean => {
-    return canModifyUser(staffRole);
-  };
-
-  // Helper function to check if user can delete a staff member
-  const canDeleteStaff = (staffRole: UserRole): boolean => {
-    return canDeleteUser(staffRole);
+  const canModifyStaff = (staffRole: AdminApiUserRole): boolean => {
+    return canModifyUser(staffRole as UserRole);
   };
 
 
@@ -69,7 +64,7 @@ const StaffManagementContent = () => {
         setLoading(true);
         setError(null);
         const response = await getUsers({
-          role: roleFilter !== "all" ? roleFilter : undefined,
+          role: roleFilter !== "all" ? (roleFilter as AdminApiUserRole) : undefined,
           status: statusFilter !== "all" ? statusFilter : undefined,
           search: searchTerm || undefined,
           page,
@@ -78,8 +73,8 @@ const StaffManagementContent = () => {
 
         if (response.success && response.data) {
           // Filter to only show staff roles
-          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
-          const staff = response.data.users.filter((user) => staffRoles.includes(user.role));
+          const staffRoles: StaffRole[] = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'] as StaffRole[];
+          const staff = response.data.users.filter((user) => staffRoles.includes(user.role as StaffRole));
           setStaffMembers(staff);
           if (response.data.pagination) {
             setTotalPages(response.data.pagination.totalPages);
@@ -118,15 +113,15 @@ const StaffManagementContent = () => {
     return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
-  const getRoleBadge = (role: UserRole | StaffRole) => {
+  const getRoleBadge = (role: AdminApiUserRole | StaffRole) => {
     const variants: Record<string, string> = {
-      [UserRoleEnum.SUPERADMIN]: "bg-red-100 text-red-800",
-      [UserRoleEnum.ADMIN_STAFF]: "bg-blue-100 text-blue-800",
-      [UserRoleEnum.MARKETER]: "bg-pink-100 text-pink-800",
-      [UserRoleEnum.SUPPORT]: "bg-purple-100 text-purple-800",
-      [UserRoleEnum.TELLER]: "bg-green-100 text-green-800",
-      [UserRoleEnum.ORGANIZER]: "bg-yellow-100 text-yellow-800",
-      [UserRoleEnum.ATTENDEE]: "bg-gray-100 text-gray-800",
+      'SUPERADMIN': "bg-red-100 text-red-800",
+      'ADMIN_STAFF': "bg-blue-100 text-blue-800",
+      'MARKETER': "bg-pink-100 text-pink-800",
+      'SUPPORT': "bg-purple-100 text-purple-800",
+      'TELLER': "bg-green-100 text-green-800",
+      'ORGANIZER': "bg-yellow-100 text-yellow-800",
+      'ATTENDEE': "bg-gray-100 text-gray-800",
     };
     return variants[role] || "bg-gray-100 text-gray-800";
   };
@@ -155,7 +150,7 @@ const StaffManagementContent = () => {
         // Refresh list
         const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
-          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
+          const staffRoles: StaffRole[] = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'] as StaffRole[];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
           if (updatedResponse.data.pagination) {
@@ -188,7 +183,7 @@ const StaffManagementContent = () => {
         // Refresh list
         const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
-          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
+          const staffRoles: StaffRole[] = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'] as StaffRole[];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
           if (updatedResponse.data.pagination) {
@@ -221,7 +216,7 @@ const StaffManagementContent = () => {
         // Refresh list
         const updatedResponse = await getUsers({ page, limit });
         if (updatedResponse.success && updatedResponse.data) {
-          const staffRoles: StaffRole[] = [UserRoleEnum.SUPERADMIN, UserRoleEnum.ADMIN_STAFF, UserRoleEnum.MARKETER, UserRoleEnum.SUPPORT, UserRoleEnum.TELLER];
+          const staffRoles: StaffRole[] = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'] as StaffRole[];
           const staff = updatedResponse.data.users.filter((user) => staffRoles.includes(user.role));
           setStaffMembers(staff);
           if (updatedResponse.data.pagination) {

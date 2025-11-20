@@ -24,7 +24,6 @@ import {
   type BulkMessageTargetAudience,
   type BulkMessageType,
 } from "@/lib/bulk-message-api";
-import { MessageSquare, Bell, Mail, Plus } from "lucide-react";
 
 interface Announcement {
   id: string;
@@ -807,7 +806,12 @@ const CommunicationsPage = () => {
       type: message.type,
       targetAudience: message.targetAudience,
       eventId: message.eventId || "",
-      channels: message.channels,
+      channels: {
+        email: message.channels.email ?? true,
+        sms: message.channels.sms ?? false,
+        push: message.channels.push ?? true,
+        inApp: message.channels.inApp ?? true,
+      },
       scheduledAt: message.scheduledAt ? new Date(message.scheduledAt).toISOString().slice(0, 16) : "",
     });
     setShowBulkMessageForm(true);
