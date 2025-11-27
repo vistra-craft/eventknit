@@ -1,320 +1,262 @@
-# EventKnit Auth Service
+# EventKnit Server
 
-A robust authentication service built with Node.js, Express, TypeScript, and MongoDB for the EventKnit platform.
+The backend API for the EventKnit platform, built with Node.js, Express, TypeScript, and Prisma (PostgreSQL).
 
-## 🚀 Features
+## 🛠️ Tech Stack
 
-- **JWT Authentication**: Secure token-based authentication
-- **Password Security**: Bcrypt hashing with configurable rounds
-- **Rate Limiting**: Protection against brute force attacks
-- **Input Validation**: Comprehensive request validation
-- **Security Headers**: Helmet.js for security best practices
-- **Database Integration**: MongoDB with Mongoose ODM
-- **TypeScript**: Full type safety and better developer experience
-- **Testing**: Jest and Supertest for comprehensive testing
-- **Docker Support**: Containerized deployment ready
-- **CI/CD**: GitHub Actions for automated testing and deployment
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Language**: TypeScript
+- **Database**: PostgreSQL
+- **ORM**: Prisma
+- **Caching/Queues**: Redis (BullMQ)
+- **Authentication**: JWT (JSON Web Tokens)
+- **Payment Processing**: Paystack
+- **Email**: Nodemailer
+- **SMS**: Twilio
 
 ## 📋 Prerequisites
 
-- Node.js 20+
-- MongoDB 7.0+
-- npm or yarn
-- Docker (optional)
+Before you begin, ensure you have the following installed:
+- **Node.js** (v18 or higher)
+- **npm** (v9 or higher)
+- **PostgreSQL** (v14 or higher)
+- **Redis** (v6 or higher)
 
-## 🛠️ Installation
+## 🚀 Getting Started
 
-1. **Clone the repository**
+### 1. Installation
 
-   ```bash
-   git clone https://github.com/vistra-craft/eventknit-auth.git
-   cd eventknit-auth
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Environment Setup**
-
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Start MongoDB**
-
-   ```bash
-   # Using Docker
-   docker run -d -p 27017:27017 --name mongodb mongo:7.0
-
-   # Or start your local MongoDB service
-   ```
-
-5. **Development**
-   ```bash
-   npm run dev
-   ```
-
-## 🏗️ Project Structure
-
-```
-src/
-├── config/          # Configuration files
-├── controllers/     # Route controllers
-├── middleware/      # Custom middleware
-├── models/         # Database models
-├── routes/         # API routes
-├── services/       # Business logic
-├── types/          # TypeScript type definitions
-├── utils/          # Utility functions
-├── __tests__/      # Test files
-└── index.ts        # Application entry point
-```
-
-## 🔧 Available Scripts
-
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build the application for production
-- `npm start` - Start production server
-- `npm test` - Run tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Run tests with coverage report
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues
-- `npm run type-check` - Run TypeScript type checking
-
-## 🌿 Branching Strategy
-
-We follow GitFlow branching strategy:
-
-- **`main`** - Production-ready code
-- **`staging`** - Pre-production testing
-- **`development`** - Integration branch for features
-- **`feature/*`** - Feature development branches
-- **`hotfix/*`** - Critical production fixes
-
-### Workflow
-
-1. **Feature Development**
-
-   ```bash
-   git checkout development
-   git pull origin development
-   git checkout -b feature/your-feature-name
-   # Make changes
-   git commit -m "feat: add your feature"
-   git push origin feature/your-feature-name
-   # Create PR to development
-   ```
-
-2. **Release Process**
-
-   ```bash
-   git checkout development
-   git pull origin development
-   git checkout -b staging
-   git push origin staging
-   # Deploy to staging environment
-   # After testing, merge to main
-   ```
-
-3. **Hotfix Process**
-   ```bash
-   git checkout main
-   git pull origin main
-   git checkout -b hotfix/critical-fix
-   # Make critical fix
-   git commit -m "hotfix: critical production fix"
-   git push origin hotfix/critical-fix
-   # Create PR to main
-   ```
-
-## 🚀 CI/CD Pipeline
-
-### GitHub Actions Workflows
-
-1. **CI Pipeline** (`.github/workflows/ci.yml`)
-
-   - Triggers on push/PR to `main`, `development`, `staging`
-   - Runs linting, type checking, tests, and build
-   - Uses MongoDB service for integration tests
-
-2. **Staging Deployment** (`.github/workflows/deploy-staging.yml`)
-
-   - Triggers on push to `staging` branch
-   - Deploys to staging environment
-   - Includes health checks
-
-3. **Production Deployment** (`.github/workflows/deploy-production.yml`)
-   - Triggers on push to `main` branch
-   - Deploys to production environment
-   - Includes health checks
-
-### Required Secrets
-
-Add these secrets to your GitHub repository:
-
-- `STAGING_MONGODB_URI`
-- `STAGING_JWT_SECRET`
-- `STAGING_PORT`
-- `STAGING_URL`
-- `PRODUCTION_MONGODB_URI`
-- `PRODUCTION_JWT_SECRET`
-- `PRODUCTION_PORT`
-- `PRODUCTION_URL`
-
-## 🐳 Docker Deployment
-
-### Multi-Environment Setup
-
-The project supports three environments with dedicated configurations:
-
-#### **Development Environment**
+Navigate to the server directory and install dependencies:
 
 ```bash
-# Using the docker manager script
-./docker-manager.sh dev up
-
-# Or manually
-docker-compose --env-file .env.development up -d
+cd server
+npm install
 ```
 
-**Features:**
+### 2. Environment Configuration
 
-- Hot reload with volume mounting (`./src:/app/src`)
-- Mongo Express admin interface (port 8081)
-- Relaxed security settings for development
-- No restart policy (manual control)
+Create a `.env` file in the `server` directory based on the example below. You **must** configure these variables for the server to function correctly.
 
-#### **Staging Environment**
+```env
+# Server Configuration
+NODE_ENV=development
+PORT=3000
+HOST=0.0.0.0
 
+# Database (PostgreSQL)
+# Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/eventknit?schema=public"
+
+# JWT Authentication
+JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
+JWT_REFRESH_SECRET="your-super-secret-refresh-key-min-32-chars"
+JWT_EXPIRES_IN="15m"
+JWT_REFRESH_EXPIRES_IN="7d"
+
+# CORS Configuration
+# Comma-separated list of allowed origins
+CORS_ORIGIN="http://localhost:5173,http://localhost:3000"
+CORS_CREDENTIALS=true
+
+# Redis (for BullMQ and Caching)
+REDIS_HOST="localhost"
+REDIS_PORT=6379
+REDIS_PASSWORD=""
+
+# Email (SMTP)
+SMTP_HOST="smtp.example.com"
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER="your-email@example.com"
+SMTP_PASSWORD="your-email-password"
+EMAIL_FROM="noreply@eventknit.com"
+
+# Payment (Paystack)
+PAYSTACK_SECRET_KEY="sk_test_..."
+PAYSTACK_PUBLIC_KEY="pk_test_..."
+
+# SMS (Twilio - Optional)
+SMS_ENABLED=false
+TWILIO_ACCOUNT_SID=""
+TWILIO_AUTH_TOKEN=""
+TWILIO_PHONE_NUMBER=""
+```
+
+### 3. Database Setup
+
+We use **Prisma** to manage the database schema.
+
+1.  **Generate Prisma Client**:
+    ```bash
+    npm run prisma:generate
+    ```
+
+2.  **Run Migrations**:
+    This will create the tables in your PostgreSQL database.
+    ```bash
+    npm run prisma:migrate
+    ```
+
+3.  **Seed the Database** (Optional):
+    Populate the database with initial test data (users, roles, etc.).
+    ```bash
+    npm run prisma:seed
+    ```
+
+### 4. Running the Server
+
+**Development Mode**:
+Starts the server with hot-reloading using `tsx`.
 ```bash
-# Using the docker manager script
-./docker-manager.sh staging up
-
-# Or manually
-docker-compose --env-file .env.staging up -d
+npm run dev
 ```
 
-**Features:**
-
-- Production-like configuration
-- Stricter security settings
-- No volume mounting (compiled code)
-- `unless-stopped` restart policy
-- Separate database (`eventknit-auth-staging`)
-
-#### **Production Environment**
-
+**Production Build**:
+Builds the TypeScript code to JavaScript and runs it.
 ```bash
-# Using the docker manager script
-./docker-manager.sh prod up
-
-# Or manually
-docker-compose --env-file .env.production up -d
+npm run build
+npm start
 ```
 
-**Features:**
-
-- Maximum security settings
-- No volume mounting (compiled code)
-- `always` restart policy
-- Separate database (`eventknit-auth-prod`)
-- Reduced rate limits for security
-
-### Docker Manager Script
-
-Use the `docker-manager.sh` script for easy environment management:
-
-```bash
-# Start development environment
-./docker-manager.sh dev up
-
-# View staging logs
-./docker-manager.sh staging logs
-
-# Build production services
-./docker-manager.sh prod build
-
-# Restart development services
-./docker-manager.sh dev restart
-
-# Stop production environment
-./docker-manager.sh prod down
-```
-
-### Environment-Specific Features
-
-| Feature         | Development          | Staging                  | Production            |
-| --------------- | -------------------- | ------------------------ | --------------------- |
-| Hot Reload      | ✅                   | ❌                       | ❌                    |
-| Mongo Express   | ✅                   | ❌                       | ❌                    |
-| Volume Mounting | ✅                   | ❌                       | ❌                    |
-| Restart Policy  | `no`                 | `unless-stopped`         | `always`              |
-| BCrypt Rounds   | 10                   | 12                       | 14                    |
-| Rate Limit      | 100/min              | 50/min                   | 30/min                |
-| Database        | `eventknit-auth-dev` | `eventknit-auth-staging` | `eventknit-auth-prod` |
+The server will start at `http://localhost:3000` (or the port specified in `.env`).
 
 ## 🧪 Testing
 
+Run the test suite using Jest:
+
 ```bash
-# Run all tests
 npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
 ```
 
-## 📊 API Endpoints
+Run tests in watch mode:
+```bash
+npm run test:watch
+```
 
-### Health Check
+## 🗄️ Database Management
 
-- `GET /health` - Basic health check
-- `GET /health/detailed` - Detailed health information
+Common Prisma commands:
 
-### Authentication (Coming Soon)
+-   `npx prisma studio`: Open a GUI to view and edit database data.
+-   `npx prisma migrate dev`: Create a new migration after changing `schema.prisma`.
+-   `npx prisma db push`: Push schema changes to the database without creating a migration (useful for prototyping).
+-   `npx prisma generate`: Regenerate the Prisma Client after schema changes.
 
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `POST /api/auth/refresh-token` - Refresh JWT token
-- `POST /api/auth/forgot-password` - Password reset request
-- `POST /api/auth/reset-password` - Password reset
-- `GET /api/auth/profile` - Get user profile
-- `PUT /api/auth/profile` - Update user profile
-- `POST /api/auth/change-password` - Change password
+## 📂 Project Structure
 
-## 🔒 Security Features
+```
+server/
+├── prisma/              # Database schema and seeds
+│   ├── schema.prisma    # Data model definition
+│   └── seed.ts          # Seeding script
+├── src/
+│   ├── config/          # Configuration loading
+│   ├── controllers/     # Request handlers
+│   ├── middleware/      # Express middleware (auth, validation, etc.)
+│   ├── models/          # Mongoose models (legacy/if used)
+│   ├── routes/          # API route definitions
+│   ├── services/        # Business logic
+│   ├── utils/           # Helper functions
+│   ├── app.ts           # Express app setup
+│   └── server.ts        # Server entry point
+├── tests/               # Unit and integration tests
+└── package.json
+```
 
-- **Helmet.js**: Security headers
-- **Rate Limiting**: Prevent brute force attacks
-- **CORS**: Configurable cross-origin requests
-- **Input Validation**: Request sanitization
-- **Password Hashing**: Bcrypt with configurable rounds
-- **JWT Security**: Secure token handling
+## 🔑 Key Features
 
-## 📝 Contributing
+-   **Authentication**: Secure user registration and login with JWT.
+-   **Role-Based Access Control (RBAC)**: Different permissions for Admins, Organizers, and Attendees.
+-   **Event Management**: Create, update, and manage events.
+-   **Ticketing**: Generate and validate tickets (QR codes).
+-   **Payments**: Integrated with Paystack for secure transactions.
+-   **Notifications**: Email and SMS notification system.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## 🛠️ Useful Commands
 
-## 📄 License
+Here is a collection of useful commands for development and maintenance.
 
-This project is licensed under the ISC License.
+### 🐳 Docker Management
 
-## 🆘 Support
+**Start PostgreSQL Database**:
+```bash
+docker compose --env-file .env.development up -d postgres
+```
 
-For support, email support@vistracraft.com or create an issue in the repository.
+**Check Running Containers**:
+```bash
+docker ps | grep eventknit
+```
 
+**View PostgreSQL Logs**:
+```bash
+docker compose --env-file .env.development logs postgres --tail 20 -f
+```
 
-## Install Packages
-npm install express cors helmet express-rate-limit dotenv bcryptjs jsonwebtoken mongoose validator morgan multer multer-gridfs-storage @types/express @types/cors @types/node @types/bcryptjs @types/jsonwebtoken @types/morgan @types/multer @types/supertest @types/jest typescript ts-node nodemon jest supertest ts-jest @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint rimraf
+**Restart PostgreSQL**:
+```bash
+docker compose --env-file .env.development restart postgres
+```
+
+**Stop Specific Containers**:
+```bash
+docker stop eventknit-postgres
+docker stop eventknit-redis
+```
+
+**Test Database Connection**:
+```bash
+docker exec -it eventknit-postgres psql -U eventknit -d eventknit -c "SELECT version();"
+```
+
+### 👥 User Management
+
+**List All Users**:
+```bash
+npm run list-users
+```
+
+**Delete a User (Soft Delete)**:
+Sets user status to DEACTIVATED.
+```bash
+npm run delete-user -- <email>
+```
+
+**Delete a User (Hard Delete)**:
+Permanently removes user and all related records from the database. Useful for testing.
+```bash
+npm run delete-user -- <email> --hard
+```
+
+**Delete without Confirmation**:
+```bash
+npm run delete-user -- <email> --hard --force
+```
+
+### 🔧 Troubleshooting
+
+**Check for Port Conflicts**:
+Check if ports 3000, 5432, or 6379 are in use.
+```bash
+lsof -i :3000 -i :5432 -i :6379
+```
+
+**Install dotenv-cli**:
+Required for running scripts with specific env files.
+```bash
+npm install dotenv-cli --save-dev
+```
+
+### 🗄️ Prisma & Database
+
+**Open Database GUI**:
+```bash
+npm run prisma:studio
+```
+
+**Reset Database (Caution)**:
+Drops the database and re-seeds it.
+```bash
+npx prisma migrate reset
+```
