@@ -2,7 +2,7 @@
  * Template API Functions
  */
 
-import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse } from './api';
+import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse, API_BASE_URL } from './api';
 
 /**
  * Template Element
@@ -135,19 +135,17 @@ export const getDefaultTemplate = async (
   eventId: string
 ): Promise<TemplateResponse> => {
   // Public endpoint - no auth required
-  // API Base URL - uses VITE_API_BASE_URL environment variable if set
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 'https://eventknit.onrender.com/api/v1');
+  // API Base URL - imported from ./api
   const response = await fetch(`${API_BASE_URL}/templates/events/${eventId}/default`);
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw {
       success: false,
       message: data.message || 'Failed to fetch template',
     };
   }
-  
+
   return data;
 };
 

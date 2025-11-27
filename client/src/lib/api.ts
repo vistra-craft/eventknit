@@ -3,11 +3,11 @@
  */
 
 // API Base URL - uses VITE_API_BASE_URL environment variable if set
-// For local development: Set VITE_API_BASE_URL=http://localhost:3000/api/v1 in .env.local
+// For local development: Uses relative path '/api/v1' to leverage Vite proxy (configured in vite.config.ts)
 // For production: Set VITE_API_BASE_URL in Netlify environment variables (recommended)
 // Falls back to production URL if not set (for backwards compatibility)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-  (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 'https://eventknit.onrender.com/api/v1');
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? '/api/v1' : 'https://eventknit.onrender.com/api/v1');
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -157,7 +157,7 @@ const apiRequestInternal = async <T>(
       } else if (response.status === 502) {
         errorMessage = 'Bad gateway. The server is temporarily unavailable. Please try again later.';
       }
-      
+
       const error: ApiError = {
         success: false,
         message: errorMessage,
@@ -177,7 +177,7 @@ const apiRequestInternal = async <T>(
         message: 'Request timed out. The server is taking too long to respond. Please try again.',
       } as ApiError;
     }
-    
+
     // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw {
@@ -223,11 +223,11 @@ export const apiRequest = async <T>(
   // If refresh is in progress, queue this request
   if (isRefreshing) {
     return new Promise<T>((resolve, reject) => {
-      refreshQueue.push({ 
-        resolve: resolve as (value: unknown) => void, 
-        reject, 
-        endpoint, 
-        options 
+      refreshQueue.push({
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        endpoint,
+        options
       });
     });
   }
@@ -237,25 +237,25 @@ export const apiRequest = async <T>(
   } catch (error) {
     // Check if error is 401 Unauthorized
     const apiError = error as ApiError & { status?: number };
-    
+
     // Handle 401 errors (except for auth endpoints and public endpoints)
     if (apiError.status === 401) {
       // Don't try to refresh token for auth endpoints or public endpoints
-      if (endpoint.includes('/auth/login') || 
-          endpoint.includes('/auth/register') || 
-          endpoint.includes('/auth/refresh') ||
-          endpoint.includes('/register-guest')) {
+      if (endpoint.includes('/auth/login') ||
+        endpoint.includes('/auth/register') ||
+        endpoint.includes('/auth/refresh') ||
+        endpoint.includes('/register-guest')) {
         throw error;
       }
 
       // If already refreshing, queue this request
       if (isRefreshing) {
         return new Promise<T>((resolve, reject) => {
-          refreshQueue.push({ 
-            resolve: resolve as (value: unknown) => void, 
-            reject, 
-            endpoint, 
-            options 
+          refreshQueue.push({
+            resolve: resolve as (value: unknown) => void,
+            reject,
+            endpoint,
+            options
           });
         });
       }
@@ -266,26 +266,26 @@ export const apiRequest = async <T>(
       try {
         const newToken = await refreshAccessToken();
         isRefreshing = false;
-        
+
         // Process queued requests
         processQueue(null, newToken);
-        
+
         // Retry original request with new token
         return await apiRequestInternal<T>(endpoint, options, newToken);
       } catch (refreshError) {
         isRefreshing = false;
-        
+
         // Clear token and logout
         removeAccessToken();
-        
+
         // Process queued requests with error
         processQueue(refreshError);
-        
+
         // Call logout callback if set
         if (onLogoutCallback) {
           onLogoutCallback();
         }
-        
+
         throw {
           success: false,
           message: 'Session expired. Please login again.',

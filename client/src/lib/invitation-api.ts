@@ -2,7 +2,7 @@
  * Invitation API Functions
  */
 
-import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse } from './api';
+import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse, API_BASE_URL } from './api';
 
 /**
  * Invite Type enum (matches backend)
@@ -158,18 +158,18 @@ export const getInvitationByToken = async (
 ): Promise<InvitationResponse> => {
   // Public endpoint - no auth required
   // API Base URL - uses VITE_API_BASE_URL environment variable if set
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 'https://eventknit.onrender.com/api/v1');
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+    (import.meta.env.DEV ? '/api/v1' : 'https://eventknit.onrender.com/api/v1');
   const response = await fetch(`${API_BASE_URL}/invitations/${token}`);
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw {
       success: false,
       message: data.message || 'Failed to fetch invitation',
     };
   }
-  
+
   return data;
 };
 
@@ -209,9 +209,7 @@ export const registerViaInvitation = async (
   registrationData: Record<string, unknown>
 ): Promise<RegisterViaInvitationResponse> => {
   // Public endpoint - no auth required
-  // API Base URL - uses VITE_API_BASE_URL environment variable if set
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.DEV ? 'http://localhost:3000/api/v1' : 'https://eventknit.onrender.com/api/v1');
+  // API Base URL - imported from ./api
   const response = await fetch(`${API_BASE_URL}/invitations/${token}/register`, {
     method: 'POST',
     headers: {
@@ -219,9 +217,9 @@ export const registerViaInvitation = async (
     },
     body: JSON.stringify(registrationData),
   });
-  
+
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw {
       success: false,
@@ -229,7 +227,7 @@ export const registerViaInvitation = async (
       errors: data.errors,
     };
   }
-  
+
   return data;
 };
 
