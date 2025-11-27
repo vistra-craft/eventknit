@@ -3,6 +3,17 @@
 # Stop execution on error
 set -e
 
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "❌ Error: 'docker' command not found."
+    echo "   Are you running this on your LOCAL machine?"
+    echo "   👉 This script is meant to be run on your CONTABO SERVER, not your Mac."
+    echo ""
+    echo "   If you ARE on the server, install Docker first:"
+    echo "   sudo apt update && sudo apt install -y docker.io docker-compose-plugin"
+    exit 1
+fi
+
 echo "🚀 Starting deployment..."
 
 # Pull latest changes
