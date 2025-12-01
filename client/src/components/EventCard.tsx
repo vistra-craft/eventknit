@@ -1,102 +1,135 @@
-import { Calendar, MapPin, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { Calendar, MapPin, Clock } from "lucide-react";
 
 interface EventCardProps {
   id: string;
   title: string;
   image: string;
-  date: string;
-  time: string;
+  startDate: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
   venue: string;
   location: string;
-  organizer: string;
   price: string;
+  currency?: string;
   category: string;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ 
-  id, 
-  title, 
-  image, 
-  date, 
-  time, 
-  venue, 
-  location, 
-  organizer, 
+export const EventCard: React.FC<EventCardProps> = ({
+  id,
+  title,
+  image,
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  venue,
+  location,
   price,
-  category 
+  currency,
+  category,
 }) => {
   const navigate = useNavigate();
   const handleCardClick = () => {
     navigate(`/event/${id}`);
   };
 
+  // Format Date: Sat, Oct 04 - Sun, Aug 01
+  const formatDate = (start: string, end?: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "short",
+      month: "short",
+      day: "2-digit",
+    };
+    const startDateObj = new Date(start);
+    const startStr = startDateObj.toLocaleDateString("en-US", options);
+    if (end) {
+      const endDateObj = new Date(end);
+      if (startDateObj.toDateString() !== endDateObj.toDateString()) {
+        const endStr = endDateObj.toLocaleDateString("en-US", options);
+        return `${startStr} - ${endStr}`;
+      }
+    }
+    return startStr;
+  };
+
+  // Format Time: 10:00am - 04:00pm
+  const formatTime = (start?: string, end?: string) => {
+    if (!start) return "";
+    const formatSingleTime = (timeStr: string) => {
+      const [hours, minutes] = timeStr.split(":");
+      const date = new Date();
+      date.setHours(parseInt(hours), parseInt(minutes));
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).toLowerCase().replace(" ", "");
+    };
+    const startFormatted = formatSingleTime(start);
+    if (end) {
+      const endFormatted = formatSingleTime(end);
+      return `${startFormatted} - ${endFormatted}`;
+    }
+    return startFormatted;
+  };
+
+  const dateDisplay = formatDate(startDate, endDate);
+  const timeDisplay = formatTime(startTime, endTime);
+
   return (
-    <Card 
-      variant="interactive"
-      onClick={handleCardClick}
-      className="group overflow-hidden"
-    >
+    <Card variant="interactive" onClick={handleCardClick} className="group overflow-hidden border-0 shadow-none">
       {/* Event Image */}
-      <div className="relative overflow-hidden h-64">
+      <div className="relative overflow-hidden h-64 rounded-lg">
         {image ? (
-          <img 
-            src={image} 
-            alt={title}
-            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-          />
+          <img src={image} alt={title} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <span className="text-muted-foreground text-sm">No image</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 bg-primary text-primary-foreground backdrop-blur-sm border border-primary rounded-full text-xs font-medium">
+          <span className="px-3 py-1 bg-white/90 text-foreground backdrop-blur-sm rounded-full text-xs font-bold shadow-sm">
             {category}
           </span>
         </div>
       </div>
 
       {/* Event Details */}
-      <div className="p-4 space-y-3">
-        <div>
-          <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2">
-            {title}
-          </h3>
-          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1 transition-colors duration-300">
-            <User className="w-3 h-3" />
-            by {organizer}
-          </p>
+      <div className="pt-4 pb-2 pl-4 space-y-2">
+        {/* Title */}
+        <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2 leading-tight group-hover:text-primary">
+          {title}
+        </h3>
+
+        {/* Date */}
+        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+          <Calendar className="w-4 h-4" />
+          <span>{dateDisplay}</span>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-foreground/70 transition-colors duration-300">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span>{date} • {time}</span>
+        {/* Time */}
+        {timeDisplay && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            <span>{timeDisplay}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-foreground/70 transition-colors duration-300">
-            <MapPin className="w-4 h-4 text-muted-foreground" />
-            <span className="truncate">{venue}, {location}</span>
-          </div>
+        )}
+
+        {/* Location */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <MapPin className="w-4 h-4" />
+          <span className="truncate">{venue ? `${venue}, ${location}` : location}</span>
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-card-border transition-colors duration-300">
-          <div>
-            <div className="text-xl font-bold text-primary transition-colors duration-300">{price}</div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="group-hover:bg-primary-foreground group-hover:text-primary transition-all duration-200"
-            onClick={() => navigate(`/event/${id}`)}
-          >
-            Get Tickets
-          </Button>
+        {/* Price */}
+        <div className="text-lg font-bold text-foreground">
+          {price && currency ? `${currency}${price}` : price}
         </div>
       </div>
     </Card>

@@ -63,11 +63,18 @@ export interface CreateEventData {
   coordinates?: { lat: number; lng: number };
   isFree: boolean;
   price?: number;
+  currency?: string; // Currency code (e.g., 'KES', 'USD')
   ticketTypes?: Array<{
     name: string;
     price: number;
     quantity?: number;
     features?: string[];
+    originalPrice?: number;
+    discountLabel?: string;
+    isComplementary?: boolean;
+    requiresInvitation?: boolean;
+    availableFrom?: string;
+    availableUntil?: string;
   }>;
   capacity?: number;
   image?: string;
@@ -194,7 +201,7 @@ export interface EventRegistrationsResponse {
  */
 export const getEvents = async (filters?: EventFilters): Promise<EventsListResponse> => {
   const queryParams = new URLSearchParams();
-  
+
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.category) queryParams.append('category', filters.category);
   if (filters?.isFree !== undefined) queryParams.append('isFree', filters.isFree.toString());
@@ -210,14 +217,14 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';
-  
+
   const response = await apiGet<EventsListResponse>(endpoint);
-  
+
   // Transform backend events to frontend format
   if (response.success && response.data) {
     response.data.events = transformEventsData(response.data.events);
   }
-  
+
   return response;
 };
 
@@ -226,12 +233,12 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
  */
 export const getEventById = async (id: string): Promise<EventResponse> => {
   const response = await apiGet<EventResponse>(`/events/${id}`);
-  
+
   // Transform backend event to frontend format
   if (response.success && response.data) {
     response.data.event = transformEventData(response.data.event);
   }
-  
+
   return response;
 };
 
@@ -240,12 +247,12 @@ export const getEventById = async (id: string): Promise<EventResponse> => {
  */
 export const createEvent = async (data: CreateEventData): Promise<EventResponse> => {
   const response = await apiPost<EventResponse>('/events', data);
-  
+
   // Transform backend event to frontend format
   if (response.success && response.data) {
     response.data.event = transformEventData(response.data.event);
   }
-  
+
   return response;
 };
 
@@ -254,12 +261,12 @@ export const createEvent = async (data: CreateEventData): Promise<EventResponse>
  */
 export const updateEvent = async (id: string, data: UpdateEventData): Promise<EventResponse> => {
   const response = await apiPut<EventResponse>(`/events/${id}`, data);
-  
+
   // Transform backend event to frontend format
   if (response.success && response.data) {
     response.data.event = transformEventData(response.data.event);
   }
-  
+
   return response;
 };
 
@@ -414,7 +421,7 @@ export const getUserRegisteredEvents = async (filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events/user/registered?${queryString}` : '/events/user/registered';
   return apiGet<UserRegisteredEventsResponse>(endpoint);

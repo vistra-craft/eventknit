@@ -127,8 +127,6 @@ const EventDetails = () => {
                 requirements={event.requirements}
                 ageRestriction={event.ageRestriction}
                 speakers={event.speakers}
-                startTime={event.time || (event.startTime ? new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : undefined)}
-                endTime={event.endTime ? new Date(`2000-01-01T${event.endTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : undefined}
               />
               
               <VenueSection 
@@ -153,6 +151,7 @@ const EventDetails = () => {
                 <TicketSelector 
                   ticketTypes={event.ticketTypes}
                   onRegister={handleRegister}
+                  currency={event.currency || '$'}
                 />
               </div>
             </div>
@@ -160,7 +159,11 @@ const EventDetails = () => {
 
           {/* Related Events */}
           <div className="mt-16">
-            <RelatedEvents />
+            <RelatedEvents 
+              currentEventId={event.id}
+              category={event.category || undefined}
+              tags={event.tags}
+            />
           </div>
         </div>
       </main>

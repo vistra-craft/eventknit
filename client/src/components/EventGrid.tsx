@@ -1,140 +1,139 @@
 import { EventCard } from "./EventCard";
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { Calendar, Sparkles } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEvents } from "@/hooks/useEvents";
-import { formatEventDate } from "@/lib/event-utils";
-import { EventStatus } from "@/lib/event-api";
+import { EventStatus, type EventFilters } from "@/lib/event-api";
+import type { SearchFilters } from "./EventSearchFilter";
 
 interface EventGridProps {
-  searchFilters?: {
-    search?: string;
-    location?: string;
-  };
-  categoryFilter?: string;
+  filters?: SearchFilters;
 }
 
-export const EventGrid = ({ searchFilters, categoryFilter }: EventGridProps = {}) => {
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  
-  // Get events based on filter
-  const { events: fetchedEvents, isLoading, error, fetchEvents, clearError } = useEvents();
+export const EventGrid = ({ filters = {} }: EventGridProps) => {
+  // Get events - we fetch all approved events and filter client-side for advanced filters
+  // that the backend doesn't support yet
+  const { events: fetchedEvents, isLoading, error, fetchEvents } = useEvents();
 
-  const timeFilters = [
-    { id: "all", label: "All" },
-    { id: "today", label: "Today" },
-    { id: "week", label: "This Week" },
-    { id: "month", label: "Next 30 Days" }
-  ];
-
-  // Filter events by date range
-  const dateFilteredEvents = useMemo(() => {
-    if (selectedFilter === "all") {
-      return fetchedEvents;
-    }
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0); // Start of today
-
-    let startDate: Date;
-    let endDate: Date;
-
-    switch (selectedFilter) {
-      case "today": {
-        startDate = new Date(now);
-        endDate = new Date(now);
-        endDate.setHours(23, 59, 59, 999); // End of today
-        break;
-      }
-      case "week": {
-        startDate = new Date(now);
-        // Get start of week (Sunday)
-        const dayOfWeek = now.getDay();
-        startDate.setDate(now.getDate() - dayOfWeek);
-        // End of week (Saturday)
-        endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      }
-      case "month": {
-        startDate = new Date(now);
-        endDate = new Date(now);
-        endDate.setDate(endDate.getDate() + 30);
-        endDate.setHours(23, 59, 59, 999);
-        break;
-      }
-      default:
-        return fetchedEvents;
-    }
-
-    return fetchedEvents.filter((event) => {
-      const eventStartDate = new Date(event.startDate);
-      return eventStartDate >= startDate && eventStartDate <= endDate;
-    });
-  }, [fetchedEvents, selectedFilter]);
-
-  const handleFilterChange = useCallback(async (filterId: string) => {
-    setSelectedFilter(filterId);
-    clearError();
-
-    // Build filters based on selected filter
-    const filters: { status?: EventStatus; limit?: number; search?: string; category?: string } = {
-      limit: 100, // Fetch more events to allow client-side date filtering
+  // Fetch events on mount and when basic filters change
+  useEffect(() => {
+    const fetchFilters: EventFilters = {
+      status: EventStatus.APPROVED,
+      limit: 100, // Fetch more events to allow client-side filtering
     };
 
-    // Always show approved events
-    filters.status = EventStatus.APPROVED;
+    // Pass search and category to backend as they are supported
+    if (filters.search) fetchFilters.search = filters.search;
+    if (filters.category && filters.category !== 'all') fetchFilters.category = filters.category;
 
-    // Add category filter if provided
-    if (categoryFilter && categoryFilter !== "all") {
-      // Handle "featured" category specially - this might need backend support
-      // For now, we'll filter it client-side if needed
-      if (categoryFilter !== "featured") {
-        filters.category = categoryFilter;
+    fetchEvents(fetchFilters);
+  }, [filters.search, filters.category, fetchEvents]);
+
+  // Apply client-side filters
+  const filteredEvents = useMemo(() => {
+    if (!fetchedEvents) return [];
+
+    return fetchedEvents.filter(event => {
+      // 1. Location Filter
+      if (filters.location) {
+        const locationTerm = filters.location.toLowerCase();
+        const eventLocation = (event.location || '').toLowerCase();
+        const eventVenue = (event.venue || '').toLowerCase();
+        if (!eventLocation.includes(locationTerm) && !eventVenue.includes(locationTerm)) {
+          return false;
+        }
       }
-    }
 
-    // Add search filters if provided
-    // Note: Backend search parameter can include location in the search string
-    if (searchFilters?.search || searchFilters?.location) {
-      const searchParts: string[] = [];
-      if (searchFilters.search) {
-        searchParts.push(searchFilters.search);
+      // 2. Event Type Filter
+      if (filters.eventType && filters.eventType !== 'all') {
+        if (filters.eventType === 'online' && !event.isOnline) return false;
+        if (filters.eventType === 'in-person' && event.isOnline) return false;
+        // Hybrid logic could be added here if supported
       }
-      if (searchFilters.location) {
-        searchParts.push(searchFilters.location);
+
+      // 3. Price Filter
+      if (filters.priceRange && filters.priceRange !== 'any') {
+        const price = typeof event.price === 'number' ? event.price : 0;
+        const isFree = event.isFree || price === 0;
+
+        switch (filters.priceRange) {
+          case 'free':
+            if (!isFree) return false;
+            break;
+          case 'under-25':
+            if (price >= 25) return false;
+            break;
+          case '25-50':
+            if (price < 25 || price > 50) return false;
+            break;
+          case '50-100':
+            if (price < 50 || price > 100) return false;
+            break;
+          case '100-plus':
+            if (price <= 100) return false;
+            break;
+        }
       }
-      filters.search = searchParts.join(" ");
-    }
 
-    await fetchEvents(filters);
-  }, [fetchEvents, clearError, searchFilters, categoryFilter]);
+      // 4. Date Range Filter
+      if (filters.dateRange && filters.dateRange !== 'anytime') {
+        const eventDate = new Date(event.startDate);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (filters.dateRange) {
+          case 'today': {
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (eventDate < today || eventDate >= tomorrow) return false;
+            break;
+          }
+          case 'tomorrow': {
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dayAfter = new Date(tomorrow);
+            dayAfter.setDate(dayAfter.getDate() + 1);
+            if (eventDate < tomorrow || eventDate >= dayAfter) return false;
+            break;
+          }
+          case 'this-week': {
+            const endOfWeek = new Date(today);
+            endOfWeek.setDate(today.getDate() + (6 - today.getDay())); // Saturday
+            endOfWeek.setHours(23, 59, 59, 999);
+            if (eventDate < today || eventDate > endOfWeek) return false;
+            break;
+          }
+          case 'this-weekend': {
+            const friday = new Date(today);
+            friday.setDate(today.getDate() + (5 - today.getDay()));
+            const sunday = new Date(today);
+            sunday.setDate(today.getDate() + (7 - today.getDay()));
+            sunday.setHours(23, 59, 59, 999);
+            if (eventDate < friday || eventDate > sunday) return false;
+            break;
+          }
+          case 'next-week': {
+            const startNextWeek = new Date(today);
+            startNextWeek.setDate(today.getDate() + (7 - today.getDay())); // Next Sunday
+            const endNextWeek = new Date(startNextWeek);
+            endNextWeek.setDate(startNextWeek.getDate() + 6);
+            endNextWeek.setHours(23, 59, 59, 999);
+            if (eventDate < startNextWeek || eventDate > endNextWeek) return false;
+            break;
+          }
+          case 'next-month': {
+            const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+            const endNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+            endNextMonth.setHours(23, 59, 59, 999);
+            if (eventDate < nextMonth || eventDate > endNextMonth) return false;
+            break;
+          }
+        }
+      }
 
-  // Filter events by category (client-side for "featured" category)
-  const categoryFilteredEvents = useMemo(() => {
-    if (!categoryFilter || categoryFilter === "all") {
-      return dateFilteredEvents;
-    }
-
-    if (categoryFilter === "featured") {
-      // Featured events could be events with specific tags or high ratings
-      // For now, we'll show all events (backend can implement featured logic later)
-      return dateFilteredEvents;
-    }
-
-    return dateFilteredEvents.filter((event) => 
-      event.category?.toLowerCase() === categoryFilter.toLowerCase()
-    );
-  }, [dateFilteredEvents, categoryFilter]);
-
-  const displayEvents = categoryFilteredEvents;
-
-  // Fetch events on mount and when search filters or category change
-  useEffect(() => {
-    handleFilterChange(selectedFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchFilters, categoryFilter]);
+      return true;
+    });
+  }, [fetchedEvents, filters]);
 
   return (
     <section className="py-16 bg-background relative overflow-hidden" data-section="events">
@@ -144,51 +143,7 @@ export const EventGrid = ({ searchFilters, categoryFilter }: EventGridProps = {}
       <div className="absolute bottom-0 left-1/4 w-20 h-20 bg-primary/5 rounded-full transform -translate-y-10"></div>
       
       <div className="container mx-auto px-6 relative">
-        <div className="mb-12">
-          {/* Centered title */}
-          <div className="text-center mb-6">
-            <h2 className="text-4xl font-bold text-foreground">
-              Discover Events
-            </h2>
-          </div>
-          
-          {/* Bottom row with filters and info */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Left side - Time Filter Selector */}
-            <div className="bg-primary/5 rounded-full p-1 flex gap-1 shadow-sm border border-border/50 w-full sm:w-auto overflow-x-auto sm:overflow-visible scrollbar-hide">
-              {timeFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => handleFilterChange(filter.id)}
-                  className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
-                    selectedFilter === filter.id
-                      ? 'bg-primary text-primary-foreground shadow-sm scale-105'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:scale-105'
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-            
-            {/* Right side - Calendar icon, live events text, and trending badge */}
-            <div className="flex items-center gap-2 sm:gap-6 w-full sm:w-auto justify-end sm:justify-start">
-              {/* Calendar icon and live events text */}
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 rounded-lg flex items-center justify-center group flex-shrink-0">
-                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary group-hover:scale-110 transition-transform duration-300" />
-                </div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary animate-pulse flex-shrink-0" />
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                    <span className="hidden sm:inline">Live events happening now</span>
-                    <span className="sm:hidden">Live now</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {isLoading ? (
@@ -201,38 +156,62 @@ export const EventGrid = ({ searchFilters, categoryFilter }: EventGridProps = {}
               <p className="text-destructive">{error}</p>
               <Button
                 variant="outline"
-                onClick={() => handleFilterChange(selectedFilter)}
+                onClick={() => fetchEvents({ status: EventStatus.APPROVED, limit: 100 })}
                 className="mt-4"
               >
                 Try Again
               </Button>
             </div>
-          ) : displayEvents.length === 0 ? (
+          ) : filteredEvents.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground">No events found</p>
+              <p className="text-muted-foreground">No events found matching your filters</p>
+              <Button 
+                variant="link" 
+                onClick={() => window.location.reload()}
+                className="mt-2"
+              >
+                Clear filters
+              </Button>
             </div>
           ) : (
-            displayEvents.map((event) => (
-              <EventCard 
-                key={event.id} 
-                id={event.id}
-                title={event.title}
-                image={event.image || ''}
-                date={event.date || formatEventDate(event.startDate)}
-                time={event.time || event.startTime || ''}
-                venue={event.venue || ''}
-                location={event.location}
-                organizer={event.organizerName || event.organizer?.organizationName || ''}
-                price={event.priceDisplay?.toString() || '0'}
-                category={event.category || ''}
-              />
-            ))
+            filteredEvents.map((event) => {
+              const isFree = event.isFree || event.priceDisplay === 0;
+              const hasNumericPrice = typeof event.priceDisplay === 'number' && event.priceDisplay > 0;
+
+              const price = isFree
+                ? 'Free'
+                : hasNumericPrice
+                  ? event.priceDisplay!.toString()
+                  : 'See tickets';
+
+              const currency = isFree || !hasNumericPrice
+                ? undefined
+                : event.currency || '$';
+
+              return (
+                <EventCard 
+                  key={event.id} 
+                  id={event.id}
+                  title={event.title}
+                  image={event.image || ''}
+                  startDate={event.startDate}
+                  endDate={event.endDate || undefined}
+                  startTime={event.startTime || undefined}
+                  endTime={event.endTime || undefined}
+                  venue={event.venue || ''}
+                  location={event.location}
+                  price={price}
+                  currency={currency}
+                  category={event.category || ''}
+                />
+              );
+            })
           )}
         </div>
 
         <div className="text-center mt-12">
           <div className="text-sm text-muted-foreground mb-4">
-            Showing {displayEvents.length} events
+            Showing {filteredEvents.length} events
           </div>
           <Button 
             variant="outline" 

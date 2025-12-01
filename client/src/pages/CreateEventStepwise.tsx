@@ -33,6 +33,18 @@ import {
 import { createEvent, type CreateEventData, EventType } from '@/lib/event-api';
 import { useAuth } from '@/hooks/useAuth';
 
+// Currency options with KES as default
+const CURRENCIES = [
+  { code: 'KES', name: 'Kenyan Shilling (KES)', symbol: 'KSh' },
+  { code: 'USD', name: 'US Dollar (USD)', symbol: '$' },
+  { code: 'EUR', name: 'Euro (EUR)', symbol: '€' },
+  { code: 'GBP', name: 'British Pound (GBP)', symbol: '£' },
+  { code: 'UGX', name: 'Ugandan Shilling (UGX)', symbol: 'USh' },
+  { code: 'TZS', name: 'Tanzanian Shilling (TZS)', symbol: 'TSh' },
+];
+
+const DEFAULT_CURRENCY = 'KES';
+
 // interface Speaker {
 //   name: string;
 //   title: string;
@@ -73,6 +85,7 @@ interface EventData {
   title: string;
   organizer: string;
   description: string;
+  fullDescription: string;
   date: string;
   time: string;
   endDate: string;
@@ -85,6 +98,7 @@ interface EventData {
   totalSlots: number;
   image: string;
   requirements: string;
+  ageRestriction: string;
   isOnline: boolean;
   capacity: string;
   category?: string;
@@ -143,19 +157,18 @@ export default function CreateEventStepwise() {
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
-    { id: 1, name: "General Admission", type: "paid", price: "50", quantity: "100" }
+    { id: 1, name: "", type: "paid", price: "", quantity: "" }
   ]);
   const [categories, setCategories] = useState(["Music", "Concert"]);
   const [newCategory, setNewCategory] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
   const [newTag, setNewTag] = useState("");
   const [faqs, setFaqs] = useState([{ question: "", answer: "" }]);
-  // const [_speakers] = useState<Speaker[]>([{ name: "", title: "", bio: "" }]);
-  // const [_sponsors] = useState<Sponsor[]>([{ name: "", level: "gold", logo: "" }]);
+  const [speakers] = useState<Array<{ name: string; title: string; bio: string; image?: string }>>([]);
   const [isPrivate, setIsPrivate] = useState(false);
   
   // Load draft from localStorage on mount
-  const loadDraft = (): Partial<EventData> => {
+  const loadDraft = (): Partial<EventData & { currency: string }> => {
     try {
       const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (draft) {
@@ -173,12 +186,13 @@ export default function CreateEventStepwise() {
     return {};
   };
 
-  const [eventData, setEventData] = useState<EventData>(() => {
+  const [eventData, setEventData] = useState<EventData & { currency: string }>(() => {
     const draft = loadDraft();
     return {
       title: draft.title || "",
       organizer: draft.organizer || "",
       description: draft.description || "",
+      fullDescription: draft.fullDescription || "",
       date: draft.date || "",
       time: draft.time || "",
       endDate: draft.endDate || "",
@@ -191,10 +205,12 @@ export default function CreateEventStepwise() {
       totalSlots: draft.totalSlots || 0,
       image: draft.image || "",
       requirements: draft.requirements || "",
+      ageRestriction: draft.ageRestriction || "",
       isOnline: draft.isOnline || false,
       capacity: draft.capacity || "",
       category: draft.category || "",
       timezone: draft.timezone || timezone,
+      currency: draft.currency || DEFAULT_CURRENCY,
     };
   });
 
@@ -553,6 +569,7 @@ export default function CreateEventStepwise() {
     const apiData: CreateEventData = {
       title: eventData.title.trim(),
       description: eventData.description.trim(),
+      fullDescription: eventData.fullDescription?.trim() || undefined,
       category: eventData.category || categories[0] || undefined,
       tags: tags.length > 0 ? tags : undefined,
       startDate,
@@ -566,10 +583,16 @@ export default function CreateEventStepwise() {
       onlineLink: eventData.onlineLink?.trim() || undefined,
       isFree,
       price: singlePrice,
+      currency: eventData.currency || DEFAULT_CURRENCY,
       ticketTypes: apiTicketTypes.length > 0 ? apiTicketTypes : undefined,
       capacity: eventData.capacity ? parseInt(eventData.capacity, 10) : undefined,
       image: eventData.image?.trim() || undefined,
       type: isPrivate ? EventType.PRIVATE : EventType.PUBLIC,
+      requirements: eventData.requirements?.trim() 
+        ? eventData.requirements.split(/[,\n]/).map(r => r.trim()).filter(Boolean)
+        : undefined,
+      ageRestriction: eventData.ageRestriction?.trim() || undefined,
+      speakers: speakers.length > 0 ? speakers : undefined,
       faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()).length > 0
         ? faqs.filter(faq => faq.question.trim() && faq.answer.trim()).map(faq => ({
             question: faq.question.trim(),
@@ -716,6 +739,21 @@ export default function CreateEventStepwise() {
             <p className="text-sm text-destructive">{validationErrors.description}</p>
           )}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="fullDescription">Detailed Description (Optional)</Label>
+        <Textarea 
+          id="fullDescription" 
+          placeholder="Provide a more comprehensive description of your event, including what attendees can expect..." 
+          rows={6}
+          value={eventData.fullDescription}
+          maxLength={10000}
+          onChange={(e) => handleInputChange("fullDescription", e.target.value)}
+        />
+        <p className="text-sm text-muted-foreground">
+          {eventData.fullDescription.length}/10000 characters
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1512,6 +1550,35 @@ export default function CreateEventStepwise() {
         </div>
       </div>
 
+      {/* Requirements */}
+      <div className="space-y-4">
+        <Label htmlFor="requirements">Event Requirements (Optional)</Label>
+        <Textarea 
+          id="requirements"
+          placeholder="e.g., Valid ID required, 18+ only, Dress code: Business casual"
+          rows={3}
+          value={eventData.requirements}
+          onChange={(e) => handleInputChange("requirements", e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          List any requirements attendees need to meet (one per line or separated by commas)
+        </p>
+      </div>
+
+      {/* Age Restriction */}
+      <div className="space-y-2">
+        <Label htmlFor="ageRestriction">Age Restriction (Optional)</Label>
+        <Input
+          id="ageRestriction"
+          placeholder="e.g., 18+, All ages, 21 and over"
+          value={eventData.ageRestriction}
+          onChange={(e) => handleInputChange("ageRestriction", e.target.value)}
+        />
+        <p className="text-xs text-muted-foreground">
+          Specify any age restrictions for this event
+        </p>
+      </div>
+
       {/* FAQs */}
       <div className="space-y-4">
         <Label>Frequently Asked Questions</Label>
@@ -1788,7 +1855,9 @@ export default function CreateEventStepwise() {
                         )}
                       </div>
                       <p className="font-bold">
-                        {ticket.type === 'free' ? 'Free' : `$${parseFloat(ticket.price || '0').toFixed(2)}`}
+                        {ticket.type === 'free'
+                          ? 'Free'
+                          : `${eventData.currency || DEFAULT_CURRENCY}${parseFloat(ticket.price || '0').toFixed(2)}`}
                       </p>
                     </div>
                   ))}
@@ -1911,6 +1980,62 @@ export default function CreateEventStepwise() {
             {currentStep === 6 && renderStep6()}
 
             {/* Navigation Buttons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>Event Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={eventType === 'in-person' ? 'default' : 'outline'}
+                    onClick={() => setEventType('in-person')}
+                    className="h-12"
+                  >
+                    <MapPin className="mr-2 h-4 w-4" />
+                    In-Person
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={eventType === 'online' ? 'default' : 'outline'}
+                    onClick={() => setEventType('online')}
+                    className="h-12"
+                  >
+                    <Globe className="mr-2 h-4 w-4" />
+                    Online
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={eventType === 'hybrid' ? 'default' : 'outline'}
+                    onClick={() => setEventType('hybrid')}
+                    className="h-12"
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Hybrid
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Currency</Label>
+                <Select 
+                  value={eventData.currency || DEFAULT_CURRENCY}
+                  onValueChange={(value) => setEventData(prev => ({ ...prev, currency: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.name} ({currency.symbol})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Select the currency for ticket prices
+                </p>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
               <div className="flex gap-2 order-2 sm:order-1">
                 <Button
