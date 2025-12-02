@@ -91,7 +91,7 @@ const UserDashboard = () => {
         activeSection={activeSection}
         eventTitle={eventData?.title}
       />
-      <main className={`${shouldShowNavigationButtons ? 'pt-32' : 'pt-20'} flex-1`}>
+      <main className={`${shouldShowNavigationButtons ? 'pt-36' : 'pt-24'} flex-1`}>
         {/* Success Message */}
         {successMessage && (
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
@@ -110,4 +110,3 @@ const UserDashboard = () => {
 };
 
 export default UserDashboard;
-

@@ -846,48 +846,32 @@ const EventRegistration = () => {
           {/* Registration Form Section */}
           <div className="mb-10">
             {currentStep === "registration" && (
-              <Card variant="default">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Registration Information
-                  </CardTitle>
+              <Card variant="default" className="border-t-4 border-t-primary shadow-lg">
+                <CardHeader className="bg-muted/30 pb-6 border-b">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Attendee Information</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Please fill in your details to complete registration
+                      </p>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-8">
                   <form
                     onSubmit={handleRegistrationSubmit}
-                    className="space-y-6"
+                    className="space-y-8"
                     autoComplete="on"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* For guest checkout, ensure email, firstName, lastName are always present */}
-                      {!isAuthenticated && (!event.registrationFields || event.registrationFields.length === 0 || 
-                        !event.registrationFields.some(f => f.type === 'email') ||
-                        !event.registrationFields.some(f => f.name?.toLowerCase().includes('first') || f.label?.toLowerCase().includes('first')) ||
-                        !event.registrationFields.some(f => f.name?.toLowerCase().includes('last') || f.label?.toLowerCase().includes('last'))) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      {/* Always show basic fields if not authenticated or if they're missing from custom fields */}
+                      {(!isAuthenticated || (!event.registrationFields?.some(f => f.type === 'email'))) && (
                         <>
-                          <div>
-                            <Label htmlFor="guest-email">
-                              Email <span className="text-destructive">*</span>
-                            </Label>
-                            <Input
-                              id="guest-email"
-                              type="email"
-                              placeholder="your.email@example.com"
-                              value={formData['guest-email'] as string || ''}
-                              onChange={(e) => handleInputChange('guest-email', e.target.value)}
-                              required
-                              className={errors['guest-email'] ? "border-destructive" : ""}
-                            />
-                            {errors['guest-email'] && (
-                              <p className="text-destructive text-sm mt-1">{errors['guest-email']}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              We'll never share your email.
-                            </p>
-                          </div>
-                          <div>
-                            <Label htmlFor="guest-firstName">
+                          <div className="space-y-2">
+                            <Label htmlFor="guest-firstName" className="text-base font-medium">
                               First Name <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -897,14 +881,15 @@ const EventRegistration = () => {
                               value={formData['guest-firstName'] as string || ''}
                               onChange={(e) => handleInputChange('guest-firstName', e.target.value)}
                               required
-                              className={errors['guest-firstName'] ? "border-destructive" : ""}
+                              className={`h-11 ${errors['guest-firstName'] ? "border-destructive" : ""}`}
                             />
                             {errors['guest-firstName'] && (
-                              <p className="text-destructive text-sm mt-1">{errors['guest-firstName']}</p>
+                              <p className="text-destructive text-sm">{errors['guest-firstName']}</p>
                             )}
                           </div>
-                          <div>
-                            <Label htmlFor="guest-lastName">
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="guest-lastName" className="text-base font-medium">
                               Last Name <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -914,34 +899,66 @@ const EventRegistration = () => {
                               value={formData['guest-lastName'] as string || ''}
                               onChange={(e) => handleInputChange('guest-lastName', e.target.value)}
                               required
-                              className={errors['guest-lastName'] ? "border-destructive" : ""}
+                              className={`h-11 ${errors['guest-lastName'] ? "border-destructive" : ""}`}
                             />
                             {errors['guest-lastName'] && (
-                              <p className="text-destructive text-sm mt-1">{errors['guest-lastName']}</p>
+                              <p className="text-destructive text-sm">{errors['guest-lastName']}</p>
                             )}
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="guest-email" className="text-base font-medium">
+                              Email Address <span className="text-destructive">*</span>
+                            </Label>
+                            <Input
+                              id="guest-email"
+                              type="email"
+                              placeholder="your.email@example.com"
+                              value={formData['guest-email'] as string || ''}
+                              onChange={(e) => handleInputChange('guest-email', e.target.value)}
+                              required
+                              className={`h-11 ${errors['guest-email'] ? "border-destructive" : ""}`}
+                            />
+                            {errors['guest-email'] && (
+                              <p className="text-destructive text-sm">{errors['guest-email']}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Your ticket will be sent to this email address.
+                            </p>
                           </div>
                         </>
                       )}
+
+                      {/* Render Custom Fields */}
                       {event.registrationFields && event.registrationFields.length > 0 && event.registrationFields.map((field) => {
+                        // Skip basic fields if we already rendered them manually above
+                        if (!isAuthenticated && (
+                          field.type === 'email' || 
+                          field.name?.toLowerCase().includes('first') || 
+                          field.name?.toLowerCase().includes('last')
+                        )) {
+                          return null;
+                        }
+
                         // Long-form fields (textarea) span both columns
                         if (field.type === "textarea") {
                           return (
-                            <div key={field.id} className="md:col-span-2">
+                            <div key={field.id} className="md:col-span-2 space-y-2">
                               {renderFormField(field)}
                             </div>
                           );
                         }
                         return (
-                          <div key={field.id}>
+                          <div key={field.id} className="space-y-2">
                             {renderFormField(field)}
                             {/* Helper text for email/phone */}
                             {field.type === "email" && (
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className="text-xs text-muted-foreground">
                                 We'll never share your email.
                               </p>
                             )}
                             {field.type === "tel" && (
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className="text-xs text-muted-foreground">
                                 Format: +1 (555) 123-4567
                               </p>
                             )}
@@ -951,7 +968,7 @@ const EventRegistration = () => {
                     </div>
                     
                     {/* Terms & Conditions */}
-                    <div className="pt-6 border-t">
+                    <div className="pt-6 border-t bg-muted/10 -mx-6 px-6">
                       <div className="flex items-start gap-3 mb-4">
                         <input
                           type="checkbox"
@@ -961,11 +978,11 @@ const EventRegistration = () => {
                         />
                         <label htmlFor="termsConsent" className="text-sm text-muted-foreground">
                           I agree to the{" "}
-                          <a href="#" className="text-primary hover:underline">
+                          <a href="#" className="text-primary hover:underline font-medium">
                             Terms and Conditions
                           </a>{" "}
                           and{" "}
-                          <a href="#" className="text-primary hover:underline">
+                          <a href="#" className="text-primary hover:underline font-medium">
                             Privacy Policy
                           </a>
                           . I understand that my information will be used for event management purposes.
@@ -979,22 +996,24 @@ const EventRegistration = () => {
                         <AlertDescription>{submitError}</AlertDescription>
                       </Alert>
                     )}
-                    <div className="flex flex-col sm:flex-row justify-between pt-6 border-t gap-4">
-                      <Link
-                        to={`/event/${eventId}`}
-                        className="px-6 py-2 border border-border rounded-full text-foreground/80 hover:bg-accent transition-colors text-center"
+                    
+                    <div className="flex flex-col sm:flex-row justify-between pt-2 gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => navigate(`/event/${eventId}`)}
+                        className="px-6 h-12 text-base"
                       >
                         Back to Event
-                      </Link>
+                      </Button>
                       <Button
                         type="submit"
-                        className="bg-primary hover:bg-primary/90 px-8"
+                        className="bg-primary hover:bg-primary/90 px-8 h-12 text-base font-semibold shadow-md"
                         disabled={submitting || loading}
-                        autoFocus
                       >
                         {submitting ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                             Processing...
                           </>
                         ) : (

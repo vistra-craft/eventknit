@@ -1,31 +1,24 @@
 import { useState } from "react";
-import { CategoryFilter } from "../components/CategoryFilter";
+import { EventSearchFilter } from "../components/EventSearchFilter";
+import type { SearchFilters } from "../components/EventSearchFilter";
 import { EventGrid } from "../components/EventGrid";
 import { Hero } from "../components/Hero";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const Index = () => {
-  const [searchFilters, setSearchFilters] = useState<{ search?: string; location?: string }>({});
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [filters, setFilters] = useState<SearchFilters>({});
 
-  const handleSearch = (searchTerm: string, location: string) => {
-    setSearchFilters({
-      search: searchTerm || undefined,
-      location: location || undefined,
-    });
-  };
-
-  const handleCategoryChange = (categoryId: string) => {
-    setSelectedCategory(categoryId);
+  const handleFiltersChange = (newFilters: SearchFilters) => {
+    setFilters(newFilters);
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar onSearch={handleSearch} />
+      <Navbar />
       <Hero />
-      <CategoryFilter selectedCategory={selectedCategory} onCategoryChange={handleCategoryChange} />
-      <EventGrid searchFilters={searchFilters} categoryFilter={selectedCategory} />
+      <EventSearchFilter filters={filters} onFiltersChange={handleFiltersChange} />
+      <EventGrid filters={filters} />
       <Footer />
     </div>
   );

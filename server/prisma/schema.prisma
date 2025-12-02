@@ -319,6 +319,7 @@ model Event {
   // Pricing
   isFree      Boolean  @default(false)
   price       Decimal? @db.Decimal(10, 2) // Single price for simple events
+  currency    String   @default("USD") // Currency code (e.g., "USD", "KES", "NGN")
   ticketTypes Json? // Array of ticket types with prices
 
   // Capacity
