@@ -111,7 +111,7 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
             Discover events around you
           </p>
         </div>
-        <Card className="border-0 bg-white/90 shadow-none rounded-2xl px-4 py-4 md:px-6 md:py-5">
+        <Card className="border-0 bg-primary/5 shadow-none rounded-2xl px-4 py-4 md:px-6 md:py-5">
           <div className="flex flex-col gap-4">
             {/* Top row: search + filter icon */}
             <div className="w-full flex items-center gap-2">
