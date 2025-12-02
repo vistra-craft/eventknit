@@ -9,35 +9,44 @@ const CookiePolicy = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 py-20">
+      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
-                <Cookie className="w-8 h-8 text-primary" />
+          <div className="max-w-4xl mx-auto">
+            <div className="rounded-2xl bg-white px-6 py-8 md:px-10 md:py-10">
+              <div className="flex flex-col items-center gap-6 text-center">
+                <div className="space-y-3">
+                  <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                    How EventKnit uses cookies
+                  </h1>
+                  <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                    This page explains what cookies are, which types we use, and how they support
+                    security, personalization, and analytics on the EventKnit platform.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span>Last updated • January 15, 2025</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span>Non-essential cookies are optional and configurable</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Cookie Policy
-            </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              Learn about how EventKnit uses cookies and similar technologies to enhance 
-              your experience and improve our services.
-            </p>
-            <div className="mt-6 text-sm text-muted-foreground">
-              Last updated: January 15, 2025
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-16">
+      <div className="container mx-auto px-6 pt-0 pb-16">
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* What Are Cookies */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Cookie className="w-5 h-5 text-primary" />
                 What Are Cookies?
               </CardTitle>
@@ -50,7 +59,7 @@ const CookiePolicy = () => {
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <h4 className="font-semibold">How Cookies Work</h4>
+                  <h4 className="font-semibold text-base">How Cookies Work</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
@@ -71,7 +80,7 @@ const CookiePolicy = () => {
                   </ul>
                 </div>
                 <div className="space-y-3">
-                  <h4 className="font-semibold">Types of Data</h4>
+                  <h4 className="font-semibold text-base">Types of Data</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
@@ -96,9 +105,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Types of Cookies We Use */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Settings className="w-5 h-5 text-primary" />
                 Types of Cookies We Use
               </CardTitle>
@@ -107,7 +116,7 @@ const CookiePolicy = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="p-4 bg-primary/5 rounded-lg">
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                       Essential Cookies
                     </h4>
@@ -122,8 +131,8 @@ const CookiePolicy = () => {
                     </ul>
                   </div>
                   
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <div className="p-4 bg-primary/5 rounded-lg">
+                    <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                       Functional Cookies
                     </h4>
@@ -140,8 +149,8 @@ const CookiePolicy = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="p-4 bg-yellow-50 rounded-lg">
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <div className="p-4 bg-primary/5 rounded-lg">
+                    <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                       <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                       Analytics Cookies
                     </h4>
@@ -156,8 +165,8 @@ const CookiePolicy = () => {
                     </ul>
                   </div>
                   
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <div className="p-4 bg-primary/5 rounded-lg">
+                    <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
                       <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                       Marketing Cookies
                     </h4>
@@ -177,9 +186,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Third-Party Cookies */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <BarChart3 className="w-5 h-5 text-primary" />
                 Third-Party Cookies
               </CardTitle>
@@ -191,7 +200,7 @@ const CookiePolicy = () => {
               </p>
               <div className="space-y-4">
                 <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-semibold mb-2">Google Analytics</h4>
+                  <h4 className="font-semibold text-base mb-2">Google Analytics</h4>
                   <p className="text-sm text-muted-foreground mb-2">
                     Helps us understand website traffic and user behavior patterns.
                   </p>
@@ -201,7 +210,7 @@ const CookiePolicy = () => {
                 </div>
                 
                 <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-semibold mb-2">Payment Processors</h4>
+                  <h4 className="font-semibold text-base mb-2">Payment Processors</h4>
                   <p className="text-sm text-muted-foreground mb-2">
                     Secure payment processing and fraud prevention services.
                   </p>
@@ -211,7 +220,7 @@ const CookiePolicy = () => {
                 </div>
                 
                 <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-semibold mb-2">Social Media</h4>
+                  <h4 className="font-semibold text-base mb-2">Social Media</h4>
                   <p className="text-sm text-muted-foreground mb-2">
                     Social sharing buttons and embedded content from social platforms.
                   </p>
@@ -221,7 +230,7 @@ const CookiePolicy = () => {
                 </div>
                 
                 <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-semibold mb-2">Customer Support</h4>
+                  <h4 className="font-semibold text-base mb-2">Customer Support</h4>
                   <p className="text-sm text-muted-foreground mb-2">
                     Live chat and customer support functionality.
                   </p>
@@ -234,9 +243,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Cookie Management */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Settings className="w-5 h-5 text-primary" />
                 Managing Your Cookie Preferences
               </CardTitle>
@@ -247,7 +256,7 @@ const CookiePolicy = () => {
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <h4 className="font-semibold">Browser Settings</h4>
+                  <h4 className="font-semibold text-base">Browser Settings</h4>
                   <div className="space-y-3">
                     <div className="p-3 bg-muted/30 rounded-lg">
                       <h5 className="font-medium text-sm mb-1">Chrome</h5>
@@ -277,7 +286,7 @@ const CookiePolicy = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  <h4 className="font-semibold">Cookie Consent</h4>
+                  <h4 className="font-semibold text-base">Cookie Consent</h4>
                   <div className="space-y-3">
                     <div className="p-4 bg-primary/5 rounded-lg">
                       <h5 className="font-medium mb-2">Cookie Banner</h5>
@@ -304,9 +313,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Impact of Disabling Cookies */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Eye className="w-5 h-5 text-primary" />
                 Impact of Disabling Cookies
               </CardTitle>
@@ -317,7 +326,7 @@ const CookiePolicy = () => {
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-red-600">Potential Issues</h4>
+                  <h4 className="font-semibold text-base text-primary">Potential Issues</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></span>
@@ -338,7 +347,7 @@ const CookiePolicy = () => {
                   </ul>
                 </div>
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-green-600">Still Available</h4>
+                  <h4 className="font-semibold text-base text-primary">Still Available</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
@@ -363,9 +372,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Data Retention */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Database className="w-5 h-5 text-primary" />
                 Cookie Data Retention
               </CardTitle>
@@ -376,7 +385,7 @@ const CookiePolicy = () => {
               </p>
               <div className="space-y-4">
                 <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-semibold mb-2">Session Cookies</h4>
+                  <h4 className="font-semibold text-base mb-2">Session Cookies</h4>
                   <p className="text-sm text-muted-foreground mb-2">
                     These cookies are deleted when you close your browser.
                   </p>
@@ -386,7 +395,7 @@ const CookiePolicy = () => {
                 </div>
                 
                 <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-semibold mb-2">Persistent Cookies</h4>
+                  <h4 className="font-semibold text-base mb-2">Persistent Cookies</h4>
                   <p className="text-sm text-muted-foreground mb-2">
                     These cookies remain on your device for a set period of time.
                   </p>
@@ -396,7 +405,7 @@ const CookiePolicy = () => {
                 </div>
                 
                 <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-semibold mb-2">Third-Party Cookies</h4>
+                  <h4 className="font-semibold text-base mb-2">Third-Party Cookies</h4>
                   <p className="text-sm text-muted-foreground mb-2">
                     Retention periods are determined by the third-party service providers.
                   </p>
@@ -409,9 +418,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Security and Privacy */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Shield className="w-5 h-5 text-primary" />
                 Security and Privacy
               </CardTitle>
@@ -423,7 +432,7 @@ const CookiePolicy = () => {
               </p>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <h4 className="font-semibold">Security Measures</h4>
+                  <h4 className="font-semibold text-base">Security Measures</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
@@ -444,7 +453,7 @@ const CookiePolicy = () => {
                   </ul>
                 </div>
                 <div className="space-y-3">
-                  <h4 className="font-semibold">Privacy Protection</h4>
+                  <h4 className="font-semibold text-base">Privacy Protection</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
@@ -469,9 +478,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Contact Information */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle>Contact Us About Cookies</CardTitle>
+              <CardTitle className="text-xl">Contact Us About Cookies</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
@@ -481,17 +490,17 @@ const CookiePolicy = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <div>
-                    <div className="font-semibold">Email</div>
+                    <div className="font-semibold text-base">Email</div>
                     <div className="text-sm text-muted-foreground">privacy@eventknit.com</div>
                   </div>
                   <div>
-                    <div className="font-semibold">Phone</div>
+                    <div className="font-semibold text-base">Phone</div>
                     <div className="text-sm text-muted-foreground">+1 (555) 123-4567</div>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <div className="font-semibold">Address</div>
+                    <div className="font-semibold text-base">Address</div>
                     <div className="text-sm text-muted-foreground">
                       EventKnit Privacy Team<br />
                       123 Event Street<br />
@@ -504,9 +513,9 @@ const CookiePolicy = () => {
           </Card>
 
           {/* Policy Updates */}
-          <Card>
+          <Card className="border-0">
             <CardHeader>
-              <CardTitle>Policy Updates</CardTitle>
+              <CardTitle className="text-xl">Policy Updates</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
