@@ -35,7 +35,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 // Currency options with KES as default
 const CURRENCIES = [
-  { code: 'KES', name: 'Kenyan Shilling (KES)', symbol: 'KSh' },
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KES' },
   { code: 'USD', name: 'US Dollar (USD)', symbol: '$' },
   { code: 'EUR', name: 'Euro (EUR)', symbol: '€' },
   { code: 'GBP', name: 'British Pound (GBP)', symbol: '£' },
@@ -1304,7 +1304,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addTicketType}
-          className="w-full border-dashed"
+          className="w-full border-dashed border-gray-300 hover:bg-gray-900 hover:text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Another Ticket Type
@@ -1395,7 +1395,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addRegistrationField}
-          className="w-full border-dashed"
+          className="w-full border-dashed border-gray-300 hover:bg-gray-900 hover:text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Custom Field
@@ -1455,6 +1455,7 @@ export default function CreateEventStepwise() {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage}
+                className="border border-gray-300 hover:bg-gray-900 hover:text-white"
               >
                 {isUploadingImage ? (
                   <>
@@ -1617,7 +1618,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addFaq}
-          className="w-full border-dashed"
+          className="w-full border-dashed border-gray-300 hover:bg-gray-900 hover:text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add FAQ
@@ -1895,8 +1896,8 @@ export default function CreateEventStepwise() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10">
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Create New Event</h1>
@@ -1930,7 +1931,7 @@ export default function CreateEventStepwise() {
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div
-                className="bg-eventknit h-2 rounded-full transition-all duration-300"
+                className="bg-gray-900 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${calculateProgress()}%` }}
               />
             </div>
@@ -1943,7 +1944,7 @@ export default function CreateEventStepwise() {
                 <div
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors ${
                     index + 1 <= currentStep
-                      ? 'bg-eventknit text-eventknit-foreground'
+                      ? 'bg-gray-900 text-white'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
@@ -1952,7 +1953,7 @@ export default function CreateEventStepwise() {
                 {index < steps.length - 1 && (
                   <div
                     className={`w-8 sm:w-16 h-0.5 mx-1 sm:mx-2 transition-colors ${
-                      index + 1 < currentStep ? 'bg-eventknit' : 'bg-muted'
+                      index + 1 < currentStep ? 'bg-gray-900' : 'bg-muted'
                     }`}
                   />
                 )}
@@ -1970,8 +1971,8 @@ export default function CreateEventStepwise() {
         )}
 
         {/* Form Content */}
-        <Card>
-          <CardContent className="p-8">
+        <Card className="border-0 bg-white rounded-2xl shadow-none">
+          <CardContent className="p-6 sm:p-8">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
@@ -1988,7 +1989,11 @@ export default function CreateEventStepwise() {
                     type="button"
                     variant={eventType === 'in-person' ? 'default' : 'outline'}
                     onClick={() => setEventType('in-person')}
-                    className="h-12"
+                    className={`h-12 text-sm font-medium rounded-xl ${
+                      eventType === 'in-person'
+                        ? 'bg-gray-900 text-white hover:bg-gray-800'
+                        : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+                    }`}
                   >
                     <MapPin className="mr-2 h-4 w-4" />
                     In-Person
@@ -1997,7 +2002,11 @@ export default function CreateEventStepwise() {
                     type="button"
                     variant={eventType === 'online' ? 'default' : 'outline'}
                     onClick={() => setEventType('online')}
-                    className="h-12"
+                    className={`h-12 text-sm font-medium rounded-xl ${
+                      eventType === 'online'
+                        ? 'bg-gray-900 text-white hover:bg-gray-800'
+                        : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+                    }`}
                   >
                     <Globe className="mr-2 h-4 w-4" />
                     Online
@@ -2006,7 +2015,11 @@ export default function CreateEventStepwise() {
                     type="button"
                     variant={eventType === 'hybrid' ? 'default' : 'outline'}
                     onClick={() => setEventType('hybrid')}
-                    className="h-12"
+                    className={`h-12 text-sm font-medium rounded-xl ${
+                      eventType === 'hybrid'
+                        ? 'bg-gray-900 text-white hover:bg-gray-800'
+                        : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+                    }`}
                   >
                     <Users className="mr-2 h-4 w-4" />
                     Hybrid
@@ -2041,7 +2054,7 @@ export default function CreateEventStepwise() {
                 <Button
                   variant="outline"
                   onClick={handleBack}
-                  className="flex-1 sm:px-6 sm:flex-none"
+                  className="flex-1 sm:px-6 sm:flex-none border border-gray-300 hover:bg-gray-900 hover:text-white"
                   disabled={isSubmitting}
                 >
                   Back
@@ -2050,7 +2063,7 @@ export default function CreateEventStepwise() {
                   <Button
                     variant="outline"
                     onClick={() => setShowPreview(true)}
-                    className="flex-1 sm:px-6 sm:flex-none"
+                    className="flex-1 sm:px-6 sm:flex-none border border-gray-300 hover:bg-gray-900 hover:text-white"
                     disabled={isSubmitting}
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -2060,7 +2073,7 @@ export default function CreateEventStepwise() {
               </div>
               <Button
                 onClick={handleNext}
-                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 bg-gray-900 hover:bg-gray-800 text-white"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
