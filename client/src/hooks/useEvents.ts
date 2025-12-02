@@ -3,7 +3,7 @@
  * Provides functionality for fetching and managing multiple events
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import * as eventApi from '../lib/event-api';
 import type { EventData } from '../types/event';
 import type { EventFilters } from '../lib/event-api';
@@ -35,15 +35,24 @@ export const useEvents = (initialFilters?: EventFilters): UseEventsReturn => {
   });
 
   const [filters] = useState<EventFilters | undefined>(initialFilters);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const fetchEvents = useCallback(async (newFilters?: EventFilters) => {
     const activeFilters = newFilters || filters;
     
     try {
+      if (!isMountedRef.current) return;
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       const response = await eventApi.getEvents(activeFilters);
 
+      if (!isMountedRef.current) return;
       if (response.success && response.data) {
         const { events, total, limit = 20 } = response.data;
         setState({
@@ -57,6 +66,7 @@ export const useEvents = (initialFilters?: EventFilters): UseEventsReturn => {
         throw new Error('Failed to fetch events');
       }
     } catch (error: unknown) {
+      if (!isMountedRef.current) return;
       const errorMessage =
         error && typeof error === 'object' && 'message' in error
           ? (error.message as string)

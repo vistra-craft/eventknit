@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Scale, AlertTriangle, Users, CreditCard, Shield } from "lucide-react";
+import { Scale, AlertTriangle, Users, CreditCard, Shield } from "lucide-react";
 
 const TermsOfService = () => {
   return (

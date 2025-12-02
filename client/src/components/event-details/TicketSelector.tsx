@@ -45,9 +45,15 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
         {ticketTypes.map((ticket, index) => {
           const quantity = quantities[ticket.name] || 0;
           const isVip = isVIPTicket(ticket.name);
-          const availability = isTicketTypeAvailable(ticket);
+          const availability = isTicketTypeAvailable({
+            availableFrom: ticket.availableFrom || undefined,
+            availableUntil: ticket.availableUntil || undefined,
+          });
           const isAvailable = availability.available;
-          const discounted = hasDiscount(ticket);
+          const discounted = hasDiscount({
+            originalPrice: ticket.originalPrice || undefined,
+            price: ticket.price,
+          });
 
           return (
             <div

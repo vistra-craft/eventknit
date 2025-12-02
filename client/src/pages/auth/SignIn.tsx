@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Calendar, Linkedin, Facebook, Instagram, Twitter, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Calendar, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, facebookAuth } from '@/lib/auth-api';
 import loginImage from '@/assets/login.jpeg';

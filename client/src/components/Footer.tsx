@@ -1,10 +1,7 @@
 import { Facebook, Twitter, Instagram } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
-  const location = useLocation();
-  const isHomePage = location.pathname === '/';
-
   return (
     <footer className="bg-gray-800 text-white">
       <div className="container mx-auto px-6 py-2">

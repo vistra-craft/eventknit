@@ -252,7 +252,7 @@ const EventDetailsPage = () => {
             image: event.image || '',
             createdAt: event.createdAt || new Date().toISOString(),
             updatedAt: event.updatedAt || new Date().toISOString(),
-            registrationDeadline: event.registrationDeadline || undefined,
+            registrationDeadline: (event as { registrationDeadline?: string }).registrationDeadline || undefined,
             requirements: event.requirements || undefined,
             speakers: Array.isArray((event as { speakers?: unknown }).speakers) 
               ? (event as { speakers?: Array<{ id: string; name: string; title: string; bio: string; image?: string }> }).speakers 

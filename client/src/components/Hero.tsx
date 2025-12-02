@@ -1,7 +1,7 @@
 import { Heart, Share2, MapPin, Calendar, Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
 
@@ -12,12 +12,20 @@ export const Hero = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [featuredEvents, setFeaturedEvents] = useState<ActiveFeaturedEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
   
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Fetch featured events on mount
   useEffect(() => {
     const fetchFeaturedEvents = async () => {
       try {
         const events = await getActiveFeaturedEvents();
+        if (!isMountedRef.current) return;
         setFeaturedEvents(events);
         if (events.length > 0) {
           setCurrentEventIndex(0);
@@ -25,9 +33,13 @@ export const Hero = () => {
       } catch (error) {
         console.error("Failed to fetch featured events:", error);
         // Set empty array on error so UI doesn't hang
-        setFeaturedEvents([]);
+        if (isMountedRef.current) {
+          setFeaturedEvents([]);
+        }
       } finally {
-        setLoading(false);
+        if (isMountedRef.current) {
+          setLoading(false);
+        }
       }
     };
 

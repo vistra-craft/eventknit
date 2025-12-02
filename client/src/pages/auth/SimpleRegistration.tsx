@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, ArrowLeft, CheckCircle, Users, Calendar } from 'lucide-react';
+import { ArrowLeft, Users, Calendar } from 'lucide-react';
 import * as authApi from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';

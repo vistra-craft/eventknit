@@ -113,13 +113,25 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
       `${backendEvent.organizer.firstName} ${backendEvent.organizer.lastName}`
     : 'Unknown Organizer';
 
-  // Convert price
+  // Convert price - ensure it's always number | null | undefined
   let priceDisplay: number | undefined;
-  if (backendEvent.price) {
-    priceDisplay =
+  let price: number | null | undefined;
+  if (backendEvent.price != null && backendEvent.price !== '') {
+    const convertedPrice =
       typeof backendEvent.price === 'string'
         ? parseFloat(backendEvent.price)
         : backendEvent.price;
+    // Only set if conversion resulted in a valid number
+    if (!isNaN(convertedPrice) && isFinite(convertedPrice)) {
+      priceDisplay = convertedPrice;
+      price = convertedPrice;
+    } else {
+      price = null;
+    }
+  } else if (backendEvent.price === null) {
+    price = null;
+  } else {
+    price = undefined;
   }
 
   // Format dates
@@ -128,6 +140,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
 
   return {
     ...backendEvent,
+    price,
     // Legacy compatibility fields
     date,
     time,
@@ -143,11 +156,8 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
     fullDescription: backendEvent.fullDescription || null,
     category: backendEvent.category || null,
     venue: backendEvent.venue || null,
-    address: backendEvent.address || null,
-    registrationDeadline: backendEvent.registrationDeadline || null,
     ageRestriction: backendEvent.ageRestriction || null,
     duration: backendEvent.duration || null,
-    onlineLink: backendEvent.onlineLink || null,
     coordinates: backendEvent.coordinates || null,
     // Convert ticket types if needed
     ticketTypes: backendEvent.ticketTypes

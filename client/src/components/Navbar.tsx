@@ -18,14 +18,13 @@ interface NavbarProps {
   onSearch?: (searchTerm: string, location: string) => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onSearch: _onSearch }) => {
+const Navbar: React.FC<NavbarProps> = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const { activeViewRole } = useRoleView();
   const { toast } = useToast();
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-  const [country] = useState<string>('US'); // Default to US
 
   // Force close mobile menu when user logs out
   useEffect(() => {
