@@ -76,7 +76,7 @@ export const Hero = () => {
                   Discover Amazing Events
                 </Badge>
                 <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-foreground">
-                  Find Your Next Unforgettable Experience
+                  Find Your Next Unforgettable Experiences
                 </h1>
                 <p className="text-xl text-muted-foreground">
                   Explore concerts, conferences, workshops, and more. Book tickets instantly and join thousands of attendees at premier events.
