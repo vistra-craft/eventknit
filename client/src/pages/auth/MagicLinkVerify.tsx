@@ -142,7 +142,7 @@ const MagicLinkVerify = () => {
                       />
                       <Button
                         onClick={handleRequestNewLink}
-                        className="bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+                        className="bg-gray-900 hover:bg-gray-800 text-white font-medium"
                       >
                         <Mail className="w-4 h-4 mr-2" />
                         Send Link
@@ -154,10 +154,10 @@ const MagicLinkVerify = () => {
 
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
                     onClick={() => navigate('/auth/signin')}
                   >
-                    Go to Login
+                    Go to login
                   </Button>
                 </div>
               </div>

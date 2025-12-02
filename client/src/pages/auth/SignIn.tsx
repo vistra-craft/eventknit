@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Calendar, Linkedin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { Eye, EyeOff, Calendar, Linkedin, Facebook, Instagram, Twitter, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, facebookAuth } from '@/lib/auth-api';
 import loginImage from '@/assets/login.jpeg';
 
 const SignIn = () => {
+  const navigate = useNavigate();
   const { login, isLoading, error: authError, clearError, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [emailOAuthEmail, setEmailOAuthEmail] = useState('');
@@ -161,23 +162,11 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 py-4 px-6">
-        <div className="max-w-7xl mx-auto">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900">EventKnit</span>
-          </Link>
-        </div>
-      </nav>
-
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex flex-col">
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row min-h-[500px] max-h-[700px]">
+        <div className="w-full max-w-5xl mx-auto">
+          <div className="bg-white rounded-2xl overflow-hidden flex flex-col lg:flex-row min-h-[420px] max-h-[600px]">
           {/* Left Panel - Image with Overlay */}
           <div className="hidden lg:flex lg:w-1/2 relative">
             <img 
@@ -199,12 +188,22 @@ const SignIn = () => {
             <div className="w-full max-w-md mx-auto">
               {/* Logo at top */}
               <div className="mb-6">
-                <Link to="/" className="inline-flex items-center gap-2 mb-4">
-                  <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-2xl font-bold text-gray-900">EventKnit</span>
-                </Link>
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <Link to="/" className="inline-flex items-center gap-2">
+                    <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-2xl font-bold text-gray-900">EventKnit</span>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/')}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Back to home</span>
+                  </button>
+                </div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-1">Log in to your account</h1>
                 <p className="text-sm text-gray-600">Welcome back! Please enter your details.</p>
               </div>
@@ -429,68 +428,6 @@ const SignIn = () => {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white py-3 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Left Side - Copyright and Links */}
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span>© EventKnit {new Date().getFullYear()}</span>
-            <Link 
-              to="/privacy-policy" 
-              className="hover:text-gray-300 transition-colors"
-            >
-              Privacy policy
-            </Link>
-            <Link 
-              to="/terms-of-service" 
-              className="hover:text-gray-300 transition-colors"
-            >
-              Terms & Conditions
-            </Link>
-          </div>
-
-          {/* Right Side - Social Media Icons */}
-          <div className="flex items-center gap-4">
-            <a
-              href="https://linkedin.com/company/eventknit"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-              aria-label="LinkedIn"
-            >
-              <Linkedin className="w-5 h-5" />
-            </a>
-            <a
-              href="https://facebook.com/eventknit"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-              aria-label="Facebook"
-            >
-              <Facebook className="w-5 h-5" />
-            </a>
-            <a
-              href="https://instagram.com/eventknit"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram className="w-5 h-5" />
-            </a>
-            <a
-              href="https://twitter.com/eventknit"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-              aria-label="Twitter"
-            >
-              <Twitter className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

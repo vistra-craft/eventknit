@@ -554,13 +554,23 @@ const OrganizerRegistration = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <button
-            onClick={() => navigate('/')}
-            className="text-2xl font-bold text-eventknit hover:text-eventknit/80 transition-colors mb-4"
-          >
-            EventKnit
-          </button>
+        <div className="mb-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              <span>Back to home</span>
+            </button>
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm font-semibold">EK</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">EventKnit</span>
+            </div>
+          </div>
           
           {/* Progress Indicator */}
           <div className="flex items-center justify-center space-x-4 mb-6">
@@ -569,7 +579,7 @@ const OrganizerRegistration = () => {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     step <= currentStep
-                      ? 'bg-eventknit text-eventknit-foreground'
+                      ? 'bg-gray-900 text-white'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
@@ -578,7 +588,7 @@ const OrganizerRegistration = () => {
                 {step < 3 && (
                   <div
                     className={`w-12 h-0.5 mx-2 ${
-                      step < currentStep ? 'bg-eventknit' : 'bg-muted'
+                      step < currentStep ? 'bg-gray-900' : 'bg-muted'
                     }`}
                   />
                 )}
@@ -606,20 +616,20 @@ const OrganizerRegistration = () => {
               <Button
                 variant="outline"
                 onClick={handleBack}
-                className="px-6"
+                className="px-6 border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
                 disabled={isLoading}
               >
                 Back
               </Button>
               <Button
                 onClick={handleNext}
-                className="px-6 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+                className="px-6 bg-gray-900 hover:bg-gray-800 text-white font-medium"
                 disabled={isLoading}
               >
                 {isLoading
                   ? 'Registering...'
                   : currentStep === 3
-                  ? 'Complete Registration'
+                  ? 'Complete registration'
                   : 'Continue'}
               </Button>
             </div>

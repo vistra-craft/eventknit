@@ -20,96 +20,108 @@ const UserTypeSelection = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex items-center justify-center p-4 relative">
       <div className="w-full max-w-4xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
+        <div className="mb-6">
+          <div className="flex items-center justify-between gap-4 mb-4">
             <button
-              onClick={() => navigate('/')}
-              className="text-2xl font-bold text-eventknit hover:text-eventknit/80 transition-colors"
+              type="button"
+              onClick={() => navigate('/auth/email-entry')}
+              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
             >
-              EventKnit
+              <ArrowLeft className="w-3 h-3" />
+              <span>Back to email</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2"
+            >
+              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                <span className="text-white text-sm font-semibold">EK</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">EventKnit</span>
             </button>
           </div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            Choose your role
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            How would you like to use EventKnit?
-          </p>
-          {email && (
-            <div className="mt-4 inline-flex items-center px-4 py-2 bg-muted rounded-lg">
-              <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{email}</span>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground mb-1">
+                Choose how you’ll use EventKnit
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Pick the option that best matches what you want to do on the platform.
+              </p>
             </div>
-          )}
+            {email && (
+              <div className="mt-3 sm:mt-0 inline-flex items-center px-3 py-1.5 bg-white/80 rounded-full shadow-sm border border-border text-xs text-muted-foreground">
+                <Mail className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+                <span className="truncate max-w-[200px]">{email}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* User Type Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Attendee Card */}
-          <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-eventknit/20">
-            <CardHeader className="text-center pb-4">
-              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Users className="w-10 h-10 text-eventknit" />
+          <Card
+            className="group border-0 bg-white rounded-2xl shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            onClick={() => handleUserTypeSelection('attendee')}
+          >
+            <CardHeader className="pb-3">
+              <div className="w-11 h-11 bg-gray-900/5 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-900/10 transition-colors">
+                <Users className="w-6 h-6 text-gray-900" />
               </div>
               <CardTitle className="text-xl font-semibold text-foreground">
-                Find an experience
+                Attend events
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-muted-foreground mb-6">
-                Discover amazing events, connect with like-minded people, and create unforgettable memories.
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Discover concerts, conferences, meetups, and more. Save favorites, get tickets,
+                and keep everything in one place.
               </p>
               <Button
-                onClick={() => handleUserTypeSelection('attendee')}
-                className="w-full bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground h-12"
+                type="button"
+                className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium"
               >
-                Tell us what you love
+                Continue as attendee
               </Button>
             </CardContent>
           </Card>
 
           {/* Organizer Card */}
-          <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-eventknit/20">
-            <CardHeader className="text-center pb-4">
-              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Calendar className="w-10 h-10 text-eventknit" />
+          <Card
+            className="group border-0 bg-white rounded-2xl shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+            onClick={() => handleUserTypeSelection('organizer')}
+          >
+            <CardHeader className="pb-3">
+              <div className="w-11 h-11 bg-gray-900/5 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-900/10 transition-colors">
+                <Calendar className="w-6 h-6 text-gray-900" />
               </div>
               <CardTitle className="text-xl font-semibold text-foreground">
-                Organize an event
+                Organize events
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-muted-foreground mb-6">
-                Create, manage, and promote your events with our comprehensive event management tools.
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                Create and manage events, track ticket sales, and understand your audience with
+                simple, powerful tools.
               </p>
               <Button
-                onClick={() => handleUserTypeSelection('organizer')}
-                className="w-full bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground h-12"
+                type="button"
+                className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium"
               >
-                Plan your best event ever
+                Continue as organizer
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Back Button */}
-        <div className="mt-8 text-center">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/auth/email-entry')}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to email entry
-          </Button>
-        </div>
-
         {/* Decorative Elements */}
-        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-eventknit/5 to-transparent rounded-full blur-xl"></div>
-        <div className="absolute bottom-20 right-10 w-24 h-24 bg-gradient-to-br from-eventknit/5 to-transparent rounded-full blur-xl"></div>
+        <div className="pointer-events-none absolute top-10 left-6 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-xl" />
+        <div className="pointer-events-none absolute bottom-10 right-6 w-24 h-24 bg-gradient-to-br from-gray-900/5 to-transparent rounded-full blur-xl" />
       </div>
     </div>
   );

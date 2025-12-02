@@ -136,13 +136,8 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
   }, [fetchedEvents, filters]);
 
   return (
-    <section className="py-16 bg-background relative overflow-hidden" data-section="events">
-      {/* Background decorative elements */}
-      <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full transform -translate-x-16 -translate-y-16"></div>
-      <div className="absolute top-20 right-0 w-24 h-24 bg-primary/5 rounded-full transform translate-x-12 -translate-y-12"></div>
-      <div className="absolute bottom-0 left-1/4 w-20 h-20 bg-primary/5 rounded-full transform -translate-y-10"></div>
-      
-      <div className="container mx-auto px-6 relative">
+    <section className="py-16 bg-background" data-section="events">
+      <div className="container mx-auto px-6">
 
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -209,18 +204,7 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
           )}
         </div>
 
-        <div className="text-center mt-12">
-          <div className="text-sm text-muted-foreground mb-4">
-            Showing {filteredEvents.length} events
-          </div>
-          <Button 
-            variant="outline" 
-            className="hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            View All Events
-          </Button>
-        </div>
+        {/* Pagination / view-all section intentionally removed for infinite scroll experience */}
       </div>
     </section>
   );

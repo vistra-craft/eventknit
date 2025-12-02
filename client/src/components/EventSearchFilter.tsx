@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, MapPin, Calendar, DollarSign, Monitor, X } from "lucide-react";
+import { Search, MapPin, Calendar, DollarSign, Monitor, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -61,6 +61,7 @@ const eventTypes = [
 
 export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilterProps) => {
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
+  const [showFilters, setShowFilters] = useState(false);
 
   // Debounce search input
   useEffect(() => {
@@ -103,162 +104,141 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
     (filters.eventType && filters.eventType !== 'all');
 
   return (
-    <section className="py-8 bg-muted/30 border-y border-border">
+    <section className="py-8 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
-        <Card className="p-6 shadow-lg">
-          <div className="space-y-6">
-            {/* Title */}
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                Find Your Next Event
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Search and filter events to find exactly what you're looking for
-              </p>
+        <div className="mb-3">
+          <p className="text-xl font-bold text-foreground">
+            Discover events around you
+          </p>
+        </div>
+        <Card className="border-0 bg-white/90 shadow-none rounded-2xl px-4 py-4 md:px-6 md:py-5">
+          <div className="flex flex-col gap-4">
+            {/* Top row: search + filter icon */}
+            <div className="w-full flex items-center gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search events…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-10 text-sm rounded-full border-border"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFilters((prev) => !prev)}
+                className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-white text-muted-foreground hover:bg-gray-900 hover:text-white transition-colors"
+              >
+                <Filter className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Search Bar - Full Width */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <Input
-                type="text"
-                placeholder="Search events by name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 text-base"
-              />
-            </div>
-
-            {/* Filter Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Category */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <span className="text-primary">📂</span> Category
-                </label>
-                <Select 
-                  value={filters.category || "all"} 
-                  onValueChange={(value) => handleFilterChange('category', value as SearchFilters['category'])}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Date Range */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" /> Date
-                </label>
-                <Select 
-                  value={filters.dateRange || "anytime"} 
-                  onValueChange={(value) => handleFilterChange('dateRange', value as SearchFilters['dateRange'])}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Anytime" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dateRanges.map((range) => (
-                      <SelectItem key={range.value} value={range.value}>
-                        {range.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Price Range */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-primary" /> Price
-                </label>
-                <Select 
-                  value={filters.priceRange || "any"} 
-                  onValueChange={(value) => handleFilterChange('priceRange', value as SearchFilters['priceRange'])}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Any Price" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {priceRanges.map((range) => (
-                      <SelectItem key={range.value} value={range.value}>
-                        {range.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Event Type */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-primary" /> Format
-                </label>
-                <Select 
-                  value={filters.eventType || "all"} 
-                  onValueChange={(value) => handleFilterChange('eventType', value as SearchFilters['eventType'])}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {eventTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Location - Secondary Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" /> Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    type="text"
-                    placeholder="City or venue..."
-                    value={filters.location || ""}
-                    onChange={(e) => handleFilterChange('location', e.target.value)}
-                    className="pl-10 h-11"
-                  />
-                </div>
-              </div>
-
-              {/* Clear Filters Button */}
-              {hasActiveFilters && (
-                <div className="flex items-end">
-                  <Button
-                    variant="outline"
-                    onClick={handleClearFilters}
-                    className="w-full h-11 gap-2"
+            {/* Compact filter row */}
+            {showFilters && (
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
+                  {/* Category */}
+                  <Select
+                    value={filters.category || "all"}
+                    onValueChange={(value) =>
+                      handleFilterChange("category", value as SearchFilters["category"])
+                    }
                   >
-                    <X className="w-4 h-4" />
-                    Clear All Filters
-                  </Button>
-                </div>
-              )}
-            </div>
+                    <SelectTrigger className="h-9 text-xs rounded-full border-border">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-            {/* Active Filters Count */}
-            {hasActiveFilters && (
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  {Object.keys(filters).filter(k => filters[k as keyof SearchFilters]).length} filter(s) active
-                </p>
+                  {/* Date Range */}
+                  <Select
+                    value={filters.dateRange || "anytime"}
+                    onValueChange={(value) =>
+                      handleFilterChange("dateRange", value as SearchFilters["dateRange"])
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-xs rounded-full border-border">
+                      <SelectValue placeholder="Date" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dateRanges.map((range) => (
+                        <SelectItem key={range.value} value={range.value}>
+                          {range.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Price Range */}
+                  <Select
+                    value={filters.priceRange || "any"}
+                    onValueChange={(value) =>
+                      handleFilterChange("priceRange", value as SearchFilters["priceRange"])
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-xs rounded-full border-border">
+                      <SelectValue placeholder="Price" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priceRanges.map((range) => (
+                        <SelectItem key={range.value} value={range.value}>
+                          {range.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Event Type */}
+                  <Select
+                    value={filters.eventType || "all"}
+                    onValueChange={(value) =>
+                      handleFilterChange("eventType", value as SearchFilters["eventType"])
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-xs rounded-full border-border">
+                      <SelectValue placeholder="Format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eventTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Location + Clear */}
+                <div className="flex flex-col gap-2 md:w-80">
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      type="text"
+                      placeholder="City or venue"
+                      value={filters.location || ""}
+                      onChange={(e) => handleFilterChange("location", e.target.value)}
+                      className="pl-9 h-9 text-xs rounded-full border-border"
+                    />
+                  </div>
+
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={handleClearFilters}
+                      className="inline-flex items-center justify-start gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3 h-3" />
+                      <span>Clear all filters</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

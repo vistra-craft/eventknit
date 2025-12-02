@@ -22,30 +22,40 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10">
-      <div className="container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex flex-col">
+      <div className="container mx-auto px-6 py-8 flex-1 flex items-center justify-center">
+        <div className="w-full max-w-4xl">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Left Panel - Branding */}
             <div className="hidden lg:block">
               {/* Background Pattern */}
               <div className="relative">
                 <div className="absolute top-20 left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-20 right-20 w-48 h-48 bg-eventknit/10 rounded-full blur-2xl"></div>
-                <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-accent-electric/10 rounded-full blur-xl"></div>
+                <div className="absolute bottom-20 right-20 w-48 h-48 bg-black/5 rounded-full blur-2xl"></div>
+                <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-primary/10 rounded-full blur-xl"></div>
                 
                 <div className="relative z-10 flex flex-col justify-between h-full">
                   {/* Logo */}
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-eventknit rounded-lg flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-eventknit-foreground" />
+                  <div className="flex items-center justify-between gap-3 mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                        <Calendar className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h1 className="text-2xl font-bold text-gray-900">EventKnit</h1>
+                        <span className="text-sm text-muted-foreground">
+                          {import.meta.env.VITE_APP_VERSION || '1.0.0 Development'}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h1 className="text-2xl font-bold text-eventknit">EventKnit</h1>
-                      <span className="text-sm text-muted-foreground">
-                        {import.meta.env.VITE_APP_VERSION || '1.0.0 Development'}
-                      </span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/')}
+                      className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+                    >
+                      <ArrowLeft className="w-3 h-3" />
+                      <span>Back to home</span>
+                    </button>
                   </div>
 
                   {/* Description */}
@@ -63,10 +73,10 @@ const ForgotPassword = () => {
 
             {/* Right Panel - Forgot Password Form */}
             <div className="flex items-center justify-center">
-              <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Forgot password?</h1>
-            <p className="text-muted-foreground">
+              <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-none">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-foreground mb-2">Forgot password?</h1>
+            <p className="text-sm text-muted-foreground">
               {isSubmitted 
                 ? "Check your email for reset instructions" 
                 : "Enter your email address and we'll send you a reset link"
@@ -77,7 +87,7 @@ const ForgotPassword = () => {
           {!isSubmitted ? (
             <>
               {/* Forgot Password Form */}
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -94,18 +104,18 @@ const ForgotPassword = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-12 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground">
+                <Button type="submit" className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium">
                   Send Reset Link
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
+              <div className="mt-5 text-center">
                 <button
                   onClick={handleBackToSignIn}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 mx-auto"
+                  className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to sign in
+                  <ArrowLeft className="w-3 h-3" />
+                  <span>Back to sign in</span>
                 </button>
               </div>
             </>
@@ -113,8 +123,8 @@ const ForgotPassword = () => {
             <>
               {/* Success State */}
               <div className="text-center space-y-6">
-                <div className="w-16 h-16 bg-eventknit/10 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-8 h-8 text-eventknit" />
+                <div className="w-16 h-16 bg-gray-900/10 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-8 h-8 text-gray-900" />
                 </div>
                 
                 <div className="space-y-2">
@@ -129,7 +139,7 @@ const ForgotPassword = () => {
                     Didn't receive the email? Check your spam folder or{' '}
                     <button
                       onClick={() => setIsSubmitted(false)}
-                      className="text-eventknit hover:text-eventknit/80 transition-colors"
+                      className="text-gray-900 hover:text-gray-700 transition-colors"
                     >
                       try again
                     </button>
@@ -138,7 +148,7 @@ const ForgotPassword = () => {
                   <Button
                     onClick={handleBackToSignIn}
                     variant="outline"
-                    className="w-full h-12"
+                    className="w-full h-11 border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
                   >
                     Back to sign in
                   </Button>
@@ -147,10 +157,10 @@ const ForgotPassword = () => {
             </>
           )}
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <p className="text-xs text-muted-foreground">
               Need help? Contact our{' '}
-              <Link to="/support" className="text-eventknit hover:text-eventknit/80 transition-colors">
+              <Link to="/support" className="text-gray-900 hover:text-gray-700 hover:underline transition-colors">
                 support team
               </Link>
             </p>

@@ -159,90 +159,62 @@ const SimpleRegistration = () => {
     }
   };
 
-  const getStepTitle = () => {
-    switch (step) {
-      case 'role':
-        return 'Join EventKnit';
-      case 'email':
-        return 'Enter Your Email';
-      case 'code':
-        return 'Verify Your Email';
-      default:
-        return 'Join EventKnit';
-    }
-  };
-
-  const getStepDescription = () => {
-    switch (step) {
-      case 'role':
-        return 'Choose how you want to use EventKnit';
-      case 'email':
-        return 'Enter your email to get started';
-      case 'code':
-        return 'Enter the 6-digit code sent to your email';
-      default:
-        return '';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <button
-              onClick={() => navigate('/')}
-              className="text-2xl font-bold text-eventknit hover:text-eventknit/80 transition-colors"
-            >
-              EventKnit
-            </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            <span>Back to home</span>
+          </button>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-semibold">EK</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">EventKnit</span>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            {getStepTitle()}
-          </h1>
-          <p className="text-muted-foreground">
-            {getStepDescription()}
-          </p>
         </div>
 
         {/* Registration Form */}
-        <Card className="border-2 hover:border-eventknit/20 transition-all duration-300">
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4">
-              {step === 'role' ? (
-                <Users className="w-8 h-8 text-eventknit" />
-              ) : step === 'email' ? (
-                <Mail className="w-8 h-8 text-eventknit" />
-              ) : (
-                <CheckCircle className="w-8 h-8 text-eventknit" />
-              )}
-            </div>
-            <CardTitle className="text-xl font-semibold text-foreground">
-              {step === 'role' 
-                ? "I want to..." 
+        <Card className="border-0 bg-white rounded-2xl shadow-none">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-2xl font-bold text-foreground">
+              {step === 'role'
+                ? 'Join EventKnit'
                 : step === 'email'
-                ? "Let's get started"
-                : 'Enter verification code'}
+                ? 'Enter your email'
+                : 'Verify your email'}
             </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {step === 'role'
+                ? 'Choose how you want to use EventKnit. You can always switch later.'
+                : step === 'email'
+                ? 'We’ll send a verification code to confirm your account.'
+                : 'Enter the 6-digit code we sent and create your password.'}
+            </p>
           </CardHeader>
           <CardContent>
             {step === 'role' ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ATTENDEE')}
-                    className="p-6 border-2 border-border rounded-lg hover:border-eventknit hover:bg-eventknit/5 transition-all duration-200 text-left group"
+                    className="p-5 rounded-2xl bg-white hover:bg-muted/40 transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-eventknit/10 rounded-lg flex items-center justify-center group-hover:bg-eventknit/20 transition-colors">
-                        <Calendar className="w-6 h-6 text-eventknit" />
+                      <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-gray-900" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">Attend Events</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Discover and register for events near you
+                        <h3 className="font-semibold text-base mb-1">Attend events</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Discover and register for events near you, and keep tickets in one place.
                         </p>
                       </div>
                     </div>
@@ -251,16 +223,16 @@ const SimpleRegistration = () => {
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ORGANIZER')}
-                    className="p-6 border-2 border-border rounded-lg hover:border-eventknit hover:bg-eventknit/5 transition-all duration-200 text-left group"
+                    className="p-5 rounded-2xl bg-white hover:bg-muted/40 transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-eventknit/10 rounded-lg flex items-center justify-center group-hover:bg-eventknit/20 transition-colors">
-                        <Users className="w-6 h-6 text-eventknit" />
+                      <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-gray-900" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">Organize Events</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Create and manage your own events
+                        <h3 className="font-semibold text-base mb-1">Organize events</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Create and manage your own events, and track ticket sales with ease.
                         </p>
                       </div>
                     </div>
@@ -294,7 +266,7 @@ const SimpleRegistration = () => {
                 <div className="space-y-3">
                   <Button
                     type="submit"
-                    className="w-full bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground h-12"
+                    className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Sending...' : 'Continue'}
@@ -303,7 +275,7 @@ const SimpleRegistration = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="w-full"
+                    className="w-full h-9 text-sm inline-flex items-center justify-center gap-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
                     onClick={() => {
                       setStep('role');
                       setEmail('');
@@ -312,7 +284,8 @@ const SimpleRegistration = () => {
                     }}
                     disabled={isLoading}
                   >
-                    Change Role
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Change role</span>
                   </Button>
                 </div>
               </form>
@@ -393,7 +366,7 @@ const SimpleRegistration = () => {
                 <div className="space-y-3">
                   <Button
                     type="submit"
-                    className="w-full bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground h-12"
+                    className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium"
                     disabled={isLoading || code.length !== 6 || !password || !confirmPassword}
                   >
                     {isLoading ? 'Verifying...' : 'Verify & Sign Up'}
@@ -402,17 +375,17 @@ const SimpleRegistration = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full h-12"
+                    className="w-full h-11 text-sm border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
                     onClick={handleResendCode}
                     disabled={isLoading}
                   >
-                    Resend Code
+                    Resend code
                   </Button>
 
                   <Button
                     type="button"
                     variant="ghost"
-                    className="w-full"
+                    className="w-full h-9 inline-flex items-center justify-center gap-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors text-sm"
                     onClick={() => {
                       setStep('email');
                       setCode('');
@@ -423,7 +396,8 @@ const SimpleRegistration = () => {
                     }}
                     disabled={isLoading}
                   >
-                    Change Email
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Change email</span>
                   </Button>
                 </div>
               </form>
@@ -434,7 +408,7 @@ const SimpleRegistration = () => {
                 Already have an account?{' '}
                 <button
                   onClick={() => navigate('/auth/signin')}
-                  className="text-eventknit hover:text-eventknit/80 font-medium"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-gray-900 hover:bg-gray-900 hover:text-white transition-colors font-medium"
                 >
                   Sign in
                 </button>
@@ -456,10 +430,10 @@ const SimpleRegistration = () => {
                 setSuccess('');
               }
             }}
-            className="text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            {step === 'role' ? 'Back to home' : 'Back'}
+            <ArrowLeft className="w-3 h-3" />
+            <span>{step === 'role' ? 'Back to home' : 'Back'}</span>
           </Button>
         </div>
       </div>

@@ -9,35 +9,44 @@ const PrivacyPolicy = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 py-20">
+      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
-                <Shield className="w-8 h-8 text-primary" />
+          <div className="max-w-4xl mx-auto">
+            <div className="rounded-2xl bg-white px-6 py-8 md:px-10 md:py-10">
+              <div className="flex flex-col items-center gap-6 text-center">
+                <div className="space-y-3">
+                  <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                    EventKnit Privacy Policy
+                  </h1>
+                  <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                    This page explains how EventKnit collects, uses, and protects your personal
+                    information when you use our platform.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span>Last updated • January 15, 2025</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span>Applies to all EventKnit users</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Privacy Policy
-            </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              Your privacy is important to us. This policy explains how EventKnit collects, 
-              uses, and protects your personal information.
-            </p>
-            <div className="mt-6 text-sm text-muted-foreground">
-              Last updated: January 15, 2025
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-16">
+      <div className="container mx-auto px-6 pt-0 pb-16">
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Introduction */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Eye className="w-5 h-5 text-primary" />
                 Introduction
               </CardTitle>
@@ -57,16 +66,16 @@ const PrivacyPolicy = () => {
           </Card>
 
           {/* Information We Collect */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Database className="w-5 h-5 text-primary" />
                 Information We Collect
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-3">Personal Information</h3>
+                <h3 className="text-base font-semibold mb-3">Personal Information</h3>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
@@ -88,7 +97,7 @@ const PrivacyPolicy = () => {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3">Usage Information</h3>
+                <h3 className="text-base font-semibold mb-3">Usage Information</h3>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
@@ -112,9 +121,9 @@ const PrivacyPolicy = () => {
           </Card>
 
           {/* How We Use Your Information */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Lock className="w-5 h-5 text-primary" />
                 How We Use Your Information
               </CardTitle>
@@ -169,9 +178,9 @@ const PrivacyPolicy = () => {
           </Card>
 
           {/* Information Sharing */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Information Sharing</CardTitle>
+              <CardTitle className="text-xl">Information Sharing</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
@@ -179,13 +188,13 @@ const PrivacyPolicy = () => {
                 We may share your information only in the following circumstances:
               </p>
               <div className="space-y-3">
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-primary/5 rounded-lg">
                   <h4 className="font-semibold mb-2">Event Organizers</h4>
                   <p className="text-sm text-muted-foreground">
                     We share necessary information with event organizers to facilitate your event participation.
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-primary/5 rounded-lg">
                   <h4 className="font-semibold mb-2">Service Providers</h4>
                   <p className="text-sm text-muted-foreground">
                     We work with trusted third-party providers for payment processing, email delivery, and analytics.
@@ -202,9 +211,9 @@ const PrivacyPolicy = () => {
           </Card>
 
           {/* Data Security */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Shield className="w-5 h-5 text-primary" />
                 Data Security
               </CardTitle>
@@ -238,9 +247,9 @@ const PrivacyPolicy = () => {
           </Card>
 
           {/* Your Rights */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Your Rights</CardTitle>
+              <CardTitle className="text-xl">Your Rights</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
@@ -292,9 +301,9 @@ const PrivacyPolicy = () => {
           </Card>
 
           {/* Contact Information */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Mail className="w-5 h-5 text-primary" />
                 Contact Us
               </CardTitle>
@@ -336,9 +345,9 @@ const PrivacyPolicy = () => {
           </Card>
 
           {/* Policy Updates */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Policy Updates</CardTitle>
+              <CardTitle className="text-xl">Policy Updates</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">

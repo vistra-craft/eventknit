@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Menu, X, Globe } from 'lucide-react';
+import { Calendar, Menu, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import SearchBar from "./Searchbar";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleView } from "@/contexts/RoleViewContext";
@@ -19,7 +18,7 @@ interface NavbarProps {
   onSearch?: (searchTerm: string, location: string) => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onSearch }) => {
+const Navbar: React.FC<NavbarProps> = ({ onSearch: _onSearch }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const { activeViewRole } = useRoleView();
@@ -202,91 +201,72 @@ const Navbar: React.FC<NavbarProps> = ({ onSearch }) => {
 
   return (
     <>
-      {/* Utility Bar - Simplified */}
-      <div className="bg-eventknit h-8 w-full">
-        <div className="container mx-auto px-6 h-full flex items-center justify-between text-eventknit-foreground text-sm font-medium">
-          <div className="flex items-center space-x-2">
-            <Globe className="w-4 h-4" />
-            <span>|</span>
-            <span>{country}</span>
-          </div>
-          
-          <div className="flex items-center space-x-6">
-            {!isAuthenticated && (
-              <>
-                <button
-                  onClick={() => navigate('/auth/signin')}
-                  className="hover:text-accent-electric transition-colors duration-200 cursor-pointer"
-                >
-                  Login
-                </button>
-                <span>|</span>
-                <button 
-                  onClick={() => navigate('/auth/signup')}
-                  className="hover:text-accent-electric transition-colors duration-200 cursor-pointer"
-                >
-                  Sign Up
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Main Navbar */}
       <nav
-        className={`fixed left-0 right-0 z-[9999] transition-all duration-300 ease-in-out ${
-          isScrolled
-            ? "top-0 bg-background/95 backdrop-blur-xl shadow-lg border-b border-border"
-            : "top-8 bg-glass-bg backdrop-blur-xl border-b border-glass-border"
+        className={`fixed left-0 right-0 top-0 z-[9999] bg-background/95 backdrop-blur-xl border-b border-border transition-all duration-300 ease-in-out ${
+          isScrolled ? "shadow-md" : "shadow-none"
         }`}
       >
         <div className="container mx-auto px-6">
-          <div className="flex items-center h-16 gap-6">
+          <div className="flex items-center h-16 gap-6 justify-between">
             
             {/* Logo */}
             <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
-              <div className="w-8 h-8 bg-eventknit rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-eventknit-foreground" />
+              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-eventknit">EventKnit</span>
+              <span className="text-xl font-bold text-foreground">EventKnit</span>
             </div>
 
-            {/* Search Bar - Full Width */}
-            <div className="hidden lg:flex flex-1">
-              <SearchBar onSearch={onSearch} />
-            </div>
-
-            {/* Desktop Navigation & Actions */}
-            <div className="hidden md:flex items-center space-x-6 flex-shrink-0">
-              {/* Navigation */}
-              <div className="flex items-center space-x-6">
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-8">
+              <div className="flex items-center gap-2">
                 {navItems.map((item) => {
                   return (
                     <button
                       key={item.name}
                       onClick={() => handleNavigation(item)}
-                      className={`text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200`}
+                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-gray-900 hover:text-white transition-colors duration-200"
                     >
                       {item.name}
                     </button>
                   );
                 })}
               </div>
-              
-              {/* Actions */}
-              <button
-                onClick={handleCreateEvent}
-                className="text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200"
-              >
-                Create Event
-              </button>
 
-              {/* Profile Dropdown - Only show when authenticated and user exists */}
-              {/* Rely on auth context state (isAuthenticated, user) for immediate updates */}
-              {isAuthenticated && user ? (
-                <ProfileDropdown key={`profile-${user.id}`} />
-              ) : null}
+              {/* Desktop Actions */}
+              <div className="flex items-center gap-4">
+                {!isAuthenticated && (
+                  <>
+                    <button
+                      onClick={() => navigate('/auth/signin')}
+                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-gray-900 hover:text-white transition-colors duration-200"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => navigate('/auth/signup')}
+                      className="text-sm font-medium text-white bg-gray-900 px-3 py-1.5 rounded-md hover:bg-gray-800 transition-colors duration-200"
+                    >
+                      Sign Up
+                    </button>
+                  </>
+                )}
+
+                {isAuthenticated && (
+                  <button
+                    onClick={handleCreateEvent}
+                    className="text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200"
+                  >
+                    Create Event
+                  </button>
+                )}
+
+                {/* Profile Dropdown - Only show when authenticated and user exists */}
+                {isAuthenticated && user ? (
+                  <ProfileDropdown key={`profile-${user.id}`} />
+                ) : null}
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -302,11 +282,6 @@ const Navbar: React.FC<NavbarProps> = ({ onSearch }) => {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-background/95 backdrop-blur-xl border-t border-border shadow-lg">
             <div className="container mx-auto px-6 py-4">
-              {/* Mobile Search Bar */}
-              <div className="mb-4">
-                <SearchBar />
-              </div>
-              
               {navItems.map((item) => (
                 <button
                   key={item.name}

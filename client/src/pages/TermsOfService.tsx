@@ -9,35 +9,44 @@ const TermsOfService = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 py-20">
+      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
-                <FileText className="w-8 h-8 text-primary" />
+          <div className="max-w-4xl mx-auto">
+            <div className="rounded-2xl bg-white px-6 py-8 md:px-10 md:py-10">
+              <div className="flex flex-col items-center gap-6 text-center">
+                <div className="space-y-3">
+                  <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                    EventKnit Terms of Service
+                  </h1>
+                  <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                    These terms explain the conditions for using EventKnit. By accessing or using our
+                    platform, you agree to the rules outlined on this page.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span>Last updated • January 15, 2025</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span>Applies to organizers and attendees</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Terms of Service
-            </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              Please read these terms carefully before using EventKnit. By using our services, 
-              you agree to be bound by these terms and conditions.
-            </p>
-            <div className="mt-6 text-sm text-muted-foreground">
-              Last updated: January 15, 2025
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-16">
+      <div className="container mx-auto px-6 pt-0 pb-16">
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Acceptance of Terms */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Scale className="w-5 h-5 text-primary" />
                 Acceptance of Terms
               </CardTitle>
@@ -58,9 +67,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Service Description */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Users className="w-5 h-5 text-primary" />
                 Service Description
               </CardTitle>
@@ -118,16 +127,16 @@ const TermsOfService = () => {
           </Card>
 
           {/* User Responsibilities */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <AlertTriangle className="w-5 h-5 text-primary" />
                 User Responsibilities
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-3">Account Security</h3>
+                <h3 className="text-base font-semibold mb-3">Account Security</h3>
                 <ul className="space-y-2 text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
@@ -149,7 +158,7 @@ const TermsOfService = () => {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3">Prohibited Activities</h3>
+                <h3 className="text-base font-semibold mb-3">Prohibited Activities</h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <h4 className="font-semibold">Content Restrictions</h4>
@@ -175,9 +184,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Payment Terms */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <CreditCard className="w-5 h-5 text-primary" />
                 Payment Terms
               </CardTitle>
@@ -188,14 +197,14 @@ const TermsOfService = () => {
                 By making a purchase, you agree to the following terms:
               </p>
               <div className="space-y-4">
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-primary/5 rounded-lg">
                   <h4 className="font-semibold mb-2">Payment Processing</h4>
                   <p className="text-sm text-muted-foreground">
                     Payments are processed immediately upon purchase. We accept major credit cards, 
                     debit cards, and other payment methods as displayed during checkout.
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-primary/5 rounded-lg">
                   <h4 className="font-semibold mb-2">Refund Policy</h4>
                   <p className="text-sm text-muted-foreground">
                     Refunds are subject to the individual event organizer's refund policy. 
@@ -203,7 +212,7 @@ const TermsOfService = () => {
                     event organizer directly for refund requests.
                   </p>
                 </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
+                <div className="p-4 bg-primary/5 rounded-lg">
                   <h4 className="font-semibold mb-2">Service Fees</h4>
                   <p className="text-sm text-muted-foreground">
                     EventKnit may charge service fees for ticket processing and platform usage. 
@@ -215,9 +224,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Intellectual Property */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Intellectual Property</CardTitle>
+              <CardTitle className="text-xl">Intellectual Property</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
@@ -270,9 +279,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Limitation of Liability */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3">
+              <CardTitle className="flex items-center gap-3 text-xl">
                 <Shield className="w-5 h-5 text-primary" />
                 Limitation of Liability
               </CardTitle>
@@ -310,9 +319,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Termination */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Termination</CardTitle>
+              <CardTitle className="text-xl">Termination</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
@@ -358,9 +367,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Governing Law */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Governing Law</CardTitle>
+              <CardTitle className="text-xl">Governing Law</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
@@ -378,9 +387,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Contact Information */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
+              <CardTitle className="text-xl">Contact Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
@@ -412,9 +421,9 @@ const TermsOfService = () => {
           </Card>
 
           {/* Changes to Terms */}
-          <Card>
+          <Card className="border-0 bg-white">
             <CardHeader>
-              <CardTitle>Changes to Terms</CardTitle>
+              <CardTitle className="text-xl">Changes to Terms</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">

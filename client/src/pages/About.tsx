@@ -164,14 +164,26 @@ const About = () => {
         <div className="absolute bottom-0 left-0 right-0 p-6">
           <div className="container mx-auto">
             <div className="max-w-4xl">
-              <h1 className={`text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <h1
+                className={`text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight transition-all duration-1000 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                }`}
+              >
                 About <span className="text-eventknit">EventKnit</span>
               </h1>
-              <p className={`text-xl md:text-2xl text-foreground/90 leading-relaxed max-w-3xl transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                We're passionate about creating extraordinary experiences that bring people together, 
+              <p
+                className={`text-xl md:text-2xl text-foreground/90 leading-relaxed max-w-3xl transition-all duration-1000 delay-300 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                }`}
+              >
+                We're passionate about creating extraordinary experiences that bring people together,
                 inspire connections, and leave lasting memories.
               </p>
-              <div className={`mt-8 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+              <div
+                className={`mt-8 transition-all duration-1000 delay-500 ${
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                }`}
+              >
                 <Button size="lg" className="h-12 px-8 bg-primary hover:bg-primary/90">
                   <Play className="w-5 h-5 mr-2" />
                   Watch Our Story
@@ -188,11 +200,11 @@ const About = () => {
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/5 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-primary/5 to-transparent"></div>
         
-        <div className="relative container mx-auto px-6 py-20">
+        <div className="relative container mx-auto px-6 pt-16 pb-20">
         {/* Interactive Stats Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
           {stats.map((stat, index) => (
-            <Card key={index} className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-2 group">
+            <Card key={index} className="border-0 bg-white text-center hover:shadow-md transition-all duration-300 hover:-translate-y-2 group">
               <CardContent className="p-6">
                 <div className="text-primary mb-3 flex justify-center group-hover:scale-110 transition-transform duration-300">
                   {stat.icon}
@@ -211,8 +223,8 @@ const About = () => {
         {/* Interactive Tabbed Content Section */}
         <div className="mb-20">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Our Journey</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            <h2 className="text-2xl font-bold mb-4">Our Journey</h2>
+            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
               Discover what drives us and how we're transforming the event industry
             </p>
             
@@ -242,13 +254,13 @@ const About = () => {
             <div className="space-y-6">
               {activeTab === 0 && (
                 <div className="space-y-6">
-                  <h3 className="text-3xl font-bold">Our Story</h3>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <h3 className="text-xl font-semibold">Our Story</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     Founded in 2018 by a team of passionate event enthusiasts, EventKnit began as a simple idea: 
                     make extraordinary experiences accessible to everyone. What started as a small platform has grown 
                     into a global community connecting millions of people through shared experiences.
                   </p>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     We've learned that the best events aren't just about entertainment—they're about creating 
                     lasting memories, building communities, and bringing people together in meaningful ways.
                   </p>
@@ -267,13 +279,13 @@ const About = () => {
               
               {activeTab === 1 && (
                 <div className="space-y-6">
-                  <h3 className="text-3xl font-bold">Our Mission</h3>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <h3 className="text-xl font-semibold">Our Mission</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     At EventKnit, we believe that life's most meaningful moments happen when people come together. 
                     Our mission is to democratize access to extraordinary experiences, making it easier than ever 
                     to discover, attend, and create events that matter.
                   </p>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     We're building bridges between event organizers and attendees, fostering communities, 
                     and turning ordinary moments into extraordinary memories through technology and innovation.
                   </p>
@@ -296,18 +308,18 @@ const About = () => {
               
               {activeTab === 2 && (
                 <div className="space-y-6">
-                  <h3 className="text-3xl font-bold">Our Impact</h3>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <h3 className="text-xl font-semibold">Our Impact</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     Since our launch, we've facilitated over 2,500 events across 50+ cities worldwide, 
                     creating unforgettable experiences for more than 500,000 attendees. Our platform has 
                     become a catalyst for community building and cultural exchange.
                   </p>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <p className="text-base text-muted-foreground leading-relaxed">
                     We're proud to support local businesses, artists, and organizers while providing 
                     attendees with seamless, secure, and memorable event experiences.
                   </p>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-muted/30 rounded-lg">
+                    <div className="text-center p-4 bg-primary/5 rounded-lg">
                       <div className="text-2xl font-bold text-primary">98%</div>
                       <div className="text-sm text-muted-foreground">Satisfaction Rate</div>
                     </div>
@@ -839,12 +851,21 @@ const About = () => {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button size="lg" className="h-12 px-8 bg-primary hover:bg-primary/90">
+              <Button
+                size="lg"
+                className="h-12 px-8 bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                onClick={() => window.location.assign('/')}
+              >
                 <Calendar className="w-5 h-5 mr-2" />
                 Browse Events
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-              <Button size="lg" variant="outline" className="h-12 px-8">
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 px-8 border border-gray-300 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
+                onClick={() => window.location.assign('/auth/signup')}
+              >
                 <Sparkles className="w-5 h-5 mr-2" />
                 Create Event
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -1015,12 +1036,7 @@ const About = () => {
           
           {/* Creative contact layout */}
           <div className="relative max-w-6xl mx-auto">
-            {/* Background decorative elements */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 rounded-3xl"></div>
-            <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full transform -translate-x-16 -translate-y-16"></div>
-            <div className="absolute bottom-0 right-0 w-24 h-24 bg-primary/5 rounded-full transform translate-x-12 translate-y-12"></div>
-            
-            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12">
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12 bg-white rounded-3xl shadow-none">
               {/* Left side - Contact methods */}
               <div className="space-y-8">
                 <div className="flex items-center gap-6 p-6 bg-white/50 backdrop-blur-sm rounded-2xl hover:bg-white/70 transition-all duration-300 group">
