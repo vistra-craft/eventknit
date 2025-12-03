@@ -39,6 +39,7 @@ export interface EventFilters {
   limit?: number;
   offset?: number; // Deprecated: use page instead
   page?: number;
+  type?: EventType;
 }
 
 /**
@@ -207,6 +208,7 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   if (filters?.isFree !== undefined) queryParams.append('isFree', filters.isFree.toString());
   if (filters?.organizerId) queryParams.append('organizerId', filters.organizerId);
   if (filters?.search) queryParams.append('search', filters.search);
+  if (filters?.type) queryParams.append('type', filters.type);
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   // Support both page and offset (page takes precedence)
   if (filters?.page !== undefined) {

@@ -21,6 +21,7 @@ import { registerForEvent, registerAsGuest } from "@/lib/event-api";
 import { validatePromoCode } from "@/lib/promo-code-api";
 import type { RegistrationField } from "@/types/event";
 import { Ticket, CheckCircle, X } from "lucide-react";
+import { RelatedEventsSimple } from "@/components/event-details/RelatedEventsSimple";
 
 interface FormData {
   [key: string]: string | number | boolean;
@@ -576,7 +577,7 @@ const EventRegistration = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <main className="flex-1 py-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
+      <main className="flex-1 pt-20 pb-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <div className="max-w-3xl mx-auto px-4 space-y-8">
           <div>
             <Button
@@ -889,7 +890,7 @@ const EventRegistration = () => {
                     </div>
                     
                     {/* Terms & Conditions */}
-                    <div className="pt-6 border-t bg-muted/10 -mx-6 px-6">
+                    <div className="pt-6 border-t bg-primary/5 -mx-6 px-6">
                       <div className="flex items-start gap-3 mb-4">
                         <input
                           type="checkbox"
@@ -918,15 +919,7 @@ const EventRegistration = () => {
                       </Alert>
                     )}
                     
-                    <div className="flex flex-col sm:flex-row justify-between pt-2 gap-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => navigate(`/event/${eventId}`)}
-                        className="px-6 h-12 text-base"
-                      >
-                        Back to Event
-                      </Button>
+                    <div className="flex flex-col sm:flex-row justify-end pt-2 gap-4">
                       <Button
                         type="submit"
                         className="bg-primary hover:bg-primary/90 px-8 h-12 text-base font-semibold shadow-md"
@@ -1002,6 +995,16 @@ const EventRegistration = () => {
               </div>
             )}
           </section>
+
+          {/* More Events You Might Like */}
+          {event && (
+            <RelatedEventsSimple
+              currentEventId={event.id}
+              category={event.category}
+              tags={event.tags}
+              organizerId={event.organizer?.id}
+            />
+          )}
         </div>
       </main>
       <Footer />

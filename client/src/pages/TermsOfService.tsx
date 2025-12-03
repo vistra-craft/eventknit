@@ -1,9 +1,23 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scale, AlertTriangle, Users, CreditCard, Shield } from "lucide-react";
+import { Scale, AlertTriangle, Users, CreditCard, Shield, Clock, RefreshCcw } from "lucide-react";
 
 const TermsOfService = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const element = document.querySelector(location.hash);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  }, [location.hash]);
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -205,20 +219,72 @@ const TermsOfService = () => {
                   </p>
                 </div>
                 <div className="p-4 bg-primary/5 rounded-lg">
-                  <h4 className="font-semibold mb-2">Refund Policy</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Refunds are subject to the individual event organizer's refund policy. 
-                    EventKnit facilitates refunds but does not guarantee them. Contact the 
-                    event organizer directly for refund requests.
-                  </p>
-                </div>
-                <div className="p-4 bg-primary/5 rounded-lg">
                   <h4 className="font-semibold mb-2">Service Fees</h4>
                   <p className="text-sm text-muted-foreground">
                     EventKnit may charge service fees for ticket processing and platform usage. 
                     These fees are clearly displayed before purchase and are non-refundable.
                   </p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Refund Policy */}
+          <Card id="refund-policy" className="border-0 bg-white scroll-mt-20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Shield className="w-5 h-5 text-primary" />
+                Refund Policy
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground leading-relaxed">
+                Our refund policy is designed to provide flexibility and protection for both event organizers and attendees.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                    <Clock className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Free Cancellation</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Cancel up to 24 hours before the event for a full refund
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                    <RefreshCcw className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Easy Transfer</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Transfer tickets to friends if you can't make it
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 shrink-0">
+                    <Shield className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-1">Event Cancellation</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Full refund if the event is cancelled by the organizer
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  Refunds are processed within 5-7 business days. Service fees may be non-refundable 
+                  depending on the cancellation timing.
+                </p>
               </div>
             </CardContent>
           </Card>

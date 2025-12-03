@@ -140,26 +140,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
           {event.description}
         </p>
         
-        {/* Event Metrics */}
-        <div className="grid grid-cols-3 gap-4 mb-4 text-center">
-          <div>
-            <p className="text-xs text-muted-foreground">Speakers</p>
-            <p className="font-semibold text-foreground">{metrics.speakers}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Exhibitors</p>
-            <p className="font-semibold text-foreground">{metrics.exhibitors}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Revenue</p>
-            <p className="font-semibold text-foreground">${metrics.revenue.toLocaleString()}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {metrics.conversion.toFixed(1)}% conversion
-          </span>
+        <div className="flex items-center justify-end">
           <Button 
             variant="outline" 
             size="sm"

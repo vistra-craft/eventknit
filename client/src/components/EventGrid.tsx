@@ -2,7 +2,7 @@ import { EventCard } from "./EventCard";
 import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { useEvents } from "@/hooks/useEvents";
-import { EventStatus, type EventFilters } from "@/lib/event-api";
+import { EventStatus, EventType, type EventFilters } from "@/lib/event-api";
 import type { SearchFilters } from "./EventSearchFilter";
 
 interface EventGridProps {
@@ -18,6 +18,7 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
   useEffect(() => {
     const fetchFilters: EventFilters = {
       status: EventStatus.APPROVED,
+      type: EventType.PUBLIC, // Only show public events on home page
       limit: 100, // Fetch more events to allow client-side filtering
     };
 
@@ -27,6 +28,15 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
 
     fetchEvents(fetchFilters);
   }, [filters.search, filters.category, fetchEvents]);
+
+  // Debug: Log events when they change
+  useEffect(() => {
+    if (fetchedEvents && fetchedEvents.length > 0) {
+      console.log('EventGrid: Fetched events:', fetchedEvents.length, fetchedEvents.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type })));
+    } else if (fetchedEvents && fetchedEvents.length === 0) {
+      console.log('EventGrid: No events found');
+    }
+  }, [fetchedEvents]);
 
   // Apply client-side filters
   const filteredEvents = useMemo(() => {
@@ -135,7 +145,7 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
   }, [fetchedEvents, filters]);
 
   return (
-    <section className="py-16 bg-background" data-section="events">
+    <section className="pt-4 pb-16 bg-background" data-section="events">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {error ? (

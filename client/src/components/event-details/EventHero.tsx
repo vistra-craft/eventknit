@@ -12,7 +12,7 @@ interface EventHeroProps {
 
 export const EventHero = ({ title, category, date, time, venue, location, image }: EventHeroProps) => {
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-20 pb-4 animate-in fade-in duration-700">
+    <div className="animate-in fade-in duration-700">
       <section className="rounded-2xl bg-white shadow-sm border-0 overflow-hidden">
         <div className="relative h-52 md:h-56 bg-muted">
           {image ? (

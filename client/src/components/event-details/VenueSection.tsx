@@ -16,8 +16,8 @@ export const VenueSection = ({ venue, location, coordinates }: VenueSectionProps
   };
 
   return (
-    <section className="space-y-6">
-      <h2 className="text-3xl font-bold">Venue Information</h2>
+    <section>
+      <h2 className="text-3xl font-bold mb-4">Venue Information</h2>
       
       <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
         {/* Map */}

@@ -9,10 +9,9 @@ import { TicketSelector } from "@/components/event-details/TicketSelector";
 import { EventInfo } from "@/components/event-details/EventInfo";
 import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
-import { RefundPolicy } from "@/components/event-details/RefundPolicy";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle } from "lucide-react";
+import { Loader2, Users, CheckCircle, Ticket } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const EventDetails = () => {
@@ -107,116 +106,130 @@ const EventDetails = () => {
       <Navbar />
       
       <main className="flex-1 pb-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
-        <EventHero 
-          title={event.title}
-          category={event.category}
-          date={event.date || new Date(event.startDate).toLocaleDateString()}
-          time={event.time || (event.startTime ? new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '')}
-          venue={event.venue}
-          location={event.location}
-          image={event.image}
-        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Hero, Organizer, About, Important Info, Refund Policy, Venue, Tags */}
+            <div className="lg:col-span-2 space-y-6">
+              <EventHero 
+                title={event.title}
+                category={event.category}
+                date={event.date || new Date(event.startDate).toLocaleDateString()}
+                time={event.time || (event.startTime ? new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '')}
+                venue={event.venue}
+                location={event.location}
+                image={event.image}
+              />
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-10 mt-6">
-          <section className="space-y-10">
-            {/* Organizer Info */}
-            <OrganizerInfo 
-              organizer={event.organizer}
-              organizerName={event.organizerName}
-            />
+              {/* Organizer Info */}
+              <OrganizerInfo 
+                organizer={event.organizer}
+                organizerName={event.organizerName}
+              />
 
-            {/* About Section */}
-            <section>
-              <h2 className="text-3xl font-bold mb-4">About This Event</h2>
-              <div className="prose prose-lg max-w-none text-muted-foreground">
-                <p className="leading-relaxed whitespace-pre-line">
-                  {event.fullDescription || event.description}
-                </p>
-              </div>
-            </section>
-
-            {/* Important Information */}
-            {(event.requirements?.length || event.ageRestriction) && (
+              {/* About Section */}
               <section>
-                <div className="p-6 rounded-2xl border-0 bg-white shadow-sm">
-                  <h3 className="text-xl font-bold mb-4">Important Information</h3>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {event.ageRestriction && (
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Users className="w-5 h-5 text-primary" />
+                <h2 className="text-3xl font-bold mb-4">About This Event</h2>
+                <div className="prose prose-lg max-w-none text-muted-foreground">
+                  <p className="leading-relaxed whitespace-pre-line">
+                    {event.fullDescription || event.description}
+                  </p>
+                </div>
+              </section>
+
+              {/* Important Information */}
+              {(event.requirements?.length || event.ageRestriction) && (
+                <section>
+                  <div className="p-6 rounded-2xl border-0 bg-white shadow-sm">
+                    <h3 className="text-xl font-bold mb-4">Important Information</h3>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {event.ageRestriction && (
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <Users className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-1">Age Restriction</h4>
+                            <p className="text-sm text-muted-foreground">{event.ageRestriction}</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {event.requirements?.map((req, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <CheckCircle className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold mb-1">Requirement</h4>
+                            <p className="text-sm text-muted-foreground">{req}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Venue Information */}
+              <VenueSection 
+                venue={event.venue}
+                location={event.location}
+                coordinates={event.coordinates}
+              />
+              
+              <EventTags tags={event.tags} />
+
+              {/* Speakers (if any) */}
+              {event.speakers && event.speakers.length > 0 && (
+                <section>
+                  <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {event.speakers.map((speaker, index) => (
+                      <Card key={index} className="p-4 flex items-start gap-4 rounded-2xl border-0 bg-white hover:shadow-md transition-shadow">
+                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {speaker.image ? (
+                            <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="w-8 h-8 text-muted-foreground" />
+                          )}
                         </div>
                         <div>
-                          <h4 className="font-semibold mb-1">Age Restriction</h4>
-                          <p className="text-sm text-muted-foreground">{event.ageRestriction}</p>
+                          <h4 className="font-bold text-lg">{speaker.name}</h4>
+                          <p className="text-primary font-medium text-sm">{speaker.title}</p>
+                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{speaker.bio}</p>
                         </div>
-                      </div>
-                    )}
-                    
-                    {event.requirements?.map((req, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <CheckCircle className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-semibold mb-1">Requirement</h4>
-                          <p className="text-sm text-muted-foreground">{req}</p>
-                        </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
-                </div>
-              </section>
-            )}
+                </section>
+              )}
+            </div>
 
-            {/* Get Tickets */}
-            <section>
-              <TicketSelector 
-                ticketTypes={event.ticketTypes}
-                onRegister={handleRegister}
-                currency={event.currency || '$'}
-              />
-            </section>
-
-            {/* Speakers (if any) */}
-            {event.speakers && event.speakers.length > 0 && (
+            {/* Right Column - Tickets and Register Button */}
+            <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-20 lg:self-start">
+              {/* Get Tickets */}
               <section>
-                <h2 className="text-3xl font-bold mb-6">Featured Speakers</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {event.speakers.map((speaker, index) => (
-                    <Card key={index} className="p-4 flex items-start gap-4 rounded-2xl border-0 bg-white hover:shadow-md transition-shadow">
-                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {speaker.image ? (
-                          <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <Users className="w-8 h-8 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-lg">{speaker.name}</h4>
-                        <p className="text-primary font-medium text-sm">{speaker.title}</p>
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{speaker.bio}</p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                <TicketSelector 
+                  ticketTypes={event.ticketTypes}
+                  onRegister={handleRegister}
+                  currency={event.currency || '$'}
+                />
               </section>
-            )}
 
-            {/* Refund Policy */}
-            <RefundPolicy />
-            
-            {/* Venue Information */}
-            <VenueSection 
-              venue={event.venue}
-              location={event.location}
-              coordinates={event.coordinates}
-            />
-            
-            <EventTags tags={event.tags} />
-          </section>
+              {/* Register Button */}
+              <Button
+                size="lg"
+                className="w-full h-12 text-lg font-semibold shadow-md"
+                onClick={() => navigate(`/event/${id}/register`)}
+              >
+                <Ticket className="mr-2 h-5 w-5" />
+                Register for Event
+              </Button>
+            </div>
+          </div>
 
-          <section className="pt-4 border-t border-border/60">
+          {/* Related Events - Full Width */}
+          <section className="pt-6 border-t border-border/60 mt-6">
             <RelatedEvents 
               currentEventId={event.id}
               category={event.category || undefined}

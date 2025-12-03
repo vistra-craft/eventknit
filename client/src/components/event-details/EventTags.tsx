@@ -9,8 +9,8 @@ export const EventTags = ({ tags }: EventTagsProps) => {
   // per user request "let it be blank but atleast it should show"
   
   return (
-    <section className="space-y-4">
-      <h3 className="text-xl font-bold">Tags</h3>
+    <section>
+      <h3 className="text-xl font-bold mb-3">Tags</h3>
       <div className="flex flex-wrap gap-2">
         {tags && tags.length > 0 ? (
           tags.map((tag) => (

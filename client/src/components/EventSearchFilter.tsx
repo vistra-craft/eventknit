@@ -103,7 +103,7 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
     (filters.eventType && filters.eventType !== 'all');
 
   return (
-    <section className="py-8 bg-background">
+    <section className="pb-4 pt-6 bg-background">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="mb-3">
           <p className="text-xl font-bold text-foreground">

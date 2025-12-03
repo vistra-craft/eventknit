@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { ImageCropper } from '@/components/ImageCropper';
 import { 
   Users, 
   Ticket, 
@@ -30,7 +31,9 @@ import {
   Percent,
   Gift
 } from 'lucide-react';
-import { createEvent, type CreateEventData, EventType } from '@/lib/event-api';
+import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
+import { getOrganizerEventById } from '@/lib/organizer-api';
+import { transformEventData } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
 
 // Currency options with KES as default
@@ -135,7 +138,21 @@ export default function CreateEventStepwise() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Check for edit mode from URL query params
+  const searchParams = new URLSearchParams(location.search);
+  const editEventId = searchParams.get('edit');
+  const stepParam = searchParams.get('step');
+  const isEditMode = !!editEventId;
+  const [isLoadingEvent, setIsLoadingEvent] = useState(isEditMode);
+  
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (stepParam) {
+      const step = parseInt(stepParam, 10);
+      return step >= 1 && step <= 6 ? step : 1;
+    }
+    return 1;
+  });
   const [eventType, setEventType] = useState("in-person");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +160,7 @@ export default function CreateEventStepwise() {
   const [showPreview, setShowPreview] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [eventId, setEventId] = useState<string | null>(editEventId);
   const [timezone, setTimezone] = useState(() => {
     // Default to user's timezone or UTC
     try {
@@ -153,6 +171,8 @@ export default function CreateEventStepwise() {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showImageCropper, setShowImageCropper] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -308,6 +328,149 @@ export default function CreateEventStepwise() {
     };
   }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone]);
 
+  // Load event data when in edit mode
+  useEffect(() => {
+    const loadEventForEdit = async () => {
+      if (!editEventId) return;
+
+      try {
+        setIsLoadingEvent(true);
+        setError(null);
+        
+        const response = await getOrganizerEventById(editEventId);
+        
+        if (response.success && response.data) {
+          const transformedEvent = transformEventData(response.data.event);
+          
+          // Parse dates from ISO format to form format (YYYY-MM-DD)
+          const parseDate = (isoDate?: string | null): string => {
+            if (!isoDate) return "";
+            try {
+              const date = new Date(isoDate);
+              return date.toISOString().split('T')[0];
+            } catch {
+              return "";
+            }
+          };
+
+          // Parse time from ISO format to form format (HH:MM)
+          const parseTime = (isoTime?: string | null): string => {
+            if (!isoTime) return "";
+            try {
+              // If it's already in HH:MM format, return as is
+              if (/^\d{2}:\d{2}$/.test(isoTime)) {
+                return isoTime;
+              }
+              // If it's a full ISO datetime, extract time
+              const date = new Date(isoTime);
+              const hours = date.getHours().toString().padStart(2, '0');
+              const minutes = date.getMinutes().toString().padStart(2, '0');
+              return `${hours}:${minutes}`;
+            } catch {
+              return "";
+            }
+          };
+
+          // Map event data to form fields
+          setEventData(prev => ({
+            ...prev,
+            title: transformedEvent.title || "",
+            organizer: transformedEvent.organizerName || user?.organizationName || "",
+            description: transformedEvent.description || "",
+            fullDescription: transformedEvent.fullDescription || "",
+            date: parseDate(transformedEvent.startDate) || transformedEvent.date || "",
+            time: parseTime(transformedEvent.startTime) || transformedEvent.time || "",
+            endDate: parseDate(transformedEvent.endDate) || "",
+            endTime: parseTime(transformedEvent.endTime) || "",
+            location: transformedEvent.location || "",
+            venue: transformedEvent.venue || "",
+            address: transformedEvent.address || "",
+            onlineLink: transformedEvent.onlineLink || "",
+            price: transformedEvent.price?.toString() || "",
+            totalSlots: transformedEvent.capacity || 0,
+            image: transformedEvent.image || "",
+            requirements: Array.isArray(transformedEvent.requirements) 
+              ? transformedEvent.requirements.join('\n') 
+              : (typeof transformedEvent.requirements === 'string' ? transformedEvent.requirements : ""),
+            ageRestriction: transformedEvent.ageRestriction || "",
+            isOnline: transformedEvent.isOnline || false,
+            capacity: transformedEvent.capacity?.toString() || "",
+            category: transformedEvent.category || "",
+            timezone: transformedEvent.timezone || timezone,
+            currency: transformedEvent.currency || DEFAULT_CURRENCY,
+          }));
+
+          // Set image preview if image exists
+          if (transformedEvent.image) {
+            setImagePreview(transformedEvent.image);
+          }
+
+          // Set event type based on isOnline
+          setEventType(transformedEvent.isOnline ? "online" : "in-person");
+
+          // Set ticket types
+          if (transformedEvent.ticketTypes && transformedEvent.ticketTypes.length > 0) {
+            const mappedTicketTypes: TicketType[] = transformedEvent.ticketTypes.map((tt, index) => ({
+              id: index + 1,
+              name: tt.name || "",
+              type: tt.price === 0 || tt.isComplementary ? "free" : "paid",
+              price: tt.price?.toString() || "",
+              originalPrice: tt.originalPrice?.toString(),
+              discountLabel: tt.discountLabel,
+              quantity: tt.quantity?.toString() || "",
+              isComplementary: tt.isComplementary,
+              requiresInvitation: tt.requiresInvitation,
+              availableFrom: tt.availableFrom || undefined,
+              availableUntil: tt.availableUntil || undefined,
+            }));
+            setTicketTypes(mappedTicketTypes);
+          }
+
+          // Set registration fields
+          if (transformedEvent.registrationFields && transformedEvent.registrationFields.length > 0) {
+            const mappedFields: RegistrationField[] = transformedEvent.registrationFields.map(field => ({
+              id: field.id,
+              name: field.name,
+              type: field.type,
+              label: field.label,
+              required: field.required,
+              placeholder: field.placeholder || "",
+              options: field.options,
+            }));
+            setRegistrationFields(mappedFields);
+          }
+
+          // Set categories
+          if (transformedEvent.category) {
+            setCategories([transformedEvent.category]);
+          }
+
+          // Set tags
+          if (transformedEvent.tags && transformedEvent.tags.length > 0) {
+            setTags(transformedEvent.tags);
+          }
+
+          // Set FAQs
+          if (transformedEvent.faqs && transformedEvent.faqs.length > 0) {
+            setFaqs(transformedEvent.faqs);
+          }
+
+          // Set privacy
+          setIsPrivate(transformedEvent.isPrivate || false);
+        } else {
+          setError('Failed to load event data');
+        }
+      } catch (err) {
+        console.error('Error loading event:', err);
+        setError('Failed to load event data. Please try again.');
+      } finally {
+        setIsLoadingEvent(false);
+      }
+    };
+
+    loadEventForEdit();
+  }, [editEventId, user, timezone]);
+
   // Clear draft after successful submission
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -338,8 +501,8 @@ export default function CreateEventStepwise() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        setImagePreview(base64String);
-        setEventData(prev => ({ ...prev, image: base64String }));
+        setUploadedImage(base64String);
+        setShowImageCropper(true);
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
@@ -351,6 +514,14 @@ export default function CreateEventStepwise() {
       setError('Failed to upload image');
       setIsUploadingImage(false);
     }
+  };
+
+  // Handle cropped image
+  const handleImageCrop = (croppedImage: string) => {
+    setImagePreview(croppedImage);
+    setEventData(prev => ({ ...prev, image: croppedImage }));
+    setShowImageCropper(false);
+    setUploadedImage(null);
   };
 
   // Format date with timezone
@@ -643,19 +814,37 @@ export default function CreateEventStepwise() {
 
     try {
       const apiData = transformFormDataToAPI();
-      const response = await createEvent(apiData);
-
-      if (response.success && response.data) {
-        // Clear draft on success
-        clearDraft();
-        // Success! Navigate to appropriate dashboard based on current route
-        const isAdminRoute = location.pathname.startsWith('/admin');
-        const dashboardRoute = isAdminRoute ? '/admin/dashboard' : '/organizer/dashboard';
-        navigate(dashboardRoute, {
-          state: { message: 'Event created successfully! It is pending admin approval.' }
-        });
+      
+      if (isEditMode && eventId) {
+        // Update existing event
+        const response = await updateEvent(eventId, apiData as UpdateEventData);
+        
+        if (response.success && response.data) {
+          // Clear draft on success
+          clearDraft();
+          // Navigate back to event management page
+          navigate(`/organizer/event/${eventId}`, {
+            state: { message: 'Event updated successfully!' }
+          });
+        } else {
+          setError(response.message || 'Failed to update event. Please try again.');
+        }
       } else {
-        setError(response.message || 'Failed to create event. Please try again.');
+        // Create new event
+        const response = await createEvent(apiData);
+
+        if (response.success && response.data) {
+          // Clear draft on success
+          clearDraft();
+          // Success! Navigate to appropriate dashboard based on current route
+          const isAdminRoute = location.pathname.startsWith('/admin');
+          const dashboardRoute = isAdminRoute ? '/admin/dashboard' : '/organizer/dashboard';
+          navigate(dashboardRoute, {
+            state: { message: 'Event created successfully! It is pending admin approval.' }
+          });
+        } else {
+          setError(response.message || 'Failed to create event. Please try again.');
+        }
       }
     } catch (err: unknown) {
       const errorMessage = err && typeof err === 'object' && 'message' in err
@@ -1487,18 +1676,31 @@ export default function CreateEventStepwise() {
                 alt="Event preview"
                 className="w-full h-64 object-cover rounded-lg border"
               />
-              <Button
-                variant="destructive"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={() => {
-                  setImagePreview(null);
-                  setEventData(prev => ({ ...prev, image: '' }));
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="absolute top-2 right-2 flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setUploadedImage(imagePreview || eventData.image || '');
+                    setShowImageCropper(true);
+                  }}
+                  className="bg-white/90 hover:bg-white"
+                  title="Reposition image"
+                >
+                  <Camera className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setEventData(prev => ({ ...prev, image: '' }));
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -2027,13 +2229,29 @@ export default function CreateEventStepwise() {
     );
   };
 
+  // Show loading state while fetching event data
+  if (isLoadingEvent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading event data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Create New Event</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Set up your event with all the details attendees need to know</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+            {isEditMode ? 'Edit Event' : 'Create New Event'}
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            {isEditMode ? 'Update your event details' : 'Set up your event with all the details attendees need to know'}
+          </p>
           
           {/* Draft Save Indicator */}
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -2146,7 +2364,7 @@ export default function CreateEventStepwise() {
                     {currentStep === 6 ? 'Publishing...' : 'Validating...'}
                   </>
                 ) : (
-                  currentStep === 6 ? 'Publish Event' : 'Next'
+                  currentStep === 6 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'
                 )}
               </Button>
             </div>
@@ -2156,6 +2374,21 @@ export default function CreateEventStepwise() {
       
       {/* Preview Modal */}
       {renderPreview()}
+
+      {/* Image Cropper Modal */}
+      {uploadedImage && (
+        <ImageCropper
+          image={uploadedImage}
+          isOpen={showImageCropper}
+          onClose={() => {
+            setShowImageCropper(false);
+            setUploadedImage(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }}
+          onCrop={handleImageCrop}
+          aspectRatio={16 / 9}
+        />
+      )}
     </div>
   );
 }

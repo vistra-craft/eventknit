@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Minus, Plus, Ticket, AlertCircle, Clock, CheckCircle, Crown } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,19 +30,34 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
 
   const totalTickets = Object.values(quantities).reduce((sum, qty) => sum + qty, 0);
 
+  // If no ticket types, show a simple register button
   if (!ticketTypes || ticketTypes.length === 0) {
-    return null;
+    return (
+      <Card className="p-4 rounded-2xl border-0 bg-white shadow-sm">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold mb-1">Register for Event</h2>
+          <p className="text-sm text-muted-foreground">Complete your registration to attend this event</p>
+        </div>
+        <Button 
+          className="w-full h-10 text-base font-semibold shadow-md"
+          onClick={() => onRegister({})}
+        >
+          <Ticket className="mr-2 h-4 w-4" />
+          Register Now
+        </Button>
+      </Card>
+    );
   }
 
   return (
-    <Card className="p-6 rounded-2xl border-0 bg-white shadow-sm">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Get Tickets</h2>
-        <p className="text-muted-foreground">Select your ticket type and quantity</p>
+    <Card className="p-4 rounded-2xl border-0 bg-white shadow-sm">
+      <div className="mb-4">
+        <h2 className="text-xl font-bold mb-1">Get Tickets</h2>
+        <p className="text-sm text-muted-foreground">Select your ticket type and quantity</p>
       </div>
 
       {/* Ticket Tiers */}
-      <div className="space-y-4 mb-6">
+      <div className="space-y-3 mb-4">
         {ticketTypes.map((ticket, index) => {
           const quantity = quantities[ticket.name] || 0;
           const isVip = isVIPTicket(ticket.name);
@@ -58,14 +74,14 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
           return (
             <div
               key={`${ticket.name}-${index}`}
-              className={`border rounded-lg p-4 transition-all duration-200 ${
+              className={`border rounded-lg p-3 transition-all duration-200 ${
                 quantity > 0 ? 'border-primary ring-1 ring-primary/20 bg-primary/5' : 'border-border hover:border-primary/50'
               } ${!isAvailable ? 'opacity-60' : ''}`}
             >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 pr-2">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg">{ticket.name}</h3>
+                    <h3 className="font-semibold text-base">{ticket.name}</h3>
                     {isVip && (
                       <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 text-[10px] px-1.5 h-5">
                         <Crown className="w-3 h-3 mr-1" /> VIP
@@ -85,18 +101,18 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
                       <span className="text-xs text-muted-foreground line-through">
                         {currency}{ticket.originalPrice}
                       </span>
-                      <span className="font-bold text-xl text-primary">
+                      <span className="font-bold text-lg text-primary">
                         {currency}{ticket.price}
                       </span>
                     </div>
                   ) : (
-                    <p className="font-bold text-xl text-primary">{currency}{ticket.price}</p>
+                    <p className="font-bold text-lg text-primary">{currency}{ticket.price}</p>
                   )}
                 </div>
               </div>
 
               {/* Badges & Info */}
-              <div className="flex flex-wrap gap-2 mb-3">
+              <div className="flex flex-wrap gap-2 mb-2">
                 {discounted && ticket.originalPrice && (
                   <Badge variant="destructive" className="text-[10px] h-5">
                     {calculateDiscountPercentage(ticket.originalPrice, ticket.price)}% OFF
@@ -116,7 +132,7 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
                 )}
               </div>
 
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
                 <span className="text-sm text-muted-foreground">
                   {!isAvailable ? (
                     <span className="text-destructive flex items-center gap-1">
@@ -160,26 +176,36 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
       </div>
 
       {/* Total & Checkout */}
-      <div className="border-t border-border pt-4">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-lg font-semibold">Total</span>
-          <span className="text-2xl font-bold text-primary">
+      <div className="border-t border-border pt-3">
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-base font-semibold">Total</span>
+          <span className="text-xl font-bold text-primary">
             {currency}{totalPrice.toFixed(2)}
           </span>
         </div>
 
         <Button 
-          className="w-full h-12 text-lg font-semibold shadow-md"
+          className="w-full h-10 text-base font-semibold shadow-md"
           disabled={totalTickets === 0}
           onClick={() => onRegister(quantities)}
         >
-          <Ticket className="mr-2 h-5 w-5" />
+          <Ticket className="mr-2 h-4 w-4" />
           {totalTickets === 0 ? "Select Tickets" : `Purchase ${totalTickets} Ticket${totalTickets > 1 ? "s" : ""}`}
         </Button>
 
-        <p className="text-xs text-muted-foreground text-center mt-3">
+        <p className="text-xs text-muted-foreground text-center mt-2">
           Secure checkout powered by PesaSwap
         </p>
+        
+        {/* Refund Policy Link */}
+        <div className="mt-3 pt-3 border-t border-border">
+          <Link 
+            to="/terms-of-service#refund-policy"
+            className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-xs transition-colors text-center block"
+          >
+            View Refund Policy →
+          </Link>
+        </div>
       </div>
     </Card>
   );
