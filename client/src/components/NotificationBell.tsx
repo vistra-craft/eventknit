@@ -88,7 +88,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
       variant="ghost"
       size="sm"
       onClick={handleClick}
-      className={`relative ${className}`}
+      className={`relative text-muted-foreground hover:bg-muted hover:text-primary-foreground ${className}`}
       aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
     >
       <Bell className={iconSize} />

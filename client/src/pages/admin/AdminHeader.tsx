@@ -62,7 +62,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:bg-muted hover:text-primary-foreground"
             title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
           >
             {resolvedTheme === 'light' ? (
@@ -73,7 +73,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
           </Button>
 
           {/* System Alerts */}
-          <Button variant="ghost" size="sm" className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative text-muted-foreground hover:bg-muted hover:text-primary-foreground"
+          >
             <AlertTriangle className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-xs rounded-full flex items-center justify-center">
               2

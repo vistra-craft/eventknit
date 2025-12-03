@@ -366,7 +366,7 @@ const AdminEnhancedDashboard = () => {
                         className={`px-3 py-1 rounded-full transition-colors ${
                           growthPeriod === option.id
                             ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-muted"
+                            : "text-muted-foreground hover:bg-muted hover:text-primary-foreground"
                         }`}
                       >
                         {option.label}
