@@ -81,7 +81,11 @@ export const EventCard: React.FC<EventCardProps> = ({
   const timeDisplay = formatTime(startTime, endTime);
 
   return (
-    <Card variant="interactive" onClick={handleCardClick} className="group overflow-hidden border-0 shadow-none">
+    <Card
+      variant="interactive"
+      onClick={handleCardClick}
+      className="group overflow-hidden border-0 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200"
+    >
       {/* Event Image */}
       <div className="relative overflow-hidden h-64 rounded-lg">
         {image ? (

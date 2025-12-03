@@ -441,7 +441,10 @@ const About = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
               {eventCreationSteps.map((step, index) => (
-                <Card key={index} className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+                <Card
+                  key={index}
+                  className="text-center border-0 bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group"
+                >
                   <CardContent className="p-6">
                     <div className="relative mb-4">
                       <div className="w-12 h-12 mx-auto bg-primary/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -640,8 +643,11 @@ const About = () => {
             {/* Flow steps in circular arrangement */}
             <div className="grid grid-cols-2 gap-8">
               {ticketingSteps.map((step, index) => (
-                <div key={index} className={`${index % 2 === 0 ? 'text-right' : 'text-left'} ${index < 2 ? 'mb-8' : ''}`}>
-                  <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+                <div
+                  key={index}
+                  className={`${index % 2 === 0 ? 'text-right' : 'text-left'} ${index < 2 ? 'mb-8' : ''}`}
+                >
+                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4">
                         {index % 2 === 0 ? (

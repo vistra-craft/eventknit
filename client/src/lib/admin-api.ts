@@ -40,6 +40,24 @@ export interface AdminDashboardStatsResponse {
   };
 }
 
+export type AdminDashboardGrowthPeriod = 'monthly' | 'quarterly' | 'semiannual' | 'yearly';
+
+export interface AdminDashboardGrowthPoint {
+  label: string;
+  value: number;
+}
+
+export interface AdminDashboardGrowthResponse {
+  success: boolean;
+  data: {
+    period: AdminDashboardGrowthPeriod;
+    organizers: AdminDashboardGrowthPoint[];
+    events: AdminDashboardGrowthPoint[];
+    revenue: AdminDashboardGrowthPoint[];
+    attendees: AdminDashboardGrowthPoint[];
+  };
+}
+
 /**
  * Admin Recent Events Response
  */
@@ -100,6 +118,15 @@ export const getAdminDashboardStats = async (
   timeRange: '7d' | '30d' | '90d' | '1y' = '30d'
 ): Promise<AdminDashboardStatsResponse> => {
   return apiGet<AdminDashboardStatsResponse>(`/admin/dashboard/stats?timeRange=${timeRange}`);
+};
+
+/**
+ * Get admin dashboard growth series (for charts)
+ */
+export const getAdminDashboardGrowth = async (
+  period: AdminDashboardGrowthPeriod = 'monthly'
+): Promise<AdminDashboardGrowthResponse> => {
+  return apiGet<AdminDashboardGrowthResponse>(`/admin/dashboard/growth?period=${period}`);
 };
 
 /**

@@ -1971,7 +1971,7 @@ export default function CreateEventStepwise() {
         )}
 
         {/* Form Content */}
-        <Card className="border-0 bg-white rounded-2xl shadow-none">
+        <Card className="border-0 bg-white rounded-2xl shadow-md">
           <CardContent className="p-6 sm:p-8">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
@@ -1989,7 +1989,7 @@ export default function CreateEventStepwise() {
                     type="button"
                     variant={eventType === 'in-person' ? 'default' : 'outline'}
                     onClick={() => setEventType('in-person')}
-                    className={`h-12 text-sm font-medium rounded-xl ${
+                    className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                       eventType === 'in-person'
                         ? 'bg-gray-900 text-white hover:bg-gray-800'
                         : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
@@ -2002,7 +2002,7 @@ export default function CreateEventStepwise() {
                     type="button"
                     variant={eventType === 'online' ? 'default' : 'outline'}
                     onClick={() => setEventType('online')}
-                    className={`h-12 text-sm font-medium rounded-xl ${
+                    className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                       eventType === 'online'
                         ? 'bg-gray-900 text-white hover:bg-gray-800'
                         : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
@@ -2015,7 +2015,7 @@ export default function CreateEventStepwise() {
                     type="button"
                     variant={eventType === 'hybrid' ? 'default' : 'outline'}
                     onClick={() => setEventType('hybrid')}
-                    className={`h-12 text-sm font-medium rounded-xl ${
+                    className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                       eventType === 'hybrid'
                         ? 'bg-gray-900 text-white hover:bg-gray-800'
                         : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
@@ -2073,7 +2073,7 @@ export default function CreateEventStepwise() {
               </div>
               <Button
                 onClick={handleNext}
-                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 bg-gray-900 hover:bg-gray-800 text-white"
+                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white transition-all duration-200 shadow-md"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

@@ -465,7 +465,7 @@ const AttendeeRegistration = () => {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               <span>Back to home</span>
@@ -504,7 +504,7 @@ const AttendeeRegistration = () => {
         </div>
 
         {/* Form Content */}
-        <Card>
+        <Card className="border-0 bg-white rounded-2xl shadow-sm">
           <CardContent className="p-8">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}

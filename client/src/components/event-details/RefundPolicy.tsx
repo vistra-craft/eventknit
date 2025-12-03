@@ -3,7 +3,7 @@ import { Shield, Clock, RefreshCcw } from "lucide-react";
 
 export const RefundPolicy = () => {
   return (
-    <Card className="p-6 border-border/50 shadow-sm">
+    <Card className="p-6 rounded-2xl border-0 bg-white shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         <Shield className="w-5 h-5 text-primary" />
         <h3 className="text-xl font-bold">Refund Policy</h3>

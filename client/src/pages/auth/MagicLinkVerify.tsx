@@ -88,7 +88,7 @@ const MagicLinkVerify = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <Card className="border-2">
+        <Card className="border-0 bg-white rounded-2xl shadow-sm">
           <CardHeader className="text-center pb-4">
             <div className="mx-auto w-16 h-16 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4">
               {status === 'loading' && <Loader2 className="w-8 h-8 text-eventknit animate-spin" />}

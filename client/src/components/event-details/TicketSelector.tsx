@@ -34,7 +34,7 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
   }
 
   return (
-    <Card className="sticky top-24 p-6 shadow-lg border-border/50">
+    <Card className="p-6 rounded-2xl border-0 bg-white shadow-sm">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Get Tickets</h2>
         <p className="text-muted-foreground">Select your ticket type and quantity</p>

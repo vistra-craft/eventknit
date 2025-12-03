@@ -4,16 +4,17 @@ import { DollarSign, TrendingUp, TrendingDown, CreditCard, ArrowRight, RefreshCw
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import AdminLayout from "../AdminLayout";
-import { 
-  getPaymentTransactions, 
+import {
+  getPaymentTransactions,
   getDisbursements,
   getRefunds,
-  type PaymentTransaction 
+  getFinanceInsights,
+  type PaymentTransaction,
+  type FinanceInsights,
+  type FinanceInsightsPeriod,
 } from "@/lib/financial-api";
 import { useToast } from "@/hooks/use-toast";
 import { CustomLineChart, CustomBarChart } from "@/components/charts/ChartComponents";
-
-type FinanceGrowthPeriod = "monthly" | "quarterly" | "semiannual" | "yearly";
 
 const EventFinanceDashboard = () => {
   const navigate = useNavigate();
@@ -28,123 +29,12 @@ const EventFinanceDashboard = () => {
     recentTransactions: [] as PaymentTransaction[],
   });
 
-  // Finance growth charts (currently mock data)
-  const [growthPeriod, setGrowthPeriod] = useState<FinanceGrowthPeriod>("monthly");
+  // Finance growth charts (backend data)
+  const [growthPeriod, setGrowthPeriod] = useState<FinanceInsightsPeriod>("monthly");
   const [selectedMonth, setSelectedMonth] = useState<string>("All");
   const [selectedYear, setSelectedYear] = useState<string>("All");
-
-  const mockFinanceGrowth: Record<
-    FinanceGrowthPeriod,
-    {
-      totalRevenue: { label: string; value: number }[];
-      platformFees: { label: string; value: number }[];
-      pendingDisbursements: { label: string; value: number }[];
-      totalRefunds: { label: string; value: number }[];
-    }
-  > = {
-    monthly: {
-      totalRevenue: [
-        { label: "Jan", value: 320_000 },
-        { label: "Feb", value: 410_000 },
-        { label: "Mar", value: 520_000 },
-        { label: "Apr", value: 610_000 },
-        { label: "May", value: 720_000 },
-        { label: "Jun", value: 810_000 },
-      ],
-      platformFees: [
-        { label: "Jan", value: 32_000 },
-        { label: "Feb", value: 41_000 },
-        { label: "Mar", value: 52_000 },
-        { label: "Apr", value: 61_000 },
-        { label: "May", value: 72_000 },
-        { label: "Jun", value: 81_000 },
-      ],
-      pendingDisbursements: [
-        { label: "Jan", value: 120_000 },
-        { label: "Feb", value: 95_000 },
-        { label: "Mar", value: 140_000 },
-        { label: "Apr", value: 110_000 },
-        { label: "May", value: 160_000 },
-        { label: "Jun", value: 135_000 },
-      ],
-      totalRefunds: [
-        { label: "Jan", value: 18_000 },
-        { label: "Feb", value: 22_000 },
-        { label: "Mar", value: 25_000 },
-        { label: "Apr", value: 21_000 },
-        { label: "May", value: 26_000 },
-        { label: "Jun", value: 29_000 },
-      ],
-    },
-    quarterly: {
-      totalRevenue: [
-        { label: "Q1", value: 1_250_000 },
-        { label: "Q2", value: 1_650_000 },
-        { label: "Q3", value: 1_980_000 },
-        { label: "Q4", value: 2_300_000 },
-      ],
-      platformFees: [
-        { label: "Q1", value: 125_000 },
-        { label: "Q2", value: 165_000 },
-        { label: "Q3", value: 198_000 },
-        { label: "Q4", value: 230_000 },
-      ],
-      pendingDisbursements: [
-        { label: "Q1", value: 360_000 },
-        { label: "Q2", value: 420_000 },
-        { label: "Q3", value: 390_000 },
-        { label: "Q4", value: 450_000 },
-      ],
-      totalRefunds: [
-        { label: "Q1", value: 65_000 },
-        { label: "Q2", value: 78_000 },
-        { label: "Q3", value: 82_000 },
-        { label: "Q4", value: 90_000 },
-      ],
-    },
-    semiannual: {
-      totalRevenue: [
-        { label: "H1", value: 2_900_000 },
-        { label: "H2", value: 3_600_000 },
-      ],
-      platformFees: [
-        { label: "H1", value: 290_000 },
-        { label: "H2", value: 360_000 },
-      ],
-      pendingDisbursements: [
-        { label: "H1", value: 780_000 },
-        { label: "H2", value: 920_000 },
-      ],
-      totalRefunds: [
-        { label: "H1", value: 145_000 },
-        { label: "H2", value: 168_000 },
-      ],
-    },
-    yearly: {
-      totalRevenue: [
-        { label: "2022", value: 4_800_000 },
-        { label: "2023", value: 6_300_000 },
-        { label: "2024", value: 7_900_000 },
-      ],
-      platformFees: [
-        { label: "2022", value: 480_000 },
-        { label: "2023", value: 630_000 },
-        { label: "2024", value: 790_000 },
-      ],
-      pendingDisbursements: [
-        { label: "2022", value: 980_000 },
-        { label: "2023", value: 1_150_000 },
-        { label: "2024", value: 1_320_000 },
-      ],
-      totalRefunds: [
-        { label: "2022", value: 260_000 },
-        { label: "2023", value: 305_000 },
-        { label: "2024", value: 340_000 },
-      ],
-    },
-  };
-
-  const currentGrowth = mockFinanceGrowth[growthPeriod];
+  const [financeGrowth, setFinanceGrowth] = useState<FinanceInsights | null>(null);
+  const [growthLoading, setGrowthLoading] = useState<boolean>(false);
 
   const applyGrowthFilters = (data: { label: string; value: number }[]) => {
     if (growthPeriod === "monthly" && selectedMonth !== "All") {
@@ -157,16 +47,35 @@ const EventFinanceDashboard = () => {
   };
 
   const filteredGrowth = {
-    totalRevenue: applyGrowthFilters(currentGrowth.totalRevenue),
-    platformFees: applyGrowthFilters(currentGrowth.platformFees),
-    pendingDisbursements: applyGrowthFilters(currentGrowth.pendingDisbursements),
-    totalRefunds: applyGrowthFilters(currentGrowth.totalRefunds),
+    totalRevenue: financeGrowth ? applyGrowthFilters(financeGrowth.totalRevenue) : [],
+    platformFees: financeGrowth ? applyGrowthFilters(financeGrowth.platformFees) : [],
+    pendingDisbursements: financeGrowth ? applyGrowthFilters(financeGrowth.pendingDisbursements) : [],
+    totalRefunds: financeGrowth ? applyGrowthFilters(financeGrowth.totalRefunds) : [],
   };
 
   useEffect(() => {
     loadFinancialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load finance insights for charts whenever the period changes
+  useEffect(() => {
+    const loadInsights = async () => {
+      try {
+        setGrowthLoading(true);
+        const response = await getFinanceInsights(growthPeriod);
+        if (response.success && response.data) {
+          setFinanceGrowth(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load finance insights:", error);
+      } finally {
+        setGrowthLoading(false);
+      }
+    };
+
+    loadInsights();
+  }, [growthPeriod]);
 
   const loadFinancialData = async () => {
     try {
@@ -358,14 +267,14 @@ const EventFinanceDashboard = () => {
                     key={option.id}
                     type="button"
                     onClick={() => {
-                      setGrowthPeriod(option.id as FinanceGrowthPeriod);
+                      setGrowthPeriod(option.id as FinanceInsightsPeriod);
                       setSelectedMonth("All");
                       setSelectedYear("All");
                     }}
                     className={`px-3 py-1 rounded-full transition-colors ${
                       growthPeriod === option.id
                         ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-primary-foreground"
+                        : "text-muted-foreground hover:bg-gray-900 hover:text-white"
                     }`}
                   >
                     {option.label}
@@ -395,7 +304,7 @@ const EventFinanceDashboard = () => {
                   className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
                 >
                   <option value="All">All years</option>
-                  {mockFinanceGrowth.yearly.totalRevenue.map((d) => (
+                  {financeGrowth?.totalRevenue.map((d) => (
                     <option key={d.label} value={d.label}>
                       {d.label}
                     </option>
@@ -410,13 +319,21 @@ const EventFinanceDashboard = () => {
               <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Total Revenue
               </h3>
-              <div className="h-56">
-                <CustomLineChart
-                  data={filteredGrowth.totalRevenue}
-                  dataKey="value"
-                  xAxisKey="label"
-                  height={220}
-                />
+              <div className="h-56 flex items-center justify-center">
+                {growthLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading chart data...</p>
+                ) : filteredGrowth.totalRevenue.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No data available for this period.
+                  </p>
+                ) : (
+                  <CustomLineChart
+                    data={filteredGrowth.totalRevenue}
+                    dataKey="value"
+                    xAxisKey="label"
+                    height={220}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -426,13 +343,21 @@ const EventFinanceDashboard = () => {
               <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Platform Fees
               </h3>
-              <div className="h-56">
-                <CustomBarChart
-                  data={filteredGrowth.platformFees}
-                  dataKey="value"
-                  xAxisKey="label"
-                  height={220}
-                />
+              <div className="h-56 flex items-center justify-center">
+                {growthLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading chart data...</p>
+                ) : filteredGrowth.platformFees.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No data available for this period.
+                  </p>
+                ) : (
+                  <CustomBarChart
+                    data={filteredGrowth.platformFees}
+                    dataKey="value"
+                    xAxisKey="label"
+                    height={220}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -442,13 +367,21 @@ const EventFinanceDashboard = () => {
               <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Pending Disbursements
               </h3>
-              <div className="h-56">
-                <CustomLineChart
-                  data={filteredGrowth.pendingDisbursements}
-                  dataKey="value"
-                  xAxisKey="label"
-                  height={220}
-                />
+              <div className="h-56 flex items-center justify-center">
+                {growthLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading chart data...</p>
+                ) : filteredGrowth.pendingDisbursements.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No data available for this period.
+                  </p>
+                ) : (
+                  <CustomLineChart
+                    data={filteredGrowth.pendingDisbursements}
+                    dataKey="value"
+                    xAxisKey="label"
+                    height={220}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
@@ -458,13 +391,21 @@ const EventFinanceDashboard = () => {
               <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Total Refunds
               </h3>
-              <div className="h-56">
-                <CustomBarChart
-                  data={filteredGrowth.totalRefunds}
-                  dataKey="value"
-                  xAxisKey="label"
-                  height={220}
-                />
+              <div className="h-56 flex items-center justify-center">
+                {growthLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading chart data...</p>
+                ) : filteredGrowth.totalRefunds.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No data available for this period.
+                  </p>
+                ) : (
+                  <CustomBarChart
+                    data={filteredGrowth.totalRefunds}
+                    dataKey="value"
+                    xAxisKey="label"
+                    height={220}
+                  />
+                )}
               </div>
             </CardContent>
           </Card>

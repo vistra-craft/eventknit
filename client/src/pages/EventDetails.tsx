@@ -74,7 +74,7 @@ const EventDetails = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Loading event...</p>
@@ -89,7 +89,7 @@ const EventDetails = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center max-w-md px-4">
             <h2 className="text-2xl font-bold mb-4">Event not found</h2>
             <p className="text-muted-foreground mb-6">{error || 'The event you are looking for does not exist.'}</p>
@@ -105,8 +105,7 @@ const EventDetails = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <main className="flex-1 pb-12">
-        {/* Hero Section */}
+      <main className="flex-1 pb-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <EventHero 
           title={event.title}
           category={event.category}
@@ -117,54 +116,47 @@ const EventDetails = () => {
           image={event.image}
         />
 
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-3 gap-8 mt-8">
-            {/* Left Column - Main Content */}
-            <div className="lg:col-span-2 space-y-12">
-              <EventInfo 
-                description={event.description}
-                fullDescription={event.fullDescription}
-                requirements={event.requirements}
-                ageRestriction={event.ageRestriction}
-                speakers={event.speakers}
-              />
-              
-              <VenueSection 
-                venue={event.venue}
-                location={event.location}
-                coordinates={event.coordinates}
-              />
-              
-              <OrganizerInfo 
-                organizer={event.organizer}
-                organizerName={event.organizerName}
-              />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-10 mt-6">
+          <section>
+            <TicketSelector 
+              ticketTypes={event.ticketTypes}
+              onRegister={handleRegister}
+              currency={event.currency || '$'}
+            />
+          </section>
 
-              <RefundPolicy />
-              
-              <EventTags tags={event.tags} />
-            </div>
+          <section className="space-y-10">
+            <EventInfo 
+              description={event.description}
+              fullDescription={event.fullDescription}
+              requirements={event.requirements}
+              ageRestriction={event.ageRestriction}
+              speakers={event.speakers}
+            />
+            
+            <VenueSection 
+              venue={event.venue}
+              location={event.location}
+              coordinates={event.coordinates}
+            />
+            
+            <OrganizerInfo 
+              organizer={event.organizer}
+              organizerName={event.organizerName}
+            />
 
-            {/* Right Column - Ticket Selector (Sticky) */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                <TicketSelector 
-                  ticketTypes={event.ticketTypes}
-                  onRegister={handleRegister}
-                  currency={event.currency || '$'}
-                />
-              </div>
-            </div>
-          </div>
+            <RefundPolicy />
+            
+            <EventTags tags={event.tags} />
+          </section>
 
-          {/* Related Events */}
-          <div className="mt-16">
+          <section className="pt-4 border-t border-border/60">
             <RelatedEvents 
               currentEventId={event.id}
               category={event.category || undefined}
               tags={event.tags}
             />
-          </div>
+          </section>
         </div>
       </main>
 

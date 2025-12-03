@@ -226,15 +226,15 @@ const AdminAnalyticsOverview = () => {
                 <option value="90d">Last 90 days</option>
                 <option value="1y">Last year</option>
               </select>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
                 <Filter className="h-4 w-4 mr-2" />
                 Filters
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>

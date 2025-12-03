@@ -48,7 +48,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Main layout area (sidebar + header + page content) */}
       <div className="max-w-7xl w-full mx-auto flex flex-1">
         {/* Sidebar */}

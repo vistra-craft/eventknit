@@ -151,7 +151,7 @@ const ResetPassword = () => {
                   </ul>
                 </div>
 
-                <Button type="submit" className="w-full h-12 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground">
+                <Button type="submit" className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md transition-all duration-200">
                   Reset Password
                 </Button>
               </form>
@@ -159,7 +159,7 @@ const ResetPassword = () => {
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground">
                   Remember your password?{' '}
-                  <Link to="/auth/signin" className="text-eventknit hover:text-eventknit/80 transition-colors font-medium">
+                  <Link to="/auth/signin" className="text-foreground hover:text-muted-foreground transition-colors font-medium">
                     Sign in
                   </Link>
                 </p>
@@ -169,8 +169,8 @@ const ResetPassword = () => {
             <>
               {/* Success State */}
               <div className="text-center space-y-6">
-                <div className="w-16 h-16 bg-eventknit/10 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-8 h-8 text-eventknit" />
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-8 h-8 text-primary" />
                 </div>
                 
                 <div className="space-y-2">
@@ -182,7 +182,7 @@ const ResetPassword = () => {
 
                 <Button
                   onClick={handleBackToSignIn}
-                  className="w-full h-12 bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground"
+                  className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   Continue to sign in
                 </Button>
@@ -193,7 +193,7 @@ const ResetPassword = () => {
           <div className="mt-8 text-center">
             <p className="text-xs text-muted-foreground">
               Need help? Contact our{' '}
-              <Link to="/support" className="text-eventknit hover:text-eventknit/80 transition-colors">
+              <Link to="/support" className="text-foreground hover:text-muted-foreground transition-colors">
                 support team
               </Link>
             </p>

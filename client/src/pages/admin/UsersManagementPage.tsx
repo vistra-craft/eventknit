@@ -28,21 +28,21 @@ const UsersManagementPage = () => {
               <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
                 <TabsTrigger
                   value="staff"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-gray-900 data-[state=inactive]:hover:text-white transition-colors"
                 >
                   <Shield className="h-4 w-4 mr-2" />
                   Staff
                 </TabsTrigger>
                 <TabsTrigger
                   value="organizers"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-gray-900 data-[state=inactive]:hover:text-white transition-colors"
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Organizers
                 </TabsTrigger>
                 <TabsTrigger
                   value="attendees"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-gray-900 data-[state=inactive]:hover:text-white transition-colors"
                 >
                   <UserCheck className="h-4 w-4 mr-2" />
                   Attendees

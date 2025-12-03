@@ -51,7 +51,7 @@ const ForgotPassword = () => {
                     <button
                       type="button"
                       onClick={() => navigate('/')}
-                      className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
                     >
                       <ArrowLeft className="w-3 h-3" />
                       <span>Back to home</span>

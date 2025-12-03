@@ -318,19 +318,28 @@ const UserRolesPage = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Can Create:</span>
-                        <Badge variant={role.canCreate ? "default" : "secondary"}>
+                        <Badge
+                          variant={role.canCreate ? "secondary" : "secondary"}
+                          className={role.canCreate ? "bg-muted/30 text-foreground" : ""}
+                        >
                           {role.canCreate ? "Yes" : "No"}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Can Modify:</span>
-                        <Badge variant={role.canModify ? "default" : "secondary"}>
+                        <Badge
+                          variant={role.canModify ? "secondary" : "secondary"}
+                          className={role.canModify ? "bg-muted/30 text-foreground" : ""}
+                        >
                           {role.canModify ? "Yes" : "No"}
                         </Badge>
                       </div>
-                <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Can Delete:</span>
-                        <Badge variant={role.canDelete ? "default" : "secondary"}>
+                        <Badge
+                          variant={role.canDelete ? "secondary" : "secondary"}
+                          className={role.canDelete ? "bg-muted/30 text-foreground" : ""}
+                        >
                           {role.canDelete ? "Yes" : "No"}
                         </Badge>
                       </div>
@@ -355,14 +364,14 @@ const UserRolesPage = () => {
                     )}
                 
                     {canModify && (
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => handleEditRole(role)}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full hover:bg-muted/30 hover:text-foreground transition-colors"
+                        onClick={() => handleEditRole(role)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </Button>
                     )}
                     {!canModify && (
                       <div className="text-xs text-muted-foreground text-center p-2">

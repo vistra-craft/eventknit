@@ -19,7 +19,7 @@ export const VenueSection = ({ venue, location, coordinates }: VenueSectionProps
     <section className="space-y-6">
       <h2 className="text-3xl font-bold">Venue Information</h2>
       
-      <Card className="overflow-hidden border-border/50 shadow-md">
+      <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
         {/* Map */}
         <div className="relative h-[300px] bg-muted">
           <EventMap 

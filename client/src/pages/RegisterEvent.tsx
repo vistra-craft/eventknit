@@ -4,13 +4,11 @@ import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, Us
 
 // UI Components
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 
 // App Components
 import Navbar from "@/components/Navbar";
@@ -501,7 +499,7 @@ const EventRegistration = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center py-12">
+        <main className="flex-1 flex items-center justify-center py-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center space-y-4">
             <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
             <p className="text-muted-foreground">Loading event details...</p>
@@ -515,7 +513,7 @@ const EventRegistration = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center p-4">
+        <main className="flex-1 flex items-center justify-center p-4 bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="max-w-md w-full">
             <Alert variant="destructive" className="mb-6">
               <AlertCircle className="h-5 w-5" />
@@ -541,7 +539,7 @@ const EventRegistration = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center p-4">
+        <main className="flex-1 flex items-center justify-center p-4 bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-bold tracking-tight">
               Event Not Found
@@ -565,18 +563,26 @@ const EventRegistration = () => {
     );
   }
 
+  const formattedDate =
+    event.date || (event.startDate ? new Date(event.startDate).toLocaleDateString() : "Date TBA");
+  const formattedTime =
+    event.time ||
+    (event.startTime
+      ? new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : "");
+  const eventLocation = event.location || event.venue || "Location TBA";
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <main className="flex-1 py-8">
-        <div className="container max-w-4xl px-4 md:px-6">
-          {/* Back Button */}
-          <div className="mb-6">
+      <main className="flex-1 py-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
+        <div className="max-w-3xl mx-auto px-4 space-y-8">
+          <div>
             <Button
               variant="outline"
               onClick={() => navigate('/')}
-              className="gap-2 hover:border-primary hover:bg-primary/5 transition-all duration-200"
+              className="gap-2 hover:bg-gray-900 hover:text-white transition-colors"
               size="lg"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -584,165 +590,126 @@ const EventRegistration = () => {
             </Button>
           </div>
 
-          {/* Hero Section */}
-          <div className="mb-10">
-            <Card variant="default" className="w-full overflow-hidden">
-              <div className="flex flex-col md:flex-row">
-                {/* Event Image */}
-                <div className="md:w-2/5 w-full h-64 md:h-auto relative">
-                  {event.image ? (
-                    <img
-                      src={event.image}
-                      alt={event.title}
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-muted-foreground">No image available</span>
-                    </div>
-                  )}
-                  <Badge className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm text-foreground">
-                    {event.price === 0 ? 'Free' : `$${event.price}`}
-                  </Badge>
+          <section className="rounded-2xl bg-white shadow-sm border border-border/40 overflow-hidden">
+            <div className="relative h-52 md:h-56 bg-muted">
+              {event.image ? (
+                <img src={event.image} alt={event.title} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
+                  Event image coming soon
                 </div>
-                {/* Event Details */}
-                <div className="md:w-3/5 w-full p-6 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start">
-                      <h2 className="text-2xl font-bold tracking-tight mb-2">
-                        {event.title}
-                      </h2>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <span>{event.date}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MapPin className="h-4 w-4 mr-2" />
-                        <span>{event.location}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 flex items-center gap-2">
-                      <Badge variant="outline" className="text-sm">
-                        {event.availableSlots} spots left
-                      </Badge>
-                      <Badge variant="secondary" className="text-sm">
-                        {event.category}
-                      </Badge>
-                    </div>
-                  </div>
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 mt-6">
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                      </svg>
-                      Save
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M4 4v16h16V4H4zm2 2h12v12H6V6zm3 3v6h6V9H9z" />
-                      </svg>
-                      Share
-                    </Button>
-                  </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
+                <p className="text-xs uppercase tracking-wide text-white/80">
+                  {event.category || "Upcoming event"}
+                </p>
+                <h1 className="text-2xl md:text-3xl font-semibold">{event.title}</h1>
+              </div>
+            </div>
+            <div className="p-6 md:p-8 grid gap-6 md:grid-cols-3 text-sm text-muted-foreground">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60 text-primary">
+                  <Calendar className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide">Date & time</p>
+                  <p className="font-medium text-foreground">{formattedDate}</p>
+                  {formattedTime && <p>{formattedTime}</p>}
                 </div>
               </div>
-            </Card>
-          </div>
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60 text-primary">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide">Location</p>
+                  <p className="font-medium text-foreground">{eventLocation}</p>
+                  {event.venue && <p>{event.venue}</p>}
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60 text-primary">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide">Organizer</p>
+                  <p className="font-medium text-foreground">
+                    {event.organizerName ||
+                      (event.organizer
+                        ? event.organizer.organizationName ||
+                          `${event.organizer.firstName} ${event.organizer.lastName}`
+                        : "Event host")}
+                  </p>
+                  {typeof event.availableSlots === "number" && (
+                    <span className="text-xs text-muted-foreground">{event.availableSlots} seats left</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
 
-          {/* Progress Indicator */}
-          <div className="mb-8 flex items-center gap-2 text-sm text-muted-foreground justify-center">
-            <span
-              className={
-                currentStep === "registration" ? "font-bold text-primary" : ""
-              }
-            >
-              1. Registration Info
-            </span>
-            <span>→</span>
-            <span
-              className={
-                currentStep === "confirmation" ? "font-bold text-primary" : ""
-              }
-            >
-              2. Confirmation
-            </span>
-          </div>
+          <section className="rounded-2xl bg-white shadow-sm border border-border/40">
+            {currentStep === "registration" ? (
+              <div className="p-6 md:p-8 space-y-8">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Registration
+                    </p>
+                    <h2 className="text-2xl font-semibold text-foreground">Secure your spot</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Complete this short form to confirm your attendance.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className={currentStep === "registration" ? "font-semibold text-foreground" : ""}>
+                      Step 1 of 2
+                    </span>
+                  </div>
+                </div>
 
-          {/* Ticket Selection Section */}
-          {event.ticketTypes && event.ticketTypes.length > 0 && (
-            <div className="mb-10">
-              {currentStep === "registration" && (
-                <Card variant="default" className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                      </svg>
-                      Select Tickets
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                {event.ticketTypes && event.ticketTypes.length > 0 && (
+                  <div className="space-y-4">
+                    <p className="text-sm font-medium text-muted-foreground">Ticket type</p>
+                    <div className="space-y-3">
                       {event.ticketTypes.map((ticket, index) => (
-                        <div 
-                          key={index} 
-                          className={`flex items-center justify-between p-4 border rounded-lg transition-colors cursor-pointer ${
-                            selectedTicketType === ticket.name 
-                              ? 'border-primary bg-primary/5' 
-                              : 'hover:bg-muted/50'
-                          }`}
+                        <button
+                          key={index}
+                          type="button"
                           onClick={() => setSelectedTicketType(ticket.name)}
+                          className={`w-full rounded-xl border border-border px-4 py-3 text-left transition-all duration-200 hover:bg-muted/30 hover:shadow-md ${
+                            selectedTicketType === ticket.name ? "border-primary bg-primary/5" : ""
+                          }`}
                         >
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{ticket.name}</h3>
-                            {ticket.features && ticket.features.length > 0 && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {ticket.features.join(" • ")}
-                              </p>
-                            )}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-foreground">{ticket.name}</p>
+                              {ticket.features && ticket.features.length > 0 && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {ticket.features.join(" • ")}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-bold text-foreground">${ticket.price}</span>
+                              <p className="text-xs text-muted-foreground">per ticket</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold">${ticket.price}</div>
-                            <div className="text-sm text-muted-foreground">per ticket</div>
-                          </div>
-                          <div className="ml-4">
-                            <input
-                              type="radio"
-                              name="selectedTicket"
-                              value={ticket.name}
-                              checked={selectedTicketType === ticket.name}
-                              onChange={() => setSelectedTicketType(ticket.name)}
-                              className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
-                            />
-                          </div>
-                        </div>
+                        </button>
                       ))}
                     </div>
+
                     {selectedTicketType && (
-                      <div className="mt-4 pt-4 border-t">
-                        <Label htmlFor="quantity">Quantity</Label>
-                        <div className="flex items-center gap-4 mt-2">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="quantity" className="text-sm font-medium text-muted-foreground">
+                          Quantity
+                        </Label>
+                        <div className="flex items-center gap-3">
                           <Button
                             type="button"
                             variant="outline"
-                            size="sm"
+                            size="icon"
                             onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
                             disabled={ticketQuantity <= 1}
                           >
@@ -756,34 +723,28 @@ const EventRegistration = () => {
                             onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                             className="w-20 text-center"
                           />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setTicketQuantity(ticketQuantity + 1)}
-                          >
+                          <Button type="button" variant="outline" size="icon" onClick={() => setTicketQuantity(ticketQuantity + 1)}>
                             +
                           </Button>
                         </div>
                       </div>
                     )}
 
-                    {/* Promo Code Section */}
                     {!event.isFree && (
-                      <div className="mt-6 pt-6 border-t space-y-3">
-                        <Label className="flex items-center gap-2">
+                      <div className="pt-4 mt-2 border-t space-y-3">
+                        <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <Ticket className="w-4 h-4" />
-                          Have a promo code?
+                          Promo code
                         </Label>
                         {!appliedDiscount ? (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col gap-2 sm:flex-row">
                             <Input
                               placeholder="Enter code"
                               value={promoCode}
                               onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                               className="flex-1"
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === "Enter") {
                                   e.preventDefault();
                                   handleApplyPromoCode();
                                 }
@@ -795,38 +756,23 @@ const EventRegistration = () => {
                               disabled={!promoCode.trim() || applyingCode}
                               variant="outline"
                             >
-                              {applyingCode ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                'Apply'
-                              )}
+                              {applyingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
                             </Button>
                           </div>
                         ) : (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                                <span className="text-sm font-medium">{appliedDiscount.code}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-green-700">
-                                  -${appliedDiscount.amount.toFixed(2)}
-                                </span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={handleRemovePromoCode}
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
+                          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-medium text-green-800">
+                              <CheckCircle className="w-4 h-4" />
+                              {appliedDiscount.code}
                             </div>
-                            <p className="text-xs text-green-700 mt-1">
-                              You saved ${appliedDiscount.amount.toFixed(2)}!
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-green-700">
+                                -${appliedDiscount.amount.toFixed(2)}
+                              </span>
+                              <Button type="button" variant="ghost" size="sm" onClick={handleRemovePromoCode}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         )}
                         {promoError && (
@@ -837,41 +783,16 @@ const EventRegistration = () => {
                         )}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-
-          {/* Registration Form Section */}
-          <div className="mb-10">
-            {currentStep === "registration" && (
-              <Card variant="default" className="border-t-4 border-t-primary shadow-lg">
-                <CardHeader className="bg-muted/30 pb-6 border-b">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                      <User className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">Attendee Information</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Please fill in your details to complete registration
-                      </p>
-                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-8">
-                  <form
-                    onSubmit={handleRegistrationSubmit}
-                    className="space-y-8"
-                    autoComplete="on"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                )}
+
+                <form onSubmit={handleRegistrationSubmit} className="space-y-8" autoComplete="on">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
                       {/* Always show basic fields if not authenticated or if they're missing from custom fields */}
                       {(!isAuthenticated || (!event.registrationFields?.some(f => f.type === 'email'))) && (
                         <>
                           <div className="space-y-2">
-                            <Label htmlFor="guest-firstName" className="text-base font-medium">
+                            <Label htmlFor="guest-firstName" className="text-sm font-medium">
                               First Name <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -881,7 +802,7 @@ const EventRegistration = () => {
                               value={formData['guest-firstName'] as string || ''}
                               onChange={(e) => handleInputChange('guest-firstName', e.target.value)}
                               required
-                              className={`h-11 ${errors['guest-firstName'] ? "border-destructive" : ""}`}
+                              className={`h-10 ${errors['guest-firstName'] ? "border-destructive" : ""}`}
                             />
                             {errors['guest-firstName'] && (
                               <p className="text-destructive text-sm">{errors['guest-firstName']}</p>
@@ -889,7 +810,7 @@ const EventRegistration = () => {
                           </div>
                           
                           <div className="space-y-2">
-                            <Label htmlFor="guest-lastName" className="text-base font-medium">
+                            <Label htmlFor="guest-lastName" className="text-sm font-medium">
                               Last Name <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -899,7 +820,7 @@ const EventRegistration = () => {
                               value={formData['guest-lastName'] as string || ''}
                               onChange={(e) => handleInputChange('guest-lastName', e.target.value)}
                               required
-                              className={`h-11 ${errors['guest-lastName'] ? "border-destructive" : ""}`}
+                              className={`h-10 ${errors['guest-lastName'] ? "border-destructive" : ""}`}
                             />
                             {errors['guest-lastName'] && (
                               <p className="text-destructive text-sm">{errors['guest-lastName']}</p>
@@ -907,7 +828,7 @@ const EventRegistration = () => {
                           </div>
 
                           <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="guest-email" className="text-base font-medium">
+                            <Label htmlFor="guest-email" className="text-sm font-medium">
                               Email Address <span className="text-destructive">*</span>
                             </Label>
                             <Input
@@ -917,7 +838,7 @@ const EventRegistration = () => {
                               value={formData['guest-email'] as string || ''}
                               onChange={(e) => handleInputChange('guest-email', e.target.value)}
                               required
-                              className={`h-11 ${errors['guest-email'] ? "border-destructive" : ""}`}
+                              className={`h-10 ${errors['guest-email'] ? "border-destructive" : ""}`}
                             />
                             {errors['guest-email'] && (
                               <p className="text-destructive text-sm">{errors['guest-email']}</p>
@@ -1024,69 +945,63 @@ const EventRegistration = () => {
                       </Button>
                     </div>
                   </form>
-                </CardContent>
-              </Card>
-            )}
-
-
-            {/* Confirmation Step */}
-            {currentStep === "confirmation" && event && (
-              <Card variant="default">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                    <Check className="w-8 h-8 text-primary" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-foreground mb-2">
-                    🎉 You're Going!
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Your registration for <strong>{event.title}</strong> is confirmed!
+              </div>
+            ) : (
+              <div className="p-8 text-center space-y-6">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 animate-bounce">
+                  <Check className="w-8 h-8 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-foreground">🎉 You're Going!</h3>
+                  <p className="text-muted-foreground">
+                    Your registration for <strong>{event.title}</strong> is confirmed.
                   </p>
-                  {isGuestRegistration ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                      <p className="text-sm text-blue-900 mb-2">
-                        <strong>Check your email!</strong> We've sent you two emails:
-                      </p>
-                      <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
-                        <li><strong>Ticket confirmation</strong> - Your event ticket with QR code and backup entry code</li>
-                        <li><strong>Account invitation</strong> - Create your EventKnit account to manage tickets and register for future events</li>
-                      </ul>
-                      <p className="text-xs text-blue-700 mt-2">
-                        You can access your tickets via the email link, and creating an account is optional but recommended.
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground mb-6 text-sm">
-                      A confirmation email with your ticket has been sent to your registered email address.
+                </div>
+                {isGuestRegistration ? (
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-left space-y-2">
+                    <p className="text-sm text-blue-900">
+                      <strong>Check your email!</strong> We've sent a ticket confirmation (with QR code) and an optional account invitation.
                     </p>
-                  )}
-                  <div className="bg-muted rounded-lg p-4 mb-6">
-                    <h4 className="font-semibold mb-2">Event Details:</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {event.date} at {event.location}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Organized by {event.organizerName || (event.organizer ? (event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`) : 'Unknown Organizer')}
+                    <p className="text-xs text-blue-700">
+                      Creating an account is optional but lets you manage future registrations faster.
                     </p>
                   </div>
-                  <div className="flex gap-4 justify-center">
-                    <Link
-                      to="/"
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-full font-semibold transition-colors duration-200"
-                    >
-                      Browse More Events
-                    </Link>
-                    <Link
-                      to="/user/dashboard"
-                      className="px-6 py-2 border border-border rounded-full text-foreground/80 hover:bg-accent transition-colors"
-                    >
-                      Go to Dashboard
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    A confirmation email with your ticket has been sent to your registered email address.
+                  </p>
+                )}
+                <div className="rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground space-y-1">
+                  <p>
+                    {formattedDate}
+                    {formattedTime && ` at ${formattedTime}`} — {eventLocation}
+                  </p>
+                  <p>
+                    Organized by{" "}
+                    {event.organizerName ||
+                      (event.organizer
+                        ? event.organizer.organizationName ||
+                          `${event.organizer.firstName} ${event.organizer.lastName}`
+                        : "Event host")}
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-3 pt-2">
+                  <Link
+                    to="/"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-full font-semibold transition-colors duration-200"
+                  >
+                    Browse More Events
+                  </Link>
+                  <Link
+                    to="/user/dashboard"
+                    className="px-6 py-2 border border-border rounded-full text-foreground/80 hover:bg-muted/40 transition-colors"
+                  >
+                    Go to Dashboard
+                  </Link>
+                </div>
+              </div>
             )}
-          </div>
+          </section>
         </div>
       </main>
       <Footer />

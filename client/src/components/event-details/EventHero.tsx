@@ -13,55 +13,49 @@ interface EventHeroProps {
 
 export const EventHero = ({ title, category, date, time, venue, location, image }: EventHeroProps) => {
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-6 animate-in fade-in duration-700">
-      <div className="relative h-[400px] md:h-[500px] w-full overflow-hidden rounded-2xl shadow-xl">
-        {/* Hero Image */}
-        <div className="absolute inset-0">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-4 animate-in fade-in duration-700">
+      <section className="rounded-2xl bg-white shadow-sm border-0 overflow-hidden">
+        <div className="relative h-52 md:h-56 bg-muted">
           {image ? (
-            <img 
-              src={image} 
-              alt={title} 
-              className="w-full h-full object-cover"
-            />
+            <img src={image} alt={title} className="h-full w-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              <span className="text-muted-foreground">No image available</span>
+            <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
+              Event image coming soon
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-        </div>
-
-        {/* Content */}
-        <div className="relative h-full flex flex-col justify-end p-6 md:p-10 text-white">
-          <div className="animate-in slide-in-from-bottom-4 duration-700 delay-200">
-            {/* Category Badge */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
             {category && (
-              <div className="mb-4">
-                <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 text-sm px-3 py-1 border-0">
-                  {category}
-                </Badge>
-              </div>
+              <p className="text-xs uppercase tracking-wide text-white/80">{category}</p>
             )}
-
-            {/* Event Title */}
-            <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight shadow-sm drop-shadow-md">
-              {title}
-            </h1>
-
-            {/* Event Details */}
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-base md:text-lg font-medium text-white/90">
-              <div className="flex items-center gap-2 drop-shadow-md">
-                <Calendar className="w-5 h-5" />
-                <span>{date} • {time}</span>
-              </div>
-              <div className="flex items-center gap-2 drop-shadow-md">
-                <MapPin className="w-5 h-5" />
-                <span>{venue ? `${venue}, ` : ''}{location}</span>
-              </div>
+            <h1 className="text-2xl md:text-3xl font-semibold leading-tight">{title}</h1>
+          </div>
+        </div>
+        <div className="p-6 md:p-7 grid gap-6 md:grid-cols-2 text-sm text-muted-foreground">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/60 text-primary">
+              <Calendar className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide">Date & time</p>
+              <p className="font-medium text-foreground">{date}</p>
+              {time && <p>{time}</p>}
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/60 text-primary">
+              <MapPin className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide">Location</p>
+              <p className="font-medium text-foreground">
+                {venue ? `${venue}, ` : ""}
+                {location}
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

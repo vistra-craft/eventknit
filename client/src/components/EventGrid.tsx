@@ -137,35 +137,21 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
   return (
     <section className="py-16 bg-background" data-section="events">
       <div className="container mx-auto px-6">
-
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {isLoading ? (
+          {error ? (
             <div className="col-span-full text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading events...</p>
-            </div>
-          ) : error ? (
-            <div className="col-span-full text-center py-12">
-              <p className="text-destructive">{error}</p>
+              <p className="text-destructive mb-2">{error}</p>
               <Button
                 variant="outline"
                 onClick={() => fetchEvents({ status: EventStatus.APPROVED, limit: 100 })}
-                className="mt-4 border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
+                className="border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
               >
                 Try Again
               </Button>
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground">No events found matching your filters</p>
-              <Button 
-                variant="link" 
-                onClick={() => window.location.reload()}
-                className="mt-2"
-              >
-                Clear filters
-              </Button>
+              <p className="text-muted-foreground">No events available yet. Check back soon.</p>
             </div>
           ) : (
             filteredEvents.map((event) => {
@@ -202,8 +188,6 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
             })
           )}
         </div>
-
-        {/* Pagination / view-all section intentionally removed for infinite scroll experience */}
       </div>
     </section>
   );

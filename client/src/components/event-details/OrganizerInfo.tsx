@@ -12,7 +12,7 @@ export const OrganizerInfo = ({ organizer, organizerName }: OrganizerInfoProps) 
 
   return (
     <section className="py-8">
-      <div className="bg-card rounded-2xl shadow-sm border border-border p-8">
+      <div className="bg-white rounded-2xl shadow-sm border-0 p-8">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           {/* Avatar Placeholder */}
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-4 ring-primary/5">

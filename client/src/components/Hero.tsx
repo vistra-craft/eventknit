@@ -1,7 +1,7 @@
 import { Heart, Share2, MapPin, Calendar, Clock, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
 
@@ -11,35 +11,19 @@ export const Hero = () => {
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [featuredEvents, setFeaturedEvents] = useState<ActiveFeaturedEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const isMountedRef = useRef(true);
-  
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   // Fetch featured events on mount
   useEffect(() => {
     const fetchFeaturedEvents = async () => {
       try {
         const events = await getActiveFeaturedEvents();
-        if (!isMountedRef.current) return;
         setFeaturedEvents(events);
         if (events.length > 0) {
           setCurrentEventIndex(0);
         }
       } catch (error) {
         console.error("Failed to fetch featured events:", error);
-        // Set empty array on error so UI doesn't hang
-        if (isMountedRef.current) {
-          setFeaturedEvents([]);
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setLoading(false);
-        }
+        setFeaturedEvents([]);
       }
     };
 
@@ -59,8 +43,8 @@ export const Hero = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying, featuredEvents.length]);
 
-  // Show placeholder if no events
-  if (!loading && featuredEvents.length === 0) {
+  // If there are no active featured events, show a clean placeholder hero (no spinner)
+  if (featuredEvents.length === 0) {
     return (
       <div className="relative">
         <div 
@@ -68,7 +52,6 @@ export const Hero = () => {
         >
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 z-10" />
           
-          {/* Placeholder Content */}
           <div className="absolute inset-0 z-20 flex items-center justify-center">
             <div className="container mx-auto max-w-7xl px-6 text-center">
               <div className="space-y-6 max-w-3xl mx-auto">
@@ -96,25 +79,6 @@ export const Hero = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="relative">
-        <div 
-          className="w-full h-[60vh] object-cover transition-opacity duration-500 relative bg-gradient-to-br from-primary/20 via-primary/10 to-muted flex items-center justify-center"
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 z-10" />
-          <div className="absolute inset-0 z-20 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="text-muted-foreground">Loading featured events...</p>
             </div>
           </div>
         </div>

@@ -138,11 +138,11 @@ const PaymentTransactionsPage = () => {
             <p className="text-gray-600">View and manage all event payment transactions</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
+            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="hover:bg-gray-900 hover:text-white transition-colors">
               <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing..." : "Sync from Paystack"}
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>

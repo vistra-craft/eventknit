@@ -521,3 +521,31 @@ export const autoFixReconciliation = async (
   );
 };
 
+// ==================== Finance Insights (Dashboards) ====================
+
+export type FinanceInsightsPeriod = 'monthly' | 'quarterly' | 'semiannual' | 'yearly';
+
+export interface FinanceInsightsPoint {
+  label: string;
+  value: number;
+}
+
+export interface FinanceInsights {
+  period: FinanceInsightsPeriod;
+  totalRevenue: FinanceInsightsPoint[];
+  platformFees: FinanceInsightsPoint[];
+  pendingDisbursements: FinanceInsightsPoint[];
+  totalRefunds: FinanceInsightsPoint[];
+}
+
+/**
+ * Get aggregated finance insights for admin dashboards
+ */
+export const getFinanceInsights = async (
+  period: FinanceInsightsPeriod
+): Promise<ApiResponse<FinanceInsights>> => {
+  return apiGet<ApiResponse<FinanceInsights>>(
+    `/admin/finance/insights?period=${period}`
+  );
+};
+

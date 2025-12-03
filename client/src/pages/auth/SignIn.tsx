@@ -377,7 +377,7 @@ const SignIn = () => {
                   {/* Log In Button */}
                   <Button 
                     type="submit" 
-                    className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                    className="w-full h-12 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Signing in...' : 'Log In'}
@@ -387,7 +387,7 @@ const SignIn = () => {
                 {/* Continue with Google Button */}
                 <Button
                   variant="outline"
-                  className="w-full h-12 bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-medium flex items-center justify-center gap-3"
+                  className="w-full h-12 bg-white border border-border hover:bg-muted/30 text-foreground font-medium flex items-center justify-center gap-3 transition-colors"
                   onClick={handleFacebookSignIn}
                   disabled={isLoading}
                   type="button"

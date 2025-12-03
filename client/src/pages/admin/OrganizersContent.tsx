@@ -248,11 +248,11 @@ const OrganizersContent = () => {
           </Select>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -392,6 +392,7 @@ const OrganizersContent = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => navigate(`/admin/users/organizers/${organizer.id}/preview`)}
+                        className="hover:bg-gray-900 hover:text-white transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
@@ -401,6 +402,7 @@ const OrganizersContent = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditOrganizer(organizer.id)}
+                          className="hover:bg-gray-900 hover:text-white transition-colors"
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
@@ -411,6 +413,7 @@ const OrganizersContent = () => {
                           size="sm"
                           disabled
                           title="You do not have permission to modify organizer accounts"
+                          className="hover:bg-gray-900 hover:text-white transition-colors"
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit

@@ -205,7 +205,7 @@ const SimpleRegistration = () => {
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ATTENDEE')}
-                    className="p-5 rounded-2xl bg-white hover:bg-muted/40 transition-colors text-left group cursor-pointer"
+                    className="p-5 rounded-2xl bg-white hover:bg-muted/30 transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center">
@@ -223,7 +223,7 @@ const SimpleRegistration = () => {
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ORGANIZER')}
-                    className="p-5 rounded-2xl bg-white hover:bg-muted/40 transition-colors text-left group cursor-pointer"
+                    className="p-5 rounded-2xl bg-white hover:bg-muted/30 transition-colors text-left group cursor-pointer"
                   >
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center">
