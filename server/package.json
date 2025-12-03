@@ -16,6 +16,7 @@
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "lint:fix": "eslint src/**/*.ts tests/**/*.ts --fix",
     "type-check": "tsc --noEmit",
+    "prepare": "husky",
     "pre-push": "npm run prisma:generate && npm run lint && npm run type-check && npm run test:run && npm run build",
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
@@ -69,7 +70,9 @@
     "@types/twilio": "^3.19.2",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.35.0",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
+    "lint-staged": "^16.2.7",
     "mongodb-memory-server": "^10.2.3",
     "sharp": "^0.34.4",
     "supertest": "^7.1.4",
@@ -116,5 +119,11 @@
     "uuid": "^11.0.3",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "git add"
+    ]
   }
 }

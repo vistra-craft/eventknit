@@ -13,6 +13,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Set the API base URL to use relative path (nginx will proxy /api to server)
+ENV VITE_API_BASE_URL=/api/v1
+
 # Build the application
 RUN npm run build
 

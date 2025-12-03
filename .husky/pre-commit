@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# Run lint-staged in the server directory
+cd server && npx lint-staged
+

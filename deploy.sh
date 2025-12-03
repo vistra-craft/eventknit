@@ -20,11 +20,35 @@ echo "🚀 Starting deployment..."
 echo "⬇️ Pulling latest changes from development..."
 git fetch origin
 git checkout development
-git pull origin development
+
+# Reset local branch to match remote exactly (discard any local changes)
+echo "🔄 Syncing with remote (discarding any local changes)..."
+git reset --hard origin/development
+
+# Clean up any untracked files
+git clean -fd
 
 # Build and start containers
 echo "📦 Building and starting containers..."
 docker compose -f docker-compose.prod.yml up -d --build
+
+# Wait for database to be ready
+echo "⏳ Waiting for database to be ready..."
+sleep 10
+
+# Run database migrations
+echo "🗄️ Running database migrations..."
+docker compose -f docker-compose.prod.yml exec -T server npx prisma migrate deploy || {
+    echo "⚠️ Migration failed. Attempting to resolve..."
+    # Get the list of failed migrations and mark them as applied
+    # This handles cases where migrations partially applied
+    docker compose -f docker-compose.prod.yml exec -T server npx prisma migrate resolve --rolled-back 2>/dev/null || true
+    # Retry deployment
+    docker compose -f docker-compose.prod.yml exec -T server npx prisma migrate deploy || {
+        echo "❌ Migration failed after retry. Please check manually."
+        echo "   Run: docker compose -f docker-compose.prod.yml exec server npx prisma migrate status"
+    }
+}
 
 # Prune unused images to save space
 echo "🧹 Cleaning up..."

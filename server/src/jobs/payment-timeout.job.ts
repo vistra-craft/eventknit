@@ -23,7 +23,7 @@ export class PaymentTimeoutJob {
     try {
       await prisma.$queryRaw`SELECT 1`;
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
