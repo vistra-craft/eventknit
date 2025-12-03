@@ -20,7 +20,13 @@ echo "🚀 Starting deployment..."
 echo "⬇️ Pulling latest changes from development..."
 git fetch origin
 git checkout development
-git pull origin development
+
+# Reset local branch to match remote exactly (discard any local changes)
+echo "🔄 Syncing with remote (discarding any local changes)..."
+git reset --hard origin/development
+
+# Clean up any untracked files
+git clean -fd
 
 # Build and start containers
 echo "📦 Building and starting containers..."
