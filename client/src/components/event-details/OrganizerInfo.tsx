@@ -12,8 +12,7 @@ export const OrganizerInfo = ({ organizer, organizerName }: OrganizerInfoProps) 
 
   return (
     <section>
-      <div className="bg-white rounded-2xl shadow-sm border-0 p-6">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           {/* Avatar Placeholder */}
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-4 ring-primary/5">
             <Building className="w-10 h-10 text-primary" />
@@ -42,7 +41,6 @@ export const OrganizerInfo = ({ organizer, organizerName }: OrganizerInfoProps) 
             </div>
           </div>
         </div>
-      </div>
     </section>
   );
 };

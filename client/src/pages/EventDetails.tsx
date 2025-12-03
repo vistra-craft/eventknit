@@ -6,13 +6,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { EventHero } from "@/components/event-details/EventHero";
 import { TicketSelector } from "@/components/event-details/TicketSelector";
-import { EventInfo } from "@/components/event-details/EventInfo";
 import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle, Ticket } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Loader2, Users, CheckCircle } from "lucide-react";
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -139,9 +137,8 @@ const EventDetails = () => {
               {/* Important Information */}
               {(event.requirements?.length || event.ageRestriction) && (
                 <section>
-                  <div className="p-6 rounded-2xl border-0 bg-white shadow-sm">
-                    <h3 className="text-xl font-bold mb-4">Important Information</h3>
-                    <div className="grid sm:grid-cols-2 gap-4">
+                  <h3 className="text-xl font-bold mb-4">Important Information</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
                       {event.ageRestriction && (
                         <div className="flex items-start gap-3">
                           <div className="p-2 rounded-lg bg-primary/10">
@@ -165,7 +162,6 @@ const EventDetails = () => {
                           </div>
                         </div>
                       ))}
-                    </div>
                   </div>
                 </section>
               )}
@@ -185,7 +181,7 @@ const EventDetails = () => {
                   <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {event.speakers.map((speaker, index) => (
-                      <Card key={index} className="p-4 flex items-start gap-4 rounded-2xl border-0 bg-white hover:shadow-md transition-shadow">
+                      <div key={index} className="p-4 flex items-start gap-4 rounded-lg hover:bg-muted/30 transition-colors">
                         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
                           {speaker.image ? (
                             <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />
@@ -198,14 +194,14 @@ const EventDetails = () => {
                           <p className="text-primary font-medium text-sm">{speaker.title}</p>
                           <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{speaker.bio}</p>
                         </div>
-                      </Card>
+                      </div>
                     ))}
                   </div>
                 </section>
               )}
             </div>
 
-            {/* Right Column - Tickets and Register Button */}
+            {/* Right Column - Tickets */}
             <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-20 lg:self-start">
               {/* Get Tickets */}
               <section>
@@ -215,16 +211,6 @@ const EventDetails = () => {
                   currency={event.currency || '$'}
                 />
               </section>
-
-              {/* Register Button */}
-              <Button
-                size="lg"
-                className="w-full h-12 text-lg font-semibold shadow-md"
-                onClick={() => navigate(`/event/${id}/register`)}
-              >
-                <Ticket className="mr-2 h-5 w-5" />
-                Register for Event
-              </Button>
             </div>
           </div>
 

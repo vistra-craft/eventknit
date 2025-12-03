@@ -48,15 +48,16 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="container mx-auto flex flex-1">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden lg:h-screen lg:overflow-hidden">
+      {/* Main layout area (sidebar + header + page content) */}
+      <div className="max-w-7xl w-full mx-auto flex flex-1 lg:h-full">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
           <OrganizerSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex-1 min-w-0 flex flex-col lg:overflow-y-auto scrollbar-hide">
           {/* Header */}
           <div className="px-4 sm:px-6">
             <OrganizerHeader
@@ -65,7 +66,7 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
           </div>
 
           {/* Page Content */}
-          <main className="flex-1 px-4 sm:px-6 pt-6">
+          <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
             {children}
           </main>
         </div>
@@ -81,8 +82,10 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
         </div>
       )}
       
-      {/* Footer */}
-      <Footer />
+      {/* Global footer – always at bottom, follows main app width */}
+      <div className="mt-4">
+        <Footer />
+      </div>
     </div>
   );
 };

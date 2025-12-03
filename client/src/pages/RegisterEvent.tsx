@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User } from "lucide-react";
 
 // UI Components
@@ -34,15 +34,18 @@ interface FormErrors {
 const EventRegistration = () => {
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { event, isLoading, error: eventError, fetchEvent } = useEvent();
-  const [currentStep, setCurrentStep] = useState<'registration' | 'confirmation'>('registration');
+  const [currentStep, setCurrentStep] = useState<'registration' | 'review' | 'confirmation'>('registration');
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [selectedTicketType, setSelectedTicketType] = useState<string>('');
   const [ticketQuantity, setTicketQuantity] = useState<number>(1);
+  const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [isGuestRegistration, setIsGuestRegistration] = useState(false);
   const [promoCode, setPromoCode] = useState<string>('');
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
@@ -59,10 +62,36 @@ const EventRegistration = () => {
 
   // Note: Guest checkout is now allowed - no authentication redirect
 
-  // Set default ticket type
+  // Handle tickets passed from EventDetails page
+  useEffect(() => {
+    if (location.state) {
+      const state = location.state as {
+        selectedTickets?: Record<string, number>;
+        preSelectedType?: string;
+        preSelectedQuantity?: number;
+      };
+      
+      if (state.selectedTickets) {
+        setSelectedTickets(state.selectedTickets);
+        // Set the first selected ticket type and quantity
+        const firstSelected = Object.entries(state.selectedTickets).find(([, qty]) => qty > 0);
+        if (firstSelected) {
+          setSelectedTicketType(firstSelected[0]);
+          setTicketQuantity(firstSelected[1]);
+        }
+      } else if (state.preSelectedType && state.preSelectedQuantity) {
+        setSelectedTicketType(state.preSelectedType);
+        setTicketQuantity(state.preSelectedQuantity);
+        setSelectedTickets({ [state.preSelectedType]: state.preSelectedQuantity });
+      }
+    }
+  }, [location.state]);
+
+  // Set default ticket type if none selected
   useEffect(() => {
     if (event?.ticketTypes && event.ticketTypes.length > 0 && !selectedTicketType) {
       setSelectedTicketType(event.ticketTypes[0].name);
+      setSelectedTickets({ [event.ticketTypes[0].name]: 1 });
     }
   }, [event, selectedTicketType]);
 
@@ -264,6 +293,7 @@ const EventRegistration = () => {
 
         if (response.success && response.data) {
           const registration = response.data.registration;
+          setRegistrationId(registration.id);
           setIsGuestRegistration(response.data.user.isNewUser || true);
 
           // Check if event is free
@@ -273,25 +303,8 @@ const EventRegistration = () => {
             // Free event - go directly to confirmation
             setCurrentStep('confirmation');
           } else {
-            // Calculate total price
-            const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
-            const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
-            const totalPrice = ticketPrice * quantity;
-
-            // Paid event - navigate to payment page with registration ID
-            navigate(`/event/${eventId}/payment`, {
-              state: {
-                registrationId: registration.id,
-                eventId: eventId,
-                eventTitle: event.title,
-                tickets: event.ticketTypes?.map(t => ({
-                  name: t.name,
-                  quantity: t.name === ticketType ? quantity : 0,
-                  price: t.price
-                })).filter(t => t.quantity > 0) || [],
-                totalPrice: totalPrice,
-              }
-            });
+            // Paid event - go to review step
+            setCurrentStep('review');
           }
         } else {
           throw new Error(response.message || 'Failed to register for event');
@@ -307,6 +320,7 @@ const EventRegistration = () => {
 
       if (response.success && response.data) {
         const registration = response.data.registration;
+        setRegistrationId(registration.id);
 
         // Check if event is free
         const isFree = event.isFree || event.price === 0;
@@ -315,29 +329,8 @@ const EventRegistration = () => {
           // Free event - go directly to confirmation
           setCurrentStep('confirmation');
         } else {
-          // Calculate total price
-          const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
-          const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
-          const subtotal = ticketPrice * quantity;
-          const discount = appliedDiscount?.amount || 0;
-          const totalPrice = subtotal - discount;
-
-          // Paid event - navigate to payment page with registration ID
-          navigate(`/event/${eventId}/payment`, {
-            state: {
-              registrationId: registration.id,
-              eventId: eventId,
-              eventTitle: event.title,
-              tickets: event.ticketTypes?.map(t => ({
-                name: t.name,
-                quantity: t.name === ticketType ? quantity : 0,
-                price: t.price
-              })).filter(t => t.quantity > 0) || [],
-              totalPrice: totalPrice,
-              discount: discount,
-              promoCode: appliedDiscount ? promoCode : undefined,
-            }
-          });
+          // Paid event - go to review step
+          setCurrentStep('review');
         }
       } else {
         throw new Error(response.message || 'Failed to register for event');
@@ -650,6 +643,63 @@ const EventRegistration = () => {
             </div>
           </section>
 
+          {/* Ticket Summary - Prominent Display */}
+          {event.ticketTypes && event.ticketTypes.length > 0 && selectedTicketType && (
+            <section className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/20 shadow-lg">
+              <div className="p-6 md:p-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Ticket className="w-5 h-5 text-primary" />
+                  <h3 className="text-lg font-semibold text-foreground">Your Order Summary</h3>
+                </div>
+                <div className="space-y-3">
+                  {Object.entries(selectedTickets).filter(([, qty]) => qty > 0).map(([ticketName, qty]) => {
+                    const ticket = event.ticketTypes?.find(t => t.name === ticketName);
+                    if (!ticket) return null;
+                    const ticketPrice = ticket.price || 0;
+                    const subtotal = ticketPrice * qty;
+                    return (
+                      <div key={ticketName} className="flex items-center justify-between p-4 bg-white/60 rounded-lg border border-primary/10">
+                        <div className="flex-1">
+                          <p className="font-semibold text-foreground">{ticketName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {qty} {qty === 1 ? 'ticket' : 'tickets'} × {event.currency || '$'}{ticketPrice.toFixed(2)}
+                          </p>
+                        </div>
+                        <p className="text-lg font-bold text-primary">
+                          {event.currency || '$'}{subtotal.toFixed(2)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                  {appliedDiscount && (
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">Promo Code: {appliedDiscount.code}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-green-700">
+                        -{event.currency || '$'}{appliedDiscount.amount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-3 border-t-2 border-primary/20">
+                    <p className="text-lg font-semibold text-foreground">Total</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {event.currency || '$'}
+                      {(() => {
+                        const selectedTicket = event.ticketTypes?.find(t => t.name === selectedTicketType);
+                        const ticketPrice = selectedTicket?.price || 0;
+                        const subtotal = ticketPrice * ticketQuantity;
+                        const discount = appliedDiscount?.amount || 0;
+                        return (subtotal - discount).toFixed(2);
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           <section className="rounded-2xl bg-white shadow-sm border border-border/40">
             {currentStep === "registration" ? (
               <div className="p-6 md:p-8 space-y-8">
@@ -665,7 +715,7 @@ const EventRegistration = () => {
                   </div>
                   <div className="inline-flex items-center rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
                     <span className={currentStep === "registration" ? "font-semibold text-foreground" : ""}>
-                      Step 1 of 2
+                      Step 1 of {event?.isFree || event?.price === 0 ? '2' : '3'}
                     </span>
                   </div>
                 </div>
@@ -678,7 +728,10 @@ const EventRegistration = () => {
                         <button
                           key={index}
                           type="button"
-                          onClick={() => setSelectedTicketType(ticket.name)}
+                          onClick={() => {
+                            setSelectedTicketType(ticket.name);
+                            setSelectedTickets({ [ticket.name]: ticketQuantity });
+                          }}
                           className={`w-full rounded-xl border border-border px-4 py-3 text-left transition-all duration-200 hover:bg-muted/30 hover:shadow-md ${
                             selectedTicketType === ticket.name ? "border-primary bg-primary/5" : ""
                           }`}
@@ -693,7 +746,7 @@ const EventRegistration = () => {
                               )}
                             </div>
                             <div className="text-right">
-                              <span className="text-lg font-bold text-foreground">${ticket.price}</span>
+                              <span className="text-lg font-bold text-foreground">{event.currency || '$'}{ticket.price}</span>
                               <p className="text-xs text-muted-foreground">per ticket</p>
                             </div>
                           </div>
@@ -711,7 +764,11 @@ const EventRegistration = () => {
                             type="button"
                             variant="outline"
                             size="icon"
-                            onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+                            onClick={() => {
+                              const newQty = Math.max(1, ticketQuantity - 1);
+                              setTicketQuantity(newQty);
+                              setSelectedTickets({ [selectedTicketType]: newQty });
+                            }}
                             disabled={ticketQuantity <= 1}
                           >
                             -
@@ -721,10 +778,23 @@ const EventRegistration = () => {
                             type="number"
                             min="1"
                             value={ticketQuantity}
-                            onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                            onChange={(e) => {
+                              const newQty = Math.max(1, parseInt(e.target.value) || 1);
+                              setTicketQuantity(newQty);
+                              setSelectedTickets({ [selectedTicketType]: newQty });
+                            }}
                             className="w-20 text-center"
                           />
-                          <Button type="button" variant="outline" size="icon" onClick={() => setTicketQuantity(ticketQuantity + 1)}>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={() => {
+                              const newQty = ticketQuantity + 1;
+                              setTicketQuantity(newQty);
+                              setSelectedTickets({ [selectedTicketType]: newQty });
+                            }}
+                          >
                             +
                           </Button>
                         </div>
@@ -933,11 +1003,192 @@ const EventRegistration = () => {
                         ) : (
                           event?.isFree || event?.price === 0
                             ? "Complete Registration"
-                            : "Continue to Payment"
+                            : "Review Order"
                         )}
                       </Button>
                     </div>
                   </form>
+              </div>
+            ) : currentStep === "review" ? (
+              <div className="p-6 md:p-8 space-y-8">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Review Order
+                    </p>
+                    <h2 className="text-2xl font-semibold text-foreground">Review your order</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Please review your details before proceeding to payment.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      Step 2 of 3
+                    </span>
+                  </div>
+                </div>
+
+                {/* Event Details */}
+                <div className="space-y-4 p-6 bg-muted/30 rounded-xl border border-border">
+                  <h3 className="font-semibold text-lg text-foreground">Event Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Event</p>
+                      <p className="font-medium text-foreground">{event.title}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Date & Time</p>
+                      <p className="font-medium text-foreground">
+                        {formattedDate} {formattedTime && `at ${formattedTime}`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Location</p>
+                      <p className="font-medium text-foreground">{eventLocation}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Organizer</p>
+                      <p className="font-medium text-foreground">
+                        {event.organizerName ||
+                          (event.organizer
+                            ? event.organizer.organizationName ||
+                              `${event.organizer.firstName} ${event.organizer.lastName}`
+                            : "Event host")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Registration Information */}
+                <div className="space-y-4 p-6 bg-muted/30 rounded-xl border border-border">
+                  <h3 className="font-semibold text-lg text-foreground">Registration Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {!isAuthenticated && (
+                      <>
+                        <div>
+                          <p className="text-muted-foreground mb-1">Name</p>
+                          <p className="font-medium text-foreground">
+                            {(formData['guest-firstName'] as string) || ''} {(formData['guest-lastName'] as string) || ''}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1">Email</p>
+                          <p className="font-medium text-foreground">{(formData['guest-email'] as string) || ''}</p>
+                        </div>
+                      </>
+                    )}
+                    {event.registrationFields && event.registrationFields.length > 0 && (
+                      event.registrationFields.map((field) => {
+                        const value = formData[field.id];
+                        if (!value) return null;
+                        return (
+                          <div key={field.id}>
+                            <p className="text-muted-foreground mb-1">{field.label}</p>
+                            <p className="font-medium text-foreground">{String(value)}</p>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Order Summary */}
+                <div className="space-y-4 p-6 bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-xl border-2 border-primary/20">
+                  <h3 className="font-semibold text-lg text-foreground">Order Summary</h3>
+                  <div className="space-y-3">
+                    {selectedTicketType && (
+                      <div className="flex items-center justify-between p-4 bg-white/60 rounded-lg border border-primary/10">
+                        <div className="flex-1">
+                          <p className="font-semibold text-foreground">{selectedTicketType}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {ticketQuantity} {ticketQuantity === 1 ? 'ticket' : 'tickets'} × {event.currency || '$'}
+                            {(() => {
+                              const ticket = event.ticketTypes?.find(t => t.name === selectedTicketType);
+                              return (ticket?.price || 0).toFixed(2);
+                            })()}
+                          </p>
+                        </div>
+                        <p className="text-lg font-bold text-primary">
+                          {event.currency || '$'}
+                          {(() => {
+                            const ticket = event.ticketTypes?.find(t => t.name === selectedTicketType);
+                            const ticketPrice = ticket?.price || 0;
+                            return (ticketPrice * ticketQuantity).toFixed(2);
+                          })()}
+                        </p>
+                      </div>
+                    )}
+                    {appliedDiscount && (
+                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">Promo Code: {appliedDiscount.code}</span>
+                        </div>
+                        <span className="text-sm font-semibold text-green-700">
+                          -{event.currency || '$'}{appliedDiscount.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-3 border-t-2 border-primary/20">
+                      <p className="text-lg font-semibold text-foreground">Total</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {event.currency || '$'}
+                        {(() => {
+                          const ticket = event.ticketTypes?.find(t => t.name === selectedTicketType);
+                          const ticketPrice = ticket?.price || 0;
+                          const subtotal = ticketPrice * ticketQuantity;
+                          const discount = appliedDiscount?.amount || 0;
+                          return (subtotal - discount).toFixed(2);
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCurrentStep('registration')}
+                    className="h-12"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!registrationId || !eventId) return;
+                      
+                      const ticket = event.ticketTypes?.find(t => t.name === selectedTicketType);
+                      const ticketPrice = ticket?.price || 0;
+                      const subtotal = ticketPrice * ticketQuantity;
+                      const discount = appliedDiscount?.amount || 0;
+                      const totalPrice = subtotal - discount;
+
+                      navigate(`/event/${eventId}/payment`, {
+                        state: {
+                          registrationId: registrationId,
+                          eventId: eventId,
+                          eventTitle: event.title,
+                          tickets: event.ticketTypes?.map(t => ({
+                            name: t.name,
+                            quantity: t.name === selectedTicketType ? ticketQuantity : 0,
+                            price: t.price
+                          })).filter(t => t.quantity > 0) || [],
+                          totalPrice: totalPrice,
+                          discount: discount,
+                          promoCode: appliedDiscount ? promoCode : undefined,
+                        }
+                      });
+                    }}
+                    className="bg-primary hover:bg-primary/90 px-8 h-12 text-base font-semibold shadow-md"
+                  >
+                    Proceed to Payment
+                    <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="p-8 text-center space-y-6">

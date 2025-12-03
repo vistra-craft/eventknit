@@ -32,7 +32,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
   };
 
   return (
-    <header className="bg-card border-b border-border py-4 sticky top-0 z-40">
+    <header className="bg-card border-b border-border py-4 px-4 sm:px-6 lg:px-8 sticky top-0 z-40">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {onMenuToggle && (

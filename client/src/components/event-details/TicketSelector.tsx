@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Minus, Plus, Ticket, AlertCircle, Clock, CheckCircle, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { EventData } from "@/types/event";
 import { isVIPTicket, hasDiscount, calculateDiscountPercentage, calculateTimeRemaining, isTicketTypeAvailable } from "@/utils/ticket-helpers";
@@ -33,7 +32,7 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
   // If no ticket types, show a simple register button
   if (!ticketTypes || ticketTypes.length === 0) {
     return (
-      <Card className="p-4 rounded-2xl border-0 bg-white shadow-sm">
+      <div className="p-4">
         <div className="mb-4">
           <h2 className="text-xl font-bold mb-1">Register for Event</h2>
           <p className="text-sm text-muted-foreground">Complete your registration to attend this event</p>
@@ -45,12 +44,12 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
           <Ticket className="mr-2 h-4 w-4" />
           Register Now
         </Button>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="p-4 rounded-2xl border-0 bg-white shadow-sm">
+    <div className="p-4">
       <div className="mb-4">
         <h2 className="text-xl font-bold mb-1">Get Tickets</h2>
         <p className="text-sm text-muted-foreground">Select your ticket type and quantity</p>
@@ -207,6 +206,6 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
           </Link>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };

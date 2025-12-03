@@ -10,6 +10,7 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -22,7 +23,7 @@ interface OrganizerSidebarProps {
 }
 
 const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, isMobile = false }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const userRole = user?.role;
   const location = useLocation();
   
@@ -160,10 +161,15 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     return <OrganizerStaffSidebar isOpen={isOpen} onToggle={onToggle} isMobile={isMobile} />;
   }
 
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
-    <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col`}>
-      <div className="p-4">
-        <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
+    <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}>
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="p-4">
+          <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
           {isOpen && (
             <Link 
               to="/" 
@@ -269,8 +275,23 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
             </div>
           ))}
         </nav>
+        </div>
       </div>
-      
+
+      {/* Sign out button */}
+      <div className="p-4 border-t mt-2">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={`w-full flex items-center ${
+            isOpen ? 'space-x-3 px-3 justify-start' : 'justify-center px-2'
+          } py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors`}
+          title={!isOpen ? 'Sign out' : undefined}
+        >
+          <LogOut className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
+          {isOpen && <span>Sign out</span>}
+        </button>
+      </div>
     </div>
   );
 };

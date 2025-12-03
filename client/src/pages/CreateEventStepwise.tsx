@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { ImageCropper } from '@/components/ImageCropper';
 import { 
   Users, 
@@ -160,7 +160,7 @@ export default function CreateEventStepwise() {
   const [showPreview, setShowPreview] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [eventId, setEventId] = useState<string | null>(editEventId);
+  const [eventId] = useState<string | null>(editEventId);
   const [timezone, setTimezone] = useState(() => {
     // Default to user's timezone or UTC
     try {
@@ -384,8 +384,8 @@ export default function CreateEventStepwise() {
             endTime: parseTime(transformedEvent.endTime) || "",
             location: transformedEvent.location || "",
             venue: transformedEvent.venue || "",
-            address: transformedEvent.address || "",
-            onlineLink: transformedEvent.onlineLink || "",
+            address: "", // Not available from API EventData
+            onlineLink: transformedEvent.isOnline ? transformedEvent.location || "" : "", // Use location for online events
             price: transformedEvent.price?.toString() || "",
             totalSlots: transformedEvent.capacity || 0,
             image: transformedEvent.image || "",
@@ -396,7 +396,7 @@ export default function CreateEventStepwise() {
             isOnline: transformedEvent.isOnline || false,
             capacity: transformedEvent.capacity?.toString() || "",
             category: transformedEvent.category || "",
-            timezone: transformedEvent.timezone || timezone,
+            timezone: timezone, // Use local state, API EventData doesn't have timezone
             currency: transformedEvent.currency || DEFAULT_CURRENCY,
           }));
 
@@ -416,7 +416,7 @@ export default function CreateEventStepwise() {
               type: tt.price === 0 || tt.isComplementary ? "free" : "paid",
               price: tt.price?.toString() || "",
               originalPrice: tt.originalPrice?.toString(),
-              discountLabel: tt.discountLabel,
+              discountLabel: tt.discountLabel || undefined, // Convert null to undefined
               quantity: tt.quantity?.toString() || "",
               isComplementary: tt.isComplementary,
               requiresInvitation: tt.requiresInvitation,
@@ -634,15 +634,6 @@ export default function CreateEventStepwise() {
   };
 
 
-  const calculateProgress = () => {
-    const requiredFields = [
-      eventData.title, eventData.description,
-      eventData.date, eventData.time, eventData.location || eventData.onlineLink,
-      eventData.category, ticketTypes.length > 0
-    ];
-    const filledFields = requiredFields.filter(field => field && field.toString().trim() !== "").length;
-    return Math.round((filledFields / requiredFields.length) * 100);
-  };
 
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {};

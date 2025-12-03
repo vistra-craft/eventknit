@@ -13,7 +13,7 @@ interface EventHeroProps {
 export const EventHero = ({ title, category, date, time, venue, location, image }: EventHeroProps) => {
   return (
     <div className="animate-in fade-in duration-700">
-      <section className="rounded-2xl bg-white shadow-sm border-0 overflow-hidden">
+      <section className="rounded-2xl overflow-hidden">
         <div className="relative h-52 md:h-56 bg-muted">
           {image ? (
             <img src={image} alt={title} className="h-full w-full object-cover" />

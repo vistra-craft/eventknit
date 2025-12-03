@@ -1,5 +1,4 @@
 import { MapPin, Navigation } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EventMap } from "@/components/EventMap";
 
@@ -19,7 +18,7 @@ export const VenueSection = ({ venue, location, coordinates }: VenueSectionProps
     <section>
       <h2 className="text-3xl font-bold mb-4">Venue Information</h2>
       
-      <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl">
         {/* Map */}
         <div className="relative h-[300px] bg-muted">
           <EventMap 
@@ -46,7 +45,7 @@ export const VenueSection = ({ venue, location, coordinates }: VenueSectionProps
             <p>{location}</p>
           </div>
         </div>
-      </Card>
+      </div>
     </section>
   );
 };

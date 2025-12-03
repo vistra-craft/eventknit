@@ -11,34 +11,22 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
-  Eye,
   Edit,
-  MoreHorizontal,
-  BarChart3,
-  Download,
-  Share2,
-  Copy,
   MapPin,
   TrendingUp,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
-import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { Pagination } from "../../components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
-import { shareEvent } from "../../lib/utils/share";
-import { exportEventData } from "../../lib/utils/export";
-import { useToast } from "../../hooks/use-toast";
+import OrganizerEventCard from "../../components/OrganizerEventCard";
 
 const AllEvents = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [allEvents, setAllEvents] = useState<OrganizerDashboardEvent[]>([]);
@@ -284,208 +272,34 @@ const AllEvents = () => {
         ) : filteredEvents.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event) => {
-              const metrics = {
+              // Transform event data to match OrganizerEventCard interface
+              const cardEvent = {
+                id: event.id,
+                title: event.title,
+                image: event.image || '',
+                date: event.date,
+                time: event.time || '',
+                venue: event.venue || '',
+                location: event.location,
+                organizer: event.organizer || '',
+                price: event.price || '',
+                category: event.category || '',
+                description: event.description || '',
+                fullDescription: event.fullDescription || event.description || '',
+                duration: event.duration || '',
+                ageRestriction: event.ageRestriction || '',
                 attendees: typeof event.attendees === 'number' ? event.attendees : 0,
                 capacity: typeof event.capacity === 'number' ? event.capacity : 0,
                 revenue: typeof event.revenue === 'number' ? event.revenue : 0,
-                conversion: typeof event.conversion === 'string' ? parseFloat(event.conversion) : (typeof event.conversion === 'number' ? event.conversion : 0),
+                views: typeof event.views === 'number' ? event.views : 0,
+                conversion: event.conversion || 0,
                 speakers: typeof event.speakers === 'number' ? event.speakers : 0,
                 exhibitors: typeof event.exhibitors === 'number' ? event.exhibitors : 0,
-              };
-
-              const getStatusBadge = (status: string) => {
-                if (status === "active" || status === "approved") {
-                  return "bg-green-100 text-green-800 border-green-200";
-                } else if (status === "upcoming") {
-                  return "bg-blue-100 text-blue-800 border-blue-200";
-                } else if (status === "completed") {
-                  return "bg-gray-100 text-gray-800 border-gray-200";
-                } else if (status === "pending") {
-                  return "bg-yellow-100 text-yellow-800 border-yellow-200";
-                }
-                return "bg-muted text-muted-foreground border-border";
+                sponsors: typeof event.sponsors === 'number' ? event.sponsors : 0,
               };
 
               return (
-                <Card key={event.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <EventThumbnail
-                        src={event.image}
-                        alt={event.title}
-                        category={event.category}
-                        size="md"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
-                            {event.title}
-                          </h3>
-                          <Badge className={`text-xs ${getStatusBadge(event.status || 'pending')} flex-shrink-0`}>
-                            {event.status || 'pending'}
-                          </Badge>
-                        </div>
-                        <Badge variant="outline" className="text-xs mb-2">
-                          {event.category}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        <span>{event.date} {event.time && `at ${event.time}`}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="w-4 h-4" />
-                        <span className="truncate">{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="w-4 h-4" />
-                        <span>{metrics.attendees}/{metrics.capacity || '∞'} attendees</span>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {event.description}
-                    </p>
-                    
-                    {/* Event Metrics */}
-                    <div className="grid grid-cols-3 gap-4 mb-4 text-center">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Speakers</p>
-                        <p className="font-semibold text-foreground">{metrics.speakers}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Exhibitors</p>
-                        <p className="font-semibold text-foreground">{metrics.exhibitors}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Revenue</p>
-                        <p className="font-semibold text-foreground">${metrics.revenue.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {metrics.conversion.toFixed(1)}% conversion
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewEvent(event);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Preview
-                        </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/organizer/event/${event.id}`);
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Manage
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/organizer/event/${event.id}`)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Event
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Public Page
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => navigate(`/organizer/analytics/events?eventId=${event.id}`)}>
-                              <BarChart3 className="h-4 w-4 mr-2" />
-                              View Analytics
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              try {
-                                exportEventData({
-                                  id: event.id,
-                                  title: event.title,
-                                  date: event.date,
-                                  location: event.location,
-                                  attendees: typeof event.attendees === 'number' ? event.attendees : 0,
-                                  revenue: typeof event.revenue === 'number' ? event.revenue : 0,
-                                  views: typeof event.views === 'number' ? event.views : 0,
-                                  status: event.status,
-                                  category: event.category,
-                                });
-                                toast({
-                                  title: "Exported",
-                                  description: "Event data exported successfully",
-                                });
-                              } catch {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to export event data",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}>
-                              <Download className="h-4 w-4 mr-2" />
-                              Export Data
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
-                                toast({
-                                  title: "Copied",
-                                  description: "Event link copied to clipboard",
-                                });
-                              } catch {
-                                toast({
-                                  title: "Error",
-                                  description: "Failed to copy link",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Copy Event Link
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={async () => {
-                              const shared = await shareEvent(event.title, event.id);
-                              if (shared) {
-                                toast({
-                                  title: "Shared",
-                                  description: "Event shared successfully",
-                                });
-                              } else {
-                                toast({
-                                  title: "Link Copied",
-                                  description: "Event link copied to clipboard",
-                                });
-                              }
-                            }}>
-                              <Share2 className="h-4 w-4 mr-2" />
-                              Share Event
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <OrganizerEventCard key={event.id} event={cardEvent} />
               );
             })}
           </div>
