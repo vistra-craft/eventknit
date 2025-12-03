@@ -880,13 +880,13 @@ export class AdminService {
 
       const halfConfigs: Array<{ year: number; half: 1 | 2 }> = isSecondHalf
         ? [
-            { year: currentYear - 1, half: 2 },
-            { year: currentYear, half: 1 },
-          ]
+          { year: currentYear - 1, half: 2 },
+          { year: currentYear, half: 1 },
+        ]
         : [
-            { year: currentYear - 1, half: 1 },
-            { year: currentYear - 1, half: 2 },
-          ];
+          { year: currentYear - 1, half: 1 },
+          { year: currentYear - 1, half: 2 },
+        ];
 
       for (const cfg of halfConfigs) {
         const startMonth = cfg.half === 1 ? 0 : 6;
