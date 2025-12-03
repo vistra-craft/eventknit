@@ -9,6 +9,77 @@ import { prisma } from '../config/database.js';
 import { UserRole } from '@prisma/client';
 import { AuthorizationError } from '../utils/errors.js';
 
+type FinanceInsightsPeriod = 'monthly' | 'quarterly' | 'semiannual' | 'yearly';
+
+interface FinanceInsightsBucket {
+  label: string;
+  start: Date;
+  end: Date;
+}
+
+const buildFinanceBuckets = (period: FinanceInsightsPeriod): FinanceInsightsBucket[] => {
+  const now = new Date();
+
+  const startOfMonth = (year: number, month: number) => new Date(year, month, 1);
+
+  if (period === 'monthly') {
+    // Last 6 calendar months including current
+    const buckets: FinanceInsightsBucket[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const start = startOfMonth(d.getFullYear(), d.getMonth());
+      const end = startOfMonth(d.getFullYear(), d.getMonth() + 1);
+      const label = start.toLocaleString('en-US', { month: 'short' });
+      buckets.push({ label, start, end });
+    }
+    return buckets;
+  }
+
+  if (period === 'quarterly') {
+    // Last 4 quarters
+    const buckets: FinanceInsightsBucket[] = [];
+    const currentQuarter = Math.floor(now.getMonth() / 3); // 0–3
+    for (let i = 3; i >= 0; i--) {
+      const qIndex = currentQuarter - i;
+      const year = now.getFullYear() + Math.floor(qIndex / 4);
+      const quarter = ((qIndex % 4) + 4) % 4; // 0–3
+      const startMonth = quarter * 3;
+      const start = startOfMonth(year, startMonth);
+      const end = startOfMonth(year, startMonth + 3);
+      const label = `Q${quarter + 1}`;
+      buckets.push({ label, start, end });
+    }
+    return buckets;
+  }
+
+  if (period === 'semiannual') {
+    // Current year H1/H2
+    const year = now.getFullYear();
+    return [
+      {
+        label: 'H1',
+        start: startOfMonth(year, 0),
+        end: startOfMonth(year, 6),
+      },
+      {
+        label: 'H2',
+        start: startOfMonth(year, 6),
+        end: startOfMonth(year + 1, 0),
+      },
+    ];
+  }
+
+  // Yearly – last 3 full years including current
+  const buckets: FinanceInsightsBucket[] = [];
+  for (let i = 2; i >= 0; i--) {
+    const year = now.getFullYear() - i;
+    const start = startOfMonth(year, 0);
+    const end = startOfMonth(year + 1, 0);
+    buckets.push({ label: String(year), start, end });
+  }
+  return buckets;
+};
+
 export class FinancialController {
   /**
    * Sync payments from Paystack
@@ -45,6 +116,119 @@ export class FinancialController {
         success: true,
         message: 'Payment sync completed',
         data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get high-level finance insights for charts (revenue, fees, disbursements, refunds)
+   * @route GET /api/v1/admin/finance/insights
+   */
+  static async getFinanceInsights(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+        res.status(403).json({
+          success: false,
+          message: 'Access denied. Admin privileges required.',
+        });
+        return;
+      }
+
+      const periodParam = (req.query.period as FinanceInsightsPeriod) || 'monthly';
+      const period: FinanceInsightsPeriod =
+        periodParam === 'quarterly' || periodParam === 'semiannual' || periodParam === 'yearly'
+          ? periodParam
+          : 'monthly';
+
+      const buckets = buildFinanceBuckets(period);
+
+      const totalRevenue: { label: string; value: number }[] = [];
+      const platformFees: { label: string; value: number }[] = [];
+      const pendingDisbursements: { label: string; value: number }[] = [];
+      const totalRefunds: { label: string; value: number }[] = [];
+
+      for (const bucket of buckets) {
+        const [revenueAgg, feeAgg, disbAgg, refundAgg] = await Promise.all([
+          prisma.eventPaymentTransaction.aggregate({
+            where: {
+              paymentStatus: 'success',
+              paymentDate: {
+                gte: bucket.start,
+                lt: bucket.end,
+              },
+            },
+            _sum: { amount: true },
+          }),
+          prisma.platformFee.aggregate({
+            where: {
+              createdAt: {
+                gte: bucket.start,
+                lt: bucket.end,
+              },
+            },
+            _sum: { feeAmount: true },
+          }),
+          prisma.organizerDisbursement.aggregate({
+            where: {
+              createdAt: {
+                gte: bucket.start,
+                lt: bucket.end,
+              },
+              status: {
+                in: ['pending', 'processing'],
+              },
+            },
+            _sum: { totalAmount: true },
+          }),
+          prisma.refund.aggregate({
+            where: {
+              completedAt: {
+                gte: bucket.start,
+                lt: bucket.end,
+              },
+              status: 'completed',
+            },
+            _sum: { refundAmount: true },
+          }),
+        ]);
+
+        totalRevenue.push({
+          label: bucket.label,
+          value: Number(revenueAgg._sum.amount || 0),
+        });
+        platformFees.push({
+          label: bucket.label,
+          value: Number(feeAgg._sum.feeAmount || 0),
+        });
+        pendingDisbursements.push({
+          label: bucket.label,
+          value: Number(disbAgg._sum.totalAmount || 0),
+        });
+        totalRefunds.push({
+          label: bucket.label,
+          value: Number(refundAgg._sum.refundAmount || 0),
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          period,
+          totalRevenue,
+          platformFees,
+          pendingDisbursements,
+          totalRefunds,
+        },
       });
     } catch (error) {
       next(error);

@@ -203,6 +203,23 @@ export class AdminController {
   }
 
   /**
+   * Get admin dashboard growth series for charts
+   */
+  static async getDashboardGrowth(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const period = (req.query.period as 'monthly' | 'quarterly' | 'semiannual' | 'yearly') || 'monthly';
+      const growth = await AdminService.getDashboardGrowth(period);
+
+      res.status(200).json({
+        success: true,
+        data: growth,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get recent events for admin dashboard
    */
   static async getRecentEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

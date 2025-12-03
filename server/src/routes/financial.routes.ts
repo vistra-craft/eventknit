@@ -9,6 +9,18 @@ const router = Router();
 // All financial routes require authentication
 router.use(authenticate);
 
+// Finance insights for dashboards
+/**
+ * @route   GET /api/v1/admin/finance/insights
+ * @desc    Get aggregated finance insights for admin dashboards
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/insights',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  FinancialController.getFinanceInsights,
+);
+
 // Payment Transactions
 /**
  * @route   POST /api/v1/admin/finance/payments/sync

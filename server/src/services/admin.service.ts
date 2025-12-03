@@ -835,6 +835,147 @@ export class AdminService {
   }
 
   /**
+   * Get admin dashboard growth series for charts
+   */
+  static async getDashboardGrowth(
+    period: 'monthly' | 'quarterly' | 'semiannual' | 'yearly' = 'monthly',
+  ) {
+    const now = new Date();
+
+    type Bucket = { label: string; start: Date; end: Date };
+
+    const buckets: Bucket[] = [];
+
+    if (period === 'monthly') {
+      // Last 6 calendar months including current
+      for (let i = 5; i >= 0; i -= 1) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const start = new Date(date.getFullYear(), date.getMonth(), 1);
+        const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+        const label = date.toLocaleString('default', { month: 'short' });
+        buckets.push({ label, start, end });
+      }
+    } else if (period === 'quarterly') {
+      // Last 4 quarters including current
+      const currentQuarter = Math.floor(now.getMonth() / 3) + 1; // 1-4
+      const currentYear = now.getFullYear();
+
+      for (let i = 3; i >= 0; i -= 1) {
+        const quarterIndex = currentQuarter - i; // can go below 1
+        const yearOffset = quarterIndex <= 0 ? Math.ceil(-quarterIndex / 4) : 0;
+        const year = currentYear - yearOffset;
+        const normalizedQuarter =
+          ((quarterIndex - 1) % 4 + 4) % 4 /* 0-3 */ + 1; /* 1-4 */
+
+        const startMonth = (normalizedQuarter - 1) * 3;
+        const start = new Date(year, startMonth, 1);
+        const end = new Date(year, startMonth + 3, 1);
+        const label = `Q${normalizedQuarter} ${year}`;
+        buckets.push({ label, start, end });
+      }
+    } else if (period === 'semiannual') {
+      // Last 2 half-years (H1/H2) including current
+      const currentYear = now.getFullYear();
+      const isSecondHalf = now.getMonth() >= 6;
+
+      const halfConfigs: Array<{ year: number; half: 1 | 2 }> = isSecondHalf
+        ? [
+            { year: currentYear - 1, half: 2 },
+            { year: currentYear, half: 1 },
+          ]
+        : [
+            { year: currentYear - 1, half: 1 },
+            { year: currentYear - 1, half: 2 },
+          ];
+
+      for (const cfg of halfConfigs) {
+        const startMonth = cfg.half === 1 ? 0 : 6;
+        const start = new Date(cfg.year, startMonth, 1);
+        const end = new Date(cfg.year, startMonth + 6, 1);
+        const label = `H${cfg.half} ${cfg.year}`;
+        buckets.push({ label, start, end });
+      }
+    } else if (period === 'yearly') {
+      // Last 3 full years including current
+      const currentYear = now.getFullYear();
+      for (let i = 2; i >= 0; i -= 1) {
+        const year = currentYear - i;
+        const start = new Date(year, 0, 1);
+        const end = new Date(year + 1, 0, 1);
+        const label = `${year}`;
+        buckets.push({ label, start, end });
+      }
+    }
+
+    const organizers: { label: string; value: number }[] = [];
+    const events: { label: string; value: number }[] = [];
+    const revenue: { label: string; value: number }[] = [];
+    const attendees: { label: string; value: number }[] = [];
+
+    for (const bucket of buckets) {
+      const [organizersCount, eventsCount, registrationsAgg, attendeesCount] = await Promise.all([
+        prisma.user.count({
+          where: {
+            deletedAt: null,
+            role: 'ORGANIZER',
+            status: 'ACTIVE',
+            createdAt: {
+              gte: bucket.start,
+              lt: bucket.end,
+            },
+          },
+        }),
+        prisma.event.count({
+          where: {
+            deletedAt: null,
+            createdAt: {
+              gte: bucket.start,
+              lt: bucket.end,
+            },
+          },
+        }),
+        prisma.eventRegistration.aggregate({
+          where: {
+            status: {
+              in: ['CONFIRMED', 'PENDING'],
+            },
+            createdAt: {
+              gte: bucket.start,
+              lt: bucket.end,
+            },
+          },
+          _sum: {
+            totalAmount: true,
+          },
+        }),
+        prisma.user.count({
+          where: {
+            deletedAt: null,
+            role: 'ATTENDEE',
+            createdAt: {
+              gte: bucket.start,
+              lt: bucket.end,
+            },
+          },
+        }),
+      ]);
+
+      organizers.push({ label: bucket.label, value: organizersCount });
+      events.push({ label: bucket.label, value: eventsCount });
+      revenue.push({ label: bucket.label, value: Number(registrationsAgg._sum.totalAmount || 0) });
+      attendees.push({ label: bucket.label, value: attendeesCount });
+    }
+
+    return {
+      period,
+      organizers,
+      events,
+      revenue,
+      attendees,
+    };
+  }
+
+  /**
    * Get admin dashboard stats
    */
   static async getDashboardStats(timeRange: '7d' | '30d' | '90d' | '1y' = '30d') {

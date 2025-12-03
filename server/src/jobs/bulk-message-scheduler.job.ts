@@ -15,10 +15,29 @@ export class BulkMessageSchedulerJob {
   private static task: cron.ScheduledTask | null = null;
 
   /**
+   * Check if database is available
+   */
+  private static async isDatabaseAvailable(): Promise<boolean> {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Process scheduled bulk messages
    */
   static async processScheduledMessages(): Promise<void> {
     try {
+      // Check if database is available before proceeding
+      const dbAvailable = await this.isDatabaseAvailable();
+      if (!dbAvailable) {
+        logger.warn('Database not available, skipping bulk message scheduler job');
+        return;
+      }
+
       const now = new Date();
 
       logger.info('Starting bulk message scheduler job');
@@ -59,6 +78,15 @@ export class BulkMessageSchedulerJob {
 
       logger.info(`Bulk message scheduler job completed. Processed ${scheduledMessages.length} message(s)`);
     } catch (error) {
+      // Check if it's a database connection error
+      if (error instanceof Error && (
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('P1001') || // Prisma connection error code
+        error.constructor.name === 'PrismaClientInitializationError'
+      )) {
+        logger.warn('Database connection error during bulk message scheduler job, skipping this run:', error.message);
+        return;
+      }
       logger.error('Error in bulk message scheduler job:', error);
     }
   }

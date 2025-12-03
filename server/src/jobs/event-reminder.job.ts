@@ -18,10 +18,29 @@ export class EventReminderJob {
   private static task: cron.ScheduledTask | null = null;
 
   /**
+   * Check if database is available
+   */
+  private static async isDatabaseAvailable(): Promise<boolean> {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Send event reminders
    */
   static async sendEventReminders(): Promise<void> {
     try {
+      // Check if database is available before proceeding
+      const dbAvailable = await this.isDatabaseAvailable();
+      if (!dbAvailable) {
+        logger.warn('Database not available, skipping event reminder job');
+        return;
+      }
+
       const now = new Date();
 
       logger.info('Starting event reminder job');
@@ -275,6 +294,15 @@ export class EventReminderJob {
         logger.debug('No event reminders to send');
       }
     } catch (error) {
+      // Check if it's a database connection error
+      if (error instanceof Error && (
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('P1001') || // Prisma connection error code
+        error.constructor.name === 'PrismaClientInitializationError'
+      )) {
+        logger.warn('Database connection error during event reminder job, skipping this run:', error.message);
+        return;
+      }
       logger.error('Error in event reminder job:', error);
     }
   }

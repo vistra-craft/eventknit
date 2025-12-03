@@ -81,6 +81,13 @@ router.post('/users/:id/password', AdminController.forcePasswordReset);
 router.get('/dashboard/stats', AdminController.getDashboardStats);
 
 /**
+ * @route   GET /api/v1/admin/dashboard/growth
+ * @desc    Get admin dashboard growth series for charts
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/dashboard/growth', AdminController.getDashboardGrowth);
+
+/**
  * @route   GET /api/v1/admin/dashboard/events
  * @desc    Get recent events for admin dashboard
  * @access  Private (ADMIN_STAFF+)

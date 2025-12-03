@@ -14,10 +14,29 @@ export class TokenCleanupJob {
   private static task: cron.ScheduledTask | null = null;
 
   /**
+   * Check if database is available
+   */
+  private static async isDatabaseAvailable(): Promise<boolean> {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Clean up expired tokens
    */
   static async cleanupExpiredTokens(): Promise<void> {
     try {
+      // Check if database is available before proceeding
+      const dbAvailable = await this.isDatabaseAvailable();
+      if (!dbAvailable) {
+        logger.warn('Database not available, skipping token cleanup job');
+        return;
+      }
+
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.CLEANUP_AGE_DAYS);
 
@@ -34,8 +53,17 @@ export class TokenCleanupJob {
 
       logger.info(`Token cleanup completed: ${result.count} expired tokens removed`);
     } catch (error) {
+      // Check if it's a database connection error
+      if (error instanceof Error && (
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('P1001') || // Prisma connection error code
+        error.constructor.name === 'PrismaClientInitializationError'
+      )) {
+        logger.warn('Database connection error during token cleanup, skipping this run:', error.message);
+        return;
+      }
       logger.error('Error during token cleanup:', error);
-      throw error;
+      // Don't throw - allow job to continue running
     }
   }
 
@@ -85,18 +113,33 @@ export class TokenCleanupJob {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - this.CLEANUP_AGE_DAYS);
 
-    const expiredTokensCount = await prisma.emailVerification.count({
-      where: {
-        expiresAt: {
-          lt: cutoffDate,
+    try {
+      const expiredTokensCount = await prisma.emailVerification.count({
+        where: {
+          expiresAt: {
+            lt: cutoffDate,
+          },
         },
-      },
-    });
+      });
 
-    return {
-      expiredTokensCount,
-      cutoffDate,
-    };
+      return {
+        expiredTokensCount,
+        cutoffDate,
+      };
+    } catch (error) {
+      // If database is not available, return zero count
+      if (error instanceof Error && (
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('P1001') ||
+        error.constructor.name === 'PrismaClientInitializationError'
+      )) {
+        return {
+          expiredTokensCount: 0,
+          cutoffDate,
+        };
+      }
+      throw error;
+    }
   }
 }
 

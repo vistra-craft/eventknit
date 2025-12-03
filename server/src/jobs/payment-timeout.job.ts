@@ -17,10 +17,29 @@ export class PaymentTimeoutJob {
   private static task: cron.ScheduledTask | null = null;
 
   /**
+   * Check if database is available
+   */
+  private static async isDatabaseAvailable(): Promise<boolean> {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Cancel abandoned payments
    */
   static async cancelAbandonedPayments(): Promise<void> {
     try {
+      // Check if database is available before proceeding
+      const dbAvailable = await this.isDatabaseAvailable();
+      if (!dbAvailable) {
+        logger.warn('Database not available, skipping payment timeout job');
+        return;
+      }
+
       const cutoffDate = new Date();
       cutoffDate.setHours(cutoffDate.getHours() - this.TIMEOUT_HOURS);
 
@@ -135,8 +154,17 @@ export class PaymentTimeoutJob {
         `Payment timeout job completed: ${cancelledCount} registration(s) cancelled, ${capacityRestoredCount} event(s) capacity restored`,
       );
     } catch (error) {
+      // Check if it's a database connection error
+      if (error instanceof Error && (
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('P1001') || // Prisma connection error code
+        error.constructor.name === 'PrismaClientInitializationError'
+      )) {
+        logger.warn('Database connection error during payment timeout job, skipping this run:', error.message);
+        return;
+      }
       logger.error('Error during payment timeout job:', error);
-      throw error;
+      // Don't throw - allow job to continue running
     }
   }
 
@@ -192,20 +220,35 @@ export class PaymentTimeoutJob {
     const timeoutDate = new Date();
     timeoutDate.setHours(timeoutDate.getHours() - this.TIMEOUT_HOURS);
 
-    const abandonedPaymentsCount = await prisma.eventRegistration.count({
-      where: {
-        paymentStatus: 'PENDING',
-        status: RegistrationStatus.PENDING,
-        createdAt: {
-          lt: timeoutDate,
+    try {
+      const abandonedPaymentsCount = await prisma.eventRegistration.count({
+        where: {
+          paymentStatus: 'PENDING',
+          status: RegistrationStatus.PENDING,
+          createdAt: {
+            lt: timeoutDate,
+          },
         },
-      },
-    });
+      });
 
-    return {
-      abandonedPaymentsCount,
-      timeoutDate,
-    };
+      return {
+        abandonedPaymentsCount,
+        timeoutDate,
+      };
+    } catch (error) {
+      // If database is not available, return zero count
+      if (error instanceof Error && (
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('P1001') ||
+        error.constructor.name === 'PrismaClientInitializationError'
+      )) {
+        return {
+          abandonedPaymentsCount: 0,
+          timeoutDate,
+        };
+      }
+      throw error;
+    }
   }
 }
 

@@ -1070,6 +1070,36 @@ describe('Admin User Management', () => {
     });
   });
 
+  describe('GET /api/v1/admin/dashboard/growth', () => {
+    it('should get dashboard growth data successfully', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/admin/dashboard/growth?period=monthly')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(response.body.data.organizers).toBeDefined();
+      expect(Array.isArray(response.body.data.organizers)).toBe(true);
+    });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/admin/dashboard/growth?period=monthly')
+        .expect(401);
+    });
+  });
+
   describe('GET /api/v1/admin/dashboard/events', () => {
     it('should get recent events successfully', async () => {
       if (!dbConnected) {
