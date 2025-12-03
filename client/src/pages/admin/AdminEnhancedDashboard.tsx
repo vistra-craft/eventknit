@@ -1,27 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  Calendar,
-  Users,
-  DollarSign,
-  Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-  Building2,
-  CheckCircle,
-  Shield,
-  AlertTriangle,
-  Database,
-  Activity,
-  UserCheck,
-  Clock,
-} from "lucide-react";
-import {
-  getAdminDashboardStats,
-  getAdminRecentEvents,
-  getAdminRecentActivity,
-  getAdminSystemAlerts,
-} from "../../lib/admin-api";
+import { Calendar, Users, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Building2 } from "lucide-react";
+import { getAdminDashboardStats } from "../../lib/admin-api";
+import { CustomLineChart, CustomBarChart } from "../../components/charts/ChartComponents";
+
+type GrowthPeriod = "monthly" | "quarterly" | "semiannual" | "yearly";
 
 const AdminEnhancedDashboard = () => {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d");
@@ -67,139 +50,148 @@ const AdminEnhancedDashboard = () => {
       bgColor: "bg-card",
       borderColor: "border-border",
     },
-    {
-      title: "System Health",
-      value: "99.9%",
-      change: "+0.1%",
-      changeType: "positive",
-      icon: Activity,
-      color: "text-primary",
-      bgColor: "bg-card",
-      borderColor: "border-border",
-    },
   ]);
-  const [recentEvents, setRecentEvents] = useState([
+  // Dashboard growth charts (mock data)
+  const [growthPeriod, setGrowthPeriod] = useState<GrowthPeriod>("monthly");
+  const [selectedMonth, setSelectedMonth] = useState<string>("All");
+  const [selectedYear, setSelectedYear] = useState<string>("All");
+
+  const mockGrowthData: Record<
+    GrowthPeriod,
     {
-      id: "1",
-      title: "Tech Conference 2024",
-      organizer: "Tech Events Co.",
-      date: "2024-03-15",
-      attendees: 1250,
-      status: "active",
-      revenue: "$45,000",
-      category: "Technology",
+      organizers: { label: string; value: number }[];
+      events: { label: string; value: number }[];
+      revenue: { label: string; value: number }[];
+      attendees: { label: string; value: number }[];
+    }
+  > = {
+    monthly: {
+      organizers: [
+        { label: "Jan", value: 12 },
+        { label: "Feb", value: 18 },
+        { label: "Mar", value: 24 },
+        { label: "Apr", value: 30 },
+        { label: "May", value: 37 },
+        { label: "Jun", value: 45 },
+      ],
+      events: [
+        { label: "Jan", value: 28 },
+        { label: "Feb", value: 35 },
+        { label: "Mar", value: 40 },
+        { label: "Apr", value: 52 },
+        { label: "May", value: 60 },
+        { label: "Jun", value: 72 },
+      ],
+      revenue: [
+        { label: "Jan", value: 24_000 },
+        { label: "Feb", value: 32_500 },
+        { label: "Mar", value: 41_200 },
+        { label: "Apr", value: 55_800 },
+        { label: "May", value: 68_300 },
+        { label: "Jun", value: 81_900 },
+      ],
+      attendees: [
+        { label: "Jan", value: 3_200 },
+        { label: "Feb", value: 4_100 },
+        { label: "Mar", value: 5_600 },
+        { label: "Apr", value: 7_200 },
+        { label: "May", value: 8_900 },
+        { label: "Jun", value: 10_400 },
+      ],
     },
-    {
-      id: "2",
-      title: "Business Leadership Workshop",
-      organizer: "Business Academy",
-      date: "2024-03-20",
-      attendees: 450,
-      status: "pending",
-      revenue: "$12,500",
-      category: "Business",
+    quarterly: {
+      organizers: [
+        { label: "Q1", value: 24 },
+        { label: "Q2", value: 45 },
+        { label: "Q3", value: 63 },
+        { label: "Q4", value: 80 },
+      ],
+      events: [
+        { label: "Q1", value: 88 },
+        { label: "Q2", value: 135 },
+        { label: "Q3", value: 160 },
+        { label: "Q4", value: 210 },
+      ],
+      revenue: [
+        { label: "Q1", value: 97_000 },
+        { label: "Q2", value: 148_500 },
+        { label: "Q3", value: 192_300 },
+        { label: "Q4", value: 238_900 },
+      ],
+      attendees: [
+        { label: "Q1", value: 12_500 },
+        { label: "Q2", value: 18_700 },
+        { label: "Q3", value: 24_900 },
+        { label: "Q4", value: 31_200 },
+      ],
     },
-    {
-      id: "3",
-      title: "Music Festival 2024",
-      organizer: "Music Events Ltd",
-      date: "2024-04-01",
-      attendees: 5000,
-      status: "active",
-      revenue: "$125,000",
-      category: "Entertainment",
+    semiannual: {
+      organizers: [
+        { label: "H1", value: 45 },
+        { label: "H2", value: 92 },
+      ],
+      events: [
+        { label: "H1", value: 150 },
+        { label: "H2", value: 310 },
+      ],
+      revenue: [
+        { label: "H1", value: 245_000 },
+        { label: "H2", value: 512_000 },
+      ],
+      attendees: [
+        { label: "H1", value: 21_000 },
+        { label: "H2", value: 44_500 },
+      ],
     },
-    {
-      id: "4",
-      title: "Health & Wellness Expo",
-      organizer: "Wellness Corp",
-      date: "2024-03-25",
-      attendees: 800,
-      status: "approved",
-      revenue: "$28,000",
-      category: "Health",
+    yearly: {
+      organizers: [
+        { label: "2022", value: 50 },
+        { label: "2023", value: 95 },
+        { label: "2024", value: 140 },
+      ],
+      events: [
+        { label: "2022", value: 280 },
+        { label: "2023", value: 410 },
+        { label: "2024", value: 560 },
+      ],
+      revenue: [
+        { label: "2022", value: 480_000 },
+        { label: "2023", value: 730_000 },
+        { label: "2024", value: 1_020_000 },
+      ],
+      attendees: [
+        { label: "2022", value: 38_000 },
+        { label: "2023", value: 57_500 },
+        { label: "2024", value: 79_200 },
+      ],
     },
-  ]);
-  const [systemAlerts, setSystemAlerts] = useState([
-    {
-      id: 1,
-      type: "warning",
-      message: "High server load detected on database cluster",
-      time: "5 minutes ago",
-      icon: AlertTriangle,
-      color: "text-yellow-600",
-    },
-    {
-      id: 2,
-      type: "info",
-      message: "Scheduled maintenance window: March 20, 2:00 AM - 4:00 AM",
-      time: "2 hours ago",
-      icon: Clock,
-      color: "text-blue-600",
-    },
-    {
-      id: 3,
-      type: "success",
-      message: "Backup completed successfully",
-      time: "4 hours ago",
-      icon: CheckCircle,
-      color: "text-green-600",
-    },
-  ]);
-  const [recentActivity, setRecentActivity] = useState([
-    {
-      id: 1,
-      type: "staff_registration",
-      message: "New staff member registered: John Smith",
-      time: "10 minutes ago",
-      icon: UserCheck,
-      color: "text-primary",
-    },
-    {
-      id: 2,
-      type: "event_approval",
-      message: "Event 'Business Workshop' approved for publication",
-      time: "25 minutes ago",
-      icon: CheckCircle,
-      color: "text-green-600",
-    },
-    {
-      id: 3,
-      type: "payment",
-      message: "Payment processed: $2,500 from Music Events Ltd",
-      time: "1 hour ago",
-      icon: DollarSign,
-      color: "text-green-600",
-    },
-    {
-      id: 4,
-      type: "system",
-      message: "Database optimization completed",
-      time: "2 hours ago",
-      icon: Database,
-      color: "text-blue-600",
-    },
-    {
-      id: 5,
-      type: "moderation",
-      message: "Content flagged for review: Event 'Party Night'",
-      time: "3 hours ago",
-      icon: Shield,
-      color: "text-yellow-600",
-    },
-  ]);
+  };
+
+  const currentGrowth = mockGrowthData[growthPeriod];
+
+  const applyGrowthFilters = (data: { label: string; value: number }[]) => {
+    if (growthPeriod === "monthly" && selectedMonth !== "All") {
+      return data.filter((d) => d.label === selectedMonth);
+    }
+    if (growthPeriod === "yearly" && selectedYear !== "All") {
+      return data.filter((d) => d.label === selectedYear);
+    }
+    return data;
+  };
+
+  const filteredGrowth = {
+    organizers: applyGrowthFilters(currentGrowth.organizers),
+    events: applyGrowthFilters(currentGrowth.events),
+    revenue: applyGrowthFilters(currentGrowth.revenue),
+    attendees: applyGrowthFilters(currentGrowth.attendees),
+  };
 
   // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [statsResponse, eventsResponse, activityResponse, alertsResponse] = await Promise.all([
-          getAdminDashboardStats(timeRange),
-          getAdminRecentEvents(10),
-          getAdminRecentActivity(10),
-          getAdminSystemAlerts(),
-        ]);
+        const statsResponse = await getAdminDashboardStats(timeRange);
 
         // Update stats
         if (statsResponse.success && statsResponse.data.stats) {
@@ -245,83 +237,9 @@ const AdminEnhancedDashboard = () => {
               bgColor: "bg-card",
               borderColor: "border-border",
             },
-            {
-              title: "System Health",
-              value: dashboardStats.systemHealth.value,
-              change: dashboardStats.systemHealth.change,
-              changeType: dashboardStats.systemHealth.changeType,
-              icon: Activity,
-              color: "text-primary",
-              bgColor: "bg-card",
-              borderColor: "border-border",
-            },
           ]);
         }
 
-        // Update recent events
-        if (eventsResponse.success && eventsResponse.data.events) {
-          setRecentEvents(eventsResponse.data.events);
-        }
-
-        // Update system alerts
-        if (alertsResponse.success && alertsResponse.data.alerts) {
-          const alertsWithIcons = alertsResponse.data.alerts.map((alert) => {
-            let icon = Clock;
-            let color = "text-blue-600";
-            if (alert.type === "warning") {
-              icon = AlertTriangle;
-              color = "text-yellow-600";
-            } else if (alert.type === "success") {
-              icon = CheckCircle;
-              color = "text-green-600";
-            }
-            return {
-              id: typeof alert.id === 'string' ? parseInt(alert.id, 10) || Date.now() : alert.id,
-              type: alert.type,
-              message: alert.message,
-              time: alert.time,
-              icon,
-              color,
-            };
-          });
-          setSystemAlerts(alertsWithIcons);
-        }
-
-        // Update recent activity
-        if (activityResponse.success && activityResponse.data.activities) {
-          const activitiesWithIcons = activityResponse.data.activities.map((activity) => {
-            let icon = Activity;
-            let color = "text-primary";
-            if (activity.icon === "CHECK") {
-              icon = CheckCircle;
-              color = "text-green-600";
-            } else if (activity.icon === "ALERT") {
-              icon = AlertTriangle;
-              color = "text-yellow-600";
-            } else if (activity.icon === "USER") {
-              icon = UserCheck;
-              color = "text-primary";
-            } else if (activity.icon === "REGISTRATION") {
-              icon = Users;
-              color = "text-green-600";
-            } else if (activity.icon === "EVENT") {
-              icon = Calendar;
-              color = "text-blue-600";
-            } else if (activity.icon === "SYSTEM") {
-              icon = Database;
-              color = "text-blue-600";
-            }
-            return {
-              id: typeof activity.id === 'string' ? parseInt(activity.id, 10) || Date.now() : activity.id,
-              type: activity.type,
-              message: activity.message,
-              time: activity.time,
-              icon,
-              color,
-            };
-          });
-          setRecentActivity(activitiesWithIcons);
-        }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -332,34 +250,23 @@ const AdminEnhancedDashboard = () => {
     fetchDashboardData();
   }, [timeRange]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "approved":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8">
-      <div>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-5xl sm:text-6xl font-bold text-foreground mb-4">EventKnit</h1>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Admin Dashboard
-            </h2>
+            <p className="text-xs font-semibold tracking-wide text-primary uppercase mb-1">
+              EventKnit
+            </p>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground mb-2">
+              Admin dashboard
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Platform overview and system management
+              High-level overview of your platform performance and system health.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value as "7d" | "30d" | "90d" | "1y")}
@@ -372,157 +279,193 @@ const AdminEnhancedDashboard = () => {
             </select>
             <Link
               to="/admin/events/create"
-              className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/80"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Event
+              <Plus className="mr-2 h-4 w-4" />
+              Create event
             </Link>
           </div>
         </div>
 
         {/* Stats Grid */}
         {loading ? (
-          <div className="text-center py-12">
+          <div className="flex items-center justify-center rounded-xl border border-dashed border-border bg-card/40 py-12">
             <p className="text-sm text-muted-foreground">Loading dashboard data...</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-              {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="p-6 rounded-xl border border-border bg-card transition-all duration-200 hover:shadow-lg"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <stat.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex items-center space-x-1">
-                  {stat.changeType === "positive" ? (
-                    <ArrowUpRight className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4 text-red-600" />
-                  )}
-                  <span
-                    className={`text-sm font-medium ${
-                      stat.changeType === "positive" ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {stat.change}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-900 mb-1">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.title}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Events */}
-          <div className="lg:col-span-2">
-            <div className="bg-card rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-foreground">Recent Events</h2>
-                <Link
-                  to="/admin/events"
-                  className="text-primary hover:text-primary/80 text-sm font-medium flex items-center"
+            <section aria-labelledby="stats-heading">
+              <div className="mb-4 flex items-center justify-between">
+                <h2
+                  id="stats-heading"
+                  className="text-sm font-semibold uppercase tracking-wide text-muted-foreground"
                 >
-                  View All
-                  <ArrowUpRight className="h-4 w-4 ml-1" />
-                </Link>
+                  Key metrics
+                </h2>
               </div>
-              <div className="space-y-4">
-                {recentEvents.map((event) => (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {stats.map((stat, index) => (
                   <div
-                    key={event.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    key={index}
+                    className="rounded-xl border border-border bg-card/80 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-sm font-medium text-foreground">{event.title}</h3>
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="rounded-lg bg-primary/10 p-3">
+                        <stat.icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 text-xs font-medium">
+                        {stat.changeType === "positive" ? (
+                          <ArrowUpRight className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <ArrowDownRight className="h-3 w-3 text-red-600" />
+                        )}
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            event.status
-                          )}`}
+                          className={
+                            stat.changeType === "positive" ? "text-green-700" : "text-red-700"
+                          }
                         >
-                          {event.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <span className="flex items-center">
-                          <Building2 className="h-4 w-4 mr-1" />
-                          {event.organizer}
-                        </span>
-                        <span className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {event.date}
-                        </span>
-                        <span className="flex items-center">
-                          <Users className="h-4 w-4 mr-1" />
-                          {event.attendees.toLocaleString()}
+                          {stat.change}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-foreground">{event.revenue}</p>
-                      <p className="text-sm text-muted-foreground">{event.category}</p>
+                    <div>
+                      <p className="mb-1 text-2xl font-semibold text-foreground">{stat.value}</p>
+                      <p className="text-sm text-muted-foreground">{stat.title}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* System Alerts & Activity */}
-          <div className="space-y-6">
-            {/* System Alerts */}
-            <div className="bg-card rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-foreground">System Alerts</h2>
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              </div>
-              <div className="space-y-3">
-                {systemAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <alert.icon className={`h-4 w-4 mt-0.5 ${alert.color}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">{alert.message}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
-                    </div>
+            <section className="space-y-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Growth insights
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Organizers, events, revenue, and attendees over time.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 sm:items-end">
+                  <div className="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 text-xs">
+                    {[
+                      { id: "monthly", label: "Monthly" },
+                      { id: "quarterly", label: "Quarterly" },
+                      { id: "semiannual", label: "Semi-annually" },
+                      { id: "yearly", label: "Yearly" },
+                    ].map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => {
+                          setGrowthPeriod(option.id as GrowthPeriod);
+                          setSelectedMonth("All");
+                          setSelectedYear("All");
+                        }}
+                        className={`px-3 py-1 rounded-full transition-colors ${
+                          growthPeriod === option.id
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Recent Activity */}
-            <div className="bg-card rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-foreground">Recent Activity</h2>
-                <Activity className="h-5 w-5 text-primary" />
+                  {growthPeriod === "monthly" && (
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
+                    >
+                      <option value="All">All months</option>
+                      {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {growthPeriod === "yearly" && (
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
+                    >
+                      <option value="All">All years</option>
+                      {mockGrowthData.yearly.organizers.map((d) => (
+                        <option key={d.label} value={d.label}>
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
-              <div className="space-y-3">
-                {recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <activity.icon className={`h-4 w-4 mt-0.5 ${activity.color}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground">{activity.message}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+
+              {currentGrowth && (
+                <div className="space-y-6">
+                  <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                    <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Organizer growth
+                    </h3>
+                    <div className="h-52">
+                      <CustomLineChart
+                        data={filteredGrowth.organizers}
+                        dataKey="value"
+                        xAxisKey="label"
+                        height={200}
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+
+                  <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                    <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Events created
+                    </h3>
+                    <div className="h-52">
+                      <CustomBarChart
+                        data={filteredGrowth.events}
+                        dataKey="value"
+                        xAxisKey="label"
+                        height={200}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                    <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Platform revenue
+                    </h3>
+                    <div className="h-52">
+                      <CustomLineChart
+                        data={filteredGrowth.revenue}
+                        dataKey="value"
+                        xAxisKey="label"
+                        height={200}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                    <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Attendees / users
+                    </h3>
+                    <div className="h-52">
+                      <CustomBarChart
+                        data={filteredGrowth.attendees}
+                        dataKey="value"
+                        xAxisKey="label"
+                        height={200}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>

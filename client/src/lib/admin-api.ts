@@ -31,11 +31,6 @@ export interface AdminDashboardStatsResponse {
         change: string;
         changeType: 'positive' | 'negative';
       };
-      systemHealth: {
-        value: string;
-        change: string;
-        changeType: 'positive' | 'negative';
-      };
     };
     meta: {
       timeRange: string;

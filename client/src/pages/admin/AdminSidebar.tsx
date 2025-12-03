@@ -13,6 +13,7 @@ import {
   DollarSign,
   HeadphonesIcon,
   Monitor,
+  LogOut,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -25,7 +26,7 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile = false }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const userRole = user?.role;
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
@@ -222,6 +223,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
                        userRole === UserRole.SUPPORT || 
                        userRole === UserRole.TELLER;
 
+  const handleLogout = () => {
+    logout();
+  };
+
   // If admin staff, render role-specific sidebar
   if (isAdminStaff) {
     return <AdminStaffSidebar isOpen={isOpen} onToggle={onToggle} isMobile={isMobile} />;
@@ -229,117 +234,132 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
 
   return (
     <div
-      className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 overflow-y-auto scrollbar-hide md:sticky md:top-0 md:h-screen`}
+      className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 md:sticky md:top-0 md:h-screen`}
     >
-      <div className="p-4">
-        <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
-          {isOpen && (
-            <Link 
-              to="/" 
-              className="text-lg font-bold text-eventknit hover:text-eventknit/80 transition-colors"
-            >
-              EventKnit
-            </Link>
-          )}
-          {isMobile && (
-            <button
-              onClick={onToggle}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-            >
-              <Menu className="h-5 w-5 text-muted-foreground" />
-            </button>
-          )}
-        </div>
-        
-        
-        {/* Navigation */}
-        <nav className="space-y-4">
-          {Object.entries(groupedItems).map(([groupKey, items]) => (
-            <div key={groupKey}>
-              {isOpen && (
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  {groupLabels[groupKey as keyof typeof groupLabels]}
-                </h3>
-              )}
-              <div className="space-y-1">
-                {items.map((item) => {
-                  const hasChildren = item.children && item.children.length > 0;
-                  const isExpanded = expandedItems[item.id];
-                  // For parent items with children, only highlight if we're on the exact parent route
-                  const isItemActive = item.href ? isActive(item.href, true) : false;
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="p-4">
+          <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
+            {isOpen && (
+              <Link 
+                to="/" 
+                className="text-lg font-bold text-eventknit hover:text-eventknit/80 transition-colors"
+              >
+                EventKnit
+              </Link>
+            )}
+            {isMobile && (
+              <button
+                onClick={onToggle}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                <Menu className="h-5 w-5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+          
+          {/* Navigation */}
+          <nav className="space-y-4">
+            {Object.entries(groupedItems).map(([groupKey, items]) => (
+              <div key={groupKey}>
+                {isOpen && (
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    {groupLabels[groupKey as keyof typeof groupLabels]}
+                  </h3>
+                )}
+                <div className="space-y-1">
+                  {items.map((item) => {
+                    const hasChildren = item.children && item.children.length > 0;
+                    const isExpanded = expandedItems[item.id];
+                    // For parent items with children, only highlight if we're on the exact parent route
+                    const isItemActive = item.href ? isActive(item.href, true) : false;
 
-                  if (hasChildren) {
-                    return (
-                      <div key={item.id}>
-                        <button
-                          onClick={() => toggleExpanded(item.id)}
-                          className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
-                            isItemActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                          }`}
-                          title={!isOpen ? item.label : undefined}
-                        >
-                          <item.icon className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
-                          {isOpen && (
-                            <>
-                              <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </>
+                    if (hasChildren) {
+                      return (
+                        <div key={item.id}>
+                          <button
+                            onClick={() => toggleExpanded(item.id)}
+                            className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
+                              isItemActive
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                            title={!isOpen ? item.label : undefined}
+                          >
+                            <item.icon className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                            {isOpen && (
+                              <>
+                                <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </>
+                            )}
+                          </button>
+
+                          {isExpanded && isOpen && (
+                            <div className="ml-6 mt-1 space-y-1">
+                              {item.children!.map((child) => (
+                                <Link
+                                  key={child.name}
+                                  to={child.href}
+                                  onClick={handleNavigationClick}
+                                  className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
+                                    isChildActive(child.href)
+                                      ? 'bg-primary/10 text-primary font-medium'
+                                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                  }`}
+                                >
+                                  {child.name}
+                                </Link>
+                              ))}
+                            </div>
                           )}
-                        </button>
+                        </div>
+                      );
+                    }
 
-                        {isExpanded && isOpen && (
-                          <div className="ml-6 mt-1 space-y-1">
-                            {item.children!.map((child) => (
-                              <Link
-                                key={child.name}
-                                to={child.href}
-                                onClick={handleNavigationClick}
-                                className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
-                                  isChildActive(child.href)
-                                    ? 'bg-primary/10 text-primary font-medium'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                                }`}
-                              >
-                                {child.name}
-                              </Link>
-                            ))}
-                          </div>
+                    return (
+                      <Link
+                        key={item.id}
+                        to={item.href!}
+                        onClick={handleNavigationClick}
+                        className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
+                          isItemActive 
+                            ? 'bg-primary/10 text-primary font-medium' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        }`}
+                        title={!isOpen ? item.label : undefined}
+                      >
+                        <item.icon className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                        {isOpen && (
+                          <span className="text-sm font-medium flex-1">{item.label}</span>
                         )}
-                      </div>
+                      </Link>
                     );
-                  }
-
-                  return (
-                    <Link
-                      key={item.id}
-                      to={item.href!}
-                      onClick={handleNavigationClick}
-                      className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
-                        isItemActive 
-                          ? 'bg-primary/10 text-primary font-medium' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                      }`}
-                      title={!isOpen ? item.label : undefined}
-                    >
-                      <item.icon className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
-                      {isOpen && (
-                        <span className="text-sm font-medium flex-1">{item.label}</span>
-                      )}
-                    </Link>
-                  );
-                })}
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </nav>
+            ))}
+          </nav>
+        </div>
       </div>
-      
+
+      {/* Sign out button */}
+      <div className="p-4 border-t mt-2">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={`w-full flex items-center ${
+            isOpen ? 'space-x-3 px-3 justify-start' : 'justify-center px-2'
+          } py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors`}
+          title={!isOpen ? 'Sign out' : undefined}
+        >
+          <LogOut className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
+          {isOpen && <span>Sign out</span>}
+        </button>
+      </div>
     </div>
   );
 };
