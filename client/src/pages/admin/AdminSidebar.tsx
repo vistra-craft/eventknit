@@ -228,7 +228,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
   }
 
   return (
-    <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col h-screen`}>
+    <div className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col h-full`}>
       <div className="p-4">
         <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
           {isOpen && (
