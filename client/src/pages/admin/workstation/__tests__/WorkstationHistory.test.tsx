@@ -71,6 +71,8 @@ describe('WorkstationHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockClear();
+    // Silence console.error noise from intentional error-path tests
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   it('should render loading state initially', async () => {

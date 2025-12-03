@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Users, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Building2 } from "lucide-react";
-import {
-  getAdminDashboardStats,
-  getAdminDashboardGrowth,
-  AdminDashboardGrowthPeriod,
-  AdminDashboardGrowthPoint,
-} from "../../lib/admin-api";
+import { getAdminDashboardStats, getAdminDashboardGrowth } from "../../lib/admin-api";
+import type { AdminDashboardGrowthPeriod, AdminDashboardGrowthPoint } from "../../lib/admin-api";
 import { CustomLineChart, CustomBarChart } from "../../components/charts/ChartComponents";
 
 const AdminEnhancedDashboard = () => {
@@ -288,7 +284,7 @@ const AdminEnhancedDashboard = () => {
                         key={option.id}
                         type="button"
                         onClick={() => {
-                          setGrowthPeriod(option.id as GrowthPeriod);
+                          setGrowthPeriod(option.id as AdminDashboardGrowthPeriod);
                           setSelectedMonth("All");
                           setSelectedYear("All");
                         }}

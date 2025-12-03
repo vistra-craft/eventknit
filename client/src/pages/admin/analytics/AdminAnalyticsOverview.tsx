@@ -15,7 +15,6 @@ import {
   Download,
   Filter,
   RefreshCw,
-  Shield,
   Building2,
   Activity,
 } from "lucide-react";

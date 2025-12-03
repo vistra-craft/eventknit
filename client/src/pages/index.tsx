@@ -16,9 +16,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
-      <Hero />
-      <EventSearchFilter filters={filters} onFiltersChange={handleFiltersChange} />
-      <EventGrid filters={filters} />
+      <main className="pt-16">
+        <Hero />
+        <EventSearchFilter filters={filters} onFiltersChange={handleFiltersChange} />
+        <EventGrid filters={filters} />
+      </main>
       <Footer />
     </div>
   );

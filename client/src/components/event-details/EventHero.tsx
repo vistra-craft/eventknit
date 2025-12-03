@@ -1,5 +1,4 @@
 import { Calendar, MapPin } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 interface EventHeroProps {
   title: string;

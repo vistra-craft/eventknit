@@ -12,7 +12,7 @@ interface EventGridProps {
 export const EventGrid = ({ filters = {} }: EventGridProps) => {
   // Get events - we fetch all approved events and filter client-side for advanced filters
   // that the backend doesn't support yet
-  const { events: fetchedEvents, isLoading, error, fetchEvents } = useEvents();
+  const { events: fetchedEvents, error, fetchEvents } = useEvents();
 
   // Fetch events on mount and when basic filters change
   useEffect(() => {

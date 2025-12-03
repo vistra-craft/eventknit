@@ -60,7 +60,7 @@ const CustomTooltip = ({ active, payload, label, formatter }: CustomTooltipProps
 
 // Line Chart Component
 interface LineChartProps {
-  data: Array<Record<string, unknown>>;
+  data: unknown[];
   dataKey: string;
   xAxisKey: string;
   height?: number;
@@ -123,7 +123,7 @@ export const CustomLineChart: React.FC<LineChartProps> = ({
 
 // Area Chart Component
 interface AreaChartProps {
-  data: Array<Record<string, unknown>>;
+  data: unknown[];
   dataKey: string;
   xAxisKey: string;
   height?: number;
@@ -183,7 +183,7 @@ export const CustomAreaChart: React.FC<AreaChartProps> = ({
 
 // Bar Chart Component
 interface BarChartProps {
-  data: Array<Record<string, unknown>>;
+  data: unknown[];
   dataKey: string;
   xAxisKey: string;
   height?: number;
@@ -263,8 +263,10 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
+        {/* Casting to any here because Recharts expects its internal ChartDataInput[] type */}
         <Pie
-          data={data}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data={data as any}
           cx="50%"
           cy="50%"
           labelLine={false}
@@ -290,7 +292,7 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
 
 // Multi-line Chart Component
 interface MultiLineChartProps {
-  data: Array<Record<string, unknown>>;
+  data: unknown[];
   lines: Array<{
     dataKey: string;
     name: string;
@@ -357,7 +359,7 @@ export const CustomMultiLineChart: React.FC<MultiLineChartProps> = ({
 
 // Composed Chart Component (Bar + Line)
 interface ComposedChartProps {
-  data: Array<Record<string, unknown>>;
+  data: unknown[];
   bars: Array<{
     dataKey: string;
     name: string;
@@ -439,7 +441,7 @@ export const CustomComposedChart: React.FC<ComposedChartProps> = ({
 
 // Radial Bar Chart Component
 interface RadialBarChartProps {
-  data: Array<Record<string, unknown>>;
+  data: unknown[];
   dataKey: string;
   nameKey: string;
   height?: number;
@@ -483,7 +485,7 @@ export const CustomRadialBarChart: React.FC<RadialBarChartProps> = ({
 
 // Scatter Chart Component
 interface ScatterChartProps {
-  data: Array<Record<string, unknown>>;
+  data: unknown[];
   xDataKey: string;
   yDataKey: string;
   height?: number;

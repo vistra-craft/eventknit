@@ -232,6 +232,11 @@ describe('AllEventsPage - Bulk Update', () => {
 
     renderComponent();
 
+    // Wait for initial data load to complete to avoid act warnings
+    await waitFor(() => {
+      expect(eventApi.getEvents).toHaveBeenCalled();
+    });
+
     // Note: Full test would simulate the complete flow and verify:
     // expect(mockToast).toHaveBeenCalledWith({
     //   title: 'Success',
@@ -244,6 +249,11 @@ describe('AllEventsPage - Bulk Update', () => {
     vi.mocked(adminApi.bulkUpdateOrganizerDataAccess).mockRejectedValue(error);
 
     renderComponent();
+
+    // Wait for initial data load to complete to avoid act warnings
+    await waitFor(() => {
+      expect(eventApi.getEvents).toHaveBeenCalled();
+    });
 
     // Note: Full test would simulate the complete flow and verify:
     // expect(mockToast).toHaveBeenCalledWith({
@@ -264,6 +274,11 @@ describe('AllEventsPage - Bulk Update', () => {
     });
 
     renderComponent();
+
+    // Wait for initial data load to complete to avoid act warnings
+    await waitFor(() => {
+      expect(eventApi.getEvents).toHaveBeenCalled();
+    });
 
     // Note: Full test would verify that selectedEvents is cleared after update
   });
