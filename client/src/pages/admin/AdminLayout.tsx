@@ -48,29 +48,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <div className="container mx-auto flex flex-1 min-h-0">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Main layout area (sidebar + header + page content) */}
+      <div className="max-w-7xl w-full mx-auto flex flex-1">
         {/* Sidebar */}
-        <div className="hidden lg:block w-64 flex-shrink-0 h-full">
+        <div className="hidden lg:block w-64 flex-shrink-0">
           <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0 flex flex-col min-h-0">
+        <div className="flex-1 min-w-0 flex flex-col">
           {/* Header */}
-          <div className="px-4 sm:px-6 flex-shrink-0">
+          <div className="px-4 sm:px-6">
             <AdminHeader
               onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
             />
           </div>
 
-          {/* Page Content - Scrollable */}
-          <main className="flex-1 px-4 sm:px-6 pt-6 pb-6 overflow-y-auto min-h-0">
+          {/* Page Content */}
+          <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
             {children}
-            {/* Footer inside scrollable content */}
-            <div className="mt-8">
-              <Footer />
-            </div>
           </main>
         </div>
       </div>
@@ -84,6 +81,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
         </div>
       )}
+
+      {/* Global footer – always at bottom, follows main app width */}
+      <div className="mt-4">
+        <Footer />
+      </div>
     </div>
   );
 };
