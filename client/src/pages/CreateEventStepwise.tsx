@@ -437,9 +437,9 @@ export default function CreateEventStepwise() {
       id: `field_${Date.now()}`,
       name: `field_${Date.now()}`,
       type: "text",
-      label: "New Field",
+      label: "",
       required: false,
-      placeholder: "Enter placeholder text",
+      placeholder: "",
     };
     setRegistrationFields((prev) => [...prev, newField]);
   };
@@ -756,41 +756,95 @@ export default function CreateEventStepwise() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="eventType">Event Type *</Label>
-          <Select value={eventType} onValueChange={setEventType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select event type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="in-person">In-Person Event</SelectItem>
-              <SelectItem value="online">Online Event</SelectItem>
-              <SelectItem value="hybrid">Hybrid Event</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label>Event Type *</Label>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              type="button"
+              variant={eventType === 'in-person' ? 'default' : 'outline'}
+              onClick={() => setEventType('in-person')}
+              className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
+                eventType === 'in-person'
+                  ? 'bg-gray-900 text-white hover:bg-gray-800'
+                  : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+              }`}
+            >
+              <MapPin className="mr-2 h-4 w-4" />
+              In-Person
+            </Button>
+            <Button
+              type="button"
+              variant={eventType === 'online' ? 'default' : 'outline'}
+              onClick={() => setEventType('online')}
+              className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
+                eventType === 'online'
+                  ? 'bg-gray-900 text-white hover:bg-gray-800'
+                  : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+              }`}
+            >
+              <Globe className="mr-2 h-4 w-4" />
+              Online
+            </Button>
+            <Button
+              type="button"
+              variant={eventType === 'hybrid' ? 'default' : 'outline'}
+              onClick={() => setEventType('hybrid')}
+              className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
+                eventType === 'hybrid'
+                  ? 'bg-gray-900 text-white hover:bg-gray-800'
+                  : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+              }`}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Hybrid
+            </Button>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="category">Category *</Label>
-          <Select 
-            value={eventData.category || ""} 
-            onValueChange={(value) => {
-              handleInputChange("category", value);
-              if (validationErrors.category) setValidationErrors(prev => ({ ...prev, category: '' }));
-            }}
-          >
-            <SelectTrigger className={validationErrors.category ? 'border-destructive' : ''}>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {eventCategories.map((category) => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {validationErrors.category && (
-            <p className="text-sm text-destructive">{validationErrors.category}</p>
-          )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Currency</Label>
+            <Select 
+              value={eventData.currency || DEFAULT_CURRENCY}
+              onValueChange={(value) => setEventData(prev => ({ ...prev, currency: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCIES.map((currency) => (
+                  <SelectItem key={currency.code} value={currency.code}>
+                    {currency.name} ({currency.symbol})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Select the currency for ticket prices
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Category *</Label>
+            <Select 
+              value={eventData.category || ""} 
+              onValueChange={(value) => {
+                handleInputChange("category", value);
+                if (validationErrors.category) setValidationErrors(prev => ({ ...prev, category: '' }));
+              }}
+            >
+              <SelectTrigger className={validationErrors.category ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {eventCategories.map((category) => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {validationErrors.category && (
+              <p className="text-sm text-destructive">{validationErrors.category}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -1569,12 +1623,28 @@ export default function CreateEventStepwise() {
       {/* Age Restriction */}
       <div className="space-y-2">
         <Label htmlFor="ageRestriction">Age Restriction (Optional)</Label>
-        <Input
-          id="ageRestriction"
-          placeholder="e.g., 18+, All ages, 21 and over"
-          value={eventData.ageRestriction}
-          onChange={(e) => handleInputChange("ageRestriction", e.target.value)}
-        />
+        <Select
+          value={eventData.ageRestriction || "none"}
+          onValueChange={(value) => {
+            // If "none" is selected, set to empty string, otherwise set the value
+            handleInputChange("ageRestriction", value === "none" ? "" : value);
+          }}
+        >
+          <SelectTrigger id="ageRestriction">
+            <SelectValue placeholder="Select age restriction" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No restriction</SelectItem>
+            <SelectItem value="All ages">All ages</SelectItem>
+            <SelectItem value="13+">13+</SelectItem>
+            <SelectItem value="16+">16+</SelectItem>
+            <SelectItem value="18+">18+</SelectItem>
+            <SelectItem value="21+">21+</SelectItem>
+            <SelectItem value="25+">25+</SelectItem>
+            <SelectItem value="Adults only">Adults only</SelectItem>
+            <SelectItem value="Seniors (65+)">Seniors (65+)</SelectItem>
+          </SelectContent>
+        </Select>
         <p className="text-xs text-muted-foreground">
           Specify any age restrictions for this event
         </p>
@@ -1720,7 +1790,7 @@ export default function CreateEventStepwise() {
     if (currentStep === 4) {
       return (
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <DialogHeader>
               <DialogTitle>Registration Form Preview</DialogTitle>
               <DialogDescription>
@@ -1728,9 +1798,69 @@ export default function CreateEventStepwise() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
-              <div className="border rounded-lg p-6 bg-card">
-                <h3 className="text-xl font-semibold mb-4">{eventData.title || 'Event Registration'}</h3>
-                <form className="space-y-4">
+              <div className="border rounded-lg overflow-hidden bg-card">
+                {/* Event Image */}
+                {(imagePreview || eventData.image) && (
+                  <div className="w-full h-48 overflow-hidden">
+                    <img
+                      src={imagePreview || eventData.image}
+                      alt={eventData.title || 'Event'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                
+                <div className="p-6">
+                  {/* Event Title */}
+                  <h3 className="text-2xl font-bold mb-2">{eventData.title || 'Event Registration'}</h3>
+                  
+                  {/* Organizer */}
+                  {eventData.organizer && (
+                    <p className="text-sm text-muted-foreground mb-4">by {eventData.organizer}</p>
+                  )}
+                  
+                  {/* Event Details */}
+                  <div className="space-y-2 mb-6 text-sm">
+                    {/* Date & Time */}
+                    {eventData.date && eventData.time && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {new Date(`${eventData.date}T${eventData.time}`).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })} at {new Date(`${eventData.date}T${eventData.time}`).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Location/Venue */}
+                    {(eventData.venue || eventData.location || eventData.onlineLink) && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="w-4 h-4" />
+                        <span>
+                          {eventData.venue && `${eventData.venue}, `}
+                          {eventData.location || eventData.onlineLink}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Category */}
+                    {eventData.category && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span className="text-xs bg-muted px-2 py-1 rounded">{eventData.category}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="text-lg font-semibold mb-4">Registration Form</h4>
+                    <form className="space-y-4">
                   {registrationFields.map((field, index) => (
                     <div key={field.id || index} className="space-y-2">
                       <Label htmlFor={`preview-${field.id}`}>
@@ -1766,10 +1896,12 @@ export default function CreateEventStepwise() {
                       )}
                     </div>
                   ))}
-                  <Button type="submit" className="w-full" disabled>
-                    Register Now
-                  </Button>
-                </form>
+                      <Button type="submit" className="w-full" disabled>
+                        Register Now
+                      </Button>
+                    </form>
+                  </div>
+                </div>
               </div>
             </div>
           </DialogContent>
@@ -1896,7 +2028,7 @@ export default function CreateEventStepwise() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
@@ -1927,12 +2059,12 @@ export default function CreateEventStepwise() {
           <div className="mt-4 sm:mt-6">
             <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mb-2">
               <span>Step {currentStep} of {steps.length}</span>
-              <span>{calculateProgress()}% complete</span>
+              <span>{Math.round((currentStep / steps.length) * 100)}% complete</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div
                 className="bg-gray-900 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${calculateProgress()}%` }}
+                style={{ width: `${(currentStep / steps.length) * 100}%` }}
               />
             </div>
           </div>
@@ -1981,74 +2113,6 @@ export default function CreateEventStepwise() {
             {currentStep === 6 && renderStep6()}
 
             {/* Navigation Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Event Type</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    type="button"
-                    variant={eventType === 'in-person' ? 'default' : 'outline'}
-                    onClick={() => setEventType('in-person')}
-                    className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
-                      eventType === 'in-person'
-                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                        : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
-                    }`}
-                  >
-                    <MapPin className="mr-2 h-4 w-4" />
-                    In-Person
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={eventType === 'online' ? 'default' : 'outline'}
-                    onClick={() => setEventType('online')}
-                    className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
-                      eventType === 'online'
-                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                        : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
-                    }`}
-                  >
-                    <Globe className="mr-2 h-4 w-4" />
-                    Online
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={eventType === 'hybrid' ? 'default' : 'outline'}
-                    onClick={() => setEventType('hybrid')}
-                    className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
-                      eventType === 'hybrid'
-                        ? 'bg-gray-900 text-white hover:bg-gray-800'
-                        : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
-                    }`}
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    Hybrid
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Currency</Label>
-                <Select 
-                  value={eventData.currency || DEFAULT_CURRENCY}
-                  onValueChange={(value) => setEventData(prev => ({ ...prev, currency: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CURRENCIES.map((currency) => (
-                      <SelectItem key={currency.code} value={currency.code}>
-                        {currency.name} ({currency.symbol})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Select the currency for ticket prices
-                </p>
-              </div>
-            </div>
-
             <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
               <div className="flex gap-2 order-2 sm:order-1">
                 <Button

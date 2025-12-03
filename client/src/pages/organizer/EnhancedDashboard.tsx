@@ -275,49 +275,64 @@ const EnhancedDashboard = () => {
 
         {/* Main Content */}
         <div className="space-y-8">
-          
-          {/* My Events Section */}
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+          {/* Quick Actions */}
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Link
-                to="/organizer/events"
-                className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
+                to="/organizer/events/create"
+                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
               >
-                View all events
-                <ArrowUpRight className="h-4 w-4 ml-1" />
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                  <Plus className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Create Event</p>
+                  <p className="text-sm text-muted-foreground">Start a new event</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/organizer/analytics"
+                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+              >
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">View Analytics</p>
+                  <p className="text-sm text-muted-foreground">Performance insights</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/organizer/attendees"
+                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+              >
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Manage Attendees</p>
+                  <p className="text-sm text-muted-foreground">View and manage</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/organizer/tickets/scanner"
+                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+              >
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Ticket Scanner</p>
+                  <p className="text-sm text-muted-foreground">Check-in attendees</p>
+                </div>
               </Link>
             </div>
-
-            {/* Events Grid */}
-            {loading ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Loading events...</p>
-              </div>
-            ) : recentEvents.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {recentEvents.map((event) => (
-                    <OrganizerEventCard key={event.id} event={event} />
-                  ))}
-                </div>
-                {/* Infinite Scroll Loader */}
-                {hasMore && (
-                  <div ref={loadMoreRef} className="py-8 text-center">
-                    {loadingMore && (
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <span>Loading more events...</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No events yet. Create your first event to get started!</p>
-              </div>
-            )}
           </div>
 
           {/* Insights Cards Row */}
@@ -458,64 +473,48 @@ const EnhancedDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* My Events Section */}
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-foreground">My Events</h2>
               <Link
-                to="/organizer/events/create"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                to="/organizer/events"
+                className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
               >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <Plus className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Create Event</p>
-                  <p className="text-sm text-muted-foreground">Start a new event</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/organizer/analytics"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">View Analytics</p>
-                  <p className="text-sm text-muted-foreground">Performance insights</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/organizer/attendees"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Manage Attendees</p>
-                  <p className="text-sm text-muted-foreground">View and manage</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/organizer/tickets/scanner"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <Calendar className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Ticket Scanner</p>
-                  <p className="text-sm text-muted-foreground">Check-in attendees</p>
-                </div>
+                View all events
+                <ArrowUpRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
+
+            {/* Events Grid */}
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading events...</p>
+              </div>
+            ) : recentEvents.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {recentEvents.map((event) => (
+                    <OrganizerEventCard key={event.id} event={event} />
+                  ))}
+                </div>
+                {/* Infinite Scroll Loader */}
+                {hasMore && (
+                  <div ref={loadMoreRef} className="py-8 text-center">
+                    {loadingMore && (
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading more events...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No events yet. Create your first event to get started!</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
