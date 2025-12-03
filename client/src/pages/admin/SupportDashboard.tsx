@@ -95,8 +95,8 @@ const SupportDashboard = () => {
     <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       {/* Header */}
       <div>
-        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Support Dashboard</h1>
-        <p className={`${isMobile ? 'text-sm' : ''} text-muted-foreground`}>
+        <h1 className="text-lg font-semibold text-gray-900">Support Dashboard</h1>
+        <p className="text-gray-600">
           Manage support requests and view your assigned events
         </p>
       </div>
@@ -109,7 +109,7 @@ const SupportDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{assignedEvents.length}</div>
+            <div className="font-semibold text-gray-900">{assignedEvents.length}</div>
             <p className="text-xs text-muted-foreground">Total assignments</p>
           </CardContent>
         </Card>
@@ -120,7 +120,7 @@ const SupportDashboard = () => {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{todaysEvents.length}</div>
+            <div className="font-semibold text-gray-900">{todaysEvents.length}</div>
             <p className="text-xs text-muted-foreground">Events happening today</p>
           </CardContent>
         </Card>
@@ -131,7 +131,7 @@ const SupportDashboard = () => {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="font-semibold text-gray-900">0</div>
             <p className="text-xs text-muted-foreground">Pending support</p>
           </CardContent>
         </Card>
@@ -142,7 +142,7 @@ const SupportDashboard = () => {
             <HeadphonesIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">--</div>
+            <div className="font-semibold text-gray-900">--</div>
             <p className="text-xs text-muted-foreground">Avg. response</p>
           </CardContent>
         </Card>

@@ -161,7 +161,7 @@ const FinanceDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Finance Dashboard</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Finance Dashboard</h1>
             <p className="text-gray-600">Track income, expenses, and financial performance</p>
           </div>
           <div className="flex items-center gap-3">
@@ -187,8 +187,8 @@ const FinanceDashboard = () => {
                 <span className="text-green-600 text-sm font-medium">+12.5%</span>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Total Income</h3>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
+                <h3 className="text-lg font-semibold text-foreground">Total Income</h3>
+                <p className="font-semibold text-green-600">{formatCurrency(totalIncome)}</p>
                 <p className="text-sm text-gray-600">This month</p>
               </div>
             </CardContent>
@@ -203,8 +203,8 @@ const FinanceDashboard = () => {
                 <span className="text-red-600 text-sm font-medium">+8.2%</span>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Total Expenses</h3>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
+                <h3 className="text-lg font-semibold text-foreground">Total Expenses</h3>
+                <p className="font-semibold text-red-600">{formatCurrency(totalExpenses)}</p>
                 <p className="text-sm text-gray-600">This month</p>
               </div>
             </CardContent>
@@ -221,8 +221,8 @@ const FinanceDashboard = () => {
                 </span>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Net Profit</h3>
-                <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <h3 className="text-lg font-semibold text-foreground">Net Profit</h3>
+                <p className={`font-semibold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(netProfit)}
                 </p>
                 <p className="text-sm text-gray-600">This month</p>
@@ -239,8 +239,8 @@ const FinanceDashboard = () => {
                 <span className="text-purple-600 text-sm font-medium">4</span>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Pending Payments</h3>
-                <p className="text-2xl font-bold text-purple-600">
+                <h3 className="text-lg font-semibold text-foreground">Pending Payments</h3>
+                <p className="font-semibold text-purple-600">
                   {formatCurrency(mockTransactions.filter(t => t.status === "pending").reduce((sum, t) => sum + t.amount, 0))}
                 </p>
                 <p className="text-sm text-gray-600">Awaiting processing</p>
@@ -304,7 +304,7 @@ const FinanceDashboard = () => {
                             <TrendingDown className="h-5 w-5 text-red-600" />
                           )}
                         </div>
-                        <h3 className="font-semibold text-gray-900">{transaction.description}</h3>
+                        <h3 className="text-lg font-semibold text-foreground">{transaction.description}</h3>
                         <Badge className={`text-xs ${getTypeBadge(transaction.type)}`}>
                           {transaction.type}
                         </Badge>
@@ -327,7 +327,7 @@ const FinanceDashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-xl font-bold ${transaction.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                      <p className={`font-semibold ${transaction.type === "income" ? "text-green-600" : "text-red-600"}`}>
                         {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
                       </p>
                     </div>

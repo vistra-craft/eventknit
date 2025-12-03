@@ -300,7 +300,7 @@ const PartnershipTemplateBuilder = () => {
               EK
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2"><span className="text-eventknit">{selectedTemplate.branding.companyName}</span></h1>
+          <h1 className="text-lg font-semibold text-gray-900 mb-2"><span className="text-eventknit">{selectedTemplate.branding.companyName}</span></h1>
           <p className="text-gray-600">{selectedTemplate.branding.tagline}</p>
           <div className="mt-4">
             <Badge className={`${selectedTemplate.type === 'sponsor' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
@@ -383,8 +383,8 @@ const PartnershipTemplateBuilder = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 flex items-center">
-                <Layout className="h-8 w-8 mr-3 text-primary" />
+              <h1 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                <Layout className="h-6 w-6 mr-3 text-primary" />
                 Partnership Template Builder
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground">

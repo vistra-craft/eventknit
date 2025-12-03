@@ -236,7 +236,7 @@ const ModerationPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Content Moderation</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Content Moderation</h1>
             <p className="text-gray-600">Review and manage reported content and user violations</p>
           </div>
           <div className="text-sm text-gray-500">
@@ -248,7 +248,7 @@ const ModerationPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-yellow-600 mb-2">
+              <div className="font-semibold text-yellow-600 mb-2">
                 {mockReportedContent.filter(r => r.status === "pending").length}
               </div>
               <p className="text-sm text-gray-600">Pending Reports</p>
@@ -256,7 +256,7 @@ const ModerationPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-red-600 mb-2">
+              <div className="font-semibold text-red-600 mb-2">
                 {mockReportedContent.filter(r => r.severity === "high").length}
               </div>
               <p className="text-sm text-gray-600">High Severity</p>
@@ -264,7 +264,7 @@ const ModerationPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-orange-600 mb-2">
+              <div className="font-semibold text-orange-600 mb-2">
                 {mockUserViolations.filter(u => u.status === "suspended").length}
               </div>
               <p className="text-sm text-gray-600">Suspended Users</p>
@@ -272,7 +272,7 @@ const ModerationPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-red-600 mb-2">
+              <div className="font-semibold text-red-600 mb-2">
                 {mockUserViolations.filter(u => u.status === "banned").length}
               </div>
               <p className="text-sm text-gray-600">Banned Users</p>
@@ -353,7 +353,7 @@ const ModerationPage = () => {
                           <div className="p-2 rounded-lg bg-primary/10">
                             {getTypeIcon(report.type)}
                           </div>
-                          <h3 className="font-semibold text-gray-900 truncate">{report.title}</h3>
+                          <h3 className="text-lg font-semibold text-foreground truncate">{report.title}</h3>
                           <Badge className={`text-xs ${getStatusBadge(report.status)}`}>
                             {report.status}
                           </Badge>
@@ -419,7 +419,7 @@ const ModerationPage = () => {
                           <div className="p-2 rounded-lg bg-primary/10">
                             <User className="h-5 w-5 text-primary" />
                           </div>
-                          <h3 className="font-semibold text-gray-900">{violation.username}</h3>
+                          <h3 className="text-lg font-semibold text-foreground">{violation.username}</h3>
                           <Badge className={`text-xs ${getStatusBadge(violation.status)}`}>
                             {violation.status}
                           </Badge>

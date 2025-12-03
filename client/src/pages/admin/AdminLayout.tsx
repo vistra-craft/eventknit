@@ -49,14 +49,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <div className="container mx-auto flex flex-1">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar */}
-        <div className="hidden lg:block w-64 flex-shrink-0">
-          <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
+        <div className="hidden lg:block w-64 flex-shrink-0 bg-card border-r border-border">
+          <div className="sticky top-0 h-screen">
+            <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
+          </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex-1 min-w-0 flex flex-col container mx-auto">
           {/* Header */}
           <div className="px-4 sm:px-6">
             <AdminHeader
@@ -65,7 +67,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           </div>
 
           {/* Page Content */}
-          <main className="flex-1 px-4 sm:px-6 pt-6">
+          <main className="flex-1 px-4 sm:px-6 pt-6 pb-8">
             {children}
           </main>
         </div>

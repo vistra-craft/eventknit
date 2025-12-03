@@ -258,7 +258,7 @@ Generated on: ${new Date().toLocaleDateString()}
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Partnership Not Found</h2>
+            <h2 className="text-base font-semibold text-gray-900 mb-2">Partnership Not Found</h2>
             <p className="text-muted-foreground mb-4">The partnership you're looking for doesn't exist.</p>
             <Button onClick={() => navigate('/admin/marketing/partnerships')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -285,7 +285,7 @@ Generated on: ${new Date().toLocaleDateString()}
               Back to Partnerships
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Partnership Details</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Partnership Details</h1>
               <p className="text-gray-600">View and manage partnership information</p>
             </div>
           </div>
@@ -315,7 +315,7 @@ Generated on: ${new Date().toLocaleDateString()}
               EK
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2"><span className="text-eventknit">EventKnit</span></h1>
+          <h1 className="text-lg font-semibold text-gray-900 mb-2"><span className="text-eventknit">EventKnit</span></h1>
           <p className="text-gray-600 text-lg mb-4">Connecting Events, Creating Opportunities</p>
           <div className="flex items-center justify-center space-x-4">
             <Badge className={`text-lg px-4 py-2 ${getTypeColor(partnership.type)}`}>
@@ -360,7 +360,7 @@ Generated on: ${new Date().toLocaleDateString()}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Partnership Value</label>
-                  <p className="text-2xl font-bold text-green-600">${partnership.value.toLocaleString()}</p>
+                  <p className="font-semibold text-green-600">${partnership.value.toLocaleString()}</p>
                 </div>
               </div>
               

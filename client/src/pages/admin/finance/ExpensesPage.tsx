@@ -193,7 +193,7 @@ const ExpensesPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Expense Management</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Expense Management</h1>
             <p className="text-gray-600">Track and manage all company expenses</p>
           </div>
           <div className="flex items-center gap-3">
@@ -212,7 +212,7 @@ const ExpensesPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-red-600 mb-2">
+              <div className="font-semibold text-red-600 mb-2">
                 {formatCurrency(totalExpenses)}
               </div>
               <p className="text-sm text-gray-600">Total Expenses</p>
@@ -220,7 +220,7 @@ const ExpensesPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-yellow-600 mb-2">
+              <div className="font-semibold text-yellow-600 mb-2">
                 {formatCurrency(pendingExpenses)}
               </div>
               <p className="text-sm text-gray-600">Pending Payments</p>
@@ -228,7 +228,7 @@ const ExpensesPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-gray-600 mb-2">
+              <div className="font-semibold text-gray-600 mb-2">
                 {mockExpenses.length}
               </div>
               <p className="text-sm text-gray-600">Total Transactions</p>
@@ -303,7 +303,7 @@ const ExpensesPage = () => {
                       <div className="p-2 rounded-lg bg-red-100">
                         <TrendingDown className="h-5 w-5 text-red-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900 truncate">{expense.description}</h3>
+                      <h3 className="text-lg font-semibold text-foreground truncate">{expense.description}</h3>
                       <Badge className={`text-xs ${getStatusBadge(expense.status)}`}>
                         {expense.status}
                       </Badge>
@@ -338,7 +338,7 @@ const ExpensesPage = () => {
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <div className="text-right">
-                      <p className="text-xl font-bold text-red-600">
+                      <p className="font-semibold text-red-600">
                         -{formatCurrency(expense.amount)}
                       </p>
                     </div>
@@ -377,7 +377,7 @@ const ExpensesPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-xl font-semibold text-gray-900">Expense Details</h2>
+                <h2 className="text-base font-semibold text-gray-900">Expense Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>

@@ -293,7 +293,7 @@ const WorkstationPrint: React.FC = () => {
             Back to Workstation
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">Print Center</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Print Center</h1>
             <p className="text-gray-600 mt-2">{currentEvent.title} • {currentEvent.date}</p>
           </div>
           <div className="flex gap-2">

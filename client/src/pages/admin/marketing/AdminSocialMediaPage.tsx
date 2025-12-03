@@ -210,8 +210,8 @@ const AdminSocialMediaPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Social Media</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-lg font-semibold text-gray-900">Social Media</h1>
+          <p className="text-gray-600">
             Manage your social media presence and engage with your audience
           </p>
         </div>
@@ -281,7 +281,7 @@ const AdminSocialMediaPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Followers</p>
-                    <p className="text-2xl font-bold text-foreground">{totalFollowers.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">{totalFollowers.toLocaleString()}</p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -293,7 +293,7 @@ const AdminSocialMediaPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Avg Engagement</p>
-                    <p className="text-2xl font-bold text-foreground">{avgEngagement.toFixed(1)}%</p>
+                    <p className="font-semibold text-gray-900">{avgEngagement.toFixed(1)}%</p>
                   </div>
                   <Heart className="h-8 w-8 text-primary" />
                 </div>
@@ -305,7 +305,7 @@ const AdminSocialMediaPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Reach</p>
-                    <p className="text-2xl font-bold text-foreground">{totalReach.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">{totalReach.toLocaleString()}</p>
                   </div>
                   <Eye className="h-8 w-8 text-primary" />
                 </div>
@@ -317,7 +317,7 @@ const AdminSocialMediaPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Impressions</p>
-                    <p className="text-2xl font-bold text-foreground">{totalImpressions.toLocaleString()}</p>
+                    <p className="font-semibold text-gray-900">{totalImpressions.toLocaleString()}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-primary" />
                 </div>
@@ -328,7 +328,7 @@ const AdminSocialMediaPage = () => {
           {/* Connected Accounts */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-base font-semibold text-gray-900">
                 <Share2 className="h-5 w-5 mr-2 text-primary" />
                 Connected Accounts
               </CardTitle>
@@ -345,7 +345,7 @@ const AdminSocialMediaPage = () => {
                         {account.status}
                       </Badge>
                     </div>
-                    <h3 className="font-medium text-foreground mb-1">{account.name}</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-1">{account.name}</h3>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>{account.followers.toLocaleString()} followers</span>
                       <span>{account.engagement}% engagement</span>
@@ -359,7 +359,7 @@ const AdminSocialMediaPage = () => {
           {/* Recent Posts */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-base font-semibold text-gray-900">
                 <BarChart3 className="h-5 w-5 mr-2 text-primary" />
                 Recent Posts Performance
               </CardTitle>
@@ -373,7 +373,7 @@ const AdminSocialMediaPage = () => {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="font-medium text-foreground">{post.platform.charAt(0).toUpperCase() + post.platform.slice(1)}</h4>
+                        <h4 className="text-lg font-semibold text-foreground">{post.platform.charAt(0).toUpperCase() + post.platform.slice(1)}</h4>
                         <Badge className={`text-xs ${getStatusColor(post.status)}`}>
                           {post.status}
                         </Badge>
@@ -416,7 +416,7 @@ const AdminSocialMediaPage = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>All Posts</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">All Posts</CardTitle>
               <div className="flex items-center space-x-2">
                 <select 
                   value={selectedPlatform} 
@@ -448,7 +448,7 @@ const AdminSocialMediaPage = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-medium text-foreground">{post.platform.charAt(0).toUpperCase() + post.platform.slice(1)} Post</h3>
+                          <h3 className="text-lg font-semibold text-foreground">{post.platform.charAt(0).toUpperCase() + post.platform.slice(1)} Post</h3>
                           <Badge className={`text-xs ${getStatusColor(post.status)}`}>
                             {post.status}
                           </Badge>
@@ -496,7 +496,7 @@ const AdminSocialMediaPage = () => {
       {activeTab === "accounts" && (
         <Card>
           <CardHeader>
-            <CardTitle>Social Media Accounts</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900">Social Media Accounts</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -507,7 +507,7 @@ const AdminSocialMediaPage = () => {
                       <account.icon className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-foreground">{account.name}</h3>
+                      <h3 className="text-lg font-semibold text-foreground">{account.name}</h3>
                       <p className="text-sm text-muted-foreground">
                         {account.followers.toLocaleString()} followers • {account.engagement}% engagement
                       </p>
@@ -533,7 +533,7 @@ const AdminSocialMediaPage = () => {
         <Card>
           <CardContent className="p-12 text-center">
             <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-foreground mb-2">Social Media Analytics</h3>
+            <h3 className="text-base font-medium text-foreground mb-2">Social Media Analytics</h3>
             <p className="text-muted-foreground mb-4">
               Detailed analytics and insights for your social media performance
             </p>

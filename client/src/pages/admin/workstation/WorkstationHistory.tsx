@@ -394,7 +394,7 @@ const WorkstationHistory: React.FC = () => {
             Back to Workstation
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">Scan History</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Scan History</h1>
             <p className="text-gray-600 mt-2">View and analyze all QR code scans</p>
           </div>
         </div>
@@ -440,7 +440,7 @@ const WorkstationHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Scans</p>
-                      <p className="text-2xl font-bold">{stats.totalScans}</p>
+                      <p className="font-semibold text-gray-900">{stats.totalScans}</p>
                     </div>
                     <QrCode className="h-8 w-8 text-primary" />
                   </div>
@@ -452,7 +452,7 @@ const WorkstationHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Valid Scans</p>
-                      <p className="text-2xl font-bold text-green-600">{stats.approvedScans}</p>
+                      <p className="font-semibold text-green-600">{stats.approvedScans}</p>
                     </div>
                     <CheckCircle className="h-8 w-8 text-green-600" />
                   </div>
@@ -464,7 +464,7 @@ const WorkstationHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Invalid Scans</p>
-                      <p className="text-2xl font-bold text-red-600">{stats.rejectedScans}</p>
+                      <p className="font-semibold text-red-600">{stats.rejectedScans}</p>
                     </div>
                     <XCircle className="h-8 w-8 text-red-600" />
                   </div>
@@ -476,7 +476,7 @@ const WorkstationHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-                      <p className="text-2xl font-bold">
+                      <p className="font-semibold text-gray-900">
                         {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%
                       </p>
                     </div>
@@ -760,7 +760,7 @@ const WorkstationHistory: React.FC = () => {
                       <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Clock className="w-8 h-8 text-primary" />
                       </div>
-                      <h3 className="text-2xl font-bold">{stats.peakScanHour || 'N/A'}</h3>
+                      <h3 className="font-semibold text-gray-900">{stats.peakScanHour || 'N/A'}</h3>
                       <p className="text-sm text-gray-600 mt-2">Most active scanning hour</p>
                     </div>
                   </CardContent>
@@ -780,7 +780,7 @@ const WorkstationHistory: React.FC = () => {
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Zap className="w-8 h-8 text-green-600" />
                         </div>
-                        <h3 className="text-2xl font-bold">
+                        <h3 className="font-semibold text-gray-900">
                           {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%
                         </h3>
                         <p className="text-sm text-gray-600">Success Rate</p>

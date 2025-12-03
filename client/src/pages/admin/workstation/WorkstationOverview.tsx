@@ -164,7 +164,7 @@ const WorkstationOverview: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Workstation Management</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Workstation Management</h1>
             <p className="text-gray-600 mt-2">Select an event to manage attendees, facilities, and operations</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ const WorkstationOverview: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Events</p>
-                    <p className="text-2xl font-bold">{stats.totalEvents}</p>
+                    <p className="font-semibold">{stats.totalEvents}</p>
                   </div>
                   <Calendar className="h-8 w-8 text-primary" />
                 </div>
@@ -196,7 +196,7 @@ const WorkstationOverview: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
-                    <p className="text-2xl font-bold">{stats.totalAttendees.toLocaleString()}</p>
+                    <p className="font-semibold">{stats.totalAttendees.toLocaleString()}</p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -208,7 +208,7 @@ const WorkstationOverview: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Tickets Scanned</p>
-                    <p className="text-2xl font-bold">{stats.totalScanned.toLocaleString()}</p>
+                    <p className="font-semibold">{stats.totalScanned.toLocaleString()}</p>
                   </div>
                   <QrCode className="h-8 w-8 text-primary" />
                 </div>
@@ -220,7 +220,7 @@ const WorkstationOverview: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Currently Inside</p>
-                    <p className="text-2xl font-bold">
+                    <p className="font-semibold">
                       {events.reduce((sum, event) => 
                         sum + (event.statistics?.currentlyInside || 0), 0
                       ).toLocaleString()}
@@ -237,7 +237,7 @@ const WorkstationOverview: React.FC = () => {
         {/* Events Grid */}
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">All Events</h2>
+            <h2 className="text-base font-semibold text-gray-900">All Events</h2>
             <Button 
               onClick={() => navigate('/admin/workstation/events')}
               variant="outline"
@@ -289,7 +289,7 @@ const WorkstationOverview: React.FC = () => {
                     <CardContent className="p-6">
                       <div className="space-y-4">
                         <div>
-                          <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary transition-colors">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
                             {event.title}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">{organizerName}</p>

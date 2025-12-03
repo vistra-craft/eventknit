@@ -208,11 +208,10 @@ const AdminAnalyticsOverview = () => {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center">
-                <Shield className="h-8 w-8 mr-3 text-primary" />
+              <h1 className="text-lg font-semibold text-gray-900">
                 Platform Analytics
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-gray-600">
                 Comprehensive insights into platform performance and user engagement
               </p>
             </div>
@@ -252,7 +251,7 @@ const AdminAnalyticsOverview = () => {
                       <p className="text-xs font-medium text-muted-foreground mb-1">
                         {stat.title}
                       </p>
-                      <p className="text-xl font-bold text-foreground mb-1">
+                      <p className="font-semibold text-gray-900 mb-1">
                         {stat.value}
                       </p>
                       <div className="flex items-center">

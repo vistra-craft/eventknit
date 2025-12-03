@@ -157,7 +157,7 @@ const BackupsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Backup Management</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Backup Management</h1>
             <p className="text-gray-600">Manage database backups and restore operations</p>
           </div>
           <div className="flex items-center gap-3">
@@ -181,7 +181,7 @@ const BackupsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-green-600 mb-2">
+              <div className="font-semibold text-green-600 mb-2">
                 {mockBackups.filter(b => b.status === "completed").length}
               </div>
               <p className="text-sm text-gray-600">Completed</p>
@@ -189,7 +189,7 @@ const BackupsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-2">
+              <div className="font-semibold text-blue-600 mb-2">
                 {mockBackups.filter(b => b.status === "in_progress").length}
               </div>
               <p className="text-sm text-gray-600">In Progress</p>
@@ -197,7 +197,7 @@ const BackupsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-red-600 mb-2">
+              <div className="font-semibold text-red-600 mb-2">
                 {mockBackups.filter(b => b.status === "failed").length}
               </div>
               <p className="text-sm text-gray-600">Failed</p>
@@ -205,7 +205,7 @@ const BackupsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-yellow-600 mb-2">
+              <div className="font-semibold text-yellow-600 mb-2">
                 {mockBackups.filter(b => b.status === "scheduled").length}
               </div>
               <p className="text-sm text-gray-600">Scheduled</p>

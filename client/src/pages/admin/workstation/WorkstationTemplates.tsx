@@ -244,7 +244,7 @@ const WorkstationTemplates: React.FC = () => {
             Back to Workstation
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Template Editor</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Template Editor</h1>
             <p className="text-gray-600 mt-2">Design and customize badge templates</p>
           </div>
         </div>

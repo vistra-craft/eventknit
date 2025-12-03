@@ -172,7 +172,7 @@ const SystemHealthPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">System Health</h1>
+            <h1 className="text-lg font-semibold text-gray-900">System Health</h1>
             <p className="text-gray-600">Monitor system performance and service status</p>
           </div>
           <div className="flex items-center gap-3">
@@ -208,8 +208,8 @@ const SystemHealthPage = () => {
                     </Badge>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-gray-900">{metric.name}</h3>
-                    <p className="text-2xl font-bold text-primary">{metric.value}</p>
+                    <h3 className="text-lg font-semibold text-foreground">{metric.name}</h3>
+                    <p className="font-semibold text-primary">{metric.value}</p>
                     <p className="text-sm text-gray-600">{metric.description}</p>
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Clock className="h-3 w-3" />
@@ -234,7 +234,7 @@ const SystemHealthPage = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Server className="h-5 w-5 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                      <h3 className="text-lg font-semibold text-foreground">{service.name}</h3>
                     </div>
                     <Badge className={`text-xs ${getStatusBadge(service.status)}`}>
                       {getStatusIcon(service.status)}

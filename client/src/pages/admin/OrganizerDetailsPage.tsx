@@ -263,7 +263,7 @@ const OrganizerDetailsPage = () => {
               Back to Organizers
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-lg font-semibold text-gray-900">
                 {organizerData.firstName} {organizerData.lastName}
               </h1>
               <p className="text-gray-600">{organizerData.company}</p>

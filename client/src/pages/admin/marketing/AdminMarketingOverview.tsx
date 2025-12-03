@@ -251,11 +251,10 @@ const AdminMarketingOverview = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 flex items-center">
-              <Megaphone className="h-8 w-8 mr-3 text-primary" />
+            <h1 className="text-lg font-semibold text-gray-900">
               Platform Marketing
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <p className="text-gray-600">
               Manage platform-wide marketing campaigns and analytics
             </p>
           </div>
@@ -308,169 +307,163 @@ const AdminMarketingOverview = () => {
                   </div>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground mb-1">{metric.value}</p>
-                  <p className="text-sm text-muted-foreground">{metric.title}</p>
+                  <p className="text-base font-semibold text-gray-900 mb-1">{metric.value}</p>
+                  <p className="text-sm text-gray-600">{metric.title}</p>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <div className="lg:col-span-1">
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Zap className="h-5 w-5 mr-2 text-primary" />
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {quickActions.map((action, index) => (
-                  <Link
-                    key={index}
-                    to={action.href}
-                    className="block p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+        {/* Quick Actions - 2 columns of 3 cards each */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+              <Zap className="h-5 w-5 mr-2 text-primary" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {quickActions.map((action, index) => (
+                <Link
+                  key={index}
+                  to={action.href}
+                  className="block p-5 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2 rounded-lg ${action.color} text-white`}>
+                      <action.icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {action.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {action.description}
+                      </p>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Performing Organizers */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+              <Building2 className="h-5 w-5 mr-2 text-primary" />
+              Top Performing Organizers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {topOrganizers.map((organizer) => (
+                <div
+                  key={organizer.id}
+                  className="p-6 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">{organizer.name}</h3>
+                    <div className="flex items-center space-x-1">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-600">
+                        +{organizer.growth}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Campaigns</span>
+                      <span className="font-medium">{organizer.campaigns}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subscribers</span>
+                      <span className="font-medium">{organizer.subscribers.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Revenue</span>
+                      <span className="font-medium">${organizer.revenue.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Conversion</span>
+                      <span className="font-medium">{organizer.conversionRate}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Performing Campaigns */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+                <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+                Top Performing Campaigns
+              </CardTitle>
+              <Link
+                to="/admin/marketing/campaigns"
+                className="text-primary hover:text-primary/80 text-sm font-medium flex items-center"
+              >
+                View All
+                <ArrowUpRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {topCampaigns.map((campaign) => {
+                const TypeIcon = getTypeIcon(campaign.type);
+                return (
+                  <div
+                    key={campaign.id}
+                    className="flex items-center justify-between p-5 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${action.color} text-white`}>
-                        <action.icon className="h-5 w-5" />
+                    <div className="flex items-center space-x-4">
+                      <div className="p-3 rounded-lg bg-primary/10">
+                        <TypeIcon className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
-                          {action.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {action.description}
+                      <div>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">{campaign.name}</h3>
+                          <Badge className={getStatusColor(campaign.status)}>
+                            {campaign.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground flex items-center">
+                          <Building2 className="h-3 w-3 mr-1" />
+                          {campaign.organizer}
                         </p>
                       </div>
-                      <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Top Campaigns */}
-          <div className="lg:col-span-2">
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2 text-primary" />
-                    Top Performing Campaigns
-                  </CardTitle>
-                  <Link
-                    to="/admin/marketing/campaigns"
-                    className="text-primary hover:text-primary/80 text-sm font-medium flex items-center"
-                  >
-                    View All
-                    <ArrowUpRight className="h-4 w-4 ml-1" />
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topCampaigns.map((campaign) => {
-                    const TypeIcon = getTypeIcon(campaign.type);
-                    return (
-                      <div
-                        key={campaign.id}
-                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <TypeIcon className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <h3 className="font-medium text-foreground">{campaign.name}</h3>
-                              <Badge className={getStatusColor(campaign.status)}>
-                                {campaign.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground flex items-center">
-                              <Building2 className="h-3 w-3 mr-1" />
-                              {campaign.organizer}
-                            </p>
-                          </div>
+                    <div className="text-right">
+                      <div className="grid grid-cols-3 gap-6 text-sm">
+                        <div>
+                          <p className="text-muted-foreground mb-1">Recipients</p>
+                          <p className="font-semibold text-base">{campaign.recipients.toLocaleString()}</p>
                         </div>
-                        <div className="text-right">
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <p className="text-muted-foreground">Recipients</p>
-                              <p className="font-medium">{campaign.recipients.toLocaleString()}</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Open Rate</p>
-                              <p className="font-medium">{campaign.openRate}%</p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Revenue</p>
-                              <p className="font-medium">${campaign.revenue.toLocaleString()}</p>
-                            </div>
-                          </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1">Open Rate</p>
+                          <p className="font-semibold text-base">{campaign.openRate}%</p>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Top Organizers */}
-        <div className="mt-8">
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Building2 className="h-5 w-5 mr-2 text-primary" />
-                Top Performing Organizers
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {topOrganizers.map((organizer) => (
-                  <div
-                    key={organizer.id}
-                    className="p-6 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-foreground">{organizer.name}</h3>
-                      <div className="flex items-center space-x-1">
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-600">
-                          +{organizer.growth}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Campaigns</span>
-                        <span className="font-medium">{organizer.campaigns}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Subscribers</span>
-                        <span className="font-medium">{organizer.subscribers.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Revenue</span>
-                        <span className="font-medium">${organizer.revenue.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Conversion</span>
-                        <span className="font-medium">{organizer.conversionRate}%</span>
+                        <div>
+                          <p className="text-muted-foreground mb-1">Revenue</p>
+                          <p className="font-semibold text-base">${campaign.revenue.toLocaleString()}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </AdminLayout>
   );

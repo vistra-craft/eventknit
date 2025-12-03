@@ -364,10 +364,10 @@ const OrganizersContent = () => {
                       size="lg"
                     />
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="text-sm font-medium text-gray-900">
                         {organizer.firstName} {organizer.lastName}
                       </h4>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-xs text-gray-600">
                         {organizer.organizationName || "No organization"}
                       </p>
                       <p className="text-sm text-gray-600">{organizer.email}</p>

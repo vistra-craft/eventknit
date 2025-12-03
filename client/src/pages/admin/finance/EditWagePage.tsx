@@ -57,7 +57,7 @@ const EditWagePage = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Wage</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Edit Wage</h1>
               <p className="text-gray-600">Update wage details</p>
             </div>
           </div>
@@ -78,7 +78,7 @@ const EditWagePage = () => {
           {/* Employee Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Employee Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Employee Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -137,7 +137,7 @@ const EditWagePage = () => {
           {/* Payment Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Payment Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Payment Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -206,7 +206,7 @@ const EditWagePage = () => {
           {/* Work Details */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Work Details</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Work Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -248,7 +248,7 @@ const EditWagePage = () => {
           {/* Adjustments */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Adjustments</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Adjustments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

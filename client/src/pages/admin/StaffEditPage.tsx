@@ -198,7 +198,7 @@ const StaffEditPage = () => {
               Back to Staff
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Staff Member</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Edit Staff Member</h1>
               <p className="text-gray-600">{staffData.firstName} {staffData.lastName} • {staffData.role.replace('_', ' ')}</p>
             </div>
           </div>

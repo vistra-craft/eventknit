@@ -117,7 +117,7 @@ const EventFinanceDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Event Finance Dashboard</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Event Finance Dashboard</h1>
             <p className="text-gray-600">Overview of event-related payments and finances</p>
           </div>
           <Button variant="outline" size="sm" onClick={loadFinancialData}>
@@ -136,8 +136,8 @@ const EventFinanceDashboard = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Total Revenue</h3>
-                <p className="text-2xl font-bold text-green-600">
+                <h3 className="text-lg font-semibold text-foreground">Total Revenue</h3>
+                <p className="font-semibold text-green-600">
                   {formatCurrency(stats.totalRevenue)}
                 </p>
                 <p className="text-sm text-gray-600">From all event payments</p>
@@ -153,8 +153,8 @@ const EventFinanceDashboard = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Platform Fees</h3>
-                <p className="text-2xl font-bold text-blue-600">
+                <h3 className="text-lg font-semibold text-foreground">Platform Fees</h3>
+                <p className="font-semibold text-blue-600">
                   {formatCurrency(stats.platformFees)}
                 </p>
                 <p className="text-sm text-gray-600">Commission earned</p>
@@ -170,8 +170,8 @@ const EventFinanceDashboard = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Pending Disbursements</h3>
-                <p className="text-2xl font-bold text-purple-600">
+                <h3 className="text-lg font-semibold text-foreground">Pending Disbursements</h3>
+                <p className="font-semibold text-purple-600">
                   {formatCurrency(stats.pendingDisbursements)}
                 </p>
                 <p className="text-sm text-gray-600">Awaiting payout to organizers</p>
@@ -187,8 +187,8 @@ const EventFinanceDashboard = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900">Total Refunds</h3>
-                <p className="text-2xl font-bold text-red-600">
+                <h3 className="text-lg font-semibold text-foreground">Total Refunds</h3>
+                <p className="font-semibold text-red-600">
                   {formatCurrency(stats.totalRefunds)}
                 </p>
                 <p className="text-sm text-gray-600">Refunded to customers</p>
@@ -206,7 +206,7 @@ const EventFinanceDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">Payment Transactions</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Payment Transactions</h3>
                   <p className="text-sm text-gray-600">View all payments</p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-gray-400" />

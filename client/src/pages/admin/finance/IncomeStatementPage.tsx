@@ -114,7 +114,7 @@ const IncomeStatementPage: React.FC = () => {
                     <FileText className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-foreground">Income Statement</h1>
+                    <h1 className="text-lg font-semibold text-gray-900">Income Statement</h1>
                     <p className="text-muted-foreground">Profit & Loss Report for {incomeStatementData.period}</p>
                   </div>
                 </div>
@@ -176,7 +176,7 @@ const IncomeStatementPage: React.FC = () => {
                     <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">+12.5%</Badge>
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Revenue</h3>
-                  <p className="text-2xl font-bold text-emerald-600">
+                  <p className="font-semibold text-emerald-600">
                     {formatCurrency(incomeStatementData.revenue.totalRevenue)}
                   </p>
                 </CardContent>
@@ -191,7 +191,7 @@ const IncomeStatementPage: React.FC = () => {
                     <Badge className="bg-red-50 text-red-700 border-red-200">+8.2%</Badge>
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Expenses</h3>
-                  <p className="text-2xl font-bold text-red-500">
+                  <p className="font-semibold text-red-500">
                     {formatCurrency(incomeStatementData.expenses.totalExpenses)}
                   </p>
                 </CardContent>
@@ -206,7 +206,7 @@ const IncomeStatementPage: React.FC = () => {
                     <Badge className="bg-blue-50 text-blue-700 border-blue-200">+15.3%</Badge>
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Gross Profit</h3>
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="font-semibold text-blue-600">
                     {formatCurrency(incomeStatementData.grossProfit)}
                   </p>
                 </CardContent>
@@ -223,7 +223,7 @@ const IncomeStatementPage: React.FC = () => {
                     </Badge>
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Net Income</h3>
-                  <p className={`text-2xl font-bold ${getTrendColor(incomeStatementData.netIncome)}`}>
+                  <p className={`font-semibold ${getTrendColor(incomeStatementData.netIncome)}`}>
                     {formatCurrency(incomeStatementData.netIncome)}
                   </p>
                 </CardContent>
@@ -233,7 +233,7 @@ const IncomeStatementPage: React.FC = () => {
             {/* Income Statement Table */}
             <Card className="border-border bg-card">
               <CardHeader className="bg-muted/30 border-b">
-                <CardTitle className="text-lg font-semibold text-foreground flex items-center">
+                <CardTitle className="text-base font-semibold text-gray-900 flex items-center">
                   <Calendar className="h-5 w-5 mr-2 text-primary" />
                   Income Statement - {incomeStatementData.period}
                 </CardTitle>
@@ -413,7 +413,7 @@ const IncomeStatementPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-foreground flex items-center">
+                  <CardTitle className="text-base font-semibold text-gray-900 flex items-center">
                     <PieChart className="h-5 w-5 mr-2 text-primary" />
                     Revenue Breakdown
                   </CardTitle>
@@ -464,7 +464,7 @@ const IncomeStatementPage: React.FC = () => {
 
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold text-foreground flex items-center">
+                  <CardTitle className="text-base font-semibold text-gray-900 flex items-center">
                     <BarChart3 className="h-5 w-5 mr-2 text-primary" />
                     Key Insights
                   </CardTitle>

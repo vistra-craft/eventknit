@@ -351,10 +351,10 @@ const AdminEnhancedDashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 flex items-center">
-              <Shield className="h-8 w-8 mr-3 text-primary" />
+            <h1 className="text-5xl sm:text-6xl font-bold text-foreground mb-4">EventKnit</h1>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
               Admin Dashboard
-            </h1>
+            </h2>
             <p className="text-sm text-muted-foreground">
               Platform overview and system management
             </p>
@@ -413,7 +413,7 @@ const AdminEnhancedDashboard = () => {
                 </div>
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground mb-1">{stat.value}</p>
+                <p className="font-semibold text-gray-900 mb-1">{stat.value}</p>
                 <p className="text-sm text-muted-foreground">{stat.title}</p>
               </div>
             </div>

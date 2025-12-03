@@ -877,7 +877,7 @@ const CommunicationsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Communications</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Communications</h1>
             <p className="text-gray-600">Manage announcements, notifications, and email templates</p>
           </div>
           <div className="flex items-center gap-3">
@@ -904,7 +904,7 @@ const CommunicationsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-primary mb-2">
+              <div className="font-semibold text-primary mb-2">
                 {announcements.filter(a => a.status === "sent").length}
               </div>
               <p className="text-sm text-gray-600">Sent Announcements</p>
@@ -912,7 +912,7 @@ const CommunicationsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-primary mb-2">
+              <div className="font-semibold text-primary mb-2">
                 {notifications.filter(n => n.status === "active").length}
               </div>
               <p className="text-sm text-gray-600">Active Notifications</p>
@@ -920,7 +920,7 @@ const CommunicationsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-primary mb-2">
+              <div className="font-semibold text-primary mb-2">
                 {emailTemplates.filter(t => t.status === "active").length}
               </div>
               <p className="text-sm text-gray-600">Active Templates</p>
@@ -928,7 +928,7 @@ const CommunicationsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-primary mb-2">
+              <div className="font-semibold text-primary mb-2">
                 {announcements.reduce((sum, a) => sum + a.views, 0)}
               </div>
               <p className="text-sm text-gray-600">Total Views</p>
@@ -1208,7 +1208,7 @@ const CommunicationsPage = () => {
             {/* Bulk Messages Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Bulk Messages</h2>
+                <h2 className="text-base font-semibold text-gray-900">Bulk Messages</h2>
                 <p className="text-sm text-gray-600 mt-1">Send messages to multiple users at once</p>
               </div>
               <Button onClick={() => { resetBulkMessageForm(); setShowBulkMessageForm(true); }}>

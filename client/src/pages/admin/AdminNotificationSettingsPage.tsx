@@ -300,7 +300,7 @@ const AdminNotificationSettingsPage = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Notification Settings</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Notification Settings</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Manage system-wide notification preferences, templates, and analytics
             </p>
@@ -769,7 +769,7 @@ const AdminNotificationSettingsPage = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">Notification Templates</h2>
+                    <h2 className="text-base font-semibold text-gray-900">Notification Templates</h2>
                     <p className="text-sm text-muted-foreground mt-1">
                       Manage notification templates for different notification types
                     </p>
@@ -853,7 +853,7 @@ const AdminNotificationSettingsPage = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">Notification Analytics</h2>
+                    <h2 className="text-base font-semibold text-gray-900">Notification Analytics</h2>
                     <p className="text-sm text-muted-foreground mt-1">
                       Track notification performance and delivery rates
                     </p>
@@ -877,7 +877,7 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Total Sent</p>
-                          <p className="text-2xl font-bold">{analytics.totalSent.toLocaleString()}</p>
+                          <p className="font-semibold text-gray-900">{analytics.totalSent.toLocaleString()}</p>
                         </div>
                         <Bell className="h-8 w-8 text-muted-foreground" />
                       </div>
@@ -888,7 +888,7 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Delivered</p>
-                          <p className="text-2xl font-bold text-green-600">{analytics.totalDelivered.toLocaleString()}</p>
+                          <p className="font-semibold text-green-600">{analytics.totalDelivered.toLocaleString()}</p>
                         </div>
                         <CheckCircle className="h-8 w-8 text-green-600" />
                       </div>
@@ -899,7 +899,7 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Failed</p>
-                          <p className="text-2xl font-bold text-red-600">{analytics.totalFailed.toLocaleString()}</p>
+                          <p className="font-semibold text-red-600">{analytics.totalFailed.toLocaleString()}</p>
                         </div>
                         <AlertCircle className="h-8 w-8 text-red-600" />
                       </div>
@@ -910,7 +910,7 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Delivery Rate</p>
-                          <p className="text-2xl font-bold">{analytics.deliveryRate.toFixed(1)}%</p>
+                          <p className="font-semibold text-gray-900">{analytics.deliveryRate.toFixed(1)}%</p>
                         </div>
                         <BarChart3 className="h-8 w-8 text-primary" />
                       </div>

@@ -228,7 +228,7 @@ const UserRolesPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">User Roles</h1>
+            <h1 className="text-lg font-semibold text-gray-900">User Roles</h1>
             <p className="text-muted-foreground">
               Manage user roles and their access permissions
             </p>

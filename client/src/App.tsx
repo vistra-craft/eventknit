@@ -84,6 +84,9 @@ import StaffEditPage from "./pages/admin/StaffEditPage";
 import StaffPerformanceDashboard from "./pages/admin/StaffPerformanceDashboard";
 import StaffPerformanceDetail from "./pages/admin/StaffPerformanceDetail";
 import UserRolesPage from "./pages/admin/UserRolesPage";
+import UsersManagementPage from "./pages/admin/UsersManagementPage";
+import AttendeesPage from "./pages/admin/AttendeesPage";
+import AdminLayout from "./pages/admin/AdminLayout";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 // Admin System imports
 import { 
@@ -225,6 +228,12 @@ const App = () => (
       <Route path="/admin/events/:eventId/preview" element={<EventPreviewPage />} />
       <Route path="/admin/events/:eventId" element={<EventDetailsPage />} />
       {/* Admin Users Routes */}
+      <Route path="/admin/users" element={<UsersManagementPage />} />
+      <Route path="/admin/users/attendees" element={
+        <AdminLayout>
+          <AttendeesPage />
+        </AdminLayout>
+      } />
       <Route path="/admin/users/staff" element={<AdminStaffManagementPage />} />
       <Route path="/admin/users/staff/:staffId" element={<StaffDetailsPage />} />
       <Route path="/admin/users/staff/:staffId/edit" element={<StaffEditPage />} />
@@ -240,6 +249,7 @@ const App = () => (
       <Route path="/admin/settings" element={<AdminSettingsPage />} />
       <Route path="/admin/profile" element={<AdminProfilePage />} />
       {/* Admin System Routes */}
+      <Route path="/admin/system" element={<SystemHealthPage />} />
       <Route path="/admin/system/health" element={<SystemHealthPage />} />
       <Route path="/admin/system/database" element={<DatabasePage />} />
       <Route path="/admin/system/logs" element={<LogsPage />} />

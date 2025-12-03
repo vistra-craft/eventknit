@@ -114,7 +114,7 @@ const RefundsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Refunds</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Refunds</h1>
             <p className="text-gray-600">Manage event refunds and cancellations</p>
           </div>
           <Button onClick={() => navigate("/admin/finance/refunds/create")}>
@@ -129,7 +129,7 @@ const RefundsPage = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Total Refunded</div>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="font-semibold text-red-600">
                   {formatCurrency(summary.totalRefunded)}
                 </div>
               </CardContent>
@@ -137,7 +137,7 @@ const RefundsPage = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Platform Fee Refunded</div>
-                <div className="text-2xl font-bold text-orange-600">
+                <div className="font-semibold text-orange-600">
                   {formatCurrency(summary.totalPlatformFeeRefunded)}
                 </div>
               </CardContent>
@@ -145,13 +145,13 @@ const RefundsPage = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Full Refunds</div>
-                <div className="text-2xl font-bold">{summary.fullRefunds}</div>
+                <div className="font-semibold">{summary.fullRefunds}</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Partial Refunds</div>
-                <div className="text-2xl font-bold">{summary.partialRefunds}</div>
+                <div className="font-semibold">{summary.partialRefunds}</div>
               </CardContent>
             </Card>
           </div>
@@ -198,7 +198,7 @@ const RefundsPage = () => {
         {/* Refunds Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Refunds</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900">Refunds</CardTitle>
           </CardHeader>
           <CardContent>
             {!filters.eventId ? (

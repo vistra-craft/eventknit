@@ -128,7 +128,7 @@ const DisbursementsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Disbursements</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Disbursements</h1>
             <p className="text-gray-600">Manage organizer payouts and disbursements</p>
           </div>
           <Button onClick={() => navigate("/admin/finance/disbursements/create")}>
@@ -142,7 +142,7 @@ const DisbursementsPage = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Total Disbursed</div>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="font-semibold text-green-600">
                   {formatCurrency(summary.totalDisbursed)}
                 </div>
               </CardContent>
@@ -150,7 +150,7 @@ const DisbursementsPage = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Pending</div>
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="font-semibold text-yellow-600">
                   {formatCurrency(summary.totalPending)}
                 </div>
               </CardContent>
@@ -158,13 +158,13 @@ const DisbursementsPage = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Completed</div>
-                <div className="text-2xl font-bold">{summary.completedCount}</div>
+                <div className="font-semibold">{summary.completedCount}</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-gray-600">Processing</div>
-                <div className="text-2xl font-bold text-blue-600">{summary.processingCount}</div>
+                <div className="font-semibold text-blue-600">{summary.processingCount}</div>
               </CardContent>
             </Card>
           </div>
@@ -205,7 +205,7 @@ const DisbursementsPage = () => {
         {/* Disbursements Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Disbursements</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900">Disbursements</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (

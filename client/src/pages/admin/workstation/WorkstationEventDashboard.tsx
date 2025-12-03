@@ -298,7 +298,7 @@ const WorkstationEventDashboard: React.FC = () => {
             Back to Events
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">{eventData.title}</h1>
+            <h1 className="text-lg font-semibold text-gray-900">{eventData.title}</h1>
             <p className="text-gray-600 mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
           </div>
           <div className="flex gap-3">
@@ -364,7 +364,7 @@ const WorkstationEventDashboard: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-600">Total Attendees</p>
-                <p className="text-2xl font-bold">
+                <p className="font-semibold text-gray-900">
                   {statistics?.totalAttendees || 0}
                 </p>
                 <p className="text-sm text-gray-500">
@@ -454,7 +454,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
-                    <p className="text-2xl font-bold">{statistics?.totalAttendees || 0}</p>
+                    <p className="font-semibold text-gray-900">{statistics?.totalAttendees || 0}</p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -466,7 +466,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Checked In</p>
-                    <p className="text-2xl font-bold">{statistics?.checkedIn || 0}</p>
+                    <p className="font-semibold text-gray-900">{statistics?.checkedIn || 0}</p>
                   </div>
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
@@ -478,7 +478,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Currently Inside</p>
-                    <p className="text-2xl font-bold">{statistics?.currentlyInside || 0}</p>
+                    <p className="font-semibold text-gray-900">{statistics?.currentlyInside || 0}</p>
                   </div>
                   <Activity className="h-8 w-8 text-blue-600" />
                 </div>
@@ -490,7 +490,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Scans Today</p>
-                    <p className="text-2xl font-bold">{statistics?.scansToday || 0}</p>
+                    <p className="font-semibold text-gray-900">{statistics?.scansToday || 0}</p>
                   </div>
                   <QrCode className="h-8 w-8 text-orange-600" />
                 </div>

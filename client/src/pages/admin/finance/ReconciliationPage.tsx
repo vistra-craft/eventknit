@@ -171,7 +171,7 @@ const ReconciliationPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Payment Reconciliation</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Payment Reconciliation</h1>
             <p className="text-gray-600">Reconcile Paystack transactions with system records</p>
           </div>
         </div>
@@ -179,7 +179,7 @@ const ReconciliationPage = () => {
         {/* Create Reconciliation Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Create Reconciliation</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900">Create Reconciliation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -271,7 +271,7 @@ const ReconciliationPage = () => {
         {/* Reconciliations Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Reconciliations</CardTitle>
+            <CardTitle className="text-base font-semibold text-gray-900">Reconciliations</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (

@@ -51,7 +51,7 @@ const EditExpensePage = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Expense</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Edit Expense</h1>
               <p className="text-gray-600">Update expense details</p>
             </div>
           </div>
@@ -72,7 +72,7 @@ const EditExpensePage = () => {
           {/* Basic Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -173,7 +173,7 @@ const EditExpensePage = () => {
           {/* Additional Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Additional Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Additional Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>

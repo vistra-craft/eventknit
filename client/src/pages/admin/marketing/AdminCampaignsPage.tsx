@@ -199,8 +199,8 @@ const AdminCampaignsPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Campaigns</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-lg font-semibold text-gray-900">Campaigns</h1>
+          <p className="text-gray-600">
             Create, manage, and track your marketing campaigns
           </p>
         </div>
@@ -223,7 +223,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Campaigns</p>
-                <p className="text-2xl font-bold text-foreground">{campaigns.length}</p>
+                <p className="font-semibold text-gray-900">{campaigns.length}</p>
               </div>
               <Megaphone className="h-8 w-8 text-primary" />
             </div>
@@ -235,7 +235,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Recipients</p>
-                <p className="text-2xl font-bold text-foreground">{totalRecipients.toLocaleString()}</p>
+                <p className="font-semibold text-gray-900">{totalRecipients.toLocaleString()}</p>
               </div>
               <Users className="h-8 w-8 text-primary" />
             </div>
@@ -247,7 +247,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Revenue Generated</p>
-                <p className="text-2xl font-bold text-foreground">${totalRevenue.toLocaleString()}</p>
+                <p className="font-semibold text-gray-900">${totalRevenue.toLocaleString()}</p>
               </div>
               <DollarSign className="h-8 w-8 text-primary" />
             </div>
@@ -259,7 +259,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Avg Open Rate</p>
-                <p className="text-2xl font-bold text-foreground">{avgOpenRate.toFixed(1)}%</p>
+                <p className="font-semibold text-gray-900">{avgOpenRate.toFixed(1)}%</p>
               </div>
               <Eye className="h-8 w-8 text-primary" />
             </div>

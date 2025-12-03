@@ -133,10 +133,10 @@ const StaffPerformanceDetail = () => {
               Back
             </Button>
             <div>
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>
+              <h1 className="text-lg font-semibold text-gray-900">
                 {performance.staffName}
               </h1>
-              <p className={`${isMobile ? 'text-sm' : ''} text-muted-foreground`}>
+              <p className="text-gray-600">
                 {performance.staffEmail} • {performance.role}
               </p>
             </div>
@@ -164,7 +164,7 @@ const StaffPerformanceDetail = () => {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatNumber(performance.totalScans)}</div>
+              <div className="font-semibold text-gray-900">{formatNumber(performance.totalScans)}</div>
               <p className="text-xs text-muted-foreground">
                 {formatNumber(performance.successfulScans)} successful
               </p>
@@ -177,7 +177,7 @@ const StaffPerformanceDetail = () => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{performance.eventsAssigned}</div>
+              <div className="font-semibold text-gray-900">{performance.eventsAssigned}</div>
               <p className="text-xs text-muted-foreground">
                 {performance.eventsCompleted} completed
               </p>
@@ -190,7 +190,7 @@ const StaffPerformanceDetail = () => {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="font-semibold text-gray-900">
                 {formatPercentage(performance.attendanceRate)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -205,7 +205,7 @@ const StaffPerformanceDetail = () => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="font-semibold text-gray-900">
                 {formatNumber(performance.totalHoursWorked)}
               </div>
               <p className="text-xs text-muted-foreground">

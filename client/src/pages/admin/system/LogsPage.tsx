@@ -148,7 +148,7 @@ const LogsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">System Logs</h1>
+            <h1 className="text-lg font-semibold text-gray-900">System Logs</h1>
             <p className="text-gray-600">Monitor system events and troubleshoot issues</p>
           </div>
           <div className="flex items-center gap-3">
@@ -269,7 +269,7 @@ const LogsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-2">
+              <div className="font-semibold text-blue-600 mb-2">
                 {mockLogs.filter(log => log.level === "info").length}
               </div>
               <p className="text-sm text-gray-600">Info Logs</p>
@@ -277,7 +277,7 @@ const LogsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-yellow-600 mb-2">
+              <div className="font-semibold text-yellow-600 mb-2">
                 {mockLogs.filter(log => log.level === "warning").length}
               </div>
               <p className="text-sm text-gray-600">Warnings</p>
@@ -285,7 +285,7 @@ const LogsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-red-600 mb-2">
+              <div className="font-semibold text-red-600 mb-2">
                 {mockLogs.filter(log => log.level === "error").length}
               </div>
               <p className="text-sm text-gray-600">Errors</p>
@@ -293,7 +293,7 @@ const LogsPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-green-600 mb-2">
+              <div className="font-semibold text-green-600 mb-2">
                 {mockLogs.filter(log => log.level === "success").length}
               </div>
               <p className="text-sm text-gray-600">Success</p>

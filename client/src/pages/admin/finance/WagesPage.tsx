@@ -236,7 +236,7 @@ const WagesPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Wage Management</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Wage Management</h1>
             <p className="text-gray-600">Track and manage employee wages and payroll</p>
           </div>
           <div className="flex items-center gap-3">
@@ -255,7 +255,7 @@ const WagesPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-red-600 mb-2">
+              <div className="font-semibold text-red-600 mb-2">
                 {formatCurrency(totalWages)}
               </div>
               <p className="text-sm text-gray-600">Total Wages Paid</p>
@@ -263,7 +263,7 @@ const WagesPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-yellow-600 mb-2">
+              <div className="font-semibold text-yellow-600 mb-2">
                 {formatCurrency(pendingWages)}
               </div>
               <p className="text-sm text-gray-600">Pending Payments</p>
@@ -271,7 +271,7 @@ const WagesPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-gray-600 mb-2">
+              <div className="font-semibold text-gray-600 mb-2">
                 {mockWages.length}
               </div>
               <p className="text-sm text-gray-600">Total Employees</p>
@@ -279,7 +279,7 @@ const WagesPage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-2">
+              <div className="font-semibold text-blue-600 mb-2">
                 {formatCurrency(mockWages.reduce((sum, w) => sum + (w.amount / (w.hoursWorked || 1)), 0) / mockWages.length)}
               </div>
               <p className="text-sm text-gray-600">Avg Hourly Rate</p>
@@ -354,7 +354,7 @@ const WagesPage = () => {
                       <div className="p-2 rounded-lg bg-blue-100">
                         <User className="h-5 w-5 text-blue-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{wage.employeeName}</h3>
+                      <h3 className="text-lg font-semibold text-foreground">{wage.employeeName}</h3>
                       <Badge className={`text-xs ${getStatusBadge(wage.status)}`}>
                         {wage.status}
                       </Badge>
@@ -400,7 +400,7 @@ const WagesPage = () => {
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <div className="text-right">
-                      <p className="text-xl font-bold text-red-600">
+                      <p className="font-semibold text-red-600">
                         -{formatCurrency(wage.amount)}
                       </p>
                     </div>
@@ -439,7 +439,7 @@ const WagesPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-xl font-semibold text-gray-900">Wage Details</h2>
+                <h2 className="text-base font-semibold text-gray-900">Wage Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>

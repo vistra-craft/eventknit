@@ -103,10 +103,10 @@ const StaffPerformanceDashboard = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>
+            <h1 className="text-lg font-semibold text-gray-900">
               Staff Performance Dashboard
             </h1>
-            <p className={`${isMobile ? 'text-sm' : ''} text-muted-foreground`}>
+            <p className="text-gray-600">
               Track and analyze staff performance metrics
             </p>
           </div>
@@ -147,7 +147,7 @@ const StaffPerformanceDashboard = () => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{summary.totalStaff}</div>
+                  <div className="font-semibold text-gray-900">{summary.totalStaff}</div>
                   <p className="text-xs text-muted-foreground">
                     {summary.activeStaff} active
                   </p>
@@ -160,7 +160,7 @@ const StaffPerformanceDashboard = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatNumber(summary.totalEvents)}</div>
+                  <div className="font-semibold text-gray-900">{formatNumber(summary.totalEvents)}</div>
                   <p className="text-xs text-muted-foreground">Events assigned</p>
                 </CardContent>
               </Card>
@@ -171,7 +171,7 @@ const StaffPerformanceDashboard = () => {
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatNumber(summary.totalScans)}</div>
+                  <div className="font-semibold text-gray-900">{formatNumber(summary.totalScans)}</div>
                   <p className="text-xs text-muted-foreground">
                     {formatNumber(summary.averageScansPerStaff)} avg per staff
                   </p>
@@ -184,7 +184,7 @@ const StaffPerformanceDashboard = () => {
                   <Target className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="font-semibold text-gray-900">
                     {formatPercentage(summary.averageAttendanceRate)}
                   </div>
                   <p className="text-xs text-muted-foreground">Average attendance</p>

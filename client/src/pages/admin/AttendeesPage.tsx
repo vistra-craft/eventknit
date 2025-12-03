@@ -309,7 +309,7 @@ const AttendeesPage = () => {
                       size="lg"
                     />
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="text-sm font-medium text-gray-900">
                         {attendee.firstName} {attendee.lastName}
                       </h4>
                       <p className="text-sm text-gray-600">{attendee.email}</p>
@@ -473,7 +473,7 @@ const AttendeesPage = () => {
                   size="xl"
                 />
                 <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h2 className="text-base font-semibold text-gray-900 mb-2">
                     {previewAttendee.firstName} {previewAttendee.lastName}
                   </h2>
                   <Badge className={`${getStatusBadge(previewAttendee.status)} mb-2`}>

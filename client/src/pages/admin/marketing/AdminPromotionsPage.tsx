@@ -289,11 +289,10 @@ const AdminPromotionsPage = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 flex items-center">
-              <Gift className="h-8 w-8 mr-3 text-primary" />
+            <h1 className="text-lg font-semibold text-gray-900">
               Platform Promotions
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <p className="text-gray-600">
               Monitor and manage platform-wide promotional campaigns
             </p>
           </div>
@@ -349,7 +348,7 @@ const AdminPromotionsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Active Promotions</p>
-                      <p className="text-2xl font-bold text-foreground">{activePromotions}</p>
+                      <p className="font-semibold text-gray-900">{activePromotions}</p>
                     </div>
                     <Gift className="h-8 w-8 text-primary" />
                   </div>
@@ -361,7 +360,7 @@ const AdminPromotionsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Usage</p>
-                      <p className="text-2xl font-bold text-foreground">{totalUsage.toLocaleString()}</p>
+                      <p className="font-semibold text-gray-900">{totalUsage.toLocaleString()}</p>
                     </div>
                     <Users className="h-8 w-8 text-primary" />
                   </div>
@@ -373,7 +372,7 @@ const AdminPromotionsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Revenue Generated</p>
-                      <p className="text-2xl font-bold text-foreground">${totalRevenue.toLocaleString()}</p>
+                      <p className="font-semibold text-gray-900">${totalRevenue.toLocaleString()}</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-primary" />
                   </div>
@@ -385,7 +384,7 @@ const AdminPromotionsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Conversions</p>
-                      <p className="text-2xl font-bold text-foreground">{totalConversions}</p>
+                      <p className="font-semibold text-gray-900">{totalConversions}</p>
                     </div>
                     <Target className="h-8 w-8 text-primary" />
                   </div>

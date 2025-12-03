@@ -63,7 +63,7 @@ const EditTransactionPage = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Transaction</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Edit Transaction</h1>
               <p className="text-gray-600">Update transaction details</p>
             </div>
           </div>
@@ -84,7 +84,7 @@ const EditTransactionPage = () => {
           {/* Basic Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -200,7 +200,7 @@ const EditTransactionPage = () => {
           {/* Event & Party Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Event & Party Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-900">Event & Party Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>

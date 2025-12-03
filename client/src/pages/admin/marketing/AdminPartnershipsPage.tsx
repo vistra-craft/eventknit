@@ -649,11 +649,10 @@ const AdminPartnershipsPage = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 flex items-center">
-              <Handshake className="h-8 w-8 mr-3 text-primary" />
+            <h1 className="text-lg font-semibold text-gray-900">
               Platform Partnerships
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <p className="text-gray-600">
               Monitor and manage platform-wide strategic partnerships
             </p>
           </div>
@@ -989,7 +988,7 @@ const AdminPartnershipsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Active Partnerships</p>
-                      <p className="text-2xl font-bold text-foreground">{activePartnerships}</p>
+                      <p className="font-semibold text-gray-900">{activePartnerships}</p>
                     </div>
                     <Handshake className="h-8 w-8 text-primary" />
                   </div>
@@ -1001,7 +1000,7 @@ const AdminPartnershipsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold text-foreground">{pendingPartnerships}</p>
+                      <p className="font-semibold text-gray-900">{pendingPartnerships}</p>
                     </div>
                     <Clock className="h-8 w-8 text-primary" />
                   </div>
@@ -1013,7 +1012,7 @@ const AdminPartnershipsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Value</p>
-                      <p className="text-2xl font-bold text-foreground">${totalValue.toLocaleString()}</p>
+                      <p className="font-semibold text-gray-900">${totalValue.toLocaleString()}</p>
                     </div>
                     <DollarSign className="h-8 w-8 text-primary" />
                   </div>
@@ -1025,7 +1024,7 @@ const AdminPartnershipsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Avg Rating</p>
-                      <p className="text-2xl font-bold text-foreground">{avgRating.toFixed(1)}</p>
+                      <p className="font-semibold text-gray-900">{avgRating.toFixed(1)}</p>
                     </div>
                     <Star className="h-8 w-8 text-primary" />
                   </div>

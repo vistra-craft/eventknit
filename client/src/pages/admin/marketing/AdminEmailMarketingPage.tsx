@@ -275,11 +275,10 @@ const AdminEmailMarketingPage = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 flex items-center">
-              <Mail className="h-8 w-8 mr-3 text-primary" />
+            <h1 className="text-lg font-semibold text-gray-900">
               Platform Email Marketing
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <p className="text-gray-600">
               Monitor and manage platform-wide email campaigns
             </p>
           </div>
@@ -345,7 +344,7 @@ const AdminEmailMarketingPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Recipients</p>
-                      <p className="text-2xl font-bold text-foreground">{totalRecipients.toLocaleString()}</p>
+                      <p className="font-semibold text-gray-900">{totalRecipients.toLocaleString()}</p>
                     </div>
                     <Users className="h-8 w-8 text-primary" />
                   </div>
@@ -357,7 +356,7 @@ const AdminEmailMarketingPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Revenue Generated</p>
-                      <p className="text-2xl font-bold text-foreground">${totalRevenue.toLocaleString()}</p>
+                      <p className="font-semibold text-gray-900">${totalRevenue.toLocaleString()}</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-primary" />
                   </div>
@@ -369,7 +368,7 @@ const AdminEmailMarketingPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Avg Open Rate</p>
-                      <p className="text-2xl font-bold text-foreground">{avgOpenRate.toFixed(1)}%</p>
+                      <p className="font-semibold text-gray-900">{avgOpenRate.toFixed(1)}%</p>
                     </div>
                     <Eye className="h-8 w-8 text-primary" />
                   </div>
@@ -381,7 +380,7 @@ const AdminEmailMarketingPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Avg Click Rate</p>
-                      <p className="text-2xl font-bold text-foreground">{avgClickRate.toFixed(1)}%</p>
+                      <p className="font-semibold text-gray-900">{avgClickRate.toFixed(1)}%</p>
                     </div>
                     <MousePointer className="h-8 w-8 text-primary" />
                   </div>

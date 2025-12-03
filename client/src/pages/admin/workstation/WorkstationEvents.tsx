@@ -206,7 +206,7 @@ const WorkstationEvents: React.FC = () => {
               Back to Events
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{selectedEvent.title}</h1>
+              <h1 className="text-lg font-semibold text-gray-900">{selectedEvent.title}</h1>
               <p className="text-gray-600 mt-2">{selectedEvent.organizer} • {selectedEvent.date}</p>
             </div>
           </div>
@@ -218,7 +218,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
-                    <p className="text-2xl font-bold">{selectedEvent.attendees}</p>
+                    <p className="font-semibold text-gray-900">{selectedEvent.attendees}</p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -230,7 +230,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Checked In</p>
-                    <p className="text-2xl font-bold">
+                    <p className="font-semibold text-gray-900">
                       {selectedEvent.attendeesList?.filter(a => a.status === 'checked_in' || a.status === 'scanned').length || 0}
                     </p>
                   </div>
@@ -244,7 +244,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Scanned</p>
-                    <p className="text-2xl font-bold">
+                    <p className="font-semibold text-gray-900">
                       {selectedEvent.attendeesList?.filter(a => a.status === 'scanned').length || 0}
                     </p>
                   </div>
@@ -258,7 +258,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Capacity</p>
-                    <p className="text-2xl font-bold">{selectedEvent.capacity}</p>
+                    <p className="font-semibold text-gray-900">{selectedEvent.capacity}</p>
                   </div>
                   <Target className="h-8 w-8 text-orange-600" />
                 </div>
@@ -420,7 +420,7 @@ const WorkstationEvents: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Event Management</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Event Management</h1>
             <p className="text-gray-600 mt-2">Manage all events and their attendees</p>
           </div>
           <div className="flex gap-3">
@@ -491,7 +491,7 @@ const WorkstationEvents: React.FC = () => {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary transition-colors">
+                    <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
                       {event.title}
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">{event.organizer}</p>

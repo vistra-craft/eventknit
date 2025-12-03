@@ -182,7 +182,7 @@ const OrganizerEditPage = () => {
               Back to Organizer
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Edit Organizer</h1>
+              <h1 className="text-lg font-semibold text-gray-900">Edit Organizer</h1>
               <p className="text-gray-600">{organizerData.firstName} {organizerData.lastName} • {organizerData.company}</p>
             </div>
           </div>

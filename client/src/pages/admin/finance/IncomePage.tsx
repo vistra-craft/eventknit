@@ -192,7 +192,7 @@ const IncomePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Income Tracking</h1>
+            <h1 className="text-lg font-semibold text-gray-900">Income Tracking</h1>
             <p className="text-gray-600">Track and manage all company income sources</p>
           </div>
           <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ const IncomePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-green-600 mb-2">
+              <div className="font-semibold text-green-600 mb-2">
                 {formatCurrency(totalIncome)}
               </div>
               <p className="text-sm text-gray-600">Total Income</p>
@@ -219,7 +219,7 @@ const IncomePage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-yellow-600 mb-2">
+              <div className="font-semibold text-yellow-600 mb-2">
                 {formatCurrency(pendingIncome)}
               </div>
               <p className="text-sm text-gray-600">Pending Payments</p>
@@ -227,7 +227,7 @@ const IncomePage = () => {
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="text-2xl font-bold text-gray-600 mb-2">
+              <div className="font-semibold text-gray-600 mb-2">
                 {mockIncome.length}
               </div>
               <p className="text-sm text-gray-600">Total Transactions</p>
@@ -303,7 +303,7 @@ const IncomePage = () => {
                       <div className="p-2 rounded-lg bg-green-100">
                         <TrendingUp className="h-5 w-5 text-green-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900 truncate">{income.description}</h3>
+                      <h3 className="text-lg font-semibold text-foreground truncate">{income.description}</h3>
                       <Badge className={`text-xs ${getStatusBadge(income.status)}`}>
                         {income.status}
                       </Badge>
@@ -338,7 +338,7 @@ const IncomePage = () => {
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <div className="text-right">
-                      <p className="text-xl font-bold text-green-600">
+                      <p className="font-semibold text-green-600">
                         +{formatCurrency(income.amount)}
                       </p>
                     </div>
@@ -377,7 +377,7 @@ const IncomePage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-xl font-semibold text-gray-900">Income Details</h2>
+                <h2 className="text-base font-semibold text-gray-900">Income Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>
