@@ -60,11 +60,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         {/* Main Content */}
         <div className="flex-1 min-w-0 flex flex-col container mx-auto">
           {/* Header */}
-          <div className="px-4 sm:px-6">
-            <AdminHeader
-              onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
-            />
-          </div>
+          <AdminHeader
+            onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
+          />
 
           {/* Page Content */}
           <main className="flex-1 px-4 sm:px-6 pt-6 pb-8">
