@@ -56,7 +56,7 @@ export const Hero = () => {
             <div className="container mx-auto max-w-7xl px-6 text-center">
               <div className="space-y-6 max-w-3xl mx-auto">
                 <Badge variant="secondary" className="bg-primary text-primary-foreground mb-4">
-                  Discover Amazing Events
+                  🎉 Discover Amazing Events
                 </Badge>
                 <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-foreground">
                   Find Your Next Unforgettable Experiences
