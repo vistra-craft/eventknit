@@ -54,7 +54,8 @@ services:
       # Add other env vars here or use env_file
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://130.185.119.45,http://localhost:5173}
+      FRONTEND_URL: ${FRONTEND_URL:-http://130.185.119.45}
     networks:
       - eventknit-network
     depends_on:
