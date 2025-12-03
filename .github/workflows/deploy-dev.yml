@@ -23,10 +23,13 @@ jobs:
           port: 22
           script: |
             cd eventknit
-            # Ensure we have the latest code
+            # Fetch latest changes from GitHub
             git fetch origin
             git checkout development
-            git pull origin development
+            
+            # Force reset to match remote exactly (fixes divergent branches)
+            git reset --hard origin/development
+            git clean -fd
             
             # Make sure script is executable
             chmod +x deploy.sh
