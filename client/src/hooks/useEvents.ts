@@ -38,6 +38,8 @@ export const useEvents = (initialFilters?: EventFilters): UseEventsReturn => {
   const isMountedRef = useRef(true);
 
   useEffect(() => {
+    // Reset on mount (important for StrictMode double-mounting)
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
@@ -50,11 +52,22 @@ export const useEvents = (initialFilters?: EventFilters): UseEventsReturn => {
       if (!isMountedRef.current) return;
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
+      console.log('[useEvents] Fetching events with filters:', activeFilters);
       const response = await eventApi.getEvents(activeFilters);
+      console.log('[useEvents] API response received:', {
+        success: response.success,
+        hasData: !!response.data,
+        eventCount: response.data?.events?.length || 0
+      });
 
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current) {
+        console.log('[useEvents] Component unmounted, not updating state');
+        return;
+      }
+      
       if (response.success && response.data) {
         const { events, total, limit = 20 } = response.data;
+        console.log('[useEvents] Setting state with events:', events.length);
         setState({
           events,
           isLoading: false,
@@ -71,6 +84,7 @@ export const useEvents = (initialFilters?: EventFilters): UseEventsReturn => {
         error && typeof error === 'object' && 'message' in error
           ? (error.message as string)
           : 'Failed to fetch events';
+      console.error('[useEvents] Error fetching events:', errorMessage);
       setState((prev) => ({
         ...prev,
         isLoading: false,

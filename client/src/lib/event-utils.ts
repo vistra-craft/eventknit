@@ -49,6 +49,7 @@ interface BackendEvent {
   title: string;
   description: string;
   fullDescription?: string | null;
+  organizerDescription?: string | null;
   category?: string | null;
   tags?: string[];
   startDate: string;
@@ -154,6 +155,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
     images: backendEvent.images || [],
     // Ensure optional fields are properly typed
     fullDescription: backendEvent.fullDescription || null,
+    organizerDescription: backendEvent.organizerDescription || null,
     category: backendEvent.category || null,
     venue: backendEvent.venue || null,
     ageRestriction: backendEvent.ageRestriction || null,

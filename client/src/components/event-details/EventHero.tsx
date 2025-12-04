@@ -14,15 +14,15 @@ export const EventHero = ({ title, category, date, time, venue, location, image 
   return (
     <div className="animate-in fade-in duration-700">
       <section className="rounded-2xl overflow-hidden">
-        <div className="relative h-52 md:h-56 bg-muted">
+        <div className="relative h-80 md:h-96 bg-muted rounded-t-2xl rounded-b-2xl">
           {image ? (
-            <img src={image} alt={title} className="h-full w-full object-cover" />
+            <img src={image} alt={title} className="h-full w-full object-cover rounded-t-2xl rounded-b-2xl" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
+            <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm rounded-t-2xl rounded-b-2xl">
               Event image coming soon
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent rounded-t-2xl rounded-b-2xl" />
           <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
             {category && (
               <p className="text-xs uppercase tracking-wide text-white/80">{category}</p>

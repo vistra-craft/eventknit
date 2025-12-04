@@ -50,10 +50,20 @@ const FeaturedEventsPage = () => {
   }, [fetchFeaturedEvents]);
 
   const filteredEvents = featuredEvents.filter(event => {
-    const title = event.customTitle || event.event.title;
-    const category = event.customCategory || event.event.category || "";
+    // Handle both EVENT and IMAGE types
+    const isEventType = event.type === 'EVENT';
+    const title = isEventType 
+      ? (event.customTitle || event.event?.title || '')
+      : (event.title || '');
+    const category = isEventType
+      ? (event.customCategory || event.event?.category || "")
+      : '';
+    const location = isEventType
+      ? (event.event?.location || '')
+      : '';
+    
     const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.event.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === "all" || category === categoryFilter;
     const matchesStatus = statusFilter === "all" || 
                          (statusFilter === "active" && event.isActive) ||
@@ -136,7 +146,7 @@ const FeaturedEventsPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {Array.from(new Set(featuredEvents.map(e => e.customCategory || e.event.category).filter(Boolean))).map(cat => (
+                  {Array.from(new Set(featuredEvents.map(e => e.customCategory || e.event?.category).filter(Boolean))).map(cat => (
                     <SelectItem key={cat} value={cat || ""}>{cat}</SelectItem>
                   ))}
                 </SelectContent>
@@ -161,9 +171,16 @@ const FeaturedEventsPage = () => {
         ) : (
           <div className="space-y-3">
             {filteredEvents.map((featuredEvent) => {
-              const displayTitle = featuredEvent.customTitle || featuredEvent.event.title;
-              const displayImage = featuredEvent.customImage || featuredEvent.event.image || "";
-              const displayCategory = featuredEvent.customCategory || featuredEvent.event.category || "";
+              const isEventType = featuredEvent.type === 'EVENT';
+              const displayTitle = isEventType 
+                ? (featuredEvent.customTitle || featuredEvent.event?.title || '')
+                : (featuredEvent.title || '');
+              const displayImage = isEventType
+                ? (featuredEvent.customImage || featuredEvent.event?.image || "")
+                : (featuredEvent.imageUrl || "");
+              const displayCategory = isEventType
+                ? (featuredEvent.customCategory || featuredEvent.event?.category || "")
+                : '';
               
               return (
                 <Card key={featuredEvent.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
@@ -185,6 +202,9 @@ const FeaturedEventsPage = () => {
                           <Badge className={`text-xs ${featuredEvent.isActive ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}`}>
                             {featuredEvent.isActive ? "Active" : "Inactive"}
                           </Badge>
+                          <Badge variant="outline" className="text-xs ml-2">
+                            {featuredEvent.type === 'EVENT' ? 'Event' : 'Image'}
+                          </Badge>
                           {displayCategory && (
                             <Badge variant="outline" className="text-xs">
                               {displayCategory}
@@ -194,26 +214,33 @@ const FeaturedEventsPage = () => {
                             Order: {featuredEvent.displayOrder}
                           </Badge>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{new Date(featuredEvent.event.startDate).toLocaleDateString()}</span>
-                            {featuredEvent.event.startTime && (
-                              <span> at {featuredEvent.event.startTime}</span>
+                        {isEventType && featuredEvent.event && (
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{new Date(featuredEvent.event.startDate).toLocaleDateString()}</span>
+                              {featuredEvent.event.startTime && (
+                                <span> at {featuredEvent.event.startTime}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              <span>{featuredEvent.event.location}</span>
+                            </div>
+                            {featuredEvent.event.venue && (
+                              <div className="flex items-center gap-1">
+                                <span>{featuredEvent.event.venue}</span>
+                              </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{featuredEvent.event.location}</span>
-                          </div>
-                          {featuredEvent.event.venue && (
-                            <div className="flex items-center gap-1">
-                              <span>{featuredEvent.event.venue}</span>
-                            </div>
-                          )}
-                        </div>
+                        )}
                         <div className="text-sm text-muted-foreground">
-                          Event ID: {featuredEvent.eventId}
+                          {isEventType && featuredEvent.eventId && (
+                            <>Event ID: {featuredEvent.eventId}</>
+                          )}
+                          {!isEventType && (
+                            <>Image Featured Item</>
+                          )}
                           {featuredEvent.displayStartDate && (
                             <span className="ml-4">Display from: {new Date(featuredEvent.displayStartDate).toLocaleDateString()}</span>
                           )}
@@ -227,7 +254,12 @@ const FeaturedEventsPage = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => navigate(`/admin/events/${featuredEvent.eventId}/preview`)}
+                          onClick={() => {
+                            if (featuredEvent.eventId) {
+                              navigate(`/admin/events/${featuredEvent.eventId}/preview`);
+                            }
+                          }}
+                          disabled={!featuredEvent.eventId}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Preview

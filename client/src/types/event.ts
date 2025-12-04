@@ -20,6 +20,7 @@ export interface EventData {
   title: string;
   description: string;
   fullDescription?: string | null;
+  organizerDescription?: string | null;
   category?: string | null;
   tags?: string[];
 

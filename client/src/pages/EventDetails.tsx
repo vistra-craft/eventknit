@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvent";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -5,19 +6,25 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { EventHero } from "@/components/event-details/EventHero";
-import { TicketSelector } from "@/components/event-details/TicketSelector";
 import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle } from "lucide-react";
+import { UnifiedRegistrationModal } from "@/components/event-details/UnifiedRegistrationModal";
+import { ContextAwareActionButton } from "@/components/event-details/ContextAwareActionButton";
+import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Fetch event data
   const { event, isLoading, error } = useEvent(id);
+  
+  // TODO: Check if user is already registered for this event
+  const userAlreadyRegistered = false;
   
   // Meta tags logic
   const getFrontendUrl = () => {
@@ -51,20 +58,12 @@ const EventDetails = () => {
     siteName: 'EventKnit',
   });
 
-  const handleRegister = (quantities: Record<string, number>) => {
-    // Find the first selected ticket to pass to register page
-    const selectedTypes = Object.entries(quantities).filter((entry) => entry[1] > 0);
-    
-    if (selectedTypes.length > 0) {
-        navigate(`/event/${id}/register`, { 
-            state: { 
-                selectedTickets: quantities,
-                preSelectedType: selectedTypes[0][0],
-                preSelectedQuantity: selectedTypes[0][1]
-            } 
-        });
+  const handleOpenModal = () => {
+    if (userAlreadyRegistered) {
+      // Navigate to my tickets page
+      navigate('/my-tickets');
     } else {
-        navigate(`/event/${id}/register`);
+      setIsModalOpen(true);
     }
   };
 
@@ -105,6 +104,19 @@ const EventDetails = () => {
       
       <main className="flex-1 pb-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="gap-2 hover:bg-gray-900 hover:text-white transition-colors"
+              size="lg"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back to Home
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Hero, Organizer, About, Important Info, Refund Policy, Venue, Tags */}
             <div className="lg:col-span-2 space-y-6">
@@ -122,6 +134,7 @@ const EventDetails = () => {
               <OrganizerInfo 
                 organizer={event.organizer}
                 organizerName={event.organizerName}
+                organizerDescription={event.organizerDescription}
               />
 
               {/* About Section */}
@@ -129,7 +142,7 @@ const EventDetails = () => {
                 <h2 className="text-3xl font-bold mb-4">About This Event</h2>
                 <div className="prose prose-lg max-w-none text-muted-foreground">
                   <p className="leading-relaxed whitespace-pre-line">
-                    {event.fullDescription || event.description}
+                    {event.fullDescription || event.description || 'No description available.'}
                   </p>
                 </div>
               </section>
@@ -201,21 +214,102 @@ const EventDetails = () => {
               )}
             </div>
 
-            {/* Right Column - Tickets */}
+            {/* Right Column - Action Button and Info */}
             <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-20 lg:self-start">
-              {/* Get Tickets */}
-              <section>
-                <TicketSelector 
-                  ticketTypes={event.ticketTypes}
-                  onRegister={handleRegister}
-                  currency={event.currency || '$'}
-                />
-              </section>
+              {/* Primary Action Card */}
+              <Card className="p-6 shadow-lg">
+                <div className="space-y-4">
+                  {/* Price Display */}
+                  {!event.isFree && (
+                    <div className="text-center pb-4 border-b">
+                      <p className="text-sm text-muted-foreground mb-1">Starting from</p>
+                      <p className="text-3xl font-bold text-primary">
+                        {event.currency || '$'}
+                        {event.ticketTypes && event.ticketTypes.length > 0
+                          ? Math.min(...event.ticketTypes.map(t => t.price))
+                          : event.price || 0}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Context-Aware Action Button */}
+                  <ContextAwareActionButton
+                    event={event}
+                    userAlreadyRegistered={userAlreadyRegistered}
+                    onClick={handleOpenModal}
+                  />
+
+                  {/* Secondary Actions */}
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Heart className="w-4 h-4" />
+                      Save
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Share2 className="w-4 h-4" />
+                      Share
+                    </Button>
+                  </div>
+
+                  {/* Event Stats */}
+                  <div className="pt-4 border-t space-y-2 text-sm">
+                    {event.capacity && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Capacity:</span>
+                        <span className="font-medium">{event.capacity} attendees</span>
+                      </div>
+                    )}
+                    {event.registrationCount !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Registered:</span>
+                        <span className="font-medium">{event.registrationCount}</span>
+                      </div>
+                    )}
+                    {event.availableSlots && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Available:</span>
+                        <span className="font-medium text-green-600">{event.availableSlots} spots</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Register Button */}
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full h-12 text-lg font-semibold shadow-md border-2"
+                onClick={() => navigate(`/event/${id}/register`)}
+              >
+                <Ticket className="mr-2 h-5 w-5" />
+                Register for Event
+              </Button>
             </div>
           </div>
 
           {/* Related Events - Full Width */}
           <section className="pt-6 border-t border-border/60 mt-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">You May Also Like</h2>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  navigate('/');
+                  // Scroll to events section after navigation
+                  setTimeout(() => {
+                    const eventsSection = document.querySelector('[data-section="events"]');
+                    if (eventsSection) {
+                      eventsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
+                }}
+                className="gap-2 text-primary hover:text-primary/80"
+              >
+                View All
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
             <RelatedEvents 
               currentEventId={event.id}
               category={event.category || undefined}
@@ -226,6 +320,14 @@ const EventDetails = () => {
       </main>
 
       <Footer />
+
+      {/* Unified Registration Modal */}
+      <UnifiedRegistrationModal
+        event={event}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        userAlreadyRegistered={userAlreadyRegistered}
+      />
     </div>
   );
 };

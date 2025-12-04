@@ -54,6 +54,7 @@ interface EventData {
   title: string;
   organizer: string;
   description: string;
+  organizerDescription?: string;
   date: string;
   time: string;
   endDate: string;
@@ -103,6 +104,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
     title: "",
     organizer: "",
     description: "",
+    organizerDescription: "",
     date: "",
     time: "",
     endDate: "",
@@ -391,6 +393,21 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                       maxLength={5000}
                       onChange={(e) => handleInputChange("description", e.target.value)}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="organizerDescription">About the Organizer</Label>
+                    <Textarea 
+                      id="organizerDescription" 
+                      placeholder="Tell attendees about yourself or your organization. This will be displayed on the event details page." 
+                      rows={4}
+                      value={eventData.organizerDescription || ""}
+                      maxLength={1000}
+                      onChange={(e) => handleInputChange("organizerDescription", e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Optional: Share information about yourself or your organization to help attendees learn more about the event host.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

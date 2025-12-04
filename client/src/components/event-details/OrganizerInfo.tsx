@@ -1,14 +1,24 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Building, Mail, ExternalLink } from "lucide-react";
+import { Building, Mail, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import type { EventData } from "@/types/event";
 
 interface OrganizerInfoProps {
   organizer: EventData['organizer'];
   organizerName?: string;
+  organizerDescription?: string | null;
 }
 
-export const OrganizerInfo = ({ organizer, organizerName }: OrganizerInfoProps) => {
+export const OrganizerInfo = ({ organizer, organizerName, organizerDescription }: OrganizerInfoProps) => {
   const name = organizerName || (organizer ? `${organizer.firstName} ${organizer.lastName}` : 'Unknown Organizer');
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Truncate description to 200 characters
+  const TRUNCATE_LENGTH = 200;
+  const shouldTruncate = organizerDescription && organizerDescription.length > TRUNCATE_LENGTH;
+  const displayDescription = shouldTruncate && !isExpanded
+    ? organizerDescription.substring(0, TRUNCATE_LENGTH) + '...'
+    : organizerDescription;
 
   return (
     <section>
@@ -26,6 +36,35 @@ export const OrganizerInfo = ({ organizer, organizerName }: OrganizerInfoProps) 
                 Event Organizer
               </p>
             </div>
+
+            {/* Organizer Description */}
+            {organizerDescription && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {displayDescription}
+                </p>
+                {shouldTruncate && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="h-8 text-primary hover:text-primary/80 p-0"
+                  >
+                    {isExpanded ? (
+                      <>
+                        Show Less
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        See More
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
               <Button variant="outline" size="sm" className="h-9">

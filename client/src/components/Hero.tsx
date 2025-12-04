@@ -89,7 +89,8 @@ export const Hero = () => {
   const currentEvent = featuredEvents[currentEventIndex];
   
   // Format date for display
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     const options: Intl.DateTimeFormatOptions = { 
       weekday: 'long', 
@@ -120,14 +121,22 @@ export const Hero = () => {
   };
 
   const handleImageClick = () => {
-    navigate(`/event/${currentEvent.eventId}`);
+    if (currentEvent.type === 'EVENT' && currentEvent.eventId) {
+      navigate(`/event/${currentEvent.eventId}`);
+    } else if (currentEvent.type === 'IMAGE' && currentEvent.linkUrl) {
+      // Open link in new tab if it's an external URL, otherwise navigate
+      if (currentEvent.linkUrl.startsWith('http://') || currentEvent.linkUrl.startsWith('https://')) {
+        window.open(currentEvent.linkUrl, '_blank');
+      } else {
+        navigate(currentEvent.linkUrl);
+      }
+    }
   };
   
   return (
     <div className="relative">
       <div 
-        className="w-full h-[60vh] object-cover transition-opacity duration-500 cursor-pointer hover:opacity-90 relative bg-muted"
-        onClick={handleImageClick}
+        className="w-full h-[60vh] object-cover transition-opacity duration-500 relative bg-muted"
         style={{
           backgroundImage: currentEvent.image ? `url(${currentEvent.image})` : undefined,
           backgroundSize: 'cover',
@@ -135,6 +144,20 @@ export const Hero = () => {
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60 z-10" />
+        {currentEvent.type === 'IMAGE' && currentEvent.linkUrl && (
+          <div 
+            className="absolute inset-0 z-10 cursor-pointer"
+            onClick={handleImageClick}
+            aria-label={currentEvent.linkText || 'Click to learn more'}
+          />
+        )}
+        {currentEvent.type === 'EVENT' && (
+          <div 
+            className="absolute inset-0 z-10 cursor-pointer"
+            onClick={handleImageClick}
+            aria-label="View event details"
+          />
+        )}
       </div>
       
       {/* Hero Content Overlay */}
@@ -151,7 +174,7 @@ export const Hero = () => {
                 )}
                 <div className="flex items-center gap-2 text-sm">
                   <Eye className="w-4 h-4" />
-                  <span>Featured Event</span>
+                  <span>{currentEvent.type === 'EVENT' ? 'Featured Event' : 'Featured'}</span>
                 </div>
               </div>
               
@@ -159,53 +182,77 @@ export const Hero = () => {
                 {currentEvent.title}
               </h1>
               
-              <div className="flex flex-wrap items-center gap-4 text-white/90">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  <div>
-                    <div className="font-semibold">{formatDate(currentEvent.date)}</div>
-                  </div>
-                </div>
-                {currentEvent.time && (
+              {currentEvent.type === 'EVENT' ? (
+                <div className="flex flex-wrap items-center gap-4 text-white/90">
+                  {currentEvent.date && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      <div>
+                        <div className="font-semibold">{formatDate(currentEvent.date)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {currentEvent.time && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5" />
+                      <span className="font-medium">{currentEvent.time}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    <span className="font-medium">{currentEvent.time}</span>
+                    <MapPin className="w-5 h-5" />
+                    <div>
+                      {currentEvent.venue && (
+                        <div className="font-semibold">{currentEvent.venue}</div>
+                      )}
+                      <div className="text-sm">{currentEvent.location}</div>
+                    </div>
                   </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  <div>
-                    {currentEvent.venue && (
-                      <div className="font-semibold">{currentEvent.venue}</div>
-                    )}
-                    <div className="text-sm">{currentEvent.location}</div>
-                  </div>
+                  {currentEvent.price && (
+                    <div className="text-lg font-semibold">{currentEvent.price}</div>
+                  )}
                 </div>
-                {currentEvent.price && (
-                  <div className="text-lg font-semibold">{currentEvent.price}</div>
-                )}
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  {currentEvent.description && (
+                    <p className="text-lg text-white/90">{currentEvent.description}</p>
+                  )}
+                  {currentEvent.linkUrl && currentEvent.linkText && (
+                    <div className="pointer-events-auto pt-2">
+                      <Button
+                        variant="secondary"
+                        size="lg"
+                        onClick={handleImageClick}
+                        className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
+                      >
+                        {currentEvent.linkText}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
-            <div className="flex gap-3 pointer-events-auto">
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() => setIsFavorited(!isFavorited)}
-                className={`bg-glass-bg backdrop-blur-sm border-glass-border hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit ${isFavorited ? 'text-red-400' : 'text-foreground'}`}
-              >
-                <Heart className={`w-5 h-5 mr-2 ${isFavorited ? 'fill-current' : ''}`} />
-                {isFavorited ? 'Saved' : 'Save'}
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
-              >
-                <Share2 className="w-5 h-5 mr-2" />
-                Share
-              </Button>
-            </div>
+            {currentEvent.type === 'EVENT' && (
+              <div className="flex gap-3 pointer-events-auto">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => setIsFavorited(!isFavorited)}
+                  className={`bg-glass-bg backdrop-blur-sm border-glass-border hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit ${isFavorited ? 'text-red-400' : 'text-foreground'}`}
+                >
+                  <Heart className={`w-5 h-5 mr-2 ${isFavorited ? 'fill-current' : ''}`} />
+                  {isFavorited ? 'Saved' : 'Save'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
+                >
+                  <Share2 className="w-5 h-5 mr-2" />
+                  Share
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

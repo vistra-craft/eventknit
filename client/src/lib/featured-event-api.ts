@@ -5,16 +5,28 @@
 import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse } from './api';
 
 /**
+ * Featured Item Type
+ */
+export type FeaturedItemType = 'EVENT' | 'IMAGE';
+
+/**
  * Featured Event Data
  */
 export interface FeaturedEventData {
   id: string;
-  eventId: string;
-  customTitle?: string;
-  customImage?: string;
-  customCategory?: string;
-  displayStartDate?: string;
-  displayEndDate?: string;
+  type: FeaturedItemType;
+  eventId: string | null;
+  customTitle?: string | null;
+  customImage?: string | null;
+  customCategory?: string | null;
+  // IMAGE type fields
+  imageUrl?: string | null;
+  title?: string | null;
+  description?: string | null;
+  linkUrl?: string | null;
+  linkText?: string | null;
+  displayStartDate?: string | null;
+  displayEndDate?: string | null;
   displayOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -22,16 +34,16 @@ export interface FeaturedEventData {
   event: {
     id: string;
     title: string;
-    image?: string;
-    category?: string;
+    image?: string | null;
+    category?: string | null;
     startDate: string;
-    startTime?: string;
-    venue?: string;
+    startTime?: string | null;
+    venue?: string | null;
     location: string;
-    price?: number;
+    price?: number | null;
     isFree: boolean;
     status?: string;
-  };
+  } | null;
   creator?: {
     id: string;
     firstName: string;
@@ -45,38 +57,52 @@ export interface FeaturedEventData {
  */
 export interface ActiveFeaturedEvent {
   id: string;
-  eventId: string;
+  type: FeaturedItemType;
+  eventId: string | null;
   title: string;
   image: string;
   category: string;
-  date: string;
+  date: string | null;
   time: string;
   venue: string;
   location: string;
   price: string;
   displayOrder: number;
+  // IMAGE type specific fields
+  description?: string;
+  linkUrl?: string | null;
+  linkText?: string | null;
   event: {
     id: string;
     title: string;
-    image?: string;
-    category?: string;
+    image?: string | null;
+    category?: string | null;
     startDate: string;
-    startTime?: string;
-    venue?: string;
+    startTime?: string | null;
+    venue?: string | null;
     location: string;
-    price?: number;
+    price?: number | null;
     isFree: boolean;
-  };
+  } | null;
 }
 
 /**
  * Create Featured Event Data
  */
 export interface CreateFeaturedEventData {
-  eventId: string;
+  type: FeaturedItemType;
+  // EVENT type fields
+  eventId?: string;
   customTitle?: string;
   customImage?: string;
   customCategory?: string;
+  // IMAGE type fields
+  imageUrl?: string;
+  title?: string;
+  description?: string;
+  linkUrl?: string;
+  linkText?: string;
+  // Common fields
   displayStartDate?: string;
   displayEndDate?: string;
   displayOrder?: number;
@@ -87,9 +113,17 @@ export interface CreateFeaturedEventData {
  * Update Featured Event Data
  */
 export interface UpdateFeaturedEventData {
+  // EVENT type fields
   customTitle?: string;
   customImage?: string;
   customCategory?: string;
+  // IMAGE type fields
+  imageUrl?: string;
+  title?: string;
+  description?: string;
+  linkUrl?: string;
+  linkText?: string;
+  // Common fields
   displayStartDate?: string;
   displayEndDate?: string;
   displayOrder?: number;

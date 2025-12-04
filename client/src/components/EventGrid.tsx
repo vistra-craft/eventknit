@@ -26,8 +26,10 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
     if (filters.search) fetchFilters.search = filters.search;
     if (filters.category && filters.category !== 'all') fetchFilters.category = filters.category;
 
+    console.log('[EventGrid] Fetching events with filters:', fetchFilters);
     fetchEvents(fetchFilters);
-  }, [filters.search, filters.category, fetchEvents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.search, filters.category]); // Removed fetchEvents from deps to prevent loops
 
   // Debug: Log events when they change
   useEffect(() => {

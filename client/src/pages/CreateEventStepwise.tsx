@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,6 +89,7 @@ interface EventData {
   organizer: string;
   description: string;
   fullDescription: string;
+  organizerDescription?: string;
   date: string;
   time: string;
   endDate: string;
@@ -187,8 +188,12 @@ export default function CreateEventStepwise() {
   const [speakers] = useState<Array<{ name: string; title: string; bio: string; image?: string }>>([]);
   const [isPrivate, setIsPrivate] = useState(false);
   
-  // Load draft from localStorage on mount
-  const loadDraft = (): Partial<EventData & { currency: string }> => {
+  // Load draft from localStorage on mount (only if not in edit mode)
+  const loadDraft = useCallback((): Partial<EventData & { currency: string }> => {
+    // Don't load draft if in edit mode
+    if (isEditMode) {
+      return {};
+    }
     try {
       const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (draft) {
@@ -200,10 +205,50 @@ export default function CreateEventStepwise() {
           localStorage.removeItem(DRAFT_STORAGE_KEY);
         }
       }
-    } catch (error) {
-      console.error('Error loading draft:', error);
+    } catch {
+      // Ignore errors
     }
     return {};
+  }, [isEditMode]);
+
+  // Reset form to initial state
+  const resetForm = () => {
+    setEventData({
+      title: "",
+      organizer: "",
+      description: "",
+      fullDescription: "",
+      organizerDescription: "",
+      date: "",
+      time: "",
+      endDate: "",
+      endTime: "",
+      location: "",
+      venue: "",
+      address: "",
+      onlineLink: "",
+      price: "",
+      totalSlots: 0,
+      image: "",
+      requirements: "",
+      ageRestriction: "",
+      isOnline: false,
+      capacity: "",
+      category: "",
+      timezone: timezone,
+      currency: DEFAULT_CURRENCY,
+    });
+    setTicketTypes([{ id: 1, name: "", type: "paid", price: "", quantity: "" }]);
+    setCategories(["Music", "Concert"]);
+    setTags([]);
+    setFaqs([{ question: "", answer: "" }]);
+    setEventType("in-person");
+    setIsPrivate(false);
+    setImagePreview(null);
+    setUploadedImage(null);
+    setCurrentStep(1);
+    setError(null);
+    setValidationErrors({});
   };
 
   const [eventData, setEventData] = useState<EventData & { currency: string }>(() => {
@@ -378,14 +423,15 @@ export default function CreateEventStepwise() {
             organizer: transformedEvent.organizerName || user?.organizationName || "",
             description: transformedEvent.description || "",
             fullDescription: transformedEvent.fullDescription || "",
+            organizerDescription: transformedEvent.organizerDescription || "",
             date: parseDate(transformedEvent.startDate) || transformedEvent.date || "",
             time: parseTime(transformedEvent.startTime) || transformedEvent.time || "",
             endDate: parseDate(transformedEvent.endDate) || "",
             endTime: parseTime(transformedEvent.endTime) || "",
             location: transformedEvent.location || "",
             venue: transformedEvent.venue || "",
-            address: "", // Not available from API EventData
-            onlineLink: transformedEvent.isOnline ? transformedEvent.location || "" : "", // Use location for online events
+            address: (transformedEvent as { address?: string }).address || "",
+            onlineLink: (transformedEvent as { onlineLink?: string }).onlineLink || "",
             price: transformedEvent.price?.toString() || "",
             totalSlots: transformedEvent.capacity || 0,
             image: transformedEvent.image || "",
@@ -396,7 +442,7 @@ export default function CreateEventStepwise() {
             isOnline: transformedEvent.isOnline || false,
             capacity: transformedEvent.capacity?.toString() || "",
             category: transformedEvent.category || "",
-            timezone: timezone, // Use local state, API EventData doesn't have timezone
+            timezone: (transformedEvent as { timezone?: string }).timezone || timezone,
             currency: transformedEvent.currency || DEFAULT_CURRENCY,
           }));
 
@@ -416,7 +462,7 @@ export default function CreateEventStepwise() {
               type: tt.price === 0 || tt.isComplementary ? "free" : "paid",
               price: tt.price?.toString() || "",
               originalPrice: tt.originalPrice?.toString(),
-              discountLabel: tt.discountLabel || undefined, // Convert null to undefined
+              discountLabel: tt.discountLabel || undefined,
               quantity: tt.quantity?.toString() || "",
               isComplementary: tt.isComplementary,
               requiresInvitation: tt.requiresInvitation,
@@ -470,6 +516,23 @@ export default function CreateEventStepwise() {
 
     loadEventForEdit();
   }, [editEventId, user, timezone]);
+
+  // Clear form when navigating to create a new event (not in edit mode) and after successful submission
+  useEffect(() => {
+    // Only reset if we're not in edit mode and there's no draft to load
+    if (!editEventId && !isEditMode) {
+      const draft = loadDraft();
+      // If no draft exists, ensure form is reset
+      if (Object.keys(draft).length === 0) {
+        // Form is already initialized with empty values, but ensure all state is reset
+        setImagePreview(null);
+        setUploadedImage(null);
+        setCurrentStep(1);
+        setError(null);
+        setValidationErrors({});
+      }
+    }
+  }, [editEventId, isEditMode, loadDraft]);
 
   // Clear draft after successful submission
   const clearDraft = () => {
@@ -732,6 +795,7 @@ export default function CreateEventStepwise() {
       title: eventData.title.trim(),
       description: eventData.description.trim(),
       fullDescription: eventData.fullDescription?.trim() || undefined,
+      organizerDescription: eventData.organizerDescription?.trim() || undefined,
       category: eventData.category || categories[0] || undefined,
       tags: tags.length > 0 ? tags : undefined,
       startDate,
@@ -813,6 +877,8 @@ export default function CreateEventStepwise() {
         if (response.success && response.data) {
           // Clear draft on success
           clearDraft();
+          // Reset form state
+          resetForm();
           // Navigate back to event management page
           navigate(`/organizer/event/${eventId}`, {
             state: { message: 'Event updated successfully!' }
@@ -827,6 +893,8 @@ export default function CreateEventStepwise() {
         if (response.success && response.data) {
           // Clear draft on success
           clearDraft();
+          // Reset form state
+          resetForm();
           // Success! Navigate to appropriate dashboard based on current route
           const isAdminRoute = location.pathname.startsWith('/admin');
           const dashboardRoute = isAdminRoute ? '/admin/dashboard' : '/organizer/dashboard';
@@ -933,6 +1001,24 @@ export default function CreateEventStepwise() {
         />
         <p className="text-sm text-muted-foreground">
           {eventData.fullDescription.length}/10000 characters
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="organizerDescription">About the Organizer (Optional)</Label>
+        <Textarea 
+          id="organizerDescription" 
+          placeholder="Tell attendees about yourself or your organization. This will be displayed on the event details page." 
+          rows={4}
+          value={eventData.organizerDescription || ""}
+          maxLength={1000}
+          onChange={(e) => handleInputChange("organizerDescription", e.target.value)}
+        />
+        <p className="text-sm text-muted-foreground">
+          {(eventData.organizerDescription || "").length}/1000 characters
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Share information about yourself or your organization to help attendees learn more about the event host.
         </p>
       </div>
 

@@ -49,6 +49,7 @@ export interface CreateEventData {
   title: string;
   description: string;
   fullDescription?: string;
+  organizerDescription?: string;
   category?: string;
   tags?: string[];
   startDate: string; // ISO date string
@@ -220,11 +221,25 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';
 
+  console.log('[event-api] Making API call to:', endpoint);
+  console.log('[event-api] Filters received:', filters);
+  
   const response = await apiGet<EventsListResponse>(endpoint);
+
+  console.log('[event-api] API Response:', {
+    success: response.success,
+    eventCount: response.data?.events?.length || 0,
+    total: response.data?.total || 0,
+    events: response.data?.events?.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type })) || []
+  });
 
   // Transform backend events to frontend format
   if (response.success && response.data) {
     response.data.events = transformEventsData(response.data.events);
+    console.log('[event-api] After transformation:', {
+      eventCount: response.data.events.length,
+      events: response.data.events.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type }))
+    });
   }
 
   return response;
