@@ -171,24 +171,24 @@ const ModerationPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      reviewed: "bg-blue-100 text-blue-800 border-blue-200",
-      approved: "bg-green-100 text-green-800 border-green-200",
-      rejected: "bg-red-100 text-red-800 border-red-200",
-      active: "bg-green-100 text-green-800 border-green-200",
-      suspended: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      banned: "bg-red-100 text-red-800 border-red-200"
+      pending: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      reviewed: "bg-primary/10 text-primary border-primary/20",
+      approved: "bg-primary/10 text-primary border-primary/20",
+      rejected: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      active: "bg-primary/10 text-primary border-primary/20",
+      suspended: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      banned: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getSeverityBadge = (severity: string) => {
     const variants = {
-      low: "bg-green-100 text-green-800 border-green-200",
-      medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      high: "bg-red-100 text-red-800 border-red-200"
+      low: "bg-primary/10 text-primary border-primary/20",
+      medium: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      high: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
     };
-    return variants[severity as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[severity as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeIcon = (type: string) => {
@@ -236,46 +236,46 @@ const ModerationPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Content Moderation</h1>
-            <p className="text-gray-600">Review and manage reported content and user violations</p>
+            <h1 className="text-lg font-semibold text-foreground">Content Moderation</h1>
+            <p className="text-muted-foreground">Review and manage reported content and user violations</p>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             {filteredReports.filter(r => r.status === "pending").length} pending reports
           </div>
         </div>
 
         {/* Moderation Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-yellow-600 mb-2">
+              <div className="font-semibold text-accent-coral mb-2">
                 {mockReportedContent.filter(r => r.status === "pending").length}
               </div>
-              <p className="text-sm text-gray-600">Pending Reports</p>
+              <p className="text-sm text-muted-foreground">Pending Reports</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-red-600 mb-2">
+              <div className="font-semibold text-accent-coral mb-2">
                 {mockReportedContent.filter(r => r.severity === "high").length}
               </div>
-              <p className="text-sm text-gray-600">High Severity</p>
+              <p className="text-sm text-muted-foreground">High Severity</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-orange-600 mb-2">
+              <div className="font-semibold text-accent-coral mb-2">
                 {mockUserViolations.filter(u => u.status === "suspended").length}
               </div>
-              <p className="text-sm text-gray-600">Suspended Users</p>
+              <p className="text-sm text-muted-foreground">Suspended Users</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-red-600 mb-2">
+              <div className="font-semibold text-accent-coral mb-2">
                 {mockUserViolations.filter(u => u.status === "banned").length}
               </div>
-              <p className="text-sm text-gray-600">Banned Users</p>
+              <p className="text-sm text-muted-foreground">Banned Users</p>
             </CardContent>
           </Card>
         </div>
@@ -289,12 +289,12 @@ const ModerationPage = () => {
 
           <TabsContent value="reports" className="space-y-6">
             {/* Filters */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Search reports..."
                         value={searchTerm}
@@ -345,7 +345,7 @@ const ModerationPage = () => {
             {/* Reports List */}
             <div className="space-y-3">
               {filteredReports.map((report) => (
-                <Card key={report.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                <Card key={report.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -361,7 +361,7 @@ const ModerationPage = () => {
                             {report.severity}
                           </Badge>
                         </div>
-                        <div className="space-y-2 text-sm text-gray-600 mb-3">
+                        <div className="space-y-2 text-sm text-muted-foreground mb-3">
                           <p><span className="font-medium">Reason:</span> {report.reason}</p>
                           <p><span className="font-medium">Description:</span> {report.description}</p>
                           <p><span className="font-medium">Reported by:</span> {report.reportedBy}</p>
@@ -384,7 +384,7 @@ const ModerationPage = () => {
                             <Button 
                               size="sm"
                               onClick={() => handleApprove(report.id)}
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-primary hover:bg-primary/90 text-white"
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
                               Approve
@@ -411,7 +411,7 @@ const ModerationPage = () => {
             {/* User Violations List */}
             <div className="space-y-3">
               {mockUserViolations.map((violation) => (
-                <Card key={violation.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                <Card key={violation.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -427,7 +427,7 @@ const ModerationPage = () => {
                             {violation.violationType}
                           </Badge>
                         </div>
-                        <div className="space-y-2 text-sm text-gray-600 mb-3">
+                        <div className="space-y-2 text-sm text-muted-foreground mb-3">
                           <p><span className="font-medium">Email:</span> {violation.email}</p>
                           <p><span className="font-medium">Description:</span> {violation.description}</p>
                           <p><span className="font-medium">Violation count:</span> {violation.violationCount}</p>

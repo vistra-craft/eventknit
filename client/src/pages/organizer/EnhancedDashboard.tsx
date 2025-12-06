@@ -34,9 +34,9 @@ const EnhancedDashboard = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: Mic,
-      color: "text-accent-neon",
-      bgColor: "bg-accent-neon/10",
-      borderColor: "border-accent-neon/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Exhibitors",
@@ -64,9 +64,9 @@ const EnhancedDashboard = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
   ]);
   const [recentEvents, setRecentEvents] = useState<OrganizerDashboardEvent[]>([]);
@@ -159,9 +159,9 @@ const EnhancedDashboard = () => {
               change: "+0%",
               changeType: "positive",
               icon: DollarSign,
-              color: "text-green-600",
-              bgColor: "bg-green-100",
-              borderColor: "border-green-200",
+              color: "text-primary",
+              bgColor: "bg-primary/10",
+              borderColor: "border-primary/20",
             },
           ]);
         }
@@ -209,7 +209,7 @@ const EnhancedDashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Dashboard Overview</h1>
             <p className="text-sm sm:text-base text-muted-foreground">
               Welcome back! Here's what's happening with your events.
             </p>
@@ -218,7 +218,7 @@ const EnhancedDashboard = () => {
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
-              className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
+              className="px-3 py-2 border border-primary rounded-lg text-sm focus:ring-2 focus:ring-accent-coral focus:border-accent-coral bg-white text-foreground hover:bg-accent-coral hover:text-white transition-colors"
             >
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
@@ -227,7 +227,7 @@ const EnhancedDashboard = () => {
             </select>
             <Link
               to="/organizer/events/create"
-              className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
+              className="bg-accent-coral hover:bg-accent-coral/90 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Event
@@ -240,24 +240,24 @@ const EnhancedDashboard = () => {
           {stats.map((stat, index) => (
             <div
               key={index}
-              className={`bg-card rounded-xl border ${stat.borderColor} p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}
+              className={`border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all ${stat.borderColor} p-4`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <p className="text-xs font-medium text-muted-foreground mb-1">
                     {stat.title}
                   </p>
-                  <p className="text-xl font-bold text-foreground mb-1">
+                  <p className="text-lg font-semibold text-foreground mb-1">
                     {stat.value}
                   </p>
                   <div className="flex items-center">
                     {stat.changeType === "positive" ? (
-                      <ArrowUpRight className="h-3 w-3 text-green-600 mr-1" />
+                      <ArrowUpRight className="h-3 w-3 text-primary mr-1" />
                     ) : (
-                      <ArrowDownRight className="h-3 w-3 text-red-600 mr-1" />
+                      <ArrowDownRight className="h-3 w-3 text-accent-coral mr-1" />
                     )}
                     <span
-                      className={`text-xs font-medium ${stat.changeType === "positive" ? "text-green-600" : "text-red-600"}`}
+                      className={`text-xs font-medium ${stat.changeType === "positive" ? "text-primary" : "text-accent-coral"}`}
                     >
                       {stat.change}
                     </span>
@@ -276,14 +276,14 @@ const EnhancedDashboard = () => {
         {/* Main Content */}
         <div className="space-y-8">
           {/* Quick Actions */}
-          <div className="bg-card rounded-xl shadow-sm border border-border p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
+          <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-6">
+            <h3 className="text-base font-semibold text-foreground mb-4">
               Quick Actions
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Link
                 to="/organizer/events/create"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
               >
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
                   <Plus className="h-5 w-5 text-primary" />
@@ -296,7 +296,7 @@ const EnhancedDashboard = () => {
 
               <Link
                 to="/organizer/analytics"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
               >
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
                   <BarChart3 className="h-5 w-5 text-primary" />
@@ -309,7 +309,7 @@ const EnhancedDashboard = () => {
 
               <Link
                 to="/organizer/attendees"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
               >
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
                   <Users className="h-5 w-5 text-primary" />
@@ -322,7 +322,7 @@ const EnhancedDashboard = () => {
 
               <Link
                 to="/organizer/tickets/scanner"
-                className="flex items-center p-4 border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors duration-200"
+                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
               >
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
                   <Calendar className="h-5 w-5 text-primary" />
@@ -338,9 +338,9 @@ const EnhancedDashboard = () => {
           {/* Insights Cards Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Performance Insights */}
-            <div className="bg-card rounded-xl shadow-sm border border-border">
+            <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="p-6 border-b border-border">
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="text-base font-semibold text-foreground">
                   Performance Insights
                 </h3>
               </div>
@@ -351,7 +351,7 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">Tech Innovation Summit</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-green-600">21.4%</p>
+                    <p className="text-sm font-bold text-primary">21.4%</p>
                     <p className="text-xs text-muted-foreground">conversion</p>
                   </div>
                 </div>
@@ -362,7 +362,7 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">Last 30 days</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-green-600">+24%</p>
+                    <p className="text-sm font-bold text-primary">+24%</p>
                     <p className="text-xs text-muted-foreground">vs last month</p>
                   </div>
                 </div>
@@ -381,9 +381,9 @@ const EnhancedDashboard = () => {
             </div>
 
             {/* Upcoming Deadlines */}
-            <div className="bg-card rounded-xl shadow-sm border border-border">
+            <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="p-6 border-b border-border">
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="text-base font-semibold text-foreground">
                   Upcoming Deadlines
                 </h3>
               </div>
@@ -394,7 +394,7 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">Business Workshop</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-yellow-600">3 days</p>
+                    <p className="text-sm font-bold text-accent-coral">3 days</p>
                     <p className="text-xs text-muted-foreground">left</p>
                   </div>
                 </div>
@@ -405,7 +405,7 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">Tech Summit</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-red-600">1 week</p>
+                    <p className="text-sm font-bold text-accent-coral">1 week</p>
                     <p className="text-xs text-muted-foreground">left</p>
                   </div>
                 </div>
@@ -416,7 +416,7 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">Startup Competition</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-blue-600">2 weeks</p>
+                    <p className="text-sm font-bold text-primary">2 weeks</p>
                     <p className="text-xs text-muted-foreground">left</p>
                   </div>
                 </div>
@@ -424,16 +424,16 @@ const EnhancedDashboard = () => {
             </div>
 
             {/* Event Health Score */}
-            <div className="bg-card rounded-xl shadow-sm border border-border">
+            <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="p-6 border-b border-border">
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="text-base font-semibold text-foreground">
                   Event Health Score
                 </h3>
               </div>
               <div className="p-6">
                 <div className="text-center mb-4">
-                  <div className="w-20 h-20 mx-auto bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mb-2">
-                    <span className="text-2xl font-bold text-white">92</span>
+                  <div className="w-20 h-20 mx-auto bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center mb-2">
+                    <span className="text-xl font-bold text-white">92</span>
                   </div>
                   <p className="text-sm text-muted-foreground">Overall Health</p>
                 </div>
@@ -443,7 +443,7 @@ const EnhancedDashboard = () => {
                     <span className="text-sm text-muted-foreground">Registration Rate</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-4/5 h-full bg-green-500 rounded-full"></div>
+                        <div className="w-4/5 h-full bg-primary rounded-full"></div>
                       </div>
                       <span className="text-sm font-medium">85%</span>
                     </div>
@@ -453,7 +453,7 @@ const EnhancedDashboard = () => {
                     <span className="text-sm text-muted-foreground">Speaker Confirmation</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-3/4 h-full bg-blue-500 rounded-full"></div>
+                        <div className="w-3/4 h-full bg-primary rounded-full"></div>
                       </div>
                       <span className="text-sm font-medium">75%</span>
                     </div>
@@ -463,7 +463,7 @@ const EnhancedDashboard = () => {
                     <span className="text-sm text-muted-foreground">Sponsor Engagement</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-full h-full bg-yellow-500 rounded-full"></div>
+                        <div className="w-full h-full bg-accent-coral rounded-full"></div>
                       </div>
                       <span className="text-sm font-medium">95%</span>
                     </div>
@@ -476,10 +476,10 @@ const EnhancedDashboard = () => {
           {/* My Events Section */}
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+              <h2 className="text-lg font-semibold text-foreground">My Events</h2>
               <Link
                 to="/organizer/events"
-                className="text-primary hover:text-primary/80 font-medium text-sm flex items-center"
+                className="text-primary hover:text-accent-coral font-medium text-sm flex items-center transition-colors"
               >
                 View all events
                 <ArrowUpRight className="h-4 w-4 ml-1" />

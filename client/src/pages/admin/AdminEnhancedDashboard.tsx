@@ -184,7 +184,7 @@ const AdminEnhancedDashboard = () => {
             <p className="text-xs font-semibold tracking-wide text-primary uppercase mb-1">
               EventKnit
             </p>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground mb-2">
+            <h1 className="text-lg sm:text-xl font-semibold text-foreground mb-2">
               Admin dashboard
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -204,7 +204,7 @@ const AdminEnhancedDashboard = () => {
             </select>
             <Link
               to="/admin/events/create"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/80"
+              className="inline-flex items-center justify-center rounded-lg bg-accent-coral px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-coral/90"
             >
               <Plus className="mr-2 h-4 w-4" />
               Create event
@@ -232,7 +232,7 @@ const AdminEnhancedDashboard = () => {
                 {stats.map((stat, index) => (
                   <div
                     key={index}
-                    className="rounded-xl border border-border bg-card/80 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                    className="rounded-2xl border-0 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:bg-primary/5"
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div className="rounded-lg bg-primary/10 p-3">
@@ -240,13 +240,13 @@ const AdminEnhancedDashboard = () => {
                       </div>
                       <div className="flex items-center space-x-1 rounded-full bg-muted px-2 py-1 text-xs font-medium">
                         {stat.changeType === "positive" ? (
-                          <ArrowUpRight className="h-3 w-3 text-green-600" />
+                          <ArrowUpRight className="h-3 w-3 text-primary" />
                         ) : (
-                          <ArrowDownRight className="h-3 w-3 text-red-600" />
+                          <ArrowDownRight className="h-3 w-3 text-accent-coral" />
                         )}
                         <span
                           className={
-                            stat.changeType === "positive" ? "text-green-700" : "text-red-700"
+                            stat.changeType === "positive" ? "text-primary" : "text-accent-coral"
                           }
                         >
                           {stat.change}
@@ -254,7 +254,7 @@ const AdminEnhancedDashboard = () => {
                       </div>
                     </div>
                     <div>
-                      <p className="mb-1 text-2xl font-semibold text-foreground">{stat.value}</p>
+                      <p className="mb-1 text-lg font-semibold text-foreground">{stat.value}</p>
                       <p className="text-sm text-muted-foreground">{stat.title}</p>
                     </div>
                   </div>
@@ -291,7 +291,7 @@ const AdminEnhancedDashboard = () => {
                         className={`px-3 py-1 rounded-full transition-colors ${
                           growthPeriod === option.id
                             ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-gray-900 hover:text-white"
+                            : "text-muted-foreground hover:bg-accent-coral hover:text-white"
                         }`}
                       >
                         {option.label}
@@ -303,7 +303,7 @@ const AdminEnhancedDashboard = () => {
                     <select
                       value={selectedMonth}
                       onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground hover:bg-gray-900 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
+                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
                     >
                       <option value="All">All months</option>
                       {growthData.organizers.map((d) => (
@@ -318,7 +318,7 @@ const AdminEnhancedDashboard = () => {
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground hover:bg-gray-900 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
+                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
                     >
                       <option value="All">All years</option>
                       {growthData.organizers.map((d) => (
@@ -332,7 +332,7 @@ const AdminEnhancedDashboard = () => {
               </div>
 
               <div className="space-y-6">
-                <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                <div className="rounded-2xl border-0 bg-white p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Organizer growth
                   </h3>
@@ -349,12 +349,13 @@ const AdminEnhancedDashboard = () => {
                         dataKey="value"
                         xAxisKey="label"
                         height={200}
+                        color="#14b8a6"
                       />
                     )}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                <div className="rounded-2xl border-0 bg-white p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Events created
                   </h3>
@@ -371,12 +372,13 @@ const AdminEnhancedDashboard = () => {
                         dataKey="value"
                         xAxisKey="label"
                         height={200}
+                        color="#FB7185"
                       />
                     )}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                <div className="rounded-2xl border-0 bg-white p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Platform revenue
                   </h3>
@@ -398,7 +400,7 @@ const AdminEnhancedDashboard = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+                <div className="rounded-2xl border-0 bg-white p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Attendees / users
                   </h3>
@@ -415,6 +417,7 @@ const AdminEnhancedDashboard = () => {
                         dataKey="value"
                         xAxisKey="label"
                         height={200}
+                        color="#FB7185"
                       />
                     )}
                   </div>

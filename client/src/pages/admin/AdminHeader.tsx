@@ -62,7 +62,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            className="text-muted-foreground hover:bg-gray-900 hover:text-white transition-colors"
+            className="text-muted-foreground hover:bg-accent-coral hover:text-white transition-colors"
             title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
           >
             {resolvedTheme === 'light' ? (
@@ -76,7 +76,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="relative text-muted-foreground hover:bg-gray-900 hover:text-white transition-colors"
+            className="relative text-muted-foreground hover:bg-accent-coral hover:text-white transition-colors"
           >
             <AlertTriangle className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-xs rounded-full flex items-center justify-center">
@@ -93,7 +93,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
               variant="ghost" 
               size="sm"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center space-x-2 hover:bg-muted"
+              className="flex items-center space-x-2 hover:bg-accent-coral hover:text-white transition-colors"
             >
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-primary-foreground" />
@@ -130,7 +130,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                       setIsProfileOpen(false);
                       navigate('/admin/profile');
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white rounded-lg transition-colors"
                   >
                     <User className="h-4 w-4" />
                     <span>View Profile</span>
@@ -141,7 +141,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                       setIsProfileOpen(false);
                       navigate('/admin/settings');
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white rounded-lg transition-colors"
                   >
                     <Shield className="h-4 w-4" />
                     <span>Admin Settings</span>

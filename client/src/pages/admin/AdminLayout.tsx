@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminSidebar from "./AdminSidebar";
 import AdminHeader from "./AdminHeader";
-import Footer from "../../components/Footer";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -82,10 +81,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </div>
       )}
 
-      {/* Global footer – always at bottom, follows main app width */}
-      <div className="mt-4">
-        <Footer />
-      </div>
     </div>
   );
 };

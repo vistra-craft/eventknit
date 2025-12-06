@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white">
+    <footer className="bg-primary text-white">
       <div className="container mx-auto px-6 py-2">
-        <div className="flex flex-col items-center justify-center gap-2 py-2 text-[11px] text-gray-300 md:flex-row">
+        <div className="flex flex-col items-center justify-center gap-2 py-2 text-[11px] text-white/90 md:flex-row">
           <p className="text-center whitespace-nowrap text-[11px] font-normal">
             © 2025 <span className="text-white font-normal">EventKnit</span>
           </p>
@@ -36,21 +36,21 @@ const Footer = () => {
           <div className="flex items-center justify-center gap-2">
             <a
               href="#"
-              className="flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+              className="flex items-center justify-center text-white/70 hover:text-white hover:scale-110 transition-all"
               aria-label="Facebook"
             >
               <Facebook size={14} />
             </a>
             <a
               href="#"
-              className="flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+              className="flex items-center justify-center text-white/70 hover:text-white hover:scale-110 transition-all"
               aria-label="Twitter"
             >
               <Twitter size={14} />
             </a>
             <a
               href="#"
-              className="flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+              className="flex items-center justify-center text-white/70 hover:text-white hover:scale-110 transition-all"
               aria-label="Instagram"
             >
               <Instagram size={14} />

@@ -28,7 +28,6 @@ export interface VerificationStatus {
 export interface IdentityVerificationData {
   firstName: string;
   lastName: string;
-  dateOfBirth: string;
   address: string;
   city: string;
   state: string;
@@ -36,7 +35,8 @@ export interface IdentityVerificationData {
   country: string;
   idType: 'passport' | 'drivers_license' | 'national_id';
   idNumber: string;
-  idDocumentUrl: string;
+  idDocumentFrontUrl: string;
+  idDocumentBackUrl: string;
 }
 
 export interface BusinessVerificationData {

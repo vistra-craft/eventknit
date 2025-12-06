@@ -160,30 +160,30 @@ const SimpleRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-3xl">
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
           >
             <ArrowLeft className="w-3 h-3" />
             <span>Back to home</span>
           </button>
           <div className="flex items-center justify-center gap-2">
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-semibold">EK</span>
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">EventKnit</span>
+            <span className="text-xl font-bold text-primary">EventKnit</span>
           </div>
         </div>
 
         {/* Registration Form */}
         <Card className="border-0 bg-white rounded-2xl shadow-none">
           <CardHeader className="pb-4">
-            <CardTitle className="text-2xl font-bold text-foreground">
+            <CardTitle className="text-2xl font-bold text-primary">
               {step === 'role'
                 ? 'Join EventKnit'
                 : step === 'email'
@@ -205,14 +205,14 @@ const SimpleRegistration = () => {
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ATTENDEE')}
-                    className="p-5 rounded-2xl bg-white hover:bg-muted/30 transition-colors text-left group cursor-pointer"
+                    className="p-5 rounded-2xl bg-white hover:bg-primary/5 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-gray-900" />
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Calendar className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-base mb-1">Attend events</h3>
+                        <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Attend events</h3>
                         <p className="text-xs text-muted-foreground">
                           Discover and register for events near you, and keep tickets in one place.
                         </p>
@@ -223,14 +223,14 @@ const SimpleRegistration = () => {
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ORGANIZER')}
-                    className="p-5 rounded-2xl bg-white hover:bg-muted/30 transition-colors text-left group cursor-pointer"
+                    className="p-5 rounded-2xl bg-white hover:bg-primary/5 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-gray-900" />
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Users className="w-5 h-5 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-base mb-1">Organize events</h3>
+                        <h3 className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">Organize events</h3>
                         <p className="text-xs text-muted-foreground">
                           Create and manage your own events, and track ticket sales with ease.
                         </p>
@@ -266,7 +266,7 @@ const SimpleRegistration = () => {
                 <div className="space-y-3">
                   <Button
                     type="submit"
-                    className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                    className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Sending...' : 'Continue'}
@@ -275,7 +275,7 @@ const SimpleRegistration = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="w-full h-9 text-sm inline-flex items-center justify-center gap-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+                    className="w-full h-9 text-sm inline-flex items-center justify-center gap-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
                     onClick={() => {
                       setStep('role');
                       setEmail('');
@@ -366,7 +366,7 @@ const SimpleRegistration = () => {
                 <div className="space-y-3">
                   <Button
                     type="submit"
-                    className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                    className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
                     disabled={isLoading || code.length !== 6 || !password || !confirmPassword}
                   >
                     {isLoading ? 'Verifying...' : 'Verify & Sign Up'}
@@ -375,7 +375,7 @@ const SimpleRegistration = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full h-11 text-sm border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
+                    className="w-full h-11 text-sm border border-border hover:bg-accent-coral hover:text-white transition-colors"
                     onClick={handleResendCode}
                     disabled={isLoading}
                   >
@@ -385,7 +385,7 @@ const SimpleRegistration = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="w-full h-9 inline-flex items-center justify-center gap-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors text-sm"
+                    className="w-full h-9 inline-flex items-center justify-center gap-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors text-sm"
                     onClick={() => {
                       setStep('email');
                       setCode('');
@@ -408,7 +408,7 @@ const SimpleRegistration = () => {
                 Already have an account?{' '}
                 <button
                   onClick={() => navigate('/auth/signin')}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-gray-900 hover:bg-gray-900 hover:text-white transition-colors font-medium"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors font-medium"
                 >
                   Sign in
                 </button>
@@ -430,7 +430,7 @@ const SimpleRegistration = () => {
                 setSuccess('');
               }
             }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs text-primary hover:bg-accent-coral hover:text-white transition-colors"
           >
             <ArrowLeft className="w-3 h-3" />
             <span>{step === 'role' ? 'Back to home' : 'Back'}</span>

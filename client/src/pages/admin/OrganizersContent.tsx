@@ -225,7 +225,7 @@ const OrganizersContent = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Organizers</h2>
+          <h2 className="text-base font-semibold text-foreground">Organizers</h2>
           <p className="text-gray-600">Manage external event organizers</p>
         </div>
         <div className="flex items-center gap-4">
@@ -278,13 +278,13 @@ const OrganizersContent = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-blue-600 mb-2">{total || organizers.length}</div>
+            <div className="text-base font-semibold text-primary mb-2">{total || organizers.length}</div>
             <p className="text-sm text-gray-600">Total Organizers</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-green-600 mb-2">
+            <div className="text-base font-semibold text-primary mb-2">
               {organizers.filter((o) => o.status === "ACTIVE").length}
             </div>
             <p className="text-sm text-gray-600">Active</p>
@@ -300,7 +300,7 @@ const OrganizersContent = () => {
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-gray-600 mb-2">
+            <div className="text-base font-semibold text-muted-foreground mb-2">
               {organizers.filter((o) => o.status === "DEACTIVATED").length}
             </div>
             <p className="text-sm text-gray-600">Deactivated</p>

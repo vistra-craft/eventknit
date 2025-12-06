@@ -234,7 +234,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
 
   return (
     <div
-      className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
+      className={`bg-white border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
     >
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="p-4">
@@ -250,7 +250,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
             {isMobile && (
               <button
                 onClick={onToggle}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                className="p-2 rounded-lg hover:bg-accent-coral hover:text-white transition-colors text-muted-foreground"
               >
                 <Menu className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -281,7 +281,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
                             className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                               isItemActive
                                 ? 'bg-primary text-primary-foreground'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
                             }`}
                             title={!isOpen ? item.label : undefined}
                           >
@@ -308,7 +308,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
                                   className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
                                     isChildActive(child.href)
                                       ? 'bg-primary/10 text-primary font-medium'
-                                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                      : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
                                   }`}
                                 >
                                   {child.name}
@@ -328,7 +328,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
                         className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                           isItemActive 
                             ? 'bg-primary/10 text-primary font-medium' 
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            : 'text-primary hover:bg-accent-coral hover:text-white'
                         }`}
                         title={!isOpen ? item.label : undefined}
                       >

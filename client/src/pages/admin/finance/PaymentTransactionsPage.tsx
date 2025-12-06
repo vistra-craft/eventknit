@@ -134,7 +134,7 @@ const PaymentTransactionsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Payment Transactions</h1>
+            <h1 className="text-base font-semibold text-foreground">Payment Transactions</h1>
             <p className="text-gray-600">View and manage all event payment transactions</p>
           </div>
           <div className="flex items-center gap-3">

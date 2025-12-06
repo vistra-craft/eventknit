@@ -121,7 +121,7 @@ const TellerDashboard = () => {
     <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">Teller Dashboard</h1>
+        <h1 className="text-base font-semibold text-foreground">Teller Dashboard</h1>
         <p className="text-gray-600">
           Manage your assigned events and scanning activities
         </p>

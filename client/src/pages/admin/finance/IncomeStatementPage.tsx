@@ -114,7 +114,7 @@ const IncomeStatementPage: React.FC = () => {
                     <FileText className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h1 className="text-lg font-semibold text-gray-900">Income Statement</h1>
+                    <h1 className="text-base font-semibold text-foreground">Income Statement</h1>
                     <p className="text-muted-foreground">Profit & Loss Report for {incomeStatementData.period}</p>
                   </div>
                 </div>

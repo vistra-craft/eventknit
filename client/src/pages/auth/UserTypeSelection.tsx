@@ -70,8 +70,8 @@ const UserTypeSelection = () => {
             onClick={() => handleUserTypeSelection('attendee')}
           >
             <CardHeader className="pb-3">
-              <div className="w-11 h-11 bg-gray-900/5 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-900/10 transition-colors">
-                <Users className="w-6 h-6 text-gray-900" />
+              <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+                <Users className="w-6 h-6 text-primary" />
               </div>
               <CardTitle className="text-xl font-semibold text-foreground">
                 Attend events
@@ -84,7 +84,7 @@ const UserTypeSelection = () => {
               </p>
               <Button
                 type="button"
-                className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium"
+                className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white text-sm font-medium"
               >
                 Continue as attendee
               </Button>
@@ -97,8 +97,8 @@ const UserTypeSelection = () => {
             onClick={() => handleUserTypeSelection('organizer')}
           >
             <CardHeader className="pb-3">
-              <div className="w-11 h-11 bg-gray-900/5 rounded-full flex items-center justify-center mb-3 group-hover:bg-gray-900/10 transition-colors">
-                <Calendar className="w-6 h-6 text-gray-900" />
+              <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+                <Calendar className="w-6 h-6 text-primary" />
               </div>
               <CardTitle className="text-xl font-semibold text-foreground">
                 Organize events
@@ -111,7 +111,7 @@ const UserTypeSelection = () => {
               </p>
               <Button
                 type="button"
-                className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium"
+                className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white text-sm font-medium"
               >
                 Continue as organizer
               </Button>
@@ -119,9 +119,6 @@ const UserTypeSelection = () => {
           </Card>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="pointer-events-none absolute top-10 left-6 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-xl" />
-        <div className="pointer-events-none absolute bottom-10 right-6 w-24 h-24 bg-gradient-to-br from-gray-900/5 to-transparent rounded-full blur-xl" />
       </div>
     </div>
   );

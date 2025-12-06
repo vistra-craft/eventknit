@@ -103,7 +103,7 @@ const StaffPerformanceDashboard = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-base font-semibold text-foreground">
               Staff Performance Dashboard
             </h1>
             <p className="text-gray-600">

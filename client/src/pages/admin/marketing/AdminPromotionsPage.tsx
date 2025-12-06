@@ -297,7 +297,7 @@ const AdminPromotionsPage = () => {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground">
+            <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Create Promotion
             </Button>
@@ -555,7 +555,7 @@ const AdminPromotionsPage = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Promotion Templates</CardTitle>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Template
                 </Button>

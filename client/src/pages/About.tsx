@@ -53,25 +53,25 @@ const About = () => {
       icon: <Heart className="w-8 h-8" />,
       title: "Community First",
       description: "We believe in the power of bringing people together and creating lasting connections through shared experiences.",
-      color: "text-red-500"
+      color: "text-accent-coral"
     },
     {
       icon: <Target className="w-8 h-8" />,
       title: "Excellence",
       description: "Every event we curate meets the highest standards of quality, ensuring memorable experiences for all attendees.",
-      color: "text-blue-500"
+      color: "text-primary"
     },
     {
       icon: <Award className="w-8 h-8" />,
       title: "Innovation",
       description: "We continuously push boundaries to create unique, cutting-edge experiences that inspire and delight.",
-      color: "text-purple-500"
+      color: "text-primary/80"
     },
     {
       icon: <Users className="w-8 h-8" />,
       title: "Inclusivity",
       description: "Our events welcome everyone, celebrating diversity and fostering an environment where all feel valued.",
-      color: "text-green-500"
+      color: "text-primary/60"
     }
   ];
 
@@ -88,28 +88,28 @@ const About = () => {
       title: "Basic Details",
       description: "Add your event title, description, and category",
       icon: <Settings className="w-6 h-6" />,
-      color: "text-blue-500"
+      color: "text-primary"
     },
     {
       step: 2,
       title: "Schedule & Location",
       description: "Set date, time, and venue details",
       icon: <Clock className="w-6 h-6" />,
-      color: "text-green-500"
+      color: "text-primary"
     },
     {
       step: 3,
       title: "Pricing & Tickets",
       description: "Configure pricing and ticket types",
       icon: <DollarSign className="w-6 h-6" />,
-      color: "text-purple-500"
+      color: "text-primary"
     },
     {
       step: 4,
       title: "Launch & Manage",
       description: "Publish and monitor your event",
       icon: <Rocket className="w-6 h-6" />,
-      color: "text-orange-500"
+      color: "text-primary"
     }
   ];
 
@@ -121,28 +121,28 @@ const About = () => {
       title: "Create Your Event",
       description: "Set up your event details, pricing, and ticket types in minutes",
       icon: <Calendar className="w-8 h-8" />,
-      color: "bg-blue-500"
+      color: "bg-primary"
     },
     {
       step: 2,
       title: "Share & Promote",
       description: "Distribute your event link and QR codes to reach your audience",
       icon: <Share2 className="w-8 h-8" />,
-      color: "bg-green-500"
+      color: "bg-accent-coral"
     },
     {
       step: 3,
       title: "Manage Registrations",
       description: "Track attendees, send updates, and handle last-minute changes",
       icon: <Users className="w-8 h-8" />,
-      color: "bg-purple-500"
+      color: "bg-primary"
     },
     {
       step: 4,
       title: "Check-in & Analytics",
       description: "Scan QR codes for entry and monitor real-time event performance",
       icon: <BarChart className="w-8 h-8" />,
-      color: "bg-orange-500"
+      color: "bg-accent-coral"
     }
   ];
 
@@ -184,7 +184,7 @@ const About = () => {
                   isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
               >
-                <Button size="lg" className="h-12 px-8 bg-primary hover:bg-primary/90">
+                <Button size="lg" className="h-12 px-8 bg-accent-coral hover:bg-accent-coral/90 text-white">
                   <Play className="w-5 h-5 mr-2" />
                   Watch Our Story
                 </Button>
@@ -204,8 +204,8 @@ const About = () => {
         {/* Interactive Stats Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
           {stats.map((stat, index) => (
-            <Card key={index} className="border-0 bg-white text-center hover:shadow-md transition-all duration-300 hover:-translate-y-2 group">
-              <CardContent className="p-6">
+            <Card key={index} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all text-center group">
+              <CardContent className="p-5">
                 <div className="text-primary mb-3 flex justify-center group-hover:scale-110 transition-transform duration-300">
                   {stat.icon}
                 </div>
@@ -238,7 +238,7 @@ const About = () => {
                     className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-300 ${
                       activeTab === tab.id
                         ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'text-muted-foreground hover:text-foreground'
+                        : 'text-primary hover:bg-accent-coral hover:text-white'
                     }`}
                   >
                     {tab.icon}
@@ -265,11 +265,11 @@ const About = () => {
                     lasting memories, building communities, and bringing people together in meaningful ways.
                   </p>
                   <div className="flex items-center gap-4">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Founded 2018
                     </Badge>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    <Badge variant="secondary" className="bg-accent-coral/10 text-accent-coral">
                       <Star className="w-4 h-4 mr-1" />
                       Award Winning
                     </Badge>
@@ -405,21 +405,21 @@ const About = () => {
 
         {/* Creative Visual Separator */}
         <div className="relative py-20 mb-20 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full transform -translate-x-32 -translate-y-32"></div>
-          <div className="absolute bottom-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full transform translate-x-24 translate-y-24"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-pink-500/10 rounded-full"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent-coral/5 to-primary/5"></div>
+          <div className="absolute top-0 left-0 w-64 h-64 bg-primary/10 rounded-full transform -translate-x-32 -translate-y-32"></div>
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-accent-coral/10 rounded-full transform translate-x-24 translate-y-24"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/10 rounded-full"></div>
           
           <div className="relative text-center">
             <div className="inline-block px-8 py-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg">
               <div className="flex items-center gap-4">
-                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse delay-100"></div>
-                <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse delay-200"></div>
+                <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+                <div className="w-3 h-3 bg-accent-coral rounded-full animate-pulse delay-100"></div>
+                <div className="w-3 h-3 bg-primary rounded-full animate-pulse delay-200"></div>
                 <span className="text-muted-foreground font-medium">Creating Amazing Experiences</span>
-                <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse delay-300"></div>
-                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse delay-400"></div>
-                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse delay-500"></div>
+                <div className="w-3 h-3 bg-primary rounded-full animate-pulse delay-300"></div>
+                <div className="w-3 h-3 bg-accent-coral rounded-full animate-pulse delay-400"></div>
+                <div className="w-3 h-3 bg-primary rounded-full animate-pulse delay-500"></div>
               </div>
             </div>
           </div>
@@ -443,9 +443,9 @@ const About = () => {
               {eventCreationSteps.map((step, index) => (
                 <Card
                   key={index}
-                  className="text-center border-0 bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group"
+                  className="text-center border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group"
                 >
-                  <CardContent className="p-6">
+                  <CardContent className="p-5">
                     <div className="relative mb-4">
                       <div className="w-12 h-12 mx-auto bg-primary/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <div className="text-primary">
@@ -483,7 +483,7 @@ const About = () => {
                   <div className="flex items-center gap-4 mb-6">
                     <div className="text-8xl font-bold text-muted-foreground/20">1</div>
                     <div>
-                      <h3 className="text-2xl font-bold text-navy">Step</h3>
+                      <h3 className="text-2xl font-bold text-foreground">Step</h3>
                     </div>
                   </div>
                   
@@ -493,9 +493,9 @@ const About = () => {
                         Book A Demo
                       </div>
                       <div className="text-primary text-2xl">→</div>
-                      <div className="text-navy font-medium">Set up your account</div>
+                      <div className="text-foreground font-medium">Set up your account</div>
                       <div className="text-primary text-2xl">→</div>
-                      <div className="text-navy font-medium">Get onboarding assistance</div>
+                      <div className="text-foreground font-medium">Get onboarding assistance</div>
                     </div>
                   </div>
                 </div>
@@ -538,20 +538,20 @@ const About = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
-                      <div className="font-semibold text-navy mb-2">Create an event</div>
+                    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                      <div className="font-semibold text-foreground mb-2">Create an event</div>
                       <div className="text-muted-foreground">→</div>
                     </div>
-                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
-                      <div className="font-semibold text-navy mb-2">Customize tickets</div>
+                    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                      <div className="font-semibold text-foreground mb-2">Customize tickets</div>
                       <div className="text-muted-foreground">→</div>
                     </div>
-                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
-                      <div className="font-semibold text-navy mb-2">Launch sales & track analytics</div>
+                    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                      <div className="font-semibold text-foreground mb-2">Launch sales & track analytics</div>
                       <div className="text-muted-foreground">→</div>
                     </div>
-                    <div className="bg-card border rounded-lg p-4 shadow-sm hover:shadow-md transition-all">
-                      <div className="font-semibold text-navy mb-2">Start selling tickets online</div>
+                    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                      <div className="font-semibold text-foreground mb-2">Start selling tickets online</div>
                     </div>
                   </div>
                 </div>
@@ -559,7 +559,7 @@ const About = () => {
             </div>
 
             <div className="text-center mt-16">
-              <Button size="lg" className="bg-primary hover:bg-primary-light text-primary-foreground px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all">
+              <Button size="lg" className="bg-accent-coral hover:bg-accent-coral/90 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-sm hover:shadow-md transition-all">
                 Book A Demo
               </Button>
             </div>
@@ -568,12 +568,12 @@ const About = () => {
 
         {/* Mobile App Showcase Section */}
         <div className="mb-20">
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <Card className="bg-gradient-to-r from-primary/5 via-accent-coral/5 to-primary/5 border-primary/20">
             <CardContent className="p-12">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
                       <QrCode className="w-6 h-6 text-white" />
                     </div>
                     <h3 className="text-2xl font-bold">QR Code for mobile check-in</h3>
@@ -590,11 +590,11 @@ const About = () => {
                   </p>
                   
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Button size="lg" className="bg-blue-500 hover:bg-blue-600">
+                    <Button size="lg" className="bg-accent-coral hover:bg-accent-coral/90 text-white">
                       <Mobile className="w-5 h-5 mr-2" />
                       Download Mobile App
                     </Button>
-                    <Button size="lg" variant="outline">
+                    <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
                       <Eye className="w-5 h-5 mr-2" />
                       Watch Demo
                     </Button>
@@ -610,10 +610,10 @@ const About = () => {
                     />
                   </div>
                   {/* Floating elements */}
-                  <div className="absolute top-4 right-4 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                  <div className="absolute top-4 right-4 w-16 h-16 bg-accent-coral rounded-full flex items-center justify-center shadow-lg animate-pulse">
                     <CheckCircle2 className="w-8 h-8 text-white" />
                   </div>
-                  <div className="absolute bottom-8 left-4 w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                  <div className="absolute bottom-8 left-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg animate-bounce">
                     <QrCode className="w-6 h-6 text-white" />
                   </div>
                 </div>
@@ -647,8 +647,8 @@ const About = () => {
                   key={index}
                   className={`${index % 2 === 0 ? 'text-right' : 'text-left'} ${index < 2 ? 'mb-8' : ''}`}
                 >
-                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
-                    <CardContent className="p-6">
+                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
+                    <CardContent className="p-5">
                       <div className="flex items-center gap-4">
                         {index % 2 === 0 ? (
                           <>
@@ -691,7 +691,7 @@ const About = () => {
           
           {/* Compact benefits row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
               </div>
@@ -701,7 +701,7 @@ const About = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-primary" />
               </div>
@@ -711,7 +711,7 @@ const About = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <Bell className="w-5 h-5 text-primary" />
               </div>
@@ -735,7 +735,7 @@ const About = () => {
           {/* Creative list layout with icons */}
           <div className="max-w-4xl mx-auto space-y-6">
             {values.map((value, index) => (
-              <div key={index} className="flex items-start gap-6 p-6 bg-muted/20 rounded-xl hover:bg-muted/30 transition-colors duration-300 group">
+              <div key={index} className="flex items-start gap-6 p-5 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                   <div className="text-primary">
                     {value.icon}
@@ -768,7 +768,7 @@ const About = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-              <Card className="group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
+              <Card className="group overflow-hidden border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <div className="relative overflow-hidden">
                   <img 
                     src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=300&fit=crop"
@@ -780,17 +780,17 @@ const About = () => {
                       Yapsody
                     </div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
                 <CardContent className="p-6">
                   <div className="text-sm text-primary font-semibold mb-2">Concert Venue</div>
-                  <h3 className="text-lg font-bold text-navy leading-tight group-hover:text-primary transition-colors duration-300">
+                  <h3 className="text-lg font-bold text-foreground leading-tight group-hover:text-primary transition-colors duration-300">
                     How Yapsody Helped Boot Barn Hall Simplify Reporting And Sales
                   </h3>
                 </CardContent>
               </Card>
 
-              <Card className="group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
+              <Card className="group overflow-hidden border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <div className="relative overflow-hidden">
                   <img 
                     src="/src/assets/event-concert.jpg"
@@ -802,17 +802,17 @@ const About = () => {
                       Yapsody
                     </div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
                 <CardContent className="p-6">
                   <div className="text-sm text-primary font-semibold mb-2">Casino Resort</div>
-                  <h3 className="text-lg font-bold text-navy leading-tight group-hover:text-primary transition-colors duration-300">
+                  <h3 className="text-lg font-bold text-foreground leading-tight group-hover:text-primary transition-colors duration-300">
                     How Yapsody Delivered Custom Ticketing & Security Solutions
                   </h3>
                 </CardContent>
               </Card>
 
-              <Card className="group overflow-hidden border-0 shadow-card hover:shadow-elegant transition-all duration-300 transform hover:-translate-y-2">
+              <Card className="group overflow-hidden border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <div className="relative overflow-hidden">
                   <img 
                     src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
@@ -824,11 +824,11 @@ const About = () => {
                       Yapsody
                     </div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
                 <CardContent className="p-6">
                   <div className="text-sm text-primary font-semibold mb-2">Sports Event</div>
-                  <h3 className="text-lg font-bold text-navy leading-tight group-hover:text-primary transition-colors duration-300">
+                  <h3 className="text-lg font-bold text-foreground leading-tight group-hover:text-primary transition-colors duration-300">
                     How Yapsody Helped Black Rodeo USA Tackle Ticket Scalping Through Blocklist Feature Customization
                   </h3>
                 </CardContent>
@@ -838,7 +838,7 @@ const About = () => {
             <div className="text-center">
               <Button 
                 size="lg" 
-                className="bg-primary hover:bg-primary-light text-primary-foreground px-8 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all"
+                className="bg-accent-coral hover:bg-accent-coral/90 text-white px-8 py-4 text-lg font-semibold rounded-lg shadow-sm hover:shadow-md transition-all"
               >
                 Discover More Success Stories
               </Button>
@@ -859,7 +859,7 @@ const About = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
-                className="h-12 px-8 bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                className="h-12 px-8 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
                 onClick={() => window.location.assign('/')}
               >
                 <Calendar className="w-5 h-5 mr-2" />
@@ -869,7 +869,7 @@ const About = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-12 px-8 border border-gray-300 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
+                className="h-12 px-8 border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-all"
                 onClick={() => window.location.assign('/auth/signup')}
               >
                 <Sparkles className="w-5 h-5 mr-2" />
@@ -897,7 +897,7 @@ const About = () => {
               <div className="flex animate-scroll gap-8">
                 {/* First set of testimonials */}
                 <div className="flex gap-8 flex-shrink-0">
-                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                  <Card className="w-80 bg-white rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -918,7 +918,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                  <Card className="w-80 bg-white rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -939,7 +939,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                  <Card className="w-80 bg-white rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -963,7 +963,7 @@ const About = () => {
 
                 {/* Duplicate set for seamless loop */}
                 <div className="flex gap-8 flex-shrink-0">
-                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                  <Card className="w-80 bg-white rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -984,7 +984,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                  <Card className="w-80 bg-white rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -1005,7 +1005,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-white shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+                  <Card className="w-80 bg-white rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -1042,10 +1042,10 @@ const About = () => {
           
           {/* Creative contact layout */}
           <div className="relative max-w-6xl mx-auto">
-            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12 bg-white rounded-3xl shadow-none">
+            <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12 bg-white rounded-2xl shadow-sm">
               {/* Left side - Contact methods */}
               <div className="space-y-8">
-                <div className="flex items-center gap-6 p-6 bg-white/50 backdrop-blur-sm rounded-2xl hover:bg-white/70 transition-all duration-300 group">
+                <div className="flex items-center gap-6 p-5 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <Mail className="w-8 h-8 text-primary" />
                   </div>
@@ -1056,7 +1056,7 @@ const About = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-6 p-6 bg-white/50 backdrop-blur-sm rounded-2xl hover:bg-white/70 transition-all duration-300 group">
+                <div className="flex items-center gap-6 p-5 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <Phone className="w-8 h-8 text-primary" />
                   </div>
@@ -1067,7 +1067,7 @@ const About = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-6 p-6 bg-white/50 backdrop-blur-sm rounded-2xl hover:bg-white/70 transition-all duration-300 group">
+                <div className="flex items-center gap-6 p-5 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <MapPin className="w-8 h-8 text-primary" />
                   </div>
@@ -1087,15 +1087,15 @@ const About = () => {
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4">
-                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-300 group">
+                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-all group">
                     <Instagram className="w-6 h-6 group-hover:scale-110 transition-transform" />
                     <span className="text-sm font-medium">Instagram</span>
                   </Button>
-                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-300 group">
+                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-all group">
                     <Twitter className="w-6 h-6 group-hover:scale-110 transition-transform" />
                     <span className="text-sm font-medium">Twitter</span>
                   </Button>
-                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-300 group">
+                  <Button variant="outline" className="h-16 flex flex-col items-center gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-all group">
                     <Linkedin className="w-6 h-6 group-hover:scale-110 transition-transform" />
                     <span className="text-sm font-medium">LinkedIn</span>
                   </Button>
@@ -1105,7 +1105,7 @@ const About = () => {
                 <div className="p-6 bg-primary/5 rounded-2xl text-center">
                   <h4 className="font-bold mb-2">Quick Question?</h4>
                   <p className="text-sm text-muted-foreground mb-4">Send us a message and we'll get back to you ASAP</p>
-                  <Button className="w-full">
+                  <Button className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white">
                     <Mail className="w-4 h-4 mr-2" />
                     Send Message
                   </Button>

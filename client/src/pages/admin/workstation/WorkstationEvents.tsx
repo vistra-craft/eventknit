@@ -491,7 +491,7 @@ const WorkstationEvents: React.FC = () => {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                    <h3 className="font-semibold text-foreground group-hover:text-accent-coral transition-colors">
                       {event.title}
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">{event.organizer}</p>

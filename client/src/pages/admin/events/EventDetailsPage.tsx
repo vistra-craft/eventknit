@@ -384,23 +384,23 @@ const EventDetailsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      cancelled: "bg-red-100 text-red-800 border-red-200",
-      completed: "bg-blue-100 text-blue-800 border-blue-200"
+      active: "bg-primary/10 text-primary border-primary/20",
+      pending: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      cancelled: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      completed: "bg-primary/10 text-primary border-primary/20"
     };
     return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
-      ? "bg-blue-100 text-blue-800 border-blue-200"
-      : "bg-purple-100 text-purple-800 border-purple-200";
+      ? "bg-primary/10 text-primary border-primary/20"
+      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
   };
 
   const getPriceBadge = (price: string) => {
     return price === "free" 
-      ? "bg-green-100 text-green-800 border-green-200"
+      ? "bg-primary/10 text-primary border-primary/20"
       : "bg-orange-100 text-orange-800 border-orange-200";
   };
 
@@ -502,8 +502,8 @@ const EventDetailsPage = () => {
               Back to Events
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">{eventData.title}</h1>
-              <p className="text-gray-600">Event ID: {eventData.id}</p>
+              <h1 className="text-base font-semibold text-foreground">{eventData.title}</h1>
+              <p className="text-muted-foreground">Event ID: {eventData.id}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -524,10 +524,10 @@ const EventDetailsPage = () => {
 
         {/* Event Status and Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Status</span>
               </div>
               <Badge className={`text-xs ${getStatusBadge(eventData.status)}`}>
@@ -535,35 +535,35 @@ const EventDetailsPage = () => {
               </Badge>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Attendees</span>
               </div>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-base font-semibold text-foreground">
                 {eventData.attendees}/{eventData.capacity}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <DollarSign className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Revenue</span>
               </div>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-base font-semibold text-foreground">
                 {formatCurrency(metrics.totalRevenue)}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <TrendingUp className="h-5 w-5 text-purple-600" />
+                <TrendingUp className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Conversion</span>
               </div>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-base font-semibold text-foreground">
                 {eventData.conversion}%
               </p>
             </CardContent>
@@ -591,14 +591,14 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Event Information */}
               <div className="lg:col-span-2 space-y-6">
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Event Title</label>
+                        <label className="text-sm font-medium text-muted-foreground">Event Title</label>
                         <p className="text-sm text-gray-900">{eventData.title}</p>
                       </div>
                       <div>
@@ -650,7 +650,7 @@ const EventDetailsPage = () => {
                 </Card>
 
                 {/* Organizer Information */}
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Organizer Information</CardTitle>
                   </CardHeader>
@@ -680,7 +680,7 @@ const EventDetailsPage = () => {
 
                 {/* Organizer Data Access Control - Only for ADMIN_STAFF and SUPERADMIN */}
                 {permissions.canAccessAllEvents && (
-                  <Card className="border-border bg-card">
+                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Organizer Data Access Control</CardTitle>
                     </CardHeader>
@@ -693,10 +693,10 @@ const EventDetailsPage = () => {
                         <Badge 
                           className={
                             eventData.organizerDataAccess === 'RESTRICTED' 
-                              ? 'bg-red-100 text-red-800 border-red-200'
+                              ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20'
                               : eventData.organizerDataAccess === 'STANDARD'
-                              ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                              : 'bg-green-100 text-green-800 border-green-200'
+                              ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20'
+                              : 'bg-primary/10 text-primary border-primary/20'
                           }
                         >
                           {eventData.organizerDataAccess || 'RESTRICTED'}
@@ -704,16 +704,16 @@ const EventDetailsPage = () => {
                       </div>
                       
                       <div className="space-y-2 mb-4">
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-muted-foreground">
                           <strong>RESTRICTED:</strong> Organizer can only see summary cards (total attendees, total revenue)
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-muted-foreground">
                           <strong>STANDARD:</strong> Organizer can see attendee list and payment summaries (no transaction IDs)
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-muted-foreground">
                           <strong>FULL:</strong> Organizer can see all payment details except transaction IDs
                         </p>
-                        <p className="text-xs text-gray-500 italic mt-2">
+                        <p className="text-xs text-muted-foreground italic mt-2">
                           Note: Transaction IDs are never visible to organizers, only admins.
                         </p>
                       </div>
@@ -761,7 +761,7 @@ const EventDetailsPage = () => {
 
               {/* Event Image and Stats */}
               <div className="space-y-6">
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Image</CardTitle>
                   </CardHeader>
@@ -774,13 +774,13 @@ const EventDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Statistics</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Views</span>
+                      <span className="text-sm text-muted-foreground">Views</span>
                       <span className="text-sm font-medium text-gray-900">{eventData.views.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -790,7 +790,7 @@ const EventDetailsPage = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Rating</span>
                       <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        <Star className="h-4 w-4 text-accent-coral fill-current" />
                         <span className="text-sm font-medium text-gray-900">{eventData.rating}</span>
                       </div>
                     </div>
@@ -805,7 +805,7 @@ const EventDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Settings</CardTitle>
                   </CardHeader>
@@ -851,7 +851,7 @@ const EventDetailsPage = () => {
             {(eventData.speakers && eventData.speakers.length > 0) || (eventData.sponsors && eventData.sponsors.length > 0) ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {eventData.speakers && eventData.speakers.length > 0 && (
-                  <Card className="border-border bg-card">
+                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Speakers ({eventData.speakers.length})</CardTitle>
                     </CardHeader>
@@ -865,7 +865,7 @@ const EventDetailsPage = () => {
                           />
                           <div>
                             <p className="text-sm font-medium text-gray-900">{speaker.name}</p>
-                            <p className="text-xs text-gray-600">{speaker.title}</p>
+                            <p className="text-xs text-muted-foreground">{speaker.title}</p>
                           </div>
                         </div>
                       ))}
@@ -874,7 +874,7 @@ const EventDetailsPage = () => {
                 )}
 
                 {eventData.sponsors && eventData.sponsors.length > 0 && (
-                  <Card className="border-border bg-card">
+                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Sponsors ({eventData.sponsors.length})</CardTitle>
                     </CardHeader>
@@ -889,7 +889,7 @@ const EventDetailsPage = () => {
                           <div>
                             <p className="text-sm font-medium text-gray-900">{sponsor.name}</p>
                             <Badge className={`text-xs ${
-                              sponsor.level === 'gold' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                              sponsor.level === 'gold' ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20' :
                               sponsor.level === 'silver' ? 'bg-gray-100 text-gray-800 border-gray-200' :
                               'bg-orange-100 text-orange-800 border-orange-200'
                             }`}>
@@ -909,31 +909,31 @@ const EventDetailsPage = () => {
           <TabsContent value="attendees" className="space-y-6">
             {/* Attendees Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-blue-600 mb-2">{registrations.length}</div>
+                  <div className="text-base font-semibold text-primary mb-2">{registrations.length}</div>
                   <p className="text-sm text-gray-600">Total Attendees</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-green-600 mb-2">
+                  <div className="text-base font-semibold text-primary mb-2">
                     {registrations.filter(r => r.status === 'CONFIRMED').length}
                   </div>
                   <p className="text-sm text-gray-600">Confirmed</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-yellow-600 mb-2">
+                  <div className="text-base font-semibold text-accent-coral mb-2">
                     {registrations.filter(r => r.status === 'PENDING').length}
                   </div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-green-600 mb-2">
+                  <div className="text-base font-semibold text-primary mb-2">
                     {registrations.filter(r => r.paymentStatus === 'COMPLETED').length}
                   </div>
                   <p className="text-sm text-gray-600">Paid</p>
@@ -942,7 +942,7 @@ const EventDetailsPage = () => {
             </div>
 
             {/* Attendees Filters and Search */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
@@ -985,7 +985,7 @@ const EventDetailsPage = () => {
             </Card>
 
             {/* Attendees List */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Attendees List</CardTitle>
               </CardHeader>
@@ -1014,9 +1014,9 @@ const EventDetailsPage = () => {
                           </div>
                           <div className="flex items-center gap-4">
                             <Badge className={`text-xs ${
-                              isConfirmed ? 'bg-green-100 text-green-800 border-green-200' :
-                              isPending ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                              'bg-red-100 text-red-800 border-red-200'
+                              isConfirmed ? 'bg-primary/10 text-primary border-primary/20' :
+                              isPending ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20' :
+                              'bg-accent-coral/10 text-accent-coral border-accent-coral/20'
                             }`}>
                               {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : reg.status}
                             </Badge>
@@ -1054,27 +1054,27 @@ const EventDetailsPage = () => {
           <TabsContent value="payments" className="space-y-6">
             {/* Payment Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-green-600 mb-2">{formatCurrency(metrics.totalRevenue)}</div>
+                  <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.totalRevenue)}</div>
                   <p className="text-sm text-gray-600">Total Revenue</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-blue-600 mb-2">{metrics.successfulPayments}</div>
-                  <p className="text-sm text-gray-600">Successful</p>
+                  <div className="text-base font-semibold text-primary mb-2">{metrics.successfulPayments}</div>
+                  <p className="text-sm text-muted-foreground">Successful</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-yellow-600 mb-2">{metrics.pendingPayments}</div>
+                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.pendingPayments}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-red-600 mb-2">{metrics.failedPayments}</div>
+                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.failedPayments}</div>
                   <p className="text-sm text-gray-600">Failed</p>
                 </CardContent>
               </Card>
@@ -1082,7 +1082,7 @@ const EventDetailsPage = () => {
 
             {/* Payment Methods Breakdown */}
             {Object.keys(paymentsByMethod).length > 0 && (
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Payment Methods</CardTitle>
                 </CardHeader>
@@ -1090,10 +1090,10 @@ const EventDetailsPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {Object.entries(paymentsByMethod).map(([method, data]) => (
                       <div key={method} className="text-center p-4 border border-border rounded-lg">
-                        <CreditCard className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                        <div className="text-lg font-semibold">{method}</div>
+                        <CreditCard className="h-8 w-8 text-primary mx-auto mb-2" />
+                        <div className="text-base font-semibold">{method}</div>
                         <div className="text-sm text-gray-600">{data.count} payment{data.count !== 1 ? 's' : ''}</div>
-                        <div className="text-sm font-medium text-green-600">{formatCurrency(data.total)}</div>
+                        <div className="text-sm font-medium text-primary">{formatCurrency(data.total)}</div>
                       </div>
                     ))}
                   </div>
@@ -1102,7 +1102,7 @@ const EventDetailsPage = () => {
             )}
 
             {/* Payments List */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Payment Transactions</CardTitle>
@@ -1203,34 +1203,34 @@ const EventDetailsPage = () => {
             <TabsContent value="refunds" className="space-y-6">
             {/* Refunds Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-red-600 mb-2">{formatCurrency(metrics.totalRefunds)}</div>
+                  <div className="text-base font-semibold text-accent-coral mb-2">{formatCurrency(metrics.totalRefunds)}</div>
                   <p className="text-sm text-gray-600">Total Refunds</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-green-600 mb-2">{metrics.processedRefunds}</div>
+                  <div className="text-base font-semibold text-primary mb-2">{metrics.processedRefunds}</div>
                   <p className="text-sm text-gray-600">Processed</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-yellow-600 mb-2">{metrics.pendingRefunds}</div>
+                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.pendingRefunds}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-blue-600 mb-2">2.5%</div>
-                  <p className="text-sm text-gray-600">Refund Rate</p>
+                  <div className="text-base font-semibold text-primary mb-2">2.5%</div>
+                  <p className="text-sm text-muted-foreground">Refund Rate</p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Refund Requests */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Refund Requests</CardTitle>
@@ -1294,7 +1294,7 @@ const EventDetailsPage = () => {
                         <div className="flex items-center gap-2">
                           {refund.status === 'pending' && (
                             <>
-                              <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50">
+                              <Button variant="outline" size="sm" className="text-primary border-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
                               <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
@@ -1320,34 +1320,34 @@ const EventDetailsPage = () => {
             <TabsContent value="remittance" className="space-y-6">
             {/* Remittance Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-green-600 mb-2">{formatCurrency(metrics.organizerAmount)}</div>
+                  <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.organizerAmount)}</div>
                   <p className="text-sm text-gray-600">Total to Organizer</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-blue-600 mb-2">{formatCurrency(metrics.platformFees)}</div>
-                  <p className="text-sm text-gray-600">Platform Fees</p>
+                  <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.platformFees)}</div>
+                  <p className="text-sm text-muted-foreground">Platform Fees</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-green-600 mb-2">{metrics.remittancesSent}</div>
+                  <div className="text-base font-semibold text-primary mb-2">{metrics.remittancesSent}</div>
                   <p className="text-sm text-gray-600">Sent</p>
                 </CardContent>
               </Card>
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-lg font-semibold text-yellow-600 mb-2">{metrics.remittancesPending}</div>
+                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.remittancesPending}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Payment Breakdown */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Payment Breakdown</CardTitle>
               </CardHeader>
@@ -1359,28 +1359,28 @@ const EventDetailsPage = () => {
                       <p className="text-sm text-gray-600">From all ticket sales</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-semibold text-gray-900">{formatCurrency(metrics.totalRevenue)}</div>
-                      <div className="text-sm text-gray-600">100%</div>
+                      <div className="text-base font-semibold text-primary">{formatCurrency(metrics.totalRevenue)}</div>
+                      <div className="text-sm text-muted-foreground">100%</div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-green-50">
                     <div>
-                      <h4 className="font-medium text-gray-900">Organizer Share</h4>
-                      <p className="text-sm text-gray-600">Amount to be paid to organizer</p>
+                      <h4 className="font-medium text-foreground">Organizer Share</h4>
+                      <p className="text-sm text-muted-foreground">Amount to be paid to organizer</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-semibold text-green-600">{formatCurrency(metrics.organizerAmount)}</div>
-                      <div className="text-sm text-gray-600">90%</div>
+                      <div className="text-base font-semibold text-primary">{formatCurrency(metrics.organizerAmount)}</div>
+                      <div className="text-sm text-muted-foreground">90%</div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-blue-50">
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-primary/5">
                     <div>
-                      <h4 className="font-medium text-gray-900">Platform Fees</h4>
-                      <p className="text-sm text-gray-600"><span className="text-eventknit">EventKnit</span> commission</p>
+                      <h4 className="font-medium text-foreground">Platform Fees</h4>
+                      <p className="text-sm text-muted-foreground"><span className="text-eventknit">EventKnit</span> commission</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-semibold text-blue-600">{formatCurrency(metrics.platformFees)}</div>
-                      <div className="text-sm text-gray-600">10%</div>
+                      <div className="text-base font-semibold text-primary">{formatCurrency(metrics.platformFees)}</div>
+                      <div className="text-sm text-muted-foreground">10%</div>
                     </div>
                   </div>
                 </div>
@@ -1388,7 +1388,7 @@ const EventDetailsPage = () => {
             </Card>
 
             {/* Remittance History */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Remittance History</CardTitle>
@@ -1445,7 +1445,7 @@ const EventDetailsPage = () => {
             </Card>
 
             {/* Organizer Payment Details */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Organizer Payment Details</CardTitle>
               </CardHeader>
@@ -1515,7 +1515,7 @@ const EventDetailsPage = () => {
           <TabsContent value="scan-settings" className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-semibold">Scan Settings</h3>
+                <h3 className="text-base font-semibold">Scan Settings</h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   Configure how tickets are scanned and validated for this event
                 </p>
@@ -1523,14 +1523,14 @@ const EventDetailsPage = () => {
             </div>
 
             {scanConfigLoading ? (
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-12 text-center">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">Loading scan settings...</p>
                 </CardContent>
               </Card>
             ) : scanConfig ? (
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Ticket Scanning Configuration</CardTitle>
                 </CardHeader>
@@ -1681,7 +1681,7 @@ const EventDetailsPage = () => {
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-border bg-card">
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-12 text-center">
                   <AlertCircle className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Failed to load scan settings</p>

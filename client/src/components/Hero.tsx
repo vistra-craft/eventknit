@@ -47,15 +47,15 @@ export const Hero = () => {
   if (featuredEvents.length === 0) {
     return (
       <div className="relative">
-        <div 
-          className="w-full h-[60vh] object-cover transition-opacity duration-500 relative bg-gradient-to-br from-primary/20 via-primary/10 to-muted flex items-center justify-center"
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 z-10" />
+      <div 
+        className="w-full h-[60vh] object-cover transition-opacity duration-500 relative bg-gradient-to-br from-primary/30 via-accent-coral/20 to-accent-coral/20 flex items-center justify-center"
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/20 to-accent-coral/30 z-10" />
           
           <div className="absolute inset-0 z-20 flex items-center justify-center">
             <div className="container mx-auto max-w-7xl px-6 text-center">
               <div className="space-y-6 max-w-3xl mx-auto">
-                <Badge variant="secondary" className="bg-primary text-primary-foreground mb-4">
+                <Badge variant="secondary" className="bg-accent-coral text-white shadow-lg shadow-primary/50 mb-4">
                   🎉 Discover Amazing Events
                 </Badge>
                 <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-foreground">
@@ -143,7 +143,7 @@ export const Hero = () => {
           backgroundPosition: 'center'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/60 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/30 to-accent-coral/60 z-10" />
         {currentEvent.type === 'IMAGE' && currentEvent.linkUrl && (
           <div 
             className="absolute inset-0 z-10 cursor-pointer"
@@ -168,7 +168,7 @@ export const Hero = () => {
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3">
                 {currentEvent.category && (
-                  <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                  <Badge variant="secondary" className="bg-accent-coral text-white shadow-lg shadow-primary/50">
                     {currentEvent.category}
                   </Badge>
                 )}
@@ -222,7 +222,7 @@ export const Hero = () => {
                         variant="secondary"
                         size="lg"
                         onClick={handleImageClick}
-                        className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
+                        className="bg-accent-coral text-white shadow-lg shadow-primary/50 hover:bg-accent-coral/90 hover:shadow-xl hover:shadow-primary/60 transition-all"
                       >
                         {currentEvent.linkText}
                       </Button>
@@ -234,23 +234,23 @@ export const Hero = () => {
             
             {currentEvent.type === 'EVENT' && (
               <div className="flex gap-3 pointer-events-auto">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  onClick={() => setIsFavorited(!isFavorited)}
-                  className={`bg-glass-bg backdrop-blur-sm border-glass-border hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit ${isFavorited ? 'text-red-400' : 'text-foreground'}`}
-                >
-                  <Heart className={`w-5 h-5 mr-2 ${isFavorited ? 'fill-current' : ''}`} />
-                  {isFavorited ? 'Saved' : 'Save'}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
-                >
-                  <Share2 className="w-5 h-5 mr-2" />
-                  Share
-                </Button>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    onClick={() => setIsFavorited(!isFavorited)}
+                    className={`bg-glass-bg backdrop-blur-sm border-glass-border hover:bg-accent-coral hover:text-white hover:shadow-lg hover:shadow-primary/50 ${isFavorited ? 'text-accent-coral' : 'text-foreground'}`}
+                  >
+                    <Heart className={`w-5 h-5 mr-2 ${isFavorited ? 'fill-current' : ''}`} />
+                    {isFavorited ? 'Saved' : 'Save'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-accent-coral hover:text-white hover:shadow-lg hover:shadow-primary/50"
+                  >
+                    <Share2 className="w-5 h-5 mr-2" />
+                    Share
+                  </Button>
               </div>
             )}
           </div>
@@ -265,7 +265,7 @@ export const Hero = () => {
               variant="secondary"
               size="icon"
               onClick={goToPrevious}
-              className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
+              className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent-coral hover:text-white hover:shadow-lg hover:shadow-primary/50"
             >
               <ChevronLeft className="w-5 h-5" />
             </Button>
@@ -276,7 +276,7 @@ export const Hero = () => {
               variant="secondary"
               size="icon"
               onClick={goToNext}
-              className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-eventknit hover:text-eventknit-foreground hover:border-eventknit"
+              className="bg-glass-bg backdrop-blur-sm border-glass-border text-foreground hover:bg-gradient-to-r hover:from-primary hover:to-accent-coral hover:text-white hover:shadow-lg hover:shadow-primary/50"
             >
               <ChevronRight className="w-5 h-5" />
             </Button>
@@ -289,10 +289,10 @@ export const Hero = () => {
                 <button
                   key={index}
                   onClick={() => goToEvent(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                  className={`w-3 h-3 rounded-full transition-all duration-200 shadow-lg ${
                     index === currentEventIndex
-                      ? 'bg-eventknit scale-125'
-                      : 'bg-eventknit/30 hover:bg-eventknit/50'
+                      ? 'bg-accent-coral scale-125 shadow-primary/50'
+                      : 'bg-white/50 hover:bg-white/80'
                   }`}
                 />
               ))}

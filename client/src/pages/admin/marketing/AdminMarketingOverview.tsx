@@ -336,14 +336,14 @@ const AdminMarketingOverview = () => {
                       <action.icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+                      <h3 className="text-base font-semibold text-foreground group-hover:text-accent-coral transition-colors">
                         {action.title}
                       </h3>
                       <p className="text-sm text-gray-600">
                         {action.description}
                       </p>
                     </div>
-                    <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-accent-coral transition-colors" />
                   </div>
                 </Link>
               ))}

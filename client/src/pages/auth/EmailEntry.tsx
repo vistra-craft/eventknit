@@ -45,14 +45,14 @@ const EmailEntry = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between gap-4 mb-4">
             <button
               onClick={() => navigate('/')}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               <span>Back to home</span>
@@ -61,14 +61,14 @@ const EmailEntry = () => {
               onClick={() => navigate('/')}
               className="inline-flex items-center gap-2"
             >
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">EK</span>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">EventKnit</span>
+              <span className="text-xl font-bold text-primary">EventKnit</span>
             </button>
           </div>
           <div className="text-left">
-            <h1 className="text-2xl font-bold text-foreground mb-1">
+            <h1 className="text-2xl font-bold text-primary mb-1">
               Create your EventKnit account
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -107,8 +107,8 @@ const EmailEntry = () => {
               onClick={() => !isLoading && handleContinue('attendee')}
             >
               <CardHeader className="pb-2">
-                <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center mb-2">
-                  <Users className="w-5 h-5 text-gray-900" />
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                  <Users className="w-5 h-5 text-primary" />
                 </div>
                 <CardTitle className="text-base font-semibold text-foreground">
                   I want to attend events
@@ -120,7 +120,7 @@ const EmailEntry = () => {
                 </p>
                 <Button
                   type="button"
-                  className="w-full h-9 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium"
+                  className="w-full h-9 bg-accent-coral hover:bg-accent-coral/90 text-white text-xs font-medium"
                   disabled={isLoading}
                   onClick={() => handleContinue('attendee')}
                 >
@@ -135,8 +135,8 @@ const EmailEntry = () => {
               onClick={() => !isLoading && handleContinue('organizer')}
             >
               <CardHeader className="pb-2">
-                <div className="w-10 h-10 bg-gray-900/5 rounded-full flex items-center justify-center mb-2">
-                  <Calendar className="w-5 h-5 text-gray-900" />
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                  <Calendar className="w-5 h-5 text-primary" />
                 </div>
                 <CardTitle className="text-base font-semibold text-foreground">
                   I want to organize events
@@ -148,7 +148,7 @@ const EmailEntry = () => {
                 </p>
                 <Button
                   type="button"
-                  className="w-full h-9 bg-gray-900 hover:bg-gray-800 text-white text-xs font-medium"
+                  className="w-full h-9 bg-accent-coral hover:bg-accent-coral/90 text-white text-xs font-medium"
                   disabled={isLoading}
                   onClick={() => handleContinue('organizer')}
                 >
@@ -164,7 +164,7 @@ const EmailEntry = () => {
               <button
                 type="button"
                 onClick={() => navigate('/auth/signin')}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-gray-900 hover:bg-gray-900 hover:text-white transition-colors font-medium"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors font-medium"
               >
                 Sign in
               </button>
@@ -172,9 +172,6 @@ const EmailEntry = () => {
           </div>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="pointer-events-none absolute top-10 left-4 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-xl" />
-        <div className="pointer-events-none absolute bottom-10 right-4 w-24 h-24 bg-gradient-to-br from-gray-900/5 to-transparent rounded-full blur-xl" />
       </div>
     </div>
   );

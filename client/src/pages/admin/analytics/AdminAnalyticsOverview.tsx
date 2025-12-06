@@ -207,7 +207,7 @@ const AdminAnalyticsOverview = () => {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-base font-semibold text-foreground">
                 Platform Analytics
               </h1>
               <p className="text-gray-600">

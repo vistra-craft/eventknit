@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import OrganizerSidebar from "./OrganizerSidebar";
 import OrganizerHeader from "./OrganizerHeader";
-import Footer from "../../components/Footer";
 
 interface OrganizerLayoutProps {
   children: React.ReactNode;
@@ -82,10 +81,6 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
         </div>
       )}
       
-      {/* Global footer – always at bottom, follows main app width */}
-      <div className="mt-4">
-        <Footer />
-      </div>
     </div>
   );
 };

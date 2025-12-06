@@ -51,7 +51,7 @@ const EditExpensePage = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Edit Expense</h1>
+              <h1 className="text-base font-semibold text-foreground">Edit Expense</h1>
               <p className="text-gray-600">Update expense details</p>
             </div>
           </div>

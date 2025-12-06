@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale, AlertTriangle, Users, CreditCard, Shield, Clock, RefreshCcw } from "lucide-react";
 
 const TermsOfService = () => {
@@ -26,8 +25,7 @@ const TermsOfService = () => {
       <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl bg-white px-6 py-8 md:px-10 md:py-10">
-              <div className="flex flex-col items-center gap-6 text-center">
+            <div className="flex flex-col items-center gap-6 text-center py-8 md:py-10">
                 <div className="space-y-3">
                   <h1 className="text-xl font-semibold tracking-tight text-foreground">
                     EventKnit Terms of Service
@@ -49,7 +47,6 @@ const TermsOfService = () => {
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
@@ -58,14 +55,12 @@ const TermsOfService = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Acceptance of Terms */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Scale className="w-5 h-5 text-primary" />
-                Acceptance of Terms
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Scale className="w-5 h-5 text-primary" />
+              Acceptance of Terms
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 By accessing and using EventKnit's platform, you accept and agree to be bound 
                 by the terms and provision of this agreement. If you do not agree to abide 
@@ -77,18 +72,16 @@ const TermsOfService = () => {
                   between you and EventKnit. Please read them carefully.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Service Description */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Users className="w-5 h-5 text-primary" />
-                Service Description
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Users className="w-5 h-5 text-primary" />
+              Service Description
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 EventKnit provides an online platform that connects event organizers with attendees, 
                 facilitating event discovery, registration, ticketing, and management services.
@@ -137,18 +130,16 @@ const TermsOfService = () => {
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* User Responsibilities */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <AlertTriangle className="w-5 h-5 text-primary" />
-                User Responsibilities
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <section className="space-y-6">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <AlertTriangle className="w-5 h-5 text-primary" />
+              User Responsibilities
+            </h2>
+            <div className="space-y-6">
               <div>
                 <h3 className="text-base font-semibold mb-3">Account Security</h3>
                 <ul className="space-y-2 text-muted-foreground">
@@ -194,18 +185,16 @@ const TermsOfService = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Payment Terms */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <CreditCard className="w-5 h-5 text-primary" />
-                Payment Terms
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <CreditCard className="w-5 h-5 text-primary" />
+              Payment Terms
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 All payments are processed securely through our trusted payment partners. 
                 By making a purchase, you agree to the following terms:
@@ -226,18 +215,16 @@ const TermsOfService = () => {
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Refund Policy */}
-          <Card id="refund-policy" className="border-0 bg-white scroll-mt-20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Shield className="w-5 h-5 text-primary" />
-                Refund Policy
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section id="refund-policy" className="scroll-mt-20 space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Shield className="w-5 h-5 text-primary" />
+              Refund Policy
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 Our refund policy is designed to provide flexibility and protection for both event organizers and attendees.
               </p>
@@ -286,15 +273,13 @@ const TermsOfService = () => {
                   depending on the cancellation timing.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Intellectual Property */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Intellectual Property</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Intellectual Property</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 The EventKnit platform, including its design, functionality, and content, 
                 is protected by intellectual property laws. You may not:
@@ -341,18 +326,16 @@ const TermsOfService = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Limitation of Liability */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Shield className="w-5 h-5 text-primary" />
-                Limitation of Liability
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Shield className="w-5 h-5 text-primary" />
+              Limitation of Liability
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 EventKnit provides its services "as is" and makes no warranties regarding 
                 the availability, accuracy, or reliability of our platform. Our liability 
@@ -381,15 +364,13 @@ const TermsOfService = () => {
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Termination */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Termination</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Termination</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 Either party may terminate this agreement at any time. Upon termination:
               </p>
@@ -429,15 +410,13 @@ const TermsOfService = () => {
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Governing Law */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Governing Law</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Governing Law</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 These terms shall be governed by and construed in accordance with the laws 
                 of the State of California, without regard to its conflict of law provisions.
@@ -449,15 +428,13 @@ const TermsOfService = () => {
                   in San Francisco, California.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Contact Information */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Contact Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Contact Information</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 If you have any questions about these Terms of Service, please contact us:
               </p>
@@ -483,15 +460,13 @@ const TermsOfService = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Changes to Terms */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Changes to Terms</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Changes to Terms</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 We reserve the right to modify these terms at any time. We will notify users 
                 of significant changes via email or through our platform. Continued use of our 
@@ -503,8 +478,8 @@ const TermsOfService = () => {
                   periodically to stay informed of any updates or changes.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       </div>
 

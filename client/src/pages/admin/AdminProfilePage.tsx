@@ -280,7 +280,7 @@ const AdminProfilePage = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Profile</h1>
+              <h1 className="text-base font-semibold text-foreground">Profile</h1>
               <p className="text-muted-foreground mt-1">Manage your personal information and account settings</p>
             </div>
           </div>

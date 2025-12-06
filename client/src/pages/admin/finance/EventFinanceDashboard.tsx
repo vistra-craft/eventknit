@@ -164,7 +164,7 @@ const EventFinanceDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Event Finance Dashboard</h1>
+            <h1 className="text-base font-semibold text-foreground">Event Finance Dashboard</h1>
             <p className="text-gray-600">Overview of event-related payments and finances</p>
           </div>
           <Button variant="outline" size="sm" onClick={loadFinancialData}>
@@ -479,7 +479,7 @@ const EventFinanceDashboard = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
+                <h2 className="text-base font-semibold text-foreground">Recent Transactions</h2>
                 <Button
                   variant="ghost"
                   size="sm"

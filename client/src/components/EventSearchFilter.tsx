@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Search, MapPin, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
 
 export interface SearchFilters {
   search?: string;
@@ -110,28 +109,27 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
             Discover events around you
           </p>
         </div>
-        <Card className="border-0 bg-primary/5 shadow-none rounded-2xl px-4 py-4 md:px-6 md:py-5">
-          <div className="flex flex-col gap-4">
-            {/* Top row: search + filter icon */}
-            <div className="w-full flex items-center gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  type="text"
-                  placeholder="Search events…"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-10 text-sm rounded-full border-border"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowFilters((prev) => !prev)}
-                className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-white text-muted-foreground hover:bg-gray-900 hover:text-white transition-colors"
-              >
-                <Filter className="w-4 h-4" />
-              </button>
+        <div className="flex flex-col gap-4">
+          {/* Top row: search + filter icon */}
+          <div className="w-full flex items-center gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search events…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 h-10 text-sm rounded-full border-border bg-white"
+              />
             </div>
+            <button
+              type="button"
+              onClick={() => setShowFilters((prev) => !prev)}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-white text-foreground/80 hover:bg-accent-coral hover:text-white transition-colors"
+            >
+              <Filter className="w-4 h-4" />
+            </button>
+          </div>
 
             {/* Compact filter row */}
             {showFilters && (
@@ -240,8 +238,7 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                 </div>
               </div>
             )}
-          </div>
-        </Card>
+        </div>
       </div>
     </section>
   );

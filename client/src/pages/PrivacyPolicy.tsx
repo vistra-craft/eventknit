@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Eye, Lock, Database, Mail, Phone } from "lucide-react";
 
 const PrivacyPolicy = () => {
@@ -12,8 +11,7 @@ const PrivacyPolicy = () => {
       <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl bg-white px-6 py-8 md:px-10 md:py-10">
-              <div className="flex flex-col items-center gap-6 text-center">
+            <div className="flex flex-col items-center gap-6 text-center py-8 md:py-10">
                 <div className="space-y-3">
                   <h1 className="text-xl font-semibold tracking-tight text-foreground">
                     EventKnit Privacy Policy
@@ -35,7 +33,6 @@ const PrivacyPolicy = () => {
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
@@ -44,14 +41,12 @@ const PrivacyPolicy = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Introduction */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Eye className="w-5 h-5 text-primary" />
-                Introduction
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Eye className="w-5 h-5 text-primary" />
+              Introduction
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 EventKnit ("we," "our," or "us") is committed to protecting your privacy. 
                 This Privacy Policy explains how we collect, use, disclose, and safeguard 
@@ -62,18 +57,16 @@ const PrivacyPolicy = () => {
                 in accordance with this policy. If you do not agree with our policies and 
                 practices, please do not use our services.
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Information We Collect */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Database className="w-5 h-5 text-primary" />
-                Information We Collect
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <section className="space-y-6">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Database className="w-5 h-5 text-primary" />
+              Information We Collect
+            </h2>
+            <div className="space-y-6">
               <div>
                 <h3 className="text-base font-semibold mb-3">Personal Information</h3>
                 <ul className="space-y-2 text-muted-foreground">
@@ -117,18 +110,16 @@ const PrivacyPolicy = () => {
                   </li>
                 </ul>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* How We Use Your Information */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Lock className="w-5 h-5 text-primary" />
-                How We Use Your Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Lock className="w-5 h-5 text-primary" />
+              How We Use Your Information
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed mb-4">
                 We use the information we collect for the following purposes:
               </p>
@@ -174,15 +165,13 @@ const PrivacyPolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Information Sharing */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Information Sharing</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Information Sharing</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 We do not sell, trade, or rent your personal information to third parties. 
                 We may share your information only in the following circumstances:
@@ -207,18 +196,16 @@ const PrivacyPolicy = () => {
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Data Security */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Shield className="w-5 h-5 text-primary" />
-                Data Security
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Shield className="w-5 h-5 text-primary" />
+              Data Security
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 We implement appropriate technical and organizational measures to protect your personal 
                 information against unauthorized access, alteration, disclosure, or destruction.
@@ -243,15 +230,13 @@ const PrivacyPolicy = () => {
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Your Rights */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Your Rights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Your Rights</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 You have the following rights regarding your personal information:
               </p>
@@ -297,18 +282,16 @@ const PrivacyPolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Contact Information */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Mail className="w-5 h-5 text-primary" />
-                Contact Us
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Mail className="w-5 h-5 text-primary" />
+              Contact Us
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 If you have any questions about this Privacy Policy or our data practices, 
                 please contact us:
@@ -341,15 +324,13 @@ const PrivacyPolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Policy Updates */}
-          <Card className="border-0 bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl">Policy Updates</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Policy Updates</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 We may update this Privacy Policy from time to time. We will notify you of any 
                 changes by posting the new Privacy Policy on this page and updating the "Last updated" 
@@ -362,8 +343,8 @@ const PrivacyPolicy = () => {
                   constitutes your acceptance of the updated Privacy Policy.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       </div>
 

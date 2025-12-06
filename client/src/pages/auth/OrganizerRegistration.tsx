@@ -551,7 +551,7 @@ const OrganizerRegistration = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="mb-8">
@@ -559,16 +559,16 @@ const OrganizerRegistration = () => {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               <span>Back to home</span>
             </button>
             <div className="flex items-center justify-center gap-2">
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">EK</span>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Upload className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">EventKnit</span>
+              <span className="text-xl font-bold text-primary">EventKnit</span>
             </div>
           </div>
           
@@ -579,7 +579,7 @@ const OrganizerRegistration = () => {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     step <= currentStep
-                      ? 'bg-gray-900 text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
@@ -588,7 +588,7 @@ const OrganizerRegistration = () => {
                 {step < 3 && (
                   <div
                     className={`w-12 h-0.5 mx-2 ${
-                      step < currentStep ? 'bg-gray-900' : 'bg-muted'
+                      step < currentStep ? 'bg-primary' : 'bg-muted'
                     }`}
                   />
                 )}
@@ -616,14 +616,14 @@ const OrganizerRegistration = () => {
               <Button
                 variant="outline"
                 onClick={handleBack}
-                className="px-6 border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
+                className="px-6 border border-border hover:bg-accent-coral hover:text-white transition-colors"
                 disabled={isLoading}
               >
                 Back
               </Button>
               <Button
                 onClick={handleNext}
-                className="px-6 bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                className="px-6 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
                 disabled={isLoading}
               >
                 {isLoading
@@ -636,9 +636,6 @@ const OrganizerRegistration = () => {
           </CardContent>
         </Card>
 
-        {/* Decorative Elements */}
-        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-eventknit/5 to-transparent rounded-full blur-xl"></div>
-        <div className="absolute bottom-20 right-10 w-24 h-24 bg-gradient-to-br from-eventknit/5 to-transparent rounded-full blur-xl"></div>
       </div>
     </div>
   );

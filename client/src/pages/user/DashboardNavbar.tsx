@@ -92,7 +92,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
                 onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
                 variant="ghost"
                 size="sm"
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:bg-accent-coral hover:text-white transition-colors"
               >
                 <Calendar className="h-5 w-5" />
               </Button>
@@ -135,7 +135,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
             <div className="relative">
               <Button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="relative h-10 w-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 p-0"
+                className="relative h-10 w-10 rounded-full bg-primary/10 text-primary hover:bg-accent-coral hover:text-white p-0 transition-colors"
               >
                 {user.initials}
                 <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-card"></div>
@@ -153,7 +153,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
                   </div>
 
                   <div className="px-4 py-2">
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground py-1">
+                    <button className="w-full text-left text-sm text-primary hover:bg-accent-coral hover:text-white py-1 rounded-lg transition-colors">
                       Edit profile &gt;
                     </button>
                   </div>
@@ -161,11 +161,11 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
                   <div className="border-t border-border my-2"></div>
 
                   <div className="px-4 py-2 space-y-2">
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                    <button className="w-full text-left text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 py-1 rounded-lg transition-colors">
                       <Calendar className="h-4 w-4" />
                       My schedule
                     </button>
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                    <button className="w-full text-left text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 py-1 rounded-lg transition-colors">
                       <FileText className="h-4 w-4" />
                       My bookmarks
                     </button>
@@ -174,19 +174,19 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
                   <div className="border-t border-border my-2"></div>
 
                   <div className="px-4 py-2 space-y-2">
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                    <button className="w-full text-left text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 py-1 rounded-lg transition-colors">
                       <Settings className="h-4 w-4" />
                       Settings
                     </button>
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                    <button className="w-full text-left text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 py-1 rounded-lg transition-colors">
                       <MessageCircle className="h-4 w-4" />
                       Contact app support
                     </button>
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                    <button className="w-full text-left text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 py-1 rounded-lg transition-colors">
                       <HelpCircle className="h-4 w-4" />
                       Resource center
                     </button>
-                    <button className="w-full text-left text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 py-1">
+                    <button className="w-full text-left text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 py-1 rounded-lg transition-colors">
                       <FileText className="h-4 w-4" />
                       Legal &gt;
                     </button>
@@ -227,7 +227,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
                         className={`w-full text-left text-sm flex items-center gap-2 py-2 px-2 rounded-md transition-colors ${
                           isActive
                             ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            : "text-muted-foreground hover:bg-accent-coral hover:text-white"
                         }`}
                       >
                         <Icon className="h-4 w-4" />

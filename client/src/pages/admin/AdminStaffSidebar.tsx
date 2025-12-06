@@ -166,7 +166,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
 
   return (
     <div
-      className={`bg-card border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
+      className={`bg-white border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
     >
       <div className="p-4">
         <div
@@ -183,7 +183,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
           {isMobile && (
             <button
               onClick={onToggle}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              className="p-2 rounded-lg hover:bg-accent-coral hover:text-white transition-colors text-muted-foreground"
             >
               <Menu className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -213,7 +213,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                           className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                             isItemActive
                               ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                              : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
                           }`}
                           title={!isOpen ? item.label : undefined}
                         >
@@ -242,7 +242,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                                 className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
                                   isChildActive(child.href)
                                     ? 'bg-primary/10 text-primary font-medium'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                    : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
                                 }`}
                               >
                                 {child.name}
@@ -262,7 +262,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                         isItemActive
                           ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                          : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
                       }`}
                       title={!isOpen ? item.label : undefined}
                     >

@@ -211,7 +211,7 @@ const Navbar: React.FC<NavbarProps> = () => {
             
             {/* Logo */}
             <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
                 <Calendar className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold text-foreground">EventKnit</span>
@@ -225,7 +225,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                     <button
                       key={item.name}
                       onClick={() => handleNavigation(item)}
-                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-gray-900 hover:text-white transition-colors duration-200"
+                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-accent-coral hover:text-white transition-colors duration-200"
                     >
                       {item.name}
                     </button>
@@ -239,13 +239,13 @@ const Navbar: React.FC<NavbarProps> = () => {
                   <>
                     <button
                       onClick={() => navigate('/auth/signin')}
-                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-gray-900 hover:text-white transition-colors duration-200"
+                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-accent-coral hover:text-white transition-colors duration-200"
                     >
                       Login
                     </button>
                     <button
                       onClick={() => navigate('/auth/signup')}
-                      className="text-sm font-medium text-white bg-gray-900 px-3 py-1.5 rounded-md hover:bg-gray-800 transition-colors duration-200"
+                      className="text-sm font-medium text-white bg-accent-coral px-4 py-1.5 rounded-md hover:bg-accent-coral/90 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200"
                     >
                       Sign Up
                     </button>

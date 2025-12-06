@@ -154,7 +154,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-background border border-border ring-1 ring-black ring-opacity-5 z-50 animate-in fade-in-0 zoom-in-95">
+        <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-background border border-border ring-1 ring-primary/10 z-50 animate-in fade-in-0 zoom-in-95">
           <div className="py-1">
             {/* User Info */}
             <div className="px-4 py-3 border-b border-border">
@@ -167,7 +167,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
             {/* Menu Items */}
             <button
               onClick={() => handleNavigate(getProfileRoute())}
-              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-900 hover:text-white flex items-center gap-2 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
             >
               <User className="w-4 h-4" />
               Profile
@@ -175,7 +175,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
 
             <button
               onClick={() => handleNavigate(getDashboardRoute())}
-              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-900 hover:text-white flex items-center gap-2 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
             >
               <LayoutDashboard className="w-4 h-4" />
               Dashboard
@@ -197,7 +197,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                           className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${
                             isActive
                               ? 'bg-primary text-primary-foreground'
-                              : 'text-foreground hover:bg-gray-900 hover:text-white'
+                              : 'text-primary hover:bg-accent-coral hover:text-white'
                           }`}
                         >
                           <Users className="w-3 h-3" />
@@ -214,7 +214,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                         setIsOpen(false);
                         onClose?.();
                       }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-white hover:bg-gray-900 rounded-md mt-1 flex items-center gap-2"
+                      className="w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white rounded-md mt-1 flex items-center gap-2"
                     >
                       <RefreshCw className="w-3 h-3" />
                       Reset to {getRoleLabel(user?.role || UserRole.ATTENDEE)}
@@ -226,7 +226,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
 
             <button
               onClick={() => handleNavigate(getProfileRoute())}
-              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-gray-900 hover:text-white flex items-center gap-2 transition-colors"
+              className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
             >
               <Settings className="w-4 h-4" />
               Settings

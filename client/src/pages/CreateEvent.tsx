@@ -354,7 +354,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
             </TabsList>
 
             <TabsContent value="basic" className="space-y-6">
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ImageIcon className="w-5 h-5" />
@@ -535,7 +535,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="w-5 h-5" />
@@ -633,7 +633,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
             </TabsContent>
 
             <TabsContent value="details" className="space-y-6">
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Event Branding & Media</CardTitle>
                 </CardHeader>
@@ -669,7 +669,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Categorization & Tags</CardTitle>
                 </CardHeader>
@@ -733,7 +733,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Event Requirements & Restrictions</CardTitle>
                 </CardHeader>
@@ -797,7 +797,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Frequently Asked Questions</CardTitle>
                 </CardHeader>
@@ -844,7 +844,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
             </TabsContent>
 
             <TabsContent value="tickets" className="space-y-6">
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Ticket className="w-5 h-5" />
@@ -955,7 +955,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
             </TabsContent>
 
             <TabsContent value="registration" className="space-y-6">
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5" />
@@ -1116,7 +1116,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Registration Confirmation & Follow-up</CardTitle>
                 </CardHeader>
@@ -1153,7 +1153,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
             </TabsContent>
 
             <TabsContent value="marketing" className="space-y-6">
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Mail className="w-5 h-5" />
@@ -1198,7 +1198,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                     </div>
                   </div>
 
-                  <Card>
+                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Email Templates</CardTitle>
                     </CardHeader>
@@ -1285,7 +1285,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                         <Settings className="w-4 h-4 mr-2" />
                         Advanced Settings
                       </Button>
-                      <Button className="bg-primary hover:bg-primary/90">
+                      <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Publish Event
                       </Button>
@@ -1319,7 +1319,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
             </TabsContent>
 
             <TabsContent value="additional" className="space-y-6">
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Speakers & Agenda</CardTitle>
                 </CardHeader>
@@ -1393,7 +1393,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Sponsors & Partners</CardTitle>
                 </CardHeader>
@@ -1467,7 +1467,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Event Schedule & Agenda</CardTitle>
                 </CardHeader>
@@ -1526,7 +1526,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />

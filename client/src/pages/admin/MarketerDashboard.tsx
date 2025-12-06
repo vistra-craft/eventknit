@@ -96,8 +96,8 @@ const MarketerDashboard = () => {
     <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">Marketer Dashboard</h1>
-        <p className="text-gray-600">
+        <h1 className="text-lg font-semibold text-foreground">Marketer Dashboard</h1>
+        <p className="text-muted-foreground">
           Manage campaigns and view analytics for your assigned events
         </p>
       </div>
@@ -110,7 +110,7 @@ const MarketerDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{assignedEvents.length}</div>
+            <div className="font-semibold text-primary">{assignedEvents.length}</div>
             <p className="text-xs text-muted-foreground">Total assignments</p>
           </CardContent>
         </Card>
@@ -121,7 +121,7 @@ const MarketerDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{upcomingEvents.length}</div>
+            <div className="font-semibold text-primary">{upcomingEvents.length}</div>
             <p className="text-xs text-muted-foreground">Next 30 days</p>
           </CardContent>
         </Card>
@@ -132,7 +132,7 @@ const MarketerDashboard = () => {
             <Megaphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">0</div>
+            <div className="font-semibold text-primary">0</div>
             <p className="text-xs text-muted-foreground">Active campaigns</p>
           </CardContent>
         </Card>
@@ -143,16 +143,16 @@ const MarketerDashboard = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">--</div>
+            <div className="font-semibold text-primary">--</div>
             <p className="text-xs text-muted-foreground">Avg. engagement</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
         <CardHeader>
-          <CardTitle className={isMobile ? 'text-lg' : ''}>Quick Actions</CardTitle>
+          <CardTitle className={isMobile ? 'text-base' : ''}>Quick Actions</CardTitle>
           <CardDescription className={isMobile ? 'text-xs' : ''}>
             Access frequently used features
           </CardDescription>
@@ -160,19 +160,19 @@ const MarketerDashboard = () => {
         <CardContent>
           <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
             <Link to="/admin/marketing/campaigns">
-              <Button className="w-full" size={isMobile ? 'default' : 'lg'}>
+              <Button className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white" size={isMobile ? 'default' : 'lg'}>
                 <Megaphone className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 Create Campaign
               </Button>
             </Link>
             <Link to="/admin/analytics/events">
-              <Button className="w-full" variant="outline" size={isMobile ? 'default' : 'lg'}>
+              <Button className="w-full border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral" variant="outline" size={isMobile ? 'default' : 'lg'}>
                 <BarChart3 className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 View Analytics
               </Button>
             </Link>
             <Link to="/admin/events/assigned">
-              <Button className="w-full" variant="outline" size={isMobile ? 'default' : 'lg'}>
+              <Button className="w-full border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral" variant="outline" size={isMobile ? 'default' : 'lg'}>
                 <Calendar className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 My Events
               </Button>
@@ -183,7 +183,7 @@ const MarketerDashboard = () => {
 
       {/* Assigned Events */}
       {upcomingEvents.length > 0 && (
-        <Card>
+        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardHeader>
             <CardTitle>Upcoming Events</CardTitle>
             <CardDescription>Events you're assigned to in the next 30 days</CardDescription>
@@ -247,7 +247,7 @@ const MarketerDashboard = () => {
             {upcomingEvents.length > 5 && (
               <div className="mt-4 text-center">
                 <Link to="/admin/events/assigned">
-                  <Button variant="outline">
+                  <Button variant="outline" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
                     View All {upcomingEvents.length} Upcoming Events
                   </Button>
                 </Link>

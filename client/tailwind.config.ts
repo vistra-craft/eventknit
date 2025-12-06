@@ -64,12 +64,6 @@ export default {
         },
         // Navigation Hover Color
         "nav-hover": "hsl(var(--nav-hover))",
-        // Additional Brand Colors
-        "red-violet": "#764abc",
-        "royal-purple": {
-          DEFAULT: "hsl(var(--royal-purple))",
-          foreground: "hsl(var(--royal-purple-foreground))",
-        },
         "essential-cookie": "hsl(var(--primary) / 0.05)", // Light primary background for essential cookies
         "functional-cookie": "#eff6ff", // Light blue background for functional cookies
         primary: {
@@ -123,10 +117,7 @@ export default {
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",
-        "gradient-hero": "var(--gradient-hero)", 
         "gradient-card": "var(--gradient-card)",
-        "gradient-card-hover": "var(--gradient-card-hover)",
-        "gradient-accent": "var(--gradient-accent)",
       },
       boxShadow: {
         "primary": "var(--shadow-primary)",

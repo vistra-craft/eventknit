@@ -209,7 +209,7 @@ const AdminCampaignsPage = () => {
             <Filter className="h-4 w-4 mr-2" />
             Filters
           </Button>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
             Create Campaign
           </Button>

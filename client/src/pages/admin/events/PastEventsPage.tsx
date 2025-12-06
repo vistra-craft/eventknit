@@ -118,14 +118,14 @@ const PastEventsPage = () => {
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
-      ? "bg-blue-100 text-blue-800 border-blue-200"
-      : "bg-purple-100 text-purple-800 border-purple-200";
+      ? "bg-primary/10 text-primary border-primary/20"
+      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
   };
 
   const getPriceBadge = (isFree: boolean) => {
     return isFree
-      ? "bg-green-100 text-green-800 border-green-200"
-      : "bg-orange-100 text-orange-800 border-orange-200";
+      ? "bg-primary/10 text-primary border-primary/20"
+      : "bg-muted text-muted-foreground border-border";
   };
 
   const getAttendanceRate = (expected: number, actual: number) => {
@@ -177,21 +177,21 @@ const PastEventsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Past Events</h1>
-            <p className="text-gray-600">View completed events and their performance metrics</p>
+            <h1 className="text-base font-semibold text-foreground">Past Events</h1>
+            <p className="text-sm text-muted-foreground">View completed events and their performance metrics</p>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             {filteredEvents.length} of {events.length} past events
           </div>
         </div>
 
         {/* Filters */}
-        <Card className="border-border bg-card">
+        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="lg:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search events or organizers..."
                     value={searchTerm}
@@ -252,13 +252,13 @@ const PastEventsPage = () => {
         {/* Events List */}
         <div className="space-y-3">
           {filteredEvents.map((event) => (
-            <Card key={event.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+            <Card key={event.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
-                      <Badge className="bg-gray-100 text-gray-800 border-gray-200 text-xs">
+                      <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
+                      <Badge className="bg-muted text-muted-foreground border-border text-xs">
                         Completed
                       </Badge>
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
@@ -268,7 +268,7 @@ const PastEventsPage = () => {
                         {event.isFree ? 'free' : 'paid'}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         <span>{event.date} {event.startTime && `at ${event.startTime}`}</span>
@@ -286,22 +286,22 @@ const PastEventsPage = () => {
                         <span>{getAttendanceRate(event.expectedAttendees, event.actualAttendees)}% attendance</span>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 mb-2">by {event.organizer}</p>
+                    <p className="text-sm text-muted-foreground mb-2">by {event.organizer}</p>
                     <div className="flex items-center gap-4 text-sm">
                       {event.rating > 0 && (
-                        <span className="text-gray-600">Rating: {event.rating}/5.0</span>
+                        <span className="text-muted-foreground">Rating: {event.rating}/5.0</span>
                       )}
                       {event.revenue > 0 && (
-                        <span className="text-gray-600">Revenue: ${event.revenue.toLocaleString()}</span>
+                        <span className="text-muted-foreground">Revenue: ${event.revenue.toLocaleString()}</span>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
                       <Eye className="h-4 w-4 mr-1" />
                       View Details
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="text-primary hover:bg-accent-coral hover:text-white">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </div>
@@ -312,11 +312,11 @@ const PastEventsPage = () => {
         </div>
 
         {filteredEvents.length === 0 && (
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-8 text-center">
-              <div className="text-gray-500">
-                <History className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-medium mb-2">No past events found</h3>
+              <div className="text-muted-foreground">
+                <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-base font-medium mb-2">No past events found</h3>
                 <p>Try adjusting your search or filter criteria</p>
               </div>
             </CardContent>

@@ -36,6 +36,7 @@ import {
   type UserPreferences as UserPreferencesType,
 } from "@/lib/user-preferences-api";
 import { SettingsSection, ThemeSelector } from "@/components/settings";
+import VerificationForm from "@/components/verification/VerificationForm";
 
 interface OrganizerSettingsData {
   // Profile Settings
@@ -99,13 +100,18 @@ const OrganizerSettingsPage = () => {
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    if (tab) return tab;
+    
     const path = location.pathname;
     if (path.includes('/notifications')) return 'notifications';
     if (path.includes('/security')) return 'security';
     if (path.includes('/appearance')) return 'appearance';
+    if (path.includes('/verification')) return 'verification';
     if (path.includes('/profile')) return 'profile';
     return 'profile'; // default
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   const [activeTab, setActiveTab] = useState(getActiveTabFromUrl());
   
@@ -262,9 +268,10 @@ const OrganizerSettingsPage = () => {
 
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
+    { id: "verification", label: "Verification", icon: Shield },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "appearance", label: "Appearance", icon: Palette },
-    { id: "security", label: "Security", icon: Shield },
+    { id: "security", label: "Security", icon: Key },
   ];
 
   // Validate password change form
@@ -1037,9 +1044,16 @@ const OrganizerSettingsPage = () => {
     </div>
   );
 
+  const renderVerificationSettings = () => {
+    // Check if user came from event creation page (via location state)
+    const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification;
+    return <VerificationForm redirectAfterBusinessVerification={redirectPath} />;
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "profile": return renderProfileSettings();
+      case "verification": return renderVerificationSettings();
       case "notifications": return renderNotificationSettings();
       case "appearance": return renderAppearanceSettings();
       case "security": return renderSecuritySettings();
@@ -1126,6 +1140,38 @@ const OrganizerSettingsPage = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Tab Navigation */}
+            <Card className="border-0 bg-white rounded-2xl shadow-sm">
+              <CardContent className="p-4">
+                <nav className="space-y-1">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          // Update URL without navigation
+                          const url = new URL(window.location.href);
+                          url.searchParams.set('tab', tab.id);
+                          window.history.pushState({}, '', url);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'bg-primary text-white'
+                            : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </CardContent>
+            </Card>
+            
             {activeTab === "profile" && <RoleSwitcher />}
           </div>
         </div>

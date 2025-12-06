@@ -792,7 +792,7 @@ const AdminSettingsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Settings</h1>
+            <h1 className="text-lg font-semibold text-foreground">Settings</h1>
             <p className="text-muted-foreground">
               Configure platform settings and preferences
             </p>

@@ -63,7 +63,7 @@ const EditTransactionPage = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Edit Transaction</h1>
+              <h1 className="text-base font-semibold text-foreground">Edit Transaction</h1>
               <p className="text-gray-600">Update transaction details</p>
             </div>
           </div>

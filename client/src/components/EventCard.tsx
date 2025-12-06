@@ -84,7 +84,7 @@ export const EventCard: React.FC<EventCardProps> = ({
     <Card
       variant="interactive"
       onClick={handleCardClick}
-      className="group overflow-hidden border-0 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200"
+      className="group overflow-hidden border-0 bg-white rounded-2xl shadow-card hover:shadow-primary transition-all duration-300 hover:-translate-y-1"
     >
       {/* Event Image */}
       <div className="relative overflow-hidden h-64 rounded-lg">
@@ -98,7 +98,7 @@ export const EventCard: React.FC<EventCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 bg-white/90 text-foreground backdrop-blur-sm rounded-full text-xs font-bold shadow-sm">
+          <span className="px-3 py-1 bg-accent-coral text-white backdrop-blur-sm rounded-full text-xs font-bold shadow-lg shadow-primary/50">
             {category}
           </span>
         </div>
@@ -107,12 +107,12 @@ export const EventCard: React.FC<EventCardProps> = ({
       {/* Event Details */}
       <div className="pt-4 pb-2 pl-4 space-y-2">
         {/* Title */}
-        <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2 leading-tight group-hover:text-primary">
+        <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2 leading-tight group-hover:text-accent-coral">
           {title}
         </h3>
 
         {/* Date */}
-        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+        <div className="flex items-center gap-2 text-sm font-medium text-primary group-hover:text-accent-coral transition-colors">
           <Calendar className="w-4 h-4" />
           <span>{dateDisplay}</span>
         </div>
@@ -132,8 +132,14 @@ export const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         {/* Price */}
-        <div className="text-lg font-bold text-foreground">
-          {price && currency ? `${currency}${price}` : price}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{price === 'Free' || price === '0' || !price
+            ? 'Free'
+            : price === 'See tickets'
+              ? 'See tickets'
+              : currency
+                ? `From ${currency}${price}`
+                : `From ${price}`}</span>
         </div>
       </div>
     </Card>

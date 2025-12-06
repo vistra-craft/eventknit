@@ -57,7 +57,7 @@ const EditWagePage = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Edit Wage</h1>
+              <h1 className="text-base font-semibold text-foreground">Edit Wage</h1>
               <p className="text-gray-600">Update wage details</p>
             </div>
           </div>

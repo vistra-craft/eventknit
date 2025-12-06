@@ -2,188 +2,262 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Premium Event Ticketing Design System - All colors MUST be HSL */
+/* ============================================================================
+   EventKnit Color System - Centralized Color Definitions
+   ============================================================================
+   Change colors here to update them across the entire application.
+   All colors use HSL format for consistency.
+   ============================================================================ */
 
 @layer base {
   :root {
-    /* Core Brand Colors - Light Theme */
-    --background: 210 18% 96%;
-    --foreground: 222 47% 11%;
-    --surface: 210 18% 96%;
+    /* ========================================================================
+       BASE COLOR TOKENS - Single source of truth
+       Change these values to update colors everywhere
+       ======================================================================== */
+    
+    /* TEAL - Primary Brand Color */
+    --color-teal: 174 77% 41%;        /* #14B8A6 - Main brand color */
+    --color-teal-glow: 174 77% 51%;   /* Brighter for glows */
+    --color-teal-dark: 174 77% 31%;   /* Darker variant */
+    --color-teal-tint: 174 77% 95%;   /* Light tint for backgrounds */
 
-    /* Primary Brand Colors - Using New Color Scheme */
-    --primary: 222 47% 11%;
-    --primary-foreground: 240 100% 100%;
-    --primary-glow: 194 48% 87%;
-    --primary-dark: 222 47% 8%;
+    /* CORAL - CTA & Accent Color */
+    --color-coral: 351 91% 72%;       /* #FB7185 - CTA color */
 
-    /* EventKnit Brand Color */
-    /* --eventknit-brand: 263 46% 51%; */ /* Original purple color - commented for easy revert */
-    --eventknit-brand: 215 45% 44%; /* New blue color: #3D52A0 */
-    --eventknit-brand-foreground: 240 100% 100%;
+    /* GREY - Text & Borders */
+    --color-grey-dark: 220 15% 20%;   /* Dark grey for text */
+    --color-grey-medium: 220 10% 45%; /* Medium grey for muted text */
+    --color-grey-border: 0 0% 92%;    /* Light grey for borders */
 
-    /* Royal Purple - Premium accent color */
-    --royal-purple: 263 46% 51%;
-    --royal-purple-foreground: 240 100% 100%;
+    /* OFF-WHITE - Backgrounds & Surfaces */
+    --color-offwhite: 30 8% 98%;      /* Warm off-white background */
+    --color-offwhite-card: 0 0% 97%;  /* Card surface (#F7F7F7) */
+    --color-offwhite-muted: 30 5% 95%; /* Muted background */
 
-    /* Navigation Hover Color */
-    /* --nav-hover: 217 91% 60%; */ /* Original blue hover color - commented for easy revert */
-    --nav-hover: 215 45% 44%; /* New blue hover color: #3D52A0 (matches EventKnit brand) */
+    /* BLACK & WHITE */
+    --color-black: 0 0% 0%;
+    --color-white: 0 0% 100%;
 
-    /* Accent Colors - Using New Color Scheme */
-    --accent-electric: 194 48% 87%;
-    --accent-neon: 194 48% 87%;
-    --accent-coral: 194 48% 87%;
+    /* ADDITIONAL COLORS */
+    --color-destructive: 0 84.2% 60.2%;
 
-    /* Event Card Colors - Enhanced Contrast */
-    --card-surface: 240 100% 100%;
-    --card-border: 194 48% 87%;
-    --card-hover: 222 47% 11%;
+    /* ========================================================================
+       SEMANTIC COLOR VARIABLES - Built from base tokens
+       ======================================================================== */
 
-    /* Gradients - Light Theme */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-neon)) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(210 18% 96%) 0%, hsl(194 48% 87%) 50%, hsl(210 18% 96%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card-surface)) 0%, hsl(210 18% 96%) 100%);
-    --gradient-card-hover: linear-gradient(145deg, hsl(var(--card-hover)) 0%, hsl(194 48% 87%) 100%);
-    --gradient-accent: linear-gradient(90deg, hsl(var(--accent-electric)) 0%, hsl(var(--primary)) 50%, hsl(var(--accent-neon)) 100%);
+    /* Backgrounds */
+    --background: var(--color-offwhite);
+    --foreground: var(--color-grey-dark);
+    --surface: var(--color-offwhite);
 
-    /* Glass Effects - Light Theme */
-    --glass-bg: hsl(240 100% 100% / 0.8);
-    --glass-border: hsl(194 48% 87% / 0.5);
+    /* Primary (Teal) */
+    --primary: var(--color-teal);
+    --primary-foreground: var(--color-white);
+    --primary-glow: var(--color-teal-glow);
+    --primary-dark: var(--color-teal-dark);
 
-    /* Shadows & Glows - Light Theme */
-    --shadow-primary: 0 20px 40px -12px hsl(var(--primary) / 0.4);
-    --shadow-card: 0 8px 32px -8px hsl(194 48% 87% / 0.2);
-    --shadow-card-hover: 0 12px 24px -8px hsl(var(--primary) / 0.3);
-    --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.4);
-    --shadow-elevated: 0 25px 50px -12px hsl(194 48% 87% / 0.4);
+    /* Accent (Coral) - For accents and highlights */
+    --accent: var(--color-coral);
+    --accent-foreground: var(--color-white);
+    --accent-electric: var(--color-coral);
+    --accent-neon: var(--color-coral);
+    --accent-coral: var(--color-coral);
 
-    /* Transitions */
+    /* Navigation */
+    --nav-hover: var(--color-coral);
+
+    /* EventKnit Brand */
+    --eventknit-brand: var(--color-teal);
+    --eventknit-brand-foreground: var(--color-white);
+
+    /* Cards */
+    --card-surface: var(--color-offwhite-card);
+    --card-border: var(--color-grey-border);
+    --card-hover: var(--color-teal);
+
+    /* Secondary */
+    --secondary: var(--color-teal-tint);
+    --secondary-foreground: var(--color-grey-dark);
+
+    /* Muted */
+    --muted: var(--color-offwhite-muted);
+    --muted-foreground: var(--color-grey-medium);
+
+    /* Destructive */
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-white);
+
+    /* Borders & Inputs */
+    --border: var(--color-grey-border);
+    --input: var(--color-white);
+    --ring: var(--color-teal);
+
+    /* Sidebar */
+    --sidebar-background: var(--color-offwhite-card);
+    --sidebar-foreground: var(--color-grey-dark);
+    --sidebar-primary: var(--color-teal);
+    --sidebar-primary-foreground: var(--color-white);
+    --sidebar-accent: var(--color-offwhite);
+    --sidebar-accent-foreground: var(--color-grey-dark);
+    --sidebar-border: var(--color-grey-border);
+    --sidebar-ring: var(--color-teal);
+
+    /* ========================================================================
+       GRADIENTS - Built from base color tokens
+       ======================================================================== */
+
+    /* Primary Brand Gradient - Used in buttons and cards */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--color-teal)) 0%, hsl(var(--color-coral)) 100%);
+
+    /* Card Gradient - Used in card components */
+    --gradient-card: linear-gradient(145deg, hsl(var(--color-offwhite-card)) 0%, hsl(0 0% 96%) 100%);
+
+    /* ========================================================================
+       GLASS EFFECTS - Light Theme
+       ======================================================================== */
+    --glass-bg: hsl(var(--color-offwhite-card) / 0.95);
+    --glass-border: hsl(var(--color-teal) / 0.3);
+
+    /* ========================================================================
+       SHADOWS & GLOWS - Light Theme
+       ======================================================================== */
+    --shadow-primary: 0 20px 40px -12px hsl(var(--color-teal) / 0.3);
+    --shadow-card: 0 4px 16px -4px hsl(var(--color-grey-dark) / 0.08);
+    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-teal) / 0.25);
+    --shadow-glow: 0 0 40px hsl(var(--color-teal-glow) / 0.4);
+    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-coral) / 0.2);
+
+    /* ========================================================================
+       TRANSITIONS
+       ======================================================================== */
     --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     --transition-spring: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-    /* Shadcn Component Colors - Light Theme */
+    /* ========================================================================
+       SHADCN COMPONENT COLORS - Light Theme
+       ======================================================================== */
     --card: var(--card-surface);
     --card-foreground: var(--foreground);
 
     --popover: var(--surface);
     --popover-foreground: var(--foreground);
 
-    --secondary: 194 48% 87%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 174 77% 95%;        /* Light teal tint */
+    --secondary-foreground: 220 15% 20%;
 
-    --muted: 194 48% 87%;
-    --muted-foreground: 222 47% 11%;
+    --muted: 30 5% 95%;             /* Subtle warm gray */
+    --muted-foreground: 220 10% 45%;
 
-    --accent: var(--primary);
-    --accent-foreground: var(--primary-foreground);
+    --accent: 351 91% 72%;          /* Coral for CTAs */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 220 20% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 194 48% 87%;
-    --input: 240 100% 100%;
+    --border: 0 0% 92%;
+    --input: 0 0% 100%;
     --ring: var(--primary);
 
     --radius: 0.5rem;
-
-    --sidebar-background: 240 100% 100%;
-
-    --sidebar-foreground: 222 47% 11%;
-
-    --sidebar-primary: 222 47% 11%;
-
-    --sidebar-primary-foreground: 240 100% 100%;
-
-    --sidebar-accent: 194 48% 87%;
-
-    --sidebar-accent-foreground: 222 47% 11%;
-
-    --sidebar-border: 194 48% 87%;
-
-    --sidebar-ring: 194 48% 87%;
   }
 
-  /* Dark mode inherits same values */
+  /* ========================================================================
+     DARK MODE - Override base tokens for dark theme
+     ======================================================================== */
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 240 100% 100%;
-    --surface: 222 47% 13%;
+    /* Base Color Overrides for Dark Mode */
+    --color-teal: 174 77% 51%;        /* Brighter teal for dark mode */
+    --color-teal-glow: 174 77% 61%;   /* Even brighter for glows */
+    --color-coral: 351 91% 77%;       /* Brighter coral for dark mode */
+    --color-destructive: 0 62.8% 30.6%;
 
-    /* Primary Brand Colors - Dark Theme */
-    --primary: 194 48% 87%;
-    --primary-foreground: 222 47% 11%;
-    --primary-glow: 194 48% 60%;
-    --primary-dark: 222 47% 8%;
+    /* Backgrounds */
+    --background: 220 20% 12%;        /* Dark gray background */
+    --foreground: 0 0% 98%;
+    --surface: 220 20% 15%;
 
-    /* EventKnit Brand Color - Same in dark mode */
-    --eventknit-brand: 215 45% 44%;
-    --eventknit-brand-foreground: 240 100% 100%;
+    /* Primary (Teal) */
+    --primary: var(--color-teal);
+    --primary-foreground: 220 20% 12%;
+    --primary-glow: var(--color-teal-glow);
+    --primary-dark: var(--color-teal-dark);
 
-    /* Royal Purple - Premium accent color */
-    --royal-purple: 263 46% 51%;
-    --royal-purple-foreground: 240 100% 100%;
+    /* Accent (Coral) */
+    --accent: var(--color-coral);
+    --accent-foreground: var(--color-white);
+    --accent-electric: var(--color-coral);
+    --accent-neon: var(--color-coral);
+    --accent-coral: var(--color-coral);
 
-    /* Navigation Hover Color - Same in dark mode */
-    --nav-hover: 215 45% 44%;
+    /* Navigation */
+    --nav-hover: var(--color-coral);
 
-    /* Accent Colors - Dark Theme */
-    --accent-electric: 194 48% 60%;
-    --accent-neon: 194 48% 60%;
-    --accent-coral: 194 48% 60%;
+    /* EventKnit Brand */
+    --eventknit-brand: var(--color-teal);
+    --eventknit-brand-foreground: 220 20% 12%;
 
-    /* Event Card Colors - Dark Theme */
-    --card-surface: 222 47% 13%;
-    --card-border: 194 48% 30%;
-    --card-hover: 222 47% 15%;
+    /* Cards */
+    --card-surface: 220 20% 15%;
+    --card-border: 220 15% 25%;
+    --card-hover: 220 20% 18%;
 
     /* Gradients - Dark Theme */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent-neon)) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(222 47% 11%) 0%, hsl(194 48% 30%) 50%, hsl(222 47% 11%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(var(--card-surface)) 0%, hsl(222 47% 11%) 100%);
-    --gradient-card-hover: linear-gradient(145deg, hsl(var(--card-hover)) 0%, hsl(194 48% 30%) 100%);
-    --gradient-accent: linear-gradient(90deg, hsl(var(--accent-electric)) 0%, hsl(var(--primary)) 50%, hsl(var(--accent-neon)) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--color-teal)) 0%, hsl(var(--color-coral)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(220 20% 15%) 0%, hsl(220 20% 12%) 100%);
 
     /* Glass Effects - Dark Theme */
-    --glass-bg: hsl(222 47% 11% / 0.8);
-    --glass-border: hsl(194 48% 30% / 0.5);
+    --glass-bg: hsl(220 20% 12% / 0.9);
+    --glass-border: hsl(var(--color-teal) / 0.3);
 
     /* Shadows & Glows - Dark Theme */
-    --shadow-primary: 0 20px 40px -12px hsl(var(--primary) / 0.3);
-    --shadow-card: 0 8px 32px -8px hsl(194 48% 30% / 0.2);
-    --shadow-card-hover: 0 12px 24px -8px hsl(var(--primary) / 0.2);
-    --shadow-glow: 0 0 60px hsl(var(--primary-glow) / 0.3);
-    --shadow-elevated: 0 25px 50px -12px hsl(194 48% 30% / 0.3);
+    --shadow-primary: 0 20px 40px -12px hsl(var(--color-teal) / 0.3);
+    --shadow-card: 0 4px 16px -4px hsl(var(--color-black) / 0.3);
+    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-teal) / 0.25);
+    --shadow-glow: 0 0 40px hsl(var(--color-teal-glow) / 0.4);
+    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-coral) / 0.2);
 
-    --card: 222 47% 13%;
-    --card-foreground: 240 100% 100%;
+    --card: 220 20% 15%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222 47% 13%;
-    --popover-foreground: 240 100% 100%;
+    --popover: 220 20% 15%;
+    --popover-foreground: 0 0% 98%;
 
-    --secondary: 194 48% 30%;
-    --secondary-foreground: 240 100% 100%;
+    --secondary: 220 15% 25%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 194 48% 30%;
-    --muted-foreground: 240 100% 100%;
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 70%;
 
-    --accent: 194 48% 87%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 351 91% 77%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 240 100% 100%;
+    /* Secondary */
+    --secondary: 220 15% 25%;
+    --secondary-foreground: 0 0% 98%;
 
-    --border: 194 48% 30%;
-    --input: 222 47% 13%;
-    --ring: 194 48% 87%;
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 240 100% 100%;
-    --sidebar-primary: 194 48% 87%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 194 48% 30%;
-    --sidebar-accent-foreground: 240 100% 100%;
-    --sidebar-border: 194 48% 87%;
-    --sidebar-ring: 194 48% 87%;
+    /* Muted */
+    --muted: 220 15% 20%;
+    --muted-foreground: 220 10% 70%;
+
+    /* Destructive */
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-white);
+
+    /* Borders & Inputs */
+    --border: 220 15% 25%;
+    --input: 220 20% 15%;
+    --ring: var(--color-teal);
+
+    /* Sidebar */
+    --sidebar-background: 220 20% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: var(--color-teal);
+    --sidebar-primary-foreground: 220 20% 12%;
+    --sidebar-accent: 220 15% 25%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 15% 25%;
+    --sidebar-ring: var(--color-teal);
   }
 }
 

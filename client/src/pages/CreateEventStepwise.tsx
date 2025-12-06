@@ -29,12 +29,16 @@ import {
   MapPin,
   Clock,
   Percent,
-  Gift
+  Gift,
+  Shield,
+  CheckCircle2
 } from 'lucide-react';
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
+import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
+import { useToast } from '@/hooks/use-toast';
 
 // Currency options with KES as default
 const CURRENCIES = [
@@ -139,6 +143,7 @@ export default function CreateEventStepwise() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   // Check for edit mode from URL query params
   const searchParams = new URLSearchParams(location.search);
@@ -187,30 +192,43 @@ export default function CreateEventStepwise() {
   const [faqs, setFaqs] = useState([{ question: "", answer: "" }]);
   const [speakers] = useState<Array<{ name: string; title: string; bio: string; image?: string }>>([]);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+  const [loadingVerification, setLoadingVerification] = useState(true);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
   
-  // Load draft from localStorage on mount (only if not in edit mode)
-  const loadDraft = useCallback((): Partial<EventData & { currency: string }> => {
-    // Don't load draft if in edit mode
-    if (isEditMode) {
-      return {};
-    }
-    try {
-      const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (draft) {
-        const parsed = JSON.parse(draft);
-        // Check if draft is less than 7 days old
-        if (parsed.timestamp && Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000) {
-          return parsed.data || {};
-        } else {
-          localStorage.removeItem(DRAFT_STORAGE_KEY);
-        }
+  // Load verification status
+  useEffect(() => {
+    const loadVerificationStatus = async () => {
+      if (!user || isEditMode) {
+        setLoadingVerification(false);
+        return;
       }
-    } catch {
-      // Ignore errors
-    }
-    return {};
-  }, [isEditMode]);
-
+      
+      try {
+        const response = await getVerificationStatus();
+        if (response.success && response.data) {
+          setVerificationStatus(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading verification status:', error);
+      } finally {
+        setLoadingVerification(false);
+      }
+    };
+    
+    loadVerificationStatus();
+    
+    // Listen for verification status updates from VerificationForm
+    const handleVerificationUpdate = () => {
+      loadVerificationStatus();
+    };
+    window.addEventListener('verificationStatusUpdated', handleVerificationUpdate);
+    
+    return () => {
+      window.removeEventListener('verificationStatusUpdated', handleVerificationUpdate);
+    };
+  }, [user, isEditMode]);
+  
   // Reset form to initial state
   const resetForm = () => {
     setEventData({
@@ -252,32 +270,132 @@ export default function CreateEventStepwise() {
   };
 
   const [eventData, setEventData] = useState<EventData & { currency: string }>(() => {
-    const draft = loadDraft();
+    // Load draft from localStorage (only if not in edit mode)
+    if (isEditMode) {
+      return {
+        title: "",
+        organizer: "",
+        description: "",
+        fullDescription: "",
+        organizerDescription: "",
+        date: "",
+        time: "",
+        endDate: "",
+        endTime: "",
+        location: "",
+        venue: "",
+        address: "",
+        onlineLink: "",
+        price: "",
+        totalSlots: 0,
+        image: "",
+        requirements: "",
+        ageRestriction: "",
+        isOnline: false,
+        capacity: "",
+        category: "",
+        timezone: timezone,
+        currency: DEFAULT_CURRENCY,
+      };
+    }
+    
+    try {
+      const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        // Check if draft is less than 7 days old
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000) {
+          const draftData = parsed.data || {};
+          return {
+            title: draftData.title || "",
+            organizer: draftData.organizer || "",
+            description: draftData.description || "",
+            fullDescription: draftData.fullDescription || "",
+            organizerDescription: draftData.organizerDescription || "",
+            date: draftData.date || "",
+            time: draftData.time || "",
+            endDate: draftData.endDate || "",
+            endTime: draftData.endTime || "",
+            location: draftData.location || "",
+            venue: draftData.venue || "",
+            address: draftData.address || "",
+            onlineLink: draftData.onlineLink || "",
+            price: draftData.price || "",
+            totalSlots: draftData.totalSlots || 0,
+            image: draftData.image || "",
+            requirements: draftData.requirements || "",
+            ageRestriction: draftData.ageRestriction || "",
+            isOnline: draftData.isOnline || false,
+            capacity: draftData.capacity || "",
+            category: draftData.category || "",
+            timezone: draftData.timezone || timezone,
+            currency: draftData.currency || DEFAULT_CURRENCY,
+          };
+        } else {
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
+        }
+      }
+    } catch {
+      // Ignore errors
+    }
+    
     return {
-      title: draft.title || "",
-      organizer: draft.organizer || "",
-      description: draft.description || "",
-      fullDescription: draft.fullDescription || "",
-      date: draft.date || "",
-      time: draft.time || "",
-      endDate: draft.endDate || "",
-      endTime: draft.endTime || "",
-      location: draft.location || "",
-      venue: draft.venue || "",
-      address: draft.address || "",
-      onlineLink: draft.onlineLink || "",
-      price: draft.price || "",
-      totalSlots: draft.totalSlots || 0,
-      image: draft.image || "",
-      requirements: draft.requirements || "",
-      ageRestriction: draft.ageRestriction || "",
-      isOnline: draft.isOnline || false,
-      capacity: draft.capacity || "",
-      category: draft.category || "",
-      timezone: draft.timezone || timezone,
-      currency: draft.currency || DEFAULT_CURRENCY,
+      title: "",
+      organizer: "",
+      description: "",
+      fullDescription: "",
+      organizerDescription: "",
+      date: "",
+      time: "",
+      endDate: "",
+      endTime: "",
+      location: "",
+      venue: "",
+      address: "",
+      onlineLink: "",
+      price: "",
+      totalSlots: 0,
+      image: "",
+      requirements: "",
+      ageRestriction: "",
+      isOnline: false,
+      capacity: "",
+      category: "",
+      timezone: timezone,
+      currency: DEFAULT_CURRENCY,
     };
   });
+
+  // Load draft function (for use in other places)
+  const loadDraft = useCallback((): Partial<EventData & { currency: string }> => {
+    // Don't load draft if in edit mode
+    if (isEditMode) {
+      return {};
+    }
+    try {
+      const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        // Check if draft is less than 7 days old
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000) {
+          return parsed.data || {};
+        } else {
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
+        }
+      }
+    } catch {
+      // Ignore errors
+    }
+    return {};
+  }, [isEditMode]);
+
+  // Check if event has paid tickets (must be after eventData is declared)
+  const hasPaidTickets = useCallback(() => {
+    if (eventData.price && parseFloat(eventData.price) > 0) {
+      return true;
+    }
+    return ticketTypes.some(ticket => ticket.type === 'paid' && parseFloat(ticket.price) > 0);
+  }, [eventData.price, ticketTypes]);
 
   const [registrationFields, setRegistrationFields] = useState<RegistrationField[]>([
     {
@@ -337,10 +455,9 @@ export default function CreateEventStepwise() {
   //   }
   // };
 
-  // Auto-save every 30 seconds
-  useEffect(() => {
-    // Set up auto-save interval
-    autoSaveIntervalRef.current = setInterval(() => {
+  // Save draft function
+  const saveDraft = useCallback(() => {
+    try {
       setIsSavingDraft(true);
       const draftData = {
         data: {
@@ -356,13 +473,22 @@ export default function CreateEventStepwise() {
         isPrivate,
         timestamp: Date.now(),
       };
-      try {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
-        setLastSaved(new Date());
-        setIsSavingDraft(false);
-      } catch (error) {
-        console.error('Error saving draft:', error);
-      }
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+      setLastSaved(new Date());
+      setIsSavingDraft(false);
+      return true;
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      setIsSavingDraft(false);
+      return false;
+    }
+  }, [eventData, timezone, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate]);
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    // Set up auto-save interval
+    autoSaveIntervalRef.current = setInterval(() => {
+      saveDraft();
     }, 30000); // 30 seconds
 
     // Cleanup on unmount
@@ -371,7 +497,7 @@ export default function CreateEventStepwise() {
         clearInterval(autoSaveIntervalRef.current);
       }
     };
-  }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone]);
+  }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone, saveDraft]);
 
   // Load event data when in edit mode
   useEffect(() => {
@@ -864,6 +990,14 @@ export default function CreateEventStepwise() {
       return;
     }
 
+    // Check verification status for paid events (only for organizers, not admins)
+    if (isOrganizerRole && !isAdminRole && hasPaidTickets()) {
+      if (!verificationStatus?.canCreatePaidEvents) {
+        setShowVerificationModal(true);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -1032,8 +1166,8 @@ export default function CreateEventStepwise() {
               onClick={() => setEventType('in-person')}
               className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                 eventType === 'in-person'
-                  ? 'bg-gray-900 text-white hover:bg-gray-800'
-                  : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+                  ? 'bg-primary text-white hover:bg-primary/90'
+                  : 'border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral'
               }`}
             >
               <MapPin className="mr-2 h-4 w-4" />
@@ -1045,8 +1179,8 @@ export default function CreateEventStepwise() {
               onClick={() => setEventType('online')}
               className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                 eventType === 'online'
-                  ? 'bg-gray-900 text-white hover:bg-gray-800'
-                  : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+                  ? 'bg-primary text-white hover:bg-primary/90'
+                  : 'border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral'
               }`}
             >
               <Globe className="mr-2 h-4 w-4" />
@@ -1058,8 +1192,8 @@ export default function CreateEventStepwise() {
               onClick={() => setEventType('hybrid')}
               className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                 eventType === 'hybrid'
-                  ? 'bg-gray-900 text-white hover:bg-gray-800'
-                  : 'border border-gray-300 hover:bg-gray-900 hover:text-white'
+                  ? 'bg-primary text-white hover:bg-primary/90'
+                  : 'border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral'
               }`}
             >
               <Users className="mr-2 h-4 w-4" />
@@ -1311,7 +1445,7 @@ export default function CreateEventStepwise() {
       
       <div className="space-y-4">
         {ticketTypes.map((ticket, index) => (
-          <Card key={ticket.id}>
+          <Card key={ticket.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Ticket Type {index + 1}</CardTitle>
@@ -1624,7 +1758,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addTicketType}
-          className="w-full border-dashed border-gray-300 hover:bg-gray-900 hover:text-white"
+          className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Another Ticket Type
@@ -1646,7 +1780,7 @@ export default function CreateEventStepwise() {
 
       <div className="space-y-4">
         {registrationFields.map((field, index) => (
-          <Card key={field.id}>
+          <Card key={field.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Field {index + 1}</CardTitle>
@@ -1715,7 +1849,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addRegistrationField}
-          className="w-full border-dashed border-gray-300 hover:bg-gray-900 hover:text-white"
+          className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Custom Field
@@ -1788,7 +1922,7 @@ export default function CreateEventStepwise() {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage}
-                className="border border-gray-300 hover:bg-gray-900 hover:text-white"
+                className="border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
               >
                 {isUploadingImage ? (
                   <>
@@ -1933,7 +2067,7 @@ export default function CreateEventStepwise() {
       <div className="space-y-4">
         <Label>Frequently Asked Questions</Label>
         {faqs.map((faq, index) => (
-          <Card key={index}>
+          <Card key={index} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
@@ -1967,7 +2101,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addFaq}
-          className="w-full border-dashed border-gray-300 hover:bg-gray-900 hover:text-white"
+          className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add FAQ
@@ -2358,7 +2492,7 @@ export default function CreateEventStepwise() {
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div
-                className="bg-gray-900 h-2 rounded-full transition-all duration-300"
+                className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(currentStep / steps.length) * 100}%` }}
               />
             </div>
@@ -2371,7 +2505,7 @@ export default function CreateEventStepwise() {
                 <div
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors ${
                     index + 1 <= currentStep
-                      ? 'bg-gray-900 text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
@@ -2380,7 +2514,7 @@ export default function CreateEventStepwise() {
                 {index < steps.length - 1 && (
                   <div
                     className={`w-8 sm:w-16 h-0.5 mx-1 sm:mx-2 transition-colors ${
-                      index + 1 < currentStep ? 'bg-gray-900' : 'bg-muted'
+                      index + 1 < currentStep ? 'bg-primary' : 'bg-muted'
                     }`}
                   />
                 )}
@@ -2394,6 +2528,26 @@ export default function CreateEventStepwise() {
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Verification Warning Banner */}
+        {!loadingVerification && !isEditMode && hasPaidTickets() && !verificationStatus?.canCreatePaidEvents && (
+          <Alert className="mb-4 border-accent-coral/20 bg-accent-coral/5">
+            <Shield className="h-4 w-4 text-accent-coral" />
+            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-foreground">
+                <strong>Identity verification required:</strong> To publish paid events, please complete identity verification. This usually takes 5-10 minutes.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/organizer/settings?tab=verification')}
+                className="border-accent-coral text-accent-coral hover:bg-accent-coral hover:text-white"
+              >
+                Verify Now
+              </Button>
+            </AlertDescription>
           </Alert>
         )}
 
@@ -2413,7 +2567,7 @@ export default function CreateEventStepwise() {
                 <Button
                   variant="outline"
                   onClick={handleBack}
-                  className="flex-1 sm:px-6 sm:flex-none border border-gray-300 hover:bg-gray-900 hover:text-white"
+                  className="flex-1 sm:px-6 sm:flex-none border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
                   disabled={isSubmitting}
                 >
                   Back
@@ -2422,7 +2576,7 @@ export default function CreateEventStepwise() {
                   <Button
                     variant="outline"
                     onClick={() => setShowPreview(true)}
-                    className="flex-1 sm:px-6 sm:flex-none border border-gray-300 hover:bg-gray-900 hover:text-white"
+                    className="flex-1 sm:px-6 sm:flex-none border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
                     disabled={isSubmitting}
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -2432,7 +2586,7 @@ export default function CreateEventStepwise() {
               </div>
               <Button
                 onClick={handleNext}
-                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 h-11 rounded-xl bg-gray-900 hover:bg-gray-800 text-white transition-all duration-200 shadow-md"
+                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 h-11 rounded-xl bg-accent-coral hover:bg-accent-coral/90 text-white transition-all duration-200 shadow-md"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -2451,6 +2605,72 @@ export default function CreateEventStepwise() {
       
       {/* Preview Modal */}
       {renderPreview()}
+
+      {/* Verification Required Modal */}
+      <Dialog open={showVerificationModal} onOpenChange={setShowVerificationModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-full bg-accent-coral/10 flex items-center justify-center">
+                <Shield className="h-6 w-6 text-accent-coral" />
+              </div>
+              <div>
+                <DialogTitle>Identity Verification Required</DialogTitle>
+                <DialogDescription className="mt-1">
+                  To publish paid events, you need to verify your identity
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Identity verification helps us ensure a secure platform for all organizers and attendees. 
+              This process usually takes 5-10 minutes.
+            </p>
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium text-foreground">What you'll need:</p>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li>Government-issued ID (passport, driver's license, or national ID)</li>
+                <li>Personal information (name, date of birth, address)</li>
+                <li>Clear photos of your ID document</li>
+              </ul>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              <span>Your event will be saved as a draft</span>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowVerificationModal(false);
+                // Save as draft
+                if (saveDraft()) {
+                  toast({
+                    title: 'Draft Saved',
+                    description: 'Your event has been saved as a draft. Complete verification to publish.',
+                  });
+                }
+              }}
+              className="flex-1"
+            >
+              Save as Draft
+            </Button>
+            <Button
+              onClick={() => {
+                setShowVerificationModal(false);
+                navigate('/organizer/settings?tab=verification', { 
+                  state: { redirectAfterVerification: '/organizer/events/create' } 
+                });
+              }}
+              className="flex-1 bg-accent-coral hover:bg-accent-coral/90 text-white"
+            >
+              Verify Now
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Image Cropper Modal */}
       {uploadedImage && (

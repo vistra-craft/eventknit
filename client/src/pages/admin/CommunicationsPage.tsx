@@ -387,44 +387,44 @@ const CommunicationsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      draft: "bg-gray-100 text-gray-800 border-gray-200",
-      scheduled: "bg-blue-100 text-blue-800 border-blue-200",
-      sent: "bg-green-100 text-green-800 border-green-200",
-      cancelled: "bg-red-100 text-red-800 border-red-200",
-      active: "bg-green-100 text-green-800 border-green-200",
-      inactive: "bg-gray-100 text-gray-800 border-gray-200",
-      expired: "bg-yellow-100 text-yellow-800 border-yellow-200"
+      draft: "bg-muted text-muted-foreground border-border",
+      scheduled: "bg-primary/10 text-primary border-primary/20",
+      sent: "bg-primary/10 text-primary border-primary/20",
+      cancelled: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      active: "bg-primary/10 text-primary border-primary/20",
+      inactive: "bg-muted text-muted-foreground border-border",
+      expired: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeBadge = (type: string) => {
     const variants = {
-      general: "bg-blue-100 text-blue-800 border-blue-200",
-      maintenance: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      feature: "bg-green-100 text-green-800 border-green-200",
-      urgent: "bg-red-100 text-red-800 border-red-200",
-      info: "bg-blue-100 text-blue-800 border-blue-200",
-      warning: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      error: "bg-red-100 text-red-800 border-red-200",
-      success: "bg-green-100 text-green-800 border-green-200",
-      welcome: "bg-purple-100 text-purple-800 border-purple-200",
-      event: "bg-blue-100 text-blue-800 border-blue-200",
-      payment: "bg-green-100 text-green-800 border-green-200",
-      notification: "bg-orange-100 text-orange-800 border-orange-200",
-      marketing: "bg-pink-100 text-pink-800 border-pink-200"
+      general: "bg-primary/10 text-primary border-primary/20",
+      maintenance: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      feature: "bg-primary/10 text-primary border-primary/20",
+      urgent: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      info: "bg-primary/10 text-primary border-primary/20",
+      warning: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      error: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      success: "bg-primary/10 text-primary border-primary/20",
+      welcome: "bg-primary/10 text-primary border-primary/20",
+      event: "bg-primary/10 text-primary border-primary/20",
+      payment: "bg-primary/10 text-primary border-primary/20",
+      notification: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      marketing: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
     };
-    return variants[type as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[type as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getAudienceBadge = (audience: string) => {
     const variants = {
-      all: "bg-gray-100 text-gray-800 border-gray-200",
-      organizers: "bg-blue-100 text-blue-800 border-blue-200",
-      attendees: "bg-green-100 text-green-800 border-green-200",
-      admins: "bg-purple-100 text-purple-800 border-purple-200"
+      all: "bg-muted text-muted-foreground border-border",
+      organizers: "bg-primary/10 text-primary border-primary/20",
+      attendees: "bg-primary/10 text-primary border-primary/20",
+      admins: "bg-primary/10 text-primary border-primary/20"
     };
-    return variants[audience as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[audience as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeIcon = (type: string) => {
@@ -877,8 +877,8 @@ const CommunicationsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Communications</h1>
-            <p className="text-gray-600">Manage announcements, notifications, and email templates</p>
+            <h1 className="text-lg font-semibold text-foreground">Communications</h1>
+            <p className="text-muted-foreground">Manage announcements, notifications, and email templates</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => setShowAnnouncementForm(true)}>
@@ -902,7 +902,7 @@ const CommunicationsPage = () => {
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {announcements.filter(a => a.status === "sent").length}
@@ -910,7 +910,7 @@ const CommunicationsPage = () => {
               <p className="text-sm text-gray-600">Sent Announcements</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {notifications.filter(n => n.status === "active").length}
@@ -918,7 +918,7 @@ const CommunicationsPage = () => {
               <p className="text-sm text-gray-600">Active Notifications</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {emailTemplates.filter(t => t.status === "active").length}
@@ -926,7 +926,7 @@ const CommunicationsPage = () => {
               <p className="text-sm text-gray-600">Active Templates</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {announcements.reduce((sum, a) => sum + a.views, 0)}
@@ -947,7 +947,7 @@ const CommunicationsPage = () => {
 
           <TabsContent value="announcements" className="space-y-6">
             {/* Filters */}
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
@@ -1016,7 +1016,7 @@ const CommunicationsPage = () => {
             ) : (
             <div className="space-y-3">
               {filteredAnnouncements.map((announcement) => (
-                <Card key={announcement.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                <Card key={announcement.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1024,7 +1024,7 @@ const CommunicationsPage = () => {
                           <div className="p-2 rounded-lg bg-primary/10">
                             {getTypeIcon(announcement.type)}
                           </div>
-                          <h3 className="font-semibold text-gray-900 truncate">{announcement.title}</h3>
+                          <h3 className="font-semibold text-foreground truncate">{announcement.title}</h3>
                           <Badge className={`text-xs ${getStatusBadge(announcement.status)}`}>
                             {announcement.status}
                           </Badge>
@@ -1093,7 +1093,7 @@ const CommunicationsPage = () => {
             ) : (
             <div className="space-y-3">
               {notifications.map((notification) => (
-                <Card key={notification.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                <Card key={notification.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1101,7 +1101,7 @@ const CommunicationsPage = () => {
                           <div className="p-2 rounded-lg bg-primary/10">
                             <Bell className="h-5 w-5 text-primary" />
                           </div>
-                          <h3 className="font-semibold text-gray-900">{notification.title}</h3>
+                          <h3 className="font-semibold text-foreground">{notification.title}</h3>
                           <Badge className={`text-xs ${getStatusBadge(notification.status)}`}>
                             {notification.status}
                           </Badge>
@@ -1159,7 +1159,7 @@ const CommunicationsPage = () => {
             ) : (
             <div className="space-y-3">
               {emailTemplates.map((template) => (
-                <Card key={template.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                <Card key={template.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1176,7 +1176,7 @@ const CommunicationsPage = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                        <p className="text-sm font-medium text-gray-900 mb-3">Subject: {template.subject}</p>
+                        <p className="text-sm font-medium text-foreground mb-3">Subject: {template.subject}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>Usage: {template.usageCount.toLocaleString()}</span>
                           <span>Last used: {template.lastUsed ? formatDate(template.lastUsed) : 'Never'}</span>
@@ -1208,7 +1208,7 @@ const CommunicationsPage = () => {
             {/* Bulk Messages Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Bulk Messages</h2>
+                <h2 className="text-base font-semibold text-foreground">Bulk Messages</h2>
                 <p className="text-sm text-gray-600 mt-1">Send messages to multiple users at once</p>
               </div>
               <Button onClick={() => { resetBulkMessageForm(); setShowBulkMessageForm(true); }}>
@@ -1238,7 +1238,7 @@ const CommunicationsPage = () => {
             ) : (
               <div className="space-y-3">
                 {bulkMessages.map((message) => (
-                  <Card key={message.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                  <Card key={message.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
@@ -1246,7 +1246,7 @@ const CommunicationsPage = () => {
                             <div className="p-2 rounded-lg bg-primary/10">
                               <Users className="h-5 w-5 text-primary" />
                             </div>
-                            <h3 className="font-semibold text-gray-900 truncate">{message.title}</h3>
+                            <h3 className="font-semibold text-foreground truncate">{message.title}</h3>
                             <Badge className={`text-xs ${getStatusBadge(message.status.toLowerCase())}`}>
                               {message.status}
                             </Badge>
@@ -1262,7 +1262,7 @@ const CommunicationsPage = () => {
                             <span>Recipients: {message.totalRecipients.toLocaleString()}</span>
                             <span>Sent: {message.sentCount.toLocaleString()}</span>
                             {message.failedCount > 0 && (
-                              <span className="text-red-600">Failed: {message.failedCount.toLocaleString()}</span>
+                              <span className="text-accent-coral">Failed: {message.failedCount.toLocaleString()}</span>
                             )}
                             <span>Created: {formatDate(message.createdAt)}</span>
                             {message.scheduledAt && (
@@ -1843,7 +1843,7 @@ const CommunicationsPage = () => {
                   <p>Recipients: {viewingBulkMessage.totalRecipients.toLocaleString()}</p>
                   <p>Sent: {viewingBulkMessage.sentCount.toLocaleString()}</p>
                   {viewingBulkMessage.failedCount > 0 && (
-                    <p className="text-red-600">Failed: {viewingBulkMessage.failedCount.toLocaleString()}</p>
+                    <p className="text-accent-coral">Failed: {viewingBulkMessage.failedCount.toLocaleString()}</p>
                   )}
                   <p>Created: {formatDate(viewingBulkMessage.createdAt)}</p>
                   {viewingBulkMessage.scheduledAt && (
@@ -1876,7 +1876,7 @@ const CommunicationsPage = () => {
                     <MessageSquare className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Live Chat Support</h3>
+                    <h3 className="font-semibold text-foreground">Live Chat Support</h3>
                     <p className="text-sm text-gray-600">Chat with our support team</p>
                   </div>
                 </div>
@@ -1900,7 +1900,7 @@ const CommunicationsPage = () => {
                       className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                         message.type === "sent"
                           ? "bg-primary text-white"
-                          : "bg-gray-100 text-gray-900"
+                          : "bg-muted text-foreground"
                       }`}
                     >
                       <p className="text-sm">{message.message}</p>

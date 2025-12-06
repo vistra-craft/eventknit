@@ -263,7 +263,7 @@ const OrganizerDetailsPage = () => {
               Back to Organizers
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-lg font-semibold text-foreground">
                 {organizerData.firstName} {organizerData.lastName}
               </h1>
               <p className="text-gray-600">{organizerData.company}</p>
@@ -295,7 +295,7 @@ const OrganizerDetailsPage = () => {
 
         {/* Organizer Status and Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Shield className="h-5 w-5 text-blue-600" />
@@ -306,16 +306,16 @@ const OrganizerDetailsPage = () => {
               </Badge>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Calendar className="h-5 w-5 text-green-600" />
                 <span className="text-sm font-medium">Events</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{organizerData.totalEvents}</p>
+              <p className="text-lg font-bold text-primary">{organizerData.totalEvents}</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <DollarSign className="h-5 w-5 text-green-600" />
@@ -324,13 +324,13 @@ const OrganizerDetailsPage = () => {
               <p className="text-lg font-bold text-gray-900">{formatCurrency(organizerData.totalRevenue)}</p>
             </CardContent>
           </Card>
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Star className="h-5 w-5 text-yellow-600" />
                 <span className="text-sm font-medium">Rating</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{organizerData.rating}</p>
+              <p className="text-lg font-bold text-primary">{organizerData.rating}</p>
             </CardContent>
           </Card>
         </div>
@@ -348,7 +348,7 @@ const OrganizerDetailsPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Organizer Information */}
               <div className="lg:col-span-2 space-y-6">
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Organizer Information</CardTitle>
                   </CardHeader>
@@ -366,7 +366,7 @@ const OrganizerDetailsPage = () => {
                         )}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-foreground">
                           {organizerData.firstName} {organizerData.lastName}
                         </h3>
                         <p className="text-gray-600">{organizerData.company}</p>
@@ -379,15 +379,15 @@ const OrganizerDetailsPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Email</label>
-                        <p className="text-sm text-gray-900">{organizerData.email}</p>
+                        <p className="text-sm text-foreground">{organizerData.email}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Phone</label>
-                        <p className="text-sm text-gray-900">{organizerData.phone || "Not provided"}</p>
+                        <p className="text-sm text-foreground">{organizerData.phone || "Not provided"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Location</label>
-                        <p className="text-sm text-gray-900">{organizerData.location}</p>
+                        <p className="text-sm text-foreground">{organizerData.location}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Website</label>
@@ -411,7 +411,7 @@ const OrganizerDetailsPage = () => {
                 </Card>
 
                 {/* Business Information */}
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Business Information</CardTitle>
                   </CardHeader>
@@ -446,7 +446,7 @@ const OrganizerDetailsPage = () => {
 
                 {/* Emergency Contact */}
                 {organizerData.emergencyContact && (
-                  <Card className="border-border bg-card">
+                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Emergency Contact</CardTitle>
                     </CardHeader>
@@ -472,7 +472,7 @@ const OrganizerDetailsPage = () => {
 
               {/* Statistics and Activity */}
               <div className="space-y-6">
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Statistics</CardTitle>
                   </CardHeader>
@@ -499,7 +499,7 @@ const OrganizerDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card">
+                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Recent Activity</CardTitle>
                   </CardHeader>
@@ -533,7 +533,7 @@ const OrganizerDetailsPage = () => {
 
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Organizer Events ({organizerEvents.length})</CardTitle>
               </CardHeader>
@@ -581,7 +581,7 @@ const OrganizerDetailsPage = () => {
 
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-6">
-            <Card className="border-border bg-card">
+            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Support Tickets ({organizerData.supportTickets?.length || 0})</CardTitle>
               </CardHeader>

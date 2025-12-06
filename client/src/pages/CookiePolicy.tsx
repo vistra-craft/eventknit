@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cookie, Settings, BarChart3, Shield, Eye, Database } from "lucide-react";
 
 const CookiePolicy = () => {
@@ -12,8 +11,7 @@ const CookiePolicy = () => {
       <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <div className="rounded-2xl bg-white px-6 py-8 md:px-10 md:py-10">
-              <div className="flex flex-col items-center gap-6 text-center">
+            <div className="flex flex-col items-center gap-6 text-center py-8 md:py-10">
                 <div className="space-y-3">
                   <h1 className="text-xl font-semibold tracking-tight text-foreground">
                     How EventKnit uses cookies
@@ -35,7 +33,6 @@ const CookiePolicy = () => {
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </div>
@@ -44,14 +41,12 @@ const CookiePolicy = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* What Are Cookies */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Cookie className="w-5 h-5 text-primary" />
-                What Are Cookies?
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Cookie className="w-5 h-5 text-primary" />
+              What Are Cookies?
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 Cookies are small text files that are stored on your device when you visit 
                 our website. They help us provide you with a better experience by remembering 
@@ -101,23 +96,21 @@ const CookiePolicy = () => {
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Types of Cookies We Use */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Settings className="w-5 h-5 text-primary" />
-                Types of Cookies We Use
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <section className="space-y-6">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Settings className="w-5 h-5 text-primary" />
+              Types of Cookies We Use
+            </h2>
+            <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="p-4 bg-primary/5 rounded-lg">
                     <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary rounded-full"></div>
                       Essential Cookies
                     </h4>
                     <p className="text-sm text-muted-foreground mb-3">
@@ -151,7 +144,7 @@ const CookiePolicy = () => {
                 <div className="space-y-4">
                   <div className="p-4 bg-primary/5 rounded-lg">
                     <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-primary/80 rounded-full"></div>
                       Analytics Cookies
                     </h4>
                     <p className="text-sm text-muted-foreground mb-3">
@@ -167,7 +160,7 @@ const CookiePolicy = () => {
                   
                   <div className="p-4 bg-primary/5 rounded-lg">
                     <h4 className="font-semibold text-base mb-2 flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-accent-coral/80 rounded-full"></div>
                       Marketing Cookies
                     </h4>
                     <p className="text-sm text-muted-foreground mb-3">
@@ -182,18 +175,16 @@ const CookiePolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Third-Party Cookies */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                Third-Party Cookies
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              Third-Party Cookies
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 We work with trusted third-party services that may set their own cookies 
                 on our website. These services help us provide better functionality and analytics.
@@ -239,18 +230,16 @@ const CookiePolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Cookie Management */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Settings className="w-5 h-5 text-primary" />
-                Managing Your Cookie Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Settings className="w-5 h-5 text-primary" />
+              Managing Your Cookie Preferences
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 You have several options for managing cookies on our website:
               </p>
@@ -309,18 +298,16 @@ const CookiePolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Impact of Disabling Cookies */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Eye className="w-5 h-5 text-primary" />
-                Impact of Disabling Cookies
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Eye className="w-5 h-5 text-primary" />
+              Impact of Disabling Cookies
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 While you can disable cookies, doing so may affect your experience on our website:
               </p>
@@ -350,36 +337,34 @@ const CookiePolicy = () => {
                   <h4 className="font-semibold text-base text-primary">Still Available</h4>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
                       <span>Basic website navigation</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
                       <span>Event browsing and discovery</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
                       <span>Contact and support features</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
                       <span>Essential security features</span>
                     </li>
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Data Retention */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Database className="w-5 h-5 text-primary" />
-                Cookie Data Retention
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Database className="w-5 h-5 text-primary" />
+              Cookie Data Retention
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 Different types of cookies have different retention periods:
               </p>
@@ -414,18 +399,16 @@ const CookiePolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Security and Privacy */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <Shield className="w-5 h-5 text-primary" />
-                Security and Privacy
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="flex items-center gap-3 text-xl font-semibold text-primary">
+              <Shield className="w-5 h-5 text-primary" />
+              Security and Privacy
+            </h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 We take the security and privacy of your data seriously. Our cookie practices 
                 are designed to protect your information while providing you with the best possible experience.
@@ -474,15 +457,13 @@ const CookiePolicy = () => {
                   </ul>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Contact Information */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="text-xl">Contact Us About Cookies</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Contact Us About Cookies</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 If you have any questions about our use of cookies or this Cookie Policy, 
                 please contact us:
@@ -509,15 +490,13 @@ const CookiePolicy = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Policy Updates */}
-          <Card className="border-0">
-            <CardHeader>
-              <CardTitle className="text-xl">Policy Updates</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold text-primary">Policy Updates</h2>
+            <div className="space-y-4">
               <p className="text-muted-foreground leading-relaxed">
                 We may update this Cookie Policy from time to time to reflect changes in our 
                 practices or for other operational, legal, or regulatory reasons. We will notify 
@@ -529,8 +508,8 @@ const CookiePolicy = () => {
                   periodically to stay informed about how we use cookies and similar technologies.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         </div>
       </div>
 

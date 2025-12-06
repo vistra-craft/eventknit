@@ -12,7 +12,6 @@ import DashboardAttendees from "./DashboardAttendees";
 import AttendeeDiscovery from "./AttendeeDiscovery";
 import NotificationsCenter from "./NotificationsCenter";
 import PersonalAnalytics from "./PersonalAnalytics";
-import Footer from "../../components/Footer";
 
 const UserDashboard = () => {
   const location = useLocation();
@@ -104,7 +103,6 @@ const UserDashboard = () => {
         )}
         {renderSection()}
       </main>
-      <Footer />
     </div>
   );
 };

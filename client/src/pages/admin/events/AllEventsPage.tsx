@@ -216,24 +216,24 @@ const AllEventsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      cancelled: "bg-red-100 text-red-800 border-red-200",
-      completed: "bg-blue-100 text-blue-800 border-blue-200"
+      active: "bg-primary/10 text-primary border-primary/20",
+      pending: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      cancelled: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      completed: "bg-primary/10 text-primary border-primary/20"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
-      ? "bg-blue-100 text-blue-800 border-blue-200"
-      : "bg-purple-100 text-purple-800 border-purple-200";
+      ? "bg-primary/10 text-primary border-primary/20"
+      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
   };
 
   const getPriceBadge = (price: string) => {
     return price === "free" 
-      ? "bg-green-100 text-green-800 border-green-200"
-      : "bg-orange-100 text-orange-800 border-orange-200";
+      ? "bg-primary/10 text-primary border-primary/20"
+      : "bg-muted text-muted-foreground border-border";
   };
 
   const handleSelectEvent = (eventId: string, checked: boolean) => {
@@ -318,17 +318,17 @@ const AllEventsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-lg font-semibold text-foreground">
               {permissions.canAccessAllEvents ? 'All Events' : 'My Assigned Events'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {permissions.canAccessAllEvents
                 ? 'Manage and monitor all platform events'
                 : 'View and manage events you are assigned to'}
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               Showing {filteredEvents.length} of {total} events
             </div>
             <Select value={limit.toString()} onValueChange={(value) => {
@@ -349,12 +349,12 @@ const AllEventsPage = () => {
         </div>
 
         {/* Filters */}
-        <Card className="border-border bg-card">
+        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="lg:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search events or organizers..."
                     value={searchTerm}
@@ -470,7 +470,7 @@ const AllEventsPage = () => {
                   <Square className="h-4 w-4" />
                 )}
               </Button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-muted-foreground">
                 {selectedEvents.size === filteredEvents.length ? 'Deselect all' : 'Select all'}
               </span>
             </div>
@@ -515,7 +515,7 @@ const AllEventsPage = () => {
                     }}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
+                      <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
                         <Badge className={`text-xs ${getStatusBadge(event.status)}`}>
                           {event.status}
                         </Badge>
@@ -526,7 +526,7 @@ const AllEventsPage = () => {
                           {event.isFree ? 'free' : 'paid'}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           <span>{event.date} {event.startTime && `at ${event.startTime}`}</span>
@@ -539,7 +539,7 @@ const AllEventsPage = () => {
                           <Users className="h-4 w-4" />
                           <span>{event.attendees} attendees</span>
                         </div>
-                        <span className="text-gray-500">by {event.organizer}</span>
+                        <span className="text-muted-foreground">by {event.organizer}</span>
                       </div>
                     </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
@@ -683,11 +683,11 @@ const AllEventsPage = () => {
         )}
 
         {filteredEvents.length === 0 && !loading && (
-          <Card className="border-border bg-card">
+          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-8 text-center">
-              <div className="text-gray-500">
-                <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-medium mb-2">No events found</h3>
+              <div className="text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="text-base font-medium mb-2">No events found</h3>
                 <p>Try adjusting your search or filter criteria</p>
               </div>
             </CardContent>
@@ -718,7 +718,7 @@ const AllEventsPage = () => {
                     <SelectItem value="FULL">FULL - All details except transaction IDs</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   {bulkUpdateLevel === 'RESTRICTED' && 'Organizers can only see summary cards (total attendees, total revenue)'}
                   {bulkUpdateLevel === 'STANDARD' && 'Organizers can see attendee list and payment summaries (no transaction IDs)'}
                   {bulkUpdateLevel === 'FULL' && 'Organizers can see all payment details except transaction IDs'}

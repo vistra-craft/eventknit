@@ -1,29 +1,24 @@
-// Color palette for consistent theming
+// Color palette for consistent theming - using teal and coral
 export const CHART_COLORS = {
-  primary: '#3b82f6',
-  secondary: '#8b5cf6',
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  info: '#06b6d4',
-  purple: '#8b5cf6',
-  pink: '#ec4899',
-  indigo: '#6366f1',
-  teal: '#14b8a6',
-  orange: '#f97316',
+  primary: '#14b8a6', // Teal
+  secondary: '#FB7185', // Coral
+  success: '#14b8a6', // Teal
+  warning: '#FB7185', // Coral
+  error: '#FB7185', // Coral
+  info: '#14b8a6', // Teal
+  purple: '#14b8a6', // Teal
+  pink: '#FB7185', // Coral
+  indigo: '#14b8a6', // Teal
+  teal: '#14b8a6', // Teal
+  orange: '#FB7185', // Coral
   gray: '#6b7280',
 };
 
 export const CHART_COLOR_ARRAY = [
-  CHART_COLORS.primary,
-  CHART_COLORS.secondary,
-  CHART_COLORS.success,
-  CHART_COLORS.warning,
-  CHART_COLORS.error,
-  CHART_COLORS.info,
-  CHART_COLORS.purple,
-  CHART_COLORS.pink,
-  CHART_COLORS.indigo,
-  CHART_COLORS.teal,
-  CHART_COLORS.orange,
+  CHART_COLORS.primary, // Teal
+  CHART_COLORS.secondary, // Coral
+  CHART_COLORS.teal, // Teal
+  CHART_COLORS.orange, // Coral
+  CHART_COLORS.success, // Teal
+  CHART_COLORS.warning, // Coral
 ];

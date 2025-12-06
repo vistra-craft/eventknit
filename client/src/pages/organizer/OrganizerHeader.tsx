@@ -61,7 +61,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:bg-accent-coral hover:text-white transition-colors"
             title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
           >
             {resolvedTheme === 'light' ? (
@@ -79,7 +79,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
               variant="ghost" 
               size="sm"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center space-x-2 hover:bg-muted"
+              className="flex items-center space-x-2 hover:bg-accent-coral hover:text-white transition-colors"
             >
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-primary-foreground" />
@@ -116,7 +116,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                       setIsProfileOpen(false);
                       navigate('/organizer/profile');
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white rounded-lg transition-colors"
                   >
                     <User className="h-4 w-4" />
                     <span>View Profile</span>

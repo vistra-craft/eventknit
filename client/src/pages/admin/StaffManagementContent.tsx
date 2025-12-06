@@ -253,7 +253,7 @@ const StaffManagementContent = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Staff Management</h2>
+          <h2 className="text-base font-semibold text-foreground">Staff Management</h2>
           <p className="text-gray-600">Manage company employees and event staff</p>
         </div>
         <div className="flex items-center gap-4">
@@ -291,13 +291,13 @@ const StaffManagementContent = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-blue-600 mb-2">{total || staffMembers.length}</div>
+            <div className="text-base font-semibold text-primary mb-2">{total || staffMembers.length}</div>
             <p className="text-sm text-gray-600">Total Staff</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-green-600 mb-2">
+            <div className="text-base font-semibold text-primary mb-2">
               {staffMembers.filter((s) => s.status === "ACTIVE").length}
             </div>
             <p className="text-sm text-gray-600">Active</p>
@@ -305,7 +305,7 @@ const StaffManagementContent = () => {
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-red-600 mb-2">
+            <div className="text-base font-semibold text-accent-coral mb-2">
               {staffMembers.filter((s) => s.status === "SUSPENDED").length}
             </div>
             <p className="text-sm text-gray-600">Suspended</p>
@@ -313,7 +313,7 @@ const StaffManagementContent = () => {
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-gray-600 mb-2">
+            <div className="text-base font-semibold text-muted-foreground mb-2">
               {staffMembers.filter((s) => s.status === "DEACTIVATED").length}
             </div>
             <p className="text-sm text-gray-600">Deactivated</p>

@@ -113,11 +113,11 @@ const AttendeesPage = () => {
 
   const getStatusBadge = (status: UserStatus) => {
     const variants = {
-      ACTIVE: "bg-green-100 text-green-800 border-green-200",
-      SUSPENDED: "bg-red-100 text-red-800 border-red-200",
-      DEACTIVATED: "bg-gray-100 text-gray-800 border-gray-200",
+      ACTIVE: "bg-primary/10 text-primary border-primary/20",
+      SUSPENDED: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      DEACTIVATED: "bg-muted text-muted-foreground border-border",
     };
-    return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status] || "bg-muted text-muted-foreground border-border";
   };
 
   const formatCurrency = (amount: number) => {
@@ -142,7 +142,7 @@ const AttendeesPage = () => {
   if (loading && attendees.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading attendees...</div>
+        <div className="text-muted-foreground">Loading attendees...</div>
       </div>
     );
   }
@@ -150,7 +150,7 @@ const AttendeesPage = () => {
   if (error && attendees.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-red-600">{error}</div>
+        <div className="text-accent-coral">{error}</div>
       </div>
     );
   }
@@ -160,11 +160,11 @@ const AttendeesPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Attendees</h2>
-          <p className="text-gray-600">Manage event attendees and view registration history</p>
+          <h2 className="text-lg font-semibold text-foreground">Attendees</h2>
+          <p className="text-muted-foreground">Manage event attendees and view registration history</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             Showing {attendees.length} of {total || attendees.length} attendees
           </div>
           <Select value={limit.toString()} onValueChange={(value) => {
@@ -183,11 +183,11 @@ const AttendeesPage = () => {
           </Select>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors">
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -196,45 +196,45 @@ const AttendeesPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-border bg-card">
+        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-blue-600 mb-2">{total || attendees.length}</div>
-            <p className="text-sm text-gray-600">Total Attendees</p>
+            <div className="text-lg font-semibold text-primary mb-2">{total || attendees.length}</div>
+            <p className="text-sm text-muted-foreground">Total Attendees</p>
           </CardContent>
         </Card>
-        <Card className="border-border bg-card">
+        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-green-600 mb-2">
+            <div className="text-lg font-semibold text-primary mb-2">
               {attendees.filter((a) => a.status === "ACTIVE").length}
             </div>
-            <p className="text-sm text-gray-600">Active</p>
+            <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
-        <Card className="border-border bg-card">
+        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-red-600 mb-2">
+            <div className="text-lg font-semibold text-accent-coral mb-2">
               {attendees.filter((a) => a.status === "SUSPENDED").length}
             </div>
-            <p className="text-sm text-gray-600">Suspended</p>
+            <p className="text-sm text-muted-foreground">Suspended</p>
           </CardContent>
         </Card>
-        <Card className="border-border bg-card">
+        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-purple-600 mb-2">
+            <div className="text-lg font-semibold text-primary mb-2">
               {attendees.reduce((sum, a) => sum + a.registrations.length, 0)}
             </div>
-            <p className="text-sm text-gray-600">Total Registrations</p>
+            <p className="text-sm text-muted-foreground">Total Registrations</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="border-border bg-card">
+      <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
         <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search attendees..."
                   value={searchTerm}
@@ -287,19 +287,19 @@ const AttendeesPage = () => {
       </Card>
 
       {/* Attendees List */}
-      <Card className="border-border bg-card">
+      <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
         <CardHeader>
           <CardTitle>Attendees ({attendees.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {attendees.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">No attendees found</div>
+            <div className="text-center py-8 text-muted-foreground">No attendees found</div>
           ) : (
             <div className="space-y-3">
               {attendees.map((attendee) => (
                 <div
                   key={attendee.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-4 border-0 rounded-2xl bg-white shadow-sm hover:shadow-md hover:bg-primary/5 transition-all"
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <Avatar
@@ -309,12 +309,12 @@ const AttendeesPage = () => {
                       size="lg"
                     />
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">
+                      <h4 className="text-sm font-medium text-foreground">
                         {attendee.firstName} {attendee.lastName}
                       </h4>
-                      <p className="text-sm text-gray-600">{attendee.email}</p>
+                      <p className="text-sm text-muted-foreground">{attendee.email}</p>
                       {attendee.phoneNumber && (
-                        <p className="text-sm text-gray-600">{attendee.phoneNumber}</p>
+                        <p className="text-sm text-muted-foreground">{attendee.phoneNumber}</p>
                       )}
                       <div className="flex items-center gap-2 mt-1">
                         <Badge className={`text-xs ${getStatusBadge(attendee.status)}`}>
@@ -330,11 +330,11 @@ const AttendeesPage = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Joined: {formatDate(attendee.createdAt)}
                       </div>
                       {attendee.registrations.length > 0 && (
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           Total: {formatCurrency(
                             attendee.registrations.reduce((sum, reg) => sum + reg.totalAmount, 0)
                           )}
@@ -346,7 +346,7 @@ const AttendeesPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => setPreviewAttendee(attendee)}
-                        className="hover:bg-gray-900 hover:text-white transition-colors"
+                        className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
@@ -355,7 +355,7 @@ const AttendeesPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditAttendee(attendee.id)}
-                        className="hover:bg-gray-900 hover:text-white transition-colors"
+                        className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors"
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit
@@ -427,7 +427,7 @@ const AttendeesPage = () => {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </div>
             </div>
@@ -475,7 +475,7 @@ const AttendeesPage = () => {
                   size="xl"
                 />
                 <div className="flex-1">
-                  <h2 className="text-base font-semibold text-gray-900 mb-2">
+                  <h2 className="text-base font-semibold text-foreground mb-2">
                     {previewAttendee.firstName} {previewAttendee.lastName}
                   </h2>
                   <Badge className={`${getStatusBadge(previewAttendee.status)} mb-2`}>

@@ -22,7 +22,7 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <div className="container mx-auto px-6 py-8 flex-1 flex items-center justify-center">
         <div className="w-full max-w-4xl">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
@@ -38,11 +38,11 @@ const ForgotPassword = () => {
                   {/* Logo */}
                   <div className="flex items-center justify-between gap-3 mb-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                         <Calendar className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h1 className="text-2xl font-bold text-gray-900">EventKnit</h1>
+                        <h1 className="text-2xl font-bold text-primary">EventKnit</h1>
                         <span className="text-sm text-muted-foreground">
                           {import.meta.env.VITE_APP_VERSION || '1.0.0 Development'}
                         </span>
@@ -51,7 +51,7 @@ const ForgotPassword = () => {
                     <button
                       type="button"
                       onClick={() => navigate('/')}
-                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
                     >
                       <ArrowLeft className="w-3 h-3" />
                       <span>Back to home</span>
@@ -75,7 +75,7 @@ const ForgotPassword = () => {
             <div className="flex items-center justify-center">
               <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-none">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Forgot password?</h1>
+            <h1 className="text-2xl font-bold text-primary mb-2">Forgot password?</h1>
             <p className="text-sm text-muted-foreground">
               {isSubmitted 
                 ? "Check your email for reset instructions" 
@@ -98,13 +98,13 @@ const ForgotPassword = () => {
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12"
+                      className="pl-10 h-12 border-border focus:border-primary focus:ring-primary"
                       required
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white font-medium">
+                <Button type="submit" className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium">
                   Send Reset Link
                 </Button>
               </form>
@@ -112,7 +112,7 @@ const ForgotPassword = () => {
               <div className="mt-5 text-center">
                 <button
                   onClick={handleBackToSignIn}
-                  className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-900 hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
                 >
                   <ArrowLeft className="w-3 h-3" />
                   <span>Back to sign in</span>
@@ -123,8 +123,8 @@ const ForgotPassword = () => {
             <>
               {/* Success State */}
               <div className="text-center space-y-6">
-                <div className="w-16 h-16 bg-gray-900/10 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-8 h-8 text-gray-900" />
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-8 h-8 text-primary" />
                 </div>
                 
                 <div className="space-y-2">
@@ -139,7 +139,7 @@ const ForgotPassword = () => {
                     Didn't receive the email? Check your spam folder or{' '}
                     <button
                       onClick={() => setIsSubmitted(false)}
-                      className="text-gray-900 hover:text-gray-700 transition-colors"
+                      className="text-primary hover:text-accent-coral transition-colors"
                     >
                       try again
                     </button>
@@ -148,7 +148,7 @@ const ForgotPassword = () => {
                   <Button
                     onClick={handleBackToSignIn}
                     variant="outline"
-                    className="w-full h-11 border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
+                    className="w-full h-11 border border-border hover:bg-accent-coral hover:text-white transition-colors"
                   >
                     Back to sign in
                   </Button>
@@ -160,7 +160,7 @@ const ForgotPassword = () => {
           <div className="mt-6 text-center">
             <p className="text-xs text-muted-foreground">
               Need help? Contact our{' '}
-              <Link to="/support" className="text-gray-900 hover:text-gray-700 hover:underline transition-colors">
+              <Link to="/support" className="text-primary hover:text-accent-coral hover:underline transition-colors">
                 support team
               </Link>
             </p>

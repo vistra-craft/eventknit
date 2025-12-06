@@ -184,7 +184,7 @@ const EditFeaturedEventPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Edit Featured Event</h1>
+            <h1 className="text-base font-semibold text-foreground">Edit Featured Event</h1>
             <p className="text-sm text-gray-600">
               Update the featured event settings
             </p>

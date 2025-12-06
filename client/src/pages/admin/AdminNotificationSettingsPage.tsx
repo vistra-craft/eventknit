@@ -769,7 +769,7 @@ const AdminNotificationSettingsPage = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-base font-semibold text-gray-900">Notification Templates</h2>
+                    <h2 className="text-base font-semibold text-foreground">Notification Templates</h2>
                     <p className="text-sm text-muted-foreground mt-1">
                       Manage notification templates for different notification types
                     </p>
@@ -853,7 +853,7 @@ const AdminNotificationSettingsPage = () => {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-base font-semibold text-gray-900">Notification Analytics</h2>
+                    <h2 className="text-base font-semibold text-foreground">Notification Analytics</h2>
                     <p className="text-sm text-muted-foreground mt-1">
                       Track notification performance and delivery rates
                     </p>
@@ -877,7 +877,7 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Total Sent</p>
-                          <p className="font-semibold text-gray-900">{analytics.totalSent.toLocaleString()}</p>
+                          <p className="font-semibold text-primary">{analytics.totalSent.toLocaleString()}</p>
                         </div>
                         <Bell className="h-8 w-8 text-muted-foreground" />
                       </div>
@@ -910,7 +910,7 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Delivery Rate</p>
-                          <p className="font-semibold text-gray-900">{analytics.deliveryRate.toFixed(1)}%</p>
+                          <p className="font-semibold text-primary">{analytics.deliveryRate.toFixed(1)}%</p>
                         </div>
                         <BarChart3 className="h-8 w-8 text-primary" />
                       </div>
