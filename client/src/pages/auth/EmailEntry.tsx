@@ -78,7 +78,7 @@ const EmailEntry = () => {
         </div>
 
         {/* Email + Role Selection */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
+        <div className="bg-card-surface rounded-2xl shadow-sm p-6 space-y-5">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium">
               Email address
@@ -103,7 +103,7 @@ const EmailEntry = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             {/* Attendee card */}
             <Card
-              className="border border-border bg-white rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              className="border border-border bg-card-surface rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
               onClick={() => !isLoading && handleContinue('attendee')}
             >
               <CardHeader className="pb-2">
@@ -131,7 +131,7 @@ const EmailEntry = () => {
 
             {/* Organizer card */}
             <Card
-              className="border border-border bg-white rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              className="border border-border bg-card-surface rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
               onClick={() => !isLoading && handleContinue('organizer')}
             >
               <CardHeader className="pb-2">

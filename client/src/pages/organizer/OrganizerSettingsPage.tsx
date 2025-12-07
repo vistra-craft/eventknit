@@ -1141,7 +1141,7 @@ const OrganizerSettingsPage = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Tab Navigation */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
               <CardContent className="p-4">
                 <nav className="space-y-1">
                   {tabs.map((tab) => {

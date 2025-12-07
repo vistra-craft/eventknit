@@ -419,7 +419,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
   return (
     <div className="space-y-6">
       {/* Status Overview */}
-      <Card className="border-0 bg-white rounded-2xl shadow-sm">
+      <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
@@ -487,7 +487,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
       {/* Verification Steps */}
       <div className="space-y-4">
         {/* Step 1: Identity Verification */}
-        <Card className="border-0 bg-white rounded-2xl shadow-sm">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -745,7 +745,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
         
         {/* Step 2: Business Verification */}
         {status?.identityVerified && (
-          <Card className="border-0 bg-white rounded-2xl shadow-sm">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>

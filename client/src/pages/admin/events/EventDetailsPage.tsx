@@ -524,7 +524,7 @@ const EventDetailsPage = () => {
 
         {/* Event Status and Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <CheckCircle className="h-5 w-5 text-primary" />
@@ -535,7 +535,7 @@ const EventDetailsPage = () => {
               </Badge>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Users className="h-5 w-5 text-primary" />
@@ -546,7 +546,7 @@ const EventDetailsPage = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <DollarSign className="h-5 w-5 text-primary" />
@@ -557,7 +557,7 @@ const EventDetailsPage = () => {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
@@ -591,7 +591,7 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Event Information */}
               <div className="lg:col-span-2 space-y-6">
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Information</CardTitle>
                   </CardHeader>
@@ -650,7 +650,7 @@ const EventDetailsPage = () => {
                 </Card>
 
                 {/* Organizer Information */}
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Organizer Information</CardTitle>
                   </CardHeader>
@@ -680,7 +680,7 @@ const EventDetailsPage = () => {
 
                 {/* Organizer Data Access Control - Only for ADMIN_STAFF and SUPERADMIN */}
                 {permissions.canAccessAllEvents && (
-                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Organizer Data Access Control</CardTitle>
                     </CardHeader>
@@ -761,7 +761,7 @@ const EventDetailsPage = () => {
 
               {/* Event Image and Stats */}
               <div className="space-y-6">
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Image</CardTitle>
                   </CardHeader>
@@ -774,7 +774,7 @@ const EventDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Statistics</CardTitle>
                   </CardHeader>
@@ -805,7 +805,7 @@ const EventDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Event Settings</CardTitle>
                   </CardHeader>
@@ -851,7 +851,7 @@ const EventDetailsPage = () => {
             {(eventData.speakers && eventData.speakers.length > 0) || (eventData.sponsors && eventData.sponsors.length > 0) ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {eventData.speakers && eventData.speakers.length > 0 && (
-                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Speakers ({eventData.speakers.length})</CardTitle>
                     </CardHeader>
@@ -874,7 +874,7 @@ const EventDetailsPage = () => {
                 )}
 
                 {eventData.sponsors && eventData.sponsors.length > 0 && (
-                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Sponsors ({eventData.sponsors.length})</CardTitle>
                     </CardHeader>
@@ -909,13 +909,13 @@ const EventDetailsPage = () => {
           <TabsContent value="attendees" className="space-y-6">
             {/* Attendees Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{registrations.length}</div>
                   <p className="text-sm text-gray-600">Total Attendees</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
                     {registrations.filter(r => r.status === 'CONFIRMED').length}
@@ -923,7 +923,7 @@ const EventDetailsPage = () => {
                   <p className="text-sm text-gray-600">Confirmed</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-accent-coral mb-2">
                     {registrations.filter(r => r.status === 'PENDING').length}
@@ -931,7 +931,7 @@ const EventDetailsPage = () => {
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
                     {registrations.filter(r => r.paymentStatus === 'COMPLETED').length}
@@ -942,7 +942,7 @@ const EventDetailsPage = () => {
             </div>
 
             {/* Attendees Filters and Search */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
@@ -985,7 +985,7 @@ const EventDetailsPage = () => {
             </Card>
 
             {/* Attendees List */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Attendees List</CardTitle>
               </CardHeader>
@@ -1054,25 +1054,25 @@ const EventDetailsPage = () => {
           <TabsContent value="payments" className="space-y-6">
             {/* Payment Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.totalRevenue)}</div>
                   <p className="text-sm text-gray-600">Total Revenue</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{metrics.successfulPayments}</div>
                   <p className="text-sm text-muted-foreground">Successful</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-accent-coral mb-2">{metrics.pendingPayments}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-accent-coral mb-2">{metrics.failedPayments}</div>
                   <p className="text-sm text-gray-600">Failed</p>
@@ -1082,7 +1082,7 @@ const EventDetailsPage = () => {
 
             {/* Payment Methods Breakdown */}
             {Object.keys(paymentsByMethod).length > 0 && (
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Payment Methods</CardTitle>
                 </CardHeader>
@@ -1102,7 +1102,7 @@ const EventDetailsPage = () => {
             )}
 
             {/* Payments List */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Payment Transactions</CardTitle>
@@ -1203,25 +1203,25 @@ const EventDetailsPage = () => {
             <TabsContent value="refunds" className="space-y-6">
             {/* Refunds Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-accent-coral mb-2">{formatCurrency(metrics.totalRefunds)}</div>
                   <p className="text-sm text-gray-600">Total Refunds</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{metrics.processedRefunds}</div>
                   <p className="text-sm text-gray-600">Processed</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-accent-coral mb-2">{metrics.pendingRefunds}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">2.5%</div>
                   <p className="text-sm text-muted-foreground">Refund Rate</p>
@@ -1230,7 +1230,7 @@ const EventDetailsPage = () => {
             </div>
 
             {/* Refund Requests */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Refund Requests</CardTitle>
@@ -1320,25 +1320,25 @@ const EventDetailsPage = () => {
             <TabsContent value="remittance" className="space-y-6">
             {/* Remittance Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.organizerAmount)}</div>
                   <p className="text-sm text-gray-600">Total to Organizer</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.platformFees)}</div>
                   <p className="text-sm text-muted-foreground">Platform Fees</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{metrics.remittancesSent}</div>
                   <p className="text-sm text-gray-600">Sent</p>
                 </CardContent>
               </Card>
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-accent-coral mb-2">{metrics.remittancesPending}</div>
                   <p className="text-sm text-gray-600">Pending</p>
@@ -1347,7 +1347,7 @@ const EventDetailsPage = () => {
             </div>
 
             {/* Payment Breakdown */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Payment Breakdown</CardTitle>
               </CardHeader>
@@ -1388,7 +1388,7 @@ const EventDetailsPage = () => {
             </Card>
 
             {/* Remittance History */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Remittance History</CardTitle>
@@ -1445,7 +1445,7 @@ const EventDetailsPage = () => {
             </Card>
 
             {/* Organizer Payment Details */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Organizer Payment Details</CardTitle>
               </CardHeader>
@@ -1523,14 +1523,14 @@ const EventDetailsPage = () => {
             </div>
 
             {scanConfigLoading ? (
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-12 text-center">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">Loading scan settings...</p>
                 </CardContent>
               </Card>
             ) : scanConfig ? (
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardHeader>
                   <CardTitle>Ticket Scanning Configuration</CardTitle>
                 </CardHeader>
@@ -1681,7 +1681,7 @@ const EventDetailsPage = () => {
                 </CardContent>
               </Card>
             ) : (
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                 <CardContent className="p-12 text-center">
                   <AlertCircle className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">Failed to load scan settings</p>

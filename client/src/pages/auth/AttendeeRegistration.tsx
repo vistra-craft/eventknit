@@ -504,7 +504,7 @@ const AttendeeRegistration = () => {
         </div>
 
         {/* Form Content */}
-        <Card className="border-0 bg-white rounded-2xl shadow-sm">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
           <CardContent className="p-8">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}

@@ -73,7 +73,7 @@ const ForgotPassword = () => {
 
             {/* Right Panel - Forgot Password Form */}
             <div className="flex items-center justify-center">
-              <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-none">
+              <div className="w-full max-w-md bg-card-surface rounded-2xl p-6 shadow-none">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-primary mb-2">Forgot password?</h1>
             <p className="text-sm text-muted-foreground">

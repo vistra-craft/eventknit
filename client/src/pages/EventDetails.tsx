@@ -214,7 +214,7 @@ const EventDetails = () => {
             {/* Right Column - Action Button and Info */}
             <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-20 lg:self-start">
               {/* Primary Action Card */}
-              <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-6">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-6">
                 <div className="space-y-4">
                   {/* Price Display */}
                   {!event.isFree && (

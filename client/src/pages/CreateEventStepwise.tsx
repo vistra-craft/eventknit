@@ -1534,7 +1534,7 @@ export default function CreateEventStepwise() {
       
       <div className="space-y-4">
         {ticketTypes.map((ticket, index) => (
-          <Card key={ticket.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card key={ticket.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Ticket Type {index + 1}</CardTitle>
@@ -1869,7 +1869,7 @@ export default function CreateEventStepwise() {
 
       <div className="space-y-4">
         {registrationFields.map((field, index) => (
-          <Card key={field.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card key={field.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Field {index + 1}</CardTitle>
@@ -2156,7 +2156,7 @@ export default function CreateEventStepwise() {
       <div className="space-y-4">
         <Label>Frequently Asked Questions</Label>
         {faqs.map((faq, index) => (
-          <Card key={index} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card key={index} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
@@ -2643,7 +2643,7 @@ export default function CreateEventStepwise() {
         )}
 
         {/* Form Content */}
-        <Card className="border-0 bg-white rounded-2xl shadow-md">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
           <CardContent className="p-6 sm:p-8">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}

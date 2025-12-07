@@ -166,24 +166,29 @@
      DARK MODE - Override base tokens for dark theme
      ======================================================================== */
   .dark {
-    /* Base Color Overrides for Dark Mode */
-    --color-teal: 174 77% 51%;        /* Brighter teal for dark mode */
-    --color-teal-glow: 174 77% 61%;   /* Even brighter for glows */
-    --color-coral: 351 91% 77%;       /* Brighter coral for dark mode */
-    --color-destructive: 0 62.8% 30.6%;
+    /* ========================================================================
+       CURSOR-STYLE DARK MODE - Deep neutral dark background
+       ======================================================================== */
+    
+    /* Base Color Overrides for Dark Mode - Enhanced for visibility */
+    --color-teal: 174 77% 58%;        /* Brighter teal for better visibility on dark */
+    --color-teal-glow: 174 77% 68%;   /* Even brighter for glows */
+    --color-teal-dark: 174 77% 45%;   /* Darker variant */
+    --color-coral: 351 100% 70%;       /* Maximum saturation, optimal lightness for vibrant contrast on dark */
+    --color-destructive: 0 72% 58%;   /* More visible red for errors */
 
-    /* Backgrounds */
-    --background: 220 20% 12%;        /* Dark gray background */
-    --foreground: 0 0% 98%;
-    --surface: 220 20% 15%;
+    /* Backgrounds - Cursor-style deep dark */
+    --background: 0 0% 10%;           /* #1a1a1a - Deep neutral dark like Cursor */
+    --foreground: 0 0% 95%;           /* High contrast text */
+    --surface: 0 0% 13%;              /* Slightly lighter for surfaces */
 
-    /* Primary (Teal) */
+    /* Primary (Teal) - Enhanced */
     --primary: var(--color-teal);
-    --primary-foreground: 220 20% 12%;
+    --primary-foreground: 0 0% 10%;   /* Dark text on teal buttons */
     --primary-glow: var(--color-teal-glow);
     --primary-dark: var(--color-teal-dark);
 
-    /* Accent (Coral) */
+    /* Accent (Coral) - Enhanced */
     --accent: var(--color-coral);
     --accent-foreground: var(--color-white);
     --accent-electric: var(--color-coral);
@@ -195,68 +200,61 @@
 
     /* EventKnit Brand */
     --eventknit-brand: var(--color-teal);
-    --eventknit-brand-foreground: 220 20% 12%;
+    --eventknit-brand-foreground: 0 0% 10%;
 
-    /* Cards */
-    --card-surface: 220 20% 15%;
-    --card-border: 220 15% 25%;
-    --card-hover: 220 20% 18%;
+    /* Cards - Subtle elevation on dark background */
+    --card-surface: 0 0% 13%;         /* Slightly lighter than background */
+    --card-border: 0 0% 20%;          /* Subtle borders */
+    --card-hover: 0 0% 16%;          /* Hover state - more visible */
 
     /* Gradients - Dark Theme */
     --gradient-primary: linear-gradient(135deg, hsl(var(--color-teal)) 0%, hsl(var(--color-coral)) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(220 20% 15%) 0%, hsl(220 20% 12%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 13%) 0%, hsl(0 0% 10%) 100%);
 
     /* Glass Effects - Dark Theme */
-    --glass-bg: hsl(220 20% 12% / 0.9);
+    --glass-bg: hsl(0 0% 10% / 0.9);
     --glass-border: hsl(var(--color-teal) / 0.3);
 
     /* Shadows & Glows - Dark Theme */
-    --shadow-primary: 0 20px 40px -12px hsl(var(--color-teal) / 0.3);
-    --shadow-card: 0 4px 16px -4px hsl(var(--color-black) / 0.3);
-    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-teal) / 0.25);
-    --shadow-glow: 0 0 40px hsl(var(--color-teal-glow) / 0.4);
-    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-coral) / 0.2);
+    --shadow-primary: 0 20px 40px -12px hsl(var(--color-teal) / 0.4);
+    --shadow-card: 0 4px 16px -4px hsl(var(--color-black) / 0.5);
+    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-teal) / 0.3);
+    --shadow-glow: 0 0 40px hsl(var(--color-teal-glow) / 0.5);
+    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-coral) / 0.3);
 
-    --card: 220 20% 15%;
-    --card-foreground: 0 0% 98%;
+    /* ShadCN Component Colors - Dark Theme */
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 220 20% 15%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 95%;
 
-    --secondary: 220 15% 25%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 70%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;     /* Secondary text - good contrast */
 
-    --accent: 351 91% 77%;
+    --accent: 351 91% 82%;
     --accent-foreground: 0 0% 100%;
-
-    /* Secondary */
-    --secondary: 220 15% 25%;
-    --secondary-foreground: 0 0% 98%;
-
-    /* Muted */
-    --muted: 220 15% 20%;
-    --muted-foreground: 220 10% 70%;
 
     /* Destructive */
     --destructive: var(--color-destructive);
     --destructive-foreground: var(--color-white);
 
     /* Borders & Inputs */
-    --border: 220 15% 25%;
-    --input: 220 20% 15%;
+    --border: 0 0% 20%;               /* Subtle borders */
+    --input: 0 0% 13%;                /* Input backgrounds */
     --ring: var(--color-teal);
 
     /* Sidebar */
-    --sidebar-background: 220 20% 12%;
-    --sidebar-foreground: 0 0% 98%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: var(--color-teal);
-    --sidebar-primary-foreground: 220 20% 12%;
-    --sidebar-accent: 220 15% 25%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 15% 25%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
     --sidebar-ring: var(--color-teal);
   }
 }

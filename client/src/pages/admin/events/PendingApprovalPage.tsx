@@ -291,7 +291,7 @@ const PendingApprovalPage = () => {
         </div>
 
         {/* Filters */}
-        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="lg:col-span-2">
@@ -343,7 +343,7 @@ const PendingApprovalPage = () => {
         {/* Events List */}
         <div className="space-y-3">
           {filteredEvents.map((event) => (
-            <Card key={event.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card key={event.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
                   <EventThumbnail
@@ -506,7 +506,7 @@ const PendingApprovalPage = () => {
         )}
 
         {filteredEvents.length === 0 && !loading && (
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-8 text-center">
               <div className="text-muted-foreground">
                 <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />

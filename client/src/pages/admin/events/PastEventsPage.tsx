@@ -186,7 +186,7 @@ const PastEventsPage = () => {
         </div>
 
         {/* Filters */}
-        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="lg:col-span-2">
@@ -252,7 +252,7 @@ const PastEventsPage = () => {
         {/* Events List */}
         <div className="space-y-3">
           {filteredEvents.map((event) => (
-            <Card key={event.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card key={event.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -312,7 +312,7 @@ const PastEventsPage = () => {
         </div>
 
         {filteredEvents.length === 0 && (
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-8 text-center">
               <div className="text-muted-foreground">
                 <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />

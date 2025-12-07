@@ -196,13 +196,13 @@ const AttendeesPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-primary mb-2">{total || attendees.length}</div>
             <p className="text-sm text-muted-foreground">Total Attendees</p>
           </CardContent>
         </Card>
-        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-primary mb-2">
               {attendees.filter((a) => a.status === "ACTIVE").length}
@@ -210,7 +210,7 @@ const AttendeesPage = () => {
             <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
-        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-accent-coral mb-2">
               {attendees.filter((a) => a.status === "SUSPENDED").length}
@@ -218,7 +218,7 @@ const AttendeesPage = () => {
             <p className="text-sm text-muted-foreground">Suspended</p>
           </CardContent>
         </Card>
-        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-primary mb-2">
               {attendees.reduce((sum, a) => sum + a.registrations.length, 0)}
@@ -229,7 +229,7 @@ const AttendeesPage = () => {
       </div>
 
       {/* Filters */}
-      <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+      <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
         <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-2">
@@ -287,7 +287,7 @@ const AttendeesPage = () => {
       </Card>
 
       {/* Attendees List */}
-      <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+      <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
         <CardHeader>
           <CardTitle>Attendees ({attendees.length})</CardTitle>
         </CardHeader>

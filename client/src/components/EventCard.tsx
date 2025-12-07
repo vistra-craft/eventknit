@@ -84,7 +84,7 @@ export const EventCard: React.FC<EventCardProps> = ({
     <Card
       variant="interactive"
       onClick={handleCardClick}
-      className="group overflow-hidden border-0 bg-white rounded-2xl shadow-card hover:shadow-primary transition-all duration-300 hover:-translate-y-1"
+      className="group overflow-hidden border-0 bg-card-surface rounded-2xl shadow-card hover:shadow-primary transition-all duration-300 hover:-translate-y-1"
     >
       {/* Event Image */}
       <div className="relative overflow-hidden h-64 rounded-lg">

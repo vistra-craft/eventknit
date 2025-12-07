@@ -240,7 +240,7 @@ const EnhancedDashboard = () => {
           {stats.map((stat, index) => (
             <div
               key={index}
-              className={`border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all ${stat.borderColor} p-4`}
+              className={`border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all ${stat.borderColor} p-4`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
@@ -276,7 +276,7 @@ const EnhancedDashboard = () => {
         {/* Main Content */}
         <div className="space-y-8">
           {/* Quick Actions */}
-          <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-6">
+          <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-6">
             <h3 className="text-base font-semibold text-foreground mb-4">
               Quick Actions
             </h3>
@@ -338,7 +338,7 @@ const EnhancedDashboard = () => {
           {/* Insights Cards Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Performance Insights */}
-            <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="p-6 border-b border-border">
                 <h3 className="text-base font-semibold text-foreground">
                   Performance Insights
@@ -381,7 +381,7 @@ const EnhancedDashboard = () => {
             </div>
 
             {/* Upcoming Deadlines */}
-            <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="p-6 border-b border-border">
                 <h3 className="text-base font-semibold text-foreground">
                   Upcoming Deadlines
@@ -424,7 +424,7 @@ const EnhancedDashboard = () => {
             </div>
 
             {/* Event Health Score */}
-            <div className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <div className="p-6 border-b border-border">
                 <h3 className="text-base font-semibold text-foreground">
                   Event Health Score

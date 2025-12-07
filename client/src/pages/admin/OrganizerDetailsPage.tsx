@@ -295,7 +295,7 @@ const OrganizerDetailsPage = () => {
 
         {/* Organizer Status and Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Shield className="h-5 w-5 text-blue-600" />
@@ -306,7 +306,7 @@ const OrganizerDetailsPage = () => {
               </Badge>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Calendar className="h-5 w-5 text-green-600" />
@@ -315,7 +315,7 @@ const OrganizerDetailsPage = () => {
               <p className="text-lg font-bold text-primary">{organizerData.totalEvents}</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <DollarSign className="h-5 w-5 text-green-600" />
@@ -324,7 +324,7 @@ const OrganizerDetailsPage = () => {
               <p className="text-lg font-bold text-gray-900">{formatCurrency(organizerData.totalRevenue)}</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Star className="h-5 w-5 text-yellow-600" />
@@ -348,7 +348,7 @@ const OrganizerDetailsPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Organizer Information */}
               <div className="lg:col-span-2 space-y-6">
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Organizer Information</CardTitle>
                   </CardHeader>
@@ -411,7 +411,7 @@ const OrganizerDetailsPage = () => {
                 </Card>
 
                 {/* Business Information */}
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Business Information</CardTitle>
                   </CardHeader>
@@ -446,7 +446,7 @@ const OrganizerDetailsPage = () => {
 
                 {/* Emergency Contact */}
                 {organizerData.emergencyContact && (
-                  <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                     <CardHeader>
                       <CardTitle>Emergency Contact</CardTitle>
                     </CardHeader>
@@ -472,7 +472,7 @@ const OrganizerDetailsPage = () => {
 
               {/* Statistics and Activity */}
               <div className="space-y-6">
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Statistics</CardTitle>
                   </CardHeader>
@@ -499,7 +499,7 @@ const OrganizerDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardHeader>
                     <CardTitle>Recent Activity</CardTitle>
                   </CardHeader>
@@ -533,7 +533,7 @@ const OrganizerDetailsPage = () => {
 
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Organizer Events ({organizerEvents.length})</CardTitle>
               </CardHeader>
@@ -581,7 +581,7 @@ const OrganizerDetailsPage = () => {
 
           {/* Support Tab */}
           <TabsContent value="support" className="space-y-6">
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardHeader>
                 <CardTitle>Support Tickets ({organizerData.supportTickets?.length || 0})</CardTitle>
               </CardHeader>

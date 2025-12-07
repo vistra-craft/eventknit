@@ -66,7 +66,7 @@ const UserTypeSelection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Attendee Card */}
           <Card
-            className="group border border-border bg-white rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+            className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
             onClick={() => handleUserTypeSelection('attendee')}
           >
             <CardHeader className="pb-3">
@@ -93,7 +93,7 @@ const UserTypeSelection = () => {
 
           {/* Organizer Card */}
           <Card
-            className="group border border-border bg-white rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+            className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
             onClick={() => handleUserTypeSelection('organizer')}
           >
             <CardHeader className="pb-3">

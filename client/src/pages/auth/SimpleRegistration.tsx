@@ -181,7 +181,7 @@ const SimpleRegistration = () => {
         </div>
 
         {/* Registration Form */}
-        <Card className="border-0 bg-white rounded-2xl shadow-none">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-2xl font-bold text-primary">
               {step === 'role'
@@ -205,7 +205,7 @@ const SimpleRegistration = () => {
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ATTENDEE')}
-                    className="p-5 rounded-2xl bg-white hover:bg-primary/5 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md"
+                    className="p-5 rounded-2xl bg-card-surface hover:bg-primary/5 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">
@@ -223,7 +223,7 @@ const SimpleRegistration = () => {
                   <button
                     type="button"
                     onClick={() => handleRoleSelect('ORGANIZER')}
-                    className="p-5 rounded-2xl bg-white hover:bg-primary/5 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md"
+                    className="p-5 rounded-2xl bg-card-surface hover:bg-primary/5 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors">

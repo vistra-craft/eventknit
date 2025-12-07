@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 
 export const RefundPolicy = () => {
   return (
-    <Card className="p-6 rounded-2xl border-0 bg-white shadow-sm">
+    <Card className="p-6 rounded-2xl border-0 bg-card-surface shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         <h3 className="text-xl font-bold">Refund Policy</h3>
       </div>

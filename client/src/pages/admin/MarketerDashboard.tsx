@@ -150,7 +150,7 @@ const MarketerDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+      <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
         <CardHeader>
           <CardTitle className={isMobile ? 'text-base' : ''}>Quick Actions</CardTitle>
           <CardDescription className={isMobile ? 'text-xs' : ''}>
@@ -183,7 +183,7 @@ const MarketerDashboard = () => {
 
       {/* Assigned Events */}
       {upcomingEvents.length > 0 && (
-        <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
           <CardHeader>
             <CardTitle>Upcoming Events</CardTitle>
             <CardDescription>Events you're assigned to in the next 30 days</CardDescription>

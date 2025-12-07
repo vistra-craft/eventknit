@@ -246,7 +246,7 @@ const ModerationPage = () => {
 
         {/* Moderation Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-accent-coral mb-2">
                 {mockReportedContent.filter(r => r.status === "pending").length}
@@ -254,7 +254,7 @@ const ModerationPage = () => {
               <p className="text-sm text-muted-foreground">Pending Reports</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-accent-coral mb-2">
                 {mockReportedContent.filter(r => r.severity === "high").length}
@@ -262,7 +262,7 @@ const ModerationPage = () => {
               <p className="text-sm text-muted-foreground">High Severity</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-accent-coral mb-2">
                 {mockUserViolations.filter(u => u.status === "suspended").length}
@@ -270,7 +270,7 @@ const ModerationPage = () => {
               <p className="text-sm text-muted-foreground">Suspended Users</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-accent-coral mb-2">
                 {mockUserViolations.filter(u => u.status === "banned").length}
@@ -289,7 +289,7 @@ const ModerationPage = () => {
 
           <TabsContent value="reports" className="space-y-6">
             {/* Filters */}
-            <Card className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
@@ -345,7 +345,7 @@ const ModerationPage = () => {
             {/* Reports List */}
             <div className="space-y-3">
               {filteredReports.map((report) => (
-                <Card key={report.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card key={report.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -411,7 +411,7 @@ const ModerationPage = () => {
             {/* User Violations List */}
             <div className="space-y-3">
               {mockUserViolations.map((violation) => (
-                <Card key={violation.id} className="border-0 bg-white rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card key={violation.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">

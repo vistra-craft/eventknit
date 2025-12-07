@@ -166,7 +166,7 @@ const SignIn = () => {
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl overflow-hidden flex flex-col lg:flex-row min-h-[420px] max-h-[600px]">
+          <div className="bg-card-surface rounded-2xl overflow-hidden flex flex-col lg:flex-row min-h-[420px] max-h-[600px]">
           {/* Left Panel - Image with Overlay */}
           <div className="hidden lg:flex lg:w-1/2 relative">
             <img 
@@ -212,7 +212,7 @@ const SignIn = () => {
               <div className="mb-6">
                 <Button
                   variant="outline"
-                  className="w-full h-12 bg-white border border-border hover:bg-accent-coral hover:text-white text-foreground font-medium flex items-center justify-center gap-3 transition-colors"
+                  className="w-full h-12 bg-card-surface border border-border hover:bg-accent-coral hover:text-white text-foreground font-medium flex items-center justify-center gap-3 transition-colors"
                   onClick={handleFacebookSignIn}
                   disabled={isLoading}
                   type="button"
