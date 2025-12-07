@@ -54,6 +54,26 @@ export class DisbursementService {
       throw new AuthorizationError('Event does not belong to this organizer');
     }
 
+    // Eventbrite-style: Verify organizer has identity verification to receive payouts
+    const organizer = await prisma.user.findUnique({
+      where: { id: data.organizerId },
+      select: {
+        id: true,
+        isIdentityVerified: true,
+        verificationLevel: true,
+      },
+    });
+
+    if (!organizer) {
+      throw new NotFoundError('Organizer not found');
+    }
+
+    if (!organizer.isIdentityVerified) {
+      throw new ValidationError(
+        'Identity verification is required to receive payouts. Please verify your identity in your profile settings to receive funds from ticket sales.',
+      );
+    }
+
     // Get platform fees to include
     let feesToInclude;
     if (data.platformFeeIds && data.platformFeeIds.length > 0) {
@@ -345,6 +365,13 @@ export class DisbursementService {
             title: true,
           },
         },
+        organizer: {
+          select: {
+            id: true,
+            isIdentityVerified: true,
+            verificationLevel: true,
+          },
+        },
       },
     });
 
@@ -354,6 +381,13 @@ export class DisbursementService {
 
     if (disbursement.status !== 'pending') {
       throw new ValidationError(`Cannot process disbursement with status: ${disbursement.status}`);
+    }
+
+    // Eventbrite-style: Verify organizer has identity verification to receive payouts
+    if (!disbursement.organizer.isIdentityVerified) {
+      throw new ValidationError(
+        'Identity verification is required to receive payouts. The organizer must verify their identity before funds can be disbursed.',
+      );
     }
 
     // Update status to processing

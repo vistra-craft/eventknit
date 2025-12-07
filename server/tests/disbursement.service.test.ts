@@ -50,7 +50,7 @@ describe('DisbursementService', () => {
       await cleanupTestData(tx);
     });
 
-    // Create test organizer
+    // Create test organizer with identity verification (required for payouts)
     const organizer = await prisma.user.create({
       data: {
         email: 'organizer@test.com',
@@ -61,6 +61,9 @@ describe('DisbursementService', () => {
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
+        isIdentityVerified: true, // Required for payouts (Eventbrite approach)
+        identityVerifiedAt: new Date(),
+        verificationLevel: 2,
       },
     });
     organizerId = organizer.id;
@@ -289,6 +292,210 @@ describe('DisbursementService', () => {
       await expect(
         DisbursementService.getDisbursement(created.id, otherOrganizer.id),
       ).rejects.toThrow('Access denied');
+    });
+  });
+
+  describe('Eventbrite Approach: Verification Required for Payouts', () => {
+    it('should fail to create disbursement without identity verification', async () => {
+      if (!dbConnected) return;
+
+      // Create organizer without identity verification
+      const unverifiedOrganizer = await prisma.user.create({
+        data: {
+          email: 'unverified@test.com',
+          password: await hashPassword('password123'),
+          firstName: 'Unverified',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          isIdentityVerified: false, // Not verified
+          verificationLevel: 1,
+        },
+      });
+
+      // Create event for unverified organizer
+      const unverifiedEvent = await prisma.event.create({
+        data: {
+          title: 'Unverified Event',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          organizerId: unverifiedOrganizer.id,
+          status: EventStatus.APPROVED,
+          isFree: false,
+          price: 100,
+        },
+      });
+
+      // Create platform fee for unverified organizer
+      const unverifiedRegistration = await prisma.eventRegistration.create({
+        data: {
+          eventId: unverifiedEvent.id,
+          attendeeId: unverifiedOrganizer.id,
+          quantity: 1,
+          status: RegistrationStatus.CONFIRMED,
+          paymentStatus: 'COMPLETED',
+          totalAmount: 10000,
+        },
+      });
+
+      const unverifiedPayment = await prisma.eventPaymentTransaction.create({
+        data: {
+          transactionNumber: 'EPT-2024-000002',
+          paystackReference: 'test_ref_002',
+          paystackAmount: 1000000,
+          currency: 'NGN',
+          amount: 10000,
+          paymentMethod: 'PAYSTACK',
+          paymentStatus: 'success',
+          paymentDate: new Date(),
+          eventId: unverifiedEvent.id,
+          registrationId: unverifiedRegistration.id,
+          attendeeEmail: 'unverified@test.com',
+          attendeeName: 'Unverified Organizer',
+        },
+      });
+
+      const unverifiedFee = await PlatformFeeService.createPlatformFee(unverifiedPayment.id);
+
+      // Try to create disbursement - should fail without verification
+      await expect(
+        DisbursementService.createDisbursement(
+          {
+            eventId: unverifiedEvent.id,
+            organizerId: unverifiedOrganizer.id,
+            paymentMethod: 'bank_transfer',
+          },
+          adminId,
+        ),
+      ).rejects.toThrow('Identity verification is required to receive payouts');
+    });
+
+    it('should fail to process disbursement without identity verification', async () => {
+      if (!dbConnected) return;
+
+      // Create organizer without identity verification
+      const unverifiedOrganizer = await prisma.user.create({
+        data: {
+          email: 'unverified2@test.com',
+          password: await hashPassword('password123'),
+          firstName: 'Unverified',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          isIdentityVerified: false,
+          verificationLevel: 1,
+        },
+      });
+
+      // Create event and fees (organizer can create events without verification)
+      const unverifiedEvent = await prisma.event.create({
+        data: {
+          title: 'Unverified Event 2',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          organizerId: unverifiedOrganizer.id,
+          status: EventStatus.APPROVED,
+          isFree: false,
+          price: 100,
+        },
+      });
+
+      const unverifiedRegistration = await prisma.eventRegistration.create({
+        data: {
+          eventId: unverifiedEvent.id,
+          attendeeId: unverifiedOrganizer.id,
+          quantity: 1,
+          status: RegistrationStatus.CONFIRMED,
+          paymentStatus: 'COMPLETED',
+          totalAmount: 10000,
+        },
+      });
+
+      const unverifiedPayment = await prisma.eventPaymentTransaction.create({
+        data: {
+          transactionNumber: 'EPT-2024-000003',
+          paystackReference: 'test_ref_003',
+          paystackAmount: 1000000,
+          currency: 'NGN',
+          amount: 10000,
+          paymentMethod: 'PAYSTACK',
+          paymentStatus: 'success',
+          paymentDate: new Date(),
+          eventId: unverifiedEvent.id,
+          registrationId: unverifiedRegistration.id,
+          attendeeEmail: 'unverified2@test.com',
+          attendeeName: 'Unverified Organizer',
+        },
+      });
+
+      await PlatformFeeService.createPlatformFee(unverifiedPayment.id);
+
+      // Manually create a disbursement record (bypassing createDisbursement which checks verification)
+      // This simulates a scenario where disbursement was created before verification check was added
+      const disbursement = await prisma.organizerDisbursement.create({
+        data: {
+          disbursementNumber: 'DISB-2024-000001',
+          organizerId: unverifiedOrganizer.id,
+          eventId: unverifiedEvent.id,
+          totalAmount: 9000,
+          currency: 'NGN',
+          paymentMethod: 'bank_transfer',
+          status: 'pending',
+          createdBy: adminId,
+        },
+      });
+
+      // Try to process disbursement - should fail without verification
+      await expect(
+        DisbursementService.processDisbursement(
+          disbursement.id,
+          { paymentReference: 'PAY_REF_001' },
+          adminId,
+        ),
+      ).rejects.toThrow('Identity verification is required to receive payouts');
+    });
+
+    it('should successfully create disbursement with identity verification', async () => {
+      if (!dbConnected) return;
+
+      // Use the verified organizer from beforeEach
+      const disbursement = await DisbursementService.createDisbursement(
+        {
+          eventId,
+          organizerId,
+          paymentMethod: 'bank_transfer',
+        },
+        adminId,
+      );
+
+      expect(disbursement.id).toBeDefined();
+      expect(disbursement.status).toBe('pending');
+    });
+
+    it('should successfully process disbursement with identity verification', async () => {
+      if (!dbConnected) return;
+
+      const created = await DisbursementService.createDisbursement(
+        {
+          eventId,
+          organizerId,
+          paymentMethod: 'bank_transfer',
+        },
+        adminId,
+      );
+
+      const processed = await DisbursementService.processDisbursement(
+        created.id,
+        { paymentReference: 'PAY_REF_001' },
+        adminId,
+      );
+
+      expect(processed.status).toBe('processing');
+      expect(processed.paymentReference).toBe('PAY_REF_001');
     });
   });
 

@@ -103,7 +103,7 @@ describe('Verification Service', () => {
 
   describe('Identity Verification', () => {
     describe('submitIdentityVerification', () => {
-      it('should submit identity verification with both front and back ID documents', async () => {
+      it('should submit identity verification with both front and back ID documents (both provided)', async () => {
         if (!dbConnected) {
           logger.info('⏭️  Skipping test - database not connected');
           return;
@@ -171,11 +171,25 @@ describe('Verification Service', () => {
         ).rejects.toThrow('Identity is already verified');
       });
 
-      it('should reject identity verification without front ID document', async () => {
+      it('should reject identity verification without front ID document (front is required)', async () => {
         if (!dbConnected) {
           logger.info('⏭️  Skipping test - database not connected');
           return;
         }
+
+        // Create a new organizer for this test
+        const organizerPassword = await hashPassword('Organizer123!@$');
+        const testOrganizer = await prisma.user.create({
+          data: {
+            email: 'test-organizer2@test.com',
+            password: organizerPassword,
+            firstName: 'Test',
+            lastName: 'Organizer',
+            role: UserRole.ORGANIZER,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+          },
+        });
 
         const identityData: Partial<IdentityVerificationData> = {
           firstName: 'John',
@@ -188,20 +202,35 @@ describe('Verification Service', () => {
           idType: 'national_id',
           idNumber: '12345678',
           idDocumentBackUrl: 'data:image/png;base64,back',
+          // idDocumentFrontUrl is missing - should fail
         };
 
         await expect(
-          VerificationService.submitIdentityVerification(organizerId, identityData as IdentityVerificationData),
-        ).rejects.toThrow('All identity verification fields are required, including both ID document images');
+          VerificationService.submitIdentityVerification(testOrganizer.id, identityData as IdentityVerificationData),
+        ).rejects.toThrow('All required identity verification fields must be provided');
       });
 
-      it('should reject identity verification without back ID document', async () => {
+      it('should accept identity verification without back ID document (back is optional)', async () => {
         if (!dbConnected) {
           logger.info('⏭️  Skipping test - database not connected');
           return;
         }
 
-        const identityData: Partial<IdentityVerificationData> = {
+        // Create a new organizer for this test
+        const organizerPassword = await hashPassword('Organizer123!@$');
+        const testOrganizer = await prisma.user.create({
+          data: {
+            email: 'test-organizer@test.com',
+            password: organizerPassword,
+            firstName: 'Test',
+            lastName: 'Organizer',
+            role: UserRole.ORGANIZER,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+          },
+        });
+
+        const identityData: IdentityVerificationData = {
           firstName: 'John',
           lastName: 'Doe',
           address: '123 Main St',
@@ -211,12 +240,23 @@ describe('Verification Service', () => {
           country: 'Kenya',
           idType: 'national_id',
           idNumber: '12345678',
-          idDocumentFrontUrl: 'data:image/png;base64,front',
+          idDocumentFrontUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          idDocumentBackUrl: undefined, // Back document is optional
         };
 
-        await expect(
-          VerificationService.submitIdentityVerification(organizerId, identityData as IdentityVerificationData),
-        ).rejects.toThrow('All identity verification fields are required, including both ID document images');
+        const result = await VerificationService.submitIdentityVerification(testOrganizer.id, identityData);
+
+        expect(result.message).toBe('Identity verification submitted successfully');
+        expect(result.verificationLevel).toBe(2);
+
+        // Verify user was updated
+        const user = await prisma.user.findUnique({
+          where: { id: testOrganizer.id },
+        });
+
+        expect(user?.isIdentityVerified).toBe(true);
+        expect(user?.identityVerifiedAt).toBeDefined();
+        expect(user?.verificationLevel).toBe(2);
       });
 
       it('should reject identity verification for non-existent user', async () => {
@@ -355,11 +395,38 @@ describe('Verification Service', () => {
         expect(response.body.message).toContain('ID document front');
       });
 
-      it('should reject API request without back ID document', async () => {
+      it('should accept API request without back ID document (back is optional)', async () => {
         if (!dbConnected) {
           logger.info('⏭️  Skipping test - database not connected');
           return;
         }
+
+        // Create a new organizer for this test
+        const organizerPassword = await hashPassword('Organizer123!@$');
+        const testOrganizer = await prisma.user.create({
+          data: {
+            email: 'test-organizer-api@test.com',
+            password: organizerPassword,
+            firstName: 'Test',
+            lastName: 'Organizer',
+            role: UserRole.ORGANIZER,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+          },
+        });
+
+        // Login to get token
+        const loginResponse = await request(app)
+          .post('/api/v1/auth/login')
+          .send({
+            email: 'test-organizer-api@test.com',
+            password: 'Organizer123!@$',
+          });
+
+        if (loginResponse.status !== 200 || !loginResponse.body.success || !loginResponse.body.data?.accessToken) {
+          throw new Error('Failed to login test organizer');
+        }
+        const testToken = loginResponse.body.data.accessToken;
 
         const identityData = {
           firstName: 'John',
@@ -371,17 +438,27 @@ describe('Verification Service', () => {
           country: 'Kenya',
           idType: 'national_id',
           idNumber: '12345678',
-          idDocumentFrontUrl: 'data:image/png;base64,front',
+          idDocumentFrontUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          // idDocumentBackUrl is missing - should be accepted
         };
 
         const response = await request(app)
           .post('/api/v1/verification/identity')
-          .set('Authorization', `Bearer ${organizerToken}`)
+          .set('Authorization', `Bearer ${testToken}`)
           .send(identityData)
-          .expect(400);
+          .expect(200);
 
-        expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain('ID document back');
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.verificationLevel).toBe(2);
+
+        // Verify user was updated
+        const user = await prisma.user.findUnique({
+          where: { id: testOrganizer.id },
+        });
+
+        expect(user?.isIdentityVerified).toBe(true);
+        expect(user?.identityVerifiedAt).toBeDefined();
+        expect(user?.verificationLevel).toBe(2);
       });
 
       it('should require authentication', async () => {

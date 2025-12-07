@@ -53,7 +53,7 @@ describe('Event System', () => {
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');
 
-    // Create organizer with identity verification (for paid events)
+    // Create organizer (verification not required to create events, but used for testing)
     const organizer = await prisma.user.create({
       data: {
         email: 'organizer@test.com',
@@ -63,10 +63,10 @@ describe('Event System', () => {
         role: UserRole.ORGANIZER,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
-        isIdentityVerified: true, // Required for paid events
+        isIdentityVerified: true, // For testing purposes
         identityVerifiedAt: new Date(),
-        verificationLevel: 2, // Identity verified
-        payoutLimit: null, // No limit for testing
+        verificationLevel: 2,
+        payoutLimit: null,
         organizationName: 'Test Events Inc',
       },
     });
@@ -142,7 +142,7 @@ describe('Event System', () => {
       expect(response.body.data.event.isFree).toBe(true);
     });
 
-    it('should create a paid event successfully (with identity verification)', async () => {
+    it('should create a paid event successfully (Eventbrite approach - no verification required)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -169,7 +169,7 @@ describe('Event System', () => {
       expect(Number(response.body.data.event.price)).toBe(50.00);
     });
 
-    it('should fail to create paid event without identity verification', async () => {
+    it('should create paid event without identity verification (Eventbrite approach)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -198,22 +198,92 @@ describe('Event System', () => {
       });
 
       const eventData = {
-        title: 'Test Paid Event',
-        description: 'This is a test paid event',
+        title: 'Test Paid Event (Unverified)',
+        description: 'This is a test paid event created without verification',
         startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         location: 'Test Location',
         isFree: false,
         price: 50.00,
       };
 
+      // Eventbrite approach: Should succeed - verification not required to CREATE events
       const response = await request(app)
         .post('/api/v1/events')
         .set('Authorization', `Bearer ${unverifiedToken}`)
         .send(eventData)
-        .expect(400);
+        .expect(201);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Identity verification is required');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.title).toBe(eventData.title);
+      expect(response.body.data.event.isFree).toBe(false);
+      expect(Number(response.body.data.event.price)).toBe(50.00);
+    });
+
+    it('should create paid event without monthly limit restriction (Eventbrite approach)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create organizer with identity verification but with payout limit
+      const limitedPassword = await hashPassword('Test123!@$');
+      const limitedOrganizer = await prisma.user.create({
+        data: {
+          email: 'limited@test.com',
+          password: limitedPassword,
+          firstName: 'Limited',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          isIdentityVerified: true,
+          verificationLevel: 2,
+          payoutLimit: 2000, // Has limit
+        },
+      });
+
+      const limitedToken = generateAccessToken({
+        userId: limitedOrganizer.id,
+        email: limitedOrganizer.email,
+        role: limitedOrganizer.role,
+      });
+
+      // Create multiple events that would exceed the old limit
+      const eventData1 = {
+        title: 'High Value Event 1',
+        description: 'Test event',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        price: 1000.00,
+        capacity: 10, // Total value: 10,000
+      };
+
+      const eventData2 = {
+        title: 'High Value Event 2',
+        description: 'Test event',
+        startDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        price: 1500.00,
+        capacity: 10, // Total value: 15,000
+      };
+
+      // Both should succeed - no monthly limit on event creation
+      const response1 = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${limitedToken}`)
+        .send(eventData1)
+        .expect(201);
+
+      const response2 = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${limitedToken}`)
+        .send(eventData2)
+        .expect(201);
+
+      expect(response1.body.success).toBe(true);
+      expect(response2.body.success).toBe(true);
     });
 
     it('should fail to create event without authentication', async () => {

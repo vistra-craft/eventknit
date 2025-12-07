@@ -14,7 +14,7 @@ export interface IdentityVerificationData {
   idType: string; // 'passport' | 'drivers_license' | 'national_id'
   idNumber: string;
   idDocumentFrontUrl: string; // URL to uploaded front document
-  idDocumentBackUrl: string; // URL to uploaded back document
+  idDocumentBackUrl?: string | null; // URL to uploaded back document (optional)
 }
 
 export interface BusinessVerificationData {
@@ -48,8 +48,9 @@ export class VerificationService {
     }
 
     // Validate required fields
-    if (!data.firstName || !data.lastName || !data.address || !data.idDocumentFrontUrl || !data.idDocumentBackUrl) {
-      throw new ValidationError('All identity verification fields are required, including both ID document images');
+    // Note: idDocumentBackUrl is optional (front is required, back is optional)
+    if (!data.firstName || !data.lastName || !data.address || !data.idDocumentFrontUrl) {
+      throw new ValidationError('All required identity verification fields must be provided, including ID document photo');
     }
 
     // Update user with identity information and mark as verified

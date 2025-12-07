@@ -194,68 +194,8 @@ export class EventService {
       throw new NotFoundError('Organizer not found');
     }
 
-    // Progressive verification check for paid events
-    if (!data.isFree) {
-      // Check if organizer has identity verification (Level 2)
-      if (!organizer.isIdentityVerified) {
-        throw new ValidationError(
-          'Identity verification is required to create paid events. Please verify your identity in your profile settings.',
-        );
-      }
-
-      // Calculate total event value
-      let totalEventValue = 0;
-      if (data.price) {
-        const capacity = data.capacity ? Number(data.capacity) : 1;
-        totalEventValue = Number(data.price) * capacity;
-      } else if (data.ticketTypes && data.ticketTypes.length > 0) {
-        totalEventValue = data.ticketTypes.reduce((sum, ticket) => {
-          const price = Number(ticket.price);
-          const quantity = ticket.quantity ? Number(ticket.quantity) : (data.capacity ? Number(data.capacity) : 1);
-          return sum + (price * quantity);
-        }, 0);
-      }
-
-      // Check monthly limit (calculate current month's events value)
-      if (organizer.verificationLevel === 2 && organizer.payoutLimit) {
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        
-        const currentMonthEvents = await prisma.event.findMany({
-          where: {
-            organizerId,
-            isFree: false,
-            createdAt: { gte: startOfMonth },
-            status: { not: EventStatus.CANCELLED },
-          },
-          select: {
-            price: true,
-            ticketTypes: true,
-            capacity: true,
-          },
-        });
-
-        const currentMonthValue = currentMonthEvents.reduce((sum, event) => {
-          let eventValue = 0;
-          if (event.price) {
-            eventValue = Number(event.price) * (event.capacity || 1);
-          } else if (event.ticketTypes) {
-            const ticketTypes = event.ticketTypes as Array<{ price: number; quantity?: number }>;
-            eventValue = ticketTypes.reduce((ticketSum, ticket) => {
-              return ticketSum + (ticket.price * (ticket.quantity || event.capacity || 1));
-            }, 0);
-          }
-          return sum + eventValue;
-        }, 0);
-
-        const limit = Number(organizer.payoutLimit);
-        if (currentMonthValue + totalEventValue > limit) {
-          throw new ValidationError(
-            `This event would exceed your monthly payout limit of $${limit.toFixed(2)}. Current month total: $${currentMonthValue.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`,
-          );
-        }
-      }
-    }
+    // Note: Eventbrite-style approach - no verification required to CREATE events
+    // Verification is only required to RECEIVE payouts (handled in disbursement service)
 
     // Validate pricing
     if (!data.isFree && !data.price && (!data.ticketTypes || data.ticketTypes.length === 0)) {
@@ -979,6 +919,9 @@ export class EventService {
       }
     }
 
+    // Generate backup ticket code
+    const backupCode = TicketService.generateBackupTicketCode();
+
     // Create registration
     // Free events and complementary tickets (price = 0) are automatically CONFIRMED
     // Paid events are PENDING (no payment yet)
@@ -994,6 +937,7 @@ export class EventService {
         quantity,
         totalAmount: finalAmount,
         registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
+        backupCode,
         status: registrationStatus,
         paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
         invitationId: data.invitationId || null,
@@ -1003,10 +947,26 @@ export class EventService {
           select: {
             id: true,
             title: true,
+            description: true,
             startDate: true,
+            endDate: true,
             startTime: true,
+            endTime: true,
             venue: true,
             location: true,
+            address: true,
+            isOnline: true,
+            onlineLink: true,
+            image: true,
+            organizer: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                organizationName: true,
+                email: true,
+              },
+            },
           },
         },
         attendee: {
@@ -1015,6 +975,7 @@ export class EventService {
             firstName: true,
             lastName: true,
             email: true,
+            companyAffiliation: true,
           },
         },
       },
@@ -1187,8 +1148,28 @@ export class EventService {
       userAgent,
     });
 
-    // Send registration confirmed notification for free events
+    // Send ticket email and notification for free events
     if (event.isFree || isComplementaryTicket) {
+      // Send ticket email immediately for free events
+      try {
+        await TicketService.sendTicketEmail({
+          id: registration.id,
+          ticketType: registration.ticketType,
+          quantity: registration.quantity,
+          totalAmount: registration.totalAmount,
+          createdAt: registration.createdAt,
+          backupCode: registration.backupCode,
+          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+          event: registration.event,
+          attendee: registration.attendee,
+        });
+        logger.info(`Ticket email sent to: ${registration.attendee.email} for free event: ${eventId}`);
+      } catch (error) {
+        logger.error('Failed to send ticket email:', error);
+        // Don't fail registration if email fails
+      }
+
+      // Send in-app notification (separate try-catch to ensure it's sent even if email fails)
       try {
         await NotificationService.sendNotification({
           userId: attendeeId,

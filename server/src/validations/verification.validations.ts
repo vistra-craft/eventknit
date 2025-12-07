@@ -45,9 +45,8 @@ export const verificationValidations = {
       'string.uri': 'ID document front URL must be a valid URL',
       'any.required': 'ID document front URL is required',
     }),
-    idDocumentBackUrl: Joi.string().uri().required().messages({
+    idDocumentBackUrl: Joi.string().uri().optional().allow('', null).messages({
       'string.uri': 'ID document back URL must be a valid URL',
-      'any.required': 'ID document back URL is required',
     }),
   }),
 
