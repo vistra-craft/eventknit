@@ -39,6 +39,8 @@ const CreateFeaturedEventPage = () => {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null); // Track actual file for IMAGE type FormData
+  const [uploadedCustomImageFile, setUploadedCustomImageFile] = useState<File | null>(null); // Track file for EVENT customImage
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageFileInputRef = useRef<HTMLInputElement>(null); // For IMAGE type upload
 
@@ -88,11 +90,14 @@ const CreateFeaturedEventPage = () => {
 
     setIsUploadingImage(true);
     try {
+      // Store the file for FormData upload
+      setUploadedCustomImageFile(file);
+      
+      // Create preview for display
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
         setImagePreview(base64String);
-        setFormData(prev => ({ ...prev, customImage: base64String }));
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
@@ -102,6 +107,7 @@ const CreateFeaturedEventPage = () => {
           variant: "destructive",
         });
         setIsUploadingImage(false);
+        setUploadedCustomImageFile(null);
       };
       reader.readAsDataURL(file);
     } catch {
@@ -111,6 +117,7 @@ const CreateFeaturedEventPage = () => {
         variant: "destructive",
       });
       setIsUploadingImage(false);
+      setUploadedCustomImageFile(null);
     }
   };
 
@@ -138,14 +145,15 @@ const CreateFeaturedEventPage = () => {
 
     setIsUploadingImage(true);
     try {
+      // Store the file for FormData upload
+      setUploadedFile(file);
+      
+      // Create preview for display
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        // Update both imagePreview and formData.imageUrl to ensure state is synced
         setImagePreview(base64String);
-        setFormData(prev => ({ ...prev, imageUrl: base64String }));
         setIsUploadingImage(false);
-        console.log('Image uploaded successfully, base64 length:', base64String.length);
       };
       reader.onerror = () => {
         toast({
@@ -154,6 +162,7 @@ const CreateFeaturedEventPage = () => {
           variant: "destructive",
         });
         setIsUploadingImage(false);
+        setUploadedFile(null);
       };
       reader.readAsDataURL(file);
     } catch (error) {
@@ -164,6 +173,7 @@ const CreateFeaturedEventPage = () => {
         variant: "destructive",
       });
       setIsUploadingImage(false);
+      setUploadedFile(null);
     }
   };
 
@@ -200,54 +210,83 @@ const CreateFeaturedEventPage = () => {
 
     try {
       setLoading(true);
-      const submitData: CreateFeaturedEventData = {
-        type: itemType,
-        displayStartDate: formData.displayStartDate || undefined,
-        displayEndDate: formData.displayEndDate || undefined,
-        displayOrder: formData.displayOrder,
-        isActive: formData.isActive,
-      };
-
-      if (itemType === "EVENT") {
-        submitData.eventId = formData.eventId;
-        submitData.customTitle = formData.customTitle || undefined;
-        submitData.customImage = formData.customImage || undefined;
-        submitData.customCategory = formData.customCategory || undefined;
-      } else {
-        // Ensure imageUrl is set (either from upload or URL input)
-        // This is required for IMAGE type
-        // Use imagePreview if available (from upload), otherwise use formData.imageUrl (from URL input)
-        const imageToSubmit = imagePreview || formData.imageUrl;
+      
+      // Use FormData if file is uploaded, otherwise use JSON
+      const hasFile = uploadedFile !== null || uploadedCustomImageFile !== null;
+      
+      if (hasFile) {
+        // Use FormData for file upload
+        const formDataToSubmit = new FormData();
+        formDataToSubmit.append('type', itemType);
         
-        if (imageToSubmit && imageToSubmit.trim() !== '') {
-          submitData.imageUrl = imageToSubmit;
-        } else {
-          // This should not happen due to validation above, but add safety check
-          console.error('Image URL is missing for IMAGE type - imagePreview:', imagePreview, 'formData.imageUrl:', formData.imageUrl);
-          toast({
-            title: "Validation Error",
-            description: "Image is required. Please upload an image or provide an image URL.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
+        // Append the appropriate file
+        if (itemType === "IMAGE" && uploadedFile) {
+          formDataToSubmit.append('image', uploadedFile);
+        } else if (itemType === "EVENT" && uploadedCustomImageFile) {
+          formDataToSubmit.append('image', uploadedCustomImageFile);
         }
-        // Optional fields
-        if (formData.title && formData.title.trim() !== '') {
-          submitData.title = formData.title;
+        
+        if (formData.displayStartDate) {
+          formDataToSubmit.append('displayStartDate', formData.displayStartDate);
         }
-        if (formData.description && formData.description.trim() !== '') {
-          submitData.description = formData.description;
+        if (formData.displayEndDate) {
+          formDataToSubmit.append('displayEndDate', formData.displayEndDate);
         }
-        if (formData.linkUrl && formData.linkUrl.trim() !== '') {
-          submitData.linkUrl = formData.linkUrl;
-        }
-        if (formData.linkText && formData.linkText.trim() !== '') {
-          submitData.linkText = formData.linkText;
-        }
-      }
+        formDataToSubmit.append('displayOrder', (formData.displayOrder ?? 0).toString());
+        formDataToSubmit.append('isActive', (formData.isActive ?? true).toString());
 
-      await createFeaturedEvent(submitData);
+        if (itemType === "EVENT") {
+          if (formData.eventId) formDataToSubmit.append('eventId', formData.eventId);
+          if (formData.customTitle) formDataToSubmit.append('customTitle', formData.customTitle);
+          if (formData.customCategory) formDataToSubmit.append('customCategory', formData.customCategory);
+        } else {
+          // IMAGE type
+          if (formData.title) formDataToSubmit.append('title', formData.title);
+          if (formData.description) formDataToSubmit.append('description', formData.description);
+          if (formData.linkUrl) formDataToSubmit.append('linkUrl', formData.linkUrl);
+          if (formData.linkText) formDataToSubmit.append('linkText', formData.linkText);
+        }
+
+        await createFeaturedEvent(formDataToSubmit);
+      } else {
+        // Use JSON for URL-based images or EVENT type without file
+        const submitData: CreateFeaturedEventData = {
+          type: itemType,
+          displayStartDate: formData.displayStartDate || undefined,
+          displayEndDate: formData.displayEndDate || undefined,
+          displayOrder: formData.displayOrder,
+          isActive: formData.isActive,
+        };
+
+        if (itemType === "EVENT") {
+          submitData.eventId = formData.eventId;
+          submitData.customTitle = formData.customTitle || undefined;
+          // Only use customImage URL if no file was uploaded
+          if (!uploadedCustomImageFile && formData.customImage) {
+            submitData.customImage = formData.customImage;
+          }
+          submitData.customCategory = formData.customCategory || undefined;
+        } else {
+          // IMAGE type with URL
+          if (formData.imageUrl && formData.imageUrl.trim() !== '') {
+            submitData.imageUrl = formData.imageUrl;
+          }
+          if (formData.title && formData.title.trim() !== '') {
+            submitData.title = formData.title;
+          }
+          if (formData.description && formData.description.trim() !== '') {
+            submitData.description = formData.description;
+          }
+          if (formData.linkUrl && formData.linkUrl.trim() !== '') {
+            submitData.linkUrl = formData.linkUrl;
+          }
+          if (formData.linkText && formData.linkText.trim() !== '') {
+            submitData.linkText = formData.linkText;
+          }
+        }
+
+        await createFeaturedEvent(submitData);
+      }
       toast({
         title: "Success",
         description: `Featured ${itemType === "EVENT" ? "event" : "image"} created successfully`,
@@ -382,6 +421,7 @@ const CreateFeaturedEventPage = () => {
                         onClick={() => {
                           setImagePreview(null);
                           setFormData(prev => ({ ...prev, customImage: '' }));
+                          setUploadedCustomImageFile(null);
                           if (fileInputRef.current) fileInputRef.current.value = '';
                         }}
                       >
@@ -426,6 +466,7 @@ const CreateFeaturedEventPage = () => {
                     onChange={(e) => {
                       setFormData({ ...formData, customImage: e.target.value });
                       setImagePreview(null);
+                      setUploadedCustomImageFile(null); // Clear file when URL is entered
                     }}
                     disabled={!!imagePreview}
                   />
@@ -508,6 +549,7 @@ const CreateFeaturedEventPage = () => {
                         onClick={() => {
                           setImagePreview(null);
                           setFormData(prev => ({ ...prev, imageUrl: '' }));
+                          setUploadedFile(null);
                           if (imageFileInputRef.current) imageFileInputRef.current.value = '';
                         }}
                       >
@@ -552,6 +594,7 @@ const CreateFeaturedEventPage = () => {
                     onChange={(e) => {
                       setFormData({ ...formData, imageUrl: e.target.value });
                       setImagePreview(null);
+                      setUploadedFile(null); // Clear file when URL is entered
                     }}
                     disabled={!!imagePreview}
                   />

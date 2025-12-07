@@ -110,8 +110,10 @@ const apiRequestInternal = async <T>(
   const token = tokenOverride || getAccessToken();
   const url = `${API_BASE_URL}${endpoint}`;
 
+  // Don't set Content-Type for FormData - browser will set it with boundary
+  const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
 
@@ -308,9 +310,11 @@ export const apiGet = <T>(endpoint: string): Promise<T> => {
  * POST request
  */
 export const apiPost = <T>(endpoint: string, body?: unknown): Promise<T> => {
+  const isFormData = body instanceof FormData;
   return apiRequest<T>(endpoint, {
     method: 'POST',
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
+    headers: isFormData ? {} : undefined, // Let browser set Content-Type for FormData
   });
 };
 
@@ -318,9 +322,11 @@ export const apiPost = <T>(endpoint: string, body?: unknown): Promise<T> => {
  * PUT request
  */
 export const apiPut = <T>(endpoint: string, body?: unknown): Promise<T> => {
+  const isFormData = body instanceof FormData;
   return apiRequest<T>(endpoint, {
     method: 'PUT',
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
+    headers: isFormData ? {} : undefined, // Let browser set Content-Type for FormData
   });
 };
 

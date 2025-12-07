@@ -187,9 +187,10 @@ export const getFeaturedEventById = async (id: string): Promise<FeaturedEventDat
 
 /**
  * Create featured event
+ * Supports both FormData (with file) and JSON (without file)
  */
 export const createFeaturedEvent = async (
-  data: CreateFeaturedEventData,
+  data: CreateFeaturedEventData | FormData,
 ): Promise<FeaturedEventData> => {
   const response = await apiPost<FeaturedEventResponse>('/featured-events', data);
   return response.data.featuredEvent;
@@ -197,10 +198,11 @@ export const createFeaturedEvent = async (
 
 /**
  * Update featured event
+ * Supports both FormData (with file) and JSON (without file)
  */
 export const updateFeaturedEvent = async (
   id: string,
-  data: UpdateFeaturedEventData,
+  data: UpdateFeaturedEventData | FormData,
 ): Promise<FeaturedEventData> => {
   const response = await apiPut<FeaturedEventResponse>(`/featured-events/${id}`, data);
   return response.data.featuredEvent;
