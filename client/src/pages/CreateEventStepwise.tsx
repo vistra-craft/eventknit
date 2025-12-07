@@ -30,15 +30,13 @@ import {
   Clock,
   Percent,
   Gift,
-  Shield,
-  CheckCircle2
+  Shield
 } from 'lucide-react';
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
-import { useToast } from '@/hooks/use-toast';
 
 // Currency options with KES as default
 const CURRENCIES = [
@@ -143,7 +141,6 @@ export default function CreateEventStepwise() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { toast } = useToast();
   
   // Check for edit mode from URL query params
   const searchParams = new URLSearchParams(location.search);
@@ -229,7 +226,7 @@ export default function CreateEventStepwise() {
   }, [user, isEditMode]);
   
   // Reset form to initial state
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setEventData({
       title: "",
       organizer: "",
@@ -266,7 +263,7 @@ export default function CreateEventStepwise() {
     setCurrentStep(1);
     setError(null);
     setValidationErrors({});
-  };
+  }, [timezone]);
 
   const [eventData, setEventData] = useState<EventData & { currency: string }>(() => {
     // Load draft from localStorage (only if not in edit mode)
@@ -726,7 +723,7 @@ export default function CreateEventStepwise() {
         setNewTag("");
       }
     }
-  }, [editEventId, isEditMode, loadDraft]);
+  }, [editEventId, isEditMode, loadDraft, resetForm]);
 
   // Reset form when component mounts and we're creating a new event (not editing)
   // This ensures fresh state when navigating to create event page
@@ -753,8 +750,7 @@ export default function CreateEventStepwise() {
         setNewTag("");
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]); // Reset when route changes
+  }, [location.pathname, isEditMode, editEventId, resetForm]); // Reset when route changes
 
   // Clear draft after successful submission
   const clearDraft = () => {

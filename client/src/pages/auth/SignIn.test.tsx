@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../contexts/AuthContext';
@@ -64,7 +64,7 @@ describe('SignIn', () => {
 
   it('should submit form with email and password', async () => {
     const user = userEvent.setup();
-    mockLogin.mockImplementation(() => Promise.resolve());
+    mockLogin.mockResolvedValue(undefined);
 
     render(
       <TestWrapper>
@@ -80,6 +80,8 @@ describe('SignIn', () => {
     await user.type(passwordInput, 'password123');
     await user.click(submitButton);
 
-    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
-  }, 10000);
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
+    });
+  });
 });
