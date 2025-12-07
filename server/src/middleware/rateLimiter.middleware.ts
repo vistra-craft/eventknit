@@ -1,10 +1,25 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { config } from '../config/index.js';
+import { logger } from '../utils/logger.js';
 
-// Skip rate limiting in test environment
-const skipRateLimit = (_req: Request, _res: Response): boolean => {
-  return config.env === 'test' || process.env.NODE_ENV === 'test';
+// Skip rate limiting in test and development environments
+const skipRateLimit = (req: Request, _res: Response): boolean => {
+  const shouldSkip = config.env === 'test' || 
+                     config.env === 'development' || 
+                     process.env.NODE_ENV === 'test' || 
+                     process.env.NODE_ENV === 'development';
+  
+  // Log for debugging
+  if (!shouldSkip) {
+    logger.debug('[RateLimiter] NOT skipping - Environment:', {
+      configEnv: config.env,
+      nodeEnv: process.env.NODE_ENV,
+      path: req.path,
+    });
+  }
+  
+  return shouldSkip;
 };
 
 /**

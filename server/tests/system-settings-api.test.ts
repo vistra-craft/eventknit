@@ -5,6 +5,7 @@ import { UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -13,7 +14,6 @@ const hashPassword = async (password: string): Promise<string> => {
 describe('System Settings API', () => {
   let dbConnected = false;
   let adminToken: string;
-  let organizerToken: string;
   let _attendeeToken: string;
   let adminId: string;
   let _organizerId: string;
@@ -46,17 +46,33 @@ describe('System Settings API', () => {
     if (!dbConnected) return;
 
     // Clean up in correct order
-    await prisma.$transaction(async (tx) => {
-      await tx.settingsHistory.deleteMany();
-      await tx.systemSettings.deleteMany();
-      await tx.user.deleteMany();
-    });
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.settingsHistory.deleteMany();
+        await tx.systemSettings.deleteMany();
+        await cleanupTestData(tx);
+      });
+    } catch (error) {
+      // If cleanup fails, log but continue - might be due to missing tables
+      logger.warn('Cleanup warning:', error);
+    }
 
-    // Create test admin
-    const admin = await prisma.user.create({
-      data: {
+    // Create test admin (use upsert to handle existing users)
+    const adminPassword = await hashPassword('password123');
+    const admin = await prisma.user.upsert({
+      where: { email: 'admin@test.com' },
+      update: {
+        password: adminPassword,
+        firstName: 'Admin',
+        lastName: 'Test',
+        role: UserRole.ADMIN_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      create: {
         email: 'admin@test.com',
-        password: await hashPassword('password123'),
+        password: adminPassword,
         firstName: 'Admin',
         lastName: 'Test',
         role: UserRole.ADMIN_STAFF,
@@ -72,11 +88,22 @@ describe('System Settings API', () => {
       role: admin.role,
     });
 
-    // Create test organizer
-    const organizer = await prisma.user.create({
-      data: {
+    // Create test organizer (use upsert to handle existing users)
+    const organizerPassword = await hashPassword('password123');
+    const organizer = await prisma.user.upsert({
+      where: { email: 'organizer@test.com' },
+      update: {
+        password: organizerPassword,
+        firstName: 'Organizer',
+        lastName: 'Test',
+        role: UserRole.ORGANIZER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      create: {
         email: 'organizer@test.com',
-        password: await hashPassword('password123'),
+        password: organizerPassword,
         firstName: 'Organizer',
         lastName: 'Test',
         role: UserRole.ORGANIZER,
@@ -86,17 +113,28 @@ describe('System Settings API', () => {
       },
     });
     _organizerId = organizer.id;
-    organizerToken = generateAccessToken({
+    const _organizerToken = generateAccessToken({
       userId: organizer.id,
       email: organizer.email,
       role: organizer.role,
     });
 
-    // Create test attendee
-    const attendee = await prisma.user.create({
-      data: {
+    // Create test attendee (use upsert to handle existing users)
+    const attendeePassword = await hashPassword('password123');
+    const attendee = await prisma.user.upsert({
+      where: { email: 'attendee@test.com' },
+      update: {
+        password: attendeePassword,
+        firstName: 'Attendee',
+        lastName: 'Test',
+        role: UserRole.ATTENDEE,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      create: {
         email: 'attendee@test.com',
-        password: await hashPassword('password123'),
+        password: attendeePassword,
         firstName: 'Attendee',
         lastName: 'Test',
         role: UserRole.ATTENDEE,
@@ -196,9 +234,22 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify organizer user exists and regenerate token to ensure it's valid
+      const organizerUser = await prisma.user.findUnique({
+        where: { email: 'organizer@test.com' },
+      });
+      if (!organizerUser) {
+        throw new Error('Organizer user not found');
+      }
+      const validOrganizerToken = generateAccessToken({
+        userId: organizerUser.id,
+        email: organizerUser.email,
+        role: organizerUser.role,
+      });
+
       await request(app)
         .get('/api/v1/admin/settings')
-        .set('Authorization', `Bearer ${organizerToken}`)
+        .set('Authorization', `Bearer ${validOrganizerToken}`)
         .expect(403);
     });
   });
@@ -320,9 +371,22 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify organizer user exists and regenerate token to ensure it's valid
+      const organizerUser = await prisma.user.findUnique({
+        where: { email: 'organizer@test.com' },
+      });
+      if (!organizerUser) {
+        throw new Error('Organizer user not found');
+      }
+      const validOrganizerToken = generateAccessToken({
+        userId: organizerUser.id,
+        email: organizerUser.email,
+        role: organizerUser.role,
+      });
+
       await request(app)
         .put('/api/v1/admin/settings/test.unauthorized')
-        .set('Authorization', `Bearer ${organizerToken}`)
+        .set('Authorization', `Bearer ${validOrganizerToken}`)
         .send({
           value: 'test',
           type: 'string',
@@ -339,9 +403,22 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify admin user exists and regenerate token to ensure it's valid
+      const adminUser = await prisma.user.findUnique({
+        where: { email: 'admin@test.com' },
+      });
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+      const validAdminToken = generateAccessToken({
+        userId: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+      });
+
       const response = await request(app)
         .put('/api/v1/admin/settings')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${validAdminToken}`)
         .send({
           settings: [
             {
@@ -371,9 +448,22 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify admin user exists and regenerate token to ensure it's valid
+      const adminUser = await prisma.user.findUnique({
+        where: { email: 'admin@test.com' },
+      });
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+      const validAdminToken = generateAccessToken({
+        userId: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+      });
+
       await request(app)
         .put('/api/v1/admin/settings')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${validAdminToken}`)
         .send({
           settings: [],
         })
@@ -388,20 +478,33 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify admin user exists and regenerate token to ensure it's valid
+      const adminUser = await prisma.user.findUnique({
+        where: { email: 'admin@test.com' },
+      });
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+      const validAdminToken = generateAccessToken({
+        userId: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+      });
+
       await prisma.systemSettings.create({
         data: {
           key: 'test.delete',
           value: 'delete me',
           type: 'string',
           category: 'general',
-          createdBy: adminId,
-          updatedBy: adminId,
+          createdBy: adminUser.id,
+          updatedBy: adminUser.id,
         },
       });
 
       await request(app)
         .delete('/api/v1/admin/settings/test.delete')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${validAdminToken}`)
         .expect(200);
 
       // Verify it's deleted
@@ -417,9 +520,22 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify admin user exists and regenerate token to ensure it's valid
+      const adminUser = await prisma.user.findUnique({
+        where: { email: 'admin@test.com' },
+      });
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+      const validAdminToken = generateAccessToken({
+        userId: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+      });
+
       await request(app)
         .delete('/api/v1/admin/settings/nonexistent')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${validAdminToken}`)
         .expect(404);
     });
   });
@@ -431,6 +547,19 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify admin user exists and regenerate token to ensure it's valid
+      const adminUser = await prisma.user.findUnique({
+        where: { email: 'admin@test.com' },
+      });
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+      const validAdminToken = generateAccessToken({
+        userId: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role,
+      });
+
       // Create and update a setting to generate history
       await prisma.systemSettings.create({
         data: {
@@ -438,8 +567,8 @@ describe('System Settings API', () => {
           value: 'initial',
           type: 'string',
           category: 'general',
-          createdBy: adminId,
-          updatedBy: adminId,
+          createdBy: adminUser.id,
+          updatedBy: adminUser.id,
         },
       });
 
@@ -448,14 +577,14 @@ describe('System Settings API', () => {
           key: 'test.history',
           oldValue: 'initial',
           newValue: 'updated',
-          changedBy: adminId,
+          changedBy: adminUser.id,
           changeReason: 'Test update',
         },
       });
 
       const response = await request(app)
         .get('/api/v1/admin/settings/test.history/history')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${validAdminToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -471,6 +600,14 @@ describe('System Settings API', () => {
         return;
       }
 
+      // Verify admin user exists to get valid ID
+      const adminUser = await prisma.user.findUnique({
+        where: { email: 'admin@test.com' },
+      });
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+
       // Create public and private settings
       await prisma.systemSettings.createMany({
         data: [
@@ -480,8 +617,8 @@ describe('System Settings API', () => {
             type: 'string',
             category: 'general',
             isPublic: true,
-            createdBy: adminId,
-            updatedBy: adminId,
+            createdBy: adminUser.id,
+            updatedBy: adminUser.id,
           },
           {
             key: 'private.setting',
@@ -489,8 +626,8 @@ describe('System Settings API', () => {
             type: 'string',
             category: 'general',
             isPublic: false,
-            createdBy: adminId,
-            updatedBy: adminId,
+            createdBy: adminUser.id,
+            updatedBy: adminUser.id,
           },
         ],
       });
@@ -500,8 +637,10 @@ describe('System Settings API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.settings).toHaveProperty('public.setting');
-      expect(response.body.data.settings).not.toHaveProperty('private.setting');
+      expect(response.body.data.settings).toBeDefined();
+      // Check if the setting exists (using bracket notation for keys with dots)
+      expect(response.body.data.settings['public.setting']).toBe('public value');
+      expect(response.body.data.settings['private.setting']).toBeUndefined();
     });
   });
 });

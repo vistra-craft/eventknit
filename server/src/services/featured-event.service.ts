@@ -1,18 +1,28 @@
 import { prisma } from '../config/database.js';
-import { UserRole } from '@prisma/client';
+import { UserRole, FeaturedItemType, EventStatus } from '@prisma/client';
 import {
   NotFoundError,
   AuthorizationError,
   ConflictError,
+  ValidationError,
 } from '../utils/errors.js';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 import { logger } from '../utils/logger.js';
 
 export interface CreateFeaturedEventData {
-  eventId: string;
+  type: FeaturedItemType;
+  // For EVENT type
+  eventId?: string;
   customTitle?: string;
   customImage?: string;
   customCategory?: string;
+  // For IMAGE type
+  imageUrl?: string;
+  title?: string;
+  description?: string;
+  linkUrl?: string;
+  linkText?: string;
+  // Common fields
   displayStartDate?: Date;
   displayEndDate?: Date;
   displayOrder?: number;
@@ -20,9 +30,17 @@ export interface CreateFeaturedEventData {
 }
 
 export interface UpdateFeaturedEventData {
+  // For EVENT type
   customTitle?: string;
   customImage?: string;
   customCategory?: string;
+  // For IMAGE type
+  imageUrl?: string;
+  title?: string;
+  description?: string;
+  linkUrl?: string;
+  linkText?: string;
+  // Common fields
   displayStartDate?: Date;
   displayEndDate?: Date;
   displayOrder?: number;
@@ -31,7 +49,7 @@ export interface UpdateFeaturedEventData {
 
 export class FeaturedEventService {
   /**
-   * Create a new featured event
+   * Create a new featured item (event or image)
    */
   static async createFeaturedEvent(
     data: CreateFeaturedEventData,
@@ -40,50 +58,72 @@ export class FeaturedEventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Verify user can create featured events (only admins)
+    // Verify user can create featured items (only admins)
     if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only admins can create featured events');
+      throw new AuthorizationError('Only admins can create featured items');
     }
 
-    // Verify event exists and is approved
-    const event = await prisma.event.findFirst({
-      where: {
-        id: data.eventId,
-        deletedAt: null,
-        status: 'APPROVED', // Only approved events can be featured
-      },
-      select: {
-        id: true,
-        title: true,
-        image: true,
-        category: true,
-      },
-    });
+    // Default type to EVENT if not provided
+    const type = data.type || FeaturedItemType.EVENT;
 
-    if (!event) {
-      throw new NotFoundError('Event not found or not approved');
+    // Validate based on type
+    if (type === FeaturedItemType.EVENT) {
+      if (!data.eventId) {
+        throw new ValidationError('eventId is required for EVENT type');
+      }
+
+      // Verify event exists and is approved
+      const event = await prisma.event.findFirst({
+        where: {
+          id: data.eventId,
+          deletedAt: null,
+          status: EventStatus.APPROVED, // Only approved events can be featured
+        },
+        select: {
+          id: true,
+          title: true,
+          image: true,
+          category: true,
+        },
+      });
+
+      if (!event) {
+        throw new NotFoundError('Event not found or not approved');
+      }
+
+      // Check if event is already featured and active
+      const existingFeatured = await prisma.featuredEvent.findFirst({
+        where: {
+          eventId: data.eventId,
+          isActive: true,
+          deletedAt: null,
+        },
+      });
+
+      if (existingFeatured) {
+        throw new ConflictError('This event is already featured');
+      }
+    } else if (type === FeaturedItemType.IMAGE) {
+      // Check if imageUrl exists and is not empty string
+      if (!data.imageUrl || (typeof data.imageUrl === 'string' && data.imageUrl.trim() === '')) {
+        throw new ValidationError('imageUrl or uploaded image is required for IMAGE type');
+      }
+      // Title is now optional for IMAGE type
     }
 
-    // Check if event is already featured and active
-    const existingFeatured = await prisma.featuredEvent.findFirst({
-      where: {
-        eventId: data.eventId,
-        isActive: true,
-        deletedAt: null,
-      },
-    });
-
-    if (existingFeatured) {
-      throw new ConflictError('This event is already featured');
-    }
-
-    // Create featured event
+    // Create featured item
     const featuredEvent = await prisma.featuredEvent.create({
       data: {
-        eventId: data.eventId,
-        customTitle: data.customTitle,
-        customImage: data.customImage,
-        customCategory: data.customCategory,
+        type,
+        eventId: type === FeaturedItemType.EVENT ? data.eventId : undefined,
+        customTitle: type === FeaturedItemType.EVENT ? data.customTitle : null,
+        customImage: type === FeaturedItemType.EVENT ? data.customImage : null,
+        customCategory: type === FeaturedItemType.EVENT ? data.customCategory : null,
+        imageUrl: type === FeaturedItemType.IMAGE ? data.imageUrl : null,
+        title: type === FeaturedItemType.IMAGE ? data.title : null,
+        description: type === FeaturedItemType.IMAGE ? data.description : null,
+        linkUrl: type === FeaturedItemType.IMAGE ? data.linkUrl : null,
+        linkText: type === FeaturedItemType.IMAGE ? data.linkText : null,
         displayStartDate: data.displayStartDate,
         displayEndDate: data.displayEndDate,
         displayOrder: data.displayOrder ?? 0,
@@ -91,7 +131,7 @@ export class FeaturedEventService {
         createdBy: userId,
       },
       include: {
-        event: {
+        event: type === FeaturedItemType.EVENT ? {
           select: {
             id: true,
             title: true,
@@ -104,7 +144,7 @@ export class FeaturedEventService {
             price: true,
             isFree: true,
           },
-        },
+        } : false,
         creator: {
           select: {
             id: true,
@@ -123,20 +163,21 @@ export class FeaturedEventService {
       entity: 'FeaturedEvent',
       entityId: featuredEvent.id,
       metadata: {
-        eventId: data.eventId,
-        eventTitle: event.title,
+        type: data.type,
+        eventId: data.eventId || null,
+        title: data.type === FeaturedItemType.EVENT ? (featuredEvent.event?.title || null) : data.title,
       },
       ipAddress,
       userAgent,
     });
 
-    logger.info(`Featured event created: ${featuredEvent.id} for event: ${data.eventId}`);
+    logger.info(`Featured item created: ${featuredEvent.id} (type: ${data.type})`);
 
     return featuredEvent;
   }
 
   /**
-   * Get featured event by ID
+   * Get featured item by ID
    */
   static async getFeaturedEventById(id: string) {
     const featuredEvent = await prisma.featuredEvent.findFirst({
@@ -172,14 +213,14 @@ export class FeaturedEventService {
     });
 
     if (!featuredEvent) {
-      throw new NotFoundError('Featured event not found');
+      throw new NotFoundError('Featured item not found');
     }
 
     return featuredEvent;
   }
 
   /**
-   * Get all active featured events (for public display)
+   * Get all active featured items (for public display)
    */
   static async getActiveFeaturedEvents() {
     const now = new Date();
@@ -236,21 +277,47 @@ export class FeaturedEventService {
       },
     });
 
-    // Transform to include custom fields or fallback to event fields
-    return featuredEvents.map((fe) => ({
-      id: fe.id,
-      eventId: fe.eventId,
-      title: fe.customTitle || fe.event.title,
-      image: fe.customImage || fe.event.image || '',
-      category: fe.customCategory || fe.event.category || '',
-      date: fe.event.startDate,
-      time: fe.event.startTime || '',
-      venue: fe.event.venue || '',
-      location: fe.event.location,
-      price: fe.event.isFree ? 'Free' : `From $${fe.event.price?.toString() || '0'}`,
-      displayOrder: fe.displayOrder,
-      event: fe.event,
-    }));
+    // Transform to unified format for both types
+    return featuredEvents.map((fe) => {
+      if (fe.type === FeaturedItemType.EVENT && fe.event) {
+        // Event-based featured item
+        return {
+          id: fe.id,
+          type: 'EVENT' as const,
+          eventId: fe.eventId || '',
+          title: fe.customTitle || fe.event.title,
+          image: fe.customImage || fe.event.image || '',
+          category: fe.customCategory || fe.event.category || '',
+          date: fe.event.startDate,
+          time: fe.event.startTime || '',
+          venue: fe.event.venue || '',
+          location: fe.event.location,
+          price: fe.event.isFree ? 'Free' : `From $${fe.event.price?.toString() || '0'}`,
+          displayOrder: fe.displayOrder,
+          event: fe.event,
+        };
+      } else {
+        // Image-based featured item
+        return {
+          id: fe.id,
+          type: 'IMAGE' as const,
+          eventId: null,
+          title: fe.title || '',
+          image: fe.imageUrl || '',
+          category: '',
+          date: null,
+          time: '',
+          venue: '',
+          location: '',
+          price: '',
+          description: fe.description || '',
+          linkUrl: fe.linkUrl || null,
+          linkText: fe.linkText || null,
+          displayOrder: fe.displayOrder,
+          event: null,
+        };
+      }
+    });
   }
 
   /**
@@ -296,7 +363,7 @@ export class FeaturedEventService {
   }
 
   /**
-   * Update featured event
+   * Update featured item
    */
   static async updateFeaturedEvent(
     id: string,
@@ -306,12 +373,12 @@ export class FeaturedEventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Verify user can update featured events (only admins)
+    // Verify user can update featured items (only admins)
     if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only admins can update featured events');
+      throw new AuthorizationError('Only admins can update featured items');
     }
 
-    // Get existing featured event
+    // Get existing featured item
     const existing = await prisma.featuredEvent.findFirst({
       where: {
         id,
@@ -328,23 +395,50 @@ export class FeaturedEventService {
     });
 
     if (!existing) {
-      throw new NotFoundError('Featured event not found');
+      throw new NotFoundError('Featured item not found');
     }
 
-    // Update featured event
+    // Build update data based on type
+    const updateData: {
+      displayStartDate?: Date | null;
+      displayEndDate?: Date | null;
+      displayOrder?: number;
+      isActive?: boolean;
+      customTitle?: string | null;
+      customImage?: string | null;
+      customCategory?: string | null;
+      imageUrl?: string | null;
+      title?: string | null;
+      description?: string | null;
+      linkUrl?: string | null;
+      linkText?: string | null;
+    } = {
+      displayStartDate: data.displayStartDate,
+      displayEndDate: data.displayEndDate,
+      displayOrder: data.displayOrder,
+      isActive: data.isActive,
+    };
+
+    if (existing.type === FeaturedItemType.EVENT) {
+      // Update event-specific fields
+      if (data.customTitle !== undefined) updateData.customTitle = data.customTitle;
+      if (data.customImage !== undefined) updateData.customImage = data.customImage;
+      if (data.customCategory !== undefined) updateData.customCategory = data.customCategory;
+    } else if (existing.type === FeaturedItemType.IMAGE) {
+      // Update image-specific fields
+      if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.linkUrl !== undefined) updateData.linkUrl = data.linkUrl;
+      if (data.linkText !== undefined) updateData.linkText = data.linkText;
+    }
+
+    // Update featured item
     const updated = await prisma.featuredEvent.update({
       where: { id },
-      data: {
-        customTitle: data.customTitle,
-        customImage: data.customImage,
-        customCategory: data.customCategory,
-        displayStartDate: data.displayStartDate,
-        displayEndDate: data.displayEndDate,
-        displayOrder: data.displayOrder,
-        isActive: data.isActive,
-      },
+      data: updateData,
       include: {
-        event: {
+        event: existing.type === FeaturedItemType.EVENT ? {
           select: {
             id: true,
             title: true,
@@ -357,7 +451,7 @@ export class FeaturedEventService {
             price: true,
             isFree: true,
           },
-        },
+        } : false,
         creator: {
           select: {
             id: true,
@@ -376,15 +470,16 @@ export class FeaturedEventService {
       entity: 'FeaturedEvent',
       entityId: id,
       metadata: {
+        type: existing.type,
         eventId: existing.eventId,
-        eventTitle: existing.event.title,
+        title: existing.type === FeaturedItemType.EVENT ? (existing.event?.title || null) : existing.title,
         changes: data,
       },
       ipAddress,
       userAgent,
     });
 
-    logger.info(`Featured event updated: ${id}`);
+    logger.info(`Featured item updated: ${id}`);
 
     return updated;
   }
@@ -439,8 +534,9 @@ export class FeaturedEventService {
       entity: 'FeaturedEvent',
       entityId: id,
       metadata: {
+        type: existing.type,
         eventId: existing.eventId,
-        eventTitle: existing.event.title,
+        title: existing.type === FeaturedItemType.EVENT ? (existing.event?.title || null) : existing.title,
       },
       ipAddress,
       userAgent,

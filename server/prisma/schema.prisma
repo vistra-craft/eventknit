@@ -342,6 +342,7 @@ model Event {
   sponsors           Json? // Array of sponsors
   faqs               Json? // Array of FAQs
   registrationFields Json? // Custom registration form fields
+  organizerDescription String? @db.Text // Organizer's description about themselves/their organization
 
   // Organizer
   organizerId String
@@ -484,8 +485,8 @@ model EventInvitation {
   isActive  Boolean   @default(true) // Whether the link is active
 
   // Organizer who created this invitation
-  createdBy String
-  creator   User   @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy String?
+  creator   User?   @relation("InvitationCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Audit fields
   createdAt DateTime  @default(now())
@@ -523,8 +524,8 @@ model TicketTemplate {
   elements Json? // Array of template elements (text, image, QR code, etc.)
 
   // Created by
-  createdBy String
-  creator   User   @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy String?
+  creator   User?   @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Audit fields
   createdAt DateTime  @default(now())
@@ -537,27 +538,42 @@ model TicketTemplate {
   @@index([createdAt])
 }
 
+enum FeaturedItemType {
+  EVENT  // Featured event from organizer-created events
+  IMAGE  // Standalone promotional image/picture
+}
+
 model FeaturedEvent {
   id      String @id @default(uuid())
-  eventId String
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  type    FeaturedItemType @default(EVENT) // Type of featured item
+  
+  // Event-based featured item (optional)
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
-  // Display customization
+  // Display customization (for event-based items)
   customTitle    String? // Optional custom title (defaults to event.title)
   customImage    String? // Optional custom hero image (defaults to event.image)
   customCategory String? // Optional custom category (defaults to event.category)
 
-  // Display dates - when this featured event should be shown
-  displayStartDate DateTime? // When to start showing this featured event
-  displayEndDate   DateTime? // When to stop showing this featured event
+  // Standalone image fields (for IMAGE type)
+  imageUrl     String? // Image URL for standalone images
+  title        String? // Title for standalone images
+  description  String? @db.Text // Description for standalone images
+  linkUrl      String? // Optional link URL when image is clicked
+  linkText     String? // Text for the link button (e.g., "Learn More", "Register Now")
+
+  // Display dates - when this featured item should be shown
+  displayStartDate DateTime? // When to start showing this featured item
+  displayEndDate   DateTime? // When to stop showing this featured item
 
   // Display order
   displayOrder Int     @default(0) // Lower numbers appear first
-  isActive     Boolean @default(true) // Whether this featured event is active
+  isActive     Boolean @default(true) // Whether this featured item is active
 
-  // Admin who created this featured event
-  createdBy String
-  creator   User   @relation("FeaturedEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  // Admin who created this featured item
+  createdBy String?
+  creator   User?   @relation("FeaturedEventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Audit fields
   createdAt DateTime  @default(now())
@@ -565,6 +581,7 @@ model FeaturedEvent {
   deletedAt DateTime?
 
   @@index([eventId])
+  @@index([type])
   @@index([createdBy])
   @@index([isActive])
   @@index([displayOrder])
@@ -828,8 +845,8 @@ model OrganizerDisbursement {
   metadata Json? // Additional payment metadata
 
   // Audit
-  createdBy String
-  creator   User     @relation("DisbursementCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy String?
+  creator   User?     @relation("DisbursementCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   updatedBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -879,8 +896,8 @@ model Refund {
   metadata Json? // Additional refund metadata
 
   // Audit
-  requestedBy String
-  requester   User     @relation("RefundRequester", fields: [requestedBy], references: [id], onDelete: SetNull)
+  requestedBy String?
+  requester   User?     @relation("RefundRequester", fields: [requestedBy], references: [id], onDelete: SetNull)
   processedBy String?
   processor   User?    @relation("RefundProcessor", fields: [processedBy], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
@@ -926,8 +943,8 @@ model PaymentReconciliation {
   paystackData Json? // Paystack transaction data used for reconciliation
 
   // Audit
-  reconciledBy String
-  reconciler   User     @relation("PaymentReconciler", fields: [reconciledBy], references: [id], onDelete: SetNull)
+  reconciledBy String?
+  reconciler   User?     @relation("PaymentReconciler", fields: [reconciledBy], references: [id], onDelete: SetNull)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -1253,8 +1270,8 @@ model BulkMessage {
   unsubscribedCount Int @default(0) // Unsubscribes
 
   // Created by
-  createdBy String
-  creator   User   @relation("BulkMessageCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy String?
+  creator   User?   @relation("BulkMessageCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1283,8 +1300,8 @@ model EmailTemplate {
   isDefault   Boolean @default(false)
 
   // Created by
-  createdBy String
-  creator   User   @relation("EmailTemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy String?
+  creator   User?   @relation("EmailTemplateCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // Usage tracking
   usageCount Int @default(0)

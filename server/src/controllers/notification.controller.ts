@@ -110,7 +110,11 @@ export class NotificationController {
       res.status(200).json({
         success: true,
         message: 'Notification marked as read',
-        data: { notification },
+        data: {
+          isRead: notification.isRead,
+          readAt: notification.readAt,
+          notification,
+        },
       });
     } catch (error) {
       next(error);

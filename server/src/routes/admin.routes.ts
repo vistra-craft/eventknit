@@ -195,16 +195,6 @@ router.post(
 );
 
 /**
- * @route   GET /api/v1/admin/staff-performance/:staffId
- * @desc    Get performance metrics for a specific staff member
- * @access  Private (ADMIN_STAFF+)
- */
-router.get(
-  '/staff-performance/:staffId',
-  StaffPerformanceController.getStaffPerformance,
-);
-
-/**
  * @route   GET /api/v1/admin/staff-performance/team
  * @desc    Get team performance metrics
  * @access  Private (ADMIN_STAFF+)
@@ -212,6 +202,16 @@ router.get(
 router.get(
   '/staff-performance/team',
   StaffPerformanceController.getTeamPerformance,
+);
+
+/**
+ * @route   GET /api/v1/admin/staff-performance/:staffId
+ * @desc    Get performance metrics for a specific staff member
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/staff-performance/:staffId',
+  StaffPerformanceController.getStaffPerformance,
 );
 
 /**

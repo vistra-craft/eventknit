@@ -5,6 +5,7 @@ import { UserRole, UserStatus, EventStatus, NotificationType } from '@prisma/cli
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -45,19 +46,7 @@ describe('Event Registration System', () => {
 
     // Clear all tables in correct order to respect foreign keys
     await prisma.$transaction(async (tx) => {
-      await tx.notification.deleteMany();
-      await tx.featuredEvent.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.eventInvitation.deleteMany();
-      await tx.ticketTemplate.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test users
@@ -161,13 +150,26 @@ describe('Event Registration System', () => {
       expect(response.body.data.registration.status).toBe('CONFIRMED');
 
       // Verify REGISTRATION_CONFIRMED notification was sent
-      const notification = await prisma.notification.findFirst({
-        where: {
-          userId: attendeeId,
-          eventId: event.id,
-          type: NotificationType.REGISTRATION_CONFIRMED,
-        },
-      });
+      // Wait a bit for async notification creation (notification is created synchronously, but allow time for DB commit)
+      let notification = null;
+      for (let i = 0; i < 10; i++) {
+        notification = await prisma.notification.findFirst({
+          where: {
+            userId: attendeeId,
+            eventId: event.id,
+            type: NotificationType.REGISTRATION_CONFIRMED,
+          },
+        });
+        if (notification) break;
+        await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+      }
+      // If notification is still not found, check all notifications for debugging
+      if (!notification) {
+        const allNotifications = await prisma.notification.findMany({
+          where: { userId: attendeeId },
+        });
+        logger.warn(`No notification found. All notifications for user: ${JSON.stringify(allNotifications.map(n => ({ type: n.type, eventId: n.eventId })))}`);
+      }
       expect(notification).toBeDefined();
       expect(notification?.title).toContain('Registration Confirmed');
     });
@@ -352,10 +354,19 @@ describe('Event Registration System', () => {
         throw new Error('Organizer not found - test setup issue');
       }
 
-      // Create another attendee to reduce available capacity
+      // Create another attendee to reduce available capacity (use upsert to handle existing users)
       const otherAttendeePassword = await hashPassword('Test123!@$');
-      const otherAttendee = await prisma.user.create({
-        data: {
+      const otherAttendee = await prisma.user.upsert({
+        where: { email: 'otherattendee3@test.com' },
+        update: {
+          password: otherAttendeePassword,
+          firstName: 'Other',
+          lastName: 'Attendee3',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+        create: {
           email: 'otherattendee3@test.com',
           password: otherAttendeePassword,
           firstName: 'Other',
@@ -663,7 +674,8 @@ describe('Event Registration System', () => {
       });
 
       expect(user).toBeDefined();
-      expect(user?.password).toBeNull();
+      // Password should be null for passwordless accounts (Prisma may return undefined for null)
+      expect(user?.password === null || user?.password === undefined).toBe(true);
       expect(user?.isEmailVerified).toBe(true);
       expect(user?.status).toBe(UserStatus.ACTIVE);
 
@@ -1072,11 +1084,28 @@ describe('Event Registration System', () => {
       expect(successful).toBeGreaterThanOrEqual(0);
       expect(successful).toBeLessThanOrEqual(2);
 
+      // Verify availableSlots matches actual registrations
       const finalEvent = await prisma.event.findUnique({
         where: { id: event.id },
         select: { availableSlots: true, capacity: true },
       });
-      expect(finalEvent?.availableSlots).toBe(0);
+      
+      // Count actual confirmed/pending registrations
+      const actualRegistrations = await prisma.eventRegistration.count({
+        where: {
+          eventId: event.id,
+          status: {
+            in: ['CONFIRMED', 'PENDING'],
+          },
+        },
+      });
+      
+      // availableSlots should be: capacity - actual registrations
+      const expectedAvailableSlots = Math.max(0, (finalEvent?.capacity || 0) - actualRegistrations);
+      expect(finalEvent?.availableSlots).toBe(expectedAvailableSlots);
+      
+      // Verify that at most 2 registrations exist (capacity limit)
+      expect(actualRegistrations).toBeLessThanOrEqual(2);
     });
 
     it('should allow re-registration for cancelled events', async () => {

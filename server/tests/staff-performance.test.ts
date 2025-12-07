@@ -5,6 +5,7 @@ import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -46,30 +47,31 @@ describe('Staff Performance & Analytics', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await tx.ticketScan.deleteMany();
-      await tx.eventStaff.deleteMany();
-      await tx.featuredEvent.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.eventInvitation.deleteMany();
-      await tx.ticketTemplate.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      await tx.user.deleteMany();
-    });
+    // Clear all tables using comprehensive cleanup helper
+    try {
+      await prisma.$transaction(async (tx) => {
+        await cleanupTestData(tx);
+      });
+    } catch (error) {
+      // If cleanup fails, log but continue - might be due to missing tables
+      logger.warn('Cleanup warning:', error);
+    }
 
-    // Create test users
+    // Create test users (use upsert to handle existing users)
     const hashedPassword = await hashPassword('Test123!@$');
 
-    // Create admin
-    const admin = await prisma.user.create({
-      data: {
+    // Create admin (use upsert to handle existing users)
+    const admin = await prisma.user.upsert({
+      where: { email: 'admin@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: UserRole.ADMIN_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'admin@test.com',
         password: hashedPassword,
         firstName: 'Admin',
@@ -86,9 +88,20 @@ describe('Staff Performance & Analytics', () => {
       role: admin.role,
     });
 
-    // Create organizer
-    const organizer = await prisma.user.create({
-      data: {
+    // Create organizer (use upsert to handle existing users)
+    const organizer = await prisma.user.upsert({
+      where: { email: 'organizer@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Organizer',
+        lastName: 'User',
+        role: UserRole.ORGANIZER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        organizationName: 'Test Org',
+        businessEmail: 'business@test.com',
+      },
+      create: {
         email: 'organizer@test.com',
         password: hashedPassword,
         firstName: 'Organizer',
@@ -107,9 +120,18 @@ describe('Staff Performance & Analytics', () => {
       role: organizer.role,
     });
 
-    // Create admin staff
-    const adminStaff = await prisma.user.create({
-      data: {
+    // Create admin staff (use upsert to handle existing users)
+    const adminStaff = await prisma.user.upsert({
+      where: { email: 'adminstaff@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'Staff',
+        role: UserRole.ADMIN_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'adminstaff@test.com',
         password: hashedPassword,
         firstName: 'Admin',
@@ -121,9 +143,18 @@ describe('Staff Performance & Analytics', () => {
     });
     adminStaffId = adminStaff.id;
 
-    // Create organizer staff
-    const organizerStaff = await prisma.user.create({
-      data: {
+    // Create organizer staff (use upsert to handle existing users)
+    const organizerStaff = await prisma.user.upsert({
+      where: { email: 'organizerstaff@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Organizer',
+        lastName: 'Staff',
+        role: UserRole.ORGANIZER_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'organizerstaff@test.com',
         password: hashedPassword,
         firstName: 'Organizer',
@@ -209,10 +240,33 @@ describe('Staff Performance & Analytics', () => {
       it('should reject non-admin users', async () => {
         if (!dbConnected) return;
 
+        // Create a real attendee user for the test
+        const attendeePassword = await hashPassword('Test123!@$');
+        const attendee = await prisma.user.upsert({
+          where: { email: 'test-attendee-staff@test.com' },
+          update: {
+            password: attendeePassword,
+            firstName: 'Test',
+            lastName: 'Attendee',
+            role: UserRole.ATTENDEE,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+          },
+          create: {
+            email: 'test-attendee-staff@test.com',
+            password: attendeePassword,
+            firstName: 'Test',
+            lastName: 'Attendee',
+            role: UserRole.ATTENDEE,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+          },
+        });
+
         const attendeeToken = generateAccessToken({
-          userId: 'attendee-id',
-          email: 'attendee@test.com',
-          role: UserRole.ATTENDEE,
+          userId: attendee.id,
+          email: attendee.email,
+          role: attendee.role,
         });
 
         const response = await request(app)
@@ -220,6 +274,9 @@ describe('Staff Performance & Analytics', () => {
           .set('Authorization', `Bearer ${attendeeToken}`);
 
         expect(response.status).toBe(403);
+
+        // Clean up - no longer needed since upsert handles it, but keep for clarity
+        // await prisma.user.delete({ where: { id: attendee.id } });
       });
     });
 

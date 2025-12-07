@@ -11,6 +11,7 @@ import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
 import { NotificationService } from '../src/services/notification.service';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -51,11 +52,7 @@ describe('Notification API', () => {
 
     // Clear all tables
     await prisma.$transaction(async (tx) => {
-      await tx.notification.deleteMany();
-      await tx.notificationPreference.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.event.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test attendee
@@ -602,7 +599,7 @@ describe('Notification API', () => {
       (smsService.isEnabled as any) = jest.fn().mockReturnValue(false);
 
       const response = await request(app)
-        .put('/api/v1/users/me/notification-preferences')
+        .put('/api/v1/user/me/notification-preferences')
         .set('Authorization', `Bearer ${attendeeToken}`)
         .send({
           smsEnabled: true,
@@ -610,7 +607,7 @@ describe('Notification API', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('SMS service is not enabled');
+      expect(response.body.message).toContain('SMS notifications are not enabled');
 
       // Restore original
       (smsService.isEnabled as any) = originalIsEnabled;

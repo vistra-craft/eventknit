@@ -7,6 +7,7 @@ import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -44,20 +45,31 @@ describe('Organizer Staff Management', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clear all tables
-    await prisma.eventRegistration.deleteMany();
-    await prisma.event.deleteMany();
-    await prisma.auditLog.deleteMany();
-    await prisma.refreshToken.deleteMany();
-    await prisma.passwordReset.deleteMany();
-    await prisma.emailVerification.deleteMany();
-    await prisma.kYCDocument.deleteMany();
-    await prisma.user.deleteMany();
+    // Clear all tables using comprehensive cleanup helper
+    try {
+      await prisma.$transaction(async (tx) => {
+        await cleanupTestData(tx);
+      });
+    } catch (error) {
+      // If cleanup fails, log but continue - might be due to missing tables
+      logger.warn('Cleanup warning:', error);
+    }
 
-    // Create organizer
+    // Create organizer (use upsert to handle existing users)
     const organizerPassword = await hashPassword('Organizer123!@$');
-    const organizer = await prisma.user.create({
-      data: {
+    const organizer = await prisma.user.upsert({
+      where: { email: 'organizer@test.com' },
+      update: {
+        password: organizerPassword,
+        firstName: 'Event',
+        lastName: 'Organizer',
+        role: UserRole.ORGANIZER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        organizationName: 'Test Events Inc',
+        businessEmail: 'business@testevents.com',
+      },
+      create: {
         email: 'organizer@test.com',
         password: organizerPassword,
         firstName: 'Event',
@@ -71,10 +83,19 @@ describe('Organizer Staff Management', () => {
     });
     _organizerId = organizer.id;
 
-    // Create attendee
+    // Create attendee (use upsert to handle existing users)
     const attendeePassword = await hashPassword('Attendee123!@$');
-    await prisma.user.create({
-      data: {
+    const _attendee = await prisma.user.upsert({
+      where: { email: 'attendee@test.com' },
+      update: {
+        password: attendeePassword,
+        firstName: 'Event',
+        lastName: 'Attendee',
+        role: UserRole.ATTENDEE,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'attendee@test.com',
         password: attendeePassword,
         firstName: 'Event',
@@ -85,6 +106,14 @@ describe('Organizer Staff Management', () => {
       },
     });
 
+    // Verify users exist before attempting login
+    const organizerUser = await prisma.user.findUnique({
+      where: { email: 'organizer@test.com' },
+    });
+    if (!organizerUser) {
+      throw new Error('Organizer user not created');
+    }
+
     // Login as organizer
     const organizerLogin = await request(app)
       .post('/api/v1/auth/login')
@@ -94,9 +123,24 @@ describe('Organizer Staff Management', () => {
       });
     
     if (!organizerLogin.body.data?.accessToken) {
+      // Log more details for debugging
+      logger.error('Organizer login failed', {
+        status: organizerLogin.status,
+        body: organizerLogin.body,
+        userExists: !!organizerUser,
+        userEmail: organizerUser?.email,
+      });
       throw new Error(`Organizer login failed: ${JSON.stringify(organizerLogin.body)}`);
     }
     organizerToken = organizerLogin.body.data.accessToken;
+
+    // Verify attendee exists
+    const attendeeUser = await prisma.user.findUnique({
+      where: { email: 'attendee@test.com' },
+    });
+    if (!attendeeUser) {
+      throw new Error('Attendee user not created');
+    }
 
     // Login as attendee
     const attendeeLogin = await request(app)
@@ -107,6 +151,11 @@ describe('Organizer Staff Management', () => {
       });
     
     if (!attendeeLogin.body.data?.accessToken) {
+      logger.error('Attendee login failed', {
+        status: attendeeLogin.status,
+        body: attendeeLogin.body,
+        userExists: !!attendeeUser,
+      });
       throw new Error(`Attendee login failed: ${JSON.stringify(attendeeLogin.body)}`);
     }
     attendeeToken = attendeeLogin.body.data.accessToken;

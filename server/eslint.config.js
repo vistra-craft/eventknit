@@ -23,6 +23,10 @@ export default [
         module: "readonly",
         require: "readonly",
         exports: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
       },
     },
     plugins: {
@@ -99,6 +103,10 @@ export default [
         module: "readonly",
         require: "readonly",
         exports: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
         // Jest globals
         describe: "readonly",
         it: "readonly",

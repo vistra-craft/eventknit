@@ -38,10 +38,26 @@ describe('NotificationPreferenceService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clear all tables
+    // Clear all tables in correct order
     await prisma.$transaction(async (tx) => {
       await tx.notificationPreference.deleteMany();
       await tx.notification.deleteMany();
+      await tx.ticketScan.deleteMany();
+      await tx.eventRegistration.deleteMany();
+      await tx.featuredEvent.deleteMany();
+      await tx.ticketTemplate.deleteMany();
+      await tx.eventInvitation.deleteMany();
+      await tx.organizerDisbursement.deleteMany();
+      await tx.bulkMessage.deleteMany();
+      await tx.emailTemplate.deleteMany();
+      await tx.refund.deleteMany();
+      await tx.paymentReconciliation.deleteMany();
+      await tx.kYCDocument.deleteMany();
+      await tx.event.deleteMany();
+      await tx.auditLog.deleteMany();
+      await tx.refreshToken.deleteMany();
+      await tx.passwordReset.deleteMany();
+      await tx.emailVerification.deleteMany();
       await tx.user.deleteMany();
     });
 

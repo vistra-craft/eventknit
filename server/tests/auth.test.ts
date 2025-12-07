@@ -5,6 +5,7 @@ import { UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { logger } from '../src/utils/logger';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -49,26 +50,8 @@ describe('Authentication System', () => {
     if (!dbConnected) return;
     
     // Clear all tables before each test (in correct order to respect foreign keys)
-    // Use transaction to ensure atomic cleanup
     await prisma.$transaction(async (tx) => {
-      // Delete tables that reference User via createdBy (which is NOT NULL)
-      // These must be deleted before users to avoid constraint violations
-      await tx.featuredEvent.deleteMany();
-      await tx.ticketTemplate.deleteMany();
-      await tx.eventInvitation.deleteMany();
-      
-      // Delete other related tables
-      await tx.eventRegistration.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      
-      // Now safe to delete users
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
   });
 

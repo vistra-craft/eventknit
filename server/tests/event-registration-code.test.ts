@@ -45,9 +45,16 @@ describe('EventService - Registration Code', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clean up test data
-    await prisma.event.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up test data (in correct order to respect foreign keys)
+    await prisma.$transaction(async (tx) => {
+      await tx.featuredEvent.deleteMany();
+      await tx.ticketTemplate.deleteMany();
+      await tx.eventInvitation.deleteMany();
+      await tx.eventRegistration.deleteMany();
+      await tx.event.deleteMany();
+      await tx.paymentReconciliation.deleteMany();
+      await tx.user.deleteMany();
+    });
 
     // Create test organizer
     const organizer = await prisma.user.create({

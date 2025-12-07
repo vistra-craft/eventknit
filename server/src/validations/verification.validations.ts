@@ -10,9 +10,6 @@ export const verificationValidations = {
       'string.empty': 'Last name is required',
       'any.required': 'Last name is required',
     }),
-    dateOfBirth: Joi.date().required().messages({
-      'any.required': 'Date of birth is required',
-    }),
     address: Joi.string().trim().min(1).max(200).required().messages({
       'string.empty': 'Address is required',
       'any.required': 'Address is required',
@@ -44,9 +41,13 @@ export const verificationValidations = {
       'string.empty': 'ID number is required',
       'any.required': 'ID number is required',
     }),
-    idDocumentUrl: Joi.string().uri().required().messages({
-      'string.uri': 'ID document URL must be a valid URL',
-      'any.required': 'ID document URL is required',
+    idDocumentFrontUrl: Joi.string().uri().required().messages({
+      'string.uri': 'ID document front URL must be a valid URL',
+      'any.required': 'ID document front URL is required',
+    }),
+    idDocumentBackUrl: Joi.string().uri().required().messages({
+      'string.uri': 'ID document back URL must be a valid URL',
+      'any.required': 'ID document back URL is required',
     }),
   }),
 

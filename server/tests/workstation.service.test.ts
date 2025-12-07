@@ -2,6 +2,7 @@ import { WorkstationService } from '../src/services/workstation.service.js';
 import { TicketService } from '../src/services/ticket.service.js';
 import { prisma } from '../src/config/database.js';
 import { logger } from '../src/utils/logger.js';
+import { cleanupTestData } from './test-helpers.js';
 
 describe('WorkstationService', () => {
   let dbConnected = false;
@@ -51,10 +52,7 @@ describe('WorkstationService', () => {
 
     // Clean up
     await prisma.$transaction(async (tx) => {
-      await tx.ticketScan.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.event.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test organizer

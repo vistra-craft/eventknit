@@ -34,6 +34,13 @@ router.post('/staff', canManageStaffMiddleware, OrganizerController.createStaff)
 router.get('/staff', canManageStaffMiddleware, OrganizerController.getStaff);
 
 /**
+ * @route   GET /api/v1/organizer/staff/assignments
+ * @desc    Get all staff assignments for organizer's events
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff/assignments', EventStaffController.getOrganizerStaffAssignments);
+
+/**
  * @route   GET /api/v1/organizer/staff/:id
  * @desc    Get staff member by ID
  * @access  Private (ORGANIZER+)
@@ -118,20 +125,6 @@ router.put('/events/:eventId/staff/:staffId', EventStaffController.updateOrganiz
 router.delete('/events/:eventId/staff/:staffId', EventStaffController.removeOrganizerStaffFromEvent);
 
 /**
- * @route   GET /api/v1/organizer/staff/assignments
- * @desc    Get all staff assignments for organizer's events
- * @access  Private (ORGANIZER+)
- */
-router.get('/staff/assignments', EventStaffController.getOrganizerStaffAssignments);
-
-/**
- * @route   GET /api/v1/organizer/staff-performance/:staffId
- * @desc    Get performance metrics for a specific staff member
- * @access  Private (ORGANIZER+)
- */
-router.get('/staff-performance/:staffId', StaffPerformanceController.getStaffPerformance);
-
-/**
  * @route   GET /api/v1/organizer/staff-performance/team
  * @desc    Get team performance metrics
  * @access  Private (ORGANIZER+)
@@ -144,13 +137,6 @@ router.get('/staff-performance/team', StaffPerformanceController.getTeamPerforma
  * @access  Private (ORGANIZER+)
  */
 router.get('/staff-performance/team/summary', StaffPerformanceController.getTeamSummary);
-
-/**
- * @route   GET /api/v1/organizer/staff-performance/:staffId/trends
- * @desc    Get performance trends for a staff member
- * @access  Private (ORGANIZER+)
- */
-router.get('/staff-performance/:staffId/trends', StaffPerformanceController.getPerformanceTrends);
 
 /**
  * @route   GET /api/v1/organizer/staff-performance/utilization
@@ -172,6 +158,20 @@ router.get('/staff-performance/coverage', StaffPerformanceController.getEventCov
  * @access  Private (ORGANIZER+)
  */
 router.get('/staff-performance/availability', StaffPerformanceController.getStaffAvailability);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/:staffId/trends
+ * @desc    Get performance trends for a staff member
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/:staffId/trends', StaffPerformanceController.getPerformanceTrends);
+
+/**
+ * @route   GET /api/v1/organizer/staff-performance/:staffId
+ * @desc    Get performance metrics for a specific staff member
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-performance/:staffId', StaffPerformanceController.getStaffPerformance);
 
 export default router;
 

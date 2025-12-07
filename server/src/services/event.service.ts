@@ -21,6 +21,7 @@ export interface CreateEventData {
   title: string;
   description: string;
   fullDescription?: string;
+  organizerDescription?: string;
   category?: string;
   tags?: string[];
   startDate: Date | string;
@@ -215,16 +216,6 @@ export class EventService {
         }, 0);
       }
 
-      // Check payout limit for Level 2 users (identity verified but not full KYC)
-      if (organizer.verificationLevel === 2 && organizer.payoutLimit) {
-        const limit = Number(organizer.payoutLimit);
-        if (totalEventValue > limit) {
-          throw new ValidationError(
-            `This event exceeds your current payout limit of $${limit.toFixed(2)}. Please complete business verification (KYC) for unlimited paid events.`,
-          );
-        }
-      }
-
       // Check monthly limit (calculate current month's events value)
       if (organizer.verificationLevel === 2 && organizer.payoutLimit) {
         const now = new Date();
@@ -316,6 +307,7 @@ export class EventService {
         title: data.title.trim(),
         description: data.description.trim(),
         fullDescription: data.fullDescription?.trim(),
+        organizerDescription: data.organizerDescription?.trim(),
         category: data.category?.trim(),
         tags: data.tags || [],
         startDate: new Date(data.startDate),
@@ -424,10 +416,13 @@ export class EventService {
     limit?: number;
     offset?: number;
     page?: number;
+    type?: EventType;
   } = {}) {
     const where: Prisma.EventWhereInput = {
       deletedAt: null,
     };
+
+    logger.debug('[EventService] Received filters:', filters);
 
     if (filters.status) {
       where.status = filters.status;
@@ -445,6 +440,10 @@ export class EventService {
       where.organizerId = filters.organizerId;
     }
 
+    if (filters.type) {
+      where.type = filters.type;
+    }
+
     if (filters.search) {
       where.OR = [
         { title: { contains: filters.search, mode: 'insensitive' } },
@@ -452,6 +451,8 @@ export class EventService {
         { location: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
+
+    logger.debug('[EventService] Prisma where clause:', JSON.stringify(where, null, 2));
 
     const limit = filters.limit || 50;
     // Support both page and offset for backward compatibility
@@ -486,6 +487,12 @@ export class EventService {
       }),
       prisma.event.count({ where }),
     ]);
+
+    logger.debug('[EventService] Database query results:', {
+      eventCount: events.length,
+      total,
+      events: events.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type })),
+    });
 
     const page = filters.page !== undefined ? filters.page : Math.floor(skip / limit) + 1;
     const totalPages = Math.ceil(total / limit);
@@ -591,6 +598,7 @@ export class EventService {
     if (data.title !== undefined) updateData.title = data.title.trim();
     if (data.description !== undefined) updateData.description = data.description.trim();
     if (data.fullDescription !== undefined) updateData.fullDescription = data.fullDescription?.trim();
+    if (data.organizerDescription !== undefined) updateData.organizerDescription = data.organizerDescription?.trim();
     if (data.category !== undefined) updateData.category = data.category?.trim();
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.startDate !== undefined) updateData.startDate = new Date(data.startDate);
@@ -996,6 +1004,7 @@ export class EventService {
             id: true,
             title: true,
             startDate: true,
+            startTime: true,
             venue: true,
             location: true,
           },
@@ -1177,6 +1186,30 @@ export class EventService {
       ipAddress,
       userAgent,
     });
+
+    // Send registration confirmed notification for free events
+    if (event.isFree || isComplementaryTicket) {
+      try {
+        await NotificationService.sendNotification({
+          userId: attendeeId,
+          type: NotificationType.REGISTRATION_CONFIRMED,
+          title: `Registration Confirmed: ${event.title}`,
+          message: `Your registration for "${event.title}" has been confirmed! Your ticket has been sent to your email.`,
+          priority: NotificationPriority.HIGH,
+          eventId: event.id,
+          registrationId: registration.id,
+          data: {
+            eventDate: registration.event.startDate,
+            eventTime: registration.event.startTime || null,
+            venue: registration.event.venue || null,
+            location: registration.event.location,
+          },
+        });
+      } catch (error) {
+        logger.error('Failed to send registration confirmed notification:', error);
+        // Don't fail registration if notification fails
+      }
+    }
 
     logger.info(`Registration created: ${registration.id} for event: ${eventId} by attendee: ${attendeeId}`);
 

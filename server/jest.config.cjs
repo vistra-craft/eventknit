@@ -12,7 +12,12 @@ module.exports = {
         useESM: true,
         tsconfig: {
           module: "ESNext",
+          skipLibCheck: true,
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
+          moduleResolution: "node",
         },
+        isolatedModules: false, // Allow type checking but skip lib checks
       },
     ],
   },
@@ -30,4 +35,8 @@ module.exports = {
   detectOpenHandles: false, // Set to true for debugging
   // Global test timeout (can be overridden per test)
   testTimeout: 120000, // 120 seconds default timeout
+  // Show concise output - only failures summary
+  verbose: false,
+  // Don't show coverage in test output
+  collectCoverage: false,
 };

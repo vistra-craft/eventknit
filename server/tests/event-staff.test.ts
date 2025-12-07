@@ -5,6 +5,7 @@ import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -51,26 +52,24 @@ describe('Event Staff Management', () => {
     // Clear all tables in correct order to respect foreign keys
     await prisma.$transaction(async (tx) => {
       await tx.eventStaff.deleteMany();
-      await tx.featuredEvent.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.eventInvitation.deleteMany();
-      await tx.ticketTemplate.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');
 
-    // Create admin
-    const admin = await prisma.user.create({
-      data: {
+    // Create admin (use upsert to handle existing users)
+    const admin = await prisma.user.upsert({
+      where: { email: 'admin@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: UserRole.ADMIN_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'admin@test.com',
         password: hashedPassword,
         firstName: 'Admin',
@@ -87,9 +86,18 @@ describe('Event Staff Management', () => {
       role: admin.role,
     });
 
-    // Create superadmin
-    const superAdmin = await prisma.user.create({
-      data: {
+    // Create superadmin (use upsert to handle existing users)
+    const superAdmin = await prisma.user.upsert({
+      where: { email: 'superadmin@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Super',
+        lastName: 'Admin',
+        role: UserRole.SUPERADMIN,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'superadmin@test.com',
         password: hashedPassword,
         firstName: 'Super',
@@ -106,9 +114,19 @@ describe('Event Staff Management', () => {
       role: superAdmin.role,
     });
 
-    // Create organizer
-    const organizer = await prisma.user.create({
-      data: {
+    // Create organizer (use upsert to handle existing users)
+    const organizer = await prisma.user.upsert({
+      where: { email: 'organizer@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Event',
+        lastName: 'Organizer',
+        role: UserRole.ORGANIZER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        organizationName: 'Test Events Inc',
+      },
+      create: {
         email: 'organizer@test.com',
         password: hashedPassword,
         firstName: 'Event',
@@ -126,9 +144,18 @@ describe('Event Staff Management', () => {
       role: organizer.role,
     });
 
-    // Create admin staff member
-    const adminStaff = await prisma.user.create({
-      data: {
+    // Create admin staff member (use upsert to handle existing users)
+    const adminStaff = await prisma.user.upsert({
+      where: { email: 'adminstaff@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'Staff',
+        role: UserRole.ADMIN_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
         email: 'adminstaff@test.com',
         password: hashedPassword,
         firstName: 'Admin',
@@ -140,9 +167,19 @@ describe('Event Staff Management', () => {
     });
     adminStaffId = adminStaff.id;
 
-    // Create organizer staff member
-    const organizerStaff = await prisma.user.create({
-      data: {
+    // Create organizer staff member (use upsert to handle existing users)
+    const organizerStaff = await prisma.user.upsert({
+      where: { email: 'organizerstaff@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Organizer',
+        lastName: 'Staff',
+        role: UserRole.ORGANIZER_STAFF,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        organizationName: 'Test Events Inc',
+      },
+      create: {
         email: 'organizerstaff@test.com',
         password: hashedPassword,
         firstName: 'Organizer',
@@ -292,10 +329,23 @@ describe('Event Staff Management', () => {
       it('should reject non-admin users', async () => {
         if (!dbConnected) return;
 
+        // Create a real attendee user for the test
+        const attendee = await prisma.user.create({
+          data: {
+            email: 'test-attendee@test.com',
+            password: 'hashedpassword',
+            firstName: 'Test',
+            lastName: 'Attendee',
+            role: UserRole.ATTENDEE,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+          },
+        });
+
         const attendeeToken = generateAccessToken({
-          userId: 'attendee-id',
-          email: 'attendee@test.com',
-          role: UserRole.ATTENDEE,
+          userId: attendee.id,
+          email: attendee.email,
+          role: attendee.role,
         });
 
         const response = await request(app)
@@ -307,6 +357,9 @@ describe('Event Staff Management', () => {
           });
 
         expect(response.status).toBe(403);
+
+        // Clean up
+        await prisma.user.delete({ where: { id: attendee.id } });
       });
     });
 
@@ -427,11 +480,11 @@ describe('Event Staff Management', () => {
           });
 
         const response = await request(app)
-          .get(`/api/v1/admin/staff/${adminStaffId}/events?status=PUBLISHED`)
+          .get(`/api/v1/admin/staff/${adminStaffId}/events?status=APPROVED`)
           .set('Authorization', `Bearer ${adminToken}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.data.assignments.every((a: { event: { status: string } }) => a.event.status === 'PUBLISHED')).toBe(true);
+        expect(response.body.data.assignments.every((a: { event: { status: string } }) => a.event.status === 'APPROVED')).toBe(true);
       });
     });
 
@@ -640,9 +693,19 @@ describe('Event Staff Management', () => {
       it('should reject assigning to event not owned by organizer', async () => {
         if (!dbConnected) return;
 
-        // Create another organizer and event
-        const otherOrganizer = await prisma.user.create({
-          data: {
+        // Create another organizer and event (use upsert to handle existing users)
+        const otherOrganizer = await prisma.user.upsert({
+          where: { email: 'otherorganizer@test.com' },
+          update: {
+            password: await hashPassword('Test123!@$'),
+            firstName: 'Other',
+            lastName: 'Organizer',
+            role: UserRole.ORGANIZER,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+            organizationName: 'Other Events Inc',
+          },
+          create: {
             email: 'otherorganizer@test.com',
             password: await hashPassword('Test123!@$'),
             firstName: 'Other',

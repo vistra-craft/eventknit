@@ -127,7 +127,7 @@ describe('USSDSMSController', () => {
       });
       
       // Wait a bit for async processing
-      // eslint-disable-next-line no-undef
+       
       await new Promise(resolve => setTimeout(resolve, 10));
       
       // Error should be logged

@@ -10,9 +10,11 @@ import crypto from 'crypto';
  */
 export class LockService {
   private static redisClient: Redis | null = null;
+  private static connectionStartTime: number | null = null;
   private static readonly DEFAULT_TTL = 5000; // 5 seconds in milliseconds
   private static readonly DEFAULT_RETRY_DELAY = 100; // 100ms
   private static readonly DEFAULT_MAX_RETRIES = 3;
+  private static readonly CONNECTION_TIMEOUT = 3000; // 3 seconds to establish connection
 
   /**
    * Initialize Redis client
@@ -27,19 +29,50 @@ export class LockService {
     try {
       this.redisClient = new Redis(redisUrl, {
         retryStrategy: (times) => {
+          // Stop retrying after 3 attempts
+          if (times > 3) {
+            logger.warn('Redis connection failed after 3 attempts, disabling Redis');
+            this.redisClient = null;
+            return null; // Stop retrying
+          }
           const delay = Math.min(times * 50, 2000);
           return delay;
         },
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: 1, // Fail fast on individual requests
+        connectTimeout: 2000, // 2 second connection timeout
+        commandTimeout: 1000, // 1 second command timeout
+        lazyConnect: true, // Connect lazily to avoid blocking initialization
+        enableOfflineQueue: false, // Don't queue commands when offline
+        enableReadyCheck: true, // Check if Redis is ready before executing commands
       });
 
       this.redisClient.on('error', (error) => {
         logger.error('Redis connection error:', error);
+        // If connection fails, disable Redis
+        if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT')) {
+          logger.warn('Redis not available, disabling Redis client');
+          this.redisClient = null;
+        }
       });
 
       this.redisClient.on('connect', () => {
         logger.info('Redis connected successfully');
+        this.connectionStartTime = null; // Reset on successful connect
       });
+
+      this.redisClient.on('ready', () => {
+        logger.info('Redis ready');
+        this.connectionStartTime = null; // Reset on ready
+      });
+
+      this.redisClient.on('close', () => {
+        logger.warn('Redis connection closed');
+        this.redisClient = null;
+        this.connectionStartTime = null;
+      });
+
+      // Track connection start time
+      this.connectionStartTime = Date.now();
     } catch (error) {
       logger.error('Failed to initialize Redis:', error);
       // Continue without Redis - locks will fail gracefully
@@ -65,6 +98,32 @@ export class LockService {
   }
 
   /**
+   * Check if Redis client is ready
+   */
+  private static isClientReady(): boolean {
+    if (!this.redisClient) {
+      return false;
+    }
+    
+    const status = this.redisClient.status;
+    
+    // If connecting for too long, consider it unavailable
+    if (status === 'connecting' && this.connectionStartTime) {
+      const elapsed = Date.now() - this.connectionStartTime;
+      if (elapsed > this.CONNECTION_TIMEOUT) {
+        logger.warn('Redis connection timeout, disabling client');
+        this.redisClient = null;
+        this.connectionStartTime = null;
+        return false;
+      }
+    }
+    
+    // Check if client is connected and ready
+    // Status can be: 'wait', 'end', 'close', 'connecting', 'connect', 'ready'
+    return status === 'ready' || status === 'connect';
+  }
+
+  /**
    * Acquire a distributed lock
    * @param key - Lock key
    * @param ttl - Time to live in milliseconds (default: 5 seconds)
@@ -72,8 +131,8 @@ export class LockService {
    */
   static async acquireLock(key: string, ttl: number = this.DEFAULT_TTL): Promise<string | null> {
     const client = this.getClient();
-    if (!client) {
-      logger.warn('Redis not available, lock acquisition skipped');
+    if (!client || !this.isClientReady()) {
+      // Redis not available - return null immediately
       return null;
     }
 
@@ -82,7 +141,11 @@ export class LockService {
       const ttlSeconds = Math.ceil(ttl / 1000); // Convert to seconds
 
       // Use SET with NX (only if not exists) and EX (expiration)
-      const result = await client.set(key, lockValue, 'EX', ttlSeconds, 'NX');
+      // commandTimeout is already set in Redis config, but add Promise.race as backup
+      const result = await Promise.race([
+        client.set(key, lockValue, 'EX', ttlSeconds, 'NX'),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)), // 1.5 second timeout (longer than commandTimeout)
+      ]);
 
       if (result === 'OK') {
         return lockValue;
@@ -91,6 +154,10 @@ export class LockService {
       return null;
     } catch (error) {
       logger.error(`Error acquiring lock for key ${key}:`, error);
+      // If connection error, disable Redis client
+      if (error instanceof Error && (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT'))) {
+        this.redisClient = null;
+      }
       return null;
     }
   }
@@ -103,8 +170,8 @@ export class LockService {
    */
   static async releaseLock(key: string, lockValue: string): Promise<boolean> {
     const client = this.getClient();
-    if (!client) {
-      logger.warn('Redis not available, lock release skipped');
+    if (!client || !this.isClientReady()) {
+      // Redis not available - return false immediately
       return false;
     }
 
@@ -119,10 +186,19 @@ export class LockService {
         end
       `;
 
-      const result = await client.eval(script, 1, key, lockValue);
+      // Add timeout to prevent hanging
+      const result = await Promise.race([
+        client.eval(script, 1, key, lockValue),
+        new Promise<number>((resolve) => setTimeout(() => resolve(0), 1500)), // 1.5 second timeout
+      ]);
+
       return result === 1;
     } catch (error) {
       logger.error(`Error releasing lock for key ${key}:`, error);
+      // If connection error, disable Redis client
+      if (error instanceof Error && (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT'))) {
+        this.redisClient = null;
+      }
       return false;
     }
   }
@@ -136,8 +212,8 @@ export class LockService {
    */
   static async extendLock(key: string, lockValue: string, ttl: number = this.DEFAULT_TTL): Promise<boolean> {
     const client = this.getClient();
-    if (!client) {
-      logger.warn('Redis not available, lock extension skipped');
+    if (!client || !this.isClientReady()) {
+      // Redis not available - return false immediately
       return false;
     }
 
@@ -152,10 +228,19 @@ export class LockService {
       `;
 
       const ttlMilliseconds = ttl.toString();
-      const result = await client.eval(script, 1, key, lockValue, ttlMilliseconds);
+      // Add timeout to prevent hanging
+      const result = await Promise.race([
+        client.eval(script, 1, key, lockValue, ttlMilliseconds),
+        new Promise<number>((resolve) => setTimeout(() => resolve(0), 1500)), // 1.5 second timeout
+      ]);
+
       return result === 1;
     } catch (error) {
       logger.error(`Error extending lock for key ${key}:`, error);
+      // If connection error, disable Redis client
+      if (error instanceof Error && (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT'))) {
+        this.redisClient = null;
+      }
       return false;
     }
   }
@@ -174,17 +259,32 @@ export class LockService {
     maxRetries: number = this.DEFAULT_MAX_RETRIES,
     retryDelay: number = this.DEFAULT_RETRY_DELAY,
   ): Promise<string | null> {
+    // Check if Redis is available before attempting retries
+    if (!this.isClientReady()) {
+      return null;
+    }
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Check again before each attempt
+      if (!this.isClientReady()) {
+        return null;
+      }
+
       const lockValue = await this.acquireLock(key, ttl);
 
       if (lockValue) {
         return lockValue;
       }
 
+      // If Redis client was disabled during acquireLock, stop retrying
+      if (!this.isClientReady()) {
+        return null;
+      }
+
       if (attempt < maxRetries) {
         // Wait before retrying
         await new Promise<void>((resolve) => {
-          // eslint-disable-next-line no-undef
+           
           setTimeout(() => resolve(), retryDelay);
         });
       }
@@ -228,8 +328,27 @@ export class LockService {
    */
   static async close(): Promise<void> {
     if (this.redisClient) {
-      await this.redisClient.quit();
-      this.redisClient = null;
+      try {
+        // Check if client is connected before trying to quit
+        const status = this.redisClient.status;
+        if (status === 'ready' || status === 'connect') {
+          // Client is connected, use quit() for graceful shutdown
+          await this.redisClient.quit();
+        } else {
+          // Client is not connected, just disconnect
+          this.redisClient.disconnect();
+        }
+      } catch (error) {
+        // If quit() fails, try disconnect() as fallback
+        try {
+          this.redisClient.disconnect();
+        } catch {
+          // Ignore disconnect errors
+        }
+        logger.warn('Error closing Redis connection:', error);
+      } finally {
+        this.redisClient = null;
+      }
     }
   }
 }

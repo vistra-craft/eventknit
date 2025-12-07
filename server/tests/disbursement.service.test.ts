@@ -4,6 +4,7 @@ import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus, RegistrationStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -46,21 +47,7 @@ describe('DisbursementService', () => {
 
     // Clear all tables
     await prisma.$transaction(async (tx) => {
-      await tx.refund.deleteMany();
-      await tx.platformFee.deleteMany();
-      await tx.organizerDisbursement.deleteMany();
-      await tx.eventPaymentTransaction.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.eventInvitation.deleteMany();
-      await tx.ticketTemplate.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test organizer

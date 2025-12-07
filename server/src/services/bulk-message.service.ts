@@ -544,7 +544,7 @@ export class BulkMessageService {
         // Small delay between batches to avoid rate limiting
         if (i + batchSize < recipients.length) {
           await new Promise((resolve) => {
-            // eslint-disable-next-line no-undef
+             
             setTimeout(resolve, 100);
           });
         }

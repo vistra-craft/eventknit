@@ -454,7 +454,7 @@ describe('Workstation API Integration Tests', () => {
       expect(checkInResponse.body.success).toBe(true);
 
       // Wait a bit to ensure database consistency
-      // eslint-disable-next-line no-undef
+       
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check-out
@@ -476,7 +476,7 @@ describe('Workstation API Integration Tests', () => {
       expect(checkOutResponse.body.success).toBe(true);
 
       // Wait a bit to ensure database consistency
-      // eslint-disable-next-line no-undef
+       
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Re-entry
@@ -541,7 +541,7 @@ describe('Workstation API Integration Tests', () => {
       // Wait for database consistency
        
       await new Promise((resolve) => {
-        // eslint-disable-next-line no-undef
+         
         setTimeout(resolve, 100);
       });
 

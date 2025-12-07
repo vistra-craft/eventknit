@@ -47,19 +47,25 @@ describe('Organizer Data Access Control', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clear all tables
-    await prisma.featuredEvent.deleteMany();
-    await prisma.eventRegistration.deleteMany();
-    await prisma.eventInvitation.deleteMany();
-    await prisma.ticketTemplate.deleteMany();
-    await prisma.event.deleteMany();
-    await prisma.auditLog.deleteMany();
-    await prisma.refreshToken.deleteMany();
-    await prisma.magicLinkToken.deleteMany();
-    await prisma.passwordReset.deleteMany();
-    await prisma.emailVerification.deleteMany();
-    await prisma.kYCDocument.deleteMany();
-    await prisma.user.deleteMany();
+    // Clear all tables (in correct order to respect foreign keys)
+    await prisma.$transaction(async (tx) => {
+      await tx.featuredEvent.deleteMany();
+      await tx.ticketTemplate.deleteMany();
+      await tx.eventInvitation.deleteMany();
+      await tx.bulkMessage.deleteMany();
+      await tx.emailTemplate.deleteMany();
+      await tx.organizerDisbursement.deleteMany();
+      await tx.eventRegistration.deleteMany();
+      await tx.event.deleteMany();
+      await tx.paymentReconciliation.deleteMany();
+      await tx.auditLog.deleteMany();
+      await tx.refreshToken.deleteMany();
+      await tx.magicLinkToken.deleteMany();
+      await tx.passwordReset.deleteMany();
+      await tx.emailVerification.deleteMany();
+      await tx.kYCDocument.deleteMany();
+      await tx.user.deleteMany();
+    });
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');

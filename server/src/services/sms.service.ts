@@ -100,7 +100,7 @@ class SMSService {
    * Sleep for specified milliseconds
    */
   private sleep(ms: number): Promise<void> {
-    // eslint-disable-next-line no-undef
+     
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 

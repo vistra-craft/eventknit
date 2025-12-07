@@ -6,6 +6,7 @@ import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus, RegistrationStatus, NotificationType } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -45,29 +46,32 @@ describe('PaymentService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clear all tables in correct order to respect foreign keys
-    await prisma.$transaction(async (tx) => {
-      await tx.notification.deleteMany();
-      await tx.eventPaymentTransaction.deleteMany();
-      await tx.platformFee.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.eventInvitation.deleteMany();
-      await tx.ticketTemplate.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      await tx.user.deleteMany();
-    });
+    // Clear all tables using comprehensive cleanup helper
+    try {
+      await prisma.$transaction(async (tx) => {
+        await cleanupTestData(tx);
+      });
+    } catch (error) {
+      // If cleanup fails, log but continue - might be due to missing tables
+      logger.warn('Cleanup warning:', error);
+    }
 
-    // Create test organizer
-    const organizer = await prisma.user.create({
-      data: {
+    // Create test organizer (use upsert to handle existing users)
+    const organizerPassword = await hashPassword('password123');
+    const organizer = await prisma.user.upsert({
+      where: { email: 'organizer@test.com' },
+      update: {
+        password: organizerPassword,
+        firstName: 'Organizer',
+        lastName: 'Test',
+        role: UserRole.ORGANIZER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      create: {
         email: 'organizer@test.com',
-        password: await hashPassword('password123'),
+        password: organizerPassword,
         firstName: 'Organizer',
         lastName: 'Test',
         role: UserRole.ORGANIZER,
@@ -78,11 +82,22 @@ describe('PaymentService', () => {
     });
     organizerId = organizer.id;
 
-    // Create test attendee
-    const attendee = await prisma.user.create({
-      data: {
+    // Create test attendee (use upsert to handle existing users)
+    const attendeePassword = await hashPassword('password123');
+    const attendee = await prisma.user.upsert({
+      where: { email: 'attendee@test.com' },
+      update: {
+        password: attendeePassword,
+        firstName: 'Attendee',
+        lastName: 'Test',
+        role: UserRole.ATTENDEE,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      create: {
         email: 'attendee@test.com',
-        password: await hashPassword('password123'),
+        password: attendeePassword,
         firstName: 'Attendee',
         lastName: 'Test',
         role: UserRole.ATTENDEE,
@@ -514,7 +529,7 @@ describe('PaymentService', () => {
 
       // Wait a bit for async notification processing
       await new Promise((resolve) => {
-        // eslint-disable-next-line no-undef
+         
         setTimeout(resolve, 100);
       });
 
@@ -1059,6 +1074,14 @@ describe('PaymentService', () => {
         logger.info('⏭️  Skipping test - database not connected');
         return;
       }
+
+      // Delete existing registration from beforeEach if it exists, then create a new one
+      await prisma.eventRegistration.deleteMany({
+        where: {
+          eventId,
+          attendeeId,
+        },
+      });
 
       // Create a payment transaction manually
       const registration = await prisma.eventRegistration.create({

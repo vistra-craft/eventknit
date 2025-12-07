@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { EventService } from '../services/event.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { EventStatus, DataAccessLevel } from '@prisma/client';
+import { EventStatus, EventType, DataAccessLevel } from '@prisma/client';
+import { logger } from '../utils/logger.js';
 
 export class EventController {
   /**
@@ -52,7 +53,10 @@ export class EventController {
         limit?: number;
         offset?: number;
         page?: number;
+        type?: EventType;
       } = {};
+
+      logger.debug('[EventController] Query params:', req.query);
 
       if (req.query.status) {
         filters.status = req.query.status as EventStatus;
@@ -69,6 +73,9 @@ export class EventController {
       if (req.query.search) {
         filters.search = req.query.search as string;
       }
+      if (req.query.type) {
+        filters.type = req.query.type as EventType;
+      }
       if (req.query.limit) {
         filters.limit = parseInt(req.query.limit as string, 10);
       }
@@ -79,7 +86,15 @@ export class EventController {
         filters.offset = parseInt(req.query.offset as string, 10);
       }
 
+      logger.debug('[EventController] Parsed filters:', filters);
+
       const result = await EventService.getEvents(filters);
+
+      logger.debug('[EventController] Service returned:', {
+        eventCount: result.events.length,
+        total: result.total,
+        events: result.events.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type })),
+      });
 
       res.status(200).json({
         success: true,

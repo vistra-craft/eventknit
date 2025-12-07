@@ -6,7 +6,7 @@
 export default async function globalTeardown(): Promise<void> {
   // Use a timeout to ensure this doesn't hang
   const timeout = new Promise<void>((resolve) => {
-    // eslint-disable-next-line no-undef
+     
     setTimeout(() => {
       console.log('⚠️  Teardown timeout - forcing exit');
       resolve();

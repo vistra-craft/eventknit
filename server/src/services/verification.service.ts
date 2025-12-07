@@ -6,7 +6,6 @@ import { Decimal } from '@prisma/client/runtime/library';
 export interface IdentityVerificationData {
   firstName: string;
   lastName: string;
-  dateOfBirth: string; // ISO date string
   address: string;
   city: string;
   state: string;
@@ -14,7 +13,8 @@ export interface IdentityVerificationData {
   country: string;
   idType: string; // 'passport' | 'drivers_license' | 'national_id'
   idNumber: string;
-  idDocumentUrl: string; // URL to uploaded document
+  idDocumentFrontUrl: string; // URL to uploaded front document
+  idDocumentBackUrl: string; // URL to uploaded back document
 }
 
 export interface BusinessVerificationData {
@@ -48,8 +48,8 @@ export class VerificationService {
     }
 
     // Validate required fields
-    if (!data.firstName || !data.lastName || !data.dateOfBirth || !data.address) {
-      throw new ValidationError('All identity verification fields are required');
+    if (!data.firstName || !data.lastName || !data.address || !data.idDocumentFrontUrl || !data.idDocumentBackUrl) {
+      throw new ValidationError('All identity verification fields are required, including both ID document images');
     }
 
     // Update user with identity information and mark as verified

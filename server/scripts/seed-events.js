@@ -6,6 +6,7 @@
  */
 
 import { PrismaClient, EventStatus, EventType, UserRole } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -155,17 +156,35 @@ async function seedEvents() {
       endDate.setHours(17, 0, 0, 0); // 5:00 PM
 
       const isFree = template.price === 0;
-      const ticketTypes = [
-        {
-          id: Date.now(),
-          name: isFree ? "Free Admission" : "General Admission",
-          type: isFree ? "free" : "paid",
-          price: template.price.toString(),
-          quantity: 100,
-          availableFrom: new Date().toISOString(),
-          availableUntil: startDate.toISOString()
-        }
-      ];
+      
+      // Build ticket types array matching the backend format
+      // Backend expects: { name, price, quantity?, features?, originalPrice?, discountLabel?, isComplementary?, requiresInvitation?, availableFrom?, availableUntil? }
+      const ticketTypes = isFree 
+        ? [
+            {
+              name: "Free Admission",
+              price: 0,
+              quantity: 200,
+              features: [],
+              isComplementary: false,
+              requiresInvitation: false
+            }
+          ]
+        : [
+            {
+              name: "General Admission",
+              price: template.price,
+              quantity: 200,
+              features: [],
+              isComplementary: false,
+              requiresInvitation: false
+            }
+          ];
+
+      // Determine single price if all tickets have same price
+      const singlePrice = !isFree && ticketTypes.length === 1 
+        ? ticketTypes[0].price 
+        : undefined;
 
       // Create the event
       await prisma.event.create({
@@ -174,7 +193,7 @@ async function seedEvents() {
           description: template.description,
           fullDescription: template.description + " This is a detailed description of the event, providing more context and information for attendees.",
           category: template.category,
-          image: template.image,
+          tags: [template.category, "Event", "Nairobi"],
           startDate: startDate,
           endDate: endDate,
           startTime: "09:00",
@@ -183,15 +202,26 @@ async function seedEvents() {
           location: template.location,
           address: `${template.venue}, ${template.location}`,
           isOnline: false,
+          onlineLink: null,
           isFree: isFree,
-          price: isFree ? 0 : template.price,
-          ticketTypes: ticketTypes,
+          price: singlePrice ? new Decimal(singlePrice) : (isFree ? new Decimal(0) : null),
+          currency: "KES",
+          ticketTypes: ticketTypes.length > 0 ? ticketTypes : undefined,
           capacity: 200,
           availableSlots: 200,
+          image: template.image,
+          images: [],
           type: EventType.PUBLIC,
           status: EventStatus.APPROVED, // Auto-approve for visibility
+          requirements: [],
+          ageRestriction: null,
+          duration: null,
+          speakers: null,
+          sponsors: null,
+          faqs: null,
+          registrationFields: null,
           organizerId: organizer.id,
-          tags: [template.category, "Event", "Nairobi"],
+          createdBy: organizer.id,
           approvedAt: new Date(),
           approvedBy: "system-seed"
         }

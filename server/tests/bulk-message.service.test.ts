@@ -9,6 +9,7 @@ import {
 } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -49,17 +50,7 @@ describe('BulkMessageService', () => {
 
     // Clear all tables
     await prisma.$transaction(async (tx) => {
-      await tx.bulkMessage.deleteMany();
-      await tx.notification.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test organizer

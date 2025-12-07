@@ -5,7 +5,7 @@ import {
   DeliveryStatus,
   Prisma,
 } from '@prisma/client';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { emailService } from './email.service.js';
 import { smsService } from './sms.service.js';
@@ -326,53 +326,93 @@ export class NotificationService {
       if (shouldSendEmail && notification.user.email) {
         try {
           await this.deliverEmail(notification);
-          await prisma.notification.update({
+          // Check if notification still exists before updating (might be deleted during test cleanup)
+          const existingNotification = await prisma.notification.findUnique({
             where: { id: notificationId },
-            data: { emailStatus: DeliveryStatus.SENT },
           });
+          if (existingNotification) {
+            await prisma.notification.update({
+              where: { id: notificationId },
+              data: { emailStatus: DeliveryStatus.SENT },
+            });
+          }
         } catch (error) {
           logger.error(`Failed to send email for notification ${notificationId}:`, error);
+          // Check if notification still exists before updating
+          const existingNotification = await prisma.notification.findUnique({
+            where: { id: notificationId },
+          });
+          if (existingNotification) {
+            await prisma.notification.update({
+              where: { id: notificationId },
+              data: { emailStatus: DeliveryStatus.FAILED },
+            });
+          }
+        }
+      } else if (channels.email && !shouldSendEmail) {
+        // User has disabled email for this category
+        // Check if notification still exists before updating
+        const existingNotification = await prisma.notification.findUnique({
+          where: { id: notificationId },
+        });
+        if (existingNotification) {
           await prisma.notification.update({
             where: { id: notificationId },
             data: { emailStatus: DeliveryStatus.FAILED },
           });
         }
-      } else if (channels.email && !shouldSendEmail) {
-        // User has disabled email for this category
-        await prisma.notification.update({
-          where: { id: notificationId },
-          data: { emailStatus: DeliveryStatus.FAILED },
-        });
       }
 
       // Deliver via SMS
       if (shouldSendSMS && notification.user.phoneNumber && smsService.isEnabled()) {
         try {
           await this.deliverSMS(notification);
-          await prisma.notification.update({
+          // Check if notification still exists before updating
+          const existingNotification = await prisma.notification.findUnique({
             where: { id: notificationId },
-            data: { smsStatus: DeliveryStatus.SENT },
           });
+          if (existingNotification) {
+            await prisma.notification.update({
+              where: { id: notificationId },
+              data: { smsStatus: DeliveryStatus.SENT },
+            });
+          }
         } catch (error) {
           logger.error(`Failed to send SMS for notification ${notificationId}:`, error);
+          // Check if notification still exists before updating
+          const existingNotification = await prisma.notification.findUnique({
+            where: { id: notificationId },
+          });
+          if (existingNotification) {
+            await prisma.notification.update({
+              where: { id: notificationId },
+              data: { smsStatus: DeliveryStatus.FAILED },
+            });
+          }
+        }
+      } else if (channels.sms && !shouldSendSMS) {
+        // User has disabled SMS for this category or SMS service not enabled
+        const existingNotification = await prisma.notification.findUnique({
+          where: { id: notificationId },
+        });
+        if (existingNotification) {
           await prisma.notification.update({
             where: { id: notificationId },
             data: { smsStatus: DeliveryStatus.FAILED },
           });
         }
-      } else if (channels.sms && !shouldSendSMS) {
-        // User has disabled SMS for this category or SMS service not enabled
-        await prisma.notification.update({
-          where: { id: notificationId },
-          data: { smsStatus: DeliveryStatus.FAILED },
-        });
       } else if (channels.sms && !notification.user.phoneNumber) {
         // SMS requested but user has no phone number
-        await prisma.notification.update({
+        const existingNotification = await prisma.notification.findUnique({
           where: { id: notificationId },
-          data: { smsStatus: DeliveryStatus.FAILED },
         });
-        logger.debug(`SMS delivery skipped for notification ${notificationId} - user has no phone number`);
+        if (existingNotification) {
+          await prisma.notification.update({
+            where: { id: notificationId },
+            data: { smsStatus: DeliveryStatus.FAILED },
+          });
+          logger.debug(`SMS delivery skipped for notification ${notificationId} - user has no phone number`);
+        }
       }
 
       // Deliver via push (placeholder - implement when push service is available)
@@ -380,16 +420,28 @@ export class NotificationService {
         try {
           // TODO: Implement push notification delivery
           // await this.deliverPush(notification);
-          await prisma.notification.update({
+          // Check if notification still exists before updating
+          const existingNotification = await prisma.notification.findUnique({
             where: { id: notificationId },
-            data: { pushStatus: DeliveryStatus.SENT },
           });
+          if (existingNotification) {
+            await prisma.notification.update({
+              where: { id: notificationId },
+              data: { pushStatus: DeliveryStatus.SENT },
+            });
+          }
         } catch (error) {
           logger.error(`Failed to send push for notification ${notificationId}:`, error);
-          await prisma.notification.update({
+          // Check if notification still exists before updating
+          const existingNotification = await prisma.notification.findUnique({
             where: { id: notificationId },
-            data: { pushStatus: DeliveryStatus.FAILED },
           });
+          if (existingNotification) {
+            await prisma.notification.update({
+              where: { id: notificationId },
+              data: { pushStatus: DeliveryStatus.FAILED },
+            });
+          }
         }
       }
 
@@ -662,7 +714,7 @@ export class NotificationService {
       }
 
       if (notification.userId !== userId) {
-        throw new ValidationError('Notification does not belong to user');
+        throw new AuthorizationError('You do not have permission to access this notification');
       }
 
       if (notification.isRead) {
@@ -691,7 +743,7 @@ export class NotificationService {
 
       return updated;
     } catch (error) {
-      if (error instanceof NotFoundError || error instanceof ValidationError) {
+      if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof AuthorizationError) {
         throw error;
       }
       logger.error(`Failed to mark notification ${notificationId} as read:`, error);
@@ -747,7 +799,7 @@ export class NotificationService {
       }
 
       if (notification.userId !== userId) {
-        throw new ValidationError('Notification does not belong to user');
+        throw new AuthorizationError('You do not have permission to delete this notification');
       }
 
       await prisma.notification.delete({
@@ -768,7 +820,7 @@ export class NotificationService {
 
       return { success: true };
     } catch (error) {
-      if (error instanceof NotFoundError || error instanceof ValidationError) {
+      if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof AuthorizationError) {
         throw error;
       }
       logger.error(`Failed to delete notification ${notificationId}:`, error);

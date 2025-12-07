@@ -11,6 +11,7 @@ import {
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -51,10 +52,7 @@ describe('Bulk Message API', () => {
 
     // Clear all tables
     await prisma.$transaction(async (tx) => {
-      await tx.bulkMessage.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.event.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test admin
@@ -147,9 +145,9 @@ describe('Bulk Message API', () => {
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('id');
-      expect(response.body.data.title).toBe(messageData.title);
-      expect(response.body.data.status).toBe(BulkMessageStatus.DRAFT);
+      expect(response.body.data.message).toHaveProperty('id');
+      expect(response.body.data.message.title).toBe(messageData.title);
+      expect(response.body.data.message.status).toBe(BulkMessageStatus.DRAFT);
     });
 
     it('should require ADMIN_STAFF+ role', async () => {
@@ -213,9 +211,9 @@ describe('Bulk Message API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data.messages).toBeDefined();
+      expect(Array.isArray(response.body.data.messages)).toBe(true);
+      expect(response.body.data.messages.length).toBeGreaterThan(0);
     });
 
     it('should require ADMIN_STAFF+ role', async () => {
@@ -267,8 +265,8 @@ describe('Bulk Message API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.id).toBe(message.id);
-      expect(response.body.data.title).toBe('Test Message');
+      expect(response.body.data.message.id).toBe(message.id);
+      expect(response.body.data.message.title).toBe('Test Message');
     });
 
     it('should return 404 for non-existent message', async () => {
@@ -306,8 +304,8 @@ describe('Bulk Message API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.title).toBe('Updated Title');
-      expect(response.body.data.content).toBe('Updated content');
+      expect(response.body.data.message.title).toBe('Updated Title');
+      expect(response.body.data.message.content).toBe('Updated content');
     });
   });
 
@@ -362,7 +360,8 @@ describe('Bulk Message API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.status).toBe(BulkMessageStatus.SENDING);
+      // The service sends synchronously, so status will be SENT after completion
+      expect(response.body.data.message.status).toBe(BulkMessageStatus.SENT);
     });
   });
 
@@ -396,7 +395,7 @@ describe('Bulk Message API', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.status).toBe(BulkMessageStatus.CANCELLED);
+      expect(response.body.data.message.status).toBe(BulkMessageStatus.CANCELLED);
     });
   });
 });

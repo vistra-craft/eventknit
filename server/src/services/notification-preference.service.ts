@@ -122,36 +122,53 @@ export class NotificationPreferenceService {
         where: { userId },
       });
 
-      // SMS can be enabled if user opts in and SMS service is configured
-      // Default to false, but allow users to enable it
-      const smsEnabled = data.smsEnabled ?? existingPreferences?.smsEnabled ?? false;
+      // SMS is always disabled in this system (SMS not used)
+      // Even if user tries to enable it, force it to false
+      const smsEnabled = false;
 
       const preferences = existingPreferences
         ? await prisma.notificationPreference.update({
           where: { userId },
           data: {
-            emailEnabled: data.emailEnabled ?? existingPreferences.emailEnabled,
+            emailEnabled: data.emailEnabled !== undefined ? data.emailEnabled : existingPreferences.emailEnabled,
             smsEnabled, // Always false - SMS not used
-            pushEnabled: data.pushEnabled ?? existingPreferences.pushEnabled,
-            inAppEnabled: data.inAppEnabled ?? existingPreferences.inAppEnabled,
-            eventReminders: data.eventReminders ?? existingPreferences.eventReminders,
-            eventUpdates: data.eventUpdates ?? existingPreferences.eventUpdates,
+            pushEnabled: data.pushEnabled !== undefined ? data.pushEnabled : existingPreferences.pushEnabled,
+            inAppEnabled: data.inAppEnabled !== undefined ? data.inAppEnabled : existingPreferences.inAppEnabled,
+            eventReminders: data.eventReminders !== undefined ? data.eventReminders : existingPreferences.eventReminders,
+            eventUpdates: data.eventUpdates !== undefined ? data.eventUpdates : existingPreferences.eventUpdates,
             eventCancellations:
-                data.eventCancellations ?? existingPreferences.eventCancellations,
+                data.eventCancellations !== undefined ? data.eventCancellations : existingPreferences.eventCancellations,
             paymentNotifications:
-                data.paymentNotifications ?? existingPreferences.paymentNotifications,
-            marketingEmails: data.marketingEmails ?? existingPreferences.marketingEmails,
+                data.paymentNotifications !== undefined ? data.paymentNotifications : existingPreferences.paymentNotifications,
+            marketingEmails: data.marketingEmails !== undefined ? data.marketingEmails : existingPreferences.marketingEmails,
             systemAnnouncements:
-                data.systemAnnouncements ?? existingPreferences.systemAnnouncements,
+                data.systemAnnouncements !== undefined ? data.systemAnnouncements : existingPreferences.systemAnnouncements,
             registrationUpdates:
-                data.registrationUpdates ?? existingPreferences.registrationUpdates,
+                data.registrationUpdates !== undefined ? data.registrationUpdates : existingPreferences.registrationUpdates,
             staffNotifications:
-                data.staffNotifications ?? existingPreferences.staffNotifications,
+                data.staffNotifications !== undefined ? data.staffNotifications : existingPreferences.staffNotifications,
             reminderFrequency:
-                data.reminderFrequency ?? existingPreferences.reminderFrequency,
+                data.reminderFrequency !== undefined ? data.reminderFrequency : existingPreferences.reminderFrequency,
           },
         })
-        : await this.createDefaultPreferences(userId);
+        : await prisma.notificationPreference.create({
+          data: {
+            userId,
+            emailEnabled: data.emailEnabled !== undefined ? data.emailEnabled : true,
+            smsEnabled: false, // Always false - SMS not used
+            pushEnabled: data.pushEnabled !== undefined ? data.pushEnabled : true,
+            inAppEnabled: data.inAppEnabled !== undefined ? data.inAppEnabled : true,
+            eventReminders: data.eventReminders !== undefined ? data.eventReminders : true,
+            eventUpdates: data.eventUpdates !== undefined ? data.eventUpdates : true,
+            eventCancellations: data.eventCancellations !== undefined ? data.eventCancellations : true,
+            paymentNotifications: data.paymentNotifications !== undefined ? data.paymentNotifications : true,
+            marketingEmails: data.marketingEmails !== undefined ? data.marketingEmails : true,
+            systemAnnouncements: data.systemAnnouncements !== undefined ? data.systemAnnouncements : true,
+            registrationUpdates: data.registrationUpdates !== undefined ? data.registrationUpdates : true,
+            staffNotifications: data.staffNotifications !== undefined ? data.staffNotifications : true,
+            reminderFrequency: data.reminderFrequency !== undefined ? data.reminderFrequency : 'all',
+          },
+        });
 
       logger.info(`Updated notification preferences for user ${userId}`);
       return preferences;

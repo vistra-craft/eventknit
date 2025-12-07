@@ -50,6 +50,9 @@ describe('User Preferences API', () => {
     // Clean up in correct order
     await prisma.$transaction(async (tx) => {
       await tx.userPreferences.deleteMany();
+      // Payment reconciliations reference User via required reconciledBy field
+      // with onDelete: SetNull, so we must delete them before deleting users
+      await tx.paymentReconciliation.deleteMany();
       await tx.user.deleteMany();
     });
 

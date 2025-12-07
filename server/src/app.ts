@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { config } from './config/index.js';
-import { stream } from './utils/logger.js';
+import { stream, logger } from './utils/logger.js';
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import organizerRoutes from './routes/organizer.routes.js';
@@ -71,6 +71,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Global rate limiter
+// Log environment on startup
+logger.info('[App] Starting server with environment:', {
+  configEnv: config.env,
+  nodeEnv: process.env.NODE_ENV,
+  willSkipRateLimit: config.env === 'development' || config.env === 'test' || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
+});
+
 app.use('/api', rateLimiter);
 
 // Health check endpoint

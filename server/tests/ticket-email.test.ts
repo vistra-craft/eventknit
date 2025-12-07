@@ -19,6 +19,8 @@ describe('Ticket Email System', () => {
   let registrationId: string;
 
   beforeAll(async () => {
+    // Set test secret key for ticket generation
+    process.env.TICKET_SECRET_KEY = 'test-secret-key-for-ticket-service-minimum-32-bytes-long';
     try {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;

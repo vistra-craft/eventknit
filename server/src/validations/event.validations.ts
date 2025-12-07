@@ -18,6 +18,9 @@ export const eventValidations = {
       'string.min': 'Full description must be at least 10 characters long',
       'string.max': 'Full description must not exceed 20000 characters',
     }),
+    organizerDescription: Joi.string().trim().max(1000).optional().allow('', null).messages({
+      'string.max': 'Organizer description must not exceed 1000 characters',
+    }),
     category: Joi.string().trim().max(100).optional().allow('', null).messages({
       'string.max': 'Category must not exceed 100 characters',
     }),
@@ -168,6 +171,9 @@ export const eventValidations = {
     fullDescription: Joi.string().trim().min(10).max(20000).optional().allow('', null).messages({
       'string.min': 'Full description must be at least 10 characters long',
       'string.max': 'Full description must not exceed 20000 characters',
+    }),
+    organizerDescription: Joi.string().trim().max(1000).optional().allow('', null).messages({
+      'string.max': 'Organizer description must not exceed 1000 characters',
     }),
     category: Joi.string().trim().max(100).optional().allow('', null).messages({
       'string.max': 'Category must not exceed 100 characters',

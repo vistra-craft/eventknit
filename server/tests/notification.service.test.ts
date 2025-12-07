@@ -11,6 +11,7 @@ import {
 } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
+import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -49,27 +50,32 @@ describe('NotificationService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clear all tables in correct order
-    await prisma.$transaction(async (tx) => {
-      await tx.notification.deleteMany();
-      await tx.notificationPreference.deleteMany();
-      await tx.bulkMessage.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.event.deleteMany();
-      await tx.auditLog.deleteMany();
-      await tx.refreshToken.deleteMany();
-      await tx.magicLinkToken.deleteMany();
-      await tx.passwordReset.deleteMany();
-      await tx.emailVerification.deleteMany();
-      await tx.kYCDocument.deleteMany();
-      await tx.user.deleteMany();
-    });
+    // Clear all tables using comprehensive cleanup helper
+    try {
+      await prisma.$transaction(async (tx) => {
+        await cleanupTestData(tx);
+      });
+    } catch (error) {
+      // If cleanup fails, log but continue - might be due to missing tables
+      logger.warn('Cleanup warning:', error);
+    }
 
-    // Create test organizer
-    const organizer = await prisma.user.create({
-      data: {
+    // Create test organizer (use upsert to handle existing users)
+    const organizerPassword = await hashPassword('password123');
+    const organizer = await prisma.user.upsert({
+      where: { email: 'organizer@test.com' },
+      update: {
+        password: organizerPassword,
+        firstName: 'Organizer',
+        lastName: 'Test',
+        role: UserRole.ORGANIZER,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      create: {
         email: 'organizer@test.com',
-        password: await hashPassword('password123'),
+        password: organizerPassword,
         firstName: 'Organizer',
         lastName: 'Test',
         role: UserRole.ORGANIZER,
@@ -80,11 +86,22 @@ describe('NotificationService', () => {
     });
     organizerId = organizer.id;
 
-    // Create test attendee
-    const attendee = await prisma.user.create({
-      data: {
+    // Create test attendee (use upsert to handle existing users)
+    const attendeePassword = await hashPassword('password123');
+    const attendee = await prisma.user.upsert({
+      where: { email: 'attendee@test.com' },
+      update: {
+        password: attendeePassword,
+        firstName: 'Attendee',
+        lastName: 'Test',
+        role: UserRole.ATTENDEE,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+      create: {
         email: 'attendee@test.com',
-        password: await hashPassword('password123'),
+        password: attendeePassword,
         firstName: 'Attendee',
         lastName: 'Test',
         role: UserRole.ATTENDEE,

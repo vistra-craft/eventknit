@@ -39,10 +39,14 @@ describe('Early Bird Tickets', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clean up
+    // Clean up (in correct order to respect foreign keys)
     await prisma.$transaction(async (tx) => {
+      await tx.featuredEvent.deleteMany();
+      await tx.ticketTemplate.deleteMany();
+      await tx.eventInvitation.deleteMany();
       await tx.eventRegistration.deleteMany();
       await tx.event.deleteMany();
+      await tx.paymentReconciliation.deleteMany();
       await tx.user.deleteMany();
     });
 

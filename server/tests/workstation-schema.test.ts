@@ -1,6 +1,7 @@
 import { prisma } from '../src/config/database';
 import { TicketStatus, ScanType } from '@prisma/client';
 import { logger } from '../src/utils/logger';
+import { cleanupTestData } from './test-helpers';
 
 describe('Workstation Schema - Phase 1.1', () => {
   let dbConnected = false;
@@ -36,10 +37,7 @@ describe('Workstation Schema - Phase 1.1', () => {
 
     // Clean up
     await prisma.$transaction(async (tx) => {
-      await tx.ticketScan.deleteMany();
-      await tx.eventRegistration.deleteMany();
-      await tx.event.deleteMany();
-      await tx.user.deleteMany();
+      await cleanupTestData(tx);
     });
 
     // Create test user
