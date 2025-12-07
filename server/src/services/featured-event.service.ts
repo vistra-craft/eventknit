@@ -51,131 +51,131 @@ export class FeaturedEventService {
   /**
  * Create a new featured item (event or image)
  */
-static async createFeaturedEvent(
-  data: CreateFeaturedEventData,
-  userId: string,
-  userRole: UserRole,
-  ipAddress?: string,
-  userAgent?: string,
-) {
+  static async createFeaturedEvent(
+    data: CreateFeaturedEventData,
+    userId: string,
+    userRole: UserRole,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
   // Verify user can create featured items (only admins)
-  if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
-    throw new AuthorizationError('Only admins can create featured items');
-  }
-
-  // Default type to EVENT if not provided
-  const type = data.type || FeaturedItemType.EVENT;
-
-  // Validate based on type
-  if (type === FeaturedItemType.EVENT) {
-    if (!data.eventId) {
-      throw new ValidationError('eventId is required for EVENT type');
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+      throw new AuthorizationError('Only admins can create featured items');
     }
 
-    // Verify event exists and is approved
-    const event = await prisma.event.findFirst({
-      where: {
-        id: data.eventId,
-        deletedAt: null,
-        status: EventStatus.APPROVED, // Only approved events can be featured
-      },
-      select: {
-        id: true,
-        title: true,
-        image: true,
-        category: true,
-      },
-    });
+    // Default type to EVENT if not provided
+    const type = data.type || FeaturedItemType.EVENT;
 
-    if (!event) {
-      throw new NotFoundError('Event not found or not approved');
-    }
+    // Validate based on type
+    if (type === FeaturedItemType.EVENT) {
+      if (!data.eventId) {
+        throw new ValidationError('eventId is required for EVENT type');
+      }
 
-    // Check if event is already featured and active
-    const existingFeatured = await prisma.featuredEvent.findFirst({
-      where: {
-        eventId: data.eventId,
-        isActive: true,
-        deletedAt: null,
-      },
-    });
-
-    if (existingFeatured) {
-      throw new ConflictError('This event is already featured');
-    }
-  } else if (type === FeaturedItemType.IMAGE) {
-    // For IMAGE type, imageUrl is required but will be set by controller after file upload
-    // Controller handles file upload and sets imageUrl before calling this service
-    // So we only validate if imageUrl is present and not empty
-    if (data.imageUrl !== undefined && (!data.imageUrl || data.imageUrl.trim() === '')) {
-      throw new ValidationError('imageUrl cannot be empty for IMAGE type');
-    }
-  }
-
-  // Create featured item
-  const featuredEvent = await prisma.featuredEvent.create({
-    data: {
-      type,
-      eventId: type === FeaturedItemType.EVENT ? data.eventId : undefined,
-      customTitle: type === FeaturedItemType.EVENT ? data.customTitle : null,
-      customImage: type === FeaturedItemType.EVENT ? data.customImage : null,
-      customCategory: type === FeaturedItemType.EVENT ? data.customCategory : null,
-      imageUrl: type === FeaturedItemType.IMAGE ? data.imageUrl : null,
-      title: type === FeaturedItemType.IMAGE ? data.title : null,
-      description: type === FeaturedItemType.IMAGE ? data.description : null,
-      linkUrl: type === FeaturedItemType.IMAGE ? data.linkUrl : null,
-      linkText: type === FeaturedItemType.IMAGE ? data.linkText : null,
-      displayStartDate: data.displayStartDate,
-      displayEndDate: data.displayEndDate,
-      displayOrder: data.displayOrder ?? 0,
-      isActive: data.isActive ?? true,
-      createdBy: userId,
-    },
-    include: {
-      event: type === FeaturedItemType.EVENT ? {
+      // Verify event exists and is approved
+      const event = await prisma.event.findFirst({
+        where: {
+          id: data.eventId,
+          deletedAt: null,
+          status: EventStatus.APPROVED, // Only approved events can be featured
+        },
         select: {
           id: true,
           title: true,
           image: true,
           category: true,
-          startDate: true,
-          startTime: true,
-          venue: true,
-          location: true,
-          price: true,
-          isFree: true,
         },
-      } : false,
-      creator: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
+      });
+
+      if (!event) {
+        throw new NotFoundError('Event not found or not approved');
+      }
+
+      // Check if event is already featured and active
+      const existingFeatured = await prisma.featuredEvent.findFirst({
+        where: {
+          eventId: data.eventId,
+          isActive: true,
+          deletedAt: null,
+        },
+      });
+
+      if (existingFeatured) {
+        throw new ConflictError('This event is already featured');
+      }
+    } else if (type === FeaturedItemType.IMAGE) {
+    // For IMAGE type, imageUrl is required but will be set by controller after file upload
+    // Controller handles file upload and sets imageUrl before calling this service
+    // So we only validate if imageUrl is present and not empty
+      if (data.imageUrl !== undefined && (!data.imageUrl || data.imageUrl.trim() === '')) {
+        throw new ValidationError('imageUrl cannot be empty for IMAGE type');
+      }
+    }
+
+    // Create featured item
+    const featuredEvent = await prisma.featuredEvent.create({
+      data: {
+        type,
+        eventId: type === FeaturedItemType.EVENT ? data.eventId : undefined,
+        customTitle: type === FeaturedItemType.EVENT ? data.customTitle : null,
+        customImage: type === FeaturedItemType.EVENT ? data.customImage : null,
+        customCategory: type === FeaturedItemType.EVENT ? data.customCategory : null,
+        imageUrl: type === FeaturedItemType.IMAGE ? data.imageUrl : null,
+        title: type === FeaturedItemType.IMAGE ? data.title : null,
+        description: type === FeaturedItemType.IMAGE ? data.description : null,
+        linkUrl: type === FeaturedItemType.IMAGE ? data.linkUrl : null,
+        linkText: type === FeaturedItemType.IMAGE ? data.linkText : null,
+        displayStartDate: data.displayStartDate,
+        displayEndDate: data.displayEndDate,
+        displayOrder: data.displayOrder ?? 0,
+        isActive: data.isActive ?? true,
+        createdBy: userId,
+      },
+      include: {
+        event: type === FeaturedItemType.EVENT ? {
+          select: {
+            id: true,
+            title: true,
+            image: true,
+            category: true,
+            startDate: true,
+            startTime: true,
+            venue: true,
+            location: true,
+            price: true,
+            isFree: true,
+          },
+        } : false,
+        creator: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  // Audit log
-  await createAuditLog({
-    userId,
-    action: AuditActions.FEATURED_EVENT_CREATED,
-    entity: 'FeaturedEvent',
-    entityId: featuredEvent.id,
-    metadata: {
-      type: data.type,
-      eventId: data.eventId || null,
-      title: data.type === FeaturedItemType.EVENT ? (featuredEvent.event?.title || null) : data.title,
-    },
-    ipAddress,
-    userAgent,
-  });
+    // Audit log
+    await createAuditLog({
+      userId,
+      action: AuditActions.FEATURED_EVENT_CREATED,
+      entity: 'FeaturedEvent',
+      entityId: featuredEvent.id,
+      metadata: {
+        type: data.type,
+        eventId: data.eventId || null,
+        title: data.type === FeaturedItemType.EVENT ? (featuredEvent.event?.title || null) : data.title,
+      },
+      ipAddress,
+      userAgent,
+    });
 
-  logger.info(`Featured item created: ${featuredEvent.id} (type: ${data.type})`);
+    logger.info(`Featured item created: ${featuredEvent.id} (type: ${data.type})`);
 
-  return featuredEvent;
-}
+    return featuredEvent;
+  }
 
   /**
    * Get featured item by ID
