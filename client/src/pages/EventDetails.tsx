@@ -10,15 +10,12 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { UnifiedRegistrationModal } from "@/components/event-details/UnifiedRegistrationModal";
-import { ContextAwareActionButton } from "@/components/event-details/ContextAwareActionButton";
 import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Fetch event data
   const { event, isLoading, error } = useEvent(id);
@@ -58,12 +55,13 @@ const EventDetails = () => {
     siteName: 'EventKnit',
   });
 
-  const handleOpenModal = () => {
+  const handleRegisterClick = () => {
     if (userAlreadyRegistered) {
       // Navigate to my tickets page
       navigate('/my-tickets');
     } else {
-      setIsModalOpen(true);
+      // Navigate to registration page
+      navigate(`/event/${id}/register`);
     }
   };
 
@@ -232,12 +230,16 @@ const EventDetails = () => {
                     </div>
                   )}
 
-                  {/* Context-Aware Action Button */}
-                  <ContextAwareActionButton
-                    event={event}
-                    userAlreadyRegistered={userAlreadyRegistered}
-                    onClick={handleOpenModal}
-                  />
+                  {/* Register Button */}
+                  <Button
+                    size="lg"
+                    variant="default"
+                    className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
+                    onClick={handleRegisterClick}
+                  >
+                    <Ticket className="mr-2 h-5 w-5" />
+                    {userAlreadyRegistered ? 'View My Ticket' : (event.isFree ? 'Register Free' : 'Register for Event')}
+                  </Button>
 
                   {/* Secondary Actions */}
                   <div className="grid grid-cols-2 gap-2 pt-2">
@@ -275,16 +277,6 @@ const EventDetails = () => {
                 </div>
               </Card>
 
-              {/* Register Button */}
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full h-12 text-lg font-semibold shadow-md border-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
-                onClick={() => navigate(`/event/${id}/register`)}
-              >
-                <Ticket className="mr-2 h-5 w-5" />
-                Register for Event
-              </Button>
             </div>
           </div>
 
@@ -320,14 +312,6 @@ const EventDetails = () => {
       </main>
 
       <Footer />
-
-      {/* Unified Registration Modal */}
-      <UnifiedRegistrationModal
-        event={event}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        userAlreadyRegistered={userAlreadyRegistered}
-      />
     </div>
   );
 };

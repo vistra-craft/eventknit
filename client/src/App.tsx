@@ -29,6 +29,7 @@ import EventManagement from "./pages/organizer/EventManagement";
 import AllEventsPage from "./pages/organizer/AllEventsPage";
 import UpcomingEventsPage from "./pages/organizer/UpcomingEventsPage";
 import PastEventsPage from "./pages/organizer/PastEventsPage";
+import VerificationPage from "./pages/organizer/VerificationPage";
 import CreateEventPage from "./pages/organizer/CreateEventPage";
 import OrganizerSettingsPage from "./pages/organizer/OrganizerSettingsPage";
 // Analytics imports
@@ -207,6 +208,7 @@ const App = () => (
       <Route path="/organizer/settings/notifications" element={<OrganizerSettingsPage />} />
       <Route path="/organizer/settings/security" element={<OrganizerSettingsPage />} />
       <Route path="/organizer/settings/appearance" element={<OrganizerSettingsPage />} />
+      <Route path="/organizer/verification" element={<VerificationPage />} />
       {/* Legacy Profile Route - redirects to settings */}
       <Route path="/organizer/profile" element={<OrganizerSettingsPage />} />
       {/* Event Templates and Drafts */}

@@ -21,9 +21,11 @@ import { useToast } from '@/hooks/use-toast';
 
 interface VerificationFormProps {
   redirectAfterBusinessVerification?: string; // Optional redirect path after business verification
+  accountType?: 'individual' | 'business'; // Account type selection
+  onSuccess?: () => void; // Callback when verification is successful
 }
 
-const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFormProps = {}) => {
+const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSuccess }: VerificationFormProps = {}) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
     idType: 'passport',
     idNumber: '',
     idDocumentFrontUrl: '',
-    idDocumentBackUrl: '',
+    idDocumentBackUrl: undefined,
   });
   const [, setIdDocumentFrontFile] = useState<File | null>(null);
   const [idDocumentFrontPreview, setIdDocumentFrontPreview] = useState<string | null>(null);
@@ -310,10 +312,21 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
       if (response.success) {
         toast({
           title: 'Success',
-          description: 'Identity verification submitted successfully. You can now create paid events.',
+          description: 'Identity verification submitted successfully. You can now receive payouts from ticket sales.',
         });
         await loadStatus();
-        setActiveStep('business');
+        // Only show business step if account type is business
+        if (accountType === 'business') {
+          setActiveStep('business');
+        } else {
+          // For individuals, verification is complete - call onSuccess callback if provided
+          if (onSuccess) {
+            // Small delay to ensure state is updated
+            setTimeout(() => {
+              onSuccess();
+            }, 500);
+          }
+        }
         // Trigger a custom event to notify other components (like CreateEventStepwise) to refresh verification status
         window.dispatchEvent(new CustomEvent('verificationStatusUpdated'));
       } else {
@@ -356,8 +369,11 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
           description: 'Business verification submitted successfully. Your documents are under review.',
         });
         await loadStatus();
-        // Redirect only if redirectAfterBusinessVerification prop is provided
-        if (redirectAfterBusinessVerification) {
+        // Call onSuccess callback if provided
+        if (onSuccess) {
+          onSuccess();
+        } else if (redirectAfterBusinessVerification) {
+          // Fallback to redirect if no callback provided
           setTimeout(() => {
             navigate(redirectAfterBusinessVerification);
           }, 1500);
@@ -410,7 +426,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
             Verification Status
           </CardTitle>
           <CardDescription>
-            Complete verification to create paid events and receive payouts
+            Complete verification to receive payouts from ticket sales
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -421,7 +437,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                 {getStatusBadge(status?.identityVerified || false, null)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Required for paid events
+                Required to receive payouts
               </p>
               {status?.identityVerifiedAt && (
                 <p className="text-xs text-muted-foreground mt-1">
@@ -460,8 +476,8 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
             <Alert className="border-primary/20 bg-primary/5">
               <AlertCircle className="h-4 w-4 text-primary" />
               <AlertDescription>
-                You can create paid events up to ${status.payoutLimit.toLocaleString()} per month. 
-                Complete business verification for unlimited events and payouts.
+                You can receive payouts up to ${status.payoutLimit.toLocaleString()} per month. 
+                Complete business verification for unlimited payouts.
               </AlertDescription>
             </Alert>
           )}
@@ -480,7 +496,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                   Step 1: Identity Verification
                 </CardTitle>
                 <CardDescription>
-                  Verify your identity to create paid events
+                  Verify your identity to receive payouts from ticket sales
                 </CardDescription>
               </div>
               {status?.identityVerified && (
@@ -570,7 +586,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                     <Select
                       value={identityData.idType}
                       onValueChange={(value: 'passport' | 'drivers_license' | 'national_id') => 
-                        setIdentityData(prev => ({ ...prev, idType: value }))
+                        setIdentityData(prev => ({ ...prev, idType: value, idNumber: '' }))
                       }
                     >
                       <SelectTrigger>
@@ -584,23 +600,39 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="idNumber">ID Number *</Label>
+                    <Label htmlFor="idNumber">
+                      {identityData.idType === 'passport' ? 'Passport Number *' :
+                       identityData.idType === 'drivers_license' ? "Driver's License Number *" :
+                       identityData.idType === 'national_id' ? 'National ID Number *' :
+                       'ID Number *'}
+                    </Label>
                     <Input
                       id="idNumber"
                       value={identityData.idNumber}
                       onChange={(e) => setIdentityData(prev => ({ ...prev, idNumber: e.target.value }))}
+                      placeholder={
+                        identityData.idType === 'passport' ? 'Enter passport number' :
+                        identityData.idType === 'drivers_license' ? "Enter driver's license number" :
+                        identityData.idType === 'national_id' ? 'Enter national ID number' :
+                        'Enter ID number'
+                      }
                       required
                     />
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <Label>ID Document - Front *</Label>
+                    <Label>
+                      {identityData.idType === 'passport' ? 'Passport Photo *' :
+                       identityData.idType === 'drivers_license' ? "Driver's License Photo *" :
+                       identityData.idType === 'national_id' ? 'National ID Photo *' :
+                       'ID Document Photo *'}
+                    </Label>
                     <div className="mt-2">
                       {idDocumentFrontPreview ? (
                         <div className="relative">
-                          <img src={idDocumentFrontPreview} alt="ID Document Front" className="w-full h-48 object-contain border border-border rounded-lg" />
+                          <img src={idDocumentFrontPreview} alt="ID Document" className="w-full h-48 object-contain border border-border rounded-lg" />
                           <Button
                             type="button"
                             variant="ghost"
@@ -618,7 +650,12 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                       ) : (
                         <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                           <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                          <span className="text-sm text-muted-foreground">Upload front of ID</span>
+                          <span className="text-sm text-muted-foreground">
+                            {identityData.idType === 'passport' ? 'Upload passport photo' :
+                             identityData.idType === 'drivers_license' ? "Upload driver's license photo" :
+                             identityData.idType === 'national_id' ? 'Upload national ID photo' :
+                             'Upload ID document photo'}
+                          </span>
                           <input
                             type="file"
                             className="hidden"
@@ -633,7 +670,12 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                     </div>
                   </div>
                   <div>
-                    <Label>ID Document - Back *</Label>
+                    <Label>
+                      {identityData.idType === 'passport' ? 'Passport Back (Optional)' :
+                       identityData.idType === 'drivers_license' ? "Driver's License Back (Optional)" :
+                       identityData.idType === 'national_id' ? 'National ID Back (Optional)' :
+                       'ID Document Back (Optional)'}
+                    </Label>
                     <div className="mt-2">
                       {idDocumentBackPreview ? (
                         <div className="relative">
@@ -655,7 +697,12 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                       ) : (
                         <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                           <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                          <span className="text-sm text-muted-foreground">Upload back of ID</span>
+                          <span className="text-sm text-muted-foreground">
+                            {identityData.idType === 'passport' ? 'Upload passport back (if applicable)' :
+                             identityData.idType === 'drivers_license' ? "Upload driver's license back" :
+                             identityData.idType === 'national_id' ? 'Upload national ID back' :
+                             'Upload ID document back (optional)'}
+                          </span>
                           <input
                             type="file"
                             className="hidden"
@@ -671,12 +718,15 @@ const VerificationForm = ({ redirectAfterBusinessVerification }: VerificationFor
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Upload clear photos of both sides of your government-issued ID (passport, driver's license, or national ID)
+                  Upload clear photos of your {identityData.idType === 'passport' ? 'passport' :
+                                                 identityData.idType === 'drivers_license' ? "driver's license" :
+                                                 identityData.idType === 'national_id' ? 'national ID' :
+                                                 'government-issued ID'}. Front photo is required, back photo is optional.
                 </p>
                 
                 <Button
                   type="submit"
-                  disabled={submitting || !identityData.idDocumentFrontUrl || !identityData.idDocumentBackUrl}
+                  disabled={submitting || !identityData.idDocumentFrontUrl}
                   className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white"
                 >
                   {submitting ? (

@@ -227,7 +227,7 @@ const PaymentPage = () => {
           <Button 
             variant="outline" 
             size="icon" 
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(`/event/${paymentData.eventId}/register`)}
             className="hover:border-primary hover:bg-primary/5 transition-all duration-200"
           >
             <ArrowLeft className="h-5 w-5" />

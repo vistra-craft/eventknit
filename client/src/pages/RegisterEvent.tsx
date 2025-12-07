@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User, Ticket, Minus, Plus, Crown, Clock, CheckCircle, X } from "lucide-react";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { registerForEvent, registerAsGuest } from "@/lib/event-api";
 import { validatePromoCode } from "@/lib/promo-code-api";
 import type { RegistrationField } from "@/types/event";
-import { Ticket, CheckCircle, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { isVIPTicket, hasDiscount, calculateDiscountPercentage, calculateTimeRemaining, isTicketTypeAvailable } from "@/utils/ticket-helpers";
 
 interface FormData {
   [key: string]: string | number | boolean;
@@ -578,6 +579,34 @@ const EventRegistration = () => {
 
       <main className="flex-1 pt-20 pb-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <div className="max-w-3xl mx-auto px-4 space-y-8">
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">1</div>
+                <span className="ml-2 text-sm font-medium">Registration</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  event.isFree ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground'
+                }`}>2</div>
+                <span className={`ml-2 text-sm ${event.isFree ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                  {event.isFree ? 'Confirmation' : 'Payment'}
+                </span>
+              </div>
+              {!event.isFree && (
+                <>
+                  <div className="w-8 h-0.5 bg-muted"></div>
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-semibold">3</div>
+                    <span className="ml-2 text-sm text-muted-foreground">Confirmation</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           <div>
             <Button
               variant="outline"
@@ -671,64 +700,164 @@ const EventRegistration = () => {
 
                 {event.ticketTypes && event.ticketTypes.length > 0 && (
                   <div className="space-y-4">
-                    <p className="text-sm font-medium text-muted-foreground">Ticket type</p>
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-1">Select Your Tickets</p>
+                      <p className="text-sm text-muted-foreground">Choose the ticket type and quantity you'd like to purchase</p>
+                    </div>
                     <div className="space-y-3">
-                      {event.ticketTypes.map((ticket, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => setSelectedTicketType(ticket.name)}
-                          className={`w-full rounded-xl border border-border px-4 py-3 text-left transition-all duration-200 hover:bg-muted/30 hover:shadow-md ${
-                            selectedTicketType === ticket.name ? "border-primary bg-primary/5" : ""
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold text-foreground">{ticket.name}</p>
-                              {ticket.features && ticket.features.length > 0 && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {ticket.features.join(" • ")}
-                                </p>
+                      {event.ticketTypes.map((ticket, index) => {
+                        const isVip = isVIPTicket(ticket.name);
+                        const availability = isTicketTypeAvailable({
+                          availableFrom: ticket.availableFrom || undefined,
+                          availableUntil: ticket.availableUntil || undefined,
+                        });
+                        const isAvailable = availability.available;
+                        const discounted = hasDiscount({
+                          originalPrice: ticket.originalPrice || undefined,
+                          price: ticket.price,
+                        });
+                        const currency = event.currency || '$';
+
+                        return (
+                          <div
+                            key={index}
+                            className={`border rounded-xl p-4 transition-all duration-200 ${
+                              selectedTicketType === ticket.name
+                                ? "border-primary ring-2 ring-primary/20 bg-primary/5"
+                                : "border-border hover:border-primary/50"
+                            } ${!isAvailable ? 'opacity-60' : ''}`}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1 pr-4">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-semibold text-base">{ticket.name}</h4>
+                                  {isVip && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 text-[10px] px-1.5 h-5"
+                                    >
+                                      <Crown className="w-3 h-3 mr-1" /> VIP
+                                    </Badge>
+                                  )}
+                                </div>
+                                {ticket.features && ticket.features.length > 0 && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {ticket.features.join(" • ")}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                {discounted && ticket.originalPrice ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-xs text-muted-foreground line-through">
+                                      {currency}{ticket.originalPrice}
+                                    </span>
+                                    <span className="font-bold text-lg text-primary">
+                                      {currency}{ticket.price}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <p className="font-bold text-lg text-primary">
+                                    {currency}{ticket.price}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Badges */}
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              {discounted && ticket.originalPrice && (
+                                <Badge variant="destructive" className="text-[10px] h-5">
+                                  {calculateDiscountPercentage(ticket.originalPrice, ticket.price)}% OFF
+                                </Badge>
+                              )}
+                              {ticket.availableUntil && new Date(ticket.availableUntil) > new Date() && (
+                                <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                                  <Clock className="w-3 h-3" />
+                                  <span>Ends in {calculateTimeRemaining(ticket.availableUntil)}</span>
+                                </div>
+                              )}
+                              {ticket.quantity && ticket.quantity < 50 && (
+                                <div className="flex items-center gap-1 text-[10px] text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
+                                  <AlertCircle className="w-3 h-3" />
+                                  <span>Only {ticket.quantity} left</span>
+                                </div>
                               )}
                             </div>
-                            <div className="text-right">
-                              <span className="text-lg font-bold text-foreground">${ticket.price}</span>
-                              <p className="text-xs text-muted-foreground">per ticket</p>
+
+                            <div className="flex items-center justify-between pt-3 border-t">
+                              <span className="text-sm">
+                                {!isAvailable ? (
+                                  <span className="text-destructive flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> {availability.reason}
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-green-600">
+                                    <CheckCircle className="w-3 h-3" /> Available
+                                  </span>
+                                )}
+                              </span>
+
+                              {/* Quantity Selector */}
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedTicketType !== ticket.name) {
+                                      setSelectedTicketType(ticket.name);
+                                      setTicketQuantity(1);
+                                    }
+                                  }}
+                                  className={`px-4 py-2 rounded-lg border transition-all ${
+                                    selectedTicketType === ticket.name
+                                      ? "border-primary bg-primary text-primary-foreground"
+                                      : "border-border hover:border-primary hover:bg-primary/5"
+                                  } ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  disabled={!isAvailable}
+                                >
+                                  {selectedTicketType === ticket.name ? "Selected" : "Select"}
+                                </button>
+                                {selectedTicketType === ticket.name && (
+                                  <div className="flex items-center gap-2 border rounded-lg px-2 py-1">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (ticketQuantity > 1) {
+                                          setTicketQuantity(ticketQuantity - 1);
+                                        }
+                                      }}
+                                      disabled={ticketQuantity <= 1}
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <span className="w-8 text-center font-medium text-sm">{ticketQuantity}</span>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!ticket.quantity || ticketQuantity < ticket.quantity) {
+                                          setTicketQuantity(ticketQuantity + 1);
+                                        }
+                                      }}
+                                      disabled={!isAvailable || (ticket.quantity !== null && ticket.quantity !== undefined && ticketQuantity >= ticket.quantity)}
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </button>
-                      ))}
+                        );
+                      })}
                     </div>
-
-                    {selectedTicketType && (
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="quantity" className="text-sm font-medium text-muted-foreground">
-                          Quantity
-                        </Label>
-                        <div className="flex items-center gap-3">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
-                            disabled={ticketQuantity <= 1}
-                          >
-                            -
-                          </Button>
-                          <Input
-                            id="quantity"
-                            type="number"
-                            min="1"
-                            value={ticketQuantity}
-                            onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-20 text-center"
-                          />
-                          <Button type="button" variant="outline" size="icon" onClick={() => setTicketQuantity(ticketQuantity + 1)}>
-                            +
-                          </Button>
-                        </div>
-                      </div>
-                    )}
 
                     {!event.isFree && (
                       <div className="pt-4 mt-2 border-t space-y-3">

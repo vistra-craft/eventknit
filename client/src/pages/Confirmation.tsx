@@ -59,6 +59,11 @@ const Confirmation = () => {
           <p className="text-sm text-muted-foreground mt-2">
             Order #{paymentId} • {new Date(date).toLocaleDateString()}
           </p>
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-md mx-auto">
+            <p className="text-sm text-blue-900">
+              <strong>Check your email!</strong> Your ticket confirmation with QR code has been sent to your registered email address.
+            </p>
+          </div>
         </div>
 
         <Card className="mb-8">

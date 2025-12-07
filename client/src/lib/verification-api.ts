@@ -36,7 +36,7 @@ export interface IdentityVerificationData {
   idType: 'passport' | 'drivers_license' | 'national_id';
   idNumber: string;
   idDocumentFrontUrl: string;
-  idDocumentBackUrl: string;
+  idDocumentBackUrl?: string | null;
 }
 
 export interface BusinessVerificationData {

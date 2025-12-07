@@ -194,7 +194,6 @@ export default function CreateEventStepwise() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
   const [loadingVerification, setLoadingVerification] = useState(true);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
   
   // Load verification status
   useEffect(() => {
@@ -272,6 +271,40 @@ export default function CreateEventStepwise() {
   const [eventData, setEventData] = useState<EventData & { currency: string }>(() => {
     // Load draft from localStorage (only if not in edit mode)
     if (isEditMode) {
+      return {
+        title: "",
+        organizer: "",
+        description: "",
+        fullDescription: "",
+        organizerDescription: "",
+        date: "",
+        time: "",
+        endDate: "",
+        endTime: "",
+        location: "",
+        venue: "",
+        address: "",
+        onlineLink: "",
+        price: "",
+        totalSlots: 0,
+        image: "",
+        requirements: "",
+        ageRestriction: "",
+        isOnline: false,
+        capacity: "",
+        category: "",
+        timezone: timezone,
+        currency: DEFAULT_CURRENCY,
+      };
+    }
+    
+    // Check if we just created an event - if so, start fresh
+    const justCreated = sessionStorage.getItem('event_just_created');
+    if (justCreated === 'true') {
+      // Clear the draft and flag
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      sessionStorage.removeItem('event_just_created');
+      // Return empty form
       return {
         title: "",
         organizer: "",
@@ -484,8 +517,33 @@ export default function CreateEventStepwise() {
     }
   }, [eventData, timezone, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate]);
 
+  // Reset all form state when starting fresh after successful event creation
+  useEffect(() => {
+    if (!isEditMode) {
+      const justCreated = sessionStorage.getItem('event_just_created');
+      if (justCreated === 'true') {
+        // Reset all form state to defaults
+        setTicketTypes([{ id: 1, name: "", type: "paid", price: "", quantity: "" }]);
+        setCategories(["Music", "Concert"]);
+        setTags([]);
+        setFaqs([{ question: "", answer: "" }]);
+        setEventType("in-person");
+        setIsPrivate(false);
+        setImagePreview(null);
+        setUploadedImage(null);
+        setCurrentStep(1);
+        // Flag is already cleared in eventData initializer
+      }
+    }
+  }, [isEditMode]);
+
   // Auto-save every 30 seconds
   useEffect(() => {
+    // Don't auto-save if in edit mode
+    if (isEditMode) {
+      return;
+    }
+    
     // Set up auto-save interval
     autoSaveIntervalRef.current = setInterval(() => {
       saveDraft();
@@ -497,7 +555,7 @@ export default function CreateEventStepwise() {
         clearInterval(autoSaveIntervalRef.current);
       }
     };
-  }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone, saveDraft]);
+  }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone, saveDraft, isEditMode]);
 
   // Load event data when in edit mode
   useEffect(() => {
@@ -645,20 +703,58 @@ export default function CreateEventStepwise() {
 
   // Clear form when navigating to create a new event (not in edit mode) and after successful submission
   useEffect(() => {
-    // Only reset if we're not in edit mode and there's no draft to load
+    // Only reset if we're not in edit mode
     if (!editEventId && !isEditMode) {
       const draft = loadDraft();
-      // If no draft exists, ensure form is reset
+      // If no draft exists, ensure form is completely reset
       if (Object.keys(draft).length === 0) {
-        // Form is already initialized with empty values, but ensure all state is reset
+        // Reset all form state to initial values
+        resetForm();
+        // Also reset other state variables
+        setTicketTypes([{ id: 1, name: "", type: "paid", price: "", quantity: "" }]);
+        setCategories(["Music", "Concert"]);
+        setTags([]);
+        setFaqs([{ question: "", answer: "" }]);
+        setEventType("in-person");
+        setIsPrivate(false);
         setImagePreview(null);
         setUploadedImage(null);
         setCurrentStep(1);
         setError(null);
         setValidationErrors({});
+        setNewCategory("");
+        setNewTag("");
       }
     }
   }, [editEventId, isEditMode, loadDraft]);
+
+  // Reset form when component mounts and we're creating a new event (not editing)
+  // This ensures fresh state when navigating to create event page
+  useEffect(() => {
+    // Only run on mount for new event creation (not edit mode)
+    if (!isEditMode && !editEventId) {
+      // Check if we just navigated here (not from a draft load)
+      const hasDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (!hasDraft) {
+        // No draft exists, ensure everything is reset
+        resetForm();
+        setTicketTypes([{ id: 1, name: "", type: "paid", price: "", quantity: "" }]);
+        setCategories(["Music", "Concert"]);
+        setTags([]);
+        setFaqs([{ question: "", answer: "" }]);
+        setEventType("in-person");
+        setIsPrivate(false);
+        setImagePreview(null);
+        setUploadedImage(null);
+        setCurrentStep(1);
+        setError(null);
+        setValidationErrors({});
+        setNewCategory("");
+        setNewTag("");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]); // Reset when route changes
 
   // Clear draft after successful submission
   const clearDraft = () => {
@@ -990,13 +1086,8 @@ export default function CreateEventStepwise() {
       return;
     }
 
-    // Check verification status for paid events (only for organizers, not admins)
-    if (isOrganizerRole && !isAdminRole && hasPaidTickets()) {
-      if (!verificationStatus?.canCreatePaidEvents) {
-        setShowVerificationModal(true);
-        return;
-      }
-    }
+    // Eventbrite-style: No verification required to CREATE events
+    // Verification is only required to RECEIVE payouts (handled in disbursement service)
 
     setIsSubmitting(true);
     setError(null);
@@ -1027,6 +1118,8 @@ export default function CreateEventStepwise() {
         if (response.success && response.data) {
           // Clear draft on success
           clearDraft();
+          // Set flag to clear draft when returning to create new event
+          sessionStorage.setItem('event_just_created', 'true');
           // Reset form state
           resetForm();
           // Success! Navigate to appropriate dashboard based on current route
@@ -2531,21 +2624,23 @@ export default function CreateEventStepwise() {
           </Alert>
         )}
 
-        {/* Verification Warning Banner */}
-        {!loadingVerification && !isEditMode && hasPaidTickets() && !verificationStatus?.canCreatePaidEvents && (
-          <Alert className="mb-4 border-accent-coral/20 bg-accent-coral/5">
-            <Shield className="h-4 w-4 text-accent-coral" />
+        {/* Verification Info Banner - Eventbrite style: Verification needed for payouts, not event creation */}
+        {!loadingVerification && !isEditMode && hasPaidTickets() && !verificationStatus?.identityVerified && (
+          <Alert className="mb-4 border-blue-200 bg-blue-50">
+            <Shield className="h-4 w-4 text-blue-600" />
             <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-foreground">
-                <strong>Identity verification required:</strong> To publish paid events, please complete identity verification. This usually takes 5-10 minutes.
+              <span className="text-blue-900">
+                <strong>Note:</strong> Identity verification is required to receive payouts from ticket sales. You can create and publish your event now, but complete verification to receive funds.
               </span>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/organizer/settings?tab=verification')}
-                className="border-accent-coral text-accent-coral hover:bg-accent-coral hover:text-white"
+                onClick={() => navigate('/organizer/verification', { 
+                  state: { redirectAfterVerification: location.pathname } 
+                })}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
               >
-                Verify Now
+                Verify Identity
               </Button>
             </AlertDescription>
           </Alert>
@@ -2605,72 +2700,6 @@ export default function CreateEventStepwise() {
       
       {/* Preview Modal */}
       {renderPreview()}
-
-      {/* Verification Required Modal */}
-      <Dialog open={showVerificationModal} onOpenChange={setShowVerificationModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-accent-coral/10 flex items-center justify-center">
-                <Shield className="h-6 w-6 text-accent-coral" />
-              </div>
-              <div>
-                <DialogTitle>Identity Verification Required</DialogTitle>
-                <DialogDescription className="mt-1">
-                  To publish paid events, you need to verify your identity
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              Identity verification helps us ensure a secure platform for all organizers and attendees. 
-              This process usually takes 5-10 minutes.
-            </p>
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium text-foreground">What you'll need:</p>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Government-issued ID (passport, driver's license, or national ID)</li>
-                <li>Personal information (name, date of birth, address)</li>
-                <li>Clear photos of your ID document</li>
-              </ul>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span>Your event will be saved as a draft</span>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowVerificationModal(false);
-                // Save as draft
-                if (saveDraft()) {
-                  toast({
-                    title: 'Draft Saved',
-                    description: 'Your event has been saved as a draft. Complete verification to publish.',
-                  });
-                }
-              }}
-              className="flex-1"
-            >
-              Save as Draft
-            </Button>
-            <Button
-              onClick={() => {
-                setShowVerificationModal(false);
-                navigate('/organizer/settings?tab=verification', { 
-                  state: { redirectAfterVerification: '/organizer/events/create' } 
-                });
-              }}
-              className="flex-1 bg-accent-coral hover:bg-accent-coral/90 text-white"
-            >
-              Verify Now
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Image Cropper Modal */}
       {uploadedImage && (
