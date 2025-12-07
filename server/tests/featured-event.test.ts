@@ -11,6 +11,52 @@ const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
 };
 
+// Mock cloudinary package to prevent initialization
+jest.mock('cloudinary', () => ({
+  v2: {
+    config: jest.fn(),
+    uploader: {
+      upload_stream: jest.fn(),
+      destroy: jest.fn(),
+    },
+  },
+}));
+
+// Mock Cloudinary service
+jest.mock('../src/services/cloudinary.service.js', () => ({
+  uploadImageToCloudinary: jest.fn().mockResolvedValue({
+    url: 'https://res.cloudinary.com/test/image/upload/v1234567890/test-image.jpg',
+    publicId: 'featured-events/test-image',
+    secureUrl: 'https://res.cloudinary.com/test/image/upload/v1234567890/test-image.jpg',
+  }),
+  deleteImageFromCloudinary: jest.fn().mockResolvedValue(undefined),
+  extractPublicIdFromUrl: jest.fn((url: string) => {
+    const match = url.match(/\/upload\/.*\/(.+)$/);
+    return match ? match[1] : null;
+  }),
+}));
+
+// Helper to create a test image buffer
+const createTestImageBuffer = (): Buffer => {
+  // Create a minimal valid PNG image (1x1 pixel)
+  // PNG signature + minimal IHDR chunk
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+  const ihdr = Buffer.from([
+    0x00, 0x00, 0x00, 0x0D, // Chunk length
+    0x49, 0x48, 0x44, 0x52, // IHDR
+    0x00, 0x00, 0x00, 0x01, // Width: 1
+    0x00, 0x00, 0x00, 0x01, // Height: 1
+    0x08, 0x02, 0x00, 0x00, 0x00, // Bit depth, color type, compression, filter, interlace
+    0x90, 0x77, 0x53, 0xDE, // CRC
+  ]);
+  const iend = Buffer.from([
+    0x00, 0x00, 0x00, 0x00, // Chunk length
+    0x49, 0x45, 0x4E, 0x44, // IEND
+    0xAE, 0x42, 0x60, 0x82, // CRC
+  ]);
+  return Buffer.concat([pngSignature, ihdr, iend]);
+};
+
 describe('Featured Events System', () => {
   let dbConnected = false;
   let adminToken: string;
@@ -364,6 +410,103 @@ describe('Featured Events System', () => {
       expect(response.body.data.featuredEvent.displayStartDate).toBeDefined();
       expect(response.body.data.featuredEvent.displayEndDate).toBeDefined();
     });
+
+    it('should create featured IMAGE type with file upload', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const imageBuffer = createTestImageBuffer();
+
+      const response = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', imageBuffer, 'test-image.png')
+        .field('type', 'IMAGE')
+        .field('title', 'Test Featured Image')
+        .field('description', 'Test description')
+        .field('displayOrder', '1')
+        .field('isActive', 'true')
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.featuredEvent.type).toBe('IMAGE');
+      expect(response.body.data.featuredEvent.title).toBe('Test Featured Image');
+      expect(response.body.data.featuredEvent.imageUrl).toBeDefined();
+      expect(response.body.data.featuredEvent.imageUrl).toContain('cloudinary.com');
+    });
+
+    it('should create featured EVENT type with customImage file upload', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const imageBuffer = createTestImageBuffer();
+
+      const response = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', imageBuffer, 'test-image.png')
+        .field('type', 'EVENT')
+        .field('eventId', eventId)
+        .field('customTitle', 'Featured with Custom Image')
+        .field('displayOrder', '1')
+        .field('isActive', 'true')
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.featuredEvent.type).toBe('EVENT');
+      expect(response.body.data.featuredEvent.eventId).toBe(eventId);
+      expect(response.body.data.featuredEvent.customImage).toBeDefined();
+      expect(response.body.data.featuredEvent.customImage).toContain('cloudinary.com');
+    });
+
+    it('should reject file upload larger than 5MB', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a buffer larger than 5MB
+      const largeBuffer = Buffer.alloc(6 * 1024 * 1024); // 6MB
+
+      const response = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', largeBuffer, 'large-image.png')
+        .field('type', 'IMAGE')
+        .field('title', 'Test')
+        .field('displayOrder', '1')
+        .field('isActive', 'true');
+
+      // Should return 400 or 413 (Request Entity Too Large)
+      expect([400, 413]).toContain(response.status);
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject non-image file upload', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const textBuffer = Buffer.from('This is not an image file');
+
+      const response = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', textBuffer, 'test.txt')
+        .field('type', 'IMAGE')
+        .field('title', 'Test')
+        .field('displayOrder', '1')
+        .field('isActive', 'true');
+
+      // Should return 400 (Bad Request) for invalid file type
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+    });
   });
 
   describe('GET /api/v1/featured-events/active', () => {
@@ -616,6 +759,68 @@ describe('Featured Events System', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.featuredEvent.displayStartDate).toBeDefined();
       expect(response.body.data.featuredEvent.displayEndDate).toBeDefined();
+    });
+
+    it('should update featured event with file upload', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const imageBuffer = createTestImageBuffer();
+
+      const response = await request(app)
+        .put(`/api/v1/featured-events/${featuredEventId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', imageBuffer, 'updated-image.png')
+        .field('customTitle', 'Updated with New Image')
+        .field('displayOrder', '2')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.featuredEvent.customTitle).toBe('Updated with New Image');
+      // If it's an EVENT type, customImage should be set; if IMAGE type, imageUrl should be set
+      const hasImage = response.body.data.featuredEvent.customImage || response.body.data.featuredEvent.imageUrl;
+      expect(hasImage).toBeDefined();
+      if (hasImage) {
+        expect(hasImage).toContain('cloudinary.com');
+      }
+    });
+
+    it('should update featured IMAGE type with file upload', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // First create an IMAGE type featured event
+      const createResponse = await request(app)
+        .post('/api/v1/featured-events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          type: 'IMAGE',
+          imageUrl: 'https://example.com/old-image.jpg',
+          title: 'Old Image',
+          displayOrder: 1,
+          isActive: true,
+        })
+        .expect(201);
+
+      const imageFeaturedEventId = createResponse.body.data.featuredEvent.id;
+      const imageBuffer = createTestImageBuffer();
+
+      // Update with new file
+      const response = await request(app)
+        .put(`/api/v1/featured-events/${imageFeaturedEventId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', imageBuffer, 'new-image.png')
+        .field('title', 'Updated Image Title')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.featuredEvent.title).toBe('Updated Image Title');
+      expect(response.body.data.featuredEvent.imageUrl).toBeDefined();
+      expect(response.body.data.featuredEvent.imageUrl).toContain('cloudinary.com');
     });
   });
 

@@ -26,7 +26,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
   let verifiedOrganizerId: string;
   let verifiedOrganizerToken: string;
   let adminId: string;
-  let adminToken: string;
+  let _adminToken: string;
 
   beforeAll(async () => {
     try {
@@ -117,7 +117,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
       },
     });
     adminId = admin.id;
-    adminToken = generateAccessToken({
+    _adminToken = generateAccessToken({
       userId: admin.id,
       email: admin.email,
       role: admin.role,
@@ -267,7 +267,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
   describe('Payout Verification (Verification Required)', () => {
     let verifiedEventId: string;
     let unverifiedEventId: string;
-    let verifiedPlatformFeeId: string;
+    let _verifiedPlatformFeeId: string;
     let unverifiedPlatformFeeId: string;
 
     beforeEach(async () => {
@@ -361,10 +361,10 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
 
       // Create platform fees
       const verifiedFee = await PlatformFeeService.createPlatformFee(verifiedPayment.id);
-      verifiedPlatformFeeId = verifiedFee.id;
+      _verifiedPlatformFeeId = verifiedFee.id;
 
-      const unverifiedFee = await PlatformFeeService.createPlatformFee(unverifiedPayment.id);
-      unverifiedPlatformFeeId = unverifiedFee.id;
+      const _unverifiedFee = await PlatformFeeService.createPlatformFee(unverifiedPayment.id);
+      unverifiedPlatformFeeId = _unverifiedFee.id;
     });
 
     it('should allow verified organizer to create disbursement', async () => {
@@ -514,7 +514,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
         },
       });
 
-      const platformFee = await PlatformFeeService.createPlatformFee(payment.id);
+      const _platformFee = await PlatformFeeService.createPlatformFee(payment.id);
 
       // Step 3: Try to create disbursement (should fail - no verification)
       await expect(

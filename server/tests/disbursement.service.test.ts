@@ -357,7 +357,7 @@ describe('DisbursementService', () => {
         },
       });
 
-      const unverifiedFee = await PlatformFeeService.createPlatformFee(unverifiedPayment.id);
+      const _unverifiedFee = await PlatformFeeService.createPlatformFee(unverifiedPayment.id);
 
       // Try to create disbursement - should fail without verification
       await expect(
