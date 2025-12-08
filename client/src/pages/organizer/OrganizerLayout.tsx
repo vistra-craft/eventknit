@@ -51,7 +51,7 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
       {/* Main layout area (sidebar + header + page content) */}
       <div className="max-w-7xl w-full mx-auto flex flex-1 lg:h-full lg:overflow-hidden">
         {/* Sidebar */}
-        <div className="hidden lg:block w-64 flex-shrink-0 lg:h-full lg:overflow-hidden">
+        <div className="hidden lg:block w-64 flex-shrink-0 lg:sticky lg:top-0 lg:self-start lg:h-screen lg:overflow-hidden">
           <OrganizerSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
         </div>
 

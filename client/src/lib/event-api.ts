@@ -107,7 +107,15 @@ export type UpdateEventData = Partial<CreateEventData>;
 /**
  * Register for Event data
  */
+export interface TicketSelection {
+  ticketType: string;
+  quantity: number;
+}
+
 export interface RegisterForEventData {
+  // New: Support multiple ticket types
+  tickets?: TicketSelection[];
+  // Deprecated: Use tickets array instead. Kept for backward compatibility
   ticketType?: string;
   quantity?: number;
   registrationData?: Record<string, unknown>;
@@ -312,6 +320,9 @@ export interface RegisterAsGuestData {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
+  // New: Support multiple ticket types
+  tickets?: TicketSelection[];
+  // Deprecated: Use tickets array instead. Kept for backward compatibility
   ticketType?: string;
   quantity?: number;
   registrationData?: Record<string, unknown>;

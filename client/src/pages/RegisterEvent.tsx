@@ -41,8 +41,7 @@ const EventRegistration = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [selectedTicketType, setSelectedTicketType] = useState<string>('');
-  const [ticketQuantity, setTicketQuantity] = useState<number>(1);
+  const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
   const [isGuestRegistration, setIsGuestRegistration] = useState(false);
   const [promoCode, setPromoCode] = useState<string>('');
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
@@ -59,12 +58,21 @@ const EventRegistration = () => {
 
   // Note: Guest checkout is now allowed - no authentication redirect
 
-  // Set default ticket type
-  useEffect(() => {
-    if (event?.ticketTypes && event.ticketTypes.length > 0 && !selectedTicketType) {
-      setSelectedTicketType(event.ticketTypes[0].name);
-    }
-  }, [event, selectedTicketType]);
+  // Update ticket quantity for a specific ticket type
+  const updateTicketQuantity = (ticketName: string, change: number) => {
+    setSelectedTickets((prev) => {
+      const currentQty = prev[ticketName] || 0;
+      const newQty = Math.max(0, currentQty + change);
+      
+      if (newQty === 0) {
+        const updated = { ...prev };
+        delete updated[ticketName];
+        return updated;
+      }
+      
+      return { ...prev, [ticketName]: newQty };
+    });
+  };
 
   // Get error from event fetch or submit
   const error = eventError || submitError;
@@ -92,15 +100,19 @@ const EventRegistration = () => {
     setPromoError(null);
 
     try {
-      // Calculate total amount
-      const selectedTicket = event.ticketTypes?.find(t => t.name === selectedTicketType);
-      const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
-      const totalAmount = ticketPrice * ticketQuantity;
+      // Calculate total amount from all selected tickets
+      const totalAmount = event.ticketTypes?.reduce((sum, ticket) => {
+        const qty = selectedTickets[ticket.name] || 0;
+        return sum + (ticket.price * qty);
+      }, 0) || 0;
+
+      // Get the first selected ticket type for promo code validation (or null if none)
+      const firstSelectedTicketType = Object.keys(selectedTickets).find(name => selectedTickets[name] > 0) || null;
 
       const response = await validatePromoCode(
         promoCode.trim(),
         eventId,
-        selectedTicketType || null,
+        firstSelectedTicketType,
         totalAmount
       );
 
@@ -140,15 +152,33 @@ const EventRegistration = () => {
       return;
     }
 
-    try {
-      // Prepare registration data
-      const registrationData: Record<string, unknown> = {
-        ...formData,
-      };
+      // Validate that at least one ticket is selected (if event has ticket types)
+      if (event.ticketTypes && event.ticketTypes.length > 0) {
+        const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
+        if (totalTickets === 0) {
+          setSubmitError('Please select at least one ticket');
+          setSubmitting(false);
+          return;
+        }
+      }
 
-      // Determine ticket type and quantity
-      const ticketType = selectedTicketType || (event.ticketTypes && event.ticketTypes.length > 0 ? event.ticketTypes[0].name : undefined);
-      const quantity = ticketQuantity || 1;
+      try {
+        // Prepare registration data
+        const registrationData: Record<string, unknown> = {
+          ...formData,
+        };
+
+      // Convert selectedTickets to tickets array format
+      const tickets = Object.entries(selectedTickets)
+        .filter(([, qty]) => qty > 0)
+        .map(([ticketType, quantity]) => ({
+          ticketType,
+          quantity,
+        }));
+
+      // For backward compatibility, also set ticketType and quantity if only one ticket type
+      const ticketType = tickets.length === 1 ? tickets[0].ticketType : undefined;
+      const quantity = tickets.length === 1 ? tickets[0].quantity : undefined;
 
       // Extract email, firstName, lastName from form data for guest checkout
       // Try multiple strategies to find these fields
@@ -257,8 +287,9 @@ const EventRegistration = () => {
           firstName,
           lastName,
           phoneNumber: phoneNumber || undefined,
-          ticketType,
-          quantity,
+          tickets: tickets.length > 0 ? tickets : undefined,
+          ticketType, // Backward compatibility
+          quantity, // Backward compatibility
           registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
         });
 
@@ -273,10 +304,11 @@ const EventRegistration = () => {
             // Free event - go directly to confirmation
             setCurrentStep('confirmation');
           } else {
-            // Calculate total price
-            const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
-            const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
-            const totalPrice = ticketPrice * quantity;
+            // Calculate total price from all selected tickets
+            const totalPrice = event.ticketTypes?.reduce((sum, ticket) => {
+              const qty = selectedTickets[ticket.name] || 0;
+              return sum + (ticket.price * qty);
+            }, 0) || 0;
 
             // Paid event - navigate to payment page with registration ID
             navigate(`/event/${eventId}/payment`, {
@@ -286,7 +318,7 @@ const EventRegistration = () => {
                 eventTitle: event.title,
                 tickets: event.ticketTypes?.map(t => ({
                   name: t.name,
-                  quantity: t.name === ticketType ? quantity : 0,
+                  quantity: selectedTickets[t.name] || 0,
                   price: t.price
                 })).filter(t => t.quantity > 0) || [],
                 totalPrice: totalPrice,
@@ -299,8 +331,9 @@ const EventRegistration = () => {
       } else {
         // Authenticated user - use regular registration
       const response = await registerForEvent(eventId, {
-        ticketType,
-        quantity,
+        tickets: tickets.length > 0 ? tickets : undefined,
+        ticketType, // Backward compatibility
+        quantity, // Backward compatibility
         registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
         promoCode: appliedDiscount ? promoCode : undefined,
       });
@@ -315,10 +348,11 @@ const EventRegistration = () => {
           // Free event - go directly to confirmation
           setCurrentStep('confirmation');
         } else {
-          // Calculate total price
-          const selectedTicket = event.ticketTypes?.find(t => t.name === ticketType);
-          const ticketPrice = selectedTicket?.price || (typeof event.price === 'number' ? event.price : typeof event.price === 'string' ? parseFloat(event.price) : 0) || 0;
-          const subtotal = ticketPrice * quantity;
+          // Calculate total price from all selected tickets
+          const subtotal = event.ticketTypes?.reduce((sum, ticket) => {
+            const qty = selectedTickets[ticket.name] || 0;
+            return sum + (ticket.price * qty);
+          }, 0) || 0;
           const discount = appliedDiscount?.amount || 0;
           const totalPrice = subtotal - discount;
 
@@ -330,7 +364,7 @@ const EventRegistration = () => {
               eventTitle: event.title,
               tickets: event.ticketTypes?.map(t => ({
                 name: t.name,
-                quantity: t.name === ticketType ? quantity : 0,
+                quantity: selectedTickets[t.name] || 0,
                 price: t.price
               })).filter(t => t.quantity > 0) || [],
               totalPrice: totalPrice,
@@ -702,10 +736,11 @@ const EventRegistration = () => {
                   <div className="space-y-4">
                     <div>
                       <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-1">Select Your Tickets</p>
-                      <p className="text-sm text-muted-foreground">Choose the ticket type and quantity you'd like to purchase</p>
+                      <p className="text-sm text-muted-foreground">Choose ticket types and quantities you'd like to purchase</p>
                     </div>
                     <div className="space-y-3">
                       {event.ticketTypes.map((ticket, index) => {
+                        const quantity = selectedTickets[ticket.name] || 0;
                         const isVip = isVIPTicket(ticket.name);
                         const availability = isTicketTypeAvailable({
                           availableFrom: ticket.availableFrom || undefined,
@@ -722,7 +757,7 @@ const EventRegistration = () => {
                           <div
                             key={index}
                             className={`border rounded-xl p-4 transition-all duration-200 ${
-                              selectedTicketType === ticket.name
+                              quantity > 0
                                 ? "border-primary ring-2 ring-primary/20 bg-primary/5"
                                 : "border-border hover:border-primary/50"
                             } ${!isAvailable ? 'opacity-60' : ''}`}
@@ -800,58 +835,29 @@ const EventRegistration = () => {
 
                               {/* Quantity Selector */}
                               <div className="flex items-center gap-2">
-                                <button
+                                <Button
                                   type="button"
-                                  onClick={() => {
-                                    if (selectedTicketType !== ticket.name) {
-                                      setSelectedTicketType(ticket.name);
-                                      setTicketQuantity(1);
-                                    }
-                                  }}
-                                  className={`px-4 py-2 rounded-lg border transition-all ${
-                                    selectedTicketType === ticket.name
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border hover:border-primary hover:bg-primary/5"
-                                  } ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                  disabled={!isAvailable}
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => updateTicketQuantity(ticket.name, -1)}
+                                  disabled={quantity === 0 || !isAvailable}
                                 >
-                                  {selectedTicketType === ticket.name ? "Selected" : "Select"}
-                                </button>
-                                {selectedTicketType === ticket.name && (
-                                  <div className="flex items-center gap-2 border rounded-lg px-2 py-1">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (ticketQuantity > 1) {
-                                          setTicketQuantity(ticketQuantity - 1);
-                                        }
-                                      }}
-                                      disabled={ticketQuantity <= 1}
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
-                                    <span className="w-8 text-center font-medium text-sm">{ticketQuantity}</span>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!ticket.quantity || ticketQuantity < ticket.quantity) {
-                                          setTicketQuantity(ticketQuantity + 1);
-                                        }
-                                      }}
-                                      disabled={!isAvailable || (ticket.quantity !== null && ticket.quantity !== undefined && ticketQuantity >= ticket.quantity)}
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                )}
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <span className="w-8 text-center font-medium text-sm">
+                                  {quantity}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => updateTicketQuantity(ticket.name, 1)}
+                                  disabled={!isAvailable || (ticket.quantity !== null && ticket.quantity !== undefined && quantity >= ticket.quantity)}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -859,7 +865,29 @@ const EventRegistration = () => {
                       })}
                     </div>
 
-                    {!event.isFree && (
+                    {/* Total Summary */}
+                    {Object.values(selectedTickets).some(qty => qty > 0) && (
+                      <div className="pt-4 mt-4 border-t">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-base font-semibold">Total Tickets</span>
+                          <span className="text-base font-semibold">
+                            {Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-base font-semibold">Total Price</span>
+                          <span className="text-xl font-bold text-primary">
+                            {event.currency || '$'}
+                            {event.ticketTypes?.reduce((sum, ticket) => {
+                              const qty = selectedTickets[ticket.name] || 0;
+                              return sum + (ticket.price * qty);
+                            }, 0).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {!event.isFree && Object.values(selectedTickets).some(qty => qty > 0) && (
                       <div className="pt-4 mt-2 border-t space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <Ticket className="w-4 h-4" />
@@ -1048,10 +1076,26 @@ const EventRegistration = () => {
                     )}
                     
                     <div className="flex flex-col sm:flex-row justify-end pt-2 gap-4">
+                      {Object.values(selectedTickets).some(qty => qty > 0) && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>
+                            {Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0)} ticket{Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0) !== 1 ? 's' : ''} selected
+                          </span>
+                          {!event?.isFree && event?.price !== 0 && (
+                            <span className="font-semibold text-foreground">
+                              • {event.currency || '$'}
+                              {event.ticketTypes?.reduce((sum, ticket) => {
+                                const qty = selectedTickets[ticket.name] || 0;
+                                return sum + (ticket.price * qty);
+                              }, 0).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <Button
                         type="submit"
                         className="bg-primary hover:bg-primary/90 px-8 h-12 text-base font-semibold shadow-md"
-                        disabled={submitting || loading}
+                        disabled={submitting || loading || !!(event?.ticketTypes && event.ticketTypes.length > 0 && Object.values(selectedTickets).every(qty => qty === 0))}
                       >
                         {submitting ? (
                           <>
