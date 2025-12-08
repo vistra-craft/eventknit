@@ -45,9 +45,9 @@ describe('Event Registration System', () => {
     if (!dbConnected) return;
 
     // Clear all tables in correct order to respect foreign keys
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    // Note: We run cleanup outside transaction to avoid transaction abortion issues
+    // If one table doesn't exist or fails, it won't abort the entire cleanup
+    await cleanupTestData();
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');
@@ -338,6 +338,160 @@ describe('Event Registration System', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.registration.status).toBe('PENDING');
       expect(response.body.data.registration.paymentStatus).toBe('PENDING');
+    });
+
+    it('should register with multiple ticket types', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Multi-Ticket Event',
+          description: 'Event with multiple ticket types',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: false,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+          ticketTypes: [
+            { name: 'VIP', price: 100, quantity: 50 },
+            { name: 'Regular', price: 50, quantity: 50 },
+            { name: 'Early Bird', price: 30, quantity: 20 },
+          ] as any,
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({
+          tickets: [
+            { ticketType: 'VIP', quantity: 2 },
+            { ticketType: 'Regular', quantity: 3 },
+          ],
+        })
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.registration.status).toBe('PENDING');
+      expect(response.body.data.registration.totalAmount).toBe('350.00'); // (2 * 100) + (3 * 50) = 350
+
+      // Verify ticket line items were created
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: response.body.data.registration.id },
+        include: { ticketLineItems: true },
+      }) as any; // Type assertion needed - Prisma types may not be fully updated
+
+      expect(registration?.ticketLineItems).toBeDefined();
+      expect(registration?.ticketLineItems.length).toBe(2);
+      
+      const vipLineItem = registration?.ticketLineItems.find((item: any) => item.ticketType === 'VIP');
+      const regularLineItem = registration?.ticketLineItems.find((item: any) => item.ticketType === 'Regular');
+      
+      expect(vipLineItem).toBeDefined();
+      expect(vipLineItem?.quantity).toBe(2);
+      expect(vipLineItem?.unitPrice).toBe(100);
+      expect(vipLineItem?.totalPrice).toBe(200);
+      
+      expect(regularLineItem).toBeDefined();
+      expect(regularLineItem?.quantity).toBe(3);
+      expect(regularLineItem?.unitPrice).toBe(50);
+      expect(regularLineItem?.totalPrice).toBe(150);
+    });
+
+    it('should fail registration with invalid ticket type in tickets array', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Ticket Validation Event',
+          description: 'Event for ticket validation',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: false,
+          organizerId,
+          status: EventStatus.APPROVED,
+          ticketTypes: [
+            { name: 'Regular', price: 50 },
+          ] as any,
+        },
+      });
+
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({
+          tickets: [
+            { ticketType: 'InvalidType', quantity: 1 },
+          ],
+        })
+        .expect(400);
+    });
+
+    it('should fail registration when ticket quantity exceeds available tickets', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Limited Tickets Event',
+          description: 'Event with limited ticket quantities',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: false,
+          organizerId,
+          status: EventStatus.APPROVED,
+          ticketTypes: [
+            { name: 'Limited', price: 50, quantity: 5 },
+          ] as any,
+        },
+      });
+
+      // Register 3 tickets first
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({
+          tickets: [{ ticketType: 'Limited', quantity: 3 }],
+        })
+        .expect(201);
+
+      // Create another attendee to try to register more than available
+      const otherAttendeePassword = await hashPassword('Test123!@$');
+      const otherAttendee = await prisma.user.create({
+        data: {
+          email: 'otherattendee4@test.com',
+          password: otherAttendeePassword,
+          firstName: 'Other',
+          lastName: 'Attendee4',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      const otherAttendeeToken = generateAccessToken({
+        userId: otherAttendee.id,
+        email: otherAttendee.email,
+        role: otherAttendee.role,
+      });
+
+      // Try to register 3 more (only 2 remaining)
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${otherAttendeeToken}`)
+        .send({
+          tickets: [{ ticketType: 'Limited', quantity: 3 }],
+        })
+        .expect(400);
     });
 
     it('should fail to register for non-approved event', async () => {
@@ -703,6 +857,64 @@ describe('Event Registration System', () => {
   });
 
   describe('POST /api/v1/events/:id/register-guest', () => {
+    it('should register guest with multiple ticket types', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Multi-Ticket Guest Event',
+          description: 'Event with multiple ticket types for guest registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+          ticketTypes: [
+            { name: 'VIP', price: 100 },
+            { name: 'Regular', price: 50 },
+          ] as any,
+        },
+      });
+
+      const guestData = {
+        email: 'multiticketguest@test.com',
+        firstName: 'Multi',
+        lastName: 'Ticket',
+        phoneNumber: '+1234567890',
+        tickets: [
+          { ticketType: 'VIP', quantity: 1 },
+          { ticketType: 'Regular', quantity: 2 },
+        ],
+      };
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send(guestData);
+
+      // Email service may not be configured
+      if (response.status === 503 || response.status === 500) {
+        logger.info('⏭️  Skipping test - email service not available');
+        return;
+      }
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.registration.totalAmount).toBe('200.00'); // (1 * 100) + (2 * 50) = 200
+
+      // Verify ticket line items were created
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: response.body.data.registration.id },
+        include: { ticketLineItems: true },
+      }) as any; // Type assertion needed - Prisma types may not be fully updated
+
+      expect(registration?.ticketLineItems).toBeDefined();
+      expect(registration?.ticketLineItems.length).toBe(2);
+    });
+
     it('should register guest for free event and create account', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');

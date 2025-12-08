@@ -90,8 +90,13 @@ export const errorHandler = (
   const appError = handlePrismaError(err);
 
   // Log error (log original error for debugging)
-  logger.error('Error:', {
-    message: err.message,
+  logger.error('Error Handler:', {
+    originalError: err.message,
+    originalErrorType: err.constructor?.name || typeof err,
+    convertedError: appError.message,
+    convertedErrorType: appError.constructor?.name,
+    statusCode: appError.statusCode,
+    code: appError.code,
     stack: config.env === 'development' ? err.stack : undefined,
     path: req.path,
     method: req.method,

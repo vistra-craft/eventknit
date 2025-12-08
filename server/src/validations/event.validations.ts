@@ -296,6 +296,24 @@ export const eventValidations = {
   }),
 
   registerForEvent: Joi.object({
+    // New: Support multiple ticket types
+    tickets: Joi.array().items(
+      Joi.object({
+        ticketType: Joi.string().trim().max(100).required().messages({
+          'string.max': 'Ticket type must not exceed 100 characters',
+          'any.required': 'Ticket type is required',
+        }),
+        quantity: Joi.number().integer().min(1).max(100).required().messages({
+          'number.min': 'Quantity must be at least 1',
+          'number.max': 'Quantity must not exceed 100',
+          'number.base': 'Quantity must be a valid number',
+          'any.required': 'Quantity is required',
+        }),
+      }),
+    ).min(1).optional().messages({
+      'array.min': 'At least one ticket must be selected',
+    }),
+    // Deprecated: Use tickets array instead. Kept for backward compatibility
     ticketType: Joi.string().trim().max(100).optional().allow('', null).messages({
       'string.max': 'Ticket type must not exceed 100 characters',
     }),
@@ -318,6 +336,32 @@ export const eventValidations = {
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
+    // New: Support multiple ticket types
+    tickets: Joi.array().items(
+      Joi.object({
+        ticketType: Joi.string().trim().max(100).required().messages({
+          'string.max': 'Ticket type must not exceed 100 characters',
+          'any.required': 'Ticket type is required',
+        }),
+        quantity: Joi.number().integer().min(1).max(100).required().messages({
+          'number.min': 'Quantity must be at least 1',
+          'number.max': 'Quantity must not exceed 100',
+          'number.base': 'Quantity must be a valid number',
+          'any.required': 'Quantity is required',
+        }),
+      }),
+    ).min(1).optional().messages({
+      'array.min': 'At least one ticket must be selected',
+    }),
+    // Deprecated: Use tickets array instead. Kept for backward compatibility
+    ticketType: Joi.string().trim().max(100).optional().allow('', null).messages({
+      'string.max': 'Ticket type must not exceed 100 characters',
+    }),
+    quantity: Joi.number().integer().min(1).max(100).optional().default(1).messages({
+      'number.min': 'Quantity must be at least 1',
+      'number.max': 'Quantity must not exceed 100',
+      'number.base': 'Quantity must be a valid number',
+    }),
     firstName: Joi.string().trim().min(1).max(100).required().messages({
       'string.empty': 'First name is required',
       'string.max': 'First name must not exceed 100 characters',
@@ -329,14 +373,6 @@ export const eventValidations = {
       'any.required': 'Last name is required',
     }),
     phoneNumber: Joi.string().trim().optional().allow('', null),
-    ticketType: Joi.string().trim().max(100).optional().allow('', null).messages({
-      'string.max': 'Ticket type must not exceed 100 characters',
-    }),
-    quantity: Joi.number().integer().min(1).max(100).optional().default(1).messages({
-      'number.min': 'Quantity must be at least 1',
-      'number.max': 'Quantity must not exceed 100',
-      'number.base': 'Quantity must be a valid number',
-    }),
     registrationData: Joi.object().optional().allow(null),
   }),
 

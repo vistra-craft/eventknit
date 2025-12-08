@@ -5,13 +5,32 @@ import { logger } from '../utils/logger.js';
 // Configure Cloudinary (lazy initialization to allow mocking in tests)
 let cloudinaryConfigured = false;
 const configureCloudinary = (): void => {
-  if (!cloudinaryConfigured && process.env.CLOUDINARY_CLOUD_NAME) {
+  if (cloudinaryConfigured) {
+    return; // Already configured
+  }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  // Check if Cloudinary is configured (all three required)
+  if (!cloudName || !apiKey || !apiSecret) {
+    // Don't log warnings - Cloudinary is optional
+    return; // Don't configure if credentials are missing
+  }
+
+  try {
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
     });
     cloudinaryConfigured = true;
+    // Optionally log success (commented out to reduce noise)
+    // logger.info('Cloudinary configured successfully');
+  } catch (error) {
+    logger.error('Failed to configure Cloudinary:', error);
+    throw new Error('Failed to configure Cloudinary. Please check your environment variables.');
   }
 };
 
@@ -35,6 +54,14 @@ export const uploadImageToCloudinary = async (
   },
 ): Promise<UploadResult> => {
   configureCloudinary();
+
+  // Check if Cloudinary is configured before attempting upload
+  if (!cloudinaryConfigured) {
+    throw new Error(
+      'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.',
+    );
+  }
+
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -81,6 +108,13 @@ export const uploadImageToCloudinary = async (
  */
 export const deleteImageFromCloudinary = async (publicId: string): Promise<void> => {
   configureCloudinary();
+  
+  // If Cloudinary is not configured, silently skip deletion
+  if (!cloudinaryConfigured) {
+    logger.debug(`Cloudinary not configured, skipping deletion of: ${publicId}`);
+    return;
+  }
+
   try {
     await cloudinary.uploader.destroy(publicId);
     logger.info(`Deleted image from Cloudinary: ${publicId}`);
@@ -89,6 +123,7 @@ export const deleteImageFromCloudinary = async (publicId: string): Promise<void>
     // Don't throw - deletion failure shouldn't break the flow
   }
 };
+
 
 /**
  * Extract public ID from Cloudinary URL

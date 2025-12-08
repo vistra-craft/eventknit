@@ -75,7 +75,15 @@ export interface UpdateEventData extends Partial<CreateEventData> {
   // Allow partial updates
 }
 
+export interface TicketSelection {
+  ticketType: string;
+  quantity: number;
+}
+
 export interface RegisterForEventData {
+  // New: Support multiple ticket types
+  tickets?: TicketSelection[];
+  // Deprecated: Use tickets array instead. Kept for backward compatibility
   ticketType?: string;
   quantity?: number;
   registrationData?: Record<string, unknown>;
@@ -820,35 +828,73 @@ export class EventService {
       throw new ConflictError('You are already registered for this event');
     }
 
-    // Calculate total amount and check if ticket is complementary
-    const quantity = data.quantity || 1;
+    // Process tickets: Support both new tickets array and legacy ticketType/quantity
+    let ticketSelections: TicketSelection[] = [];
+    
+    if (data.tickets && data.tickets.length > 0) {
+      // New format: multiple ticket types
+      ticketSelections = data.tickets;
+    } else if (data.ticketType) {
+      // Legacy format: single ticket type (backward compatibility)
+      ticketSelections = [{
+        ticketType: data.ticketType,
+        quantity: data.quantity || 1,
+      }];
+    } else if (!event.isFree && event.ticketTypes && Array.isArray(event.ticketTypes) && event.ticketTypes.length > 0) {
+      // If event has ticket types but none selected, throw error
+      throw new ValidationError('Please select at least one ticket type');
+    } else if (!event.isFree && !event.price) {
+      throw new ValidationError('Ticket type is required for this event');
+    }
+
+    // Validate tickets and calculate total amount
     let totalAmount = new Decimal(0);
     let isComplementaryTicket = false;
+    let totalQuantity = 0;
+    const ticketLineItems: Array<{
+      ticketType: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }> = [];
 
-    if (!event.isFree) {
-      if (data.ticketType && event.ticketTypes) {
-        const ticketTypes = event.ticketTypes as Array<{
-          name: string;
-          price: number;
-          originalPrice?: number;
-          isComplementary?: boolean;
-          requiresInvitation?: boolean;
-          availableFrom?: string;
-          availableUntil?: string;
-        }>;
-        const selectedTicket = ticketTypes.find(t => t.name === data.ticketType);
-        if (!selectedTicket) {
-          throw new ValidationError('Invalid ticket type');
+    if (!event.isFree && ticketSelections.length > 0) {
+      const ticketTypes = event.ticketTypes as Array<{
+        name: string;
+        price: number;
+        originalPrice?: number;
+        isComplementary?: boolean;
+        requiresInvitation?: boolean;
+        availableFrom?: string;
+        availableUntil?: string;
+        quantity?: number;
+      }> | null;
+
+      if (!ticketTypes || ticketTypes.length === 0) {
+        throw new ValidationError('Event has no ticket types configured');
+      }
+
+      for (const selection of ticketSelections) {
+        if (selection.quantity <= 0) {
+          throw new ValidationError(`Invalid quantity for ticket type: ${selection.ticketType}`);
+        }
+
+        const ticketConfig = ticketTypes.find(t => t.name === selection.ticketType);
+        if (!ticketConfig) {
+          throw new ValidationError(`Invalid ticket type: ${selection.ticketType}`);
         }
 
         // Check if ticket is complementary
-        isComplementaryTicket = selectedTicket.isComplementary === true || selectedTicket.price === 0;
+        const isComplementary = ticketConfig.isComplementary === true || ticketConfig.price === 0;
+        if (isComplementary) {
+          isComplementaryTicket = true;
+        }
 
         // Check if ticket requires invitation
-        if (selectedTicket.isComplementary || selectedTicket.requiresInvitation) {
+        if (ticketConfig.isComplementary || ticketConfig.requiresInvitation) {
           if (!data.invitationId) {
             throw new ValidationError(
-              'This ticket type requires an invitation. Please use the invitation link provided.',
+              `Ticket type "${selection.ticketType}" requires an invitation. Please use the invitation link provided.`,
             );
           }
           // Verify invitation is valid and matches ticket type
@@ -862,19 +908,56 @@ export class EventService {
 
         // Check early bird availability
         const { isTicketTypeAvailable } = await import('../utils/ticket-helpers');
-        const availability = isTicketTypeAvailable(selectedTicket);
+        const availability = isTicketTypeAvailable(ticketConfig);
         if (!availability.available) {
-          throw new ValidationError(availability.reason || 'Ticket is not available');
+          throw new ValidationError(
+            `Ticket type "${selection.ticketType}" is not available: ${availability.reason || 'Not available'}`,
+          );
         }
 
-        // Use current price (discounted price if originalPrice exists)
-        const ticketPrice = selectedTicket.price;
-        totalAmount = new Decimal(Number(ticketPrice) * quantity);
-      } else if (event.price) {
-        totalAmount = new Decimal(Number(event.price) * quantity);
-      } else {
-        throw new ValidationError('Ticket type is required for this event');
+        // Check ticket quantity limit
+        if (ticketConfig.quantity !== null && ticketConfig.quantity !== undefined) {
+          // Count existing registrations for this ticket type
+          const existingTickets = await prisma.ticketLineItem.count({
+            where: {
+              registration: {
+                eventId,
+                status: {
+                  in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+                },
+              },
+              ticketType: selection.ticketType,
+            },
+          });
+          
+          if (existingTickets + selection.quantity > ticketConfig.quantity) {
+            throw new ValidationError(
+              `Insufficient tickets available for "${selection.ticketType}". Only ${ticketConfig.quantity - existingTickets} remaining.`,
+            );
+          }
+        }
+
+        // Calculate price for this ticket type
+        const unitPrice = ticketConfig.price;
+        const lineTotal = new Decimal(Number(unitPrice) * selection.quantity);
+        totalAmount = totalAmount.plus(lineTotal);
+        totalQuantity += selection.quantity;
+
+        ticketLineItems.push({
+          ticketType: selection.ticketType,
+          quantity: selection.quantity,
+          unitPrice: Number(unitPrice),
+          totalPrice: Number(lineTotal),
+        });
       }
+    } else if (!event.isFree && event.price) {
+      // Legacy: Single price event without ticket types
+      const quantity = data.quantity || 1;
+      totalAmount = new Decimal(Number(event.price) * quantity);
+      totalQuantity = quantity;
+    } else if (event.isFree) {
+      // Free event: count total quantity
+      totalQuantity = ticketSelections.reduce((sum, t) => sum + t.quantity, 0) || (data.quantity || 1);
     }
 
     // Apply promo code discount if provided
@@ -883,10 +966,12 @@ export class EventService {
 
     if (data.promoCode && totalAmount.gt(0)) {
       const { PromoCodeService } = await import('./promo-code.service.js');
+      // Use first ticket type for promo code validation (or null if no tickets)
+      const firstTicketType = ticketSelections.length > 0 ? ticketSelections[0].ticketType : (data.ticketType || null);
       const validation = await PromoCodeService.validatePromoCode(
         data.promoCode,
         eventId,
-        data.ticketType || null,
+        firstTicketType,
         Number(totalAmount),
         attendeeId,
       );
@@ -903,19 +988,42 @@ export class EventService {
 
     const finalAmount = totalAmount.minus(discountAmount);
 
-    // Check capacity
-    if (event.capacity !== null) {
-      const currentRegistrations = await prisma.eventRegistration.count({
+    // Check capacity (using total quantity from all ticket types)
+    if (event.capacity !== null && totalQuantity > 0) {
+      // Count total tickets (not registrations) for capacity check
+      const existingTickets = await prisma.ticketLineItem.aggregate({
+        where: {
+          registration: {
+            eventId,
+            status: {
+              in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+            },
+          },
+        },
+        _sum: {
+          quantity: true,
+        },
+      });
+
+      // Also count legacy registrations without ticket line items
+      const legacyRegistrations = await prisma.eventRegistration.count({
         where: {
           eventId,
           status: {
             in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
           },
+          ticketLineItems: {
+            none: {},
+          },
         },
       });
 
-      if (currentRegistrations + quantity > event.capacity) {
-        throw new ValidationError('Event is sold out or insufficient capacity');
+      const existingTotalTickets = (existingTickets._sum.quantity || 0) + legacyRegistrations;
+
+      if (existingTotalTickets + totalQuantity > event.capacity) {
+        throw new ValidationError(
+          `Event is sold out or insufficient capacity. Only ${event.capacity - existingTotalTickets} tickets remaining.`,
+        );
       }
     }
 
@@ -929,20 +1037,34 @@ export class EventService {
       ? RegistrationStatus.CONFIRMED
       : RegistrationStatus.PENDING;
 
+    // For backward compatibility, set ticketType and quantity from first ticket or legacy data
+    const legacyTicketType = ticketSelections.length > 0 ? ticketSelections[0].ticketType : (data.ticketType || null);
+    const legacyQuantity = totalQuantity || (data.quantity || 1);
+
     const registration = await prisma.eventRegistration.create({
       data: {
         eventId,
         attendeeId,
-        ticketType: data.ticketType || null,
-        quantity,
+        ticketType: legacyTicketType, // Backward compatibility
+        quantity: legacyQuantity, // Backward compatibility
         totalAmount: finalAmount,
         registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
         backupCode,
         status: registrationStatus,
         paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
         invitationId: data.invitationId || null,
+        // Create ticket line items for multiple ticket types
+        ticketLineItems: ticketLineItems.length > 0 ? {
+          create: ticketLineItems.map(item => ({
+            ticketType: item.ticketType,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+          })),
+        } : undefined,
       },
       include: {
+        ticketLineItems: true, // Include ticket line items for multiple ticket types
         event: {
           select: {
             id: true,
@@ -993,10 +1115,10 @@ export class EventService {
       );
     }
 
-    // Update available slots if capacity exists
+    // Update available slots if capacity exists (using totalQuantity)
     let newAvailableSlots: number | null = null;
-    if (event.capacity !== null) {
-      newAvailableSlots = (event.availableSlots || event.capacity) - quantity;
+    if (event.capacity !== null && totalQuantity > 0) {
+      newAvailableSlots = (event.availableSlots || event.capacity) - totalQuantity;
       await prisma.event.update({
         where: { id: eventId },
         data: {
@@ -1137,7 +1259,7 @@ export class EventService {
       metadata: {
         eventId,
         eventTitle: event.title,
-        quantity,
+        quantity: totalQuantity,
         totalAmount: finalAmount.toString(),
         originalAmount: totalAmount.toString(),
         discountAmount: discountAmount.toString(),
@@ -1152,6 +1274,58 @@ export class EventService {
     if (event.isFree || isComplementaryTicket) {
       // Send ticket email immediately for free events
       try {
+        logger.debug(`[registerForEvent] Authenticated user - preparing ticket email for free event`);
+        
+        // Safely extract ticketLineItems if they exist
+        // Type assertion needed because Prisma types may not fully include ticketLineItems relation
+        const registrationWithLineItems = registration as typeof registration & {
+          ticketLineItems?: Array<{
+            ticketType: string;
+            quantity: number;
+            unitPrice: any; // Decimal from Prisma
+            totalPrice: any; // Decimal from Prisma
+          }>;
+        };
+        
+        let ticketLineItems: Array<{
+          ticketType: string;
+          quantity: number;
+          unitPrice: number;
+          totalPrice: number;
+        }> | undefined;
+        
+        try {
+          logger.debug(`[registerForEvent] Authenticated user - extracting ticketLineItems`);
+          // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
+          const lineItems = (registrationWithLineItems as any).ticketLineItems;
+          logger.debug(`[registerForEvent] Authenticated user - ticketLineItems raw value:`, lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
+          
+          if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
+            ticketLineItems = lineItems.map((item: {
+              ticketType: string;
+              quantity: number;
+              unitPrice: any;
+              totalPrice: any;
+            }) => ({
+              ticketType: item.ticketType,
+              quantity: item.quantity,
+              unitPrice: Number(item.unitPrice),
+              totalPrice: Number(item.totalPrice),
+            }));
+            logger.debug(`[registerForEvent] Authenticated user - successfully extracted ${ticketLineItems.length} ticket line items`);
+          } else {
+            logger.debug(`[registerForEvent] Authenticated user - no ticket line items to extract`);
+          }
+        } catch (lineItemsError) {
+          // If ticketLineItems extraction fails, just log and continue without them
+          logger.warn(`[registerForEvent] Authenticated user - failed to extract ticketLineItems for registration ${registration.id}:`, {
+            error: lineItemsError instanceof Error ? lineItemsError.message : String(lineItemsError),
+            stack: lineItemsError instanceof Error ? lineItemsError.stack : undefined,
+          });
+          ticketLineItems = undefined;
+        }
+        
+        logger.debug(`[registerForEvent] Authenticated user - calling TicketService.sendTicketEmail for registration ${registration.id}`);
         await TicketService.sendTicketEmail({
           id: registration.id,
           ticketType: registration.ticketType,
@@ -1160,12 +1334,20 @@ export class EventService {
           createdAt: registration.createdAt,
           backupCode: registration.backupCode,
           registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+          ticketLineItems,
           event: registration.event,
           attendee: registration.attendee,
         });
-        logger.info(`Ticket email sent to: ${registration.attendee.email} for free event: ${eventId}`);
+        logger.info(`[registerForEvent] Authenticated user - ticket email sent successfully to: ${registration.attendee.email} for free event: ${eventId}`);
       } catch (error) {
-        logger.error('Failed to send ticket email:', error);
+        // Log email error but don't fail registration - email can be resent later
+        logger.error(`[registerForEvent] Authenticated user - failed to send ticket email:`, {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          registrationId: registration.id,
+          eventId,
+          attendeeEmail: registration.attendee.email,
+        });
         // Don't fail registration if email fails
       }
 
@@ -2294,6 +2476,9 @@ export class EventService {
       firstName: string;
       lastName: string;
       phoneNumber?: string;
+      // New: Support multiple ticket types
+      tickets?: TicketSelection[];
+      // Deprecated: Use tickets array instead. Kept for backward compatibility
       ticketType?: string;
       quantity?: number;
       registrationData?: Record<string, unknown>;
@@ -2488,23 +2673,113 @@ export class EventService {
       throw new ConflictError('You are already registered for this event');
     }
 
-    // Calculate total amount
-    const quantity = guestData.quantity || 1;
-    let totalAmount = new Decimal(0);
+    // Process tickets: Support both new tickets array and legacy ticketType/quantity
+    let ticketSelections: TicketSelection[] = [];
+    
+    if (guestData.tickets && guestData.tickets.length > 0) {
+      // New format: multiple ticket types
+      ticketSelections = guestData.tickets;
+    } else if (guestData.ticketType) {
+      // Legacy format: single ticket type (backward compatibility)
+      ticketSelections = [{
+        ticketType: guestData.ticketType,
+        quantity: guestData.quantity || 1,
+      }];
+    } else if (!event.isFree && event.ticketTypes && Array.isArray(event.ticketTypes) && event.ticketTypes.length > 0) {
+      // If event has ticket types but none selected, throw error
+      throw new ValidationError('Please select at least one ticket type');
+    } else if (!event.isFree && !event.price) {
+      throw new ValidationError('Ticket type is required for this event');
+    }
 
-    if (!event.isFree) {
-      if (guestData.ticketType && event.ticketTypes) {
-        const ticketTypes = event.ticketTypes as Array<{ name: string; price: number }>;
-        const selectedTicket = ticketTypes.find(t => t.name === guestData.ticketType);
-        if (!selectedTicket) {
-          throw new ValidationError('Invalid ticket type');
-        }
-        totalAmount = new Decimal(Number(selectedTicket.price) * quantity);
-      } else if (event.price) {
-        totalAmount = new Decimal(Number(event.price) * quantity);
-      } else {
-        throw new ValidationError('Ticket type is required for this event');
+    // Validate tickets and calculate total amount
+    let totalAmount = new Decimal(0);
+    let totalQuantity = 0;
+    const ticketLineItems: Array<{
+      ticketType: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }> = [];
+
+    if (!event.isFree && ticketSelections.length > 0) {
+      const ticketTypes = event.ticketTypes as Array<{
+        name: string;
+        price: number;
+        originalPrice?: number;
+        isComplementary?: boolean;
+        requiresInvitation?: boolean;
+        availableFrom?: string;
+        availableUntil?: string;
+        quantity?: number;
+      }> | null;
+
+      if (!ticketTypes || ticketTypes.length === 0) {
+        throw new ValidationError('Event has no ticket types configured');
       }
+
+      for (const selection of ticketSelections) {
+        if (selection.quantity <= 0) {
+          throw new ValidationError(`Invalid quantity for ticket type: ${selection.ticketType}`);
+        }
+
+        const ticketConfig = ticketTypes.find(t => t.name === selection.ticketType);
+        if (!ticketConfig) {
+          throw new ValidationError(`Invalid ticket type: ${selection.ticketType}`);
+        }
+
+        // Check early bird availability
+        const { isTicketTypeAvailable } = await import('../utils/ticket-helpers');
+        const availability = isTicketTypeAvailable(ticketConfig);
+        if (!availability.available) {
+          throw new ValidationError(
+            `Ticket type "${selection.ticketType}" is not available: ${availability.reason || 'Not available'}`,
+          );
+        }
+
+        // Check ticket quantity limit
+        if (ticketConfig.quantity !== null && ticketConfig.quantity !== undefined) {
+          // Count existing tickets for this ticket type
+          const existingTickets = await prisma.ticketLineItem.count({
+            where: {
+              registration: {
+                eventId,
+                status: {
+                  in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+                },
+              },
+              ticketType: selection.ticketType,
+            },
+          });
+          
+          if (existingTickets + selection.quantity > ticketConfig.quantity) {
+            throw new ValidationError(
+              `Insufficient tickets available for "${selection.ticketType}". Only ${ticketConfig.quantity - existingTickets} remaining.`,
+            );
+          }
+        }
+
+        // Calculate price for this ticket type
+        const unitPrice = ticketConfig.price;
+        const lineTotal = new Decimal(Number(unitPrice) * selection.quantity);
+        totalAmount = totalAmount.plus(lineTotal);
+        totalQuantity += selection.quantity;
+
+        ticketLineItems.push({
+          ticketType: selection.ticketType,
+          quantity: selection.quantity,
+          unitPrice: Number(unitPrice),
+          totalPrice: Number(lineTotal),
+        });
+      }
+    } else if (!event.isFree && event.price) {
+      // Legacy: Single price event without ticket types
+      const quantity = guestData.quantity || 1;
+      totalAmount = new Decimal(Number(event.price) * quantity);
+      totalQuantity = quantity;
+    } else if (event.isFree) {
+      // Free event: count total quantity
+      totalQuantity = ticketSelections.reduce((sum, t) => sum + t.quantity, 0) || (guestData.quantity || 1);
     }
 
     // Generate backup ticket code
@@ -2534,21 +2809,48 @@ export class EventService {
       }
 
       // Check capacity within transaction (atomic with registration creation)
-      if (lockedEvent.capacity !== null) {
-        const currentRegistrations = await tx.eventRegistration.count({
+      if (lockedEvent.capacity !== null && totalQuantity > 0) {
+        // Count total tickets (not registrations) for capacity check
+        const existingTickets = await tx.ticketLineItem.aggregate({
+          where: {
+            registration: {
+              eventId,
+              status: {
+                in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+              },
+            },
+          },
+          _sum: {
+            quantity: true,
+          },
+        });
+
+        // Also count legacy registrations without ticket line items
+        const legacyRegistrations = await tx.eventRegistration.count({
           where: {
             eventId,
             status: {
               in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
             },
+            ticketLineItems: {
+              none: {},
+            },
           },
         });
 
+        const existingTotalTickets = (existingTickets._sum.quantity || 0) + legacyRegistrations;
+
         // For re-registrations, we don't need to check capacity (slot already reserved)
-        if (!isReRegistration && currentRegistrations + quantity > lockedEvent.capacity) {
-          throw new ValidationError('Event is sold out or insufficient capacity');
+        if (!isReRegistration && existingTotalTickets + totalQuantity > lockedEvent.capacity) {
+          throw new ValidationError(
+            `Event is sold out or insufficient capacity. Only ${lockedEvent.capacity - existingTotalTickets} tickets remaining.`,
+          );
         }
       }
+
+      // For backward compatibility, set ticketType and quantity from first ticket or legacy data
+      const legacyTicketType = ticketSelections.length > 0 ? ticketSelections[0].ticketType : (guestData.ticketType || null);
+      const legacyQuantity = totalQuantity || (guestData.quantity || 1);
 
       // Create or update registration
       const reg = isReRegistration
@@ -2560,8 +2862,8 @@ export class EventService {
             },
           },
           data: {
-            ticketType: guestData.ticketType || null,
-            quantity,
+            ticketType: legacyTicketType, // Backward compatibility
+            quantity: legacyQuantity, // Backward compatibility
             totalAmount,
             registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
             backupCode,
@@ -2569,8 +2871,19 @@ export class EventService {
             paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
             cancelledAt: null, // Clear cancellation timestamp
             cancelledBy: null, // Clear cancellation user
+            // Delete old ticket line items and create new ones
+            ticketLineItems: {
+              deleteMany: {},
+              create: ticketLineItems.map(item => ({
+                ticketType: item.ticketType,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                totalPrice: item.totalPrice,
+              })),
+            },
           },
           include: {
+            ticketLineItems: true, // Include ticket line items for multiple ticket types
             event: {
               select: {
                 id: true,
@@ -2612,15 +2925,25 @@ export class EventService {
           data: {
             eventId,
             attendeeId: user.id,
-            ticketType: guestData.ticketType || null,
-            quantity,
+            ticketType: legacyTicketType, // Backward compatibility
+            quantity: legacyQuantity, // Backward compatibility
             totalAmount,
             registrationData: guestData.registrationData ? (guestData.registrationData as Prisma.InputJsonValue) : undefined,
+            // Create ticket line items for multiple ticket types
+            ticketLineItems: ticketLineItems.length > 0 ? {
+              create: ticketLineItems.map(item => ({
+                ticketType: item.ticketType,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                totalPrice: item.totalPrice,
+              })),
+            } : undefined,
             backupCode,
             status: registrationStatus,
             paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
           },
           include: {
+            ticketLineItems: true, // Include ticket line items for multiple ticket types
             event: {
               select: {
                 id: true,
@@ -2661,7 +2984,7 @@ export class EventService {
 
       // Update available slots if capacity exists (only for new registrations)
       if (lockedEvent.capacity !== null && !isReRegistration) {
-        const newAvailableSlots = (lockedEvent.availableSlots || lockedEvent.capacity) - quantity;
+        const newAvailableSlots = (lockedEvent.availableSlots || lockedEvent.capacity) - totalQuantity;
         await tx.event.update({
           where: { id: eventId },
           data: {
@@ -2683,21 +3006,89 @@ export class EventService {
     // Send appropriate email based on event type
     // For free events: Send ticket email immediately
     // For paid events: Send payment pending email (ticket email will be sent after payment confirmation)
+    logger.debug(`[registerForEvent] Starting email sending process for event ${eventId}, isFree: ${event.isFree}, registrationId: ${registration.id}`);
+    
     try {
       if (event.isFree) {
         // Free event - send ticket email immediately
-        await TicketService.sendTicketEmail({
-          id: registration.id,
-          ticketType: registration.ticketType,
-          quantity: registration.quantity,
-          totalAmount: registration.totalAmount,
-          createdAt: registration.createdAt,
-          backupCode: registration.backupCode,
-          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-          event: registration.event,
-          attendee: registration.attendee,
-        });
-        logger.info(`Ticket email sent to: ${user.email} for free event: ${eventId}`);
+        logger.debug(`[registerForEvent] Processing free event - preparing ticket email`);
+        
+        // Type assertion needed because Prisma types may not fully include ticketLineItems relation
+        // The query includes ticketLineItems, but TypeScript may not infer it correctly
+        const registrationWithLineItems = registration as typeof registration & {
+          ticketLineItems?: Array<{
+            ticketType: string;
+            quantity: number;
+            unitPrice: any; // Decimal from Prisma
+            totalPrice: any; // Decimal from Prisma
+          }>;
+        };
+        
+        // Safely extract ticketLineItems if they exist
+        let ticketLineItems: Array<{
+          ticketType: string;
+          quantity: number;
+          unitPrice: number;
+          totalPrice: number;
+        }> | undefined;
+        
+        try {
+          logger.debug(`[registerForEvent] Extracting ticketLineItems from registration`);
+          // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
+          const lineItems = (registrationWithLineItems as any).ticketLineItems;
+          logger.debug(`[registerForEvent] ticketLineItems raw value:`, lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
+          
+          if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
+            ticketLineItems = lineItems.map((item: {
+              ticketType: string;
+              quantity: number;
+              unitPrice: any;
+              totalPrice: any;
+            }) => ({
+              ticketType: item.ticketType,
+              quantity: item.quantity,
+              unitPrice: Number(item.unitPrice),
+              totalPrice: Number(item.totalPrice),
+            }));
+            logger.debug(`[registerForEvent] Successfully extracted ${ticketLineItems.length} ticket line items`);
+          } else {
+            logger.debug(`[registerForEvent] No ticket line items to extract (lineItems: ${lineItems ? 'exists but empty' : 'does not exist'})`);
+          }
+        } catch (lineItemsError) {
+          // If ticketLineItems extraction fails, just log and continue without them
+          logger.warn(`[registerForEvent] Failed to extract ticketLineItems for registration ${registration.id}:`, {
+            error: lineItemsError instanceof Error ? lineItemsError.message : String(lineItemsError),
+            stack: lineItemsError instanceof Error ? lineItemsError.stack : undefined,
+          });
+          ticketLineItems = undefined;
+        }
+        
+        try {
+          logger.debug(`[registerForEvent] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
+          await TicketService.sendTicketEmail({
+            id: registration.id,
+            ticketType: registration.ticketType,
+            quantity: registration.quantity,
+            totalAmount: registration.totalAmount,
+            createdAt: registration.createdAt,
+            backupCode: registration.backupCode,
+            registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+            ticketLineItems,
+            event: registration.event,
+            attendee: registration.attendee,
+          });
+          logger.info(`[registerForEvent] Ticket email sent successfully to: ${user.email} for free event: ${eventId}`);
+        } catch (emailError) {
+          // Log email error but don't fail registration - email can be resent later
+          logger.error(`[registerForEvent] Failed to send ticket email to ${user.email} for event ${eventId}:`, {
+            error: emailError instanceof Error ? emailError.message : String(emailError),
+            stack: emailError instanceof Error ? emailError.stack : undefined,
+            registrationId: registration.id,
+            eventId,
+            userEmail: user.email,
+          });
+          // Registration still succeeds even if email fails
+        }
 
         // Send registration confirmed notification for free events
         try {
@@ -2722,19 +3113,33 @@ export class EventService {
         }
       } else {
         // Paid event - send payment pending email
+        logger.debug(`[registerForEvent] Processing paid event - preparing payment pending email`);
         // Note: Payment URL will be generated by frontend, so we don't include it here
-        await TicketService.sendPaymentPendingEmail({
-          id: registration.id,
-          ticketType: registration.ticketType,
-          quantity: registration.quantity,
-          totalAmount: registration.totalAmount,
-          createdAt: registration.createdAt,
-          backupCode: registration.backupCode,
-          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-          event: registration.event,
-          attendee: registration.attendee,
-        });
-        logger.info(`Payment pending email sent to: ${user.email} for paid event: ${eventId}`);
+        try {
+          logger.debug(`[registerForEvent] Calling TicketService.sendPaymentPendingEmail for registration ${registration.id}`);
+          await TicketService.sendPaymentPendingEmail({
+            id: registration.id,
+            ticketType: registration.ticketType,
+            quantity: registration.quantity,
+            totalAmount: registration.totalAmount,
+            createdAt: registration.createdAt,
+            backupCode: registration.backupCode,
+            registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+            event: registration.event,
+            attendee: registration.attendee,
+          });
+          logger.info(`[registerForEvent] Payment pending email sent successfully to: ${user.email} for paid event: ${eventId}`);
+        } catch (emailError) {
+          // Log email error but don't fail registration - email can be resent later
+          logger.error(`[registerForEvent] Failed to send payment pending email to ${user.email} for event ${eventId}:`, {
+            error: emailError instanceof Error ? emailError.message : String(emailError),
+            stack: emailError instanceof Error ? emailError.stack : undefined,
+            registrationId: registration.id,
+            eventId,
+            userEmail: user.email,
+          });
+          // Registration still succeeds even if email fails
+        }
       }
     } catch (error) {
       // Log error but don't fail registration
@@ -2742,13 +3147,21 @@ export class EventService {
       // For paid events: payment pending email failure is logged but registration succeeds
       // Ticket email will be sent after payment confirmation
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`Failed to send ${event.isFree ? 'ticket' : 'payment pending'} email:`, {
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      logger.error(`[registerForEvent] Outer catch: Failed to send ${event.isFree ? 'ticket' : 'payment pending'} email:`, {
         error: errorMessage,
+        stack: errorStack,
         eventId,
         userEmail: user.email,
+        registrationId: registration.id,
+        errorType: error?.constructor?.name || typeof error,
       });
       // Don't throw error - registration is complete, email is optional
+      // This catch should never be reached if inner try-catches are working properly
     }
+    
+    logger.debug(`[registerForEvent] Email sending process completed for registration ${registration.id}`);
 
     // Generate account invitation token (only for new users or existing users without passwords)
     // Skip account invitation for existing users who already have passwords
@@ -2859,7 +3272,7 @@ export class EventService {
       metadata: {
         eventId,
         eventTitle: event.title,
-        quantity,
+        quantity: totalQuantity,
         totalAmount: totalAmount.toString(),
         isFree: event.isFree,
         isGuestCheckout: true,

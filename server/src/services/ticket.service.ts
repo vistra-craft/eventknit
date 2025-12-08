@@ -9,12 +9,18 @@ import { TicketSecurityService } from './ticket-security.service.js';
 interface TicketEmailData {
   registration: {
     id: string;
-    ticketType: string | null;
-    quantity: number;
+    ticketType: string | null; // Deprecated: Use ticketLineItems
+    quantity: number; // Deprecated: Use ticketLineItems
     totalAmount: Decimal;
     createdAt: Date;
     backupCode?: string | null;
     registrationData?: Record<string, unknown> | null;
+    ticketLineItems?: Array<{
+      ticketType: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }>;
     event: {
       id: string;
       title: string;
@@ -293,6 +299,22 @@ export class TicketService {
                             <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${attendee.companyAffiliation}</td>
                           </tr>
                           ` : ''}
+                          ${registration.ticketLineItems && registration.ticketLineItems.length > 0 ? `
+                          <tr>
+                            <td colspan="2" style="padding: 8px 0;">
+                              <div style="background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-top: 8px;">
+                                <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; font-weight: 600;">🎫 Tickets</p>
+                                ${registration.ticketLineItems.map((item, index) => `
+                                  <div style="padding: 6px 0; ${index < registration.ticketLineItems!.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''}">
+                                    <span style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${item.ticketType}</span>
+                                    <span style="color: #666; font-size: 14px; margin-left: 8px;">x${item.quantity}</span>
+                                    <span style="color: #1a1a1a; font-size: 14px; font-weight: 600; float: right;">$${item.totalPrice.toFixed(2)}</span>
+                                  </div>
+                                `).join('')}
+                              </div>
+                            </td>
+                          </tr>
+                          ` : `
                           <tr>
                             <td style="padding: 8px 0; color: #666; font-size: 14px;">🎫 Ticket Type</td>
                             <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${registration.ticketType || 'General Admission'}</td>
@@ -301,6 +323,7 @@ export class TicketService {
                             <td style="padding: 8px 0; color: #666; font-size: 14px;">🔢 Quantity</td>
                             <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${registration.quantity}</td>
                           </tr>
+                          `}
                           ${Number(registration.totalAmount) > 0 ? `
                           <tr>
                             <td style="padding: 8px 0; color: #666; font-size: 14px;">💰 Amount Paid</td>

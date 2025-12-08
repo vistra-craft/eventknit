@@ -415,8 +415,8 @@ model EventRegistration {
   invitation   EventInvitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
 
   // Registration details
-  ticketType  String? // Ticket type name if multiple ticket types
-  quantity    Int     @default(1)
+  ticketType  String? // DEPRECATED: Use ticketLineItems instead. Kept for backward compatibility
+  quantity    Int     @default(1) // DEPRECATED: Use ticketLineItems instead. Kept for backward compatibility
   totalAmount Decimal @db.Decimal(10, 2) // Total amount paid (0 for free events)
 
   // Registration form data
@@ -450,6 +450,7 @@ model EventRegistration {
   // Relations
   promoCodeRedemption PromoCodeRedemption?     @relation("PromoCodeRedemption")
   ticketScans         TicketScan[]
+  ticketLineItems     TicketLineItem[]        // Multiple ticket types per registration
   // Event Payment Relations
   paymentTransaction  EventPaymentTransaction?
   platformFee         PlatformFee?
@@ -465,6 +466,24 @@ model EventRegistration {
   @@index([ticketStatus])
   @@index([checkedInAt])
   @@index([isCurrentlyInside])
+}
+
+model TicketLineItem {
+  id               String   @id @default(uuid())
+  registrationId   String
+  registration     EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  ticketType       String   // Ticket type name
+  quantity         Int      @default(1)
+  unitPrice        Decimal  @db.Decimal(10, 2) // Price per ticket
+  totalPrice       Decimal  @db.Decimal(10, 2) // Total price for this line item (unitPrice * quantity)
+  
+  // Audit fields
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@index([registrationId])
+  @@index([ticketType])
 }
 
 model EventInvitation {

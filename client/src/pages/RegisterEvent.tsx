@@ -68,7 +68,7 @@ const EventRegistration = () => {
         const updated = { ...prev };
         delete updated[ticketName];
         return updated;
-      }
+    }
       
       return { ...prev, [ticketName]: newQty };
     });
@@ -160,13 +160,13 @@ const EventRegistration = () => {
           setSubmitting(false);
           return;
         }
-      }
+    }
 
-      try {
-        // Prepare registration data
-        const registrationData: Record<string, unknown> = {
-          ...formData,
-        };
+    try {
+      // Prepare registration data
+      const registrationData: Record<string, unknown> = {
+        ...formData,
+      };
 
       // Convert selectedTickets to tickets array format
       const tickets = Object.entries(selectedTickets)
@@ -835,29 +835,29 @@ const EventRegistration = () => {
 
                               {/* Quantity Selector */}
                               <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
+                                    <Button
+                                      type="button"
                                   variant="outline"
-                                  size="icon"
+                                      size="icon"
                                   className="h-8 w-8"
                                   onClick={() => updateTicketQuantity(ticket.name, -1)}
                                   disabled={quantity === 0 || !isAvailable}
-                                >
+                                    >
                                   <Minus className="h-4 w-4" />
-                                </Button>
+                                    </Button>
                                 <span className="w-8 text-center font-medium text-sm">
                                   {quantity}
                                 </span>
-                                <Button
-                                  type="button"
+                                    <Button
+                                      type="button"
                                   variant="outline"
-                                  size="icon"
+                                      size="icon"
                                   className="h-8 w-8"
                                   onClick={() => updateTicketQuantity(ticket.name, 1)}
                                   disabled={!isAvailable || (ticket.quantity !== null && ticket.quantity !== undefined && quantity >= ticket.quantity)}
-                                >
+                                    >
                                   <Plus className="h-4 w-4" />
-                                </Button>
+                                    </Button>
                               </div>
                             </div>
                           </div>

@@ -63,8 +63,22 @@ export class FeaturedEventService {
       throw new AuthorizationError('Only admins can create featured items');
     }
 
-    // Default type to EVENT if not provided
-    const type = data.type || FeaturedItemType.EVENT;
+    // Validate and set type (handle both string and enum values)
+    let type: FeaturedItemType;
+    if (data.type) {
+      // Convert string to enum if needed
+      const typeString = String(data.type).toUpperCase();
+      if (typeString === 'EVENT' || typeString === FeaturedItemType.EVENT) {
+        type = FeaturedItemType.EVENT;
+      } else if (typeString === 'IMAGE' || typeString === FeaturedItemType.IMAGE) {
+        type = FeaturedItemType.IMAGE;
+      } else {
+        throw new ValidationError(`Invalid type: ${data.type}. Must be either 'EVENT' or 'IMAGE'`);
+      }
+    } else {
+      // Default to EVENT if not provided
+      type = FeaturedItemType.EVENT;
+    }
 
     // Validate based on type
     if (type === FeaturedItemType.EVENT) {

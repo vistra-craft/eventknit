@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { FeaturedEventService } from '../services/featured-event.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { uploadImageToCloudinary, extractPublicIdFromUrl, deleteImageFromCloudinary } from '../services/cloudinary.service.js';
+import { logger } from '../utils/logger.js';
 
 export class FeaturedEventController {
   /**
@@ -42,27 +43,77 @@ export class FeaturedEventController {
           );
           imageUrl = uploadResult.secureUrl;
         } catch (uploadError) {
+          // Check if Cloudinary is not configured
+          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown error';
+          if (errorMessage.includes('not configured') || errorMessage.includes('CLOUDINARY')) {
+            res.status(400).json({
+              success: false,
+              message: 'Cloudinary is not configured. Please either configure Cloudinary credentials or provide a direct image URL via the imageUrl field instead of uploading a file.',
+              error: errorMessage,
+            });
+            return;
+          }
           res.status(500).json({
             success: false,
             message: 'Failed to upload image',
-            error: uploadError instanceof Error ? uploadError.message : 'Unknown error',
+            error: errorMessage,
           });
           return;
         }
       }
 
       // Parse and convert form data types
+      let displayStartDate: Date | undefined;
+      let displayEndDate: Date | undefined;
+      if (req.body.displayStartDate) {
+        const startDate = new Date(req.body.displayStartDate);
+        if (isNaN(startDate.getTime())) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid displayStartDate format',
+          });
+          return;
+        }
+        displayStartDate = startDate;
+      }
+      
+      if (req.body.displayEndDate) {
+        const endDate = new Date(req.body.displayEndDate);
+        if (isNaN(endDate.getTime())) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid displayEndDate format',
+          });
+          return;
+        }
+        displayEndDate = endDate;
+      }
+
+      let displayOrder: number | undefined;
+      if (req.body.displayOrder !== undefined && req.body.displayOrder !== null && req.body.displayOrder !== '') {
+        const parsed = parseInt(String(req.body.displayOrder), 10);
+        if (isNaN(parsed)) {
+          res.status(400).json({
+            success: false,
+            message: 'Invalid displayOrder format. Must be a number.',
+          });
+          return;
+        }
+        displayOrder = parsed;
+      }
+
       const data = {
         ...req.body,
         // Use uploaded image URL if file was uploaded
         imageUrl: imageUrl || req.body.imageUrl,
         customImage: imageUrl || req.body.customImage,
-        displayStartDate: req.body.displayStartDate ? new Date(req.body.displayStartDate) : undefined,
-        displayEndDate: req.body.displayEndDate ? new Date(req.body.displayEndDate) : undefined,
-        // Convert string to number for displayOrder
-        displayOrder: req.body.displayOrder ? parseInt(req.body.displayOrder, 10) : undefined,
+        displayStartDate,
+        displayEndDate,
+        displayOrder,
         // Convert string to boolean for isActive
         isActive: req.body.isActive !== undefined ? req.body.isActive === 'true' || req.body.isActive === true : undefined,
+        // Ensure type is properly set (EVENT or IMAGE)
+        type: req.body.type || 'EVENT',
       };
 
       const featuredEvent = await FeaturedEventService.createFeaturedEvent(
@@ -79,6 +130,12 @@ export class FeaturedEventController {
         data: { featuredEvent },
       });
     } catch (error) {
+      // Log the error for debugging
+      logger.error('Error creating featured event:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        body: req.body,
+      });
       next(error);
     }
   }
@@ -194,10 +251,20 @@ export class FeaturedEventController {
             oldImageUrl = existingEvent.imageUrl || existingEvent.customImage || null;
           }
         } catch (uploadError) {
+          // Check if Cloudinary is not configured
+          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown error';
+          if (errorMessage.includes('not configured') || errorMessage.includes('CLOUDINARY')) {
+            res.status(400).json({
+              success: false,
+              message: 'Cloudinary is not configured. Please either configure Cloudinary credentials or provide a direct image URL via the imageUrl field instead of uploading a file.',
+              error: errorMessage,
+            });
+            return;
+          }
           res.status(500).json({
             success: false,
             message: 'Failed to upload image',
-            error: uploadError instanceof Error ? uploadError.message : 'Unknown error',
+            error: errorMessage,
           });
           return;
         }

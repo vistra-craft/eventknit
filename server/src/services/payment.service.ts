@@ -298,6 +298,7 @@ export class PaymentService {
             paymentTransactionId: reference,
           },
           include: {
+            ticketLineItems: true, // Include ticket line items for multiple ticket types
             event: {
               include: {
                 organizer: {
@@ -437,11 +438,88 @@ export class PaymentService {
         });
 
         // Send ticket email
+        logger.debug(`[PaymentService.handleWebhook] Starting ticket email sending for registration ${registration.id}`);
         try {
           // Ensure required fields are present before sending email
           if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
-            await TicketService.sendTicketEmail(registration as Parameters<typeof TicketService.sendTicketEmail>[0]);
-            logger.info(`Ticket email sent for registration: ${registration.id}`);
+            logger.debug(`[PaymentService.handleWebhook] Organizer info present, preparing ticket email data`);
+            
+            // Transform registration data to match TicketEmailData interface
+            // Convert Decimal types to numbers for ticketLineItems
+            // Type assertion needed because Prisma types may not fully include ticketLineItems relation
+            // The query includes ticketLineItems, but TypeScript may not infer it correctly
+            const registrationWithLineItems = registration as typeof registration & {
+              ticketLineItems?: Array<{
+                ticketType: string;
+                quantity: number;
+                unitPrice: any; // Decimal from Prisma
+                totalPrice: any; // Decimal from Prisma
+              }>;
+            };
+            
+            // Safely extract ticketLineItems if they exist
+            let ticketLineItems: Array<{
+              ticketType: string;
+              quantity: number;
+              unitPrice: number;
+              totalPrice: number;
+            }> | undefined;
+            
+            try {
+              logger.debug(`[PaymentService.handleWebhook] Extracting ticketLineItems from registration`);
+              // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
+              const lineItems = (registrationWithLineItems as any).ticketLineItems;
+              logger.debug(`[PaymentService.handleWebhook] ticketLineItems raw value:`, lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
+              
+              if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
+                ticketLineItems = lineItems.map((item: {
+                  ticketType: string;
+                  quantity: number;
+                  unitPrice: any;
+                  totalPrice: any;
+                }) => ({
+                  ticketType: item.ticketType,
+                  quantity: item.quantity,
+                  unitPrice: Number(item.unitPrice),
+                  totalPrice: Number(item.totalPrice),
+                }));
+                logger.debug(`[PaymentService.handleWebhook] Successfully extracted ${ticketLineItems.length} ticket line items`);
+              } else {
+                logger.debug(`[PaymentService.handleWebhook] No ticket line items to extract`);
+              }
+            } catch (lineItemsError) {
+              // If ticketLineItems extraction fails, just log and continue without them
+              logger.warn(`[PaymentService.handleWebhook] Failed to extract ticketLineItems for registration ${registration.id}:`, {
+                error: lineItemsError instanceof Error ? lineItemsError.message : String(lineItemsError),
+                stack: lineItemsError instanceof Error ? lineItemsError.stack : undefined,
+              });
+              ticketLineItems = undefined;
+            }
+            
+            try {
+              logger.debug(`[PaymentService.handleWebhook] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
+              await TicketService.sendTicketEmail({
+                id: registration.id,
+                ticketType: registration.ticketType,
+                quantity: registration.quantity,
+                totalAmount: registration.totalAmount,
+                createdAt: registration.createdAt,
+                backupCode: registration.backupCode,
+                registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+                ticketLineItems,
+                event: registration.event,
+                attendee: registration.attendee,
+              });
+              logger.info(`[PaymentService.handleWebhook] Ticket email sent successfully for registration: ${registration.id}`);
+            } catch (emailError) {
+              // Log email error but don't fail payment - email can be resent later
+              logger.error(`[PaymentService.handleWebhook] Failed to send ticket email for registration ${registration.id}:`, {
+                error: emailError instanceof Error ? emailError.message : String(emailError),
+                stack: emailError instanceof Error ? emailError.stack : undefined,
+                registrationId: registration.id,
+              });
+              // Payment still succeeds even if email fails
+            }
           } else {
             logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
           }

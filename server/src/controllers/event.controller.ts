@@ -205,6 +205,8 @@ export class EventController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
+      logger.debug(`[EventController.registerForEvent] Starting registration for event ${req.params.id}, user: ${req.user.id}`);
+      
       const registration = await EventService.registerForEvent(
         req.params.id,
         req.user.id,
@@ -212,6 +214,8 @@ export class EventController {
         ipAddress,
         userAgent,
       );
+
+      logger.debug(`[EventController.registerForEvent] Registration completed successfully: ${registration.id}, status: ${registration.status}`);
 
       res.status(201).json({
         success: true,
@@ -221,6 +225,13 @@ export class EventController {
         data: { registration },
       });
     } catch (error) {
+      logger.error(`[EventController.registerForEvent] Error in registration controller:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        eventId: req.params.id,
+        userId: req.user?.id,
+        errorType: error?.constructor?.name || typeof error,
+      });
       next(error);
     }
   }
