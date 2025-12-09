@@ -4,9 +4,47 @@ import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { AdminNotificationSettingsController } from '../controllers/admin-notification-settings.controller.js';
 import { SystemSettingsController } from '../controllers/system-settings.controller.js';
+import { AdminFinancialController } from '../controllers/admin-financial.controller.js';
+import { InvoiceController } from '../controllers/invoice.controller.js';
+import { validate, validateQuery, validateParams } from '../middleware/validation.middleware.js';
+import {
+  createExpenseSchema,
+  updateExpenseSchema,
+  createIncomeSchema,
+  updateIncomeSchema,
+  getMonthlySummarySchema,
+  getFinancialOverviewSchema,
+} from '../validations/admin-financial.validations.js';
+import {
+  createTemplateSchema,
+  updateTemplateSchema,
+} from '../validations/invoice.validations.js';
+import { TaxController } from '../controllers/tax.controller.js';
+import { WebhookController } from '../controllers/webhook.controller.js';
+import { ApiKeyController } from '../controllers/api-key.controller.js';
+import {
+  calculateTaxSchema,
+  upsertTaxRateSchema,
+} from '../validations/tax.validations.js';
+import {
+  createEndpointSchema,
+  updateEndpointSchema,
+} from '../validations/webhook.validations.js';
+import {
+  createApiKeySchema,
+  updateApiKeySchema,
+} from '../validations/api-key.validations.js';
+import { PaymentPlanController } from '../controllers/payment-plan.controller.js';
+import { createPaymentPlanSchema } from '../validations/payment-plan.validations.js';
+import { WhiteLabelController } from '../controllers/white-label.controller.js';
+import {
+  updateBrandingStatusSchema,
+  verifyCustomDomainSchema,
+} from '../validations/white-label.validations.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireMinRole } from '../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
+import Joi from 'joi';
 
 const router = Router();
 
@@ -367,6 +405,339 @@ router.delete('/settings/:key', SystemSettingsController.deleteSetting);
 router.get(
   '/settings/:key/history',
   SystemSettingsController.getSettingsHistory,
+);
+
+// ========== Admin Financial Management Routes ==========
+
+/**
+ * @route   POST /api/v1/admin/financial/expenses
+ * @desc    Create a platform expense
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post(
+  '/financial/expenses',
+  validate(createExpenseSchema),
+  AdminFinancialController.createExpense,
+);
+
+/**
+ * @route   GET /api/v1/admin/financial/expenses
+ * @desc    Get all platform expenses with filters
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/financial/expenses', AdminFinancialController.getExpenses);
+
+/**
+ * @route   GET /api/v1/admin/financial/expenses/:id
+ * @desc    Get expense by ID
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/financial/expenses/:id', AdminFinancialController.getExpenseById);
+
+/**
+ * @route   PUT /api/v1/admin/financial/expenses/:id
+ * @desc    Update expense
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/financial/expenses/:id',
+  validate(updateExpenseSchema),
+  AdminFinancialController.updateExpense,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/financial/expenses/:id
+ * @desc    Delete expense
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.delete('/financial/expenses/:id', AdminFinancialController.deleteExpense);
+
+/**
+ * @route   POST /api/v1/admin/financial/incomes
+ * @desc    Create a platform income
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post(
+  '/financial/incomes',
+  validate(createIncomeSchema),
+  AdminFinancialController.createIncome,
+);
+
+/**
+ * @route   GET /api/v1/admin/financial/incomes
+ * @desc    Get all platform incomes with filters
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/financial/incomes', AdminFinancialController.getIncomes);
+
+/**
+ * @route   GET /api/v1/admin/financial/incomes/:id
+ * @desc    Get income by ID
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/financial/incomes/:id', AdminFinancialController.getIncomeById);
+
+/**
+ * @route   PUT /api/v1/admin/financial/incomes/:id
+ * @desc    Update income
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/financial/incomes/:id',
+  validate(updateIncomeSchema),
+  AdminFinancialController.updateIncome,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/financial/incomes/:id
+ * @desc    Delete income
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.delete('/financial/incomes/:id', AdminFinancialController.deleteIncome);
+
+/**
+ * @route   GET /api/v1/admin/financial/monthly-summary
+ * @desc    Get monthly financial summary
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/financial/monthly-summary',
+  validateQuery(getMonthlySummarySchema),
+  AdminFinancialController.getMonthlySummary,
+);
+
+/**
+ * @route   GET /api/v1/admin/financial/overview
+ * @desc    Get financial overview
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/financial/overview',
+  validateQuery(getFinancialOverviewSchema),
+  AdminFinancialController.getFinancialOverview,
+);
+
+// ========== Invoice Templates ==========
+router.post(
+  '/invoices/templates',
+  validate(createTemplateSchema),
+  InvoiceController.createTemplate
+);
+router.get(
+  '/invoices/templates',
+  validateQuery(Joi.object({
+    type: Joi.string().optional(),
+    isActive: Joi.boolean().optional(),
+    includeInactive: Joi.boolean().optional(),
+  })),
+  InvoiceController.getTemplates
+);
+router.get(
+  '/invoices/templates/default',
+  InvoiceController.getDefaultTemplate
+);
+router.get(
+  '/invoices/templates/:templateId',
+  validateParams(Joi.object({ templateId: Joi.string().uuid().required() })),
+  InvoiceController.getTemplateById
+);
+router.put(
+  '/invoices/templates/:templateId',
+  validateParams(Joi.object({ templateId: Joi.string().uuid().required() })),
+  validate(updateTemplateSchema),
+  InvoiceController.updateTemplate
+);
+router.delete(
+  '/invoices/templates/:templateId',
+  validateParams(Joi.object({ templateId: Joi.string().uuid().required() })),
+  InvoiceController.deleteTemplate
+);
+
+// ========== Tax Management ==========
+router.post(
+  '/tax/calculate',
+  validate(calculateTaxSchema),
+  TaxController.calculateTax
+);
+router.get(
+  '/tax/rates',
+  validateQuery(Joi.object({
+    country: Joi.string().optional(),
+    state: Joi.string().optional(),
+    isActive: Joi.boolean().optional(),
+  })),
+  TaxController.getTaxRates
+);
+router.get(
+  '/tax/rate',
+  validateQuery(Joi.object({
+    country: Joi.string().required(),
+    state: Joi.string().optional(),
+    city: Joi.string().optional(),
+  })),
+  TaxController.getTaxRate
+);
+router.post(
+  '/tax/rates',
+  validate(upsertTaxRateSchema),
+  TaxController.upsertTaxRate
+);
+router.get(
+  '/tax/rates/:taxRateId',
+  validateParams(Joi.object({ taxRateId: Joi.string().uuid().required() })),
+  TaxController.getTaxRateById
+);
+router.delete(
+  '/tax/rates/:taxRateId',
+  validateParams(Joi.object({ taxRateId: Joi.string().uuid().required() })),
+  TaxController.deleteTaxRate
+);
+router.get(
+  '/tax/report',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    country: Joi.string().optional(),
+    eventId: Joi.string().uuid().optional(),
+  })),
+  TaxController.getTaxReport
+);
+
+// ========== Webhook Management ==========
+router.post(
+  '/webhooks/endpoints',
+  validate(createEndpointSchema),
+  WebhookController.createEndpoint
+);
+router.get(
+  '/webhooks/endpoints',
+  validateQuery(Joi.object({
+    isActive: Joi.boolean().optional(),
+    eventType: Joi.string().optional(),
+  })),
+  WebhookController.getEndpoints
+);
+router.get(
+  '/webhooks/endpoints/:endpointId',
+  validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
+  WebhookController.getEndpointById
+);
+router.put(
+  '/webhooks/endpoints/:endpointId',
+  validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
+  validate(updateEndpointSchema),
+  WebhookController.updateEndpoint
+);
+router.delete(
+  '/webhooks/endpoints/:endpointId',
+  validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
+  WebhookController.deleteEndpoint
+);
+router.post(
+  '/webhooks/endpoints/:endpointId/test',
+  validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
+  WebhookController.testEndpoint
+);
+router.get(
+  '/webhooks/deliveries',
+  validateQuery(Joi.object({
+    endpointId: Joi.string().uuid().optional(),
+    eventType: Joi.string().optional(),
+    status: Joi.string().optional(),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  })),
+  WebhookController.getDeliveryHistory
+);
+router.post(
+  '/webhooks/retry',
+  WebhookController.retryFailedDeliveries
+);
+
+// ========== API Key Management ==========
+router.post(
+  '/api-keys',
+  validate(createApiKeySchema),
+  ApiKeyController.createApiKey
+);
+router.get(
+  '/api-keys',
+  validateQuery(Joi.object({
+    isActive: Joi.boolean().optional(),
+  })),
+  ApiKeyController.getApiKeys
+);
+router.get(
+  '/api-keys/:apiKeyId',
+  validateParams(Joi.object({ apiKeyId: Joi.string().uuid().required() })),
+  ApiKeyController.getApiKeyById
+);
+router.put(
+  '/api-keys/:apiKeyId',
+  validateParams(Joi.object({ apiKeyId: Joi.string().uuid().required() })),
+  validate(updateApiKeySchema),
+  ApiKeyController.updateApiKey
+);
+router.delete(
+  '/api-keys/:apiKeyId',
+  validateParams(Joi.object({ apiKeyId: Joi.string().uuid().required() })),
+  ApiKeyController.deleteApiKey
+);
+router.get(
+  '/api-keys/:apiKeyId/stats',
+  validateParams(Joi.object({ apiKeyId: Joi.string().uuid().required() })),
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+  })),
+  ApiKeyController.getApiUsageStats
+);
+
+// ========== Payment Plans (Admin) ==========
+router.post(
+  '/payment-plans',
+  validate(createPaymentPlanSchema),
+  PaymentPlanController.createPaymentPlan
+);
+
+// ========== White-Label Management (Admin) ==========
+/**
+ * @route   GET /api/v1/admin/white-label/brandings
+ * @desc    Get all brandings (with filters)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/white-label/brandings',
+  validateQuery(Joi.object({
+    status: Joi.string().valid('ACTIVE', 'INACTIVE', 'PENDING_APPROVAL').optional(),
+    isActive: Joi.boolean().optional(),
+    search: Joi.string().optional(),
+  })),
+  WhiteLabelController.getAllBrandings
+);
+
+/**
+ * @route   PUT /api/v1/admin/white-label/brandings/:brandingId/status
+ * @desc    Update branding status (approve/reject)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/white-label/brandings/:brandingId/status',
+  validateParams(Joi.object({ brandingId: Joi.string().uuid().required() })),
+  validate(updateBrandingStatusSchema),
+  WhiteLabelController.updateBrandingStatus
+);
+
+/**
+ * @route   PUT /api/v1/admin/white-label/custom-domains/:domainId/verify
+ * @desc    Verify custom domain
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/white-label/custom-domains/:domainId/verify',
+  validateParams(Joi.object({ domainId: Joi.string().uuid().required() })),
+  validate(verifyCustomDomainSchema),
+  WhiteLabelController.verifyCustomDomain
 );
 
 export default router;

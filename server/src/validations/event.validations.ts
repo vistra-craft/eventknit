@@ -383,5 +383,43 @@ export const eventValidations = {
       'any.required': 'Rejection reason is required',
     }),
   }),
+
+  duplicateEvent: Joi.object({
+    title: Joi.string().trim().min(3).max(200).optional().messages({
+      'string.min': 'Event title must be at least 3 characters long',
+      'string.max': 'Event title must not exceed 200 characters',
+    }),
+    copyFields: Joi.array().items(Joi.string().valid(
+      'description',
+      'fullDescription',
+      'organizerDescription',
+      'category',
+      'tags',
+      'venue',
+      'location',
+      'address',
+      'isOnline',
+      'onlineLink',
+      'coordinates',
+      'isFree',
+      'price',
+      'ticketTypes',
+      'capacity',
+      'requirements',
+      'ageRestriction',
+      'duration',
+      'speakers',
+      'sponsors',
+      'faqs',
+      'registrationFields',
+      'dates',
+      'images',
+    )).optional().messages({
+      'array.max': 'Too many copy fields',
+    }),
+    excludeFields: Joi.array().items(Joi.string()).optional().messages({
+      'array.max': 'Too many exclude fields',
+    }),
+  }),
 };
 

@@ -16,6 +16,8 @@ import { emailService } from './email.service.js';
 import { TicketService } from './ticket.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
+import { EventCollaborationService } from './event-collaboration.service.js';
+import { EventCollaborationService } from './event-collaboration.service.js';
 
 export interface CreateEventData {
   title: string;
@@ -532,6 +534,24 @@ export class EventService {
       }
     }
 
+    // Check if user is a collaborator with edit permissions
+    const isCollaborator = await prisma.eventCollaborator.findFirst({
+      where: {
+        eventId,
+        collaboratorId: organizerId,
+        isActive: true,
+        acceptedAt: { not: null },
+        canEdit: true,
+      },
+    });
+
+    // Verify organizer owns the event or is a collaborator (unless admin)
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+      if (event.organizerId !== organizerId && !isCollaborator) {
+        throw new AuthorizationError('You do not have permission to update this event');
+      }
+    }
+
     // If event is being updated after approval, it goes back to PENDING
     const newStatus = event.status === EventStatus.APPROVED
       ? EventStatus.PENDING
@@ -664,6 +684,16 @@ export class EventService {
       ipAddress,
       userAgent,
     });
+
+    // Log activity
+    await EventCollaborationService.logActivity(
+      eventId,
+      organizerId,
+      'event_updated',
+      { changes: Object.keys(data) },
+      ipAddress,
+      userAgent
+    );
 
     logger.info(`Event updated: ${eventId} by organizer: ${organizerId}`);
 
@@ -3377,6 +3407,205 @@ export class EventService {
     logger.info(`Generated registration code ${code} for event ${eventId}`);
 
     return code;
+  }
+
+  /**
+   * Duplicate an event
+   */
+  static async duplicateEvent(
+    eventId: string,
+    organizerId: string,
+    organizerRole: UserRole,
+    data?: {
+      title?: string;
+      copyFields?: string[]; // Fields to copy: 'dates', 'pricing', 'location', 'ticketTypes', 'speakers', 'sponsors', etc.
+      excludeFields?: string[]; // Fields to exclude
+    },
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    try {
+      // Get original event
+      const originalEvent = await prisma.event.findFirst({
+        where: {
+          id: eventId,
+          deletedAt: null,
+        },
+      });
+
+      if (!originalEvent) {
+        throw new NotFoundError('Event not found');
+      }
+
+      // Verify organizer owns the event (unless admin)
+      if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+        if (originalEvent.organizerId !== organizerId) {
+          throw new AuthorizationError('You do not have permission to duplicate this event');
+        }
+      }
+
+      // Determine which fields to copy
+      const copyFields = data?.copyFields || [
+        'description',
+        'fullDescription',
+        'organizerDescription',
+        'category',
+        'tags',
+        'venue',
+        'location',
+        'address',
+        'isOnline',
+        'onlineLink',
+        'coordinates',
+        'isFree',
+        'price',
+        'ticketTypes',
+        'capacity',
+        'requirements',
+        'ageRestriction',
+        'duration',
+        'speakers',
+        'sponsors',
+        'faqs',
+        'registrationFields',
+      ];
+
+      const excludeFields = data?.excludeFields || [];
+
+      // Prepare new event data
+      const newEventData: Prisma.EventCreateInput = {
+        title: data?.title || `${originalEvent.title} (Copy)`,
+        organizer: {
+          connect: { id: organizerId },
+        },
+        status: EventStatus.PENDING, // New event starts as pending
+        type: originalEvent.type,
+        createdBy: organizerId,
+        updatedBy: organizerId,
+      };
+
+      // Copy selected fields
+      if (copyFields.includes('description') && !excludeFields.includes('description')) {
+        newEventData.description = originalEvent.description;
+      }
+      if (copyFields.includes('fullDescription') && !excludeFields.includes('fullDescription')) {
+        newEventData.fullDescription = originalEvent.fullDescription;
+      }
+      if (copyFields.includes('organizerDescription') && !excludeFields.includes('organizerDescription')) {
+        newEventData.organizerDescription = originalEvent.organizerDescription;
+      }
+      if (copyFields.includes('category') && !excludeFields.includes('category')) {
+        newEventData.category = originalEvent.category;
+      }
+      if (copyFields.includes('tags') && !excludeFields.includes('tags')) {
+        newEventData.tags = originalEvent.tags;
+      }
+      if (copyFields.includes('venue') && !excludeFields.includes('venue')) {
+        newEventData.venue = originalEvent.venue;
+      }
+      if (copyFields.includes('location') && !excludeFields.includes('location')) {
+        newEventData.location = originalEvent.location;
+      }
+      if (copyFields.includes('address') && !excludeFields.includes('address')) {
+        newEventData.address = originalEvent.address;
+      }
+      if (copyFields.includes('isOnline') && !excludeFields.includes('isOnline')) {
+        newEventData.isOnline = originalEvent.isOnline;
+      }
+      if (copyFields.includes('onlineLink') && !excludeFields.includes('onlineLink')) {
+        newEventData.onlineLink = originalEvent.onlineLink;
+      }
+      if (copyFields.includes('coordinates') && !excludeFields.includes('coordinates')) {
+        newEventData.coordinates = originalEvent.coordinates as Prisma.InputJsonValue;
+      }
+      if (copyFields.includes('isFree') && !excludeFields.includes('isFree')) {
+        newEventData.isFree = originalEvent.isFree;
+      }
+      if (copyFields.includes('price') && !excludeFields.includes('price')) {
+        newEventData.price = originalEvent.price;
+      }
+      if (copyFields.includes('ticketTypes') && !excludeFields.includes('ticketTypes')) {
+        newEventData.ticketTypes = originalEvent.ticketTypes as Prisma.InputJsonValue;
+      }
+      if (copyFields.includes('capacity') && !excludeFields.includes('capacity')) {
+        newEventData.capacity = originalEvent.capacity;
+        newEventData.availableSlots = originalEvent.capacity;
+      }
+      if (copyFields.includes('requirements') && !excludeFields.includes('requirements')) {
+        newEventData.requirements = originalEvent.requirements;
+      }
+      if (copyFields.includes('ageRestriction') && !excludeFields.includes('ageRestriction')) {
+        newEventData.ageRestriction = originalEvent.ageRestriction;
+      }
+      if (copyFields.includes('duration') && !excludeFields.includes('duration')) {
+        newEventData.duration = originalEvent.duration;
+      }
+      if (copyFields.includes('speakers') && !excludeFields.includes('speakers')) {
+        newEventData.speakers = originalEvent.speakers as Prisma.InputJsonValue;
+      }
+      if (copyFields.includes('sponsors') && !excludeFields.includes('sponsors')) {
+        newEventData.sponsors = originalEvent.sponsors as Prisma.InputJsonValue;
+      }
+      if (copyFields.includes('faqs') && !excludeFields.includes('faqs')) {
+        newEventData.faqs = originalEvent.faqs as Prisma.InputJsonValue;
+      }
+      if (copyFields.includes('registrationFields') && !excludeFields.includes('registrationFields')) {
+        newEventData.registrationFields = originalEvent.registrationFields as Prisma.InputJsonValue;
+      }
+
+      // Dates are not copied by default - user must set new dates
+      // But if dates are in copyFields, copy them
+      if (copyFields.includes('dates') && !excludeFields.includes('dates')) {
+        newEventData.startDate = originalEvent.startDate;
+        newEventData.endDate = originalEvent.endDate;
+        newEventData.startTime = originalEvent.startTime;
+        newEventData.endTime = originalEvent.endTime;
+        newEventData.registrationDeadline = originalEvent.registrationDeadline;
+      }
+
+      // Images are not copied by default
+      if (copyFields.includes('images') && !excludeFields.includes('images')) {
+        newEventData.image = originalEvent.image;
+        newEventData.images = originalEvent.images;
+      }
+
+      // Create new event
+      const duplicatedEvent = await prisma.event.create({
+        data: newEventData,
+        include: {
+          organizer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              organizationName: true,
+            },
+          },
+        },
+      });
+
+      // Audit log
+      await createAuditLog({
+        userId: organizerId,
+        action: AuditActions.EVENT_CREATED,
+        entity: 'Event',
+        entityId: duplicatedEvent.id,
+        metadata: {
+          eventTitle: duplicatedEvent.title,
+          duplicatedFrom: eventId,
+        },
+        ipAddress,
+        userAgent,
+      });
+
+      logger.info(`Event duplicated: ${eventId} -> ${duplicatedEvent.id} by organizer: ${organizerId}`);
+
+      return duplicatedEvent;
+    } catch (error) {
+      logger.error('Error duplicating event:', error);
+      throw error;
+    }
   }
 }
 

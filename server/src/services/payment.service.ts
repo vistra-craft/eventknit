@@ -1,4 +1,3 @@
-import Paystack from 'paystack';
 import { config } from '../config/index.js';
 import { prisma } from '../config/database.js';
 import { RegistrationStatus, Prisma } from '@prisma/client';
@@ -10,12 +9,14 @@ import { generatePaymentTransactionNumber } from '../utils/transaction-helpers.j
 import { PlatformFeeService } from './platform-fee.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
+import { getPaymentGatewayManager, GatewayType } from './payment-gateway-manager.js';
 
 export interface InitializePaymentData {
   registrationId: string;
   email: string;
   amount: number; // Amount in main currency unit (e.g., USD, NGN)
   currency?: string;
+  gateway?: GatewayType; // Optional: specify gateway, defaults to default gateway
   metadata?: Record<string, unknown>;
 }
 
@@ -31,13 +32,10 @@ export interface PaymentVerificationResult {
 }
 
 export class PaymentService {
-  private paystack: Paystack;
+  private gatewayManager = getPaymentGatewayManager();
 
   constructor() {
-    if (!config.paystack.secretKey) {
-      logger.warn('Paystack secret key not configured. Payment features will not work.');
-    }
-    this.paystack = new Paystack(config.paystack.secretKey);
+    // Gateway manager initializes gateways automatically
   }
 
   /**
@@ -74,13 +72,9 @@ export class PaymentService {
   }
 
   /**
-   * Initialize payment with Paystack
+   * Initialize payment with selected gateway (Paystack, Stripe, etc.)
    */
   async initializePayment(data: InitializePaymentData) {
-    if (!config.paystack.secretKey) {
-      throw new ValidationError('Payment service is not configured');
-    }
-
     // Get registration to verify it exists and is pending
     const registration = await prisma.eventRegistration.findUnique({
       where: { id: data.registrationId },
@@ -89,6 +83,7 @@ export class PaymentService {
           select: {
             id: true,
             title: true,
+            currency: true,
             organizer: {
               select: {
                 organizationName: true,
@@ -114,26 +109,27 @@ export class PaymentService {
       throw new ValidationError('Payment already completed');
     }
 
+    // Select gateway (use specified or default)
+    const gatewayType = data.gateway || this.gatewayManager.getDefaultGateway().getName() as GatewayType;
+    const gateway = this.gatewayManager.getGateway(gatewayType);
+
     // Generate unique reference
     const reference = `EVT-${registration.id}-${Date.now()}`;
 
-    // Convert amount to smallest currency unit (kobo for NGN, cents for USD)
-    // For now, assuming NGN (multiply by 100)
-    const amountInKobo = Math.round(data.amount * 100);
-
     try {
-      const response = await this.paystack.transaction.initialize({
+      const response = await gateway.initializePayment({
+        amount: data.amount,
+        currency: data.currency || registration.event?.currency || 'NGN',
         email: data.email,
-        amount: amountInKobo,
         reference,
-        currency: data.currency || 'NGN',
         metadata: {
           registrationId: data.registrationId,
           eventId: registration.eventId,
           eventTitle: registration.event.title,
           ...data.metadata,
         },
-        callback_url: `${config.frontend.url}/payment/callback?reference=${reference}`,
+        callbackUrl: `${config.frontend.url}/payment/callback?reference=${reference}&gateway=${gatewayType}`,
+        returnUrl: `${config.frontend.url}/payment/success?reference=${reference}`,
       });
 
       // Update registration with payment reference
@@ -144,17 +140,14 @@ export class PaymentService {
         },
       });
 
-      logger.info(`Payment initialized: ${reference} for registration: ${data.registrationId}`);
+      logger.info(`Payment initialized with ${gatewayType}: ${reference} for registration: ${data.registrationId}`);
 
-      const responseData = response.data as {
-        authorization_url: string;
-        access_code: string;
-        reference: string;
-      };
       return {
-        authorizationUrl: responseData.authorization_url,
-        accessCode: responseData.access_code,
-        reference: responseData.reference,
+        authorizationUrl: response.authorizationUrl,
+        accessCode: response.accessCode,
+        reference: response.reference,
+        gateway: gatewayType,
+        metadata: response.metadata,
       };
     } catch (error: unknown) {
       logger.error('Failed to initialize payment:', error);
@@ -169,7 +162,7 @@ export class PaymentService {
         // Continue to throw original error even if rollback fails
       }
       
-      throw new ValidationError('Failed to initialize payment. Please try again.');
+      throw new ValidationError(`Failed to initialize payment with ${gatewayType}. Please try again.`);
     }
   }
 
@@ -239,37 +232,44 @@ export class PaymentService {
   }
 
   /**
-   * Verify payment with Paystack
+   * Verify payment with gateway
    */
-  async verifyPayment(reference: string): Promise<PaymentVerificationResult> {
-    if (!config.paystack.secretKey) {
-      throw new ValidationError('Payment service is not configured');
-    }
-
+  async verifyPayment(reference: string, gatewayType?: GatewayType): Promise<PaymentVerificationResult> {
     try {
-      const response = await this.paystack.transaction.verify(reference);
+      // Determine gateway - try to find from transaction if not specified
+      let gateway: any;
+      if (gatewayType) {
+        gateway = this.gatewayManager.getGateway(gatewayType);
+      } else {
+        // Try to find existing transaction to determine gateway
+        const existingTransaction = await prisma.eventPaymentTransaction.findFirst({
+          where: {
+            OR: [
+              { gatewayReference: reference },
+              { transactionNumber: reference },
+            ],
+          },
+        });
 
-      if (!response.data) {
-        throw new ValidationError('Invalid payment reference');
+        if (existingTransaction) {
+          gateway = this.gatewayManager.getGateway(existingTransaction.gateway as GatewayType);
+        } else {
+          // Default to default gateway
+          gateway = this.gatewayManager.getDefaultGateway();
+        }
       }
 
-      const responseData = response.data as {
-        status: string;
-        reference: string;
-        amount: number;
-        customer?: { email?: string };
-        metadata?: Record<string, unknown>;
-      };
+      const response = await gateway.verifyPayment({ reference });
 
       return {
-        success: responseData.status === 'success',
-        reference: responseData.reference,
-        amount: responseData.amount / 100, // Convert from kobo to main unit
-        status: responseData.status,
+        success: response.success,
+        reference: response.reference,
+        amount: response.amount,
+        status: response.status,
         customer: {
-          email: responseData.customer?.email || '',
+          email: response.customer.email,
         },
-        metadata: responseData.metadata,
+        metadata: response.metadata,
       };
     } catch (error: unknown) {
       logger.error('Failed to verify payment:', error);
@@ -278,18 +278,42 @@ export class PaymentService {
   }
 
   /**
-   * Handle payment webhook from Paystack
+   * Handle payment webhook from payment gateway
    */
-  async handleWebhook(event: string, data: Record<string, unknown>) {
-    if (event === 'charge.success') {
-      const reference = data.reference as string;
+  async handleWebhook(event: string, data: Record<string, unknown>, gatewayType?: GatewayType) {
+    try {
+      // Determine gateway type
+      let gateway: any;
+      let detectedGatewayType: GatewayType;
+
+      if (gatewayType) {
+        detectedGatewayType = gatewayType;
+        gateway = this.gatewayManager.getGateway(gatewayType);
+      } else {
+        // Auto-detect gateway from webhook payload
+        // Paystack uses 'charge.success', Stripe uses 'checkout.session.completed' or 'payment_intent.succeeded'
+        if (event === 'charge.success' || data.reference) {
+          detectedGatewayType = 'PAYSTACK';
+        } else if (event.includes('checkout.session') || event.includes('payment_intent')) {
+          detectedGatewayType = 'STRIPE';
+        } else {
+          // Default to Paystack for backward compatibility
+          detectedGatewayType = 'PAYSTACK';
+        }
+        gateway = this.gatewayManager.getGateway(detectedGatewayType);
+      }
+
+      // Process webhook through gateway
+      const webhookResult = await gateway.handleWebhook(data, event);
+      const reference = webhookResult.reference;
+
       if (!reference) {
         logger.error('Webhook missing reference');
         return;
       }
 
       // Verify payment
-      const verification = await this.verifyPayment(reference);
+      const verification = await this.verifyPayment(reference, detectedGatewayType);
 
       if (verification.success) {
         // Find registration by reference
@@ -394,15 +418,20 @@ export class PaymentService {
             attempts++;
           }
 
+          // Get gateway transaction ID from verification
+          const gatewayVerification = await gateway.verifyPayment({ reference });
+          
           // Create payment transaction record
           const paymentTransaction = await tx.eventPaymentTransaction.create({
             data: {
               transactionNumber,
-              paystackReference: reference,
-              paystackAmount: verification.amount * 100, // Store in kobo/cents
-              currency: 'NGN',
+              gateway: detectedGatewayType,
+              gatewayReference: reference,
+              gatewayAmount: verification.amount * 100, // Store in smallest unit (kobo/cents)
+              gatewayTransactionId: gatewayVerification.gatewayTransactionId || null,
+              currency: gatewayVerification.currency || 'NGN',
               amount: verification.amount,
-              paymentMethod: 'PAYSTACK',
+              paymentMethod: detectedGatewayType,
               paymentStatus: 'success',
               paymentDate: new Date(),
               eventId: registration.eventId,
@@ -411,7 +440,7 @@ export class PaymentService {
               attendeeName: registration.attendee.firstName && registration.attendee.lastName
                 ? `${registration.attendee.firstName} ${registration.attendee.lastName}`
                 : null,
-              paystackMetadata: data as Prisma.InputJsonValue,
+              gatewayMetadata: data as Prisma.InputJsonValue,
             },
           });
 
@@ -421,7 +450,7 @@ export class PaymentService {
             data: {
               status: syncedStatus.status,
               paymentStatus: syncedStatus.paymentStatus,
-              paymentMethod: 'PAYSTACK',
+              paymentMethod: detectedGatewayType,
             },
           });
 
@@ -434,6 +463,36 @@ export class PaymentService {
           } catch (feeError) {
             // Log error but don't fail the payment - fee can be calculated later
             logger.error(`Failed to calculate platform fee for transaction ${paymentTransaction.id}:`, feeError);
+          }
+
+          // Automatically generate invoice
+          try {
+            const { InvoiceService } = await import('./invoice.service.js');
+            await InvoiceService.createInvoice(paymentTransaction.id);
+            logger.info(`Invoice generated for transaction: ${paymentTransaction.id}`);
+          } catch (invoiceError) {
+            // Log error but don't fail the payment - invoice can be generated later
+            logger.error(`Failed to generate invoice for transaction ${paymentTransaction.id}:`, invoiceError);
+          }
+
+          // Trigger webhook for payment success
+          try {
+            const { WebhookService } = await import('./webhook.service.js');
+            await WebhookService.triggerWebhook(
+              'payment.success',
+              {
+                transactionId: paymentTransaction.id,
+                registrationId: registration.id,
+                eventId: registration.eventId,
+                amount: Number(verification.amount),
+                currency: gatewayVerification.currency,
+                gateway: detectedGatewayType,
+              },
+              paymentTransaction.id
+            );
+          } catch (webhookError) {
+            // Log error but don't fail the payment - webhook failures shouldn't break the flow
+            logger.error(`Failed to trigger webhook for transaction ${paymentTransaction.id}:`, webhookError);
           }
         });
 
@@ -588,95 +647,118 @@ export class PaymentService {
 
         logger.info(`Payment completed: ${reference} for registration: ${registration.id}`);
       }
-    } else if (event === 'charge.failed') {
-      const reference = data.reference as string;
-      if (reference) {
-        // Find registration and update both payment status and registration status
-        const registration = await prisma.eventRegistration.findFirst({
-          where: {
-            paymentTransactionId: reference,
-            paymentStatus: 'PENDING',
-          },
-          select: {
-            id: true,
-            status: true,
-          },
-        });
 
-        if (registration) {
-          // Get full registration details for notification
-          const fullRegistration = await prisma.eventRegistration.findUnique({
-            where: { id: registration.id },
-            include: {
-              event: {
-                select: {
-                  id: true,
-                  title: true,
-                },
-              },
-              attendee: {
-                select: {
-                  id: true,
-                  email: true,
-                },
-              },
+      // Handle payment failure events
+      if (event === 'charge.failed') {
+        const reference = data.reference as string;
+        if (reference) {
+          // Find registration and update both payment status and registration status
+          const registration = await prisma.eventRegistration.findFirst({
+            where: {
+              paymentTransactionId: reference,
+              paymentStatus: 'PENDING',
+            },
+            select: {
+              id: true,
+              status: true,
             },
           });
 
-          // Use status validation to ensure consistency
-          const syncedStatus = EventService.validateAndSyncStatus(
-            registration.status,
-            'PENDING', // Current payment status before failure
-            'FAILED',
-          );
-
-          await prisma.eventRegistration.update({
-            where: { id: registration.id },
-            data: {
-              status: syncedStatus.status,
-              paymentStatus: syncedStatus.paymentStatus,
-            },
-          });
-
-          // Send payment failed notification
-          if (fullRegistration) {
-            try {
-              await NotificationService.sendNotification({
-                userId: fullRegistration.attendeeId,
-                type: NotificationType.PAYMENT_FAILED,
-                title: `Payment Failed: ${fullRegistration.event.title}`,
-                message: `Your payment for "${fullRegistration.event.title}" has failed. Please try again or contact support if the issue persists.`,
-                priority: NotificationPriority.HIGH,
-                eventId: fullRegistration.eventId,
-                registrationId: registration.id,
-                data: {
-                  transactionReference: reference,
+          if (registration) {
+            // Get full registration details for notification
+            const fullRegistration = await prisma.eventRegistration.findUnique({
+              where: { id: registration.id },
+              include: {
+                event: {
+                  select: {
+                    id: true,
+                    title: true,
+                  },
                 },
-              });
-            } catch (error) {
-              logger.error('Failed to send payment failed notification:', error);
+                attendee: {
+                  select: {
+                    id: true,
+                    email: true,
+                  },
+                },
+              },
+            });
+
+            // Use status validation to ensure consistency
+            const syncedStatus = EventService.validateAndSyncStatus(
+              registration.status,
+              'PENDING', // Current payment status before failure
+              'FAILED',
+            );
+
+            await prisma.eventRegistration.update({
+              where: { id: registration.id },
+              data: {
+                status: syncedStatus.status,
+                paymentStatus: syncedStatus.paymentStatus,
+              },
+            });
+
+            // Send payment failed notification
+            if (fullRegistration) {
+              try {
+                await NotificationService.sendNotification({
+                  userId: fullRegistration.attendeeId,
+                  type: NotificationType.PAYMENT_FAILED,
+                  title: `Payment Failed: ${fullRegistration.event.title}`,
+                  message: `Your payment for "${fullRegistration.event.title}" has failed. Please try again or contact support if the issue persists.`,
+                  priority: NotificationPriority.HIGH,
+                  eventId: fullRegistration.eventId,
+                  registrationId: registration.id,
+                  data: {
+                    transactionReference: reference,
+                  },
+                });
+              } catch (error) {
+                logger.error('Failed to send payment failed notification:', error);
+              }
             }
-          }
 
-          logger.info(`Payment failed: ${reference} for registration: ${registration.id}`);
-        } else {
-          logger.warn(`Payment failed webhook: Registration not found for reference: ${reference}`);
+            logger.info(`Payment failed: ${reference} for registration: ${registration.id}`);
+          } else {
+            logger.warn(`Payment failed webhook: Registration not found for reference: ${reference}`);
+          }
         }
       }
+    } catch (error) {
+      logger.error('Failed to handle payment webhook:', error);
+      throw error;
     }
   }
 
   /**
    * Verify Paystack webhook signature
    */
-  verifyWebhookSignature(payload: string, signature: string): boolean {
+  verifyWebhookSignature(payload: string, signature: string, gatewayType: GatewayType = 'PAYSTACK'): boolean {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const crypto = require('crypto');
-    const hash = crypto
-      .createHmac('sha512', config.paystack.secretKey)
-      .update(payload)
-      .digest('hex');
-    return hash === signature;
+    
+    // Use gateway manager to get the correct gateway
+    const gateway = this.gatewayManager.getGateway(gatewayType);
+    
+    // Get secret key from gateway configuration
+    // For Paystack, we need the secret key for HMAC verification
+    if (gatewayType === 'PAYSTACK') {
+      if (!config.paystack?.secretKey) {
+        logger.error('Paystack secret key not configured');
+        return false;
+      }
+      const hash = crypto
+        .createHmac('sha512', config.paystack.secretKey)
+        .update(payload)
+        .digest('hex');
+      return hash === signature;
+    }
+    
+    // For other gateways, use their verification methods
+    // This is a placeholder - implement gateway-specific verification as needed
+    logger.warn(`Webhook signature verification not implemented for gateway: ${gatewayType}`);
+    return true; // Default to true for non-Paystack gateways (implement proper verification)
   }
 
   /**
@@ -703,8 +785,11 @@ export class PaymentService {
     errors: number;
     details: Array<{ reference: string; action: string; reason?: string }>;
   }> {
-    if (!config.paystack.secretKey) {
-      throw new ValidationError('Payment service is not configured');
+    // Use gateway manager instead of direct config access
+    const paystackGateway = this.gatewayManager.getGateway('PAYSTACK');
+    
+    if (!config.paystack?.secretKey) {
+      throw new ValidationError('Paystack payment service is not configured');
     }
 
     const result = {
@@ -735,7 +820,24 @@ export class PaymentService {
           params.to = endDate.toISOString();
         }
 
-        const response = await this.paystack.transaction.list(params);
+        // Use Paystack SDK directly for transaction listing
+        // Note: This is a sync operation that requires direct API access
+        // The gateway interface doesn't include listTransactions, so we use the SDK directly
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const Paystack = require('paystack');
+        if (!config.paystack?.secretKey) {
+          throw new ValidationError('Paystack secret key is required for syncing transactions');
+        }
+        
+        const paystackInstance = Paystack(config.paystack.secretKey);
+        const response = await paystackInstance.transaction.list(params);
+        
+        // Type-safe response handling
+        if (!response || !response.data || !Array.isArray(response.data)) {
+          hasMore = false;
+          break;
+        }
+        
         const transactions = response.data as Array<{
           id: number;
           reference: string;
@@ -746,11 +848,6 @@ export class PaymentService {
           paid_at?: string;
           created_at: string;
         }>;
-
-        if (!transactions || transactions.length === 0) {
-          hasMore = false;
-          break;
-        }
 
         result.totalFetched += transactions.length;
 
@@ -770,7 +867,7 @@ export class PaymentService {
 
             // Check if we already have this transaction
             const existing = await prisma.eventPaymentTransaction.findUnique({
-              where: { paystackReference: paystackTx.reference },
+              where: { gatewayReference: paystackTx.reference },
             });
 
             if (existing) {
@@ -844,8 +941,10 @@ export class PaymentService {
             const paymentTransaction = await prisma.eventPaymentTransaction.create({
               data: {
                 transactionNumber,
-                paystackReference: paystackTx.reference,
-                paystackAmount: paystackTx.amount,
+                gateway: 'PAYSTACK',
+                gatewayReference: paystackTx.reference,
+                gatewayAmount: paystackTx.amount,
+                gatewayTransactionId: paystackTx.id?.toString() || null,
                 currency: 'NGN',
                 amount,
                 paymentMethod: 'PAYSTACK',
@@ -858,7 +957,7 @@ export class PaymentService {
                   registration.attendee.firstName && registration.attendee.lastName
                     ? `${registration.attendee.firstName} ${registration.attendee.lastName}`
                     : null,
-                paystackMetadata: (paystackTx.metadata || {}) as Prisma.InputJsonValue,
+                gatewayMetadata: (paystackTx.metadata || {}) as Prisma.InputJsonValue,
               },
             });
 

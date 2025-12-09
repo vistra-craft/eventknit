@@ -11,6 +11,17 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  FileText,
+  Users,
+  Tag,
+  DollarSign,
+  Mail,
+  Share2,
+  Ticket,
+  Percent,
+  Link as LinkIcon,
+  Share,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -56,8 +67,19 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Upcoming", href: "/organizer/events/upcoming" },
         { name: "Past Events", href: "/organizer/events/past" },
         { name: "Create New", href: "/organizer/events/create" },
-        { name: "Templates", href: "/organizer/events/templates" },
-        { name: "Drafts", href: "/organizer/events/drafts" },
+        { name: "Event Templates", href: "/organizer/events/templates-management" },
+        { name: "Event Drafts", href: "/organizer/events/drafts" },
+      ]
+    },
+    { 
+      id: "attendees", 
+      label: "Attendees", 
+      icon: Users,
+      group: "main",
+      children: [
+        { name: "Segmentation", href: "/organizer/attendees/segmentation" },
+        { name: "Tags", href: "/organizer/attendees/tags" },
+        { name: "Communication", href: "/organizer/attendees/communication" },
       ]
     },
     { 
@@ -70,14 +92,42 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Event Performance", href: "/organizer/analytics/events" },
         { name: "Attendee Insights", href: "/organizer/analytics/attendees" },
         { name: "Revenue Reports", href: "/organizer/analytics/revenue" },
+        { name: "Marketing Analytics", href: "/organizer/analytics/marketing" },
       ]
     },
     { 
-      id: "communications", 
-      label: "Communications", 
-      href: "/organizer/communications", 
-      icon: MessageCircle,
-      group: "management"
+      id: "marketing", 
+      label: "Marketing", 
+      icon: Share2,
+      group: "main",
+      children: [
+        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
+        { name: "Email Campaigns", href: "/organizer/marketing/email" },
+        { name: "Social Media", href: "/organizer/marketing/social" },
+        { name: "Affiliate Program", href: "/organizer/marketing/affiliate" },
+      ]
+    },
+    { 
+      id: "financial", 
+      label: "Financial", 
+      icon: DollarSign,
+      group: "main",
+      children: [
+        { name: "Expenses", href: "/organizer/financial" },
+        { name: "Profit & Loss", href: "/organizer/financial" },
+        { name: "Goals", href: "/organizer/financial" },
+        { name: "Payouts", href: "/organizer/financial/payouts" },
+      ]
+    },
+    { 
+      id: "tickets", 
+      label: "Tickets", 
+      icon: Ticket,
+      group: "main",
+      children: [
+        { name: "Advanced Types", href: "/organizer/tickets/advanced" },
+        { name: "Dynamic Pricing", href: "/organizer/tickets/pricing" },
+      ]
     },
     { 
       id: "team", 

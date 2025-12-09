@@ -126,6 +126,12 @@ model User {
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
   lastLoginAt         DateTime?
+  
+  // Two-Factor Authentication (2FA)
+  twoFactorEnabled    Boolean   @default(false)
+  twoFactorSecret     String?   // TOTP secret (encrypted)
+  twoFactorBackupCodes String[] // Backup codes for 2FA recovery
+  twoFactorVerifiedAt DateTime? // When 2FA was verified/set up
 
   // Audit fields
   createdAt DateTime  @default(now())
@@ -165,6 +171,59 @@ model User {
   // Social Media & Support Relations
   assignedSupportQueries            SocialMessage[]              @relation("AssignedSupportQueries")
   supportResponses                  SupportResponse[]            @relation("SupportResponses")
+  // User Dashboard Features Relations
+  eventReviews                      EventReview[]                @relation("UserReviews")
+  ticketTransfersFrom               TicketTransfer[]             @relation("TicketTransfersFrom")
+  ticketTransfersTo                 TicketTransfer[]              @relation("TicketTransfersTo")
+  eventCollections                  EventCollection[]             @relation("UserCollections")
+  collectionFollows                 CollectionFollower[]         @relation("CollectionFollows")
+  userInterests                     UserInterest[]                @relation("UserInterests")
+  sentMessages                      DirectMessage[]               @relation("SentMessages")
+  ticketResales                     TicketResale[]                @relation("TicketResales")
+  ticketResalePurchases             TicketResale[]                @relation("TicketResalePurchases")
+  digitalWallet                     DigitalWallet?                @relation("UserDigitalWallet")
+  calendarSyncs                     EventCalendarSync[]           @relation("UserCalendarSyncs")
+  eventFeed                         PersonalEventFeed?            @relation("UserEventFeed")
+  eventSubscriptions                EventUpdateSubscription[]     @relation("UserEventSubscriptions")
+  receivedMessages                  DirectMessage[]               @relation("ReceivedMessages")
+  userFollowers                     UserFollow[]                  @relation("UserFollowers")
+  userFollowing                     UserFollow[]                  @relation("UserFollowing")
+  eventShares                       EventShare[]                  @relation("UserShares")
+  savedSearches                     SavedSearch[]                 @relation("SavedSearches")
+  activityHistory                   ActivityHistory[]             @relation("UserActivityHistory")
+  // Organizer Dashboard Features
+  eventTemplates                    EventTemplate[]               @relation("OrganizerTemplates")
+  eventDrafts                       EventDraft[]                 @relation("OrganizerDrafts")
+  attendeeSegments                  AttendeeSegment[]            @relation("OrganizerSegments")
+  segmentMembers                    AttendeeSegmentMember[]      @relation("SegmentMembers")
+  attendeeTags                      AttendeeTag[]                @relation("OrganizerTags")
+  taggedUsers                        AttendeeTaggedUser[]         @relation("TaggedUsers")
+  // Phase 2 Features
+  eventExpenses                      EventExpense[]               @relation("OrganizerExpenses")
+  financialGoals                    FinancialGoal[]               @relation("OrganizerFinancialGoals")
+  payoutPreference                  PayoutPreference?            @relation("OrganizerPayoutPreferences")
+  eventCollaborations               EventCollaborator[]           @relation("UserEventCollaborations")
+  eventActivityLogs                 EventActivityLog[]            @relation("UserEventActivityLogs")
+  // Phase 3 Features
+  ticketPackages                    TicketPackage[]                @relation("OrganizerTicketPackages")
+  pricingRules                      DynamicPricingRule[]           @relation("OrganizerPricingRules")
+  affiliatePrograms                 AffiliateProgram[]             @relation("OrganizerAffiliatePrograms")
+  emailCampaigns                    EmailCampaign[]                @relation("OrganizerEmailCampaigns")
+  emailAutomations                  EmailAutomationRule[]          @relation("OrganizerEmailAutomations")
+  socialPosts                       SocialMediaPost[]              @relation("OrganizerSocialPosts")
+  socialCalendars                   SocialMediaCalendar[]          @relation("OrganizerSocialCalendars")
+  postTemplates                     SocialMediaPostTemplate[]      @relation("OrganizerPostTemplates")
+  roleTemplates                     TeamRoleTemplate[]             @relation("OrganizerRoleTemplates")
+  teamActivities                    TeamActivityFeed[]              @relation("OrganizerTeamActivities")
+  userTeamActivities                TeamActivityFeed[]              @relation("UserTeamActivities")
+  teamMetrics                       TeamPerformanceMetric[]        @relation("OrganizerTeamMetrics")
+  userTeamMetrics                   TeamPerformanceMetric[]         @relation("UserTeamMetrics")
+  affiliates                        Affiliate[]                    @relation("UserAffiliates")
+  // White-Label Branding
+  whiteLabelBranding                WhiteLabelBranding?            @relation("OrganizerBranding")
+  customDomains                     CustomDomain[]                 @relation("OrganizerCustomDomains")
+  // Seating & Venues
+  venues                            Venue[]                       @relation("OrganizerVenues")
 
   @@index([email])
   @@index([role])
@@ -391,6 +450,34 @@ model Event {
   // Notification Relations
   notifications          Notification[]            @relation("EventNotifications")
   bulkMessages           BulkMessage[]             @relation("EventBulkMessages")
+  // User Dashboard Features Relations
+  eventReviews           EventReview[]              @relation("EventReviews")
+  collectionItems        EventCollectionItem[]     @relation("CollectionEvents")
+  eventMessages          DirectMessage[]           @relation("EventMessages")
+  eventShares            EventShare[]              @relation("EventShares")
+  activityHistory        ActivityHistory[]          @relation("EventActivityHistory")
+  feedItems              FeedItem[]                 @relation("FeedEvents")
+  updateSubscriptions    EventUpdateSubscription[]  @relation("EventUpdateSubscriptions")
+  invoices               Invoice[]                  @relation("InvoiceEvents")
+  paymentPlans           PaymentPlan[]              @relation("PaymentPlanEvents")
+  // Affiliate Relations (through Affiliate model)
+  // Organizer Dashboard Features Relations
+  segments               AttendeeSegment[]          @relation("EventSegments")
+  taggedUsers            AttendeeTaggedUser[]        @relation("EventTaggedUsers")
+  // Phase 2 Features
+  expenses               EventExpense[]              @relation("EventExpenses")
+  financialGoals         FinancialGoal[]              @relation("EventFinancialGoals")
+  collaborators          EventCollaborator[]          @relation("EventCollaborators")
+  activityLogs           EventActivityLog[]           @relation("EventActivityLogs")
+  // Phase 3 Features
+  ticketPackages         TicketPackage[]              @relation("EventTicketPackages")
+  pricingRules           DynamicPricingRule[]          @relation("EventPricingRules")
+  affiliatePrograms     AffiliateProgram[]            @relation("EventAffiliatePrograms")
+  emailCampaigns         EmailCampaign[]               @relation("EventEmailCampaigns")
+  socialPosts            SocialMediaPost[]             @relation("EventSocialPosts")
+  teamActivities         TeamActivityFeed[]            @relation("EventTeamActivities")
+  platformIncome         PlatformIncome[]              @relation("PlatformIncomeEvents")
+  seatMap                SeatMap?                      @relation("EventSeatMap")
 
   @@index([organizerId])
   @@index([status])
@@ -431,6 +518,9 @@ model EventRegistration {
   paymentMethod        String? // STRIPE, PAYPAL, etc.
   paymentTransactionId String?
 
+  // Seating
+  seatReservation        SeatReservation?              @relation("SeatReservation")
+
   // Scan-related fields
   ticketStatus      TicketStatus @default(ACTIVE) // Ticket status for scanning
   checkedInAt       DateTime? // When ticket was checked in
@@ -457,6 +547,17 @@ model EventRegistration {
   refund              Refund?
   // Notification Relations
   notifications       Notification[]           @relation("RegistrationNotifications")
+  // User Dashboard Features Relations
+  review              EventReview?             @relation("ReviewRegistration")
+  affiliateConversion AffiliateConversion?      @relation("AffiliateRegistration")
+  transfers           TicketTransfer[]         @relation("TransferRegistration")
+  messages            DirectMessage[]          @relation("MessageRegistration")
+  activityHistory     ActivityHistory[]        @relation("RegistrationActivityHistory")
+  resale              TicketResale?            @relation("ResaleRegistration")
+  walletTicket        WalletTicket?            @relation("WalletRegistration")
+  calendarSyncs       EventCalendarSync[]      @relation("CalendarRegistration")
+  invoices            Invoice[]                @relation("InvoiceRegistration")
+  paymentPlan         PaymentPlan?              @relation("PaymentPlanRegistration")
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
@@ -642,6 +743,7 @@ model PromoCode {
   // Relations
   organizer   User                  @relation("PromoCodeOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
   redemptions PromoCodeRedemption[]
+  variants    PromoCodeVariant[]    @relation("PromoCodeVariants")
 
   @@index([code])
   @@index([organizerId])
@@ -741,9 +843,11 @@ model EventPaymentTransaction {
   id                String @id @default(uuid())
   transactionNumber String @unique // Auto-generated (e.g., "EPT-2024-001")
 
-  // Paystack Details
-  paystackReference String  @unique // Paystack transaction reference
-  paystackAmount    Decimal @db.Decimal(10, 2) // Amount from Paystack (in kobo/cents)
+  // Gateway Details (supports multiple gateways)
+  gateway           String  @default("PAYSTACK") // PAYSTACK, STRIPE, PAYPAL
+  gatewayReference  String  @unique // Gateway transaction reference
+  gatewayAmount     Decimal @db.Decimal(10, 2) // Amount from gateway (in smallest unit)
+  gatewayTransactionId String? // Gateway's internal transaction ID
   currency          String  @default("NGN")
 
   // Payment Details
@@ -763,7 +867,7 @@ model EventPaymentTransaction {
   attendeeName  String?
 
   // Metadata
-  paystackMetadata Json? // Full Paystack response data
+  gatewayMetadata Json? // Full gateway response data (replaces paystackMetadata)
   notes            String? @db.Text
 
   // Audit
@@ -773,12 +877,421 @@ model EventPaymentTransaction {
   // Relations
   platformFee PlatformFee?
   refund      Refund?
+  invoice     Invoice?
 
-  @@index([paystackReference])
+  @@index([gatewayReference])
+  @@index([gateway])
   @@index([eventId])
   @@index([registrationId])
   @@index([paymentStatus])
   @@index([paymentDate])
+}
+
+// Invoice Generation
+model Invoice {
+  id              String   @id @default(uuid())
+  invoiceNumber   String   @unique // Auto-generated (e.g., "INV-2024-001")
+  
+  // Related Entities
+  transactionId   String   @unique
+  transaction     EventPaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  registrationId String
+  registration   EventRegistration @relation("InvoiceRegistration", fields: [registrationId], references: [id], onDelete: Restrict)
+  eventId        String
+  event           Event    @relation("InvoiceEvents", fields: [eventId], references: [id], onDelete: Restrict)
+  
+  // Invoice Details
+  issueDate       DateTime @default(now())
+  dueDate         DateTime?
+  status          String   @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE, CANCELLED
+  
+  // Amounts
+  subtotal        Decimal  @db.Decimal(10, 2)
+  taxAmount       Decimal? @db.Decimal(10, 2)
+  discountAmount  Decimal? @db.Decimal(10, 2)
+  totalAmount     Decimal  @db.Decimal(10, 2)
+  currency        String   @default("NGN")
+  
+  // Billing Information
+  billToName      String
+  billToEmail     String
+  billToAddress   String?  @db.Text
+  billToCity      String?
+  billToState     String?
+  billToCountry   String?
+  billToZipCode   String?
+  
+  // Invoice Items
+  items           InvoiceItem[]
+  
+  // Template
+  templateId      String?  // Reference to invoice template used
+  templateData   Json?    // Template-specific data
+  
+  // PDF
+  pdfUrl         String?  // URL to generated PDF
+  pdfGeneratedAt DateTime?
+  
+  // Email
+  sentAt         DateTime?
+  sentTo         String?  // Email address invoice was sent to
+  
+  // Notes
+  notes          String?  @db.Text
+  terms          String?  @db.Text // Payment terms
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([invoiceNumber])
+  @@index([transactionId])
+  @@index([registrationId])
+  @@index([eventId])
+  @@index([status])
+  @@index([issueDate])
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  // Item Details
+  description String   @db.Text
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  totalPrice  Decimal  @db.Decimal(10, 2)
+  
+  // Optional: Link to ticket type or other entity
+  itemType    String?  // TICKET, FEE, DISCOUNT, etc.
+  itemId      String?  // ID of related entity (ticket type, etc.)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([invoiceId])
+}
+
+model InvoiceTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  
+  // Template Type
+  type        String   @default("STANDARD") // STANDARD, MINIMAL, DETAILED, CUSTOM
+  
+  // Template Content
+  htmlContent String   @db.Text // HTML template with variables
+  cssContent  String?  @db.Text // Custom CSS
+  
+  // Template Variables
+  variables   Json?    // Available template variables
+  
+  // Settings
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  
+  // Usage
+  usageCount  Int      @default(0)
+  lastUsedAt  DateTime?
+  
+  // Created by
+  createdBy   String?  // Admin user ID
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([type])
+  @@index([isDefault])
+  @@index([isActive])
+}
+
+// Tax Management
+model TaxRate {
+  id          String   @id @default(uuid())
+  
+  // Location
+  country     String
+  state       String?
+  city        String?
+  
+  // Tax Details
+  rate        Decimal  @db.Decimal(5, 2) // Tax rate percentage (e.g., 7.50 for 7.5%)
+  taxType     String   @default("SALES_TAX") // VAT, GST, SALES_TAX, etc.
+  
+  // Status
+  isActive    Boolean  @default(true)
+  
+  // Metadata
+  description String?  @db.Text
+  notes       String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([country, state, city], name: "country_state_city")
+  @@index([country])
+  @@index([state])
+  @@index([isActive])
+}
+
+model TaxExemption {
+  id          String   @id @default(uuid())
+  
+  // Exemption Details
+  exemptionType String // ORGANIZATION, INDIVIDUAL, EVENT, etc.
+  entityId      String // ID of the exempted entity (user, event, etc.)
+  entityType    String // USER, EVENT, etc.
+  
+  // Tax Details
+  country       String
+  state         String?
+  taxType       String? // Specific tax type exempted (null = all taxes)
+  
+  // Validity
+  validFrom     DateTime @default(now())
+  validUntil    DateTime?
+  isActive      Boolean  @default(true)
+  
+  // Documentation
+  exemptionNumber String? // Official exemption number
+  certificateUrl  String? // URL to exemption certificate
+  
+  // Notes
+  notes         String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([entityId, entityType])
+  @@index([country])
+  @@index([isActive])
+  @@index([validUntil])
+}
+
+// Webhook Management
+model WebhookEndpoint {
+  id          String   @id @default(uuid())
+  
+  // Endpoint Details
+  name        String
+  url         String   @db.Text
+  description String?  @db.Text
+  
+  // Event Types
+  eventTypes  String[] // Array of event types to subscribe to
+  
+  // Configuration
+  secret      String?  // Secret for webhook signature verification
+  isActive    Boolean  @default(true)
+  
+  // Headers (custom headers to send with webhook)
+  headers     Json?    // Custom headers as key-value pairs
+  
+  // Retry Configuration
+  maxRetries  Int      @default(3)
+  retryDelay  Int      @default(1000) // Delay in milliseconds
+  
+  // Statistics
+  successCount Int     @default(0)
+  failureCount Int     @default(0)
+  lastTriggeredAt DateTime?
+  
+  // Created by
+  createdBy   String?  // User ID who created this webhook
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  deliveries  WebhookDelivery[]
+  
+  @@index([isActive])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(uuid())
+  endpointId  String
+  endpoint    WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  
+  // Event Details
+  eventType   String
+  eventId     String?  // ID of the entity that triggered the event
+  payload     Json     // Webhook payload data
+  
+  // Delivery Status
+  status      String   @default("PENDING") // PENDING, SUCCESS, FAILED, RETRYING
+  attemptCount Int     @default(0)
+  maxAttempts  Int     @default(3)
+  
+  // Response
+  responseCode Int?    // HTTP response code
+  responseBody String? @db.Text
+  errorMessage String? @db.Text
+  
+  // Timing
+  triggeredAt  DateTime @default(now())
+  deliveredAt DateTime?
+  nextRetryAt  DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([endpointId])
+  @@index([status])
+  @@index([eventType])
+  @@index([triggeredAt])
+  @@index([nextRetryAt])
+}
+
+// API Key Management
+model ApiKey {
+  id          String   @id @default(uuid())
+  
+  // Key Details
+  name        String
+  keyPrefix   String   // First 8 characters of key (for display)
+  keyHash     String   @unique // Hashed API key (for verification)
+  description String?  @db.Text
+  
+  // Permissions
+  permissions String[] // Array of permission scopes
+  
+  // Rate Limiting
+  rateLimit   Int      @default(100) // Requests per hour
+  rateLimitWindow Int  @default(3600) // Window in seconds (default 1 hour)
+  
+  // Status
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  
+  // Usage Statistics
+  requestCount Int     @default(0)
+  lastRequestAt DateTime?
+  
+  // Created by
+  createdBy   String?  // User ID who created this API key
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  apiRequests ApiRequest[]
+  
+  @@index([keyHash])
+  @@index([isActive])
+  @@index([createdBy])
+  @@index([expiresAt])
+}
+
+model ApiRequest {
+  id          String   @id @default(uuid())
+  apiKeyId    String
+  apiKey      ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  
+  // Request Details
+  method      String   // GET, POST, PUT, DELETE, etc.
+  path        String   @db.Text
+  statusCode  Int
+  responseTime Int?    // Response time in milliseconds
+  
+  // Request Data
+  ipAddress   String?
+  userAgent   String?
+  requestBody Json?    // Request body (limited size)
+  
+  // Error
+  errorMessage String? @db.Text
+  
+  createdAt DateTime @default(now())
+  
+  @@index([apiKeyId])
+  @@index([createdAt])
+  @@index([statusCode])
+  @@index([method, path])
+}
+
+// Payment Plans & Installments
+model PaymentPlan {
+  id          String   @id @default(uuid())
+  
+  // Related Entities
+  registrationId String @unique
+  registration   EventRegistration @relation("PaymentPlanRegistration", fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId        String
+  event          Event  @relation("PaymentPlanEvents", fields: [eventId], references: [id], onDelete: Restrict)
+  
+  // Plan Details
+  planName     String
+  totalAmount  Decimal  @db.Decimal(10, 2)
+  currency     String   @default("NGN")
+  
+  // Installment Configuration
+  installmentCount Int      // Number of installments
+  installmentAmount Decimal  @db.Decimal(10, 2) // Amount per installment
+  frequency         String   @default("MONTHLY") // MONTHLY, WEEKLY, BIWEEKLY, CUSTOM
+  
+  // Schedule
+  startDate    DateTime
+  endDate      DateTime
+  
+  // Status
+  status       String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED, DEFAULTED
+  
+  // Auto-payment
+  autoPaymentEnabled Boolean @default(true)
+  paymentMethod      String?  // Payment method for auto-payment
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  installments PaymentInstallment[]
+  
+  @@index([registrationId])
+  @@index([eventId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model PaymentInstallment {
+  id          String   @id @default(uuid())
+  planId      String
+  plan        PaymentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  
+  // Installment Details
+  installmentNumber Int      // 1, 2, 3, etc.
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("NGN")
+  
+  // Due Date
+  dueDate     DateTime
+  
+  // Payment
+  paidAmount  Decimal? @db.Decimal(10, 2)
+  paidAt      DateTime?
+  paymentTransactionId String? // Link to payment transaction
+  
+  // Status
+  status      String   @default("PENDING") // PENDING, PAID, OVERDUE, FAILED, CANCELLED
+  
+  // Retry
+  retryCount  Int      @default(0)
+  lastRetryAt DateTime?
+  nextRetryAt DateTime?
+  
+  // Notes
+  notes       String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([planId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([nextRetryAt])
 }
 
 model PlatformFee {
@@ -1555,4 +2068,1618 @@ model SocialAnalytics {
   @@index([socialAccountId])
   @@index([date])
   @@index([platform])
+}
+
+// ============================================
+// User Dashboard Features Models
+// ============================================
+
+// Event Reviews & Ratings
+model EventReview {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation("EventReviews", fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade)
+  registrationId String? @unique // Link to registration if reviewed after attending   
+  registration EventRegistration? @relation("ReviewRegistration", fields: [registrationId], references: [id], onDelete: SetNull)
+  
+  rating    Int      // 1-5 stars
+  title     String?  @db.Text
+  review    String?  @db.Text
+  pros      String[] // Array of pros
+  cons      String[] // Array of cons
+  
+  // Moderation
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED, FLAGGED
+  moderatedBy String?
+  moderatedAt DateTime?
+  moderationReason String? @db.Text
+  
+  // Engagement
+  helpfulCount Int    @default(0) // Number of users who found this helpful
+  reportCount  Int    @default(0) // Number of times reported
+  
+  // Metadata
+  isVerifiedAttendee Boolean @default(false) // Verified that user attended
+  attendedDate DateTime? // When user attended the event
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([eventId, userId]) // One review per user per event
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+// Ticket Transfer
+model TicketTransfer {
+  id             String   @id @default(uuid())
+  registrationId String
+  registration   EventRegistration @relation("TransferRegistration", fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  fromUserId     String
+  fromUser       User     @relation("TicketTransfersFrom", fields: [fromUserId], references: [id], onDelete: Restrict)
+  toUserId       String
+  toUser         User     @relation("TicketTransfersTo", fields: [toUserId], references: [id], onDelete: Restrict)
+  toEmail        String?  // Email if transferring to non-user
+  
+  // Transfer details
+  transferToken  String   @unique // Unique token for transfer acceptance
+  status         String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED, CANCELLED
+  message        String?  @db.Text // Optional message from sender
+  
+  // Approval workflow
+  requiresApproval Boolean @default(false) // If organizer requires approval
+  approvedBy      String?  // User ID who approved (if required)
+  approvedAt      DateTime?
+  
+  // Expiration
+  expiresAt      DateTime?
+  acceptedAt     DateTime?
+  rejectedAt     DateTime?
+  cancelledAt    DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([registrationId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([status])
+  @@index([transferToken])
+  @@index([expiresAt])
+}
+
+// Event Collections
+model EventCollection {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("UserCollections", fields: [userId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  isPublic    Boolean  @default(false)
+  coverImage  String?
+  
+  // Sharing
+  shareToken  String?  @unique // Token for sharing collections
+  isShared    Boolean  @default(false)
+  
+  // Metadata
+  eventCount  Int      @default(0)
+  followerCount Int    @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  events     EventCollectionItem[]
+  followers  CollectionFollower[]
+  
+  @@index([userId])
+  @@index([isPublic])
+  @@index([shareToken])
+}
+
+model EventCollectionItem {
+  id           String   @id @default(uuid())
+  collectionId String
+  collection   EventCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  eventId      String
+  event        Event    @relation("CollectionEvents", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  addedAt      DateTime @default(now())
+  notes        String?  @db.Text // User's personal notes about this event
+  
+  @@unique([collectionId, eventId])
+  @@index([collectionId])
+  @@index([eventId])
+}
+
+model CollectionFollower {
+  id           String   @id @default(uuid())
+  collectionId String
+  collection   EventCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation("CollectionFollows", fields: [userId], references: [id], onDelete: Cascade)
+  
+  followedAt   DateTime @default(now())
+  
+  @@unique([collectionId, userId])
+  @@index([collectionId])
+  @@index([userId])
+}
+
+// Ticket Resale Marketplace
+model TicketResale {
+  id             String   @id @default(uuid())
+  registrationId String   @unique
+  registration   EventRegistration @relation("ResaleRegistration", fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  sellerId       String
+  seller         User     @relation("TicketResales", fields: [sellerId], references: [id], onDelete: Restrict)
+  
+  // Pricing
+  originalPrice  Decimal  @db.Decimal(10, 2)
+  resalePrice    Decimal  @db.Decimal(10, 2)
+  currency       String   @default("NGN")
+  
+  // Status
+  status         String   @default("LISTED") // LISTED, SOLD, CANCELLED, EXPIRED
+  listedAt       DateTime @default(now())
+  soldAt         DateTime?
+  
+  // Buyer (if sold)
+  buyerId        String?
+  buyer          User?    @relation("TicketResalePurchases", fields: [buyerId], references: [id], onDelete: SetNull)
+  
+  // Platform fee
+  platformFee    Decimal? @db.Decimal(10, 2)
+  sellerPayout   Decimal? @db.Decimal(10, 2)
+  
+  // Expiration
+  expiresAt      DateTime? // Auto-expire if event is too close
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([status])
+  @@index([listedAt])
+  @@index([expiresAt])
+}
+
+// Digital Wallet (Ticket Storage)
+model DigitalWallet {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation("UserDigitalWallet", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Wallet preferences
+  autoAddTickets Boolean  @default(true) // Automatically add tickets to wallet
+  backupEnabled  Boolean  @default(true) // Enable cloud backup
+  
+  // Apple Wallet / Google Pay integration
+  appleWalletId  String?  // Apple Wallet pass identifier
+  googlePayId    String?  // Google Pay pass identifier
+  
+  // Last sync
+  lastSyncedAt   DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  walletTickets  WalletTicket[]
+  
+  @@index([userId])
+}
+
+model WalletTicket {
+  id          String   @id @default(uuid())
+  walletId   String
+  wallet     DigitalWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  registrationId String @unique
+  registration EventRegistration @relation("WalletRegistration", fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  // Wallet-specific data
+  passData    Json?    // Apple/Google Pay pass data
+  qrCodeUrl   String?  // QR code for offline access
+  backupCode  String?  // Backup code for recovery
+  
+  // Status
+  isActive    Boolean  @default(true)
+  addedAt     DateTime @default(now())
+  lastAccessedAt DateTime?
+  
+  @@index([walletId])
+  @@index([registrationId])
+  @@index([isActive])
+}
+
+// Event Calendar Integration
+model EventCalendarSync {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("UserCalendarSyncs", fields: [userId], references: [id], onDelete: Cascade)
+  registrationId String
+  registration EventRegistration @relation("CalendarRegistration", fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  // Calendar type
+  calendarType String  // GOOGLE, APPLE, OUTLOOK, ICAL
+  calendarId   String? // External calendar event ID
+  
+  // Sync status
+  syncedAt    DateTime @default(now())
+  lastSyncedAt DateTime?
+  syncStatus  String   @default("ACTIVE") // ACTIVE, FAILED, DISABLED
+  
+  // Reminder settings
+  reminderEnabled Boolean @default(true)
+  reminderMinutes Int?    // Minutes before event (e.g., 15, 30, 60)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, registrationId, calendarType])
+  @@index([userId])
+  @@index([registrationId])
+  @@index([calendarType])
+  @@index([syncStatus])
+}
+
+// Personal Event Feed
+model PersonalEventFeed {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation("UserEventFeed", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Feed preferences
+  preferences Json     // Feed customization settings
+  filters     Json?    // Feed filtering options (categories, locations, etc.)
+  
+  // Feed items (cached)
+  feedItems   FeedItem[]
+  
+  lastUpdated DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model FeedItem {
+  id          String   @id @default(uuid())
+  feedId      String
+  feed        PersonalEventFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  eventId     String
+  event       Event    @relation("FeedEvents", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Item metadata
+  relevanceScore Decimal? @db.Decimal(5, 2) // AI relevance score
+  reason         String?  // Why this event is in the feed (e.g., "Based on your interests")
+  
+  // User interaction
+  viewed      Boolean  @default(false)
+  viewedAt    DateTime?
+  dismissed  Boolean  @default(false)
+  dismissedAt DateTime?
+  
+  addedAt     DateTime @default(now())
+  
+  @@unique([feedId, eventId])
+  @@index([feedId])
+  @@index([eventId])
+  @@index([viewed])
+  @@index([addedAt])
+}
+
+// Event Updates Subscription
+model EventUpdateSubscription {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("UserEventSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  eventId     String
+  event       Event    @relation("EventUpdateSubscriptions", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Subscription preferences
+  updateTypes String[] // Types of updates to receive: SCHEDULE, VENUE, CANCELLATION, ANNOUNCEMENT, etc.
+  channels    String[] // Notification channels: EMAIL, PUSH, IN_APP, SMS
+  
+  // Status
+  isActive    Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+  unsubscribedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([isActive])
+}
+
+// User Interests
+model UserInterest {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("UserInterests", fields: [userId], references: [id], onDelete: Cascade)
+  
+  category    String   // Event category
+  subcategory String?  // Optional subcategory
+  tags        String[] // Array of interest tags
+  
+  // Weight/preference
+  weight      Int      @default(1) // 1-10, how much user likes this
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([userId, category])
+  @@index([userId])
+  @@index([category])
+}
+
+// Direct Messaging
+model DirectMessage {
+  id        String   @id @default(uuid())
+  senderId  String
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient User     @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  // Message content
+  subject   String?  @db.Text
+  content   String   @db.Text
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  
+  // Related entities
+  eventId   String?  // If message is about an event
+  event     Event?   @relation("EventMessages", fields: [eventId], references: [id], onDelete: SetNull)
+  registrationId String? // If message is about a registration
+  registration EventRegistration? @relation("MessageRegistration", fields: [registrationId], references: [id], onDelete: SetNull)
+  
+  // Threading
+  parentMessageId String? // For replies
+  parentMessage   DirectMessage? @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  replies         DirectMessage[] @relation("MessageReplies")
+  
+  // Status
+  isDeleted Boolean @default(false)
+  deletedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([eventId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// User Follows (Social Networking)
+model UserFollow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  followedAt DateTime @default(now())
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// Event Shares (Tracking)
+model EventShare {
+  id        String   @id @default(uuid())
+  eventId  String
+  event     Event    @relation("EventShares", fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String?  // User who shared (null if anonymous)
+  user      User?    @relation("UserShares", fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Share details
+  platform  String   // facebook, twitter, email, whatsapp, link, etc.
+  shareUrl  String?  // URL that was shared
+  referrer  String?  // Where the share came from
+  
+  // Tracking
+  clickCount Int     @default(0) // Number of clicks on shared link
+  conversionCount Int @default(0) // Number of registrations from this share
+  
+  createdAt DateTime @default(now())
+  
+  @@index([eventId])
+  @@index([userId])
+  @@index([platform])
+  @@index([createdAt])
+}
+
+// Saved Searches
+model SavedSearch {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("SavedSearches", fields: [userId], references: [id], onDelete: Cascade)
+  
+  name        String
+  searchQuery String   @db.Text // JSON string of search parameters
+  filters     Json?    // Search filters
+  
+  // Notifications
+  notifyOnNewEvents Boolean @default(false)
+  notificationFrequency String @default("DAILY") // DAILY, WEEKLY, NEVER
+  
+  lastSearchedAt DateTime?
+  resultCount    Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([notifyOnNewEvents])
+}
+
+// Activity History
+model ActivityHistory {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation("UserActivityHistory", fields: [userId], references: [id], onDelete: Cascade)
+  
+  activityType String  // REGISTRATION, PAYMENT, TICKET_DOWNLOAD, REVIEW, TRANSFER, etc.
+  entityType   String  // EVENT, REGISTRATION, PAYMENT, etc.
+  entityId     String
+  
+  // Details
+  title       String
+  description String?  @db.Text
+  metadata    Json?    // Additional activity data
+  
+  // Related entities
+  eventId     String?
+  event       Event?   @relation("EventActivityHistory", fields: [eventId], references: [id], onDelete: SetNull)
+  registrationId String?
+  registration EventRegistration? @relation("RegistrationActivityHistory", fields: [registrationId], references: [id], onDelete: SetNull)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([activityType])
+  @@index([entityType])
+  @@index([createdAt])
+  @@index([eventId])
+}
+
+// Event Templates
+model EventTemplate {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerTemplates", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  category    String?
+  tags        String[]
+  
+  // Template data (stores event structure)
+  templateData Json // Stores all event fields that can be templated
+  
+  // Sharing
+  isPublic    Boolean  @default(false)
+  isShared    Boolean  @default(false)
+  shareToken  String?  @unique
+  
+  // Versioning
+  version     Int      @default(1)
+  parentId    String? // For versioning - links to parent template
+  parent      EventTemplate? @relation("TemplateVersions", fields: [parentId], references: [id], onDelete: SetNull)
+  versions    EventTemplate[] @relation("TemplateVersions")
+  
+  // Usage tracking
+  usageCount  Int      @default(0)
+  lastUsedAt  DateTime?
+  
+  // Metadata
+  thumbnail   String? // Template preview image
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  
+  @@index([organizerId])
+  @@index([isPublic])
+  @@index([category])
+  @@index([shareToken])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+// Event Drafts
+model EventDraft {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerDrafts", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  // Draft data
+  draftData   Json // Stores all event fields
+  
+  // Versioning
+  version     Int      @default(1)
+  parentId    String? // For versioning
+  parent      EventDraft? @relation("DraftVersions", fields: [parentId], references: [id], onDelete: SetNull)
+  versions    EventDraft[] @relation("DraftVersions")
+  
+  // Scheduling
+  scheduledPublishAt DateTime? // When to auto-publish
+  
+  // Collaboration
+  collaborators Json? // Array of user IDs with permissions
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  publishedAt DateTime? // When draft was published
+  deletedAt DateTime?
+  
+  @@index([organizerId])
+  @@index([parentId])
+  @@index([scheduledPublishAt])
+  @@index([createdAt])
+}
+
+// Attendee Segmentation
+model AttendeeSegment {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerSegments", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation("EventSegments", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  
+  // Segment criteria (JSON for flexibility)
+  criteria    Json // e.g., { tags: ["VIP"], registrationDate: { before: "2024-01-01" }, totalSpent: { min: 100 } }
+  
+  // Auto-update
+  isDynamic   Boolean  @default(true) // If true, segment updates automatically based on criteria
+  
+  memberCount Int      @default(0) // Cached count
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  members     AttendeeSegmentMember[]
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([isDynamic])
+  @@index([createdAt])
+}
+
+model AttendeeSegmentMember {
+  id          String   @id @default(uuid())
+  segmentId   String
+  segment     AttendeeSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("SegmentMembers", fields: [userId], references: [id], onDelete: Cascade)
+  
+  addedAt     DateTime @default(now())
+  
+  @@unique([segmentId, userId])
+  @@index([segmentId])
+  @@index([userId])
+}
+
+// Attendee Tags
+model AttendeeTag {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerTags", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  name        String
+  color       String? // Hex color for UI
+  description String?  @db.Text
+  
+  usageCount  Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  taggedUsers AttendeeTaggedUser[]
+  
+  @@unique([organizerId, name])
+  @@index([organizerId])
+  @@index([name])
+}
+
+model AttendeeTaggedUser {
+  id          String   @id @default(uuid())
+  tagId       String
+  tag         AttendeeTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("TaggedUsers", fields: [userId], references: [id], onDelete: Cascade)
+  eventId     String? // Optional: tag specific to an event
+  event       Event?   @relation("EventTaggedUsers", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  taggedBy    String? // User ID who added the tag
+  notes       String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([tagId, userId, eventId])
+  @@index([tagId])
+  @@index([userId])
+  @@index([eventId])
+}
+
+// Advanced Promo Code Features
+model PromoCodeVariant {
+  id          String   @id @default(uuid())
+  promoCodeId String
+  promoCode   PromoCode @relation("PromoCodeVariants", fields: [promoCodeId], references: [id], onDelete: Cascade)
+  
+  name        String   // Variant name (e.g., "Variant A", "Variant B")
+  code        String   // Unique code for this variant
+  discountType DiscountType
+  discountValue Decimal @db.Decimal(10, 2)
+  
+  // A/B Testing
+  trafficPercentage Int @default(50) // Percentage of traffic to show this variant (0-100)
+  isControl         Boolean @default(false) // Is this the control variant
+  
+  // Performance
+  views       Int      @default(0)
+  redemptions Int      @default(0)
+  revenue     Decimal  @default(0) @db.Decimal(10, 2)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([promoCodeId, code])
+  @@index([promoCodeId])
+}
+
+// Event Expenses
+model EventExpense {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerExpenses", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation("EventExpenses", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  category    String   // e.g., "Marketing", "Venue", "Equipment", "Staff"
+  description String   @db.Text
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("NGN")
+  
+  // Receipt/Proof
+  receiptUrl  String?
+  receiptDate DateTime?
+  
+  // Tax
+  taxAmount   Decimal? @db.Decimal(10, 2)
+  taxRate     Decimal? @db.Decimal(5, 2)
+  isTaxDeductible Boolean @default(false)
+  
+  // Status
+  status      String   @default("pending") // pending, approved, rejected, paid
+  
+  expenseDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([category])
+  @@index([expenseDate])
+}
+
+// Financial Goals
+model FinancialGoal {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerFinancialGoals", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation("EventFinancialGoals", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  targetAmount Decimal  @db.Decimal(10, 2)
+  currency    String   @default("NGN")
+  
+  // Progress
+  currentAmount Decimal @default(0) @db.Decimal(10, 2)
+  progressPercentage Decimal @default(0) @db.Decimal(5, 2)
+  
+  // Timeline
+  startDate   DateTime
+  endDate     DateTime
+  
+  // Status
+  status      String   @default("active") // active, completed, cancelled
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  completedAt DateTime?
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([status])
+  @@index([endDate])
+}
+
+// Payout Preferences
+model PayoutPreference {
+  id          String   @id @default(uuid())
+  organizerId String   @unique
+  organizer   User     @relation("OrganizerPayoutPreferences", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  // Primary payout method
+  primaryMethod String // bank_transfer, paystack_transfer, etc.
+  
+  // Bank Details
+  bankName      String?
+  accountName   String?
+  accountNumber String?
+  bankCode      String?
+  routingNumber String?
+  
+  // Paystack Details
+  paystackRecipientCode String?
+  
+  // Other payment methods
+  alternativeMethods Json? // Array of alternative payment methods
+  
+  // Auto-payout settings
+  autoPayoutEnabled Boolean @default(false)
+  autoPayoutThreshold Decimal? @db.Decimal(10, 2) // Auto-payout when balance reaches this
+  autoPayoutSchedule String? // daily, weekly, monthly
+  
+  // Tax information
+  taxId       String?
+  taxCountry  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+}
+
+// Event Collaboration
+model EventCollaborator {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation("EventCollaborators", fields: [eventId], references: [id], onDelete: Cascade)
+  collaboratorId String
+  collaborator User    @relation("UserEventCollaborations", fields: [collaboratorId], references: [id], onDelete: Cascade)
+  
+  // Permissions
+  canEdit     Boolean  @default(false)
+  canManageAttendees Boolean @default(false)
+  canManageTickets Boolean @default(false)
+  canViewAnalytics Boolean @default(true)
+  canManageStaff Boolean @default(false)
+  canPublish Boolean @default(false)
+  
+  // Role
+  role        String?  // e.g., "Co-Organizer", "Marketing Manager", "Event Coordinator"
+  
+  invitedBy   String?  // User ID who invited
+  invitedAt   DateTime @default(now())
+  acceptedAt  DateTime?
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([eventId, collaboratorId])
+  @@index([eventId])
+  @@index([collaboratorId])
+}
+
+// Event Activity Log (for collaboration tracking)
+model EventActivityLog {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation("EventActivityLogs", fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("UserEventActivityLogs", fields: [userId], references: [id], onDelete: Cascade)
+  
+  action      String   // e.g., "event_updated", "ticket_created", "attendee_added"
+  entityType  String?  // e.g., "Event", "Ticket", "Attendee"
+  entityId    String?
+  
+  description String   @db.Text
+  changes     Json?    // Before/after changes
+  
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([eventId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// Phase 3: Advanced Ticket Types
+model TicketPackage {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerTicketPackages", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String
+  event       Event    @relation("EventTicketPackages", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  type        String   // "group", "bundle", "donation"
+  
+  // Pricing
+  price       Decimal? @db.Decimal(10, 2) // For bundles/group packages
+  minQuantity Int?     // Minimum quantity for group packages
+  maxQuantity Int?     // Maximum quantity for group packages
+  
+  // Bundle configuration
+  bundleItems Json?    // Array of ticket types included in bundle
+  
+  // Donation configuration
+  isDonation  Boolean  @default(false)
+  minDonation Decimal? @db.Decimal(10, 2)
+  maxDonation Decimal? @db.Decimal(10, 2)
+  suggestedAmounts Json? // Array of suggested donation amounts
+  
+  // Reserved seating
+  hasReservedSeating Boolean @default(false)
+  seatingChart       Json?   // Seating chart configuration
+  
+  // Availability
+  availableFrom DateTime?
+  availableUntil DateTime?
+  quantity       Int?     // Available quantity
+  soldQuantity   Int      @default(0)
+  
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([type])
+}
+
+// Dynamic Pricing Rules
+model DynamicPricingRule {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerPricingRules", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String
+  event       Event    @relation("EventPricingRules", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  name        String
+  type        String   // "time_based", "demand_based", "group_discount", "loyalty"
+  
+  // Time-based pricing
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  // Demand-based pricing
+  demandThreshold Int?     // When to trigger (e.g., 80% sold)
+  priceMultiplier  Decimal? @db.Decimal(5, 2) // e.g., 1.2 for 20% increase
+  
+  // Group discount
+  minGroupSize Int?
+  discountType String? // "PERCENTAGE", "FIXED_AMOUNT"
+  discountValue Decimal? @db.Decimal(10, 2)
+  
+  // Loyalty program
+  loyaltyTierId String?
+  loyaltyDiscount Decimal? @db.Decimal(10, 2)
+  
+  // Applicable ticket types
+  applicableTicketTypes String[] // Empty = all ticket types
+  
+  // Priority (higher priority rules apply first)
+  priority Int @default(0)
+  
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([type])
+  @@index([isActive])
+}
+
+// Affiliate Program
+model AffiliateProgram {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerAffiliatePrograms", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation("EventAffiliatePrograms", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  
+  // Commission settings
+  commissionType String // "PERCENTAGE", "FIXED_AMOUNT"
+  commissionValue Decimal @db.Decimal(10, 2)
+  minCommission  Decimal? @db.Decimal(10, 2)
+  maxCommission  Decimal? @db.Decimal(10, 2)
+  
+  // Cookie settings
+  cookieDuration Int @default(30) // Days
+  
+  // Status
+  isActive Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  affiliates Affiliate[]
+  
+  @@index([organizerId])
+  @@index([eventId])
+}
+
+model Affiliate {
+  id          String   @id @default(uuid())
+  programId   String
+  program     AffiliateProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("UserAffiliates", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Affiliate link
+  affiliateCode String @unique
+  customLink    String? // Custom affiliate link
+  
+  // Performance
+  clicks       Int      @default(0)
+  conversions  Int      @default(0)
+  totalRevenue Decimal  @default(0) @db.Decimal(10, 2)
+  totalCommission Decimal @default(0) @db.Decimal(10, 2)
+  paidCommission Decimal @default(0) @db.Decimal(10, 2)
+  
+  // Status
+  status       String   @default("active") // active, suspended, inactive
+  approvedAt   DateTime?
+  approvedBy   String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  conversionsList AffiliateConversion[]
+  
+  @@unique([programId, userId])
+  @@index([userId])
+  @@index([programId])
+  @@index([affiliateCode])
+}
+
+model AffiliateConversion {
+  id          String   @id @default(uuid())
+  affiliateId String
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  registrationId String @unique
+  registration EventRegistration @relation("AffiliateRegistration", fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  // Commission
+  revenueAmount Decimal @db.Decimal(10, 2)
+  commissionAmount Decimal @db.Decimal(10, 2)
+  commissionStatus String @default("pending") // pending, approved, paid
+  
+  convertedAt DateTime @default(now())
+  paidAt      DateTime?
+  
+  @@unique([affiliateId, registrationId])
+  @@index([affiliateId])
+  @@index([registrationId])
+}
+
+// Email Marketing
+model EmailCampaign {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerEmailCampaigns", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation("EventEmailCampaigns", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  name        String
+  subject     String
+  content     String   @db.Text // HTML content
+  plainText   String?  @db.Text
+  
+  // Recipients
+  recipientType String // "all", "segment", "tag", "event_registrations"
+  segmentId     String?
+  tagId         String?
+  
+  // Scheduling
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  
+  // Status
+  status      String   @default("draft") // draft, scheduled, sending, sent, cancelled
+  
+  // Analytics
+  sentCount      Int @default(0)
+  deliveredCount Int @default(0)
+  openedCount     Int @default(0)
+  clickedCount    Int @default(0)
+  bouncedCount    Int @default(0)
+  unsubscribedCount Int @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  automationRules EmailAutomationRule[]
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model EmailAutomationRule {
+  id          String   @id @default(uuid())
+  campaignId  String
+  campaign    EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  organizerId String
+  organizer   User     @relation("OrganizerEmailAutomations", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  name        String
+  trigger     String   // "event_created", "registration_confirmed", "event_reminder", "custom"
+  triggerConditions Json? // Conditions for trigger
+  
+  // Delay
+  delayType   String?  // "immediate", "after_days", "before_event"
+  delayValue  Int?     // Days or hours
+  
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([campaignId])
+  @@index([organizerId])
+  @@index([trigger])
+}
+
+// Social Media Integration
+model SocialMediaPost {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerSocialPosts", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation("EventSocialPosts", fields: [eventId], references: [id], onDelete: Cascade)
+  
+  platform    String   // "facebook", "twitter", "instagram", "linkedin"
+  content     String   @db.Text
+  mediaUrls   String[] // Array of image/video URLs
+  
+  // Scheduling
+  scheduledAt DateTime?
+  postedAt    DateTime?
+  
+  // Status
+  status      String   @default("draft") // draft, scheduled, posted, failed
+  
+  // Analytics
+  impressions Int      @default(0)
+  likes       Int      @default(0)
+  shares      Int      @default(0)
+  comments    Int      @default(0)
+  clicks      Int      @default(0)
+  
+  externalPostId String? // ID from social media platform
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([platform])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model SocialMediaCalendar {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerSocialCalendars", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  
+  // Auto-posting settings
+  autoPostEnabled Boolean @default(false)
+  platforms       String[] // Array of platforms to auto-post to
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+}
+
+model SocialMediaPostTemplate {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerPostTemplates", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  name              String
+  description       String? @db.Text
+  platform          String   // facebook, twitter, instagram, linkedin
+  content           String   @db.Text // Template content with {{variables}}
+  variables         String[] // Available variables (e.g., eventTitle, eventDate)
+  mediaPlaceholders String[] // Media placeholder names (e.g., eventImage, logo)
+  
+  isPublic   Boolean  @default(false)
+  usageCount Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+  @@index([platform])
+  @@index([isPublic])
+}
+
+// ============================================
+// Seating & Venue Map Models
+// ============================================
+
+enum SeatStatus {
+  AVAILABLE    // Seat is available for booking
+  RESERVED     // Seat is temporarily reserved (in cart)
+  BOOKED       // Seat is booked/assigned
+  BLOCKED      // Seat is blocked (not available)
+  MAINTENANCE  // Seat is under maintenance
+}
+
+enum SeatType {
+  STANDARD     // Standard seat
+  VIP          // VIP seat
+  PREMIUM      // Premium seat
+  WHEELCHAIR   // Wheelchair accessible
+  COMPANION    // Companion seat (for wheelchair users)
+  STANDING     // Standing area
+}
+
+model Venue {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerVenues", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  postalCode  String?
+  coordinates Json?    // { lat: number, lng: number }
+  
+  // Venue details
+  capacity    Int?     // Total capacity
+  venueType   String?  // "theatre", "stadium", "conference", "hall", etc.
+  amenities   String[] // Array of amenities
+  
+  // Default seating configuration
+  defaultSeatMap Json? // Default seat map layout (can be overridden per event)
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  seatMaps    SeatMap[]
+  
+  @@index([organizerId])
+  @@index([isActive])
+  @@index([venueType])
+}
+
+model SeatMap {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  event       Event    @relation("EventSeatMap", fields: [eventId], references: [id], onDelete: Cascade)
+  venueId     String?
+  venue       Venue?   @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  
+  // Seat map configuration
+  name        String?  // Custom name for this seat map
+  layout      Json     // Seat map layout configuration (sections, rows, seats)
+  // Layout structure:
+  // {
+  //   sections: [
+  //     {
+  //       id: "section-1",
+  //       name: "Orchestra",
+  //       type: "seated",
+  //       rows: [
+  //         {
+  //           id: "row-A",
+  //           label: "A",
+  //           seats: [
+  //             { id: "A1", label: "1", type: "STANDARD", price: 50.00 },
+  //             { id: "A2", label: "2", type: "VIP", price: 100.00 }
+  //           ]
+  //         }
+  //       ]
+  //     }
+  //   ]
+  // }
+  
+  // Pricing by section/type
+  pricing     Json?    // Pricing configuration per section/seat type
+  
+  // Display settings
+  imageUrl    String?  // Venue map image URL
+  width       Int?     // Map width in pixels
+  height      Int?     // Map height in pixels
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  seats       Seat[]
+  
+  @@index([eventId])
+  @@index([venueId])
+  @@index([isActive])
+}
+
+model Seat {
+  id          String   @id @default(uuid())
+  seatMapId   String
+  seatMap     SeatMap  @relation(fields: [seatMapId], references: [id], onDelete: Cascade)
+  
+  // Seat identification
+  seatIdentifier String // Unique identifier (e.g., "A1", "Section1-RowA-Seat1")
+  sectionId      String? // Section ID from layout
+  rowId          String? // Row ID from layout
+  rowLabel       String? // Row label (e.g., "A", "1")
+  seatLabel      String? // Seat label (e.g., "1", "2")
+  
+  // Seat properties
+  seatType    SeatType @default(STANDARD)
+  status      SeatStatus @default(AVAILABLE)
+  
+  // Pricing
+  basePrice   Decimal? @db.Decimal(10, 2) // Base price for this seat
+  currentPrice Decimal? @db.Decimal(10, 2) // Current price (may differ from base due to dynamic pricing)
+  
+  // Position (for visual rendering)
+  x           Float?   // X coordinate on map
+  y           Float?   // Y coordinate on map
+  angle       Float?   // Rotation angle (for curved rows)
+  
+  // Metadata
+  metadata    Json?    // Additional seat properties (aisle, restricted view, etc.)
+  
+  // Relations
+  reservations SeatReservation[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([seatMapId, seatIdentifier])
+  @@index([seatMapId])
+  @@index([status])
+  @@index([seatType])
+  @@index([sectionId, rowId])
+}
+
+model SeatReservation {
+  id              String   @id @default(uuid())
+  seatId          String
+  seat            Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  registrationId  String   @unique
+  registration    EventRegistration @relation("SeatReservation", fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  // Reservation details
+  reservedAt      DateTime @default(now())
+  reservedUntil   DateTime? // For temporary reservations (cart timeout)
+  confirmedAt     DateTime? // When reservation was confirmed (payment completed)
+  
+  // Pricing at time of reservation
+  priceAtReservation Decimal @db.Decimal(10, 2)
+  
+  // Status
+  status          String   @default("reserved") // "reserved", "confirmed", "cancelled"
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([seatId])
+  @@index([registrationId])
+  @@index([status])
+  @@index([reservedUntil])
+}
+
+// Advanced Team Features
+model TeamRoleTemplate {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerRoleTemplates", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?  @db.Text
+  
+  // Permissions
+  canEdit     Boolean  @default(false)
+  canManageAttendees Boolean @default(false)
+  canManageTickets Boolean @default(false)
+  canViewAnalytics Boolean @default(true)
+  canManageStaff Boolean @default(false)
+  canPublish Boolean @default(false)
+  canManageCollaborators Boolean @default(false)
+  
+  // Usage
+  usageCount  Int      @default(0)
+  
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+}
+
+model TeamActivityFeed {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerTeamActivities", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?   @relation("EventTeamActivities", fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("UserTeamActivities", fields: [userId], references: [id], onDelete: Cascade)
+  
+  action      String   // e.g., "event_created", "ticket_updated", "attendee_added"
+  description String   @db.Text
+  metadata    Json?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model TeamPerformanceMetric {
+  id          String   @id @default(uuid())
+  organizerId String
+  organizer   User     @relation("OrganizerTeamMetrics", fields: [organizerId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("UserTeamMetrics", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Metrics
+  eventsCreated     Int      @default(0)
+  ticketsSold       Int      @default(0)
+  revenueGenerated  Decimal  @default(0) @db.Decimal(10, 2)
+  attendeesManaged  Int      @default(0)
+  
+  // Period
+  periodStart DateTime
+  periodEnd   DateTime
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([organizerId, userId, periodStart, periodEnd])
+  @@index([organizerId])
+  @@index([userId])
+  @@index([periodStart])
+}
+
+// Admin Platform Financial Management
+model PlatformExpense {
+  id          String   @id @default(uuid())
+  
+  // Expense Details
+  category    String   // e.g., "Teller Payments", "Marketing", "Facilitation", "Utilities", "Office Supplies", "Other"
+  description String   @db.Text
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("NGN")
+  
+  // Payment Details
+  paymentMethod String? // "cash", "bank_transfer", "credit_card", "check"
+  recipient     String? // Who received the payment (e.g., teller name, vendor name)
+  reference     String? // Payment reference number
+  
+  // Receipt/Proof
+  receiptUrl  String?
+  receiptDate DateTime?
+  
+  // Tax
+  taxAmount   Decimal? @db.Decimal(10, 2)
+  taxRate     Decimal? @db.Decimal(5, 2)
+  isTaxDeductible Boolean @default(false)
+  
+  // Status
+  status      String   @default("pending") // pending, approved, paid, cancelled
+  
+  // Recorded by
+  recordedBy  String?  // Admin user ID who recorded this
+  approvedBy  String?  // Admin user ID who approved this
+  
+  expenseDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([category])
+  @@index([expenseDate])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PlatformIncome {
+  id          String   @id @default(uuid())
+  
+  // Income Details
+  category    String   // e.g., "Platform Fees", "Subscriptions", "Event Registration Fees", "Other"
+  description String   @db.Text
+  amount      Decimal  @db.Decimal(10, 2)
+  currency    String   @default("NGN")
+  
+  // Source Details
+  source      String?  // Where the income came from (e.g., "EventKnit Platform", "Subscription Revenue")
+  reference   String?  // Reference number (e.g., transaction ID, subscription ID)
+  
+  // Payment Details
+  paymentMethod String? // "bank_transfer", "credit_card", "paystack", etc.
+  
+  // Related Entities (optional)
+  eventId     String?  // If income is related to a specific event
+  event       Event?   @relation("PlatformIncomeEvents", fields: [eventId], references: [id], onDelete: SetNull)
+  transactionId String? // If related to a payment transaction
+  
+  // Tax
+  taxAmount   Decimal? @db.Decimal(10, 2)
+  taxRate     Decimal? @db.Decimal(5, 2)
+  
+  // Status
+  status      String   @default("received") // received, pending, cancelled
+  
+  // Recorded by
+  recordedBy  String?  // Admin user ID who recorded this
+  
+  incomeDate  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([category])
+  @@index([incomeDate])
+  @@index([status])
+  @@index([createdAt])
+  @@index([eventId])
+}
+
+// ============================================
+// White-Label Solution Models
+// ============================================
+
+enum CustomDomainStatus {
+  PENDING      // Domain added but not verified
+  VERIFIED     // Domain verified and active
+  FAILED       // Domain verification failed
+  SUSPENDED    // Domain suspended by admin
+}
+
+enum BrandingStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_APPROVAL // For admin review
+}
+
+model WhiteLabelBranding {
+  id                String         @id @default(uuid())
+  organizerId       String         @unique
+  organizer         User           @relation("OrganizerBranding", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  // Branding Assets
+  logoUrl           String?        // Main logo URL
+  logoLightUrl      String?        // Logo for light backgrounds
+  logoDarkUrl       String?        // Logo for dark backgrounds
+  faviconUrl        String?        // Favicon URL
+  coverImageUrl     String?        // Cover/hero image
+  
+  // Color Scheme
+  primaryColor      String?        // Primary brand color (hex)
+  secondaryColor   String?        // Secondary brand color (hex)
+  accentColor       String?        // Accent color (hex)
+  backgroundColor   String?        // Background color (hex)
+  textColor         String?        // Primary text color (hex)
+  linkColor         String?        // Link color (hex)
+  
+  // Typography
+  fontFamily        String?        // Primary font family
+  headingFont       String?        // Heading font family
+  
+  // Branding Details
+  brandName         String?        // Custom brand name (if different from organization name)
+  tagline           String?        // Brand tagline/slogan
+  supportEmail      String?        // Custom support email
+  supportPhone      String?        // Custom support phone
+  websiteUrl        String?        // Organization website
+  
+  // Email Branding
+  emailHeaderImage  String?        // Image for email headers
+  emailFooterText   String?        // Custom footer text for emails
+  emailSignature    String?        @db.Text // Email signature HTML
+  
+  // Social Media
+  socialLinks       Json?          // {facebook, twitter, instagram, linkedin, etc.}
+  
+  // Status
+  status            BrandingStatus @default(PENDING_APPROVAL)
+  isActive          Boolean        @default(false)
+  approvedBy        String?        // Admin user ID who approved
+  approvedAt        DateTime?
+  rejectionReason   String?        @db.Text
+  
+  // Metadata
+  metadata          Json?          // Additional branding settings
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  @@index([organizerId])
+  @@index([status])
+  @@index([isActive])
+}
+
+model CustomDomain {
+  id                String             @id @default(uuid())
+  organizerId       String
+  organizer         User               @relation("OrganizerCustomDomains", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  // Domain Details
+  domain            String             @unique // e.g., events.example.com
+  subdomain         String?            // If using subdomain approach
+  isPrimary         Boolean            @default(false) // Primary domain for the organizer
+  
+  // DNS Verification
+  status            CustomDomainStatus @default(PENDING)
+  verificationToken String?            // Token for DNS verification
+  verificationCode  String?            // Code to add to DNS TXT record
+  verifiedAt        DateTime?
+  verifiedBy        String?            // Admin user ID who verified
+  
+  // SSL Certificate
+  sslEnabled        Boolean            @default(false)
+  sslCertificate    String?            @db.Text // SSL certificate (if self-hosted)
+  sslKey            String?            @db.Text // SSL private key (if self-hosted)
+  sslExpiresAt      DateTime?
+  
+  // Configuration
+  cnameTarget       String?            // CNAME target for DNS setup
+  ipAddress         String?            // IP address for A record setup
+  
+  // Status
+  isActive          Boolean            @default(false)
+  lastCheckedAt     DateTime?          // Last DNS verification check
+  failureReason     String?            @db.Text
+  
+  // Metadata
+  metadata          Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  @@index([organizerId])
+  @@index([domain])
+  @@index([status])
+  @@index([isActive])
+  @@index([isPrimary])
 }

@@ -347,3 +347,16 @@ export const apiDelete = <T>(endpoint: string): Promise<T> => {
   return apiRequest<T>(endpoint, { method: 'DELETE' });
 };
 
+/**
+ * Compatibility wrapper for modules expecting a default export
+ */
+const api = {
+  get: apiGet,
+  post: apiPost,
+  put: apiPut,
+  patch: apiPatch,
+  delete: apiDelete,
+};
+
+export default api;
+

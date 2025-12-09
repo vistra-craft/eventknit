@@ -12,6 +12,21 @@ import DashboardAttendees from "./DashboardAttendees";
 import AttendeeDiscovery from "./AttendeeDiscovery";
 import NotificationsCenter from "./NotificationsCenter";
 import PersonalAnalytics from "./PersonalAnalytics";
+import PersonalizedRecommendations from "./PersonalizedRecommendations";
+import TicketTransfer from "./TicketTransfer";
+import EventReviews from "./EventReviews";
+import EventCollections from "./EventCollections";
+import InterestManagement from "./InterestManagement";
+import AdvancedSearch from "./AdvancedSearch";
+import DirectMessaging from "./DirectMessaging";
+import SocialNetworking from "./SocialNetworking";
+import TicketResale from "./TicketResale";
+import DigitalWallet from "./DigitalWallet";
+import EventCalendarIntegration from "./EventCalendarIntegration";
+import PersonalEventFeed from "./PersonalEventFeed";
+import EventUpdatesSubscription from "./EventUpdatesSubscription";
+import PaymentPlans from "./PaymentPlans";
+import Invoices from "./Invoices";
 
 const UserDashboard = () => {
   const location = useLocation();
@@ -70,6 +85,36 @@ const UserDashboard = () => {
         return <NotificationsCenter eventData={eventData} />;
       case "analytics":
         return <PersonalAnalytics eventData={eventData} user={user} />;
+      case "recommendations":
+        return <PersonalizedRecommendations />;
+      case "ticket-transfer":
+        return <TicketTransfer />;
+      case "reviews":
+        return <EventReviews />;
+      case "collections":
+        return <EventCollections />;
+      case "interests":
+        return <InterestManagement />;
+      case "search":
+        return <AdvancedSearch />;
+      case "messages":
+        return <DirectMessaging />;
+      case "social":
+        return <SocialNetworking />;
+      case "ticket-resale":
+        return <TicketResale />;
+      case "wallet":
+        return <DigitalWallet />;
+      case "calendar":
+        return <EventCalendarIntegration />;
+      case "feed":
+        return <PersonalEventFeed />;
+      case "subscriptions":
+        return <EventUpdatesSubscription />;
+      case "payment-plans":
+        return <PaymentPlans />;
+      case "invoices":
+        return <Invoices />;
       case "abstracts":
         return <DashboardAbstracts eventData={eventData} user={user} registration={registration} />;
       default:

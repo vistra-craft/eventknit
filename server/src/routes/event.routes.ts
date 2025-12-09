@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import { EventController } from '../controllers/event.controller.js';
-import { validate } from '../middleware/validation.middleware.js';
+import { SeatSelectionController } from '../controllers/seat-map.controller.js';
+import { validate, validateParams } from '../middleware/validation.middleware.js';
 import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
 import { eventValidations } from '../validations/event.validations.js';
+import { reserveSeatsSchema } from '../validations/venue.validations.js';
 import { guestRegistrationRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import { UserRole } from '@prisma/client';
+import Joi from 'joi';
 
 const router = Router();
 
@@ -32,6 +35,17 @@ router.post(
   guestRegistrationRateLimiter,
   validate(eventValidations.registerAsGuest),
   EventController.registerAsGuest,
+);
+
+/**
+ * @route   GET /api/v1/events/:id/seat-map
+ * @desc    Get seat map availability (public)
+ * @access  Public
+ */
+router.get(
+  '/:id/seat-map',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  SeatSelectionController.getSeatMapAvailability,
 );
 
 // Protected routes (require authentication)
@@ -70,6 +84,18 @@ router.delete(
   '/:id',
   requireMinRole(UserRole.ORGANIZER),
   EventController.deleteEvent,
+);
+
+/**
+ * @route   POST /api/v1/events/:id/duplicate
+ * @desc    Duplicate an event
+ * @access  Private (ORGANIZER+)
+ */
+router.post(
+  '/:id/duplicate',
+  requireMinRole(UserRole.ORGANIZER),
+  validate(eventValidations.duplicateEvent),
+  EventController.duplicateEvent,
 );
 
 /**
@@ -167,6 +193,51 @@ router.put(
  * @access  Private (ATTENDEE+)
  */
 router.get('/user/registered', EventController.getUserRegisteredEvents);
+
+/**
+ * @route   POST /api/v1/events/:id/seats/reserve
+ * @desc    Reserve seats for registration
+ * @access  Private (ATTENDEE+)
+ */
+router.post(
+  '/:id/seats/reserve',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  validate(reserveSeatsSchema),
+  SeatSelectionController.reserveSeats,
+);
+
+/**
+ * @route   POST /api/v1/events/registrations/:registrationId/seats/confirm
+ * @desc    Confirm seat reservation (after payment)
+ * @access  Private (ATTENDEE+)
+ */
+router.post(
+  '/registrations/:registrationId/seats/confirm',
+  validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
+  SeatSelectionController.confirmReservation,
+);
+
+/**
+ * @route   DELETE /api/v1/events/registrations/:registrationId/seats
+ * @desc    Cancel seat reservation
+ * @access  Private (ATTENDEE+)
+ */
+router.delete(
+  '/registrations/:registrationId/seats',
+  validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
+  SeatSelectionController.cancelReservation,
+);
+
+/**
+ * @route   GET /api/v1/events/registrations/:registrationId/seats
+ * @desc    Get seat selection for registration
+ * @access  Private (ATTENDEE+)
+ */
+router.get(
+  '/registrations/:registrationId/seats',
+  validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
+  SeatSelectionController.getSeatSelection,
+);
 
 export default router;
 

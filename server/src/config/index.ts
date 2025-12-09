@@ -81,9 +81,40 @@ export const config = {
     appSecret: process.env.FACEBOOK_APP_SECRET || '',
   },
 
+  socialMedia: {
+    facebook: {
+      clientId: process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID || '',
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET || '',
+      redirectUri: process.env.FACEBOOK_REDIRECT_URI || '',
+    },
+    twitter: {
+      clientId: process.env.TWITTER_CLIENT_ID || '',
+      clientSecret: process.env.TWITTER_CLIENT_SECRET || '',
+      redirectUri: process.env.TWITTER_REDIRECT_URI || '',
+    },
+    instagram: {
+      clientId: process.env.INSTAGRAM_CLIENT_ID || '',
+      clientSecret: process.env.INSTAGRAM_CLIENT_SECRET || '',
+      redirectUri: process.env.INSTAGRAM_REDIRECT_URI || '',
+    },
+    linkedin: {
+      clientId: process.env.LINKEDIN_CLIENT_ID || '',
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+      redirectUri: process.env.LINKEDIN_REDIRECT_URI || '',
+    },
+  },
+
   paystack: {
     secretKey: process.env.PAYSTACK_SECRET_KEY || '',
     publicKey: process.env.PAYSTACK_PUBLIC_KEY || '',
+    webhookSecret: process.env.PAYSTACK_WEBHOOK_SECRET || '',
+  },
+
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || '',
+    publicKey: process.env.STRIPE_PUBLIC_KEY || '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    environment: (process.env.STRIPE_ENVIRONMENT as 'test' | 'live') || 'test',
   },
 
   sms: {

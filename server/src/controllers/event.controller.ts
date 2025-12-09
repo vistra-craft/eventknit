@@ -604,6 +604,42 @@ export class EventController {
       next(error);
     }
   }
+
+  /**
+   * Duplicate an event
+   */
+  static async duplicateEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { id } = req.params;
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const duplicatedEvent = await EventService.duplicateEvent(
+        id,
+        req.user.id,
+        req.user.role,
+        req.body,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Event duplicated successfully',
+        data: { event: duplicatedEvent },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 

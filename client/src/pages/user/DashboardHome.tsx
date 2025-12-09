@@ -16,6 +16,14 @@ import {
   Share2,
   Copy,
   Download,
+  BarChart3,
+  FolderPlus,
+  Mail,
+  Ticket,
+  Wallet,
+  Sparkles,
+  Bell,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
@@ -228,6 +236,65 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                     <p className="text-xs text-muted-foreground">Completed</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="mt-6 pt-6 border-t border-border space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Quick Actions</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs"
+                  onClick={() => navigate('/user/dashboard?section=recommendations')}
+                >
+                  <Star className="h-3 w-3 mr-2" />
+                  Recommendations
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs"
+                  onClick={() => navigate('/user/dashboard?section=analytics')}
+                >
+                  <BarChart3 className="h-3 w-3 mr-2" />
+                  Analytics
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs"
+                  onClick={() => navigate('/user/dashboard?section=collections')}
+                >
+                  <FolderPlus className="h-3 w-3 mr-2" />
+                  Collections
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs"
+                  onClick={() => navigate('/user/dashboard?section=messages')}
+                >
+                  <Mail className="h-3 w-3 mr-2" />
+                  Messages
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs"
+                  onClick={() => navigate('/user/dashboard?section=invoices')}
+                >
+                  <FileText className="h-3 w-3 mr-2" />
+                  Invoices
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs"
+                  onClick={() => navigate('/user/dashboard?section=payment-plans')}
+                >
+                  <CreditCard className="h-3 w-3 mr-2" />
+                  Payment Plans
+                </Button>
               </div>
             </div>
           </div>

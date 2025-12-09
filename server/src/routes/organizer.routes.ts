@@ -2,9 +2,20 @@ import { Router, Response, NextFunction } from 'express';
 import { OrganizerController } from '../controllers/organizer.controller.js';
 import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
+import { InvoiceController } from '../controllers/invoice.controller.js';
+import { WhiteLabelController } from '../controllers/white-label.controller.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { canManageStaff } from '../utils/privileges.js';
 import { AuthorizationError } from '../utils/errors.js';
+import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
+import {
+  createBrandingSchema,
+  updateBrandingStatusSchema,
+  createCustomDomainSchema,
+  updateCustomDomainSchema,
+  verifyCustomDomainSchema,
+} from '../validations/white-label.validations.js';
+import Joi from 'joi';
 
 const router = Router();
 
@@ -172,6 +183,68 @@ router.get('/staff-performance/:staffId/trends', StaffPerformanceController.getP
  * @access  Private (ORGANIZER+)
  */
 router.get('/staff-performance/:staffId', StaffPerformanceController.getStaffPerformance);
+
+// ========== Invoices ==========
+router.get(
+  '/events/:eventId/invoices',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validateQuery(Joi.object({
+    status: Joi.string().optional(),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  })),
+  InvoiceController.getEventInvoices
+);
+
+// ========== White-Label Branding ==========
+/**
+ * @route   GET /api/v1/organizer/branding
+ * @desc    Get organizer's branding
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/branding', WhiteLabelController.getBranding);
+
+/**
+ * @route   PUT /api/v1/organizer/branding
+ * @desc    Create or update branding
+ * @access  Private (ORGANIZER+)
+ */
+router.put('/branding', validate(createBrandingSchema), WhiteLabelController.upsertBranding);
+
+/**
+ * @route   GET /api/v1/organizer/custom-domains
+ * @desc    Get custom domains for organizer
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/custom-domains', WhiteLabelController.getCustomDomains);
+
+/**
+ * @route   POST /api/v1/organizer/custom-domains
+ * @desc    Add custom domain
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/custom-domains', validate(createCustomDomainSchema), WhiteLabelController.addCustomDomain);
+
+/**
+ * @route   GET /api/v1/organizer/custom-domains/:domainId
+ * @desc    Get custom domain by ID
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/custom-domains/:domainId', WhiteLabelController.getCustomDomainById);
+
+/**
+ * @route   PUT /api/v1/organizer/custom-domains/:domainId
+ * @desc    Update custom domain
+ * @access  Private (ORGANIZER+)
+ */
+router.put('/custom-domains/:domainId', validate(updateCustomDomainSchema), WhiteLabelController.updateCustomDomain);
+
+/**
+ * @route   DELETE /api/v1/organizer/custom-domains/:domainId
+ * @desc    Delete custom domain
+ * @access  Private (ORGANIZER+)
+ */
+router.delete('/custom-domains/:domainId', WhiteLabelController.deleteCustomDomain);
 
 export default router;
 

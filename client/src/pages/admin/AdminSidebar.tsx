@@ -95,6 +95,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       ]
     },
     { 
+      id: "financial", 
+      label: "Financial", 
+      icon: DollarSign,
+      group: "main",
+      children: [
+        { name: "Financial Management", href: "/admin/financial" },
+      ]
+    },
+    { 
       id: "marketing", 
       label: "Marketing", 
       icon: Megaphone,

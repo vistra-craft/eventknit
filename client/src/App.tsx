@@ -32,6 +32,9 @@ import PastEventsPage from "./pages/organizer/PastEventsPage";
 import VerificationPage from "./pages/organizer/VerificationPage";
 import CreateEventPage from "./pages/organizer/CreateEventPage";
 import OrganizerSettingsPage from "./pages/organizer/OrganizerSettingsPage";
+import WhiteLabelBranding from "./pages/organizer/WhiteLabelBranding";
+import CustomDomains from "./pages/organizer/CustomDomains";
+import VenueManagement from "./pages/organizer/VenueManagement";
 // Analytics imports
 import { 
   AnalyticsOverview, 
@@ -49,6 +52,18 @@ import {
 } from "./pages/organizer/team";
 // Event Templates import
 import EventTemplates from "./pages/organizer/EventTemplates";
+import EventTemplatesManagement from "./pages/organizer/EventTemplatesManagement";
+import EventDraftsManagement from "./pages/organizer/EventDraftsManagement";
+import AttendeeSegmentation from "./pages/organizer/AttendeeSegmentation";
+import AttendeeTagsManagement from "./pages/organizer/AttendeeTagsManagement";
+import AttendeeCommunication from "./pages/organizer/AttendeeCommunication";
+import FinancialManagement from "./pages/organizer/FinancialManagement";
+import EventCollaboration from "./pages/organizer/EventCollaboration";
+import EmailMarketing from "./pages/organizer/EmailMarketing";
+import AdvancedTicketTypes from "./pages/organizer/AdvancedTicketTypes";
+import DynamicPricing from "./pages/organizer/DynamicPricing";
+import AffiliateProgram from "./pages/organizer/AffiliateProgram";
+import SocialMedia from "./pages/organizer/SocialMedia";
 // Marketing imports
 import PromoCodeManager from "./pages/organizer/marketing/PromoCodeManager";
 // Admin Dashboard imports
@@ -106,6 +121,8 @@ import AdminNotificationSettingsPage from "./pages/admin/AdminNotificationSettin
 import { AdminAnalyticsOverview } from "./pages/admin/analytics";
 // Admin Support import
 import SupportPage from "./pages/admin/SupportPage";
+// Admin Financial import
+import AdminFinancialManagement from "./pages/admin/AdminFinancialManagement";
 // Admin Finance imports
 import { 
   FinanceDashboard,
@@ -209,10 +226,34 @@ const App = () => (
       <Route path="/organizer/settings/security" element={<OrganizerSettingsPage />} />
       <Route path="/organizer/settings/appearance" element={<OrganizerSettingsPage />} />
       <Route path="/organizer/verification" element={<VerificationPage />} />
+      {/* White-Label Routes */}
+      <Route path="/organizer/branding" element={<WhiteLabelBranding />} />
+      <Route path="/organizer/custom-domains" element={<CustomDomains />} />
+      {/* Venue & Seating Routes */}
+      <Route path="/organizer/venues" element={<VenueManagement />} />
       {/* Legacy Profile Route - redirects to settings */}
       <Route path="/organizer/profile" element={<OrganizerSettingsPage />} />
       {/* Event Templates and Drafts */}
       <Route path="/organizer/events/templates" element={<EventTemplates />} />
+      <Route path="/organizer/events/templates-management" element={<EventTemplatesManagement />} />
+      <Route path="/organizer/events/drafts" element={<EventDraftsManagement />} />
+      {/* Attendee Management Routes */}
+      <Route path="/organizer/attendees/segmentation" element={<AttendeeSegmentation />} />
+      <Route path="/organizer/attendees/tags" element={<AttendeeTagsManagement />} />
+      <Route path="/organizer/attendees/communication" element={<AttendeeCommunication />} />
+      {/* Marketing Routes */}
+      <Route path="/organizer/marketing/email" element={<EmailMarketing />} />
+      <Route path="/organizer/marketing/affiliate" element={<AffiliateProgram />} />
+      <Route path="/organizer/marketing/social" element={<SocialMedia />} />
+      {/* Tickets Routes */}
+      <Route path="/organizer/tickets/advanced" element={<AdvancedTicketTypes />} />
+      <Route path="/organizer/event/:eventId/tickets/advanced" element={<AdvancedTicketTypes />} />
+      <Route path="/organizer/tickets/pricing" element={<DynamicPricing />} />
+      <Route path="/organizer/event/:eventId/tickets/pricing" element={<DynamicPricing />} />
+      {/* Financial Routes */}
+      <Route path="/organizer/financial" element={<FinancialManagement />} />
+      {/* Event Collaboration Routes */}
+      <Route path="/organizer/event/:eventId/collaboration" element={<EventCollaboration />} />
       {/* Marketing Routes */}
       <Route path="/organizer/marketing/promo-codes" element={<PromoCodeManager />} />
       {/* Admin Dashboard Routes */}
@@ -295,6 +336,8 @@ const App = () => (
       <Route path="/admin/analytics/users" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/revenue" element={<AdminAnalyticsOverview />} />
       <Route path="/admin/analytics/system" element={<AdminAnalyticsOverview />} />
+      {/* Admin Financial Management Route */}
+      <Route path="/admin/financial" element={<AdminFinancialManagement />} />
       <Route path="/support" element={<Support />} />
       {/* Auth Routes */}
       <Route path="/auth/signin" element={<SignIn />} />
