@@ -1,0 +1,61 @@
+import { WebhookService } from '../src/services/webhook.service';
+import { NotFoundError, ValidationError } from '../src/utils/errors';
+
+const prismaMock = {
+  webhookConfig: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+};
+
+jest.mock('../src/config/database', () => ({
+  prisma: prismaMock,
+}));
+
+describe('WebhookService', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('creates webhook config', async () => {
+    prismaMock.webhookConfig.create.mockResolvedValue({ id: 'wh-1' });
+    const cfg = await WebhookService.createWebhook({
+      name: 'Events',
+      url: 'https://example.com/webhook',
+      secret: 'secret',
+      events: ['ticket.created'],
+      isActive: true,
+    });
+    expect(prismaMock.webhookConfig.create).toHaveBeenCalled();
+    expect(cfg).toEqual({ id: 'wh-1' });
+  });
+
+  it('verifies secret when signing payload', async () => {
+    prismaMock.webhookConfig.findUnique.mockResolvedValue({ id: 'wh-1', secret: 'abc', isActive: true });
+    const signature = await WebhookService.signPayload('wh-1', { hello: 'world' });
+    expect(signature).toMatch(/^[a-f0-9]+$/i);
+  });
+
+  it('throws when signing with missing config', async () => {
+    prismaMock.webhookConfig.findUnique.mockResolvedValue(null);
+    await expect(WebhookService.signPayload('missing', {})).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('validates signature', async () => {
+    prismaMock.webhookConfig.findUnique.mockResolvedValue({ id: 'wh-1', secret: 'abc', isActive: true });
+    const payload = { a: 1 };
+    const sig = await WebhookService.signPayload('wh-1', payload);
+    const valid = await WebhookService.verifySignature('wh-1', payload, sig);
+    expect(valid).toBe(true);
+  });
+
+  it('fails verification with wrong secret', async () => {
+    prismaMock.webhookConfig.findUnique.mockResolvedValue({ id: 'wh-1', secret: 'wrong', isActive: true });
+    const valid = await WebhookService.verifySignature('wh-1', { a: 1 }, 'deadbeef');
+    expect(valid).toBe(false);
+  });
+});
+

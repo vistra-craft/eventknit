@@ -18,6 +18,8 @@ describe('Event System', () => {
   let adminToken: string;
   let organizerId: string;
   let adminId: string;
+  let templateId: string;
+  let draftId: string;
 
   beforeAll(async () => {
     try {
@@ -327,6 +329,71 @@ describe('Event System', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('Event Templates & Drafts (Organizer Dashboard)', () => {
+    it('creates a template and uses it', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const createRes = await request(app)
+        .post('/api/v1/organizer-dashboard/templates')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          name: 'My Template',
+          templateData: { title: 'From Template', steps: [] },
+          isPublic: true,
+        });
+
+      expect(createRes.status).toBe(201);
+      templateId = createRes.body.data.template.id;
+
+      const useRes = await request(app)
+        .post(`/api/v1/organizer-dashboard/templates/${templateId}/use`)
+        .set('Authorization', `Bearer ${organizerToken}`);
+
+      expect(useRes.status).toBe(200);
+      expect(useRes.body.data.templateData.title).toBe('From Template');
+    });
+
+    it('creates, updates, and publishes a draft', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create draft
+      const draftRes = await request(app)
+        .post('/api/v1/organizer-dashboard/drafts')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          draftData: { title: 'Draft Event', details: {} },
+        });
+
+      expect(draftRes.status).toBe(201);
+      draftId = draftRes.body.data.draft.id;
+
+      // Update draft
+      const updateRes = await request(app)
+        .put(`/api/v1/organizer-dashboard/drafts/${draftId}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          draftData: { title: 'Draft Event Updated', details: { venue: 'Hall A' } },
+        });
+
+      expect(updateRes.status).toBe(200);
+      expect(updateRes.body.data.draft.draftData.title).toBe('Draft Event Updated');
+
+      // Publish draft
+      const publishRes = await request(app)
+        .post(`/api/v1/organizer-dashboard/drafts/${draftId}/publish`)
+        .set('Authorization', `Bearer ${organizerToken}`);
+
+      expect(publishRes.status).toBe(200);
+      expect(publishRes.body.data.draftId).toBe(draftId);
     });
   });
 
