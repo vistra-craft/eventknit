@@ -1,23 +1,19 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import OrganizerLayout from "./OrganizerLayout";
 import {
   Users,
   Plus,
-  UserPlus,
-  UserMinus,
   Settings,
   Trash2,
   Clock,
   CheckCircle,
-  XCircle,
   Activity,
 } from "lucide-react";
 import {
@@ -61,8 +57,18 @@ interface ActivityLog {
     email: string;
   };
   createdAt: string;
-  changes?: any;
+  changes?: Record<string, unknown>;
 }
+
+type PermissionPayload = {
+  role?: string;
+  canEdit?: boolean;
+  canManageAttendees?: boolean;
+  canManageTickets?: boolean;
+  canViewAnalytics?: boolean;
+  canManageStaff?: boolean;
+  canPublish?: boolean;
+};
 
 const EventCollaboration = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -75,16 +81,7 @@ const EventCollaboration = () => {
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (eventId) {
-      loadCollaborators();
-      if (activeTab === "activity") {
-        loadActivityLog();
-      }
-    }
-  }, [eventId, activeTab]);
-
-  const loadCollaborators = async () => {
+  const loadCollaborators = useCallback(async () => {
     if (!eventId) return;
     try {
       setLoading(true);
@@ -102,9 +99,9 @@ const EventCollaboration = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId, toast]);
 
-  const loadActivityLog = async () => {
+  const loadActivityLog = useCallback(async () => {
     if (!eventId) return;
     try {
       const response = await getEventActivityLog(eventId);
@@ -114,7 +111,7 @@ const EventCollaboration = () => {
     } catch (error) {
       console.error("Error loading activity log:", error);
     }
-  };
+  }, [eventId]);
 
   const handleInviteCollaborator = async (data: {
     collaboratorId: string;
@@ -138,6 +135,7 @@ const EventCollaboration = () => {
         loadCollaborators();
       }
     } catch (error) {
+      console.error("Error inviting collaborator:", error);
       toast({
         title: "Error",
         description: "Failed to invite collaborator",
@@ -146,15 +144,7 @@ const EventCollaboration = () => {
     }
   };
 
-  const handleUpdatePermissions = async (collaborationId: string, data: {
-    role?: string;
-    canEdit?: boolean;
-    canManageAttendees?: boolean;
-    canManageTickets?: boolean;
-    canViewAnalytics?: boolean;
-    canManageStaff?: boolean;
-    canPublish?: boolean;
-  }) => {
+  const handleUpdatePermissions = async (collaborationId: string, data: PermissionPayload) => {
     try {
       const response = await updateCollaboratorPermissions(collaborationId, data);
       if (response.success) {
@@ -167,6 +157,7 @@ const EventCollaboration = () => {
         loadCollaborators();
       }
     } catch (error) {
+      console.error("Error updating permissions:", error);
       toast({
         title: "Error",
         description: "Failed to update permissions",
@@ -188,6 +179,7 @@ const EventCollaboration = () => {
         loadCollaborators();
       }
     } catch (error) {
+      console.error("Error removing collaborator:", error);
       toast({
         title: "Error",
         description: "Failed to remove collaborator",
@@ -195,6 +187,15 @@ const EventCollaboration = () => {
       });
     }
   };
+
+  useEffect(() => {
+    if (eventId) {
+      loadCollaborators();
+      if (activeTab === "activity") {
+        loadActivityLog();
+      }
+    }
+  }, [eventId, activeTab, loadCollaborators, loadActivityLog]);
 
   if (!eventId) {
     return (
@@ -408,7 +409,7 @@ const InviteCollaboratorForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: PermissionPayload & { collaboratorId: string }) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -536,7 +537,7 @@ const PermissionsForm = ({
   onCancel,
 }: {
   collaborator: Collaborator;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: PermissionPayload) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -646,3 +647,4 @@ const PermissionsForm = ({
 };
 
 export default EventCollaboration;
+

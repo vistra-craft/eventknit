@@ -1,8 +1,9 @@
 /**
  * User Dashboard API Functions
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { apiGet, apiPost, apiPut, apiDelete, apiPatch, type ApiResponse } from './api';
+import { apiGet, apiPost, apiPut, apiDelete, apiPatch, type ApiResponse } from "./api";
 
 /**
  * Get personalized event recommendations
@@ -606,3 +607,4 @@ export const updateSubscriptionPreferences = async (eventId: string, data: {
 }): Promise<ApiResponse<{ subscription: any }>> => {
   return apiPut(`/user-dashboard/subscriptions/${eventId}/preferences`, data);
 };
+

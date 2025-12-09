@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,25 +39,29 @@ const CustomDomains = () => {
     ipAddress: '',
   });
 
-  useEffect(() => {
-    loadDomains();
-  }, []);
-
-  const loadDomains = async () => {
+  const loadDomains = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getCustomDomains();
       setDomains(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to load custom domains',
+        description: message || 'Failed to load custom domains',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadDomains();
+  }, [loadDomains]);
 
   const handleAddDomain = async () => {
     try {
@@ -76,10 +80,14 @@ const CustomDomains = () => {
         ipAddress: '',
       });
       loadDomains();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to add custom domain',
+        description: message || 'Failed to add custom domain',
         variant: 'destructive',
       });
     } finally {
@@ -99,10 +107,14 @@ const CustomDomains = () => {
         description: 'Custom domain deleted successfully',
       });
       loadDomains();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to delete custom domain',
+        description: message || 'Failed to delete custom domain',
         variant: 'destructive',
       });
     }
@@ -116,21 +128,28 @@ const CustomDomains = () => {
         description: 'Primary domain updated',
       });
       loadDomains();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to update domain',
+        description: message || 'Failed to update domain',
         variant: 'destructive',
       });
     }
   };
 
   const getStatusBadge = (status: CustomDomain['status']) => {
-    const variants: Record<string, any> = {
-      VERIFIED: { variant: 'default' as const, icon: CheckCircle, label: 'Verified' },
-      PENDING: { variant: 'secondary' as const, icon: Clock, label: 'Pending' },
-      FAILED: { variant: 'destructive' as const, icon: XCircle, label: 'Failed' },
-      SUSPENDED: { variant: 'destructive' as const, icon: AlertCircle, label: 'Suspended' },
+    const variants: Record<
+      CustomDomain['status'] | string,
+      { variant: 'default' | 'secondary' | 'destructive'; icon: typeof CheckCircle; label: string }
+    > = {
+      VERIFIED: { variant: 'default', icon: CheckCircle, label: 'Verified' },
+      PENDING: { variant: 'secondary', icon: Clock, label: 'Pending' },
+      FAILED: { variant: 'destructive', icon: XCircle, label: 'Failed' },
+      SUSPENDED: { variant: 'destructive', icon: AlertCircle, label: 'Suspended' },
     };
 
     const config = variants[status] || variants.PENDING;
@@ -367,3 +386,4 @@ const CustomDomains = () => {
 };
 
 export default CustomDomains;
+

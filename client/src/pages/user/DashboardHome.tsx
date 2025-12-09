@@ -19,10 +19,6 @@ import {
   BarChart3,
   FolderPlus,
   Mail,
-  Ticket,
-  Wallet,
-  Sparkles,
-  Bell,
   CreditCard,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";

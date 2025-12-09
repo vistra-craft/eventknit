@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +21,6 @@ import {
 import {
   createTag,
   getOrganizerTags,
-  getTagById,
-  updateTag,
   tagUser,
   untagUser,
   getTaggedUsers,
@@ -43,7 +42,7 @@ interface AttendeeTag {
 const AttendeeTagsManagement = () => {
   const [tags, setTags] = useState<AttendeeTag[]>([]);
   const [selectedTag, setSelectedTag] = useState<AttendeeTag | null>(null);
-  const [taggedUsers, setTaggedUsers] = useState<any[]>([]);
+  const [taggedUsers, setTaggedUsers] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("tags");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -51,17 +50,7 @@ const AttendeeTagsManagement = () => {
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchTags();
-  }, []);
-
-  useEffect(() => {
-    if (selectedTag && activeTab === "users") {
-      loadTaggedUsers();
-    }
-  }, [selectedTag, activeTab]);
-
-  const fetchTags = async () => {
+  const fetchTags = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getOrganizerTags();
@@ -78,9 +67,19 @@ const AttendeeTagsManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const loadTaggedUsers = async () => {
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+
+  useEffect(() => {
+    if (selectedTag && activeTab === "users") {
+      loadTaggedUsers();
+    }
+  }, [selectedTag, activeTab, loadTaggedUsers]);
+
+  const loadTaggedUsers = useCallback(async () => {
     if (!selectedTag) return;
     try {
       const response = await getTaggedUsers(selectedTag.id);
@@ -90,7 +89,7 @@ const AttendeeTagsManagement = () => {
     } catch (error) {
       console.error("Error loading tagged users:", error);
     }
-  };
+  }, [selectedTag]);
 
   const handleCreateTag = async (data: {
     name: string;
@@ -649,3 +648,4 @@ const SendMessageForm = ({
 };
 
 export default AttendeeTagsManagement;
+

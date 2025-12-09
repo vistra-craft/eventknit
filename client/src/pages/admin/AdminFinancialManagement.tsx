@@ -11,12 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import AdminLayout from "./AdminLayout";
 import {
   DollarSign,
-  TrendingUp,
-  TrendingDown,
   Plus,
   Edit,
   Trash2,
-  Calendar,
   FileText,
   BarChart3,
 } from "lucide-react";
@@ -53,17 +50,7 @@ const AdminFinancialManagement = () => {
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadData();
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (activeTab === "summary") {
-      loadMonthlySummary();
-    }
-  }, [activeTab, selectedYear, selectedMonth]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       if (activeTab === "overview") {
@@ -100,7 +87,28 @@ const AdminFinancialManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, toast]);
+
+  const loadMonthlySummary = useCallback(async () => {
+    try {
+      const response = await getMonthlySummary(selectedYear, selectedMonth);
+      if (response.success && response.data) {
+        setMonthlySummary(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading monthly summary:", error);
+    }
+  }, [selectedMonth, selectedYear]);
+
+  useEffect(() => {
+    loadData();
+  }, [activeTab, loadData]);
+
+  useEffect(() => {
+    if (activeTab === "summary") {
+      loadMonthlySummary();
+    }
+  }, [activeTab, loadMonthlySummary]);
 
   const loadMonthlySummary = async () => {
     try {
@@ -118,7 +126,7 @@ const AdminFinancialManagement = () => {
     }
   };
 
-  const handleCreateExpense = async (data: any) => {
+  const handleCreateExpense = async (data: Expense) => {
     try {
       const response = await createExpense(data);
       if (response.success) {
@@ -129,7 +137,7 @@ const AdminFinancialManagement = () => {
         setIsExpenseDialogOpen(false);
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create expense",
@@ -138,7 +146,7 @@ const AdminFinancialManagement = () => {
     }
   };
 
-  const handleUpdateExpense = async (id: string, data: any) => {
+  const handleUpdateExpense = async (id: string, data: Partial<Expense>) => {
     try {
       const response = await updateExpense(id, data);
       if (response.success) {
@@ -150,7 +158,7 @@ const AdminFinancialManagement = () => {
         setSelectedExpense(null);
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update expense",
@@ -171,7 +179,7 @@ const AdminFinancialManagement = () => {
         });
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete expense",
@@ -180,7 +188,7 @@ const AdminFinancialManagement = () => {
     }
   };
 
-  const handleCreateIncome = async (data: any) => {
+  const handleCreateIncome = async (data: Income) => {
     try {
       const response = await createIncome(data);
       if (response.success) {
@@ -191,7 +199,7 @@ const AdminFinancialManagement = () => {
         setIsIncomeDialogOpen(false);
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create income",
@@ -200,7 +208,7 @@ const AdminFinancialManagement = () => {
     }
   };
 
-  const handleUpdateIncome = async (id: string, data: any) => {
+  const handleUpdateIncome = async (id: string, data: Partial<Income>) => {
     try {
       const response = await updateIncome(id, data);
       if (response.success) {
@@ -212,7 +220,7 @@ const AdminFinancialManagement = () => {
         setSelectedIncome(null);
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update income",
@@ -233,7 +241,7 @@ const AdminFinancialManagement = () => {
         });
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete income",
@@ -250,14 +258,17 @@ const AdminFinancialManagement = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      pending: { variant: "outline" as const, label: "Pending" },
-      approved: { variant: "default" as const, label: "Approved" },
-      paid: { variant: "default" as const, label: "Paid" },
-      received: { variant: "default" as const, label: "Received" },
-      cancelled: { variant: "destructive" as const, label: "Cancelled" },
+    const variants: Record<
+      string,
+      { variant: "outline" | "default" | "destructive"; label: string }
+    > = {
+      pending: { variant: "outline", label: "Pending" },
+      approved: { variant: "default", label: "Approved" },
+      paid: { variant: "default", label: "Paid" },
+      received: { variant: "default", label: "Received" },
+      cancelled: { variant: "destructive", label: "Cancelled" },
     };
-    const config = variants[status] || { variant: "outline" as const, label: status };
+    const config = variants[status] || { variant: "outline", label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -785,7 +796,7 @@ const ExpenseForm = ({
   onCancel,
 }: {
   expense?: Expense | null;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Expense) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -955,7 +966,7 @@ const IncomeForm = ({
   onCancel,
 }: {
   income?: Income | null;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Income) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -1096,3 +1107,4 @@ const IncomeForm = ({
 };
 
 export default AdminFinancialManagement;
+

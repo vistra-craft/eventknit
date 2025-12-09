@@ -1,23 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import OrganizerLayout from "./OrganizerLayout";
 import {
-  DollarSign,
   Plus,
   TrendingUp,
   TrendingDown,
   Target,
   Receipt,
   FileText,
-  Calendar,
   PieChart,
 } from "lucide-react";
 import {
@@ -53,22 +50,55 @@ interface FinancialGoal {
   status: string;
 }
 
+interface ProfitLossStatement {
+  revenue: { gross: number; platformFees: number; net: number };
+  expenses: { total: number; taxDeductible: number };
+  profit: { amount: number; margin: number };
+}
+
+interface TaxSummary {
+  year: number;
+  revenue: { gross: number; platformFees: number; net: number };
+  expenses: { taxDeductible: number };
+  taxableIncome: number;
+}
+
+type ExpensePayload = {
+  eventId?: string;
+  category: string;
+  description: string;
+  amount: number;
+  currency?: string;
+  receiptUrl?: string;
+  receiptDate?: string;
+  taxAmount?: number;
+  taxRate?: number;
+  isTaxDeductible?: boolean;
+  expenseDate?: string;
+};
+
+type GoalPayload = {
+  name: string;
+  description?: string;
+  targetAmount: number;
+  currency?: string;
+  eventId?: string;
+  startDate: string;
+  endDate: string;
+};
+
 const FinancialManagement = () => {
   const [activeTab, setActiveTab] = useState("expenses");
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [goals, setGoals] = useState<FinancialGoal[]>([]);
-  const [profitLoss, setProfitLoss] = useState<any>(null);
-  const [taxSummary, setTaxSummary] = useState<any>(null);
+  const [profitLoss, setProfitLoss] = useState<ProfitLossStatement | null>(null);
+  const [taxSummary, setTaxSummary] = useState<TaxSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadData();
-  }, [activeTab]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       if (activeTab === "expenses") {
@@ -102,21 +132,13 @@ const FinancialManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, toast]);
 
-  const handleCreateExpense = async (data: {
-    eventId?: string;
-    category: string;
-    description: string;
-    amount: number;
-    currency?: string;
-    receiptUrl?: string;
-    receiptDate?: string;
-    taxAmount?: number;
-    taxRate?: number;
-    isTaxDeductible?: boolean;
-    expenseDate?: string;
-  }) => {
+  useEffect(() => {
+    loadData();
+  }, [activeTab, loadData]);
+
+  const handleCreateExpense = async (data: ExpensePayload) => {
     try {
       const response = await createExpense(data);
       if (response.success) {
@@ -128,6 +150,7 @@ const FinancialManagement = () => {
         loadData();
       }
     } catch (error) {
+      console.error("Error creating expense:", error);
       toast({
         title: "Error",
         description: "Failed to create expense",
@@ -136,15 +159,7 @@ const FinancialManagement = () => {
     }
   };
 
-  const handleCreateGoal = async (data: {
-    name: string;
-    description?: string;
-    targetAmount: number;
-    currency?: string;
-    eventId?: string;
-    startDate: string;
-    endDate: string;
-  }) => {
+  const handleCreateGoal = async (data: GoalPayload) => {
     try {
       const response = await createFinancialGoal(data);
       if (response.success) {
@@ -156,6 +171,7 @@ const FinancialManagement = () => {
         loadData();
       }
     } catch (error) {
+      console.error("Error creating goal:", error);
       toast({
         title: "Error",
         description: "Failed to create goal",
@@ -494,7 +510,7 @@ const ExpenseForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: ExpensePayload) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -613,7 +629,7 @@ const GoalForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: GoalPayload) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -719,3 +735,4 @@ const GoalForm = ({
 };
 
 export default FinancialManagement;
+

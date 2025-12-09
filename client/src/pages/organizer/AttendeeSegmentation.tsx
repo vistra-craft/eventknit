@@ -1,35 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import OrganizerLayout from "./OrganizerLayout";
 import {
   Users,
   Plus,
-  Edit,
   Trash2,
   Mail,
   Filter,
   RefreshCw,
-  UserPlus,
   UserMinus,
 } from "lucide-react";
 import {
   createSegment,
   getOrganizerSegments,
   getSegmentById,
-  updateSegment,
   updateSegmentMembers,
-  addMemberToSegment,
   removeMemberFromSegment,
   deleteSegment,
   sendToSegment,
-  type ApiResponse,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,7 +31,7 @@ interface Segment {
   id: string;
   name: string;
   description?: string;
-  criteria: any;
+  criteria: Record<string, unknown>;
   memberCount?: number;
   eventId?: string;
   createdAt: string;
@@ -48,13 +42,12 @@ const AttendeeSegmentation = () => {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
-  const [segmentMembers, setSegmentMembers] = useState<any[]>([]);
+  const [segmentMembers, setSegmentMembers] = useState<Record<string, unknown>[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const fetchSegments = async () => {
+  const fetchSegments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getOrganizerSegments();
@@ -71,17 +64,17 @@ const AttendeeSegmentation = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchSegments();
-  }, []);
+  }, [fetchSegments]);
 
   const handleCreateSegment = async (data: {
     eventId?: string;
     name: string;
     description?: string;
-    criteria: any;
+    criteria: Record<string, unknown>;
   }) => {
     try {
       const response = await createSegment(data);
@@ -93,7 +86,7 @@ const AttendeeSegmentation = () => {
         setIsCreateDialogOpen(false);
         fetchSegments();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create segment",
@@ -114,7 +107,7 @@ const AttendeeSegmentation = () => {
           loadSegmentDetails(segmentId);
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update segment members",
@@ -130,7 +123,7 @@ const AttendeeSegmentation = () => {
         setSelectedSegment(response.data.segment);
         setSegmentMembers(response.data.members || []);
       }
-    } catch (error) {
+    } catch {
       console.error("Error loading segment details:", error);
     }
   };
@@ -147,7 +140,7 @@ const AttendeeSegmentation = () => {
         });
         fetchSegments();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete segment",
@@ -171,7 +164,7 @@ const AttendeeSegmentation = () => {
         });
         setIsSendDialogOpen(false);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -379,7 +372,7 @@ const CreateSegmentForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: { eventId?: string; name: string; description?: string; criteria: any }) => void;
+  onSubmit: (data: { eventId?: string; name: string; description?: string; criteria: Record<string, unknown> }) => void;
   onCancel: () => void;
 }) => {
   const [name, setName] = useState("");
@@ -531,3 +524,4 @@ const SendMessageForm = ({
 };
 
 export default AttendeeSegmentation;
+

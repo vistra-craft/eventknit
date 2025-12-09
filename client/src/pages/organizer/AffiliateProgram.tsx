@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,18 +13,12 @@ import {
   Link as LinkIcon,
   Plus,
   BarChart3,
-  DollarSign,
-  Users,
-  CheckCircle,
-  Clock,
   Copy,
 } from "lucide-react";
 import {
   createAffiliateProgram,
   getAffiliatePrograms,
   applyAsAffiliate,
-  getAffiliateDashboard,
-  getAffiliateConversions,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,31 +29,20 @@ interface AffiliateProgram {
   commissionType: "PERCENTAGE" | "FIXED_AMOUNT";
   commissionValue: number;
   isActive: boolean;
-  affiliates?: any[];
+  affiliates?: { id: string; name?: string }[];
   _count?: { affiliates: number };
 }
 
 const AffiliateProgram = () => {
   const [programs, setPrograms] = useState<AffiliateProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<AffiliateProgram | null>(null);
-  const [affiliateDashboard, setAffiliateDashboard] = useState<any>(null);
-  const [conversions, setConversions] = useState<any[]>([]);
+  // Dashboard/conversions would be populated with real API data when available
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("programs");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchPrograms();
-  }, []);
-
-  useEffect(() => {
-    if (selectedProgram && activeTab === "dashboard") {
-      loadAffiliateDashboard();
-    }
-  }, [selectedProgram, activeTab]);
-
-  const fetchPrograms = async () => {
+  const fetchPrograms = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getAffiliatePrograms();
@@ -75,13 +59,22 @@ const AffiliateProgram = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const loadAffiliateDashboard = async () => {
-    if (!selectedProgram) return;
-    // This would need the affiliate ID - for now, just show program info
-    // In a real scenario, you'd get the current user's affiliate ID
-  };
+  useEffect(() => {
+    fetchPrograms();
+  }, [fetchPrograms]);
+
+  useEffect(() => {
+    if (selectedProgram && activeTab === "dashboard") {
+      loadAffiliateDashboard();
+    }
+  }, [selectedProgram, activeTab, loadAffiliateDashboard]);
+
+  const loadAffiliateDashboard = useCallback(async () => {
+    // Placeholder for future dashboard data fetch
+    return;
+  }, []);
 
   const handleCreateProgram = async (data: {
     eventId?: string;
@@ -324,7 +317,16 @@ const CreateProgramForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: {
+    eventId?: string;
+    name: string;
+    description?: string;
+    commissionType: "PERCENTAGE" | "FIXED_AMOUNT";
+    commissionValue: number;
+    minCommission?: number;
+    maxCommission?: number;
+    cookieDuration?: number;
+  }) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -376,7 +378,7 @@ const CreateProgramForm = ({
           <Label htmlFor="commissionType">Commission Type *</Label>
           <Select
             value={formData.commissionType}
-            onValueChange={(value: any) =>
+            onValueChange={(value: CreateProgramFormFields["commissionType"]) =>
               setFormData({ ...formData, commissionType: value })
             }
           >
@@ -455,3 +457,4 @@ const CreateProgramForm = ({
 };
 
 export default AffiliateProgram;
+

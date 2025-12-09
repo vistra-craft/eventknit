@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import OrganizerLayout from "./OrganizerLayout";
@@ -15,10 +14,6 @@ import {
   Send,
   BarChart3,
   Clock,
-  CheckCircle,
-  XCircle,
-  Eye,
-  MousePointerClick,
 } from "lucide-react";
 import {
   createEmailCampaign,
@@ -43,20 +38,42 @@ interface EmailCampaign {
   createdAt: string;
 }
 
+interface CampaignAnalytics {
+  rates: {
+    deliveryRate: number;
+    openRate: number;
+    clickRate: number;
+    bounceRate: number;
+  };
+  metrics: {
+    sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+  };
+}
+
+type CreateCampaignPayload = {
+  eventId?: string;
+  name: string;
+  subject: string;
+  content: string;
+  plainText?: string;
+  recipientType: "all" | "segment" | "tag" | "event_registrations";
+  segmentId?: string;
+  tagId?: string;
+  scheduledAt?: string;
+};
+
 const EmailMarketing = () => {
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCampaign, setSelectedCampaign] = useState<EmailCampaign | null>(null);
-  const [campaignAnalytics, setCampaignAnalytics] = useState<any>(null);
+  const [campaignAnalytics, setCampaignAnalytics] = useState<CampaignAnalytics | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAnalyticsDialogOpen, setIsAnalyticsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
-
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getEmailCampaigns();
@@ -73,19 +90,13 @@ const EmailMarketing = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const handleCreateCampaign = async (data: {
-    eventId?: string;
-    name: string;
-    subject: string;
-    content: string;
-    plainText?: string;
-    recipientType: "all" | "segment" | "tag" | "event_registrations";
-    segmentId?: string;
-    tagId?: string;
-    scheduledAt?: string;
-  }) => {
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  const handleCreateCampaign = async (data: CreateCampaignPayload) => {
     try {
       const response = await createEmailCampaign(data);
       if (response.success) {
@@ -97,6 +108,7 @@ const EmailMarketing = () => {
         fetchCampaigns();
       }
     } catch (error) {
+      console.error("Error creating campaign:", error);
       toast({
         title: "Error",
         description: "Failed to create campaign",
@@ -118,6 +130,7 @@ const EmailMarketing = () => {
         fetchCampaigns();
       }
     } catch (error) {
+      console.error("Error sending campaign:", error);
       toast({
         title: "Error",
         description: "Failed to send campaign",
@@ -134,6 +147,7 @@ const EmailMarketing = () => {
         setIsAnalyticsDialogOpen(true);
       }
     } catch (error) {
+      console.error("Error loading analytics:", error);
       toast({
         title: "Error",
         description: "Failed to load analytics",
@@ -143,14 +157,17 @@ const EmailMarketing = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      draft: { variant: "outline" as const, label: "Draft" },
-      scheduled: { variant: "default" as const, label: "Scheduled" },
-      sending: { variant: "default" as const, label: "Sending" },
-      sent: { variant: "default" as const, label: "Sent" },
-      cancelled: { variant: "outline" as const, label: "Cancelled" },
+    const variants: Record<
+      string,
+      { variant: "outline" | "default" | "destructive"; label: string }
+    > = {
+      draft: { variant: "outline", label: "Draft" },
+      scheduled: { variant: "default", label: "Scheduled" },
+      sending: { variant: "default", label: "Sending" },
+      sent: { variant: "default", label: "Sent" },
+      cancelled: { variant: "outline", label: "Cancelled" },
     };
-    const config = variants[status] || { variant: "outline" as const, label: status };
+    const config = variants[status] || { variant: "outline", label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -335,7 +352,7 @@ const CreateCampaignForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CreateCampaignPayload) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -387,7 +404,9 @@ const CreateCampaignForm = ({
         <Label htmlFor="recipientType">Recipient Type *</Label>
         <Select
           value={formData.recipientType}
-          onValueChange={(value: any) => setFormData({ ...formData, recipientType: value })}
+        onValueChange={(value: CreateCampaignPayload["recipientType"]) =>
+          setFormData({ ...formData, recipientType: value })
+        }
         >
           <SelectTrigger>
             <SelectValue />
@@ -478,3 +497,4 @@ const CreateCampaignForm = ({
 };
 
 export default EmailMarketing;
+

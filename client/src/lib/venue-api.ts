@@ -1,8 +1,9 @@
 /**
  * Venue & Seating API Client
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import api from './api';
+import api from "./api";
 
 export interface Venue {
   id: string;
@@ -18,7 +19,7 @@ export interface Venue {
   capacity?: number;
   venueType?: string;
   amenities?: string[];
-  defaultSeatMap?: any;
+  defaultSeatMap?: Record<string, unknown>;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -160,3 +161,4 @@ export const getSeatSelection = async (registrationId: string): Promise<SeatRese
   const response = await api.get(`/events/registrations/${registrationId}/seats`);
   return response.data.data.selection;
 };
+

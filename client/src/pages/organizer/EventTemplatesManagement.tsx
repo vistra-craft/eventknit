@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,24 +15,17 @@ import {
   Copy,
   Share2,
   Eye,
-  Edit,
   Trash2,
   Globe,
   Lock,
-  Download,
-  Upload,
 } from "lucide-react";
 import {
   createEventTemplate,
   getOrganizerTemplates,
   getPublicTemplates,
-  getTemplateById,
-  updateTemplate,
   deleteTemplate,
   shareTemplate,
-  useTemplate,
-  createTemplateFromEvent,
-  type ApiResponse,
+  useTemplate as applyTemplate,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,7 +33,7 @@ interface EventTemplate {
   id: string;
   name: string;
   description?: string;
-  eventData: any;
+  eventData: Record<string, unknown>;
   isPublic: boolean;
   shareToken?: string;
   version: number;
@@ -57,7 +51,7 @@ const EventTemplatesManagement = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
       const [myTemplatesRes, publicTemplatesRes] = await Promise.all([
@@ -82,16 +76,16 @@ const EventTemplatesManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchTemplates();
-  }, []);
+  }, [fetchTemplates]);
 
   const handleCreateTemplate = async (data: {
     name: string;
     description?: string;
-    eventData: any;
+    eventData: Record<string, unknown>;
     isPublic?: boolean;
   }) => {
     try {
@@ -105,6 +99,7 @@ const EventTemplatesManagement = () => {
         fetchTemplates();
       }
     } catch (error) {
+      console.error("Error creating template:", error);
       toast({
         title: "Error",
         description: "Failed to create template",
@@ -126,6 +121,7 @@ const EventTemplatesManagement = () => {
         fetchTemplates();
       }
     } catch (error) {
+      console.error("Error deleting template:", error);
       toast({
         title: "Error",
         description: "Failed to delete template",
@@ -145,6 +141,7 @@ const EventTemplatesManagement = () => {
         });
       }
     } catch (error) {
+      console.error("Error sharing template:", error);
       toast({
         title: "Error",
         description: "Failed to generate share link",
@@ -155,12 +152,13 @@ const EventTemplatesManagement = () => {
 
   const handleUseTemplate = async (templateId: string) => {
     try {
-      const response = await useTemplate(templateId);
+      const response = await applyTemplate(templateId);
       if (response.success && response.data) {
         // Navigate to create event page with template data
         window.location.href = `/organizer/create-event?template=${templateId}`;
       }
     } catch (error) {
+      console.error("Error using template:", error);
       toast({
         title: "Error",
         description: "Failed to use template",
@@ -347,7 +345,7 @@ const CreateTemplateForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: { name: string; description?: string; eventData: any; isPublic?: boolean }) => void;
+  onSubmit: (data: { name: string; description?: string; eventData: Record<string, unknown>; isPublic?: boolean }) => void;
   onCancel: () => void;
 }) => {
   const [name, setName] = useState("");
@@ -419,3 +417,4 @@ const CreateTemplateForm = ({
 };
 
 export default EventTemplatesManagement;
+

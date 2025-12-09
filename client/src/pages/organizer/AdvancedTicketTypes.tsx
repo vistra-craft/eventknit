@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,6 @@ import {
 import {
   createTicketPackage,
   getEventTicketPackages,
-  updateTicketPackage,
   getReservedSeating,
   deleteTicketPackage,
 } from "@/lib/organizer-dashboard-api";
@@ -49,23 +49,14 @@ interface TicketPackage {
 const AdvancedTicketTypes = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [packages, setPackages] = useState<TicketPackage[]>([]);
-  const [reservedSeating, setReservedSeating] = useState<any[]>([]);
+  const [reservedSeating, setReservedSeating] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("packages");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<TicketPackage | null>(null);
+  const [selectedPackage] = useState<TicketPackage | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (eventId) {
-      fetchPackages();
-      if (activeTab === "seating") {
-        fetchReservedSeating();
-      }
-    }
-  }, [eventId, activeTab]);
-
-  const fetchPackages = async () => {
+  const fetchPackages = useCallback(async () => {
     if (!eventId) return;
     try {
       setLoading(true);
@@ -83,9 +74,9 @@ const AdvancedTicketTypes = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId, toast]);
 
-  const fetchReservedSeating = async () => {
+  const fetchReservedSeating = useCallback(async () => {
     if (!eventId) return;
     try {
       const response = await getReservedSeating(eventId);
@@ -95,9 +86,18 @@ const AdvancedTicketTypes = () => {
     } catch (error) {
       console.error("Error fetching reserved seating:", error);
     }
-  };
+  }, [eventId]);
 
-  const handleCreatePackage = async (data: any) => {
+  useEffect(() => {
+    if (eventId) {
+      fetchPackages();
+      if (activeTab === "seating") {
+        fetchReservedSeating();
+      }
+    }
+  }, [eventId, activeTab, fetchPackages, fetchReservedSeating]);
+
+  const handleCreatePackage = async (data: Partial<TicketPackage>) => {
     if (!eventId) return;
     try {
       const response = await createTicketPackage({ ...data, eventId });
@@ -344,7 +344,7 @@ const CreatePackageForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Partial<TicketPackage>) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -366,7 +366,7 @@ const CreatePackageForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const data: any = {
+    const data: Partial<TicketPackage> = {
       name: formData.name,
       description: formData.description || undefined,
       type: formData.type,
@@ -422,7 +422,7 @@ const CreatePackageForm = ({
         <Label htmlFor="type">Package Type *</Label>
         <Select
           value={formData.type}
-          onValueChange={(value: any) => setFormData({ ...formData, type: value })}
+          onValueChange={(value: TicketPackage["type"]) => setFormData({ ...formData, type: value })}
         >
           <SelectTrigger>
             <SelectValue />

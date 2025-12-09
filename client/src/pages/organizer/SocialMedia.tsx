@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,6 @@ import {
   BarChart3,
   Clock,
   CheckCircle,
-  XCircle,
   Facebook,
   Twitter,
   Instagram,
@@ -44,29 +43,50 @@ interface SocialPost {
   clicks: number;
 }
 
+interface SocialAnalytics {
+  total: {
+    posts: number;
+    impressions: number;
+    likes: number;
+    shares: number;
+    comments: number;
+    clicks: number;
+  };
+  byPlatform: Array<{
+    platform: SocialPost["platform"];
+    posts: number;
+    impressions: number;
+    likes: number;
+    shares: number;
+    comments: number;
+    clicks: number;
+  }>;
+}
+
+type CreatePostPayload = {
+  eventId?: string;
+  platform: SocialPost["platform"];
+  content: string;
+  mediaUrls?: string[];
+  scheduledAt?: string;
+};
+
 const SocialMedia = () => {
   const [posts, setPosts] = useState<SocialPost[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<SocialAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchPosts();
-    if (activeTab === "analytics") {
-      fetchAnalytics();
-    }
-  }, [activeTab]);
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getSocialPosts();
       if (response.success && response.data) {
         setPosts(response.data.posts || []);
       }
-    } catch (error) {
+    } catch {
       console.error("Error fetching posts:", error);
       toast({
         title: "Error",
@@ -76,26 +96,27 @@ const SocialMedia = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const response = await getSocialMediaAnalytics();
       if (response.success && response.data) {
-        setAnalytics(response.data);
+        setAnalytics(response.data as SocialAnalytics);
       }
-    } catch (error) {
+    } catch {
       console.error("Error fetching analytics:", error);
     }
-  };
+  }, []);
 
-  const handleCreatePost = async (data: {
-    eventId?: string;
-    platform: "facebook" | "twitter" | "instagram" | "linkedin";
-    content: string;
-    mediaUrls?: string[];
-    scheduledAt?: string;
-  }) => {
+  useEffect(() => {
+    fetchPosts();
+    if (activeTab === "analytics") {
+      fetchAnalytics();
+    }
+  }, [activeTab, fetchAnalytics, fetchPosts]);
+
+  const handleCreatePost = async (data: CreatePostPayload) => {
     try {
       const response = await createSocialPost(data);
       if (response.success) {
@@ -106,7 +127,7 @@ const SocialMedia = () => {
         setIsCreateDialogOpen(false);
         fetchPosts();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to create post",
@@ -125,7 +146,7 @@ const SocialMedia = () => {
         });
         fetchPosts();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to publish post",
@@ -135,24 +156,27 @@ const SocialMedia = () => {
   };
 
   const getPlatformIcon = (platform: string) => {
-    const icons: Record<string, any> = {
+    const icons: Record<SocialPost["platform"], typeof Facebook> = {
       facebook: Facebook,
       twitter: Twitter,
       instagram: Instagram,
       linkedin: Linkedin,
     };
-    const Icon = icons[platform] || Share2;
+    const Icon = icons[platform as SocialPost["platform"]] || Share2;
     return <Icon className="h-5 w-5" />;
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
-      draft: { variant: "outline" as const, label: "Draft" },
-      scheduled: { variant: "default" as const, label: "Scheduled" },
-      posted: { variant: "default" as const, label: "Posted" },
-      failed: { variant: "destructive" as const, label: "Failed" },
+    const variants: Record<
+      string,
+      { variant: "outline" | "default" | "destructive"; label: string }
+    > = {
+      draft: { variant: "outline", label: "Draft" },
+      scheduled: { variant: "default", label: "Scheduled" },
+      posted: { variant: "default", label: "Posted" },
+      failed: { variant: "destructive", label: "Failed" },
     };
-    const config = variants[status] || { variant: "outline" as const, label: status };
+    const config = variants[status] || { variant: "outline", label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -295,7 +319,7 @@ const SocialMedia = () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-4">By Platform</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {analytics.byPlatform.map((platform: any) => (
+                    {analytics.byPlatform.map((platform) => (
                       <Card key={platform.platform}>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2 capitalize">
@@ -347,7 +371,7 @@ const CreatePostForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CreatePostPayload) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -376,7 +400,7 @@ const CreatePostForm = ({
         <Label htmlFor="platform">Platform *</Label>
         <Select
           value={formData.platform}
-          onValueChange={(value: any) => setFormData({ ...formData, platform: value })}
+          onValueChange={(value: SocialPost["platform"]) => setFormData({ ...formData, platform: value })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -438,3 +462,4 @@ const CreatePostForm = ({
 };
 
 export default SocialMedia;
+

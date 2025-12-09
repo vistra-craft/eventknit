@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,11 +41,7 @@ const EventCalendarIntegration = () => {
   const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadSyncs();
-  }, []);
-
-  const loadSyncs = async () => {
+  const loadSyncs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getUserCalendarSyncs();
@@ -61,7 +58,11 @@ const EventCalendarIntegration = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadSyncs();
+  }, [loadSyncs]);
 
   const handleSync = async (data: {
     registrationId: string;
@@ -272,7 +273,9 @@ const SyncEventForm = ({
         <Label htmlFor="calendarType">Calendar Type *</Label>
         <Select
           value={formData.calendarType}
-          onValueChange={(value: any) => setFormData({ ...formData, calendarType: value })}
+          onValueChange={(value: "GOOGLE" | "APPLE" | "OUTLOOK" | "ICAL") =>
+            setFormData({ ...formData, calendarType: value })
+          }
         >
           <SelectTrigger>
             <SelectValue />

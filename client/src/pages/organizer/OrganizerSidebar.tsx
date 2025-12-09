@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Calendar,
   Settings,
-  MessageCircle,
   Home,
   Menu,
   UserPlus,
@@ -11,17 +10,10 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
-  FileText,
   Users,
-  Tag,
   DollarSign,
-  Mail,
   Share2,
   Ticket,
-  Percent,
-  Link as LinkIcon,
-  Share,
-  BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";

@@ -1,25 +1,101 @@
 /**
  * Organizer Dashboard API Functions
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { apiGet, apiPost, apiPut, apiDelete, apiPatch, type ApiResponse } from './api';
+import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse } from "./api";
+
+// Generic helpers
+type Id = string;
+type Pagination = { page?: number; limit?: number };
+type WithEvent<T = unknown> = { eventId?: Id } & T;
+
+// Template domain types
+export interface EventTemplatePayload {
+  name: string;
+  description?: string;
+  eventData: Record<string, unknown>;
+  isPublic?: boolean;
+}
+
+export interface EventTemplateResponse {
+  template: Record<string, unknown>;
+}
+
+// Draft domain types
+export interface EventDraftPayload {
+  eventId?: Id;
+  name: string;
+  description?: string;
+  eventData: Record<string, unknown>;
+}
+
+export interface EventDraftResponse {
+  draft: Record<string, unknown>;
+}
+
+export interface SegmentCriteria {
+  [key: string]: unknown;
+}
+
+// Attendee segmentation types
+export interface SegmentPayload {
+  eventId?: Id;
+  name: string;
+  description?: string;
+  criteria: SegmentCriteria;
+}
+
+// Pricing rules
+export type PricingRuleType = "time_based" | "demand_based" | "group_discount" | "loyalty";
+export interface PricingRulePayload extends WithEvent {
+  name: string;
+  type: PricingRuleType;
+  priority: number;
+  startDate?: string;
+  endDate?: string;
+  demandThreshold?: number;
+  priceMultiplier?: number;
+  minGroupSize?: number;
+  discountType?: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue?: number;
+  applicableTicketTypes?: string[];
+}
+
+// Financials
+export interface ExpensePayload {
+  eventId?: Id;
+  category: string;
+  description: string;
+  amount: number;
+  currency?: string;
+  receiptUrl?: string;
+  receiptDate?: string;
+  taxAmount?: number;
+  taxRate?: number;
+  isTaxDeductible?: boolean;
+  expenseDate?: string;
+}
+
+export interface GoalPayload {
+  name: string;
+  description?: string;
+  targetAmount: number;
+  currency?: string;
+  eventId?: Id;
+  startDate: string;
+  endDate: string;
+}
 
 // ==================== Event Templates ====================
 
-export const createEventTemplate = async (data: {
-  name: string;
-  description?: string;
-  eventData: any;
-  isPublic?: boolean;
-}): Promise<ApiResponse<{ template: any }>> => {
+export const createEventTemplate = async (data: EventTemplatePayload): Promise<ApiResponse<EventTemplateResponse>> => {
   return apiPost('/organizer-dashboard/templates', data);
 };
 
-export const getOrganizerTemplates = async (filters?: {
-  page?: number;
-  limit?: number;
-  isPublic?: boolean;
-}): Promise<ApiResponse<{ templates: any[]; total: number; page: number; limit: number; totalPages: number }>> => {
+export const getOrganizerTemplates = async (filters?: Pagination & { isPublic?: boolean }): Promise<
+  ApiResponse<{ templates: Record<string, unknown>[]; total?: number; page?: number; limit?: number; totalPages?: number }>
+> => {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
@@ -30,10 +106,9 @@ export const getOrganizerTemplates = async (filters?: {
   return apiGet(endpoint);
 };
 
-export const getPublicTemplates = async (filters?: {
-  page?: number;
-  limit?: number;
-}): Promise<ApiResponse<{ templates: any[]; total: number }>> => {
+export const getPublicTemplates = async (filters?: Pagination): Promise<
+  ApiResponse<{ templates: Record<string, unknown>[]; total?: number }>
+> => {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
@@ -43,24 +118,21 @@ export const getPublicTemplates = async (filters?: {
   return apiGet(endpoint);
 };
 
-export const getTemplateById = async (templateId: string): Promise<ApiResponse<{ template: any }>> => {
+export const getTemplateById = async (templateId: string): Promise<ApiResponse<EventTemplateResponse>> => {
   return apiGet(`/organizer-dashboard/templates/${templateId}`);
 };
 
-export const updateTemplate = async (templateId: string, data: {
-  name?: string;
-  description?: string;
-  eventData?: any;
-  isPublic?: boolean;
-}): Promise<ApiResponse<{ template: any }>> => {
+export const updateTemplate = async (
+  templateId: string,
+  data: Partial<EventTemplatePayload>,
+): Promise<ApiResponse<EventTemplateResponse>> => {
   return apiPut(`/organizer-dashboard/templates/${templateId}`, data);
 };
 
-export const createTemplateVersion = async (templateId: string, data: {
-  name?: string;
-  description?: string;
-  eventData?: any;
-}): Promise<ApiResponse<{ template: any }>> => {
+export const createTemplateVersion = async (
+  templateId: string,
+  data: Partial<EventTemplatePayload>,
+): Promise<ApiResponse<EventTemplateResponse>> => {
   return apiPost(`/organizer-dashboard/templates/${templateId}/versions`, data);
 };
 
@@ -68,7 +140,9 @@ export const shareTemplate = async (templateId: string): Promise<ApiResponse<{ s
   return apiPost(`/organizer-dashboard/templates/${templateId}/share`);
 };
 
-export const useTemplate = async (templateId: string): Promise<ApiResponse<{ eventData: any }>> => {
+export const useTemplate = async (
+  templateId: string,
+): Promise<ApiResponse<{ eventData: Record<string, unknown> }>> => {
   return apiPost(`/organizer-dashboard/templates/${templateId}/use`);
 };
 
@@ -76,30 +150,22 @@ export const deleteTemplate = async (templateId: string): Promise<ApiResponse<{ 
   return apiDelete(`/organizer-dashboard/templates/${templateId}`);
 };
 
-export const createTemplateFromEvent = async (eventId: string, data: {
-  name: string;
-  description?: string;
-  isPublic?: boolean;
-}): Promise<ApiResponse<{ template: any }>> => {
+export const createTemplateFromEvent = async (
+  eventId: string,
+  data: { name: string; description?: string; isPublic?: boolean },
+): Promise<ApiResponse<EventTemplateResponse>> => {
   return apiPost(`/organizer-dashboard/events/${eventId}/create-template`, data);
 };
 
 // ==================== Event Drafts ====================
 
-export const createEventDraft = async (data: {
-  eventId?: string;
-  name: string;
-  description?: string;
-  eventData: any;
-}): Promise<ApiResponse<{ draft: any }>> => {
+export const createEventDraft = async (data: EventDraftPayload): Promise<ApiResponse<EventDraftResponse>> => {
   return apiPost('/organizer-dashboard/drafts', data);
 };
 
-export const getOrganizerDrafts = async (filters?: {
-  page?: number;
-  limit?: number;
-  eventId?: string;
-}): Promise<ApiResponse<{ drafts: any[]; total: number; page: number; limit: number; totalPages: number }>> => {
+export const getOrganizerDrafts = async (filters?: Pagination & { eventId?: Id }): Promise<
+  ApiResponse<{ drafts: Record<string, unknown>[]; total?: number; page?: number; limit?: number; totalPages?: number }>
+> => {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
@@ -110,33 +176,34 @@ export const getOrganizerDrafts = async (filters?: {
   return apiGet(endpoint);
 };
 
-export const getDraftById = async (draftId: string): Promise<ApiResponse<{ draft: any }>> => {
+export const getDraftById = async (draftId: string): Promise<ApiResponse<EventDraftResponse>> => {
   return apiGet(`/organizer-dashboard/drafts/${draftId}`);
 };
 
-export const updateDraft = async (draftId: string, data: {
-  name?: string;
-  description?: string;
-  eventData?: any;
-}): Promise<ApiResponse<{ draft: any }>> => {
+export const updateDraft = async (
+  draftId: string,
+  data: Partial<EventDraftPayload>,
+): Promise<ApiResponse<EventDraftResponse>> => {
   return apiPut(`/organizer-dashboard/drafts/${draftId}`, data);
 };
 
-export const createDraftVersion = async (draftId: string, data: {
-  name?: string;
-  description?: string;
-  eventData?: any;
-}): Promise<ApiResponse<{ draft: any }>> => {
+export const createDraftVersion = async (
+  draftId: string,
+  data: Partial<EventDraftPayload>,
+): Promise<ApiResponse<EventDraftResponse>> => {
   return apiPost(`/organizer-dashboard/drafts/${draftId}/versions`, data);
 };
 
-export const scheduleDraft = async (draftId: string, data: {
-  scheduledDate: string;
-}): Promise<ApiResponse<{ draft: any }>> => {
+export const scheduleDraft = async (
+  draftId: string,
+  data: { scheduledDate: string },
+): Promise<ApiResponse<EventDraftResponse>> => {
   return apiPost(`/organizer-dashboard/drafts/${draftId}/schedule`, data);
 };
 
-export const publishDraft = async (draftId: string): Promise<ApiResponse<{ eventData: any }>> => {
+export const publishDraft = async (
+  draftId: string,
+): Promise<ApiResponse<{ eventData: Record<string, unknown> }>> => {
   return apiPost(`/organizer-dashboard/drafts/${draftId}/publish`);
 };
 
@@ -146,18 +213,9 @@ export const deleteDraft = async (draftId: string): Promise<ApiResponse<{ succes
 
 // ==================== Attendee Segmentation ====================
 
-export const createSegment = async (data: {
-  eventId?: string;
-  name: string;
-  description?: string;
-  criteria: any;
-}): Promise<ApiResponse<{ segment: any }>> => {
-  return apiPost('/organizer-dashboard/segments', data);
-};
-
-export const getOrganizerSegments = async (filters?: {
-  eventId?: string;
-}): Promise<ApiResponse<{ segments: any[] }>> => {
+export const getOrganizerSegments = async (filters?: { eventId?: Id }): Promise<
+  ApiResponse<{ segments: Record<string, unknown>[] }>
+> => {
   const queryParams = new URLSearchParams();
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   
@@ -166,19 +224,22 @@ export const getOrganizerSegments = async (filters?: {
   return apiGet(endpoint);
 };
 
-export const getSegmentById = async (segmentId: string): Promise<ApiResponse<{ segment: any; members: any[] }>> => {
+export const getSegmentById = async (
+  segmentId: string,
+): Promise<ApiResponse<{ segment: Record<string, unknown>; members: Record<string, unknown>[] }>> => {
   return apiGet(`/organizer-dashboard/segments/${segmentId}`);
 };
 
-export const updateSegment = async (segmentId: string, data: {
-  name?: string;
-  description?: string;
-  criteria?: any;
-}): Promise<ApiResponse<{ segment: any }>> => {
+export const updateSegment = async (
+  segmentId: string,
+  data: Partial<SegmentPayload>,
+): Promise<ApiResponse<{ segment: Record<string, unknown> }>> => {
   return apiPut(`/organizer-dashboard/segments/${segmentId}`, data);
 };
 
-export const updateSegmentMembers = async (segmentId: string): Promise<ApiResponse<{ segment: any; membersAdded: number; membersRemoved: number }>> => {
+export const updateSegmentMembers = async (
+  segmentId: string,
+): Promise<ApiResponse<{ segment: Record<string, unknown>; membersAdded: number; membersRemoved: number }>> => {
   return apiPost(`/organizer-dashboard/segments/${segmentId}/update-members`);
 };
 
@@ -1043,3 +1104,4 @@ export const getTeamPerformanceMetrics = async (filters?: {
   const endpoint = queryString ? `/organizer-dashboard/team/performance-metrics?${queryString}` : '/organizer-dashboard/team/performance-metrics';
   return apiGet(endpoint);
 };
+

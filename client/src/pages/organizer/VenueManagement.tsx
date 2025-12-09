@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,25 +44,29 @@ const VenueManagement = () => {
     amenities: [] as string[],
   });
 
-  useEffect(() => {
-    loadVenues();
-  }, []);
-
-  const loadVenues = async () => {
+  const loadVenues = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getVenues();
       setVenues(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to load venues',
+        description: message || 'Failed to load venues',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadVenues();
+  }, [loadVenues]);
 
   const handleSubmit = async () => {
     try {
@@ -88,10 +92,14 @@ const VenueManagement = () => {
       setIsDialogOpen(false);
       resetForm();
       loadVenues();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to save venue',
+        description: message || 'Failed to save venue',
         variant: 'destructive',
       });
     }
@@ -109,10 +117,14 @@ const VenueManagement = () => {
         description: 'Venue deleted successfully',
       });
       loadVenues();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to delete venue',
+        description: message || 'Failed to delete venue',
         variant: 'destructive',
       });
     }
@@ -386,3 +398,4 @@ const VenueManagement = () => {
 };
 
 export default VenueManagement;
+

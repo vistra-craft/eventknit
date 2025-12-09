@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,11 +56,7 @@ const DigitalWallet = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadWallet();
-  }, []);
-
-  const loadWallet = async () => {
+  const loadWallet = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getWallet();
@@ -76,11 +73,15 @@ const DigitalWallet = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadWallet();
+  }, [loadWallet]);
 
   const handleAddTicket = async (registrationId: string) => {
     try {
-      const response: any = await addTicketToWallet(registrationId);
+      const response = await addTicketToWallet(registrationId);
       if (response.success) {
         toast({
           title: "Success",

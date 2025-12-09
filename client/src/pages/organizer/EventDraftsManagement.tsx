@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,15 +15,12 @@ import {
   Trash2,
   Clock,
   Send,
-  History,
   Calendar,
 } from "lucide-react";
 import {
   createEventDraft,
   getOrganizerDrafts,
-  getDraftById,
   updateDraft,
-  createDraftVersion,
   scheduleDraft,
   publishDraft,
   deleteDraft,
@@ -33,7 +31,7 @@ interface Draft {
   id: string;
   name: string;
   description?: string;
-  eventData: any;
+  eventData: Record<string, unknown>;
   version: number;
   scheduledDate?: string;
   eventId?: string;
@@ -50,11 +48,7 @@ const EventDraftsManagement = () => {
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchDrafts();
-  }, []);
-
-  const fetchDrafts = async () => {
+  const fetchDrafts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getOrganizerDrafts();
@@ -71,13 +65,17 @@ const EventDraftsManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchDrafts();
+  }, [fetchDrafts]);
 
   const handleCreateDraft = async (data: {
     eventId?: string;
     name: string;
     description?: string;
-    eventData: any;
+    eventData: Record<string, unknown>;
   }) => {
     try {
       const response = await createEventDraft(data);
@@ -90,6 +88,7 @@ const EventDraftsManagement = () => {
         fetchDrafts();
       }
     } catch (error) {
+      console.error("Error creating draft:", error);
       toast({
         title: "Error",
         description: "Failed to create draft",
@@ -111,6 +110,7 @@ const EventDraftsManagement = () => {
         fetchDrafts();
       }
     } catch (error) {
+      console.error("Error publishing draft:", error);
       toast({
         title: "Error",
         description: "Failed to publish draft",
@@ -131,6 +131,7 @@ const EventDraftsManagement = () => {
         fetchDrafts();
       }
     } catch (error) {
+      console.error("Error scheduling draft:", error);
       toast({
         title: "Error",
         description: "Failed to schedule draft",
@@ -152,6 +153,7 @@ const EventDraftsManagement = () => {
         fetchDrafts();
       }
     } catch (error) {
+      console.error("Error deleting draft:", error);
       toast({
         title: "Error",
         description: "Failed to delete draft",
@@ -322,7 +324,7 @@ const CreateDraftForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: { eventId?: string; name: string; description?: string; eventData: any }) => void;
+  onSubmit: (data: { eventId?: string; name: string; description?: string; eventData: Record<string, unknown> }) => void;
   onCancel: () => void;
 }) => {
   const [name, setName] = useState("");
@@ -398,7 +400,7 @@ const EditDraftForm = ({
   onCancel,
 }: {
   draft: Draft;
-  onSubmit: (data: { name?: string; description?: string; eventData?: any }) => void;
+  onSubmit: (data: { name?: string; description?: string; eventData?: Record<string, unknown> }) => void;
   onCancel: () => void;
 }) => {
   const [name, setName] = useState(draft.name);
@@ -494,3 +496,4 @@ const ScheduleDraftForm = ({
 };
 
 export default EventDraftsManagement;
+

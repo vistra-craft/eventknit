@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import {
   type WhiteLabelBranding,
   type CreateBrandingData,
 } from '@/lib/white-label-api';
-import { Save, Upload, Palette, Mail, Globe, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Save, Palette, Mail, Globe, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import OrganizerLayout from './OrganizerLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -46,11 +46,7 @@ const WhiteLabelBranding = () => {
     socialLinks: {},
   });
 
-  useEffect(() => {
-    loadBranding();
-  }, []);
-
-  const loadBranding = async () => {
+  const loadBranding = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getBranding();
@@ -79,16 +75,24 @@ const WhiteLabelBranding = () => {
         emailSignature: data.emailSignature || '',
         socialLinks: data.socialLinks || {},
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to load branding',
+        description: message || 'Failed to load branding',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadBranding();
+  }, [loadBranding]);
 
   const handleSave = async () => {
     try {
@@ -99,10 +103,14 @@ const WhiteLabelBranding = () => {
         title: 'Success',
         description: 'Branding updated successfully. Pending admin approval.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' && error !== null && 'response' in error
+          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       toast({
         title: 'Error',
-        description: error.response?.data?.error || 'Failed to save branding',
+        description: message || 'Failed to save branding',
         variant: 'destructive',
       });
     } finally {
@@ -110,7 +118,7 @@ const WhiteLabelBranding = () => {
     }
   };
 
-  const updateField = (field: keyof CreateBrandingData, value: any) => {
+  const updateField = (field: keyof CreateBrandingData, value: CreateBrandingData[keyof CreateBrandingData]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -553,3 +561,4 @@ const WhiteLabelBranding = () => {
 };
 
 export default WhiteLabelBranding;
+

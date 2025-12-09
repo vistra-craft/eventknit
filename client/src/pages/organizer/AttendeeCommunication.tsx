@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,16 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import OrganizerLayout from "./OrganizerLayout";
-import {
-  Mail,
-  Plus,
-  Users,
-  Tag,
-  Calendar,
-  Clock,
-  CheckCircle,
-  XCircle,
-} from "lucide-react";
+import { Mail, Plus, Clock, CheckCircle, XCircle } from "lucide-react";
 import {
   sendToSegment,
   sendToTaggedUsers,
@@ -41,18 +32,13 @@ interface CommunicationMessage {
 
 const AttendeeCommunication = () => {
   const [messages, setMessages] = useState<CommunicationMessage[]>([]);
-  const [segments, setSegments] = useState<any[]>([]);
-  const [tags, setTags] = useState<any[]>([]);
+  const [segments, setSegments] = useState<{ id: string; name: string }[]>([]);
+  const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
-  const [recipientType, setRecipientType] = useState<"segment" | "tag" | "event">("segment");
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [historyRes, segmentsRes, tagsRes] = await Promise.all([
@@ -82,7 +68,11 @@ const AttendeeCommunication = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSendMessage = async (data: {
     recipientType: "segment" | "tag" | "event";
@@ -125,7 +115,7 @@ const AttendeeCommunication = () => {
         setIsSendDialogOpen(false);
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -233,9 +223,16 @@ const SendMessageForm = ({
   onCancel,
 }: {
   recipientType: "segment" | "tag" | "event";
-  segments: any[];
-  tags: any[];
-  onSubmit: (data: any) => void;
+  segments: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
+  onSubmit: (data: {
+    recipientType: "segment" | "tag" | "event";
+    recipientId: string;
+    subject: string;
+    content: string;
+    sendEmail?: boolean;
+    sendNotification?: boolean;
+  }) => void;
   onCancel: () => void;
 }) => {
   const [recipientType, setRecipientType] = useState<"segment" | "tag" | "event">(initialRecipientType);
@@ -261,7 +258,10 @@ const SendMessageForm = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label htmlFor="recipientType">Recipient Type *</Label>
-        <Select value={recipientType} onValueChange={(value: any) => setRecipientType(value)}>
+        <Select
+          value={recipientType}
+          onValueChange={(value: "segment" | "tag" | "event") => setRecipientType(value)}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -373,3 +373,4 @@ const SendMessageForm = ({
 };
 
 export default AttendeeCommunication;
+

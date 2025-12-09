@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,19 +10,16 @@ import OrganizerLayout from "./OrganizerLayout";
 import {
   Percent,
   Plus,
-  Edit,
   Trash2,
   Clock,
   TrendingUp,
   Users,
   Calculator,
-  CheckCircle,
 } from "lucide-react";
 import {
   createPricingRule,
   getEventPricingRules,
   calculateDynamicPrice,
-  updatePricingRule,
   deletePricingRule,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/use-toast";
@@ -44,22 +40,37 @@ interface PricingRule {
   isActive: boolean;
 }
 
+interface PriceCalculation {
+  finalPrice: number;
+  originalPrice: number;
+  discount?: number;
+  appliedRules: string[];
+}
+
+type CreateRulePayload = {
+  name: string;
+  type: PricingRule["type"];
+  priority: number;
+  startDate?: string;
+  endDate?: string;
+  demandThreshold?: number;
+  priceMultiplier?: number;
+  minGroupSize?: number;
+  discountType?: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue?: number;
+  applicableTicketTypes?: string[];
+};
+
 const DynamicPricing = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [rules, setRules] = useState<PricingRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
-  const [priceCalculation, setPriceCalculation] = useState<any>(null);
+  const [priceCalculation, setPriceCalculation] = useState<PriceCalculation | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (eventId) {
-      fetchRules();
-    }
-  }, [eventId]);
-
-  const fetchRules = async () => {
+  const fetchRules = useCallback(async () => {
     if (!eventId) return;
     try {
       setLoading(true);
@@ -77,9 +88,15 @@ const DynamicPricing = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId, toast]);
 
-  const handleCreateRule = async (data: any) => {
+  useEffect(() => {
+    if (eventId) {
+      fetchRules();
+    }
+  }, [eventId, fetchRules]);
+
+  const handleCreateRule = async (data: CreateRulePayload) => {
     if (!eventId) return;
     try {
       const response = await createPricingRule({ ...data, eventId });
@@ -92,6 +109,7 @@ const DynamicPricing = () => {
         fetchRules();
       }
     } catch (error) {
+      console.error("Error creating pricing rule:", error);
       toast({
         title: "Error",
         description: "Failed to create pricing rule",
@@ -105,10 +123,11 @@ const DynamicPricing = () => {
     try {
       const response = await calculateDynamicPrice(eventId, ticketType, quantity);
       if (response.success && response.data) {
-        setPriceCalculation(response.data);
+        setPriceCalculation(response.data as PriceCalculation);
         setIsCalculatorOpen(true);
       }
     } catch (error) {
+      console.error("Error calculating price:", error);
       toast({
         title: "Error",
         description: "Failed to calculate price",
@@ -129,13 +148,14 @@ const DynamicPricing = () => {
         });
         fetchRules();
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete rule",
-        variant: "destructive",
-      });
-    }
+  } catch (error) {
+    console.error("Error deleting rule:", error);
+    toast({
+      title: "Error",
+      description: "Failed to delete rule",
+      variant: "destructive",
+    });
+  }
   };
 
   const getTypeLabel = (type: string) => {
@@ -318,7 +338,7 @@ const CreateRuleForm = ({
   onSubmit,
   onCancel,
 }: {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CreateRulePayload) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -337,7 +357,7 @@ const CreateRuleForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const data: any = {
+    const data: CreateRulePayload = {
       name: formData.name,
       type: formData.type,
       priority: parseInt(formData.priority),
@@ -383,7 +403,7 @@ const CreateRuleForm = ({
         <Label htmlFor="type">Rule Type *</Label>
         <Select
           value={formData.type}
-          onValueChange={(value: any) => setFormData({ ...formData, type: value })}
+          onValueChange={(value: PricingRule["type"]) => setFormData({ ...formData, type: value })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -426,7 +446,7 @@ const CreateRuleForm = ({
               <Label htmlFor="discountType">Discount Type</Label>
               <Select
                 value={formData.discountType}
-                onValueChange={(value: any) =>
+            onValueChange={(value: "PERCENTAGE" | "FIXED_AMOUNT") =>
                   setFormData({ ...formData, discountType: value })
                 }
               >
@@ -504,7 +524,7 @@ const CreateRuleForm = ({
               <Label htmlFor="discountType">Discount Type</Label>
               <Select
                 value={formData.discountType}
-                onValueChange={(value: any) =>
+            onValueChange={(value: "PERCENTAGE" | "FIXED_AMOUNT") =>
                   setFormData({ ...formData, discountType: value })
                 }
               >
@@ -607,3 +627,4 @@ const PriceCalculatorForm = ({
 };
 
 export default DynamicPricing;
+

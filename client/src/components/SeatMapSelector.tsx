@@ -4,8 +4,8 @@
  * Allows users to select seats from an interactive venue map
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -35,18 +35,18 @@ const SeatMapSelector = ({
   const [reserving, setReserving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSeatMap();
-  }, [eventId]);
-
-  const loadSeatMap = async () => {
+  const loadSeatMap = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await getSeatMapAvailability(eventId);
       setSeatMap(data);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load seat map');
+    } catch (err: unknown) {
+      const message =
+        typeof err === "object" && err !== null && "response" in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
+      setError(message || "Failed to load seat map");
       toast({
         title: 'Error',
         description: 'Failed to load seat map',
@@ -55,7 +55,11 @@ const SeatMapSelector = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId, toast]);
+
+  useEffect(() => {
+    loadSeatMap();
+  }, [loadSeatMap]);
 
   const handleSeatClick = useCallback((seat: Seat) => {
     if (seat.status !== 'available') {
@@ -120,12 +124,15 @@ const SeatMapSelector = ({
       if (onSeatsSelected) {
         onSeatsSelected(seatIds, totalPrice);
       }
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.error || 'Failed to reserve seats';
+    } catch (err: unknown) {
+      const errorMsg =
+        typeof err === "object" && err !== null && "response" in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       setError(errorMsg);
       toast({
         title: 'Error',
-        description: errorMsg,
+        description: errorMsg || 'Failed to reserve seats',
         variant: 'destructive',
       });
     } finally {
@@ -309,7 +316,7 @@ const SeatMapSelector = ({
                 return (
                   <div key={sectionId} className="space-y-3">
                     <h3 className="font-semibold text-lg">
-                      {seatMap.layout?.sections?.find((s: any) => s.id === sectionId)?.name || sectionId}
+                      {seatMap.layout?.sections?.find((s) => s.id === sectionId)?.name || sectionId}
                     </h3>
                     {Object.entries(seatsByRow).map(([rowLabel, rowSeats]) => (
                       <div key={rowLabel} className="flex items-center gap-2">
@@ -427,3 +434,4 @@ const SeatMapSelector = ({
 };
 
 export default SeatMapSelector;
+
