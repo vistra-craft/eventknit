@@ -100,7 +100,7 @@ export const getOrganizerTemplates = async (filters?: Pagination & { isPublic?: 
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.isPublic !== undefined) queryParams.append('isPublic', filters.isPublic.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/templates?${queryString}` : '/organizer-dashboard/templates';
   return apiGet(endpoint);
@@ -112,7 +112,7 @@ export const getPublicTemplates = async (filters?: Pagination): Promise<
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/templates/public?${queryString}` : '/organizer-dashboard/templates/public';
   return apiGet(endpoint);
@@ -170,7 +170,7 @@ export const getOrganizerDrafts = async (filters?: Pagination & { eventId?: Id }
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/drafts?${queryString}` : '/organizer-dashboard/drafts';
   return apiGet(endpoint);
@@ -213,12 +213,16 @@ export const deleteDraft = async (draftId: string): Promise<ApiResponse<{ succes
 
 // ==================== Attendee Segmentation ====================
 
+export const createSegment = async (data: SegmentPayload): Promise<ApiResponse<{ segment: Record<string, unknown> }>> => {
+  return apiPost('/organizer-dashboard/segments', data);
+};
+
 export const getOrganizerSegments = async (filters?: { eventId?: Id }): Promise<
   ApiResponse<{ segments: Record<string, unknown>[] }>
 > => {
   const queryParams = new URLSearchParams();
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/segments?${queryString}` : '/organizer-dashboard/segments';
   return apiGet(endpoint);
@@ -309,7 +313,7 @@ export const getTaggedUsers = async (tagId: string, filters?: {
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/tags/${tagId}/users?${queryString}` : `/organizer-dashboard/tags/${tagId}/users`;
   return apiGet(endpoint);
@@ -357,7 +361,7 @@ export const getCommunicationHistory = async (filters?: {
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/communications?${queryString}` : '/organizer-dashboard/communications';
   return apiGet(endpoint);
@@ -379,7 +383,7 @@ export const getEventAnalytics = async (eventId: string, filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/analytics/events/${eventId}?${queryString}` : `/organizer-dashboard/analytics/events/${eventId}`;
   return apiGet(endpoint);
@@ -400,7 +404,7 @@ export const getRevenueAnalytics = async (filters?: {
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/analytics/revenue?${queryString}` : '/organizer-dashboard/analytics/revenue';
   return apiGet(endpoint);
@@ -415,7 +419,7 @@ export const getAttendeeInsights = async (filters?: {
 }>> => {
   const queryParams = new URLSearchParams();
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/analytics/attendees?${queryString}` : '/organizer-dashboard/analytics/attendees';
   return apiGet(endpoint);
@@ -434,7 +438,7 @@ export const getMarketingAnalytics = async (filters?: {
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/analytics/marketing?${queryString}` : '/organizer-dashboard/analytics/marketing';
   return apiGet(endpoint);
@@ -476,7 +480,7 @@ export const getOrganizerPromoCodeAnalytics = async (filters?: {
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/promo-codes/analytics?${queryString}` : '/organizer-dashboard/promo-codes/analytics';
   return apiGet(endpoint);
@@ -524,7 +528,7 @@ export const getExpenses = async (filters?: {
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
   if (filters?.status) queryParams.append('status', filters.status);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/expenses?${queryString}` : '/organizer-dashboard/expenses';
   return apiGet(endpoint);
@@ -545,7 +549,7 @@ export const getProfitLossStatement = async (filters?: {
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/financial/profit-loss?${queryString}` : '/organizer-dashboard/financial/profit-loss';
   return apiGet(endpoint);
@@ -570,7 +574,7 @@ export const getFinancialGoals = async (filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.status) queryParams.append('status', filters.status);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/financial/goals?${queryString}` : '/organizer-dashboard/financial/goals';
   return apiGet(endpoint);
@@ -589,7 +593,7 @@ export const getTaxSummary = async (filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.year) queryParams.append('year', filters.year.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/financial/tax-summary?${queryString}` : '/organizer-dashboard/financial/tax-summary';
   return apiGet(endpoint);
@@ -639,7 +643,7 @@ export const getPayoutHistory = async (filters?: {
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/payouts/history?${queryString}` : '/organizer-dashboard/payouts/history';
   return apiGet(endpoint);
@@ -720,7 +724,7 @@ export const getEventActivityLog = async (eventId: string, filters?: {
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.action) queryParams.append('action', filters.action);
   if (filters?.userId) queryParams.append('userId', filters.userId);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/events/${eventId}/activity-log?${queryString}` : `/organizer-dashboard/events/${eventId}/activity-log`;
   return apiGet(endpoint);
@@ -757,7 +761,7 @@ export const getEventTicketPackages = async (eventId: string, filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.type) queryParams.append('type', filters.type);
   if (filters?.isActive !== undefined) queryParams.append('isActive', filters.isActive.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/events/${eventId}/ticket-packages?${queryString}` : `/organizer-dashboard/events/${eventId}/ticket-packages`;
   return apiGet(endpoint);
@@ -819,7 +823,7 @@ export const getEventPricingRules = async (eventId: string, filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.type) queryParams.append('type', filters.type);
   if (filters?.isActive !== undefined) queryParams.append('isActive', filters.isActive.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/events/${eventId}/pricing-rules?${queryString}` : `/organizer-dashboard/events/${eventId}/pricing-rules`;
   return apiGet(endpoint);
@@ -834,7 +838,7 @@ export const calculateDynamicPrice = async (eventId: string, ticketType: string,
   const queryParams = new URLSearchParams();
   queryParams.append('ticketType', ticketType);
   queryParams.append('quantity', quantity.toString());
-  
+
   return apiGet(`/organizer-dashboard/events/${eventId}/calculate-price?${queryParams.toString()}`);
 };
 
@@ -881,7 +885,7 @@ export const getAffiliatePrograms = async (filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.eventId) queryParams.append('eventId', filters.eventId);
   if (filters?.isActive !== undefined) queryParams.append('isActive', filters.isActive.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/affiliate-programs?${queryString}` : '/organizer-dashboard/affiliate-programs';
   return apiGet(endpoint);
@@ -914,7 +918,7 @@ export const getAffiliateConversions = async (affiliateId: string, filters?: {
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.status) queryParams.append('status', filters.status);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/affiliates/${affiliateId}/conversions?${queryString}` : `/organizer-dashboard/affiliates/${affiliateId}/conversions`;
   return apiGet(endpoint);
@@ -953,7 +957,7 @@ export const getEmailCampaigns = async (filters?: {
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/email-campaigns?${queryString}` : '/organizer-dashboard/email-campaigns';
   return apiGet(endpoint);
@@ -1007,7 +1011,7 @@ export const getSocialPosts = async (filters?: {
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/social-posts?${queryString}` : '/organizer-dashboard/social-posts';
   return apiGet(endpoint);
@@ -1031,7 +1035,7 @@ export const getSocialMediaAnalytics = async (filters?: {
   if (filters?.platform) queryParams.append('platform', filters.platform);
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/social-media/analytics?${queryString}` : '/organizer-dashboard/social-media/analytics';
   return apiGet(endpoint);
@@ -1058,7 +1062,7 @@ export const getRoleTemplates = async (filters?: {
 }): Promise<ApiResponse<{ templates: any[] }>> => {
   const queryParams = new URLSearchParams();
   if (filters?.isActive !== undefined) queryParams.append('isActive', filters.isActive.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/team/role-templates?${queryString}` : '/organizer-dashboard/team/role-templates';
   return apiGet(endpoint);
@@ -1081,7 +1085,7 @@ export const getTeamActivityFeed = async (filters?: {
   if (filters?.userId) queryParams.append('userId', filters.userId);
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/team/activity-feed?${queryString}` : '/organizer-dashboard/team/activity-feed';
   return apiGet(endpoint);
@@ -1099,7 +1103,7 @@ export const getTeamPerformanceMetrics = async (filters?: {
   if (filters?.userId) queryParams.append('userId', filters.userId);
   if (filters?.startDate) queryParams.append('startDate', filters.startDate);
   if (filters?.endDate) queryParams.append('endDate', filters.endDate);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer-dashboard/team/performance-metrics?${queryString}` : '/organizer-dashboard/team/performance-metrics';
   return apiGet(endpoint);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,8 +97,13 @@ const AdminFinancialManagement = () => {
       }
     } catch (error) {
       console.error("Error loading monthly summary:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load monthly summary",
+        variant: "destructive",
+      });
     }
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, toast]);
 
   useEffect(() => {
     loadData();
@@ -109,22 +114,6 @@ const AdminFinancialManagement = () => {
       loadMonthlySummary();
     }
   }, [activeTab, loadMonthlySummary]);
-
-  const loadMonthlySummary = async () => {
-    try {
-      const response = await getMonthlySummary(selectedYear, selectedMonth);
-      if (response.success && response.data) {
-        setMonthlySummary(response.data);
-      }
-    } catch (error) {
-      console.error("Error loading monthly summary:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load monthly summary",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleCreateExpense = async (data: Expense) => {
     try {
