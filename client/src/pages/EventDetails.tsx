@@ -9,7 +9,7 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, CalendarDays, Clock, Store } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const EventDetails = () => {
@@ -127,12 +127,59 @@ const EventDetails = () => {
                 image={event.image}
               />
 
+
               {/* Organizer Info */}
               <OrganizerInfo 
                 organizer={event.organizer}
                 organizerName={event.organizerName}
                 organizerDescription={event.organizerDescription}
               />
+
+              
+              {/* Social Links */}
+              {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (
+                <Card className="border-0 bg-card-surface shadow-sm p-6">
+                  <h3 className="text-xl font-bold mb-4">Connect With Us</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {Object.entries(event.socialLinks).map(([platform, url]) => {
+                      if (!url) return null;
+                      const Icon = {
+                        facebook: Facebook,
+                        twitter: Twitter,
+                        instagram: Instagram,
+                        linkedin: Linkedin,
+                        youtube: Youtube,
+                        tiktok: Globe,
+                        website: Globe
+                      }[platform.toLowerCase()] || Globe;
+                      
+                      const platformLabels: Record<string, string> = {
+                        facebook: 'Facebook',
+                        twitter: 'Twitter / X',
+                        instagram: 'Instagram',
+                        linkedin: 'LinkedIn',
+                        youtube: 'YouTube',
+                        tiktok: 'TikTok',
+                        website: 'Website'
+                      };
+                      
+                      return (
+                        <a
+                          key={platform}
+                          href={url.startsWith('http') ? url : `https://${url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all hover:shadow-md"
+                          title={platformLabels[platform.toLowerCase()] || platform}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-sm font-medium">{platformLabels[platform.toLowerCase()] || platform}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </Card>
+              )}
 
               {/* About Section */}
               <section>
@@ -143,6 +190,48 @@ const EventDetails = () => {
                   </p>
                 </div>
               </section>
+
+              {/* Event Agenda */}
+              {event.agenda && event.agenda.length > 0 && (
+                <section>
+                  <h2 className="text-3xl font-bold mb-6">Event Agenda</h2>
+                  <div className="space-y-4">
+                    {event.agenda.map((item, index) => (
+                      <Card key={index} className="border-0 bg-card-surface shadow-sm p-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-shrink-0 w-32 flex flex-col justify-center text-center sm:text-left sm:border-r border-border/50 pr-4">
+                            <div className="flex items-center gap-2 text-primary font-semibold">
+                              <Clock className="w-4 h-4" />
+                              <span>{item.startTime}</span>
+                            </div>
+                            <span className="text-muted-foreground text-sm pl-6 sm:pl-0 block">
+                              to {item.endTime}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold mb-1">{item.title}</h3>
+                            {item.description && (
+                              <p className="text-muted-foreground text-sm mb-2">{item.description}</p>
+                            )}
+                            {item.speakers && item.speakers.length > 0 && (
+                              <div className="flex items-center gap-2 mt-2">
+                                <Users className="w-4 h-4 text-primary" />
+                                <span className="text-sm font-medium">
+                                  {item.speakers.map(s => {
+                                      // If speaker is an ID string, try to find name in event.speakers if available, else show ID
+                                      // Or if speaker is object (agenda builder might store objects)
+                                      return typeof s === 'string' ? s : (s as any).name || 'Speaker';
+                                  }).join(', ')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Important Information */}
               {(event.requirements?.length || event.ageRestriction) && (
@@ -209,6 +298,57 @@ const EventDetails = () => {
                   </div>
                 </section>
               )}
+
+
+              {/* Exhibitors & Sponsors */}
+              {( (event.exhibitors && event.exhibitors.length > 0) || (event.sponsors && event.sponsors.length > 0) ) && (
+                  <section className="space-y-8">
+                    {/* Exhibitors */}
+                    {event.exhibitors && event.exhibitors.length > 0 && (
+                      <div>
+                         <h2 className="text-3xl font-bold mb-4">Exhibitors</h2>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {event.exhibitors.map((exhibitor, idx) => (
+                              <Card key={idx} className="p-4 border-0 bg-card-surface shadow-sm hover:shadow-md transition-all">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                     <Store className="w-6 h-6 text-muted-foreground" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-bold">{exhibitor.name}</h4>
+                                    {exhibitor.description && <p className="text-xs text-muted-foreground line-clamp-1">{exhibitor.description}</p>}
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                         </div>
+                      </div>
+                    )}
+
+                    {/* Sponsors */}
+                    {event.sponsors && event.sponsors.length > 0 && (
+                      <div>
+                        <h2 className="text-3xl font-bold mb-4">Sponsors</h2>
+                         <div className="flex flex-wrap gap-6 items-center">
+                            {event.sponsors.map((sponsor, idx) => (
+                              <div key={idx} className="text-center group">
+                                <div className="w-24 h-24 rounded-full bg-white shadow-sm border flex items-center justify-center p-2 mb-2 group-hover:scale-105 transition-transform">
+                                   {sponsor.logo ? (
+                                     <img src={sponsor.logo} alt={sponsor.name} className="max-w-full max-h-full object-contain" />
+                                   ) : (
+                                     <span className="text-xl font-bold text-primary">{sponsor.name.charAt(0)}</span>
+                                   )}
+                                </div>
+                                <span className="text-sm font-medium">{sponsor.name}</span>
+                                <span className="block text-xs text-muted-foreground uppercase">{sponsor.level}</span>
+                              </div>
+                            ))}
+                         </div>
+                      </div>
+                    )}
+                  </section>
+              )}
+
             </div>
 
             {/* Right Column - Action Button and Info */}

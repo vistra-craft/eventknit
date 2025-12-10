@@ -143,7 +143,7 @@ export const Hero = () => {
           backgroundPosition: 'center'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/30 to-accent-coral/60 z-10" />
+        {/* Gradient overlay removed upon user request to keep original image colors */}
         {currentEvent.type === 'IMAGE' && currentEvent.linkUrl && (
           <div 
             className="absolute inset-0 z-10 cursor-pointer"

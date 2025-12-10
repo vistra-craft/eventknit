@@ -27,6 +27,8 @@
     "prisma:studio": "npx dotenv-cli -e .env.development -- prisma studio",
     "prisma:seed": "npx dotenv-cli -e .env.development -- tsx prisma/seed.ts",
     "seed:test-users": "node scripts/seed-test-users.js",
+    "seed:dummy-data": "node scripts/seed-dummy-data.js",
+    "seed:events": "node scripts/seed-events.js",
     "list-users": "node scripts/list-users.js",
     "delete-user": "node scripts/delete-user.js",
     "verify-test-users": "node scripts/verify-test-users.js"

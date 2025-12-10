@@ -30,13 +30,17 @@ import {
   Clock,
   Percent,
   Gift,
-  Shield
+  Shield,
+  Layout
 } from 'lucide-react';
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
+import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
+import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
+import { DragAndDropFormBuilder } from '@/components/event-wizard/DragAndDropFormBuilder';
 
 // Currency options with KES as default
 const CURRENCIES = [
@@ -109,6 +113,11 @@ interface EventData {
   capacity: string;
   category?: string;
   timezone?: string;
+  socialLinks?: Record<string, string>;
+  exhibitors?: any[];
+  sponsors?: any[];
+  agenda?: any[];
+  speakers?: any[];
 }
 
 type Tag = string;
@@ -148,14 +157,58 @@ export default function CreateEventStepwise() {
   const stepParam = searchParams.get('step');
   const isEditMode = !!editEventId;
   const [isLoadingEvent, setIsLoadingEvent] = useState(isEditMode);
+  const [useDragAndDrop, setUseDragAndDrop] = useState(false);
   
+  /* Renaming STEPS constant if it exists or adding it */
+  const steps = [
+    { title: "Basic Info", icon: FileText },
+    { title: "Social", icon: Layout }, 
+    { title: "Agenda", icon: Clock },
+    { title: "Date & Location", icon: Calendar },
+    { title: "Tickets", icon: Ticket },
+    { title: "Registration", icon: Users },
+    { title: "Media", icon: Camera },
+    { title: "Review", icon: CheckCircle }
+  ];
+
   const [currentStep, setCurrentStep] = useState(() => {
     if (stepParam) {
       const step = parseInt(stepParam, 10);
-      return step >= 1 && step <= 6 ? step : 1;
+      return step >= 1 && step <= 8 ? step : 1;
     }
     return 1;
   });
+
+  // Restored missing state for enhancements
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
+  const [agenda, setAgenda] = useState<any[]>([]);
+  const [speakers, setSpeakers] = useState<any[]>([]);
+  const [exhibitors, setExhibitors] = useState<any[]>([]);
+  const [sponsors, setSponsors] = useState<any[]>([]);
+  
+  // Verification state
+  const [loadingVerification, setLoadingVerification] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+
+  useEffect(() => {
+    const fetchVerification = async () => {
+      if (user && ['ORGANIZER', 'ORGANIZER_STAFF'].includes(user.role)) {
+        try {
+          setLoadingVerification(true);
+          const response = await getVerificationStatus();
+          if (response.success) {
+            setVerificationStatus(response.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch verification status", error);
+        } finally {
+          setLoadingVerification(false);
+        }
+      }
+    };
+    fetchVerification();
+  }, [user]);
+
   const [eventType, setEventType] = useState("in-person");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,97 +226,6 @@ export default function CreateEventStepwise() {
     }
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [showImageCropper, setShowImageCropper] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
-    { id: 1, name: "", type: "paid", price: "", quantity: "" }
-  ]);
-  const [categories, setCategories] = useState(["Music", "Concert"]);
-  const [newCategory, setNewCategory] = useState("");
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [newTag, setNewTag] = useState("");
-  const [faqs, setFaqs] = useState([{ question: "", answer: "" }]);
-  const [speakers] = useState<Array<{ name: string; title: string; bio: string; image?: string }>>([]);
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
-  const [loadingVerification, setLoadingVerification] = useState(true);
-  
-  // Load verification status
-  useEffect(() => {
-    const loadVerificationStatus = async () => {
-      if (!user || isEditMode) {
-        setLoadingVerification(false);
-        return;
-      }
-      
-      try {
-        const response = await getVerificationStatus();
-        if (response.success && response.data) {
-          setVerificationStatus(response.data);
-        }
-      } catch (error) {
-        console.error('Error loading verification status:', error);
-      } finally {
-        setLoadingVerification(false);
-      }
-    };
-    
-    loadVerificationStatus();
-    
-    // Listen for verification status updates from VerificationForm
-    const handleVerificationUpdate = () => {
-      loadVerificationStatus();
-    };
-    window.addEventListener('verificationStatusUpdated', handleVerificationUpdate);
-    
-    return () => {
-      window.removeEventListener('verificationStatusUpdated', handleVerificationUpdate);
-    };
-  }, [user, isEditMode]);
-  
-  // Reset form to initial state
-  const resetForm = useCallback(() => {
-    setEventData({
-      title: "",
-      organizer: "",
-      description: "",
-      fullDescription: "",
-      organizerDescription: "",
-      date: "",
-      time: "",
-      endDate: "",
-      endTime: "",
-      location: "",
-      venue: "",
-      address: "",
-      onlineLink: "",
-      price: "",
-      totalSlots: 0,
-      image: "",
-      requirements: "",
-      ageRestriction: "",
-      isOnline: false,
-      capacity: "",
-      category: "",
-      timezone: timezone,
-      currency: DEFAULT_CURRENCY,
-    });
-    setTicketTypes([{ id: 1, name: "", type: "paid", price: "", quantity: "" }]);
-    setCategories(["Music", "Concert"]);
-    setTags([]);
-    setFaqs([{ question: "", answer: "" }]);
-    setEventType("in-person");
-    setIsPrivate(false);
-    setImagePreview(null);
-    setUploadedImage(null);
-    setCurrentStep(1);
-    setError(null);
-    setValidationErrors({});
-  }, [timezone]);
 
   const [eventData, setEventData] = useState<EventData & { currency: string }>(() => {
     // Load draft from localStorage (only if not in edit mode)
@@ -292,40 +254,11 @@ export default function CreateEventStepwise() {
         category: "",
         timezone: timezone,
         currency: DEFAULT_CURRENCY,
-      };
-    }
-    
-    // Check if we just created an event - if so, start fresh
-    const justCreated = sessionStorage.getItem('event_just_created');
-    if (justCreated === 'true') {
-      // Clear the draft and flag
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-      sessionStorage.removeItem('event_just_created');
-      // Return empty form
-      return {
-        title: "",
-        organizer: "",
-        description: "",
-        fullDescription: "",
-        organizerDescription: "",
-        date: "",
-        time: "",
-        endDate: "",
-        endTime: "",
-        location: "",
-        venue: "",
-        address: "",
-        onlineLink: "",
-        price: "",
-        totalSlots: 0,
-        image: "",
-        requirements: "",
-        ageRestriction: "",
-        isOnline: false,
-        capacity: "",
-        category: "",
-        timezone: timezone,
-        currency: DEFAULT_CURRENCY,
+        socialLinks: {},
+        exhibitors: [],
+        sponsors: [],
+        agenda: [],
+        speakers: [],
       };
     }
     
@@ -360,6 +293,11 @@ export default function CreateEventStepwise() {
             category: draftData.category || "",
             timezone: draftData.timezone || timezone,
             currency: draftData.currency || DEFAULT_CURRENCY,
+            socialLinks: draftData.socialLinks || {},
+            exhibitors: draftData.exhibitors || [],
+            sponsors: draftData.sponsors || [],
+            agenda: draftData.agenda || [],
+            speakers: draftData.speakers || [],
           };
         } else {
           localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -393,8 +331,76 @@ export default function CreateEventStepwise() {
       category: "",
       timezone: timezone,
       currency: DEFAULT_CURRENCY,
+      socialLinks: {},
+      exhibitors: [],
+      sponsors: [],
+      agenda: [],
+      speakers: [],
     };
   });
+
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showImageCropper, setShowImageCropper] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
+    { id: 1, name: "", type: "paid", price: "", quantity: "" }
+  ]);
+  const [categories, setCategories] = useState(["Music", "Concert"]);
+  const [newCategory, setNewCategory] = useState("");
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [newTag, setNewTag] = useState("");
+  const [faqs, setFaqs] = useState([{ question: "", answer: "" }]);
+  const [isPrivate, setIsPrivate] = useState(false);
+  
+  // Reset form to initial state
+  const resetForm = useCallback(() => {
+    setEventData({
+      title: "",
+      organizer: "",
+      description: "",
+      fullDescription: "",
+      organizerDescription: "",
+      date: "",
+      time: "",
+      endDate: "",
+      endTime: "",
+      location: "",
+      venue: "",
+      address: "",
+      onlineLink: "",
+      price: "",
+      totalSlots: 0,
+      image: "",
+      requirements: "",
+      ageRestriction: "",
+      isOnline: false,
+      capacity: "",
+      category: "",
+      timezone: timezone,
+      currency: DEFAULT_CURRENCY,
+      socialLinks: {},
+      exhibitors: [],
+      sponsors: [],
+      agenda: [],
+      speakers: [],
+    });
+    setTicketTypes([{ id: 1, name: "", type: "paid", price: "", quantity: "" }]);
+    setCategories(["Music", "Concert"]);
+    setTags([]);
+    setFaqs([{ question: "", answer: "" }]);
+    setEventType("physical");
+    setIsPrivate(false);
+    setImagePreview(null);
+    setUploadedImage(null);
+    setCurrentStep(1);
+    setError(null);
+    setValidationErrors({});
+  }, [timezone]);
+
+
 
   // Load draft function (for use in other places)
   const loadDraft = useCallback((): Partial<EventData & { currency: string }> => {
@@ -914,12 +920,10 @@ export default function CreateEventStepwise() {
     setFaqs(updatedFaqs);
   };
 
-
-
-  const validateStep = (step: number): boolean => {
+  const validateStep = (step: number) => {
     const errors: Record<string, string> = {};
-    
-    if (step === 1) {
+
+    if (step === 1) { // Basic Info
       if (!eventData.title?.trim()) errors.title = 'Event title is required';
       if (!eventData.description?.trim()) errors.description = 'Event description is required';
       if (eventData.description && eventData.description.length < 10) {
@@ -928,7 +932,9 @@ export default function CreateEventStepwise() {
       if (!eventData.category) errors.category = 'Category is required';
     }
     
-    if (step === 2) {
+    // Step 2 (Social) and Step 3 (Agenda) are optional, no strict validation needed yet
+    
+    if (step === 4) { // Date & Location
       if (!eventData.date) errors.date = 'Event date is required';
       if (!eventData.time) errors.time = 'Start time is required';
       if (eventType === 'in-person' && !eventData.venue?.trim()) {
@@ -945,7 +951,7 @@ export default function CreateEventStepwise() {
       }
     }
     
-    if (step === 3) {
+    if (step === 5) { // Tickets
       if (ticketTypes.length === 0) {
         errors.tickets = 'At least one ticket type is required';
       }
@@ -964,7 +970,7 @@ export default function CreateEventStepwise() {
   };
 
   const handleNext = () => {
-    if (currentStep < 6) {
+    if (currentStep < 8) {
       if (validateStep(currentStep)) {
         setError(null);
         setCurrentStep(currentStep + 1);
@@ -1149,7 +1155,7 @@ export default function CreateEventStepwise() {
     }
   };
 
-  const renderStep1 = () => (
+  const renderBasicInfoStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -1339,7 +1345,7 @@ export default function CreateEventStepwise() {
     </div>
   );
 
-  const renderStep2 = () => (
+  const renderDateLocationStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -1514,7 +1520,70 @@ export default function CreateEventStepwise() {
     </div>
   );
 
-  const renderStep3 = () => (
+  const renderSocialStep = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          Social Connections
+        </h2>
+        <p className="text-muted-foreground">
+          Connect your social media accounts to display them on your event page.
+        </p>
+      </div>
+
+      <SocialConnectionsStep
+        socialLinks={socialLinks}
+        onChange={(newLinks) => {
+          setSocialLinks(newLinks);
+          setEventData(prev => ({ ...prev, socialLinks: newLinks }));
+        }}
+        onNext={handleNext}
+        onBack={handleBack}
+      />
+    </div>
+  );
+
+  const renderAgendaStep = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          Event Agenda
+        </h2>
+        <p className="text-muted-foreground">
+          Build your event schedule, manage speakers, and add exhibitors.
+        </p>
+      </div>
+
+      <AgendaBuilderStep
+        agenda={agenda}
+        speakers={speakers}
+        exhibitors={exhibitors}
+        sponsors={sponsors}
+        onUpdate={(field, value) => {
+          if (field === 'agenda') {
+             setAgenda(value);
+             setEventData(prev => ({ ...prev, agenda: value }));
+          }
+          if (field === 'speakers') {
+             setSpeakers(value);
+             setEventData(prev => ({ ...prev, speakers: value }));
+          }
+          if (field === 'exhibitors') {
+             setExhibitors(value);
+             setEventData(prev => ({ ...prev, exhibitors: value }));
+          }
+          if (field === 'sponsors') {
+             setSponsors(value);
+             setEventData(prev => ({ ...prev, sponsors: value }));
+          }
+        }}
+        onNext={handleNext}
+        onBack={handleBack}
+      />
+    </div>
+  );
+
+  const renderTicketsStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -1856,7 +1925,7 @@ export default function CreateEventStepwise() {
     </div>
   );
 
-  const renderStep4 = () => (
+  const renderRegistrationStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -1867,87 +1936,131 @@ export default function CreateEventStepwise() {
         </p>
       </div>
 
-      <div className="space-y-4">
-        {registrationFields.map((field, index) => (
-          <Card key={field.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Field {index + 1}</CardTitle>
-                {registrationFields.length > 3 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeRegistrationField(index)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex justify-end items-center space-x-2 mb-4">
+        <Label htmlFor="builder-mode" className="text-sm font-medium">
+          {useDragAndDrop ? 'Drag & Drop Builder' : 'Simple Builder'}
+        </Label>
+        <Switch
+          id="builder-mode"
+          checked={useDragAndDrop}
+          onCheckedChange={setUseDragAndDrop}
+        />
+      </div>
+
+      {useDragAndDrop ? (
+        <DragAndDropFormBuilder
+          fields={registrationFields.map((field: RegistrationField) => ({
+            id: field.id,
+            name: field.id,
+            type: field.type as any,
+            label: field.label,
+            required: field.required,
+            placeholder: field.placeholder,
+            options: field.options
+          }))}
+          onChange={(newFields: RegistrationField[]) => {
+            const mappedFields = newFields.map((field: RegistrationField) => ({
+              id: field.id,
+              name: field.id,
+              type: field.type,
+              label: field.label,
+              required: field.required || false,
+              placeholder: field.placeholder || '',
+              options: field.options
+            }));
+            setRegistrationFields(mappedFields);
+          }}
+          onNext={() => {}}
+          onBack={() => {}}
+        />
+      ) : (
+        <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-hide">
+          {/* Display standard fields (Name, Email, Phone) as read-only or informational if needed, 
+              but usually they are implicit. The original code only mapped 'registrationFields'.
+              Assuming standard fields like 'First Name', 'Last Name', 'Email' are fixed or handled elsewhere?
+              The original code rendered all fields in 'registrationFields'. */}
+              
+          {registrationFields.map((field, index) => (
+            <Card key={field.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Field {index + 1}</CardTitle>
+                  {registrationFields.length > 3 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeRegistrationField(index)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Field Label</Label>
+                    <Input 
+                      value={field.label}
+                      onChange={(e) => updateRegistrationField(index, { label: e.target.value })}
+                      placeholder="Field label"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Field Type</Label>
+                    <Select value={field.type} onValueChange={(value) => updateRegistrationField(index, { type: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">Text</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="phone">Phone</SelectItem>
+                        <SelectItem value="textarea">Textarea</SelectItem>
+                        <SelectItem value="select">Select</SelectItem>
+                        <SelectItem value="checkbox">Checkbox</SelectItem>
+                        <SelectItem value="date">Date</SelectItem>
+                        <SelectItem value="number">Number</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label>Field Label</Label>
+                  <Label>Placeholder Text</Label>
                   <Input 
-                    value={field.label}
-                    onChange={(e) => updateRegistrationField(index, { label: e.target.value })}
-                    placeholder="Field label"
+                    value={field.placeholder}
+                    onChange={(e) => updateRegistrationField(index, { placeholder: e.target.value })}
+                    placeholder="Enter placeholder text"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Field Type</Label>
-                  <Select value={field.type} onValueChange={(value) => updateRegistrationField(index, { type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">Text</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="phone">Phone</SelectItem>
-                      <SelectItem value="textarea">Textarea</SelectItem>
-                      <SelectItem value="select">Select</SelectItem>
-                      <SelectItem value="checkbox">Checkbox</SelectItem>
-                      <SelectItem value="date">Date</SelectItem>
-                      <SelectItem value="number">Number</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={field.required}
+                    onCheckedChange={(checked) => updateRegistrationField(index, { required: checked })}
+                  />
+                  <Label>Required field</Label>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+          ))}
 
-              <div className="space-y-2">
-                <Label>Placeholder Text</Label>
-                <Input 
-                  value={field.placeholder}
-                  onChange={(e) => updateRegistrationField(index, { placeholder: e.target.value })}
-                  placeholder="Enter placeholder text"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={field.required}
-                  onCheckedChange={(checked) => updateRegistrationField(index, { required: checked })}
-                />
-                <Label>Required field</Label>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        <Button
-          variant="outline"
-          onClick={addRegistrationField}
-          className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Custom Field
-        </Button>
-      </div>
+          <Button
+            variant="outline"
+            onClick={addRegistrationField}
+            className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Custom Field
+          </Button>
+        </div>
+      )}
     </div>
   );
 
-  const renderStep5 = () => (
+  const renderMediaStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -2199,7 +2312,9 @@ export default function CreateEventStepwise() {
     </div>
   );
 
-  const renderStep6 = () => (
+
+
+  const renderReviewStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -2277,14 +2392,9 @@ export default function CreateEventStepwise() {
     </div>
   );
 
-  const steps = [
-    { title: "Basic Info", icon: FileText },
-    { title: "Date & Location", icon: Calendar },
-    { title: "Tickets", icon: Ticket },
-    { title: "Registration", icon: Users },
-    { title: "Media & Details", icon: Camera },
-    { title: "Review", icon: CheckCircle }
-  ];
+
+
+  // steps definition moved up
 
   // Render preview modal
   const renderPreview = () => {
@@ -2588,28 +2698,7 @@ export default function CreateEventStepwise() {
           </div>
 
           {/* Step Navigation - Hidden on mobile, shown on desktop */}
-          <div className="hidden md:flex items-center justify-center space-x-2 sm:space-x-4 mt-6">
-            {steps.map((step, index) => (
-              <div key={index} className="flex items-center">
-                <div
-                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-colors ${
-                    index + 1 <= currentStep
-                      ? 'bg-primary text-white'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  <step.icon className="w-3 h-3 sm:w-4 sm:h-4" />
-                </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={`w-8 sm:w-16 h-0.5 mx-1 sm:mx-2 transition-colors ${
-                      index + 1 < currentStep ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
+
         </div>
 
         {/* Error Alert */}
@@ -2645,12 +2734,14 @@ export default function CreateEventStepwise() {
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
           <CardContent className="p-6 sm:p-8">
-            {currentStep === 1 && renderStep1()}
-            {currentStep === 2 && renderStep2()}
-            {currentStep === 3 && renderStep3()}
-            {currentStep === 4 && renderStep4()}
-            {currentStep === 5 && renderStep5()}
-            {currentStep === 6 && renderStep6()}
+            {currentStep === 1 && renderBasicInfoStep()}
+            {currentStep === 2 && renderSocialStep()}
+            {currentStep === 3 && renderAgendaStep()}
+            {currentStep === 4 && renderDateLocationStep()}
+            {currentStep === 5 && renderTicketsStep()}
+            {currentStep === 6 && renderRegistrationStep()}
+            {currentStep === 7 && renderMediaStep()}
+            {currentStep === 8 && renderReviewStep()}
 
             {/* Navigation Buttons */}
             <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
@@ -2683,10 +2774,10 @@ export default function CreateEventStepwise() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {currentStep === 6 ? 'Publishing...' : 'Validating...'}
+                    {currentStep === 8 ? 'Publishing...' : 'Validating...'}
                   </>
                 ) : (
-                  currentStep === 6 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'
+                  currentStep === 8 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'
                 )}
               </Button>
             </div>

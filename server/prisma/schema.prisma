@@ -399,6 +399,9 @@ model Event {
   // Additional content
   speakers           Json? // Array of speakers
   sponsors           Json? // Array of sponsors
+  exhibitors         Json? // Array of exhibitors
+  agenda             Json? // Array of agenda items/schedule
+  socialLinks        Json? // Object containing social media links
   faqs               Json? // Array of FAQs
   registrationFields Json? // Custom registration form fields
   organizerDescription String? @db.Text // Organizer's description about themselves/their organization

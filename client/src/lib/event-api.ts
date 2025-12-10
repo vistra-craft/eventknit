@@ -88,6 +88,15 @@ export interface CreateEventData {
   speakers?: Array<{ name: string; title: string; bio: string; image?: string }>;
   sponsors?: Array<{ name: string; level: string; logo: string }>;
   faqs?: Array<{ question: string; answer: string }>;
+  socialLinks?: Record<string, string>;
+  exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }>;
+  agenda?: Array<{
+    title: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    speakers?: string[]; // IDs of speakers
+  }>;
   registrationFields?: Array<{
     id: string;
     name: string;
@@ -231,7 +240,7 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
 
   console.log('[event-api] Making API call to:', endpoint);
   console.log('[event-api] Filters received:', filters);
-  
+
   const response = await apiGet<EventsListResponse>(endpoint);
 
   console.log('[event-api] API Response:', {
