@@ -470,18 +470,17 @@ export class OrganizerService {
   }
 
   /**
-   * Check if organizer has at least one approved event
+   * Check if organizer has created at least one event (any status)
    */
-  static async hasApprovedEvent(organizerId: string): Promise<boolean> {
-    const approvedEvent = await prisma.event.findFirst({
+  static async hasEvent(organizerId: string): Promise<boolean> {
+    const event = await prisma.event.findFirst({
       where: {
         organizerId,
-        status: EventStatus.APPROVED,
         deletedAt: null,
       },
       select: { id: true },
     });
-    return !!approvedEvent;
+    return !!event;
   }
 
   /**

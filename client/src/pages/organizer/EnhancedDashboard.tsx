@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Users,
@@ -11,12 +11,22 @@ import {
   ArrowDownRight,
   Mic,
   Building2,
+  CheckCircle2,
+  Shield,
+  X,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 import { getOrganizerDashboardStats, getOrganizerDashboardEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 
 const EnhancedDashboard = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState("30d");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [verificationReminder, setVerificationReminder] = useState<string | null>(null);
+  const [showVerificationReminder, setShowVerificationReminder] = useState(false);
   const [stats, setStats] = useState([
     {
       title: "Total Events",
@@ -100,6 +110,27 @@ const EnhancedDashboard = () => {
       setLoadingMore(false);
     }
   };
+
+  // Check for messages from navigation state (e.g., after event creation)
+  useEffect(() => {
+    const state = location.state as { 
+      message?: string; 
+      verificationReminder?: string; 
+      eventCreated?: boolean;
+      needsVerification?: boolean;
+    } | null;
+    
+    if (state?.message) {
+      setSuccessMessage(state.message);
+      // Clear the state to prevent showing message on refresh
+      window.history.replaceState({}, document.title);
+    }
+    
+    if (state?.verificationReminder && state?.needsVerification) {
+      setVerificationReminder(state.verificationReminder);
+      setShowVerificationReminder(true);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -206,6 +237,50 @@ const EnhancedDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8">
       <div>
+        {/* Success Message */}
+        {successMessage && (
+          <Alert className="mb-6 border-green-500/20 bg-green-500/10">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-700 dark:text-green-400">
+              {successMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Verification Reminder */}
+        {showVerificationReminder && verificationReminder && (
+          <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+            <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-blue-900 dark:text-blue-100 flex-1">
+                <strong>Verification Required:</strong> {verificationReminder}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigate('/organizer/verification', { 
+                      state: { redirectAfterVerification: '/organizer/dashboard' } 
+                    });
+                  }}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
+                >
+                  Verify Identity
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowVerificationReminder(false)}
+                  className="text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>

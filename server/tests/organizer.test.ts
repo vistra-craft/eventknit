@@ -1682,22 +1682,22 @@ describe('Organizer Staff Management', () => {
       });
     });
 
-    it('should return true for organizer with approved event', async () => {
+    it('should return true for organizer with any event', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
       }
 
-      // Create an approved event for the organizer
+      // Create a pending event for the organizer (any status should work)
       const event = await prisma.event.create({
         data: {
-          title: 'Test Approved Event',
+          title: 'Test Event',
           description: 'Test event',
           startDate: new Date(Date.now() + 86400000), // Tomorrow
           endDate: new Date(Date.now() + 172800000), // Day after tomorrow
           location: 'Test Location',
           organizerId: _organizerId,
-          status: EventStatus.APPROVED,
+          status: EventStatus.PENDING,
           type: 'PUBLIC',
           isFree: true,
           capacity: 100,
@@ -1719,7 +1719,7 @@ describe('Organizer Staff Management', () => {
       });
     });
 
-    it('should return false for organizer with only pending events', async () => {
+    it('should return true for organizer with pending events', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -1746,9 +1746,10 @@ describe('Organizer Staff Management', () => {
         .set('Authorization', `Bearer ${organizerToken}`)
         .expect(200);
 
-      // Should still return false if no approved events
+      // Should return true for any event (including pending)
       expect(response.body.success).toBe(true);
-      expect(response.body.data.hasAccess).toBe(false);
+      expect(response.body.data.hasAccess).toBe(true);
+      expect(response.body.data.message).toContain('You have access');
 
       // Cleanup
       await prisma.event.deleteMany({

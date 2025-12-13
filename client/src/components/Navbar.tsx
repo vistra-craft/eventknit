@@ -104,7 +104,7 @@ const Navbar: React.FC<NavbarProps> = () => {
         const { getDashboardAccess } = await import('@/lib/organizer-api');
         const accessResponse = await getDashboardAccess();
         if (accessResponse.success && !accessResponse.data.hasAccess) {
-          // No approved event - redirect to event creation
+          // No event created - redirect to event creation
           return '/organizer/events/create-standalone';
         }
       } catch (error) {

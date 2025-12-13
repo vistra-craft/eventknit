@@ -31,7 +31,9 @@ import {
   Percent,
   Gift,
   Shield,
-  Layout
+  Layout,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
 import { getOrganizerEventById } from '@/lib/organizer-api';
@@ -1133,11 +1135,19 @@ export default function CreateEventStepwise() {
               state: { message: 'Event created successfully! It is pending admin approval.' }
             });
           } else if (isStandaloneRoute) {
-            // For standalone creation, show success message and redirect to onboarding or show pending status
-            navigate('/organizer/onboarding', {
+            // For standalone creation, navigate to dashboard with success message and verification reminder
+            const needsVerification = verificationStatus && !verificationStatus.identityVerified;
+            const successMessage = 'Event created successfully! It is pending admin approval. You will receive an email when it\'s approved.';
+            const verificationMessage = needsVerification 
+              ? 'Complete identity verification to help speed up approval and receive payouts from ticket sales.'
+              : null;
+            
+            navigate('/organizer/dashboard', {
               state: { 
-                message: 'Event created successfully! It is pending admin approval. You will receive an email when it\'s approved.',
-                eventCreated: true
+                message: successMessage,
+                verificationReminder: verificationMessage,
+                eventCreated: true,
+                needsVerification: needsVerification
               }
             });
           } else {
@@ -1193,7 +1203,7 @@ export default function CreateEventStepwise() {
               handleInputChange("title", e.target.value);
               if (validationErrors.title) setValidationErrors(prev => ({ ...prev, title: '' }));
             }}
-            className={validationErrors.title ? 'border-destructive' : ''}
+            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.title ? 'border-destructive' : ''}`}
           />
           {validationErrors.title && (
             <p className="text-sm text-destructive">{validationErrors.title}</p>
@@ -1206,6 +1216,7 @@ export default function CreateEventStepwise() {
             placeholder="Your organization name" 
             value={eventData.organizer}
             onChange={(e) => handleInputChange("organizer", e.target.value)}
+            className="h-12 border-border focus-visible:border-primary/30"
           />
         </div>
       </div>
@@ -1383,7 +1394,7 @@ export default function CreateEventStepwise() {
               handleInputChange("date", e.target.value);
               if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
             }}
-            className={validationErrors.date ? 'border-destructive' : ''}
+            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.date ? 'border-destructive' : ''}`}
           />
           {validationErrors.date && (
             <p className="text-sm text-destructive">{validationErrors.date}</p>
@@ -1399,7 +1410,7 @@ export default function CreateEventStepwise() {
               handleInputChange("time", e.target.value);
               if (validationErrors.time) setValidationErrors(prev => ({ ...prev, time: '' }));
             }}
-            className={validationErrors.time ? 'border-destructive' : ''}
+            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.time ? 'border-destructive' : ''}`}
           />
           {validationErrors.time && (
             <p className="text-sm text-destructive">{validationErrors.time}</p>
@@ -1418,7 +1429,7 @@ export default function CreateEventStepwise() {
               handleInputChange("endDate", e.target.value);
               if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
             }}
-            className={validationErrors.endDate ? 'border-destructive' : ''}
+            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.endDate ? 'border-destructive' : ''}`}
           />
           {validationErrors.endDate && (
             <p className="text-sm text-destructive">{validationErrors.endDate}</p>
@@ -1431,6 +1442,7 @@ export default function CreateEventStepwise() {
             type="time"
             value={eventData.endTime}
             onChange={(e) => handleInputChange("endTime", e.target.value)}
+            className="h-12 border-border focus-visible:border-primary/30"
           />
         </div>
       </div>
@@ -1469,7 +1481,7 @@ export default function CreateEventStepwise() {
                 handleInputChange("venue", e.target.value);
                 if (validationErrors.venue) setValidationErrors(prev => ({ ...prev, venue: '' }));
               }}
-              className={validationErrors.venue ? 'border-destructive' : ''}
+              className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.venue ? 'border-destructive' : ''}`}
             />
             {validationErrors.venue && (
               <p className="text-sm text-destructive">{validationErrors.venue}</p>
@@ -1485,7 +1497,7 @@ export default function CreateEventStepwise() {
                 handleInputChange("location", e.target.value);
                 if (validationErrors.location) setValidationErrors(prev => ({ ...prev, location: '' }));
               }}
-              className={validationErrors.location ? 'border-destructive' : ''}
+              className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.location ? 'border-destructive' : ''}`}
             />
             {validationErrors.location && (
               <p className="text-sm text-destructive">{validationErrors.location}</p>
@@ -1515,7 +1527,7 @@ export default function CreateEventStepwise() {
               handleInputChange("onlineLink", e.target.value);
               if (validationErrors.onlineLink) setValidationErrors(prev => ({ ...prev, onlineLink: '' }));
             }}
-            className={validationErrors.onlineLink ? 'border-destructive' : ''}
+            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.onlineLink ? 'border-destructive' : ''}`}
           />
           {validationErrors.onlineLink && (
             <p className="text-sm text-destructive">{validationErrors.onlineLink}</p>
@@ -1531,6 +1543,7 @@ export default function CreateEventStepwise() {
           placeholder="Maximum number of attendees"
           value={eventData.capacity}
           onChange={(e) => handleInputChange("capacity", e.target.value)}
+          className="h-12 border-border focus-visible:border-primary/30"
         />
       </div>
     </div>
@@ -1561,15 +1574,6 @@ export default function CreateEventStepwise() {
 
   const renderAgendaStep = () => (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Event Agenda
-        </h2>
-        <p className="text-muted-foreground">
-          Build your event schedule, manage speakers, and add exhibitors.
-        </p>
-      </div>
-
       <AgendaBuilderStep
         agenda={agenda}
         speakers={speakers}
@@ -1642,6 +1646,7 @@ export default function CreateEventStepwise() {
                   <Input 
                     placeholder="e.g., General Admission, VIP"
                     value={ticket.name}
+                    className="h-12 border-border focus-visible:border-primary/30"
                     onChange={(e) => {
                       const updatedTickets = [...ticketTypes];
                       updatedTickets[index] = { ...ticket, name: e.target.value };
@@ -1771,6 +1776,7 @@ export default function CreateEventStepwise() {
                             step="0.01"
                             placeholder="149.99"
                             value={ticket.originalPrice}
+                            className="h-12 border-border focus-visible:border-primary/30"
                             onChange={(e) => {
                               const updatedTickets = [...ticketTypes];
                               updatedTickets[index] = {
@@ -1830,6 +1836,7 @@ export default function CreateEventStepwise() {
                         <Input
                           placeholder="e.g., Student Discount, Early Bird, Limited Time"
                           value={ticket.discountLabel || ''}
+                          className="h-12 border-border focus-visible:border-primary/30"
                           onChange={(e) => {
                             const updatedTickets = [...ticketTypes];
                             updatedTickets[index] = {
@@ -1880,6 +1887,7 @@ export default function CreateEventStepwise() {
                       <Input
                         type="datetime-local"
                         value={ticket.availableFrom || ''}
+                        className="h-12 border-border focus-visible:border-primary/30"
                         onChange={(e) => {
                           const updatedTickets = [...ticketTypes];
                           updatedTickets[index] = {
@@ -1895,6 +1903,7 @@ export default function CreateEventStepwise() {
                       <Input
                         type="datetime-local"
                         value={ticket.availableUntil || ''}
+                        className="h-12 border-border focus-visible:border-primary/30"
                         onChange={(e) => {
                           const updatedTickets = [...ticketTypes];
                           updatedTickets[index] = {
@@ -1918,6 +1927,7 @@ export default function CreateEventStepwise() {
                   type="number"
                   placeholder="100"
                   value={ticket.quantity}
+                  className="h-12 border-border focus-visible:border-primary/30"
                   onChange={(e) => {
                     const updatedTickets = [...ticketTypes];
                     updatedTickets[index] = { ...ticket, quantity: e.target.value };
@@ -2021,6 +2031,7 @@ export default function CreateEventStepwise() {
                       value={field.label}
                       onChange={(e) => updateRegistrationField(index, { label: e.target.value })}
                       placeholder="Field label"
+                      className="h-12 border-border focus-visible:border-primary/30"
                     />
                   </div>
                   <div className="space-y-2">
@@ -2049,6 +2060,7 @@ export default function CreateEventStepwise() {
                     value={field.placeholder}
                     onChange={(e) => updateRegistrationField(index, { placeholder: e.target.value })}
                     placeholder="Enter placeholder text"
+                    className="h-12 border-border focus-visible:border-primary/30"
                   />
                 </div>
 
@@ -2164,6 +2176,7 @@ export default function CreateEventStepwise() {
                 id="imageUrl"
                 placeholder="https://example.com/image.jpg"
                 value={eventData.image}
+                className="h-12 border-border focus-visible:border-primary/30"
                 onChange={(e) => handleInputChange("image", e.target.value)}
               />
             </div>
@@ -2224,11 +2237,12 @@ export default function CreateEventStepwise() {
           ))}
         </div>
         <div className="flex gap-2">
-          <Input 
+          <Input
             placeholder="Add tag"
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addTag()}
+            className="h-12 border-border focus-visible:border-primary/30"
           />
           <Button onClick={addTag} disabled={!newTag.trim()}>
             Add
@@ -2305,6 +2319,7 @@ export default function CreateEventStepwise() {
                   placeholder="Question"
                   value={faq.question}
                   onChange={(e) => handleFaqChange(index, 'question', e.target.value)}
+                  className="h-12 border-border focus-visible:border-primary/30"
                 />
                 <Textarea 
                   placeholder="Answer"
@@ -2761,41 +2776,58 @@ export default function CreateEventStepwise() {
 
             {/* Navigation Buttons */}
             <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
-              <div className="flex gap-2 order-2 sm:order-1">
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  className="flex-1 sm:px-6 sm:flex-none border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
-                  disabled={isSubmitting}
-                >
-                  Back
-                </Button>
+              {/* Left side - Back button (only from step 2 onwards) */}
+              <div>
+                {currentStep >= 2 && (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Back</span>
+                  </button>
+                )}
+              </div>
+              
+              {/* Right side - Preview (middle) and Next (right) */}
+              <div className="flex items-center gap-3 ml-auto">
+                {/* Preview Button - Show from step 3 onwards, in the middle */}
                 {currentStep >= 3 && (
                   <Button
                     variant="outline"
                     onClick={() => setShowPreview(true)}
-                    className="flex-1 sm:px-6 sm:flex-none border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+                    className="px-6 border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
                     disabled={isSubmitting}
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Preview
                   </Button>
                 )}
-              </div>
-              <Button
-                onClick={handleNext}
-                className="order-1 sm:order-2 flex-1 sm:flex-none px-6 h-11 rounded-xl bg-accent-coral hover:bg-accent-coral/90 text-white transition-all duration-200 shadow-md"
-                disabled={isSubmitting}
-              >
+                
+                {/* Next Button - Always on the right */}
                 {isSubmitting ? (
-                  <>
+                  <Button
+                    onClick={handleNext}
+                    className="px-6 h-11 rounded-xl bg-transparent text-primary hover:bg-accent-coral hover:text-white transition-colors shadow-none"
+                    disabled={isSubmitting}
+                  >
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     {currentStep === 8 ? 'Publishing...' : 'Validating...'}
-                  </>
+                  </Button>
                 ) : (
-                  currentStep === 8 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <span>{currentStep === 8 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>
+                    {currentStep !== 8 && <ArrowRight className="w-3 h-3" />}
+                  </button>
                 )}
-              </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

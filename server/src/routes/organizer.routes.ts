@@ -95,7 +95,7 @@ router.get('/dashboard/events', OrganizerController.getDashboardEvents);
 
 /**
  * @route   GET /api/v1/organizer/dashboard-access
- * @desc    Check if organizer has dashboard access (has approved event)
+ * @desc    Check if organizer has dashboard access (has created an event)
  * @access  Private (ORGANIZER+)
  */
 router.get('/dashboard-access', OrganizerController.getDashboardAccess);

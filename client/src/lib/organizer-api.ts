@@ -67,7 +67,7 @@ export interface OrganizerDashboardEventsResponse {
 }
 
 /**
- * Check if organizer has dashboard access (has approved event)
+ * Check if organizer has dashboard access (has created an event)
  */
 export interface DashboardAccessResponse {
   success: boolean;

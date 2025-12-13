@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Calendar, Users, Briefcase, Award } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
@@ -110,6 +111,22 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
     onUpdate('exhibitors', newExhibitors);
   };
 
+  // --- Sponsor Handlers ---
+  const addSponsor = () => {
+    onUpdate('sponsors', [...sponsors, { name: '', level: 'bronze', logo: '' }]);
+  };
+
+  const updateSponsor = (index: number, field: keyof Sponsor, value: any) => {
+    const newSponsors = [...sponsors];
+    newSponsors[index] = { ...newSponsors[index], [field]: value };
+    onUpdate('sponsors', newSponsors);
+  };
+
+  const removeSponsor = (index: number) => {
+    const newSponsors = [...sponsors];
+    newSponsors.splice(index, 1);
+    onUpdate('sponsors', newSponsors);
+  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -144,8 +161,12 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                 <CardTitle>Event Schedule</CardTitle>
                 <CardDescription>Plan your sessions and timeline.</CardDescription>
               </div>
-              <Button onClick={addAgendaItem} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" /> Add Session
+              <Button 
+                onClick={addAgendaItem} 
+                variant="ghost"
+                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" /> Add Session
               </Button>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -215,8 +236,13 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                 <CardTitle>Speakers</CardTitle>
                 <CardDescription>Add profiles for your event speakers (Max 20).</CardDescription>
               </div>
-              <Button onClick={addSpeaker} variant="outline" size="sm" disabled={speakers.length >= 20}>
-                <Plus className="h-4 w-4 mr-2" /> Add Speaker
+              <Button 
+                onClick={addSpeaker} 
+                variant="ghost"
+                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+                disabled={speakers.length >= 20}
+              >
+                <Plus className="h-4 w-4" /> Add Speaker
               </Button>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -284,8 +310,12 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                 <CardTitle>Exhibitors</CardTitle>
                 <CardDescription>List companies or groups exhibiting at your event.</CardDescription>
               </div>
-              <Button onClick={addExhibitor} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" /> Add Exhibitor
+              <Button 
+                onClick={addExhibitor} 
+                variant="ghost"
+                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" /> Add Exhibitor
               </Button>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -334,12 +364,82 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
           </Card>
         </TabsContent>
         
-        {/* Sponsors Tab - Reusing existing sponsor implementation or simple placeholder */}
-         <TabsContent value="sponsors">
-           <div className="text-center py-8 text-muted-foreground">
-             Sponsor management is available in the advanced settings.
-           </div>
-         </TabsContent>
+        {/* --- Sponsors Tab --- */}
+        <TabsContent value="sponsors" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Sponsors</CardTitle>
+                <CardDescription>Add companies or organizations sponsoring your event.</CardDescription>
+              </div>
+              <Button 
+                onClick={addSponsor} 
+                variant="ghost"
+                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" /> Add Sponsor
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {sponsors.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No sponsors added yet.
+                </div>
+              ) : (
+                sponsors.map((sponsor, index) => (
+                  <div key={index} className="relative border rounded-lg p-4 bg-card/50">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 text-destructive hover:text-destructive/90"
+                      onClick={() => removeSponsor(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Sponsor Name</Label>
+                        <Input
+                          value={sponsor.name}
+                          onChange={(e) => updateSponsor(index, 'name', e.target.value)}
+                          placeholder="Company/Organization name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Sponsorship Level</Label>
+                        <Select
+                          value={sponsor.level}
+                          onValueChange={(value) => updateSponsor(index, 'level', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gold">Gold</SelectItem>
+                            <SelectItem value="silver">Silver</SelectItem>
+                            <SelectItem value="bronze">Bronze</SelectItem>
+                            <SelectItem value="platinum">Platinum</SelectItem>
+                            <SelectItem value="title">Title Sponsor</SelectItem>
+                            <SelectItem value="presenting">Presenting Sponsor</SelectItem>
+                            <SelectItem value="partner">Community Partner</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-1 md:col-span-2 space-y-2">
+                        <Label>Logo URL</Label>
+                        <Input
+                          value={sponsor.logo}
+                          onChange={(e) => updateSponsor(index, 'logo', e.target.value)}
+                          placeholder="https://..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
       </Tabs>
 

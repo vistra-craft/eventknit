@@ -252,7 +252,7 @@ export class OrganizerController {
   }
 
   /**
-   * Check if organizer has dashboard access (has at least one approved event)
+   * Check if organizer has dashboard access (has created at least one event)
    */
   static async getDashboardAccess(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -264,7 +264,7 @@ export class OrganizerController {
         return;
       }
 
-      const hasAccess = await OrganizerService.hasApprovedEvent(req.user.id);
+      const hasAccess = await OrganizerService.hasEvent(req.user.id);
 
       res.status(200).json({
         success: true,
@@ -272,7 +272,7 @@ export class OrganizerController {
           hasAccess,
           message: hasAccess
             ? 'You have access to the dashboard'
-            : 'Create your first event and get it approved to access the dashboard',
+            : 'Create your first event to access the dashboard',
         },
       });
     } catch (error) {

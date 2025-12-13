@@ -4,7 +4,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, LayoutDashboard, Users, RefreshCw } from 'lucide-react';
+import { User, LogOut, Settings, LayoutDashboard, Users, RefreshCw, Plus } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useRoleView } from '@/contexts/RoleViewContext';
@@ -19,6 +19,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   const { activeViewRole, setActiveViewRole, availableRoles, resetToDefaultRole } = useRoleView();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [hasEvent, setHasEvent] = useState<boolean | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,6 +45,38 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
       setIsOpen(false);
     }
   }, [isAuthenticated, user]);
+
+  // Check if organizer has created an event when dropdown opens
+  useEffect(() => {
+    const checkHasEvent = async () => {
+      if (!isOpen || !user) return;
+      
+      const isOrganizerRole = [
+        UserRole.ORGANIZER,
+        UserRole.ORGANIZER_STAFF,
+        UserRole.ORGANIZER_TELLER,
+      ].includes(user.role);
+      
+      // Only check for full organizers (not staff/teller)
+      if (isOrganizerRole && user.role === UserRole.ORGANIZER) {
+        try {
+          const { getDashboardAccess } = await import('@/lib/organizer-api');
+          const accessResponse = await getDashboardAccess();
+          if (accessResponse.success) {
+            setHasEvent(accessResponse.data.hasAccess);
+          }
+        } catch (error) {
+          console.error('Error checking dashboard access:', error);
+          setHasEvent(false);
+        }
+      } else {
+        // Non-organizers or staff/teller always have access (or don't need it)
+        setHasEvent(true);
+      }
+    };
+
+    checkHasEvent();
+  }, [isOpen, user]);
 
   if (!isAuthenticated || !user) return null;
 
@@ -73,7 +106,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
         const { getDashboardAccess } = await import('@/lib/organizer-api');
         const accessResponse = await getDashboardAccess();
         if (accessResponse.success && !accessResponse.data.hasAccess) {
-          // No approved event - redirect to event creation
+          // No event created - redirect to event creation
           return '/organizer/events/create-standalone';
         }
       } catch (error) {
@@ -182,75 +215,134 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
             </div>
 
             {/* Menu Items */}
-            <button
-              onClick={() => handleNavigate(getProfileRoute())}
-              className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
-            >
-              <User className="w-4 h-4" />
-              Profile
-            </button>
-
-            <button
-              onClick={async () => {
-                const route = await getDashboardRoute();
-                handleNavigate(route);
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </button>
-
-            {/* Role Switcher - Only show if multiple roles available */}
-            {availableRoles.length > 1 && (
+            {/* For organizers without events: Show simplified menu */}
+            {user.role === UserRole.ORGANIZER && hasEvent === false ? (
               <>
-                <div className="border-t border-border my-1" />
-                <div className="px-4 py-2">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">Switch View</p>
-                  <div className="space-y-1">
-                    {availableRoles.map((role) => {
-                      const isActive = activeViewRole === role || (!activeViewRole && role === user?.role);
+                <button
+                  onClick={() => handleNavigate('/organizer/events/create-standalone')}
+                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Event
+                </button>
+
+                {/* Role Switcher - Only show if multiple roles available */}
+                {availableRoles.length > 1 && (
+                  <>
+                    <div className="border-t border-border my-1" />
+                    <div className="px-4 py-2">
+                      <p className="text-xs text-muted-foreground mb-2 font-medium">Switch View</p>
+                      <div className="space-y-1">
+                        {availableRoles.map((role) => {
+                          const isActive = activeViewRole === role || (!activeViewRole && role === user?.role);
                           return (
+                            <button
+                              key={role}
+                              onClick={() => handleRoleSwitch(role)}
+                              className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${
+                                isActive
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'text-primary hover:bg-accent-coral hover:text-white'
+                              }`}
+                            >
+                              <Users className="w-3 h-3" />
+                              {getRoleLabel(role)}
+                              {isActive && <span className="ml-auto text-xs">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {activeViewRole && activeViewRole !== user?.role && (
                         <button
-                          key={role}
-                          onClick={() => handleRoleSwitch(role)}
-                          className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${
-                            isActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-primary hover:bg-accent-coral hover:text-white'
-                          }`}
+                          onClick={() => {
+                            resetToDefaultRole();
+                            setIsOpen(false);
+                            onClose?.();
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white rounded-md mt-1 flex items-center gap-2"
                         >
-                          <Users className="w-3 h-3" />
-                          {getRoleLabel(role)}
-                          {isActive && <span className="ml-auto text-xs">✓</span>}
+                          <RefreshCw className="w-3 h-3" />
+                          Reset to {getRoleLabel(user?.role || UserRole.ATTENDEE)}
                         </button>
-                      );
-                    })}
-                  </div>
-                  {activeViewRole && activeViewRole !== user?.role && (
-                    <button
-                      onClick={() => {
-                        resetToDefaultRole();
-                        setIsOpen(false);
-                        onClose?.();
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white rounded-md mt-1 flex items-center gap-2"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      Reset to {getRoleLabel(user?.role || UserRole.ATTENDEE)}
-                    </button>
-                  )}
-                </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Full menu for organizers with events or non-organizers */}
+                <button
+                  onClick={() => handleNavigate(getProfileRoute())}
+                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  Profile
+                </button>
+
+                <button
+                  onClick={async () => {
+                    const route = await getDashboardRoute();
+                    handleNavigate(route);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  Dashboard
+                </button>
+
+                {/* Role Switcher - Only show if multiple roles available */}
+                {availableRoles.length > 1 && (
+                  <>
+                    <div className="border-t border-border my-1" />
+                    <div className="px-4 py-2">
+                      <p className="text-xs text-muted-foreground mb-2 font-medium">Switch View</p>
+                      <div className="space-y-1">
+                        {availableRoles.map((role) => {
+                          const isActive = activeViewRole === role || (!activeViewRole && role === user?.role);
+                          return (
+                            <button
+                              key={role}
+                              onClick={() => handleRoleSwitch(role)}
+                              className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${
+                                isActive
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'text-primary hover:bg-accent-coral hover:text-white'
+                              }`}
+                            >
+                              <Users className="w-3 h-3" />
+                              {getRoleLabel(role)}
+                              {isActive && <span className="ml-auto text-xs">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {activeViewRole && activeViewRole !== user?.role && (
+                        <button
+                          onClick={() => {
+                            resetToDefaultRole();
+                            setIsOpen(false);
+                            onClose?.();
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white rounded-md mt-1 flex items-center gap-2"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          Reset to {getRoleLabel(user?.role || UserRole.ATTENDEE)}
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <button
+                  onClick={() => handleNavigate(getProfileRoute())}
+                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
               </>
             )}
-
-            <button
-              onClick={() => handleNavigate(getProfileRoute())}
-              className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </button>
 
             <div className="border-t border-border my-1" />
 

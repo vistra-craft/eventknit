@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Shield, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EventPreferencesStep } from '@/components/onboarding/EventPreferencesStep';
 import { ProcessOverview } from '@/components/onboarding/ProcessOverview';
 import { ActionChoiceStep } from '@/components/onboarding/ActionChoiceStep';
 import * as authApi from '@/lib/auth-api';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import Logo from '@/components/Logo';
 
 type OnboardingStep = 1 | 2 | 3;
@@ -20,6 +21,8 @@ const OnboardingWizard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [eventCreatedMessage, setEventCreatedMessage] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+  const [showVerificationReminder, setShowVerificationReminder] = useState(false);
 
   // Check if event was just created (from location state)
   useEffect(() => {
@@ -30,6 +33,27 @@ const OnboardingWizard = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+  // Fetch verification status when event is created
+  useEffect(() => {
+    const fetchVerification = async () => {
+      if (eventCreatedMessage) {
+        try {
+          const response = await getVerificationStatus();
+          if (response.success && response.data) {
+            setVerificationStatus(response.data);
+            // Show reminder if not verified
+            if (!response.data.identityVerified) {
+              setShowVerificationReminder(true);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch verification status:', error);
+        }
+      }
+    };
+    fetchVerification();
+  }, [eventCreatedMessage]);
 
   const [formData, setFormData] = useState({
     eventTypes: [] as string[],
@@ -183,6 +207,40 @@ const OnboardingWizard = () => {
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-700 dark:text-green-400">
                   {eventCreatedMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Verification Reminder */}
+            {showVerificationReminder && verificationStatus && !verificationStatus.identityVerified && (
+              <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
+                <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-blue-900 dark:text-blue-100 flex-1">
+                    <strong>Verification Required:</strong> Complete identity verification to help speed up event approval and receive payouts from ticket sales.
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigate('/organizer/verification', { 
+                          state: { redirectAfterVerification: '/organizer/onboarding' } 
+                        });
+                      }}
+                      className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
+                    >
+                      Verify Identity
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowVerificationReminder(false)}
+                      className="text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}

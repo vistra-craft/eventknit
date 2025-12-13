@@ -8,7 +8,7 @@ import { getDashboardAccess } from "@/lib/organizer-api";
 
 /**
  * Create Event Page
- * - If organizer has dashboard access (approved event): Shows with dashboard layout
+ * - If organizer has dashboard access (has created an event): Shows with dashboard layout
  * - If organizer has no dashboard access: Redirects to standalone creation page
  */
 const CreateEventPage: React.FC = () => {
