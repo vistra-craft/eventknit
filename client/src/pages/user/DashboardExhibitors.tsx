@@ -59,24 +59,26 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
       try {
         setLoading(true);
         const response = await getEventById(eventData.id.toString());
-        if (response.success && response.data?.event?.sponsors) {
-          // Transform sponsors data to exhibitors format
-          const eventExhibitors = response.data.event.sponsors.map((sponsor, index) => ({
+        if (response.success && response.data?.event?.exhibitors) {
+          // Transform exhibitors data to display format
+          const eventExhibitors = response.data.event.exhibitors.map((exhibitor: any, index: number) => ({
             id: index + 1,
-            name: sponsor.name,
-            logo: sponsor.logo || '/api/placeholder/200/100',
-            category: 'Sponsor',
-            sponsorType: (sponsor.level?.toLowerCase() as 'platinum' | 'gold' | 'silver' | 'bronze' | 'partner') || 'partner',
-            booth: '', // Not available in sponsor data
-            description: `${sponsor.name} - ${sponsor.level} sponsor`,
+            name: exhibitor.name || 'Exhibitor',
+            logo: exhibitor.logo || '/api/placeholder/200/100',
+            category: 'Exhibitor',
+            sponsorType: 'partner' as const,
+            booth: exhibitor.booth || '',
+            description: exhibitor.description || '',
             website: undefined,
-            email: undefined,
+            email: exhibitor.contactEmail,
             phone: undefined,
             location: undefined,
             products: [],
             representatives: [],
           }));
           setExhibitors(eventExhibitors);
+        } else {
+          setExhibitors([]);
         }
       } catch (error) {
         console.error("Error fetching exhibitors:", error);

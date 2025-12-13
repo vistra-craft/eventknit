@@ -1124,12 +1124,28 @@ export default function CreateEventStepwise() {
           sessionStorage.setItem('event_just_created', 'true');
           // Reset form state
           resetForm();
-          // Success! Navigate to appropriate dashboard based on current route
+          // Success! Navigate based on current route
           const isAdminRoute = location.pathname.startsWith('/admin');
-          const dashboardRoute = isAdminRoute ? '/admin/dashboard' : '/organizer/dashboard';
-          navigate(dashboardRoute, {
-            state: { message: 'Event created successfully! It is pending admin approval.' }
-          });
+          const isStandaloneRoute = location.pathname.includes('/create-standalone');
+          
+          if (isAdminRoute) {
+            navigate('/admin/dashboard', {
+              state: { message: 'Event created successfully! It is pending admin approval.' }
+            });
+          } else if (isStandaloneRoute) {
+            // For standalone creation, show success message and redirect to onboarding or show pending status
+            navigate('/organizer/onboarding', {
+              state: { 
+                message: 'Event created successfully! It is pending admin approval. You will receive an email when it\'s approved.',
+                eventCreated: true
+              }
+            });
+          } else {
+            // Created from dashboard - go back to dashboard
+            navigate('/organizer/dashboard', {
+              state: { message: 'Event created successfully! It is pending admin approval.' }
+            });
+          }
         } else {
           setError(response.message || 'Failed to create event. Please try again.');
         }

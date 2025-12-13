@@ -141,7 +141,19 @@ export const RoleViewProvider: React.FC<RoleViewProviderProps> = ({ children, us
 export const useRoleView = (): RoleViewContextType => {
   const context = useContext(RoleViewContext);
   if (!context) {
-    throw new Error('useRoleView must be used within a RoleViewProvider');
+    // Return a safe default instead of throwing an error
+    // This allows components to work even if provider is not available
+    return {
+      activeViewRole: null,
+      setActiveViewRole: () => {
+        console.warn('RoleViewProvider not available');
+      },
+      availableRoles: [],
+      canSwitchToRole: () => false,
+      resetToDefaultRole: () => {
+        console.warn('RoleViewProvider not available');
+      },
+    };
   }
   return context;
 };

@@ -51,9 +51,19 @@ export const useAuth = () => {
           setAccessToken(response.data.accessToken);
           dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
 
-          // Redirect to appropriate dashboard
-          const dashboardRoute = getDashboardRoute(response.data.user.role);
-          navigate(dashboardRoute);
+          // Check if organizer needs onboarding
+          const role = response.data.user.role;
+          const needsOnboarding = 
+            (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') &&
+            !response.data.user.onboardingCompleted;
+
+          if (needsOnboarding) {
+            navigate('/organizer/onboarding');
+          } else {
+            // Redirect to appropriate dashboard
+            const dashboardRoute = getDashboardRoute(response.data.user.role);
+            navigate(dashboardRoute);
+          }
         } else {
           throw new Error(response.message || 'Login failed');
         }

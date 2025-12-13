@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { hashPassword } from '../utils/password.js';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import {
   NotFoundError,
   ConflictError,
@@ -467,6 +467,21 @@ export class OrganizerService {
       ipAddress,
       userAgent,
     });
+  }
+
+  /**
+   * Check if organizer has at least one approved event
+   */
+  static async hasApprovedEvent(organizerId: string): Promise<boolean> {
+    const approvedEvent = await prisma.event.findFirst({
+      where: {
+        organizerId,
+        status: EventStatus.APPROVED,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    return !!approvedEvent;
   }
 
   /**

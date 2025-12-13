@@ -16,6 +16,7 @@ import {
   Badge,
   Moon,
   Sun,
+  Award,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useAuth } from "../../hooks/useAuth";
@@ -46,6 +47,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
   const navigationItems = [
     { key: "speakers", label: "Speakers", icon: Mic },
     { key: "exhibitors", label: "Exhibitors", icon: Building2 },
+    { key: "sponsors", label: "Sponsors", icon: Award },
     { key: "attendees", label: "Attendees", icon: Users },
     { key: "agenda", label: "Agenda", icon: CalendarDays },
     { key: "my-badge", label: "My Badge", icon: Badge },
@@ -64,7 +66,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
   };
 
   // Check if we should show navigation buttons (only on specific sections)
-  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'attendees', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
+  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'sponsors', 'attendees', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-sm ${shouldShowNavigationButtons ? 'h-32' : 'h-16'}`}>

@@ -14,7 +14,9 @@ const UserRoleValues = [
   'ATTENDEE',
 ] as const;
 
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+// Eventbrite-style password requirements: 8+ chars, at least 1 letter and 1 number
+// Allows all printable ASCII characters (no forced uppercase or special chars)
+const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,128}$/;
 
 export const authValidations = {
   requestRegistrationCode: Joi.object({
@@ -47,9 +49,19 @@ export const authValidations = {
       .required()
       .messages({
         'string.min': 'Password must be at least 8 characters long',
-        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'string.pattern.base': 'Password must be at least 8 characters and contain at least one letter and one number',
         'any.required': 'Password is required',
       }),
+    firstName: Joi.string().trim().min(1).max(100).required().messages({
+      'string.empty': 'First name is required',
+      'string.max': 'First name must not exceed 100 characters',
+      'any.required': 'First name is required',
+    }),
+    lastName: Joi.string().trim().min(1).max(100).required().messages({
+      'string.empty': 'Last name is required',
+      'string.max': 'Last name must not exceed 100 characters',
+      'any.required': 'Last name is required',
+    }),
   }),
 
   register: Joi.object({
@@ -63,7 +75,7 @@ export const authValidations = {
       .required()
       .messages({
         'string.min': 'Password must be at least 8 characters long',
-        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'string.pattern.base': 'Password must be at least 8 characters and contain at least one letter and one number',
         'any.required': 'Password is required',
       }),
     firstName: Joi.string().trim().min(1).max(100).required().messages({
@@ -176,7 +188,7 @@ export const authValidations = {
       .required()
       .messages({
         'string.min': 'Password must be at least 8 characters long',
-        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'string.pattern.base': 'Password must be at least 8 characters and contain at least one letter and one number',
         'any.required': 'Password is required',
       }),
   }),
@@ -261,7 +273,7 @@ export const authValidations = {
       .required()
       .messages({
         'string.min': 'Password must be at least 8 characters long',
-        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'string.pattern.base': 'Password must be at least 8 characters and contain at least one letter and one number',
         'any.required': 'Password is required',
       }),
   }),

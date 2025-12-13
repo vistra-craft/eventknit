@@ -75,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = () => {
     logout();
   };
 
-  const getDashboardRoute = () => {
+  const getDashboardRoute = async () => {
     // Use active view role if set, otherwise use user's actual role
     const roleToUse = activeViewRole || user?.role;
     
@@ -96,6 +96,23 @@ const Navbar: React.FC<NavbarProps> = () => {
     ].includes(roleToUse);
     
     if (isAdminRole) return '/admin/dashboard';
+    
+    // For organizers, check if they have dashboard access
+    if (isOrganizerRole && roleToUse === UserRole.ORGANIZER) {
+      try {
+        const { getDashboardAccess } = await import('@/lib/organizer-api');
+        const accessResponse = await getDashboardAccess();
+        if (accessResponse.success && !accessResponse.data.hasAccess) {
+          // No approved event - redirect to event creation
+          return '/organizer/events/create-standalone';
+        }
+      } catch (error) {
+        console.error('Error checking dashboard access:', error);
+        // On error, redirect to event creation to be safe
+        return '/organizer/events/create-standalone';
+      }
+    }
+    
     if (isOrganizerRole) return '/organizer/dashboard';
     return '/user/dashboard';
   };
@@ -318,8 +335,9 @@ const Navbar: React.FC<NavbarProps> = () => {
                       Profile
                     </button>
                     <button
-                      onClick={() => {
-                        navigate(getDashboardRoute());
+                      onClick={async () => {
+                        const route = await getDashboardRoute();
+                        navigate(route);
                         setIsMobileMenuOpen(false);
                       }}
                       className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"

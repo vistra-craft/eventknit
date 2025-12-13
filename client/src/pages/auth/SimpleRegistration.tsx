@@ -18,6 +18,8 @@ const SimpleRegistration = () => {
   const [step, setStep] = useState<RegistrationStep>('role');
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -65,22 +67,19 @@ const SimpleRegistration = () => {
     }
   };
 
-  // Password validation
+  // Password validation (Eventbrite-style: 8+ chars, 1 letter, 1 number)
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
       return 'Password must be at least 8 characters long';
     }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
+    if (password.length > 128) {
+      return 'Password must be no more than 128 characters';
     }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
+    if (!/[a-zA-Z]/.test(password)) {
+      return 'Password must contain at least one letter';
     }
     if (!/\d/.test(password)) {
       return 'Password must contain at least one number';
-    }
-    if (!/[@$!%*?&]/.test(password)) {
-      return 'Password must contain at least one special character (@$!%*?&)';
     }
     return null;
   };
@@ -108,9 +107,19 @@ const SimpleRegistration = () => {
     setIsLoading(true);
     setError('');
 
+    // Validate first and last name
+    if (!firstName.trim()) {
+      setError('First name is required');
+      return;
+    }
+    if (!lastName.trim()) {
+      setError('Last name is required');
+      return;
+    }
+
     try {
       // Verify code and register with password
-      const response = await authApi.verifyRegistrationCode(email, code, password);
+      const response = await authApi.verifyRegistrationCode(email, code, password, firstName.trim(), lastName.trim());
       
       if (response.success && response.data) {
         // Set access token and update auth context
@@ -120,7 +129,10 @@ const SimpleRegistration = () => {
         // Redirect to appropriate dashboard based on role
         const role = response.data.user.role;
         if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
-          navigate('/organizer/dashboard');
+          // New organizers go to onboarding, existing ones go to dashboard
+          // Check onboarding status from user data (will be added to response)
+          const needsOnboarding = !response.data.user.onboardingCompleted;
+          navigate(needsOnboarding ? '/organizer/onboarding' : '/organizer/dashboard');
         } else if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
           navigate('/admin/dashboard');
         } else {
@@ -242,6 +254,44 @@ const SimpleRegistration = () => {
               </div>
             ) : step === 'email' ? (
               <form onSubmit={handleEmailSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-sm font-medium">
+                      First Name *
+                    </Label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="Enter your first name"
+                      value={firstName}
+                      onChange={(e) => {
+                        setFirstName(e.target.value);
+                        setError('');
+                      }}
+                      className="h-12"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-sm font-medium">
+                      Last Name *
+                    </Label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Enter your last name"
+                      value={lastName}
+                      onChange={(e) => {
+                        setLastName(e.target.value);
+                        setError('');
+                      }}
+                      className="h-12"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
                     Email Address
@@ -279,6 +329,8 @@ const SimpleRegistration = () => {
                     onClick={() => {
                       setStep('role');
                       setEmail('');
+                      setFirstName('');
+                      setLastName('');
                       setError('');
                       setSuccess('');
                     }}
@@ -333,11 +385,29 @@ const SimpleRegistration = () => {
                       required
                       disabled={isLoading}
                     />
-                    {password && (
-                      <p className="text-xs text-muted-foreground">
-                        Must contain: uppercase, lowercase, number, special character (@$!%*?&), min 8 chars
-                      </p>
-                    )}
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-foreground">Password requirements:</p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-600' : ''}`}>
+                          <span className={password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                            {password.length >= 8 ? '✓' : '○'}
+                          </span>
+                          At least 8 characters
+                        </li>
+                        <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(password) ? 'text-green-600' : ''}`}>
+                          <span className={/[a-zA-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                            {/[a-zA-Z]/.test(password) ? '✓' : '○'}
+                          </span>
+                          At least one letter
+                        </li>
+                        <li className={`flex items-center gap-2 ${/\d/.test(password) ? 'text-green-600' : ''}`}>
+                          <span className={/\d/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                            {/\d/.test(password) ? '✓' : '○'}
+                          </span>
+                          At least one number
+                        </li>
+                      </ul>
+                    </div>
                   </div>
 
                   <div className="space-y-2">

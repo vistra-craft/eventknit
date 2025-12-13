@@ -90,22 +90,19 @@ const AttendeeRegistration = () => {
     }));
   };
 
-  // Password validation
+  // Password validation (Eventbrite-style: 8+ chars, 1 letter, 1 number)
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
       return 'Password must be at least 8 characters long';
     }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
+    if (password.length > 128) {
+      return 'Password must be no more than 128 characters';
     }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
+    if (!/[a-zA-Z]/.test(password)) {
+      return 'Password must contain at least one letter';
     }
     if (!/\d/.test(password)) {
       return 'Password must contain at least one number';
-    }
-    if (!/[@$!%*?&]/.test(password)) {
-      return 'Password must contain at least one special character (@$!%*?&)';
     }
     return null;
   };
@@ -259,9 +256,29 @@ const AttendeeRegistration = () => {
             required
           />
           {formData.password && (
-            <p className="text-xs text-muted-foreground">
-              Must contain: uppercase, lowercase, number, special character (@$!%*?&), min 8 chars
-            </p>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-foreground">Password requirements:</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li className={`flex items-center gap-2 ${formData.password.length >= 8 ? 'text-green-600' : ''}`}>
+                  <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                    {formData.password.length >= 8 ? '✓' : '○'}
+                  </span>
+                  At least 8 characters
+                </li>
+                <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? 'text-green-600' : ''}`}>
+                  <span className={/[a-zA-Z]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
+                    {/[a-zA-Z]/.test(formData.password) ? '✓' : '○'}
+                  </span>
+                  At least one letter
+                </li>
+                <li className={`flex items-center gap-2 ${/\d/.test(formData.password) ? 'text-green-600' : ''}`}>
+                  <span className={/\d/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
+                    {/\d/.test(formData.password) ? '✓' : '○'}
+                  </span>
+                  At least one number
+                </li>
+              </ul>
+            </div>
           )}
         </div>
         <div className="space-y-2">

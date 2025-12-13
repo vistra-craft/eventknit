@@ -26,22 +26,19 @@ const CreateAccount = () => {
   const [success, setSuccess] = useState(false);
   const [showResend, setShowResend] = useState(false);
 
-  // Password validation
+  // Password validation (Eventbrite-style: 8+ chars, 1 letter, 1 number)
   const validatePassword = (password: string): string | null => {
     if (password.length < 8) {
       return 'Password must be at least 8 characters long';
     }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
+    if (password.length > 128) {
+      return 'Password must be no more than 128 characters';
     }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
+    if (!/[a-zA-Z]/.test(password)) {
+      return 'Password must contain at least one letter';
     }
     if (!/\d/.test(password)) {
       return 'Password must contain at least one number';
-    }
-    if (!/[@$!%*?&]/.test(password)) {
-      return 'Password must contain at least one special character (@$!%*?&)';
     }
     return null;
   };
@@ -238,9 +235,31 @@ const CreateAccount = () => {
                   className="pl-10"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters with uppercase, lowercase, number, and special character
-              </p>
+              {password && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">Password requirements:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-600' : ''}`}>
+                      <span className={password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                        {password.length >= 8 ? '✓' : '○'}
+                      </span>
+                      At least 8 characters
+                    </li>
+                    <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(password) ? 'text-green-600' : ''}`}>
+                      <span className={/[a-zA-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                        {/[a-zA-Z]/.test(password) ? '✓' : '○'}
+                      </span>
+                      At least one letter
+                    </li>
+                    <li className={`flex items-center gap-2 ${/\d/.test(password) ? 'text-green-600' : ''}`}>
+                      <span className={/\d/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                        {/\d/.test(password) ? '✓' : '○'}
+                      </span>
+                      At least one number
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Confirm Password */}

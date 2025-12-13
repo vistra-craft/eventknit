@@ -301,8 +301,32 @@ const EventRegistration = () => {
           const isFree = event.isFree || event.price === 0;
 
           if (isFree) {
-            // Free event - go directly to confirmation
-            setCurrentStep('confirmation');
+            // Free event - redirect to confirmation page
+            navigate(`/event/${eventId}/registration-confirmation`, {
+              state: {
+                eventId: eventId,
+                eventTitle: event.title,
+                eventDate: event.startDate,
+                eventTime: event.startTime,
+                eventLocation: event.location || event.venue,
+                organizerName: event.organizerName || 
+                  (event.organizer 
+                    ? event.organizer.organizationName ||
+                      `${event.organizer.firstName} ${event.organizer.lastName}`
+                    : "Event host"),
+                registrationId: registration.id,
+                tickets: event.ticketTypes?.map(t => ({
+                  name: t.name,
+                  quantity: selectedTickets[t.name] || 0,
+                  price: t.price
+                })).filter(t => t.quantity > 0) || [],
+                isGuestUser: !isAuthenticated,
+                userEmail: email || user?.email,
+                isFreeEvent: true,
+                date: new Date().toISOString(),
+              },
+              replace: true,
+            });
           } else {
             // Calculate total price from all selected tickets
             const totalPrice = event.ticketTypes?.reduce((sum, ticket) => {
@@ -345,8 +369,32 @@ const EventRegistration = () => {
         const isFree = event.isFree || event.price === 0;
 
         if (isFree) {
-          // Free event - go directly to confirmation
-          setCurrentStep('confirmation');
+          // Free event - redirect to confirmation page
+          navigate(`/event/${eventId}/registration-confirmation`, {
+            state: {
+              eventId: eventId,
+              eventTitle: event.title,
+              eventDate: event.startDate,
+              eventTime: event.startTime,
+              eventLocation: event.location || event.venue,
+              organizerName: event.organizerName || 
+                (event.organizer 
+                  ? event.organizer.organizationName ||
+                    `${event.organizer.firstName} ${event.organizer.lastName}`
+                  : "Event host"),
+              registrationId: registration.id,
+              tickets: event.ticketTypes?.map(t => ({
+                name: t.name,
+                quantity: selectedTickets[t.name] || 0,
+                price: t.price
+              })).filter(t => t.quantity > 0) || [],
+              isGuestUser: false,
+              userEmail: user?.email,
+              isFreeEvent: true,
+              date: new Date().toISOString(),
+            },
+            replace: true,
+          });
         } else {
           // Calculate total price from all selected tickets
           const subtotal = event.ticketTypes?.reduce((sum, ticket) => {

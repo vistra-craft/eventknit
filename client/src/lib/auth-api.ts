@@ -87,9 +87,11 @@ export const requestRegistrationCode = async (
 export const verifyRegistrationCode = async (
   email: string,
   code: string,
-  password: string
+  password: string,
+  firstName: string,
+  lastName: string
 ): Promise<RegisterResponse> => {
-  return apiPost<RegisterResponse>('/auth/register-code/verify', { email, code, password });
+  return apiPost<RegisterResponse>('/auth/register-code/verify', { email, code, password, firstName, lastName });
 };
 
 /**

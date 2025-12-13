@@ -52,6 +52,7 @@ export interface AuthResponse {
     isEmailVerified: boolean;
     organizationName?: string | null;
     verificationLevel?: number; // Added for tests
+    onboardingCompleted?: boolean; // For organizers - tracks if onboarding is complete
   };
   accessToken: string;
   refreshToken: string;
@@ -176,7 +177,13 @@ export class AuthService {
    * Verify registration code and create user account
    * Now requires password (traditional registration)
    */
-  static async verifyRegistrationCode(email: string, code: string, password: string): Promise<AuthResponse> {
+  static async verifyRegistrationCode(
+    email: string,
+    code: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ): Promise<AuthResponse> {
     // Find verification record
     const verification = await prisma.emailVerification.findFirst({
       where: {
@@ -230,10 +237,14 @@ export class AuthService {
       data: {
         email,
         password: hashedPassword,
+        firstName,
+        lastName,
         role: userRole,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
+        // Set onboardingCompleted to false for new organizers (will be set to true after onboarding)
+        onboardingCompleted: userRole === UserRole.ORGANIZER ? false : true,
       },
     });
 
@@ -268,6 +279,7 @@ export class AuthService {
         isEmailVerified: user.isEmailVerified,
         organizationName: user.organizationName,
         verificationLevel: user.verificationLevel,
+        onboardingCompleted: user.onboardingCompleted,
       },
       ...tokens,
     };
@@ -663,6 +675,7 @@ export class AuthService {
         isEmailVerified: user.isEmailVerified,
         organizationName: user.organizationName,
         verificationLevel: user.verificationLevel,
+        onboardingCompleted: user.onboardingCompleted,
       },
       ...tokens,
     };
@@ -1414,6 +1427,9 @@ export class AuthService {
         role: user.role,
         status: user.status,
         isEmailVerified: user.isEmailVerified,
+        organizationName: user.organizationName,
+        verificationLevel: user.verificationLevel,
+        onboardingCompleted: user.onboardingCompleted,
       },
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,

@@ -25,7 +25,13 @@ export class AuthController {
    */
   static async verifyRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await AuthService.verifyRegistrationCode(req.body.email, req.body.code, req.body.password);
+      const result = await AuthService.verifyRegistrationCode(
+        req.body.email,
+        req.body.code,
+        req.body.password,
+        req.body.firstName,
+        req.body.lastName
+      );
 
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {

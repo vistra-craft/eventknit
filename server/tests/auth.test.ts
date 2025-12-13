@@ -108,6 +108,12 @@ describe('Authentication System', () => {
       expect(response.body.data.user.email).toBe(userData.email);
       expect(response.body.data.user.role).toBe(UserRole.ORGANIZER);
       expect(response.body.data.user.organizationName).toBe(userData.organizationName);
+
+      // Verify organizer has onboardingCompleted set to false for new organizers
+      const user = await prisma.user.findUnique({
+        where: { email: 'organizer@test.com' },
+      });
+      expect(user?.onboardingCompleted).toBe(false);
     });
 
     it('should fail to register with invalid email', async () => {
@@ -131,7 +137,7 @@ describe('Authentication System', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it('should fail to register with weak password', async () => {
+    it('should fail to register with weak password (too short)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -150,6 +156,77 @@ describe('Authentication System', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
+    });
+
+    it('should fail to register with password missing letter', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const userData = {
+        email: 'noletter@test.com',
+        password: '12345678', // Only numbers, no letters
+        firstName: 'John',
+        lastName: 'Doe',
+        role: UserRole.ATTENDEE,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/auth/signup')
+        .send(userData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('letter');
+    });
+
+    it('should fail to register with password missing number', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const userData = {
+        email: 'nonumber@test.com',
+        password: 'password', // Only letters, no numbers
+        firstName: 'John',
+        lastName: 'Doe',
+        role: UserRole.ATTENDEE,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/auth/signup')
+        .send(userData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('number');
+    });
+
+    it('should accept password with letter and number (Eventbrite-style)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+      const userData = {
+        email: 'validpass@test.com',
+        password: 'password123', // Letter + number, no uppercase or special char required
+        firstName: 'John',
+        lastName: 'Doe',
+        role: UserRole.ATTENDEE,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/auth/signup')
+        .send(userData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.user.email).toBe(userData.email);
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'validpass@test.com' },
+      });
     });
 
     it('should register with email code verification (requires password)', async () => {
@@ -181,18 +258,23 @@ describe('Authentication System', () => {
       expect(verification).toBeDefined();
       expect(verification?.code).toBeDefined();
 
-      // Verify code and create account (now requires password)
+      // Verify code and create account (now requires password, firstName, lastName)
+      // Using Eventbrite-style password (letter + number, no special char required)
       const verifyResponse = await request(app)
         .post('/api/v1/auth/register-code/verify')
         .send({
           email: 'emailcode@test.com',
           code: verification?.code,
-          password: 'Test123!@$',
+          password: 'password123', // Eventbrite-style: letter + number
+          firstName: 'Test',
+          lastName: 'User',
         })
         .expect(200);
 
       expect(verifyResponse.body.success).toBe(true);
       expect(verifyResponse.body.data.user.email).toBe('emailcode@test.com');
+      expect(verifyResponse.body.data.user.firstName).toBe('Test');
+      expect(verifyResponse.body.data.user.lastName).toBe('User');
       expect(verifyResponse.body.data.user.verificationLevel).toBe(1);
       expect(verifyResponse.body.data.accessToken).toBeDefined();
     });
@@ -221,9 +303,84 @@ describe('Authentication System', () => {
       expect(response.body.data.user.role).toBe(UserRole.ORGANIZER);
       expect(response.body.data.user.status).toBe(UserStatus.ACTIVE);
 
+      // Verify organizer has onboardingCompleted set to false
+      const user = await prisma.user.findUnique({
+        where: { email: 'organizeroptional@test.com' },
+      });
+      expect(user?.onboardingCompleted).toBe(false);
+
       // Cleanup
       await prisma.user.deleteMany({
         where: { email: 'organizeroptional@test.com' },
+      });
+    });
+
+    it('should require firstName and lastName in register-code/verify', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Request verification code
+      const codeResponse = await request(app)
+        .post('/api/v1/auth/register-code/request')
+        .send({ email: 'requiredfields@test.com', role: 'ORGANIZER' });
+
+      if (codeResponse.status === 503 || codeResponse.status === 500) {
+        logger.info('⏭️  Skipping test - email service unavailable');
+        return;
+      }
+
+      const verification = await prisma.emailVerification.findFirst({
+        where: { email: 'requiredfields@test.com' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Missing firstName
+      const response1 = await request(app)
+        .post('/api/v1/auth/register-code/verify')
+        .send({
+          email: 'requiredfields@test.com',
+          code: verification?.code,
+          password: 'password123', // Eventbrite-style password
+          lastName: 'User',
+        })
+        .expect(400);
+
+      expect(response1.body.success).toBe(false);
+
+      // Missing lastName
+      const response2 = await request(app)
+        .post('/api/v1/auth/register-code/verify')
+        .send({
+          email: 'requiredfields@test.com',
+          code: verification?.code,
+          password: 'password123', // Eventbrite-style password
+          firstName: 'Test',
+        })
+        .expect(400);
+
+      expect(response2.body.success).toBe(false);
+
+      // Valid with both fields (Eventbrite-style password)
+      const response3 = await request(app)
+        .post('/api/v1/auth/register-code/verify')
+        .send({
+          email: 'requiredfields@test.com',
+          code: verification?.code,
+          password: 'password123', // Eventbrite-style: letter + number
+          firstName: 'Test',
+          lastName: 'User',
+        })
+        .expect(200);
+
+      expect(response3.body.success).toBe(true);
+      expect(response3.body.data.user.firstName).toBe('Test');
+      expect(response3.body.data.user.lastName).toBe('User');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'requiredfields@test.com' },
       });
     });
 

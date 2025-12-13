@@ -67,6 +67,53 @@ export interface OrganizerDashboardEventsResponse {
 }
 
 /**
+ * Check if organizer has dashboard access (has approved event)
+ */
+export interface DashboardAccessResponse {
+  success: boolean;
+  data: {
+    hasAccess: boolean;
+    message: string;
+  };
+}
+
+export const getDashboardAccess = async (): Promise<DashboardAccessResponse> => {
+  return apiGet<DashboardAccessResponse>('/organizer/dashboard-access');
+};
+
+/**
+ * Complete onboarding response
+ */
+export interface CompleteOnboardingResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+      onboardingCompleted: boolean;
+    };
+  };
+}
+
+/**
+ * Complete onboarding for organizer
+ */
+export const completeOnboarding = async (eventPreferences?: {
+  eventTypes?: string[];
+  organizationType?: string;
+  eventsPerYear?: string;
+  isRecurringSeries?: boolean;
+}): Promise<CompleteOnboardingResponse> => {
+  return apiPost<CompleteOnboardingResponse>('/organizer/onboarding/complete', {
+    eventPreferences,
+  });
+};
+
+/**
  * Get organizer dashboard stats
  */
 export const getOrganizerDashboardStats = async (): Promise<OrganizerDashboardStatsResponse> => {

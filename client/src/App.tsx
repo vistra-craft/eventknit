@@ -16,6 +16,7 @@ import CookiePolicy from "./pages/CookiePolicy";
 import RegisterEvent from "./pages/RegisterEvent";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
+import RegistrationConfirmation from "./pages/RegistrationConfirmation";
 import EventDetails from "./pages/EventDetails";
 import PublicEventForm from "./pages/PublicEventForm";
 // User Dashboard imports
@@ -31,6 +32,8 @@ import UpcomingEventsPage from "./pages/organizer/UpcomingEventsPage";
 import PastEventsPage from "./pages/organizer/PastEventsPage";
 import VerificationPage from "./pages/organizer/VerificationPage";
 import CreateEventPage from "./pages/organizer/CreateEventPage";
+import StandaloneCreateEventPage from "./pages/organizer/StandaloneCreateEventPage";
+import OnboardingWizard from "./pages/organizer/OnboardingWizard";
 import OrganizerSettingsPage from "./pages/organizer/OrganizerSettingsPage";
 import WhiteLabelBranding from "./pages/organizer/WhiteLabelBranding";
 import CustomDomains from "./pages/organizer/CustomDomains";
@@ -194,6 +197,7 @@ const App = () => (
       <Route path="/event/:id/register" element={<RegisterEvent />} />
       <Route path="/event/:id/payment" element={<Payment />} />
       <Route path="/event/:id/confirmation" element={<Confirmation />} />
+      <Route path="/event/:id/registration-confirmation" element={<RegistrationConfirmation />} />
       {/* Public Form Routes */}
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
       {/* User Dashboard Routes */}
@@ -203,10 +207,12 @@ const App = () => (
       <Route path="/exhibitors/:id" element={<ExhibitorDetails />} />
       {/* Organizer Dashboard Routes */}
       <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+      <Route path="/organizer/onboarding" element={<OnboardingWizard />} />
       <Route path="/organizer/events/upcoming" element={<UpcomingEventsPage />} />
       <Route path="/organizer/events/past" element={<PastEventsPage />} />
       <Route path="/organizer/events" element={<AllEventsPage />} />
       <Route path="/organizer/events/create" element={<CreateEventPage />} />
+      <Route path="/organizer/events/create-standalone" element={<StandaloneCreateEventPage />} />
       <Route path="/organizer/event/:eventId" element={<EventManagement />} />
       {/* Analytics Routes */}
       <Route path="/organizer/analytics" element={<AnalyticsOverview />} />

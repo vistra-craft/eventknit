@@ -70,6 +70,7 @@ describe('Event System', () => {
         verificationLevel: 2,
         payoutLimit: null,
         organizationName: 'Test Events Inc',
+        onboardingCompleted: true, // Set to true for existing test organizers
       },
     });
     organizerId = organizer.id;
@@ -190,6 +191,7 @@ describe('Event System', () => {
           isEmailVerified: true,
           isIdentityVerified: false,
           verificationLevel: 1,
+          onboardingCompleted: true,
         },
       });
 
@@ -241,6 +243,7 @@ describe('Event System', () => {
           isIdentityVerified: true,
           verificationLevel: 2,
           payoutLimit: 2000, // Has limit
+          onboardingCompleted: true,
         },
       });
 
@@ -753,6 +756,7 @@ describe('Event System', () => {
           status: UserStatus.ACTIVE,
           isEmailVerified: true,
           organizationName: 'Other Org',
+          onboardingCompleted: true,
         },
       });
 
@@ -997,6 +1001,7 @@ describe('Event System', () => {
           status: UserStatus.ACTIVE,
           isEmailVerified: true,
           organizationName: 'Other Org',
+          onboardingCompleted: true,
         },
       });
 
@@ -1492,6 +1497,7 @@ describe('Event System', () => {
           status: UserStatus.ACTIVE,
           isEmailVerified: true,
           organizationName: 'Other Org',
+          onboardingCompleted: true,
         },
       });
 
@@ -1692,6 +1698,7 @@ describe('Event System', () => {
           status: UserStatus.ACTIVE,
           isEmailVerified: true,
           organizationName: 'Other Org',
+          onboardingCompleted: true,
         },
       });
 

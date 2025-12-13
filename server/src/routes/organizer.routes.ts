@@ -94,6 +94,20 @@ router.get('/dashboard/stats', OrganizerController.getDashboardStats);
 router.get('/dashboard/events', OrganizerController.getDashboardEvents);
 
 /**
+ * @route   GET /api/v1/organizer/dashboard-access
+ * @desc    Check if organizer has dashboard access (has approved event)
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/dashboard-access', OrganizerController.getDashboardAccess);
+
+/**
+ * @route   POST /api/v1/organizer/onboarding/complete
+ * @desc    Complete onboarding for organizer (save preferences and mark as complete)
+ * @access  Private (ORGANIZER)
+ */
+router.post('/onboarding/complete', OrganizerController.completeOnboarding);
+
+/**
  * @route   GET /api/v1/organizer/events
  * @desc    Get all organizer events (with filters: status, category, search, upcoming, past)
  * @access  Private (ORGANIZER+)

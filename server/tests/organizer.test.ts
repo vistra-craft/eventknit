@@ -68,6 +68,7 @@ describe('Organizer Staff Management', () => {
         isEmailVerified: true,
         organizationName: 'Test Events Inc',
         businessEmail: 'business@testevents.com',
+        onboardingCompleted: true, // Set to true for existing test organizers
       },
       create: {
         email: 'organizer@test.com',
@@ -79,6 +80,7 @@ describe('Organizer Staff Management', () => {
         isEmailVerified: true,
         organizationName: 'Test Events Inc',
         businessEmail: 'business@testevents.com',
+        onboardingCompleted: true, // Set to true for existing test organizers
       },
     });
     _organizerId = organizer.id;
@@ -1632,6 +1634,137 @@ describe('Organizer Staff Management', () => {
       const pageIds = pageResponse.body.data.events.map((e: { id: string }) => e.id);
       const offsetIds = offsetResponse.body.data.events.map((e: { id: string }) => e.id);
       expect(pageIds).toEqual(offsetIds);
+    });
+  });
+
+  describe('GET /api/v1/organizer/dashboard-access', () => {
+    it('should return false for organizer without approved events', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a new organizer without any events
+      const newOrganizerPassword = await hashPassword('NewOrg123!@$');
+      const newOrganizer = await prisma.user.create({
+        data: {
+          email: 'neworganizer@test.com',
+          password: newOrganizerPassword,
+          firstName: 'New',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          onboardingCompleted: true,
+        },
+      });
+
+      const newOrganizerToken = await request(app)
+        .post('/api/v1/auth/login')
+        .send({
+          email: 'neworganizer@test.com',
+          password: 'NewOrg123!@$',
+        })
+        .then((res) => res.body.data.accessToken);
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .set('Authorization', `Bearer ${newOrganizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.hasAccess).toBe(false);
+      expect(response.body.data.message).toContain('Create your first event');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'neworganizer@test.com' },
+      });
+    });
+
+    it('should return true for organizer with approved event', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create an approved event for the organizer
+      const event = await prisma.event.create({
+        data: {
+          title: 'Test Approved Event',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 86400000), // Tomorrow
+          endDate: new Date(Date.now() + 172800000), // Day after tomorrow
+          location: 'Test Location',
+          organizerId: _organizerId,
+          status: EventStatus.APPROVED,
+          type: 'PUBLIC',
+          isFree: true,
+          capacity: 100,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.hasAccess).toBe(true);
+      expect(response.body.data.message).toContain('You have access');
+
+      // Cleanup
+      await prisma.event.deleteMany({
+        where: { id: event.id },
+      });
+    });
+
+    it('should return false for organizer with only pending events', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a pending event
+      const pendingEvent = await prisma.event.create({
+        data: {
+          title: 'Test Pending Event',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 86400000),
+          endDate: new Date(Date.now() + 172800000),
+          location: 'Test Location',
+          organizerId: _organizerId,
+          status: EventStatus.PENDING,
+          type: 'PUBLIC',
+          isFree: true,
+          capacity: 100,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      // Should still return false if no approved events
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.hasAccess).toBe(false);
+
+      // Cleanup
+      await prisma.event.deleteMany({
+        where: { id: pendingEvent.id },
+      });
+    });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .expect(401);
     });
   });
 });

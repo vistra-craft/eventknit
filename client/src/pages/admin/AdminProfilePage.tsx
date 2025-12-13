@@ -124,11 +124,10 @@ const AdminProfilePage = () => {
       errors.newPassword = "New password is required";
     } else if (passwordData.newPassword.length < 8) {
       errors.newPassword = "Password must be at least 8 characters";
-    } else if (
-      !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(passwordData.newPassword)
-    ) {
-      errors.newPassword =
-        "Password must contain uppercase, lowercase, number, and special character";
+    } else if (passwordData.newPassword.length > 128) {
+      errors.newPassword = "Password must be no more than 128 characters";
+    } else if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(passwordData.newPassword)) {
+      errors.newPassword = "Password must contain at least one letter and one number";
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {

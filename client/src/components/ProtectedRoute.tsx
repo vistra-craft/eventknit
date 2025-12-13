@@ -64,6 +64,20 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={dashboardRoute} replace />;
   }
 
+  // Check onboarding status for organizers (except on onboarding page itself)
+  const isOrganizer = [
+    UserRole.ORGANIZER,
+    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_TELLER,
+  ].includes(user.role);
+
+  const isOnboardingPage = location.pathname === '/organizer/onboarding';
+
+  if (isOrganizer && !isOnboardingPage && user.role === UserRole.ORGANIZER && !user.onboardingCompleted) {
+    // Redirect to onboarding if organizer hasn't completed onboarding
+    return <Navigate to="/organizer/onboarding" replace />;
+  }
+
   return <>{children}</>;
 };
 

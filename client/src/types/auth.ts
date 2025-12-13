@@ -36,6 +36,7 @@ export interface User {
   businessEmail?: string | null;
   kycStatus?: string | null;
   lastLoginAt?: string | null;
+  onboardingCompleted?: boolean; // For organizers - tracks if onboarding is complete
   createdAt: string;
   updatedAt: string;
 }

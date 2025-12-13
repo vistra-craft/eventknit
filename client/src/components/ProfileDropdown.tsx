@@ -47,7 +47,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
 
   if (!isAuthenticated || !user) return null;
 
-  const getDashboardRoute = () => {
+  const getDashboardRoute = async () => {
     // Use active view role if set, otherwise use user's actual role
     const roleToUse = activeViewRole || user?.role;
     
@@ -66,6 +66,23 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     ].includes(roleToUse);
     
     if (isAdminRole) return '/admin/dashboard';
+    
+    // For organizers, check if they have dashboard access
+    if (isOrganizerRole && roleToUse === UserRole.ORGANIZER) {
+      try {
+        const { getDashboardAccess } = await import('@/lib/organizer-api');
+        const accessResponse = await getDashboardAccess();
+        if (accessResponse.success && !accessResponse.data.hasAccess) {
+          // No approved event - redirect to event creation
+          return '/organizer/events/create-standalone';
+        }
+      } catch (error) {
+        console.error('Error checking dashboard access:', error);
+        // On error, redirect to event creation to be safe
+        return '/organizer/events/create-standalone';
+      }
+    }
+    
     if (isOrganizerRole) return '/organizer/dashboard';
     return '/user/dashboard';
   };
@@ -174,7 +191,10 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
             </button>
 
             <button
-              onClick={() => handleNavigate(getDashboardRoute())}
+              onClick={async () => {
+                const route = await getDashboardRoute();
+                handleNavigate(route);
+              }}
               className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
             >
               <LayoutDashboard className="w-4 h-4" />

@@ -87,7 +87,7 @@ const PaymentPage = () => {
           const verification = await verifyPayment(paymentRef);
           if (verification.success && verification.data.success) {
             // Payment successful - redirect to confirmation
-            navigate(`/event/${paymentData.eventId}/confirmation`, {
+            navigate(`/event/${paymentData.eventId}/registration-confirmation`, {
               state: {
                 eventId: paymentData.eventId,
                 eventTitle: paymentData.eventTitle,
@@ -96,6 +96,7 @@ const PaymentPage = () => {
                 paymentMethod: 'paystack',
                 paymentId: paymentRef,
                 date: new Date().toISOString(),
+                isFreeEvent: false,
                 success: true,
               }
             });

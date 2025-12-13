@@ -4,6 +4,7 @@ import DashboardNavbar from "./DashboardNavbar";
 import DashboardHome from "./DashboardHome";
 import DashboardSpeakers from "./DashboardSpeakers";
 import DashboardExhibitors from "./DashboardExhibitors";
+import DashboardSponsors from "./DashboardSponsors";
 import DashboardAgenda from "./DashboardAgenda";
 import DashboardMyEvent from "./DashboardMyEvent";
 import DashboardMyBadge from "./DashboardMyBadge";
@@ -63,6 +64,8 @@ const UserDashboard = () => {
         return <DashboardSpeakers eventData={eventData} />;
       case "exhibitors":
         return <DashboardExhibitors eventData={eventData} />;
+      case "sponsors":
+        return <DashboardSponsors eventData={eventData} />;
       case "attendees":
         return <DashboardAttendees />;
       case "agenda":

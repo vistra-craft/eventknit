@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import EmptyState from '../../components/EmptyState';
-import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils, Loader2 } from 'lucide-react';
+import { getEventById } from '../../lib/event-api';
 
 interface EventData {
   id: number;
@@ -45,109 +46,138 @@ interface AgendaItem {
 }
 
 const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
-  // Mock agenda data
-  const agendaItems: AgendaItem[] = [
-    {
-      id: '1',
-      time: '08:00',
-      title: 'Registration & Welcome Coffee',
-      type: 'break',
-      location: 'Main Lobby',
-      duration: '60 min'
-    },
-    {
-      id: '2',
-      time: '09:00',
-      title: 'Opening Keynote: The Future of Digital Commerce',
-      type: 'keynote',
-      speaker: 'Dr. Sarah Johnson',
-      location: 'Main Auditorium',
-      description: 'Exploring emerging trends and technologies shaping the future of digital commerce.',
-      duration: '45 min'
-    },
-    {
-      id: '3',
-      time: '09:45',
-      title: 'Panel: E-commerce Innovation in Africa',
-      type: 'panel',
-      speaker: 'Moderator: James Kariuki',
-      location: 'Stage 1',
-      description: 'Panel discussion on innovative e-commerce solutions across African markets.',
-      duration: '60 min'
-    },
-    {
-      id: '4',
-      time: '10:45',
-      title: 'Coffee Break',
-      type: 'break',
-      location: 'Exhibition Hall',
-      duration: '30 min'
-    },
-    {
-      id: '5',
-      time: '11:15',
-      title: 'Workshop: Building Scalable Payment Systems',
-      type: 'workshop',
-      speaker: 'Tech Team Lead',
-      location: 'Workshop Room A',
-      description: 'Hands-on workshop on designing and implementing scalable payment infrastructure.',
-      duration: '90 min'
-    },
-    {
-      id: '6',
-      time: '12:45',
-      title: 'Lunch & Networking',
-      type: 'meal',
-      location: 'Dining Hall',
-      duration: '75 min'
-    },
-    {
-      id: '7',
-      time: '14:00',
-      title: 'Fireside Chat: Digital Transformation Success Stories',
-      type: 'panel',
-      speaker: 'CEO Panel',
-      location: 'Stage 2',
-      description: 'Intimate conversation with industry leaders about their digital transformation journeys.',
-      duration: '45 min'
-    },
-    {
-      id: '8',
-      time: '14:45',
-      title: 'Networking Break',
-      type: 'networking',
-      location: 'Exhibition Hall',
-      duration: '30 min'
-    },
-    {
-      id: '9',
-      time: '15:15',
-      title: 'Workshop: Mobile Commerce Best Practices',
-      type: 'workshop',
-      speaker: 'Mobile Expert',
-      location: 'Workshop Room B',
-      description: 'Learn the latest strategies for optimizing mobile commerce experiences.',
-      duration: '90 min'
-    },
-    {
-      id: '10',
-      time: '16:45',
-      title: 'Closing Keynote: Building Sustainable Digital Ecosystems',
-      type: 'keynote',
-      speaker: 'Prof. Michael Chen',
-      location: 'Main Auditorium',
-      description: 'Creating sustainable and inclusive digital commerce ecosystems for the future.',
-      duration: '45 min'
-    },
-    {
-      id: '11',
-      time: '17:30',
-      title: 'Closing Remarks & Networking Reception',
-      type: 'networking',
-      location: 'Main Lobby',
-      duration: '90 min'
+  const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [eventLocation, setEventLocation] = useState(eventData.location || '');
+
+  // Calculate duration from start and end time
+  const calculateDuration = (startTime: string, endTime: string): string => {
+    if (!startTime || !endTime) return '';
+    
+    try {
+      const start = new Date(`2000-01-01T${startTime}`);
+      const end = new Date(`2000-01-01T${endTime}`);
+      const diffMs = end.getTime() - start.getTime();
+      const diffMins = Math.round(diffMs / 60000);
+      
+      if (diffMins < 60) {
+        return `${diffMins} min`;
+      } else {
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+      }
+    } catch {
+      return '';
     }
-  ];
+  };
+
+  // Infer agenda item type from title/description
+  const inferType = (title: string, description?: string): AgendaItem['type'] => {
+    const lowerTitle = title.toLowerCase();
+    const lowerDesc = (description || '').toLowerCase();
+    const combined = `${lowerTitle} ${lowerDesc}`;
+
+    if (combined.includes('keynote') || combined.includes('opening') || combined.includes('closing')) {
+      return 'keynote';
+    }
+    if (combined.includes('panel') || combined.includes('discussion')) {
+      return 'panel';
+    }
+    if (combined.includes('workshop') || combined.includes('training') || combined.includes('session')) {
+      return 'workshop';
+    }
+    if (combined.includes('break') || combined.includes('coffee') || combined.includes('tea')) {
+      return 'break';
+    }
+    if (combined.includes('lunch') || combined.includes('dinner') || combined.includes('meal')) {
+      return 'meal';
+    }
+    if (combined.includes('networking') || combined.includes('reception') || combined.includes('social')) {
+      return 'networking';
+    }
+    return 'workshop'; // Default
+  };
+
+  // Transform organizer agenda to display format
+  const transformAgenda = (organizerAgenda: any[]): AgendaItem[] => {
+    if (!organizerAgenda || !Array.isArray(organizerAgenda)) {
+      return [];
+    }
+
+    return organizerAgenda.map((item, index) => {
+      const startTime = item.startTime || '';
+      const endTime = item.endTime || '';
+      const time = startTime ? startTime.substring(0, 5) : ''; // Format as HH:MM
+      
+      // Map speakers array to string
+      let speakerString = '';
+      if (item.speakers && Array.isArray(item.speakers)) {
+        if (item.speakers.length > 0) {
+          // If speakers are IDs, we'd need to look them up, but for now just join
+          speakerString = item.speakers
+            .map((s: any) => typeof s === 'string' ? s : (s?.name || s))
+            .filter(Boolean)
+            .join(', ');
+        }
+      }
+
+      return {
+        id: `agenda-${index}`,
+        time: time,
+        title: item.title || 'Untitled Session',
+        type: inferType(item.title || '', item.description),
+        speaker: speakerString || undefined,
+        location: eventLocation,
+        description: item.description,
+        duration: calculateDuration(startTime, endTime),
+      };
+    }).sort((a, b) => {
+      // Sort by time
+      if (!a.time && !b.time) return 0;
+      if (!a.time) return 1;
+      if (!b.time) return -1;
+      return a.time.localeCompare(b.time);
+    });
+  };
+
+  useEffect(() => {
+    const fetchAgenda = async () => {
+      if (!eventData?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await getEventById(eventData.id.toString());
+        
+        if (response.success && response.data?.event) {
+          const event = response.data.event;
+          
+          // Update location
+          if (event.location) {
+            setEventLocation(event.location);
+          }
+
+          // Transform and set agenda
+          if (event.agenda && Array.isArray(event.agenda)) {
+            const transformed = transformAgenda(event.agenda);
+            setAgendaItems(transformed);
+          } else {
+            setAgendaItems([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching agenda:', error);
+        setAgendaItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgenda();
+  }, [eventData?.id]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -224,8 +254,14 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {Object.entries(agendaGroups).map(([timeSlot, items]) => (
+                {loading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-4" />
+                    <p className="text-muted-foreground">Loading agenda...</p>
+                  </div>
+                ) : agendaItems.length > 0 ? (
+                  <div className="space-y-6">
+                    {Object.entries(agendaGroups).map(([timeSlot, items]) => (
                     <div key={timeSlot} className="space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
@@ -278,10 +314,8 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
                       </div>
                     </div>
                   ))}
-                </div>
-
-                {/* Empty State */}
-                {agendaItems.length === 0 && (
+                  </div>
+                ) : (
                   <EmptyState
                     icon={Calendar}
                     title="Agenda Coming Soon"
