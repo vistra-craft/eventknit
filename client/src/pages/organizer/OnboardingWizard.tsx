@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EventPreferencesStep } from '@/components/onboarding/EventPreferencesStep';
@@ -9,6 +8,7 @@ import { ProcessOverview } from '@/components/onboarding/ProcessOverview';
 import { ActionChoiceStep } from '@/components/onboarding/ActionChoiceStep';
 import * as authApi from '@/lib/auth-api';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import Logo from '@/components/Logo';
 
 type OnboardingStep = 1 | 2 | 3;
 
@@ -141,22 +141,13 @@ const OnboardingWizard = () => {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
             <button
               type="button"
-              onClick={() => navigate('/')}
-              className="flex items-center justify-center gap-2 hover:opacity-80 transition-opacity"
-            >
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">EK</span>
-              </div>
-              <span className="text-xl font-bold text-primary">EventKnit</span>
-            </button>
-            <button
-              type="button"
               onClick={() => navigate('/auth/email-entry')}
               className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               <span>Back to Sign Up</span>
             </button>
+            <Logo to="/" />
           </div>
 
           {/* Progress Indicator */}
@@ -185,8 +176,7 @@ const OnboardingWizard = () => {
         </div>
 
         {/* Form Content */}
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
-          <CardContent className="p-8">
+        <div className="bg-card-surface rounded-2xl shadow-sm p-8">
             {/* Event Created Success Message */}
             {eventCreatedMessage && (
               <Alert className="mb-6 border-green-500/20 bg-green-500/10">
@@ -211,7 +201,8 @@ const OnboardingWizard = () => {
               <div className="flex justify-end mt-8">
                 <Button
                   onClick={handleNext}
-                  className="px-6 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
+                  variant="outline"
+                  className="px-6 bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none focus:shadow-none focus-visible:shadow-none"
                   disabled={isLoading}
                 >
                   Continue
@@ -220,8 +211,7 @@ const OnboardingWizard = () => {
             )}
 
             {/* Step 3 doesn't need navigation buttons - ActionChoiceStep handles it */}
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import {
   Award,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import Logo from '../../components/Logo';
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
 import NotificationBell from "../../components/NotificationBell";
@@ -76,7 +77,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
           {/* Left Side - Logo and Event Title */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-xl font-bold text-eventknit">EventKnit</span>
+              <Logo />
               {eventTitle && (
                 <>
                   <span className="text-muted-foreground mx-2">&gt;</span>

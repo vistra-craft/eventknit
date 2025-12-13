@@ -4,6 +4,7 @@ import { Calendar, Users, DollarSign, Plus, ArrowUpRight, ArrowDownRight, Buildi
 import { getAdminDashboardStats, getAdminDashboardGrowth } from "../../lib/admin-api";
 import type { AdminDashboardGrowthPeriod, AdminDashboardGrowthPoint } from "../../lib/admin-api";
 import { CustomLineChart, CustomBarChart } from "../../components/charts/ChartComponents";
+import Logo from "@/components/Logo";
 
 const AdminEnhancedDashboard = () => {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d");
@@ -181,9 +182,9 @@ const AdminEnhancedDashboard = () => {
         {/* Header */}
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold tracking-wide text-primary uppercase mb-1">
-              EventKnit
-            </p>
+            <div className="mb-1">
+              <Logo textOnly={true} className="text-xs font-semibold tracking-wide uppercase" />
+            </div>
             <h1 className="text-lg sm:text-xl font-semibold text-foreground mb-2">
               Admin dashboard
             </h1>

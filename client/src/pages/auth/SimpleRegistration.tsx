@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Users, Calendar } from 'lucide-react';
+import Logo from '@/components/Logo';
 import * as authApi from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
@@ -185,10 +186,7 @@ const SimpleRegistration = () => {
             <span>Back to home</span>
           </button>
           <div className="flex items-center justify-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-primary">EventKnit</span>
+            <Logo to={undefined} />
           </div>
         </div>
 
@@ -196,11 +194,15 @@ const SimpleRegistration = () => {
         <Card className="border-0 bg-card-surface rounded-2xl shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-2xl font-bold text-primary">
-              {step === 'role'
-                ? 'Join EventKnit'
-                : step === 'email'
-                ? 'Enter your email'
-                : 'Verify your email'}
+              {step === 'role' ? (
+                <>
+                  Join <Logo textOnly to={undefined} />
+                </>
+              ) : step === 'email' ? (
+                'Enter your email'
+              ) : (
+                'Verify your email'
+              )}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               {step === 'role'
@@ -314,31 +316,38 @@ const SimpleRegistration = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Button
-                    type="submit"
-                    className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Sending...' : 'Continue'}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex items-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setStep('role');
+                          setEmail('');
+                          setFirstName('');
+                          setLastName('');
+                          setError('');
+                          setSuccess('');
+                        }}
+                        disabled={isLoading}
+                        className="h-9 text-sm inline-flex items-center gap-2 text-primary hover:bg-accent-coral hover:text-white rounded-md transition-colors"
+                      >
+                        <ArrowLeft className="w-3 h-3" />
+                        <span>Change role</span>
+                      </Button>
+                    </div>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full h-9 text-sm inline-flex items-center justify-center gap-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
-                    onClick={() => {
-                      setStep('role');
-                      setEmail('');
-                      setFirstName('');
-                      setLastName('');
-                      setError('');
-                      setSuccess('');
-                    }}
-                    disabled={isLoading}
-                  >
-                    <ArrowLeft className="w-3 h-3" />
-                    <span>Change role</span>
-                  </Button>
+                    <div className="flex justify-end">
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        className="inline-flex h-11 px-4 text-primary hover:bg-accent-coral hover:text-white font-medium shadow-none"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? 'Sending...' : 'Continue'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </form>
             ) : (
@@ -434,41 +443,47 @@ const SimpleRegistration = () => {
                 {success && <p className="text-sm text-green-600">{success}</p>}
 
                 <div className="space-y-3">
-                  <Button
-                    type="submit"
-                    className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
-                    disabled={isLoading || code.length !== 6 || !password || !confirmPassword}
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify & Sign Up'}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 text-sm px-3 rounded-md border-border text-foreground hover:bg-accent-coral hover:text-white shadow-none"
+                        onClick={handleResendCode}
+                        disabled={isLoading}
+                      >
+                        Resend code
+                      </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-11 text-sm border border-border hover:bg-accent-coral hover:text-white transition-colors"
-                    onClick={handleResendCode}
-                    disabled={isLoading}
-                  >
-                    Resend code
-                  </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-9 text-sm inline-flex items-center gap-1 text-primary hover:underline shadow-none"
+                        onClick={() => {
+                          setStep('email');
+                          setCode('');
+                          setPassword('');
+                          setConfirmPassword('');
+                          setError('');
+                          setSuccess('');
+                        }}
+                        disabled={isLoading}
+                      >
+                        <ArrowLeft className="w-3 h-3" />
+                        <span>Change email</span>
+                      </Button>
+                    </div>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full h-9 inline-flex items-center justify-center gap-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors text-sm"
-                    onClick={() => {
-                      setStep('email');
-                      setCode('');
-                      setPassword('');
-                      setConfirmPassword('');
-                      setError('');
-                      setSuccess('');
-                    }}
-                    disabled={isLoading}
-                  >
-                    <ArrowLeft className="w-3 h-3" />
-                    <span>Change email</span>
-                  </Button>
+                    <div className="flex justify-end">
+                      <Button
+                        type="submit"
+                        className="inline-flex h-11 px-4 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium shadow-none"
+                        disabled={isLoading || code.length !== 6 || !password || !confirmPassword}
+                      >
+                        {isLoading ? 'Verifying...' : 'Verify & Sign Up'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </form>
             )}

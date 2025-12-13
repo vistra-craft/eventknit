@@ -32,7 +32,7 @@
 
     /* OFF-WHITE - Backgrounds & Surfaces */
     --color-offwhite: 30 8% 98%;      /* Warm off-white background */
-    --color-offwhite-card: 0 0% 97%;  /* Card surface (#F7F7F7) */
+    --color-offwhite-card: 30 8% 95%;  /* Card surface - slightly darker for separation */
     --color-offwhite-muted: 30 5% 95%; /* Muted background */
 
     /* BLACK & WHITE */
@@ -73,7 +73,7 @@
 
     /* Cards */
     --card-surface: var(--color-offwhite-card);
-    --card-border: var(--color-grey-border);
+    --card-border: 0 0% 90%; /* slightly darker border for better separation */
     --card-hover: var(--color-teal);
 
     /* Secondary */
@@ -123,7 +123,7 @@
        SHADOWS & GLOWS - Light Theme
        ======================================================================== */
     --shadow-primary: 0 20px 40px -12px hsl(var(--color-teal) / 0.3);
-    --shadow-card: 0 4px 16px -4px hsl(var(--color-grey-dark) / 0.08);
+    --shadow-card: 0 6px 18px -6px hsl(var(--color-grey-dark) / 0.06);
     --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-teal) / 0.25);
     --shadow-glow: 0 0 40px hsl(var(--color-teal-glow) / 0.4);
     --shadow-elevated: 0 20px 40px -12px hsl(var(--color-coral) / 0.2);

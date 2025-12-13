@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 import AdminStaffSidebar from "./AdminStaffSidebar";
+import Logo from "@/components/Logo";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -248,13 +249,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="p-4">
           <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
-            {isOpen && (
-              <Link 
-                to="/" 
-                className="text-lg font-bold text-eventknit hover:text-eventknit/80 transition-colors"
-              >
-                EventKnit
-              </Link>
+            {isOpen ? (
+              <Logo to="/" />
+            ) : (
+              <Logo to="/" textOnly={true} className="text-lg" />
             )}
             {isMobile && (
               <button

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, Calendar, ArrowLeft } from 'lucide-react';
+import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, facebookAuth } from '@/lib/auth-api';
 import loginImage from '@/assets/login.jpeg';
@@ -189,12 +190,7 @@ const SignIn = () => {
               {/* Logo at top */}
               <div className="mb-6">
                 <div className="flex items-center justify-between gap-4 mb-2">
-                  <Link to="/" className="inline-flex items-center gap-2">
-                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                      <Calendar className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-2xl font-bold text-primary">EventKnit</span>
-                  </Link>
+                  <Logo to="/" />
                   <button
                     type="button"
                     onClick={() => navigate('/')}
@@ -212,7 +208,7 @@ const SignIn = () => {
               <div className="mb-6">
                 <Button
                   variant="outline"
-                  className="w-full h-12 bg-card-surface border border-border hover:bg-accent-coral hover:text-white text-foreground font-medium flex items-center justify-center gap-3 transition-colors"
+                  className="w-full h-12 bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium flex items-center justify-center gap-3 transition-colors shadow-none focus:shadow-none focus-visible:shadow-none"
                   onClick={handleFacebookSignIn}
                   disabled={isLoading}
                   type="button"
@@ -337,7 +333,7 @@ const SignIn = () => {
                 )}
 
                 {/* Main Sign In Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4 shadow-none">
                   {authError && (
                     <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
                       {authError}
@@ -352,7 +348,7 @@ const SignIn = () => {
                       placeholder="letsdesignabrar@gmail.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="h-12 border-border focus:border-primary focus:ring-primary"
+                      className="h-12 border-border focus-visible:border-primary/30"
                       required
                       disabled={isLoading}
                     />
@@ -367,7 +363,7 @@ const SignIn = () => {
                         placeholder="Enter your password"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="h-12 pr-10 border-border focus:border-primary focus:ring-primary"
+                        className="h-12 pr-10 border-border focus-visible:border-primary/30"
                         required
                         disabled={isLoading}
                       />
@@ -397,9 +393,9 @@ const SignIn = () => {
                         Remember for 30 days
                       </Label>
                     </div>
-                    <Link 
-                      to="/auth/forgot-password" 
-                      className="text-sm text-primary hover:text-accent-coral hover:underline transition-colors"
+                    <Link
+                      to="/auth/forgot-password"
+                      className="inline-flex items-center px-2 py-1 rounded-md text-sm text-primary hover:bg-accent-coral hover:text-white transition-colors"
                     >
                       Forgot password?
                     </Link>
@@ -407,8 +403,9 @@ const SignIn = () => {
 
                   {/* Log In Button */}
                   <Button 
+                    variant="outline"
                     type="submit" 
-                    className="w-full h-12 rounded-xl bg-accent-coral hover:bg-accent-coral/90 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                    className="w-full h-12 bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none focus:shadow-none focus-visible:shadow-none"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Signing in...' : 'Log In'}
@@ -419,7 +416,7 @@ const SignIn = () => {
                 <div className="text-center pt-2">
                   <p className="text-sm text-muted-foreground">
                     Don't have an account?{' '}
-                    <Link to="/auth/signup" className="text-primary font-medium hover:text-accent-coral hover:underline transition-colors">
+                    <Link to="/auth/signup" className="inline-flex items-center px-2 py-1 rounded-md text-primary font-medium hover:bg-accent-coral hover:text-white transition-colors">
                       Sign up
                     </Link>
                   </p>

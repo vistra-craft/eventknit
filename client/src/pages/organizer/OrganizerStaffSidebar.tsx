@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
+import Logo from '@/components/Logo';
 
 interface OrganizerStaffSidebarProps {
   isOpen: boolean;
@@ -152,8 +153,10 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
         <div
           className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}
         >
-          {isOpen && (
-            <h2 className="text-lg font-semibold text-eventknit">EventKnit</h2>
+          {isOpen ? (
+            <Logo to="/" />
+          ) : (
+            <Logo to="/" textOnly={true} className="text-lg" />
           )}
           {isMobile && (
             <button

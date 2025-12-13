@@ -66,7 +66,7 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
               className={`h-10 ${
                 formData.eventTypes.includes(type)
                   ? 'bg-eventknit text-eventknit-foreground'
-                  : 'border-border hover:border-eventknit/50'
+                  : 'border-border hover:bg-muted hover:border-border'
               }`}
             >
               {type}

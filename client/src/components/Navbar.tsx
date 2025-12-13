@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, Menu, X } from 'lucide-react';
+import Logo from '@/components/Logo';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ProfileDropdown } from "./ProfileDropdown";
@@ -227,11 +228,8 @@ const Navbar: React.FC<NavbarProps> = () => {
           <div className="flex items-center h-16 gap-6 justify-between">
             
             {/* Logo */}
-            <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate('/')}>
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
-                <Calendar className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-foreground">EventKnit</span>
+            <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate('/')}> 
+              <Logo to={undefined} />
             </div>
 
             {/* Desktop Navigation */}

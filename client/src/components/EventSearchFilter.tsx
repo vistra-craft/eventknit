@@ -119,7 +119,7 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                 placeholder="Search events…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10 text-sm rounded-full border-border bg-card-surface"
+                className="pl-9 h-10 text-sm rounded-full border-border bg-card-surface focus-visible:border-[0.5px] focus-visible:border-primary/30"
               />
             </div>
             <button

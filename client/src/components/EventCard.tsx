@@ -98,7 +98,7 @@ export const EventCard: React.FC<EventCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 bg-accent-coral text-white backdrop-blur-sm rounded-full text-xs font-bold shadow-lg shadow-primary/50">
+          <span className="px-3 py-1 bg-accent-coral text-white backdrop-blur-sm rounded-full text-xs font-bold shadow-none">
             {category}
           </span>
         </div>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
+import Logo from '@/components/Logo';
 
 interface AdminStaffSidebarProps {
   isOpen: boolean;
@@ -172,13 +173,10 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
         <div
           className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}
         >
-          {isOpen && (
-            <Link
-              to="/"
-              className="text-lg font-bold text-eventknit hover:text-eventknit/80 transition-colors"
-            >
-              EventKnit
-            </Link>
+          {isOpen ? (
+            <Logo to="/" />
+          ) : (
+            <Logo to="/" textOnly={true} className="text-lg" />
           )}
           {isMobile && (
             <button

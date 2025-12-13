@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 import OrganizerStaffSidebar from "./OrganizerStaffSidebar";
+import Logo from "@/components/Logo";
 
 interface OrganizerSidebarProps {
   isOpen: boolean;
@@ -212,13 +213,10 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="p-4">
           <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}>
-          {isOpen && (
-            <Link 
-              to="/" 
-              className="text-lg font-semibold text-eventknit hover:text-eventknit/80 transition-colors"
-            >
-              EventKnit
-            </Link>
+          {isOpen ? (
+            <Logo to="/" />
+          ) : (
+            <Logo to="/" textOnly={true} className="text-lg" />
           )}
           {isMobile && (
             <button

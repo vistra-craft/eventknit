@@ -46,11 +46,13 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Create Event Card */}
-        <Card className="border-2 border-primary/20 hover:border-primary/40 transition-colors cursor-pointer">
+        <Card
+          className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-primary/10 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+        >
           <CardHeader>
-            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
               <Plus className="w-6 h-6 text-primary" />
             </div>
             <CardTitle>Create Your First Event</CardTitle>
@@ -61,7 +63,8 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
           <CardContent>
             <Button
               onClick={handleCreateEvent}
-              className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white"
+              variant="outline"
+              className="w-full bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none"
             >
               Create Event
             </Button>
@@ -69,10 +72,12 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
         </Card>
 
         {/* Learn More Card */}
-        <Card className="border-2 border-border hover:border-primary/20 transition-colors cursor-pointer">
+        <Card
+          className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-primary/10 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+        >
           <CardHeader>
-            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
-              <Info className="w-6 h-6 text-muted-foreground" />
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+              <Info className="w-6 h-6 text-primary" />
             </div>
             <CardTitle>Learn More</CardTitle>
             <CardDescription>
@@ -83,7 +88,7 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
             <Button
               onClick={() => setShowLearnMore(true)}
               variant="outline"
-              className="w-full"
+              className="w-full bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none"
             >
               Learn More
             </Button>
@@ -113,7 +118,8 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
           <div className="mt-6">
             <Button
               onClick={handleCreateEvent}
-              className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white"
+              variant="outline"
+              className="w-full bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none"
             >
               Get Started - Create Your First Event
             </Button>
