@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -23,6 +23,9 @@ interface Event {
   title: string;
   organizer: string;
   organizerName?: string;
+  organizerId?: string;
+  organizerVerified?: boolean;
+  organizerVerificationLevel?: number;
   date: string;
   startDate?: string;
   startTime?: string;
@@ -53,6 +56,8 @@ const PendingApprovalPage = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [eventToApprove, setEventToApprove] = useState<Event | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
@@ -94,6 +99,9 @@ const PendingApprovalPage = () => {
             title: event.title,
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerName: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+            organizerId: event.organizer?.id,
+            organizerVerified: event.organizer?.isIdentityVerified || false,
+            organizerVerificationLevel: event.organizer?.verificationLevel || 1,
             date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
             startDate: event.startDate,
             startTime: event.startTime || '',
@@ -154,6 +162,16 @@ const PendingApprovalPage = () => {
       : "bg-muted text-muted-foreground border-border";
   };
 
+  const handleApproveClick = (event: Event) => {
+    // Check if it's a paid event with unverified organizer
+    if (!event.isFree && !event.organizerVerified) {
+      setEventToApprove(event);
+      setApproveDialogOpen(true);
+    } else {
+      handleApprove(event.id);
+    }
+  };
+
   const handleApprove = async (eventId: string) => {
     try {
       setProcessing(eventId);
@@ -165,6 +183,8 @@ const PendingApprovalPage = () => {
         });
         // Remove event from list
         setEvents(events.filter(e => e.id !== eventId));
+        setApproveDialogOpen(false);
+        setEventToApprove(null);
       } else {
         throw new Error(response.message || 'Failed to approve event');
       }
@@ -383,7 +403,21 @@ const PendingApprovalPage = () => {
                         <span>Submitted {getDaysSinceSubmission(event.submittedDate)} days ago</span>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">by {event.organizer}</p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="text-sm text-muted-foreground">by {event.organizer}</p>
+                      {!event.isFree && !event.organizerVerified && (
+                        <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs flex items-center gap-1">
+                          <Shield className="h-3 w-3" />
+                          Unverified Organizer
+                        </Badge>
+                      )}
+                      {!event.isFree && event.organizerVerified && (
+                        <Badge className="bg-green-100 text-green-800 border-green-200 text-xs flex items-center gap-1">
+                          <Shield className="h-3 w-3" />
+                          Verified
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
@@ -394,7 +428,7 @@ const PendingApprovalPage = () => {
                     <Button 
                       variant="default" 
                       size="sm"
-                      onClick={() => handleApprove(event.id)}
+                      onClick={() => handleApproveClick(event)}
                       disabled={processing === event.id}
                       className="bg-primary hover:bg-primary/90 text-white"
                     >
@@ -517,6 +551,63 @@ const PendingApprovalPage = () => {
           </Card>
         )}
 
+
+        {/* Approve Warning Dialog for Unverified Organizers */}
+        <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                Unverified Organizer - Paid Event
+              </DialogTitle>
+              <DialogDescription>
+                This is a paid event, but the organizer has not completed identity verification.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Alert className="border-orange-200 bg-orange-50">
+                <Shield className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-900">
+                  <strong>Important:</strong> The organizer will not be able to receive payouts from ticket sales until they complete identity verification. 
+                  You can still approve the event, but they will need to verify their identity to receive funds.
+                </AlertDescription>
+              </Alert>
+              {eventToApprove && (
+                <div className="text-sm space-y-1">
+                  <p><strong>Event:</strong> {eventToApprove.title}</p>
+                  <p><strong>Organizer:</strong> {eventToApprove.organizer}</p>
+                  <p><strong>Verification Level:</strong> {eventToApprove.organizerVerificationLevel || 1} (Level 2+ required for payouts)</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setApproveDialogOpen(false);
+                setEventToApprove(null);
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={() => eventToApprove && handleApprove(eventToApprove.id)}
+                disabled={processing === eventToApprove?.id}
+                className="bg-primary hover:bg-primary/90 text-white"
+              >
+                {processing === eventToApprove?.id ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Approve Anyway
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Reject Dialog */}
         <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>

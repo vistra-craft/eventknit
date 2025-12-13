@@ -423,6 +423,8 @@ export class EventService {
               firstName: true,
               lastName: true,
               organizationName: true,
+              isIdentityVerified: true,
+              verificationLevel: true,
             },
           },
           _count: {
@@ -476,6 +478,8 @@ export class EventService {
             email: true,
             organizationName: true,
             businessEmail: true,
+            isIdentityVerified: true,
+            verificationLevel: true,
           },
         },
         _count: {
