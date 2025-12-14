@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import {
   User,
@@ -13,6 +13,9 @@ import {
   EyeOff,
   Key,
   Mail,
+  Camera,
+  X,
+  Upload,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,6 +100,12 @@ const OrganizerSettingsPage = () => {
     confirmPassword: "",
   });
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  
+  // Avatar upload state
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -192,6 +201,7 @@ const OrganizerSettingsPage = () => {
             company: userData.organizationName || "",
             organizationName: userData.organizationName || "",
             businessEmail: userData.businessEmail || "",
+            avatar: userData.avatar || "",
             kycStatus: userData.kycStatus || null,
             // Keep other settings as they are (notifications, appearance, etc.)
           }));
@@ -358,26 +368,56 @@ const OrganizerSettingsPage = () => {
 
     try {
       if (activeTab === "profile") {
-        // Update profile
-        const profileData: Partial<authApi.RegisterData> = {
-          firstName: settings.firstName,
-          lastName: settings.lastName,
-          otherName: settings.otherName || undefined,
-          phoneNumber: settings.phone || undefined,
-          companyAffiliation: settings.companyAffiliation || undefined,
-          organizationName: settings.organizationName || undefined,
-          businessEmail: settings.businessEmail || undefined,
-        };
+        // If avatar file is selected, use FormData; otherwise use JSON
+        if (avatarFile) {
+          const formData = new FormData();
+          formData.append('image', avatarFile);
+          formData.append('firstName', settings.firstName);
+          formData.append('lastName', settings.lastName);
+          if (settings.otherName) formData.append('otherName', settings.otherName);
+          if (settings.phone) formData.append('phoneNumber', settings.phone);
+          if (settings.companyAffiliation) formData.append('companyAffiliation', settings.companyAffiliation);
+          if (settings.organizationName) formData.append('organizationName', settings.organizationName);
+          if (settings.businessEmail) formData.append('businessEmail', settings.businessEmail);
 
-        const response = await authApi.updateProfile(profileData);
-        
-        if (response.success) {
-          // Refresh user profile in context
-          await refreshProfile();
-          setSaveStatus("success");
-          setSaveMessage("Profile updated successfully");
+          const response = await authApi.updateProfile(formData);
+          
+          if (response.success) {
+            // Clear avatar upload state
+            setAvatarFile(null);
+            setAvatarPreview(null);
+            if (avatarInputRef.current) {
+              avatarInputRef.current.value = '';
+            }
+            // Refresh user profile in context
+            await refreshProfile();
+            setSaveStatus("success");
+            setSaveMessage("Profile updated successfully");
+          } else {
+            throw new Error("Failed to update profile");
+          }
         } else {
-          throw new Error("Failed to update profile");
+          // Update profile without avatar
+          const profileData: Partial<authApi.RegisterData> = {
+            firstName: settings.firstName,
+            lastName: settings.lastName,
+            otherName: settings.otherName || undefined,
+            phoneNumber: settings.phone || undefined,
+            companyAffiliation: settings.companyAffiliation || undefined,
+            organizationName: settings.organizationName || undefined,
+            businessEmail: settings.businessEmail || undefined,
+          };
+
+          const response = await authApi.updateProfile(profileData);
+          
+          if (response.success) {
+            // Refresh user profile in context
+            await refreshProfile();
+            setSaveStatus("success");
+            setSaveMessage("Profile updated successfully");
+          } else {
+            throw new Error("Failed to update profile");
+          }
         }
       } else if (activeTab === "appearance" || activeTab === "security") {
         // Save appearance and security preferences
@@ -514,23 +554,110 @@ const OrganizerSettingsPage = () => {
     }
   };
 
+  // Handle avatar file selection
+  const handleAvatarSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "Image size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAvatarFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.onerror = () => {
+      toast({
+        title: "Error",
+        description: "Failed to read image file",
+        variant: "destructive",
+      });
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove avatar selection
+  const handleRemoveAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = '';
+    }
+  };
+
   const renderProfileSettings = () => (
     <div className="space-y-6">
       {/* Profile Picture */}
       <div className="flex items-center space-x-6">
-        <Avatar
-          src={settings.avatar}
-          name={`${settings.firstName} ${settings.lastName}`}
-          alt="Profile"
-          size="xl"
-          className="h-24 w-24"
-        />
+        <div className="relative">
+          <Avatar
+            src={avatarPreview || settings.avatar || undefined}
+            name={`${settings.firstName} ${settings.lastName}`}
+            alt="Profile"
+            size="xl"
+            className="h-24 w-24"
+          />
+          {avatarPreview && (
+            <button
+              onClick={handleRemoveAvatar}
+              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors"
+              aria-label="Remove selected avatar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
         <div className="space-y-2">
-          <Button variant="outline" size="sm">
-            Change Photo
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarSelect}
+            className="hidden"
+            id="avatar-upload"
+          />
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={isUploadingAvatar}
+          >
+            {isUploadingAvatar ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Camera className="h-4 w-4 mr-2" />
+                {avatarPreview ? 'Change Photo' : 'Upload Photo'}
+              </>
+            )}
           </Button>
           <p className="text-sm text-muted-foreground">
-            JPG, PNG or GIF. Max size 2MB.
+            JPG, PNG or GIF. Max size 5MB.
           </p>
         </div>
       </div>

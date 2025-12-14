@@ -333,6 +333,55 @@ describe('Event System', () => {
 
       expect(response.body.success).toBe(false);
     });
+
+    it('should fail to create event as attendee (only organizers and admins can create events)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Test Event',
+        description: 'This is a test event',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: true,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send(eventData)
+        .expect(403);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Only organizers and admins can create events');
+    });
+
+    it('should allow admin to create events', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Admin Created Event',
+        description: 'This event was created by an admin',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: true,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.title).toBe(eventData.title);
+      expect(response.body.data.event.status).toBe(EventStatus.PENDING);
+    });
   });
 
   describe('Event Templates & Drafts (Organizer Dashboard)', () => {

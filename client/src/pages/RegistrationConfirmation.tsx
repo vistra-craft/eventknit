@@ -29,6 +29,9 @@ import { getEventById } from "@/lib/event-api";
 import { downloadTicket } from "@/lib/utils/ticket";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/use-toast";
+import { setupPassword } from "@/lib/auth-api";
+import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
+import { setAccessToken } from "@/lib/api";
 
 interface TicketType {
   name: string;
@@ -60,12 +63,13 @@ const RegistrationConfirmation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshProfile } = useAuth();
   const { toast } = useToast();
 
   const [eventData, setEventData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [settingPassword, setSettingPassword] = useState(false);
+  const [passwordSetSuccess, setPasswordSetSuccess] = useState(false);
   const [passwordData, setPasswordData] = useState({
     password: "",
     confirmPassword: "",
@@ -74,6 +78,18 @@ const RegistrationConfirmation: React.FC = () => {
 
   // Get confirmation data from location state or construct from event
   const confirmationData = location.state as ConfirmationData | null;
+
+  // Store access token if provided (for guest users) and refresh auth
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.accessToken) {
+      setAccessToken(state.accessToken);
+      // Trigger auth refresh to load user data
+      refreshProfile().catch(() => {
+        // Silently fail - token might be invalid
+      });
+    }
+  }, [location.state, refreshProfile]);
 
   // Fetch event data if not provided
   useEffect(() => {
@@ -248,16 +264,22 @@ END:VCALENDAR`;
     }
 
     try {
-      // TODO: Implement ticket download
-      // For now, show a message
       toast({
         title: "Downloading ticket...",
         description: "Your ticket will be downloaded shortly.",
       });
+      
+      await downloadTicketPDF(confirmationData.registrationId);
+      
+      toast({
+        title: "Ticket downloaded!",
+        description: "Your ticket has been downloaded successfully.",
+      });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to download ticket. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to download ticket. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -348,7 +370,7 @@ END:VCALENDAR`;
                     Setting a password lets you manage your tickets, register for events faster, and access your event dashboard.
                   </p>
 
-                  {passwordData.password === "" ? (
+                  {!passwordSetSuccess ? (
                     <form onSubmit={handleSetPassword} className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -420,7 +442,42 @@ END:VCALENDAR`;
         <Alert className="mb-6 border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
           <Mail className="h-4 w-4 text-green-600 dark:text-green-400" />
           <AlertDescription className="text-green-800 dark:text-green-200">
-            <strong>Check your email!</strong> A confirmation email with your ticket{isFree ? "" : " and receipt"} has been sent to <strong>{userEmail}</strong>.
+            <div className="flex items-start justify-between flex-wrap gap-2">
+              <div className="flex-1">
+                <p className="mb-1">
+                  <strong>Check your email!</strong> A confirmation email with your ticket{isFree ? "" : " and receipt"} is being sent to <strong>{userEmail}</strong>.
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                  📧 Email is being sent in the background. If you don't receive it within a few minutes, you can resend it below or view your ticket online.
+                </p>
+              </div>
+              {confirmationData?.registrationId && isAuthenticated && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await resendTicketEmail(confirmationData.registrationId);
+                      toast({
+                        title: "Email resent!",
+                        description: "Your ticket email has been resent successfully.",
+                      });
+                    } catch (error) {
+                      const errorMessage = error instanceof Error ? error.message : "Failed to resend email";
+                      toast({
+                        title: "Error",
+                        description: errorMessage,
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="ml-auto"
+                >
+                  <Mail className="w-3 h-3 mr-1" />
+                  Resend Email
+                </Button>
+              )}
+            </div>
           </AlertDescription>
         </Alert>
 
@@ -586,14 +643,30 @@ END:VCALENDAR`;
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-          <Button
-            size="lg"
-            onClick={() => navigate("/user/dashboard", { state: { eventData: event } })}
-            className="gap-2"
-          >
-            <Ticket className="w-5 h-5" />
-            View My Tickets
-          </Button>
+          {confirmationData?.registrationId ? (
+            <Button
+              size="lg"
+              onClick={() => navigate(`/user/tickets/${confirmationData.registrationId}`, { 
+                state: { 
+                  userEmail: confirmationData.userEmail || userEmail,
+                  email: confirmationData.userEmail || userEmail,
+                } 
+              })}
+              className="gap-2"
+            >
+              <Ticket className="w-5 h-5" />
+              View My Ticket
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              onClick={() => navigate("/user/dashboard", { state: { eventData: event } })}
+              className="gap-2"
+            >
+              <Ticket className="w-5 h-5" />
+              View My Tickets
+            </Button>
+          )}
           <Button
             variant="outline"
             size="lg"

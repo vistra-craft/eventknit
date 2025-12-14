@@ -12,6 +12,19 @@ const HOST = config.host;
 
 const startServer = async () => {
   try {
+    // Validate critical environment variables
+    const ticketSecretKey = process.env.TICKET_SECRET_KEY;
+    if (!ticketSecretKey) {
+      logger.warn('⚠️  WARNING: TICKET_SECRET_KEY is not set in environment variables');
+      logger.warn('⚠️  Ticket QR code generation will fail. Please set TICKET_SECRET_KEY in your .env file');
+      logger.warn('⚠️  Generate a secure key: openssl rand -hex 32');
+    } else if (ticketSecretKey.length < 32) {
+      logger.warn(`⚠️  WARNING: TICKET_SECRET_KEY is shorter than recommended 32 bytes (current: ${ticketSecretKey.length})`);
+      logger.warn('⚠️  For better security, use a key at least 32 bytes long');
+    } else {
+      logger.info('✅ TICKET_SECRET_KEY is configured');
+    }
+
     // Connect to database (optional - will warn if unavailable)
     try {
       await connectDB();

@@ -340,6 +340,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                         <Input
                           value={exhibitor.name}
                           onChange={(e) => updateExhibitor(index, 'name', e.target.value)}
+                          placeholder="Company/Organization name"
                         />
                       </div>
                       <div className="space-y-2">
@@ -347,13 +348,35 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                          <Input
                           value={exhibitor.booth}
                           onChange={(e) => updateExhibitor(index, 'booth', e.target.value)}
+                          placeholder="A1, B2, etc."
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Contact Email</Label>
+                        <Input
+                          type="email"
+                          value={exhibitor.contactEmail}
+                          onChange={(e) => updateExhibitor(index, 'contactEmail', e.target.value)}
+                          placeholder="contact@example.com"
+                        />
+                      </div>
+                      <div className="col-span-1 md:col-span-2 space-y-2">
+                        <Label>Logo URL</Label>
+                        <Input
+                          value={exhibitor.logo}
+                          onChange={(e) => updateExhibitor(index, 'logo', e.target.value)}
+                          placeholder="https://..."
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter the URL of the exhibitor's logo image
+                        </p>
                       </div>
                       <div className="col-span-1 md:col-span-2 space-y-2">
                         <Label>Description</Label>
                         <Textarea
                           value={exhibitor.description}
                           onChange={(e) => updateExhibitor(index, 'description', e.target.value)}
+                          placeholder="Brief description of the exhibitor..."
                         />
                       </div>
                     </div>

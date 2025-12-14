@@ -555,30 +555,30 @@ export class PaymentService {
               ticketLineItems = undefined;
             }
             
-            try {
-              logger.debug(`[PaymentService.handleWebhook] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
-              await TicketService.sendTicketEmail({
-                id: registration.id,
-                ticketType: registration.ticketType,
-                quantity: registration.quantity,
-                totalAmount: registration.totalAmount,
-                createdAt: registration.createdAt,
-                backupCode: registration.backupCode,
-                registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-                ticketLineItems,
-                event: registration.event,
-                attendee: registration.attendee,
-              });
-              logger.info(`[PaymentService.handleWebhook] Ticket email sent successfully for registration: ${registration.id}`);
-            } catch (emailError) {
+            // Send email asynchronously (non-blocking) - webhook response is immediate
+            logger.debug(`[PaymentService.handleWebhook] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
+            TicketService.sendTicketEmail({
+              id: registration.id,
+              ticketType: registration.ticketType,
+              quantity: registration.quantity,
+              totalAmount: registration.totalAmount,
+              createdAt: registration.createdAt,
+              backupCode: registration.backupCode,
+              registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+              ticketLineItems,
+              event: registration.event,
+              attendee: registration.attendee,
+            }).catch((emailError) => {
               // Log email error but don't fail payment - email can be resent later
-              logger.error(`[PaymentService.handleWebhook] Failed to send ticket email for registration ${registration.id}:`, {
+              logger.error(`[PaymentService.handleWebhook] Failed to send ticket email (async) for registration ${registration.id}:`, {
                 error: emailError instanceof Error ? emailError.message : String(emailError),
                 stack: emailError instanceof Error ? emailError.stack : undefined,
                 registrationId: registration.id,
               });
-              // Payment still succeeds even if email fails
-            }
+              // Payment still succeeds even if email fails - status already tracked in database
+            });
+            // Email status will be updated in database by sendTicketEmail
+            logger.debug(`[PaymentService.handleWebhook] Ticket email sending started (async) for registration ${registration.id}`);
           } else {
             logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
           }

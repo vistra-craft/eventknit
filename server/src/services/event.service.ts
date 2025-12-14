@@ -180,13 +180,6 @@ export class EventService {
       }
     }
 
-    // Verify organizer can create events
-    if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only organizers can create events');
-    }
-
     // Verify organizer exists and get verification status
     const organizer = await prisma.user.findUnique({
       where: { id: organizerId },
@@ -202,6 +195,14 @@ export class EventService {
 
     if (!organizer) {
       throw new NotFoundError('Organizer not found');
+    }
+
+    // Verify organizer can create events (check actual role from database, not token)
+    const actualRole = organizer.role;
+    if (actualRole !== UserRole.ORGANIZER &&
+        actualRole !== UserRole.SUPERADMIN &&
+        actualRole !== UserRole.ADMIN_STAFF) {
+      throw new AuthorizationError('Only organizers and admins can create events');
     }
 
     // Note: Eventbrite-style approach - no verification required to CREATE events
@@ -490,6 +491,7 @@ export class EventService {
           },
         },
       },
+      // All fields are included by default, including JSON fields (agenda, exhibitors, speakers, sponsors, socialLinks)
     });
 
     if (!event) {
@@ -552,15 +554,27 @@ export class EventService {
       }
     }
 
-    // If event is being updated after approval, it goes back to PENDING
-    const newStatus = event.status === EventStatus.APPROVED
+    // Determine if status should be reset to PENDING
+    // Only reset for significant changes, not minor updates like adding an image
+    const significantFields = [
+      'title', 'description', 'fullDescription', 'startDate', 'endDate', 
+      'startTime', 'endTime', 'venue', 'location', 'address', 'isOnline',
+      'onlineLink', 'price', 'ticketTypes', 'capacity', 'category', 'type',
+      'requirements', 'ageRestriction', 'duration', 'speakers', 'sponsors',
+      'exhibitors', 'agenda', 'faqs', 'registrationFields'
+    ];
+    
+    const hasSignificantChanges = significantFields.some(field => data[field as keyof UpdateEventData] !== undefined);
+    
+    // Only reset to PENDING if there are significant changes (not just image/media updates)
+    const newStatus = (event.status === EventStatus.APPROVED && hasSignificantChanges)
       ? EventStatus.PENDING
       : event.status;
 
     // Prepare update data
     const updateData: Prisma.EventUpdateInput = {
       updatedBy: organizerId,
-      status: newStatus, // Reset to PENDING if was APPROVED
+      status: newStatus, // Reset to PENDING only for significant changes
     };
 
     if (data.title !== undefined) updateData.title = data.title.trim();
@@ -1071,6 +1085,7 @@ export class EventService {
     const legacyTicketType = ticketSelections.length > 0 ? ticketSelections[0].ticketType : (data.ticketType || null);
     const legacyQuantity = totalQuantity || (data.quantity || 1);
 
+    // Create registration first (need registration.id for QR code generation)
     const registration = await prisma.eventRegistration.create({
       data: {
         eventId,
@@ -1132,6 +1147,31 @@ export class EventService {
         },
       },
     });
+
+    // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
+    // This ensures QR code is always available and stored for fast access
+    try {
+      const ticketData = TicketService.generateTicketData(registration.id, event.id, user.email);
+      const qrCodeDataUrl = await TicketService.generateQRCode(ticketData);
+      
+      // Store QR code in database for fast access
+      await prisma.eventRegistration.update({
+        where: { id: registration.id },
+        data: {
+          qrCodeDataUrl,
+          qrCodeGeneratedAt: new Date(),
+        },
+      });
+      
+      logger.debug(`[registerForEvent] QR code generated and stored for registration ${registration.id}`);
+    } catch (qrError) {
+      // Log error but don't fail registration - QR code can be generated later
+      logger.error(`[registerForEvent] Failed to generate QR code for registration ${registration.id}:`, {
+        error: qrError instanceof Error ? qrError.message : String(qrError),
+        stack: qrError instanceof Error ? qrError.stack : undefined,
+      });
+      // Registration still succeeds - QR code will be generated when email is sent
+    }
 
     // Create promo code redemption if promo code was used
     if (promoCodeId && discountAmount.gt(0)) {
@@ -1356,7 +1396,8 @@ export class EventService {
         }
         
         logger.debug(`[registerForEvent] Authenticated user - calling TicketService.sendTicketEmail for registration ${registration.id}`);
-        await TicketService.sendTicketEmail({
+        // Send email asynchronously (non-blocking) - user gets immediate response
+        TicketService.sendTicketEmail({
           id: registration.id,
           ticketType: registration.ticketType,
           quantity: registration.quantity,
@@ -1367,40 +1408,49 @@ export class EventService {
           ticketLineItems,
           event: registration.event,
           attendee: registration.attendee,
+        }).catch((error) => {
+          // Log email error but don't fail registration - email can be resent later
+          logger.error(`[registerForEvent] Authenticated user - failed to send ticket email (async):`, {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            registrationId: registration.id,
+            eventId,
+            attendeeEmail: registration.attendee.email,
+          });
+          // Don't fail registration if email fails - status already tracked in database
         });
-        logger.info(`[registerForEvent] Authenticated user - ticket email sent successfully to: ${registration.attendee.email} for free event: ${eventId}`);
+        // Email status will be updated in database by sendTicketEmail
+        logger.debug(`[registerForEvent] Authenticated user - ticket email sending started (async) for registration ${registration.id}`);
+
+        // Send in-app notification (separate try-catch to ensure it's sent even if email fails)
+        try {
+          await NotificationService.sendNotification({
+            userId: attendeeId,
+            type: NotificationType.REGISTRATION_CONFIRMED,
+            title: `Registration Confirmed: ${event.title}`,
+            message: `Your registration for "${event.title}" has been confirmed! Your ticket has been sent to your email.`,
+            priority: NotificationPriority.HIGH,
+            eventId: event.id,
+            registrationId: registration.id,
+            data: {
+              eventDate: registration.event.startDate,
+              eventTime: registration.event.startTime || null,
+              venue: registration.event.venue || null,
+              location: registration.event.location,
+            },
+          });
+        } catch (error) {
+          logger.error('Failed to send registration confirmed notification:', error);
+          // Don't fail registration if notification fails
+        }
       } catch (error) {
-        // Log email error but don't fail registration - email can be resent later
-        logger.error(`[registerForEvent] Authenticated user - failed to send ticket email:`, {
+        // Log error but don't fail registration - email/notification can be sent later
+        logger.error(`[registerForEvent] Authenticated user - error in ticket email/notification flow:`, {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
           registrationId: registration.id,
           eventId,
-          attendeeEmail: registration.attendee.email,
         });
-        // Don't fail registration if email fails
-      }
-
-      // Send in-app notification (separate try-catch to ensure it's sent even if email fails)
-      try {
-        await NotificationService.sendNotification({
-          userId: attendeeId,
-          type: NotificationType.REGISTRATION_CONFIRMED,
-          title: `Registration Confirmed: ${event.title}`,
-          message: `Your registration for "${event.title}" has been confirmed! Your ticket has been sent to your email.`,
-          priority: NotificationPriority.HIGH,
-          eventId: event.id,
-          registrationId: registration.id,
-          data: {
-            eventDate: registration.event.startDate,
-            eventTime: registration.event.startTime || null,
-            venue: registration.event.venue || null,
-            location: registration.event.location,
-          },
-        });
-      } catch (error) {
-        logger.error('Failed to send registration confirmed notification:', error);
-        // Don't fail registration if notification fails
       }
     }
 
@@ -3033,6 +3083,31 @@ export class EventService {
       logger.info(`Re-registration created: ${registration.id} for event: ${eventId} by user: ${user.id} (previously cancelled)`);
     }
 
+    // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
+    // This ensures QR code is always available and stored for fast access
+    try {
+      const ticketData = TicketService.generateTicketData(registration.id, event.id, user.email);
+      const qrCodeDataUrl = await TicketService.generateQRCode(ticketData);
+      
+      // Store QR code in database for fast access
+      await prisma.eventRegistration.update({
+        where: { id: registration.id },
+        data: {
+          qrCodeDataUrl,
+          qrCodeGeneratedAt: new Date(),
+        },
+      });
+      
+      logger.debug(`[registerAsGuest] QR code generated and stored for registration ${registration.id}`);
+    } catch (qrError) {
+      // Log error but don't fail registration - QR code can be generated later
+      logger.error(`[registerAsGuest] Failed to generate QR code for registration ${registration.id}:`, {
+        error: qrError instanceof Error ? qrError.message : String(qrError),
+        stack: qrError instanceof Error ? qrError.stack : undefined,
+      });
+      // Registration still succeeds - QR code will be generated when email is sent
+    }
+
     // Send appropriate email based on event type
     // For free events: Send ticket email immediately
     // For paid events: Send payment pending email (ticket email will be sent after payment confirmation)
@@ -3093,32 +3168,32 @@ export class EventService {
           ticketLineItems = undefined;
         }
         
-        try {
-          logger.debug(`[registerForEvent] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
-          await TicketService.sendTicketEmail({
-            id: registration.id,
-            ticketType: registration.ticketType,
-            quantity: registration.quantity,
-            totalAmount: registration.totalAmount,
-            createdAt: registration.createdAt,
-            backupCode: registration.backupCode,
-            registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-            ticketLineItems,
-            event: registration.event,
-            attendee: registration.attendee,
-          });
-          logger.info(`[registerForEvent] Ticket email sent successfully to: ${user.email} for free event: ${eventId}`);
-        } catch (emailError) {
+        // Send email asynchronously (non-blocking) - user gets immediate response
+        logger.debug(`[registerForEvent] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
+        TicketService.sendTicketEmail({
+          id: registration.id,
+          ticketType: registration.ticketType,
+          quantity: registration.quantity,
+          totalAmount: registration.totalAmount,
+          createdAt: registration.createdAt,
+          backupCode: registration.backupCode,
+          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+          ticketLineItems,
+          event: registration.event,
+          attendee: registration.attendee,
+        }).catch((emailError) => {
           // Log email error but don't fail registration - email can be resent later
-          logger.error(`[registerForEvent] Failed to send ticket email to ${user.email} for event ${eventId}:`, {
+          logger.error(`[registerForEvent] Failed to send ticket email (async) to ${user.email} for event ${eventId}:`, {
             error: emailError instanceof Error ? emailError.message : String(emailError),
             stack: emailError instanceof Error ? emailError.stack : undefined,
             registrationId: registration.id,
             eventId,
             userEmail: user.email,
           });
-          // Registration still succeeds even if email fails
-        }
+          // Registration still succeeds even if email fails - status already tracked in database
+        });
+        // Email status will be updated in database by sendTicketEmail
+        logger.debug(`[registerForEvent] Ticket email sending started (async) for registration ${registration.id}`);
 
         // Send registration confirmed notification for free events
         try {
@@ -3314,6 +3389,20 @@ export class EventService {
 
     logger.info(`Guest registration created: ${registration.id} for event: ${eventId} by user: ${user.id}`);
 
+    // Generate access token for guest user so they can immediately view their ticket
+    const { generateAccessToken, generateRefreshToken, parseExpiresIn } = await import('../utils/jwt.js');
+    const { config } = await import('../config/index.js');
+    
+    const tokenPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
+    const expiresIn = parseExpiresIn(config.jwt.expiresIn);
+
     return {
       registration,
       user: {
@@ -3323,7 +3412,9 @@ export class EventService {
         lastName: user.lastName,
         isNewUser: finalIsNewUser,
       },
-      // No magic link token - user must use account invitation link or ticket email link
+      accessToken,
+      refreshToken,
+      expiresIn,
     };
   }
 

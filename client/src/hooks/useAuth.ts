@@ -180,11 +180,12 @@ export const useAuth = () => {
 
   /**
    * Initialize auth state from stored token
+   * Runs on mount and when state becomes unauthenticated (to handle navigation)
    */
   useEffect(() => {
     const initAuth = async () => {
-      // Only initialize if user is not already loaded and not authenticated
-      if (state.user || state.isAuthenticated) {
+      // If already authenticated, don't re-initialize
+      if (state.user && state.isAuthenticated) {
         return;
       }
       
@@ -203,7 +204,7 @@ export const useAuth = () => {
 
     initAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, []); // Only run once on mount - state persistence is handled by AuthProvider
 
   /**
    * Set logout callback for API client to call on token refresh failure

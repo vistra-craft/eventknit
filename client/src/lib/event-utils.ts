@@ -82,6 +82,9 @@ interface BackendEvent {
   duration?: string | null;
   speakers?: Array<{ name: string; title: string; bio: string; image?: string }> | null;
   sponsors?: Array<{ name: string; level: string; logo: string }> | null;
+  exhibitors?: Array<{ name: string; description: string; logo: string; contactEmail: string; booth: string }> | null;
+  agenda?: Array<{ title: string; description: string; startTime: string; endTime: string; speakers: string[] }> | null;
+  socialLinks?: Record<string, string> | null;
   faqs?: Array<{ question: string; answer: string }> | null;
   registrationFields?: Array<{
     id: string;
@@ -177,6 +180,21 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
       ? Array.isArray(backendEvent.sponsors)
         ? backendEvent.sponsors
         : null
+      : null,
+    exhibitors: backendEvent.exhibitors
+      ? Array.isArray(backendEvent.exhibitors)
+        ? backendEvent.exhibitors
+        : null
+      : null,
+    agenda: backendEvent.agenda
+      ? Array.isArray(backendEvent.agenda)
+        ? backendEvent.agenda
+        : null
+      : null,
+    socialLinks: backendEvent.socialLinks
+      ? (typeof backendEvent.socialLinks === 'object' && !Array.isArray(backendEvent.socialLinks)
+          ? backendEvent.socialLinks as Record<string, string>
+          : null)
       : null,
     faqs: backendEvent.faqs
       ? Array.isArray(backendEvent.faqs)

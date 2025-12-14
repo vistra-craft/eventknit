@@ -5,6 +5,7 @@ import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import { Decimal } from '@prisma/client/runtime/library';
 import { TicketSecurityService } from './ticket-security.service.js';
+import { config } from '../config/index.js';
 
 interface TicketEmailData {
   registration: {
@@ -196,9 +197,39 @@ export class TicketService {
     try {
       const { event, attendee } = registration;
 
-      // Generate QR code
-      const ticketData = this.generateTicketData(registration.id, event.id, attendee.email);
-      const qrCodeDataUrl = await this.generateQRCode(ticketData);
+      // Use stored QR code if available (generated at registration time, like Eventbrite/vf-ticket)
+      // Otherwise generate on-the-fly (backward compatibility for existing registrations)
+      let qrCodeDataUrl: string;
+      const registrationWithQR = await prisma.eventRegistration.findUnique({
+        where: { id: registration.id },
+        select: { qrCodeDataUrl: true, qrCodeGeneratedAt: true },
+      });
+
+      if (registrationWithQR?.qrCodeDataUrl) {
+        // Use stored QR code (faster, like Eventbrite/vf-ticket)
+        qrCodeDataUrl = registrationWithQR.qrCodeDataUrl;
+        logger.debug(`Using stored QR code for registration ${registration.id} (generated at: ${registrationWithQR.qrCodeGeneratedAt})`);
+      } else {
+        // Generate QR code on-the-fly (backward compatibility for old registrations)
+        logger.debug(`Generating QR code on-the-fly for registration ${registration.id} (no stored QR code found)`);
+        const ticketData = this.generateTicketData(registration.id, event.id, attendee.email);
+        qrCodeDataUrl = await this.generateQRCode(ticketData);
+        
+        // Store generated QR code for future use
+        try {
+          await prisma.eventRegistration.update({
+            where: { id: registration.id },
+            data: {
+              qrCodeDataUrl,
+              qrCodeGeneratedAt: new Date(),
+            },
+          });
+          logger.debug(`Stored generated QR code for registration ${registration.id}`);
+        } catch (storeError) {
+          // Log but don't fail - QR code is still available for email
+          logger.warn(`Failed to store QR code for registration ${registration.id}:`, storeError);
+        }
+      }
 
       // Generate calendar invite
       const icsContent = this.generateCalendarInvite({ registration });
@@ -246,8 +277,18 @@ export class TicketService {
                   <!-- Header -->
                   <tr>
                     <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">🎉 Your Ticket is Ready!</h1>
-                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">EventKnit</p>
+                      <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">🎉 Registration Confirmed!</h1>
+                      <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">Your ticket is ready - EventKnit</p>
+                    </td>
+                  </tr>
+                  
+                  <!-- Registration Confirmation Message -->
+                  <tr>
+                    <td style="padding: 30px 30px 20px 30px; background-color: #f0f9ff; border-bottom: 1px solid #e0e7ff;">
+                      <div style="text-align: center;">
+                        <p style="margin: 0 0 10px 0; color: #1e40af; font-size: 16px; font-weight: 600;">✅ Your registration has been confirmed!</p>
+                        <p style="margin: 0; color: #1e40af; font-size: 14px;">We're excited to have you join us. Your ticket details are below.</p>
+                      </div>
                     </td>
                   </tr>
 
@@ -417,6 +458,19 @@ export class TicketService {
                     </td>
                   </tr>
 
+                  <!-- View Ticket Link -->
+                  <tr>
+                    <td style="padding: 0 30px 20px 30px; text-align: center;">
+                      <div style="background-color: #f0f9ff; border-radius: 8px; padding: 20px; border: 1px solid #bae6fd;">
+                        <p style="margin: 0 0 15px 0; color: #1e40af; font-size: 14px; font-weight: 600;">View Your Ticket Online</p>
+                        <a href="${config.frontend.url}/user/tickets/${registration.id}?email=${encodeURIComponent(attendee.email)}" style="display: inline-block; background-color: #667eea; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                          View Ticket
+                        </a>
+                        <p style="margin: 10px 0 0 0; color: #1e40af; font-size: 12px;">You can view, download, or share your ticket anytime</p>
+                      </div>
+                    </td>
+                  </tr>
+
                   <!-- Footer -->
                   <tr>
                     <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
@@ -440,33 +494,107 @@ export class TicketService {
         </html>
       `;
 
-      // Send email with calendar invite as attachment
+      // Prepare attachments: calendar invite, PDF ticket, and QR code PNG
+      const attachments: Array<{
+        filename: string;
+        content: Buffer | string;
+        contentType?: string;
+        encoding?: string;
+      }> = [
+        {
+          filename: 'event.ics',
+          content: Buffer.from(icsContent),
+          contentType: 'text/calendar',
+        },
+        // QR code PNG attachment (always available)
+        {
+          filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-qr-code.png`,
+          content: qrCodeDataUrl.split(';base64,')[1] || qrCodeDataUrl,
+          encoding: 'base64',
+          contentType: 'image/png',
+        },
+      ];
+
+      // Try to generate PDF ticket (always attempt, fallback to HTML if puppeteer unavailable)
+      try {
+        const pdfBuffer = await this.generateTicketPDF(registration.id);
+        // Check if it's PDF (Buffer with PDF header) or HTML (fallback)
+        const isPDF = pdfBuffer.length > 4 && pdfBuffer[0] === 0x25 && pdfBuffer[1] === 0x50 && pdfBuffer[2] === 0x44 && pdfBuffer[3] === 0x46; // %PDF
+        
+        if (isPDF) {
+          attachments.push({
+            filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-ticket.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          });
+        } else {
+          // HTML fallback - attach as HTML file
+          attachments.push({
+            filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-ticket.html`,
+            content: pdfBuffer,
+            contentType: 'text/html',
+          });
+        }
+      } catch (pdfError) {
+        // PDF generation failed - log but continue with email
+        logger.warn(`Failed to generate PDF ticket for registration ${registration.id}:`, pdfError);
+        // Email will still be sent with QR code PNG and calendar invite
+      }
+
+      // Send email with attachments
       // Ticket emails are critical - users need them for event entry
       const emailResult = await emailService.sendEmail({
         to: attendee.email,
         subject: `Your Ticket for ${event.title} - EventKnit`,
         html,
         isCritical: true,
-        attachments: [
-          {
-            filename: 'event.ics',
-            content: Buffer.from(icsContent),
-            contentType: 'text/calendar',
-          },
-        ],
+        attachments,
       });
 
+      // Update email status in database
       if (emailResult.success) {
+        await prisma.eventRegistration.update({
+          where: { id: registration.id },
+          data: {
+            ticketEmailSentAt: new Date(),
+            ticketEmailStatus: 'SUCCESS',
+            ticketEmailError: null,
+          },
+        });
+        
         if (emailResult.attempts > 1) {
           logger.info(`Ticket email sent to ${attendee.email} for event: ${event.id} after ${emailResult.attempts} attempts`);
         } else {
           logger.info(`Ticket email sent to ${attendee.email} for event: ${event.id}`);
         }
       } else {
+        const errorMessage = emailResult.error?.message || 'Unknown error';
+        await prisma.eventRegistration.update({
+          where: { id: registration.id },
+          data: {
+            ticketEmailStatus: 'FAILED',
+            ticketEmailError: errorMessage.substring(0, 500), // Limit error message length
+          },
+        });
+        
         logger.error(`Failed to send ticket email to ${attendee.email} after ${emailResult.attempts} attempts:`, emailResult.error);
-        throw new Error(`Failed to send ticket email after ${emailResult.attempts} attempts: ${emailResult.error?.message}`);
+        throw new Error(`Failed to send ticket email after ${emailResult.attempts} attempts: ${errorMessage}`);
       }
     } catch (error) {
+      // Update status even if exception occurs
+      try {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        await prisma.eventRegistration.update({
+          where: { id: registration.id },
+          data: {
+            ticketEmailStatus: 'FAILED',
+            ticketEmailError: errorMessage.substring(0, 500),
+          },
+        });
+      } catch (updateError) {
+        logger.error('Failed to update email status in database:', updateError);
+      }
+      
       logger.error('Failed to send ticket email:', error);
       throw error;
     }
@@ -664,13 +792,47 @@ export class TicketService {
       throw new NotFoundError('Registration not found');
     }
 
-    // Generate QR code
-    const ticketData = this.generateTicketData(registration.id, registration.eventId, registration.attendee.email);
-    const qrCodeDataUrl = await this.generateQRCode(ticketData);
+    // Use stored QR code if available (generated at registration time, like Eventbrite/vf-ticket)
+    // Otherwise generate on-the-fly (backward compatibility for existing registrations)
+    let qrCodeDataUrl: string;
+    if (registration.qrCodeDataUrl) {
+      // Use stored QR code (faster, like Eventbrite/vf-ticket)
+      qrCodeDataUrl = registration.qrCodeDataUrl;
+      logger.debug(`Using stored QR code for registration ${registrationId} (generated at: ${registration.qrCodeGeneratedAt})`);
+    } else {
+      // Generate QR code on-the-fly (backward compatibility for old registrations)
+      logger.debug(`Generating QR code on-the-fly for registration ${registrationId} (no stored QR code found)`);
+      const ticketData = this.generateTicketData(registration.id, registration.eventId, registration.attendee.email);
+      qrCodeDataUrl = await this.generateQRCode(ticketData);
+      
+      // Store generated QR code for future use
+      try {
+        await prisma.eventRegistration.update({
+          where: { id: registrationId },
+          data: {
+            qrCodeDataUrl,
+            qrCodeGeneratedAt: new Date(),
+          },
+        });
+        logger.debug(`Stored generated QR code for registration ${registrationId}`);
+      } catch (storeError) {
+        // Log but don't fail - QR code is still available
+        logger.warn(`Failed to store QR code for registration ${registrationId}:`, storeError);
+      }
+    }
 
     return {
-      registration,
+      id: registration.id,
+      registrationId: registration.id,
+      eventId: registration.eventId,
+      eventTitle: registration.event.title || '',
+      attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim() || registration.attendee.email || '',
+      attendeeEmail: registration.attendee.email || '',
+      ticketType: registration.ticketType || undefined,
       qrCode: qrCodeDataUrl,
+      backupCode: registration.backupCode || undefined,
+      createdAt: registration.createdAt.toISOString(),
+      registration,
       ticketData,
     };
   }

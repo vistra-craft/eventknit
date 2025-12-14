@@ -195,7 +195,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
         aria-expanded={isOpen}
       >
         <Avatar
-          src={undefined}
+          src={user.avatar || undefined}
           name={`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
           alt={`${user.firstName} ${user.lastName}`}
           size="sm"

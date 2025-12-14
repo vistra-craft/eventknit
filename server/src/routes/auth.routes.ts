@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { AuthController } from '../controllers/auth.controller.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { authenticate } from '../middleware/auth.middleware.js';
@@ -253,6 +254,54 @@ router.get('/me', AuthController.getProfile);
 router.get('/profile', AuthController.getProfile);
 
 /**
+ * Wrapper for multer middleware to handle errors
+ */
+const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  import('../utils/upload.js').then(({ uploadSingleImage }) => {
+    uploadSingleImage(req, res, (err: unknown) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          res.status(413).json({
+            success: false,
+            message: 'File too large. Maximum file size is 5MB.',
+          });
+          return;
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+          res.status(400).json({
+            success: false,
+            message: 'Too many files. Only one file is allowed.',
+          });
+          return;
+        }
+        res.status(400).json({
+          success: false,
+          message: err.message || 'File upload error',
+        });
+        return;
+      }
+      
+      if (err instanceof Error) {
+        // Handle file filter errors (e.g., "Only image files are allowed")
+        if (err.message.includes('Only image files are allowed')) {
+          res.status(400).json({
+            success: false,
+            message: err.message,
+          });
+          return;
+        }
+      }
+      
+      if (err) {
+        return next(err);
+      }
+      
+      next();
+    });
+  }).catch(next);
+};
+
+/**
  * @route   PUT /api/v1/auth/profile
  * @desc    Update user profile
  * @access  Private
@@ -260,6 +309,7 @@ router.get('/profile', AuthController.getProfile);
 router.put(
   '/profile',
   validate(authValidations.updateProfile),
+  handleMulterUpload,
   AuthController.updateProfile,
 );
 
@@ -272,6 +322,17 @@ router.post(
   '/password/change',
   validate(authValidations.changePassword),
   AuthController.changePassword,
+);
+
+/**
+ * @route   POST /api/v1/auth/password/setup
+ * @desc    Setup password for guest users (users without password)
+ * @access  Private
+ */
+router.post(
+  '/password/setup',
+  validate(authValidations.setupPassword),
+  AuthController.setupPassword,
 );
 
 export default router;

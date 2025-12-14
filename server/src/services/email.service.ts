@@ -32,6 +32,12 @@ class EmailService {
   private readonly MAX_RETRY_DELAY_MS = 30000; // 30 seconds
 
   constructor() {
+    // Validate email configuration
+    if (!config.email.user || !config.email.password) {
+      logger.warn('Email service not configured: SMTP_USER and SMTP_PASSWORD are required');
+      logger.warn('Ticket emails will fail. Please configure SMTP credentials in environment variables.');
+    }
+
     this.transporter = nodemailer.createTransport({
       host: config.email.host,
       port: config.email.port,
@@ -40,6 +46,14 @@ class EmailService {
         user: config.email.user,
         pass: config.email.password,
       },
+    });
+
+    // Verify connection on startup (non-blocking)
+    this.transporter.verify().then(() => {
+      logger.info('Email service configured and verified successfully');
+    }).catch((error) => {
+      logger.error('Email service configuration error:', error);
+      logger.error('Please check SMTP credentials. Emails will fail until configured.');
     });
   }
 

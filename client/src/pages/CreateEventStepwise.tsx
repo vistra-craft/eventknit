@@ -690,6 +690,43 @@ export default function CreateEventStepwise() {
             setFaqs(transformedEvent.faqs);
           }
 
+          // Set agenda
+          if (transformedEvent.agenda && Array.isArray(transformedEvent.agenda)) {
+            setAgenda(transformedEvent.agenda);
+            setEventData(prev => ({ ...prev, agenda: transformedEvent.agenda || [] }));
+          }
+
+          // Set speakers
+          if (transformedEvent.speakers && Array.isArray(transformedEvent.speakers)) {
+            const mappedSpeakers = transformedEvent.speakers.map((speaker, index) => ({
+              id: `speaker-${index}`,
+              name: speaker.name || "",
+              title: speaker.title || "",
+              bio: speaker.bio || "",
+              image: speaker.image || "",
+            }));
+            setSpeakers(mappedSpeakers);
+            setEventData(prev => ({ ...prev, speakers: mappedSpeakers }));
+          }
+
+          // Set exhibitors
+          if (transformedEvent.exhibitors && Array.isArray(transformedEvent.exhibitors)) {
+            setExhibitors(transformedEvent.exhibitors);
+            setEventData(prev => ({ ...prev, exhibitors: transformedEvent.exhibitors || [] }));
+          }
+
+          // Set sponsors
+          if (transformedEvent.sponsors && Array.isArray(transformedEvent.sponsors)) {
+            setSponsors(transformedEvent.sponsors);
+            setEventData(prev => ({ ...prev, sponsors: transformedEvent.sponsors || [] }));
+          }
+
+          // Set social links
+          if (transformedEvent.socialLinks && typeof transformedEvent.socialLinks === 'object') {
+            setSocialLinks(transformedEvent.socialLinks);
+            setEventData(prev => ({ ...prev, socialLinks: transformedEvent.socialLinks || {} }));
+          }
+
           // Set privacy
           setIsPrivate(transformedEvent.isPrivate || false);
         } else {

@@ -294,7 +294,7 @@ export class AuthController {
         return;
       }
 
-      const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, email } = req.body;
+      const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, email, avatar } = req.body;
 
       // Email cannot be changed once registered (immutability requirement)
       if (email !== undefined && email !== req.user.email) {
@@ -305,6 +305,46 @@ export class AuthController {
         return;
       }
 
+      let avatarUrl: string | undefined = undefined;
+
+      // Handle avatar upload if file is provided
+      if (req.file) {
+        try {
+          const { uploadImageToCloudinary } = await import('../services/cloudinary.service.js');
+          const uploadOptions = {
+            width: 400,
+            height: 400,
+            quality: 'auto' as const,
+            format: 'auto' as const,
+          };
+          const uploadResult = await uploadImageToCloudinary(
+            req.file.buffer,
+            'user-avatars',
+            uploadOptions,
+          );
+          avatarUrl = uploadResult.secureUrl;
+        } catch (uploadError) {
+          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown error';
+          if (errorMessage.includes('not configured') || errorMessage.includes('CLOUDINARY')) {
+            res.status(400).json({
+              success: false,
+              message: 'Cloudinary is not configured. Please configure Cloudinary credentials or provide an avatar URL instead of uploading a file.',
+              error: errorMessage,
+            });
+            return;
+          }
+          res.status(500).json({
+            success: false,
+            message: 'Failed to upload avatar',
+            error: errorMessage,
+          });
+          return;
+        }
+      } else if (avatar !== undefined) {
+        // If avatar URL is provided directly (not a file upload)
+        avatarUrl = avatar && avatar.trim() !== '' ? avatar.trim() : null;
+      }
+
       const updateData: {
         firstName?: string;
         lastName?: string;
@@ -313,6 +353,7 @@ export class AuthController {
         companyAffiliation?: string | null;
         organizationName?: string | null;
         businessEmail?: string | null;
+        avatar?: string | null;
       } = {};
 
       if (firstName !== undefined) updateData.firstName = firstName.trim();
@@ -332,6 +373,9 @@ export class AuthController {
       if (businessEmail !== undefined) {
         updateData.businessEmail = businessEmail && businessEmail.trim() !== '' ? businessEmail.trim() : null;
       }
+      if (avatarUrl !== undefined) {
+        updateData.avatar = avatarUrl;
+      }
 
       const user = await prisma.user.update({
         where: { id: req.user.id },
@@ -347,6 +391,7 @@ export class AuthController {
           isEmailVerified: true,
           organizationName: true,
           businessEmail: true,
+          avatar: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -472,6 +517,30 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Password changed successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Setup password for guest users (users without password)
+   */
+  static async setupPassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      await AuthService.setPassword(req.user.id, req.body.password);
+
+      res.status(200).json({
+        success: true,
+        message: 'Password set successfully',
       });
     } catch (error) {
       next(error);

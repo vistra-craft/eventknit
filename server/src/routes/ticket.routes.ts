@@ -6,9 +6,6 @@ import { config } from '../config/index.js';
 
 const router = Router();
 
-// All ticket routes require authentication
-router.use(authenticate);
-
 /**
  * Rate limiter for resend ticket email
  * Limits: 3 resends per hour per user
@@ -26,6 +23,16 @@ const resendTicketRateLimiter = rateLimit({
   },
   skip: () => config.env === 'test' || process.env.NODE_ENV === 'test',
 });
+
+/**
+ * @route   GET /api/v1/tickets/:registrationId/view
+ * @desc    Get ticket by registration ID (public - with email verification)
+ * @access  Public (requires email query parameter)
+ */
+router.get('/:registrationId/view', TicketController.getTicketPublic);
+
+// Protected routes require authentication
+router.use(authenticate);
 
 /**
  * @route   GET /api/v1/tickets/:registrationId

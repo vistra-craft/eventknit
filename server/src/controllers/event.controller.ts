@@ -571,6 +571,9 @@ export class EventController {
         data: {
           registration: result.registration,
           user: result.user,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
         },
       });
     } catch (error) {

@@ -1,13 +1,14 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { TicketService } from '../services/ticket.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { AuthorizationError, NotFoundError } from '../utils/errors.js';
+import { AuthorizationError, NotFoundError, ValidationError } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
+import crypto from 'crypto';
 
 export class TicketController {
   /**
-   * Get ticket by registration ID
+   * Get ticket by registration ID (authenticated)
    * User can only view their own tickets
    */
   static async getTicket(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -47,6 +48,66 @@ export class TicketController {
 
       if (!isOwner && !isOrganizer && !isAdmin) {
         throw new AuthorizationError('You do not have permission to view this ticket');
+      }
+
+      const ticket = await TicketService.getTicketByRegistrationId(registrationId);
+
+      res.status(200).json({
+        success: true,
+        data: ticket,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get ticket by registration ID (public - with email verification)
+   * Allows guest users to view tickets without authentication
+   */
+  static async getTicketPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { registrationId } = req.params;
+      const { email, token } = req.query;
+
+      if (!email || typeof email !== 'string') {
+        res.status(400).json({
+          success: false,
+          message: 'Email is required',
+        });
+        return;
+      }
+
+      // Get registration
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: registrationId },
+        include: {
+          attendee: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new NotFoundError('Ticket not found');
+      }
+
+      // Verify email matches registration
+      const normalizedEmail = email.toLowerCase().trim();
+      const registrationEmail = registration.attendee.email?.toLowerCase().trim();
+
+      if (registrationEmail !== normalizedEmail) {
+        throw new AuthorizationError('Email does not match the registration');
+      }
+
+      // If token is provided, verify it (optional security enhancement)
+      // For now, email verification is sufficient for public access
+      if (token && typeof token === 'string') {
+        // Could verify token here if we implement email verification tokens
+        // For now, email match is sufficient
       }
 
       const ticket = await TicketService.getTicketByRegistrationId(registrationId);
@@ -146,6 +207,7 @@ export class TicketController {
       const registration = await prisma.eventRegistration.findUnique({
         where: { id: registrationId },
         include: {
+          ticketLineItems: true, // Include ticket line items
           event: {
             include: {
               organizer: {

@@ -355,10 +355,14 @@ export interface RegisterAsGuestResponse {
     user: {
       id: string;
       email: string;
+      firstName: string;
+      lastName: string;
       isNewUser: boolean;
       requiresPasswordSetup: boolean;
     };
-    // No magic link token - user receives ticket email and account invitation email separately
+    accessToken?: string;
+    refreshToken?: string;
+    expiresIn?: number;
   };
 }
 

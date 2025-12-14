@@ -1013,6 +1013,11 @@ describe('Event Registration System', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.registration).toBeDefined();
       expect(response.body.data.user).toBeDefined();
+      
+      // Verify access token is returned for guest users
+      expect(response.body.data.accessToken).toBeDefined();
+      expect(response.body.data.refreshToken).toBeDefined();
+      expect(response.body.data.expiresIn).toBeDefined();
       expect(response.body.data.user.email).toBe(guestData.email);
       expect(response.body.data.user.isNewUser).toBe(true);
 
@@ -1056,6 +1061,19 @@ describe('Event Registration System', () => {
 
       expect(registration).toBeDefined();
       expect(registration?.status).toBe('CONFIRMED');
+
+      // Verify QR code was generated and stored at registration time (Eventbrite/vf-ticket approach)
+      const registrationWithQR = await prisma.eventRegistration.findUnique({
+        where: { id: registration.id },
+        select: {
+          qrCodeDataUrl: true,
+          qrCodeGeneratedAt: true,
+        },
+      });
+
+      expect(registrationWithQR?.qrCodeDataUrl).toBeDefined();
+      expect(registrationWithQR?.qrCodeDataUrl).toContain('data:image/png;base64');
+      expect(registrationWithQR?.qrCodeGeneratedAt).toBeDefined();
     });
 
     it('should register existing user as guest', async () => {
@@ -1102,6 +1120,11 @@ describe('Event Registration System', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.user.isNewUser).toBe(false);
+      
+      // Verify access token is returned even for existing users
+      expect(response.body.data.accessToken).toBeDefined();
+      expect(response.body.data.refreshToken).toBeDefined();
+      expect(response.body.data.expiresIn).toBeDefined();
 
       const magicLink = await prisma.magicLinkToken.findFirst({
         where: { userId: existingUser.id },

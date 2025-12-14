@@ -208,6 +208,18 @@ export const authValidations = {
       }),
   }),
 
+  setupPassword: Joi.object({
+    password: Joi.string()
+      .min(8)
+      .pattern(passwordRegex)
+      .required()
+      .messages({
+        'string.min': 'Password must be at least 8 characters long',
+        'string.pattern.base': 'Password must be at least 8 characters and contain at least one letter and one number',
+        'any.required': 'Password is required',
+      }),
+  }),
+
   requestEmailVerification: Joi.object({
     email: Joi.string().email().required().messages({
       'string.email': 'Please provide a valid email address',

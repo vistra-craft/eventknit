@@ -24,6 +24,7 @@ import UserDashboard from "./pages/user/UserDashboard";
 import ExhibitorDetails from "./pages/user/ExhibitorDetails";
 import UserProfilePage from "./pages/user/UserProfilePage";
 import NotificationPreferencesPage from "./pages/user/NotificationPreferencesPage";
+import TicketViewPage from "./pages/user/TicketViewPage";
 // Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
 import EventManagement from "./pages/organizer/EventManagement";
@@ -202,6 +203,7 @@ const App = () => (
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
       {/* User Dashboard Routes */}
       <Route path="/user/dashboard" element={<UserDashboard />} />
+      <Route path="/user/tickets/:registrationId" element={<TicketViewPage />} />
       <Route path="/user/profile" element={<UserProfilePage />} />
       <Route path="/user/notification-preferences" element={<NotificationPreferencesPage />} />
       <Route path="/exhibitors/:id" element={<ExhibitorDetails />} />

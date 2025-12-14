@@ -19,6 +19,7 @@ export interface User {
   emailVerifiedAt?: string | null;
   organizationName?: string | null;
   businessEmail?: string | null;
+  avatar?: string | null;
   kycStatus?: string | null;
   lastLoginAt?: string | null;
   createdAt: string;
@@ -154,8 +155,9 @@ export const logout = async (): Promise<ApiResponse<void>> => {
 
 /**
  * Update user profile
+ * Supports both JSON data and FormData (for avatar uploads)
  */
-export const updateProfile = async (data: Partial<RegisterData>): Promise<ProfileResponse> => {
+export const updateProfile = async (data: Partial<RegisterData> | FormData): Promise<ProfileResponse> => {
   return apiPut<ProfileResponse>('/auth/profile', data);
 };
 
@@ -184,6 +186,13 @@ export const changePassword = async (
     currentPassword,
     newPassword,
   });
+};
+
+/**
+ * Setup password for guest users (users without password)
+ */
+export const setupPassword = async (password: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/password/setup', { password });
 };
 
 /**
