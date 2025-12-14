@@ -315,13 +315,13 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
           description: 'Identity verification submitted successfully. You can now receive payouts from ticket sales.',
         });
         await loadStatus();
-        // Only show business step if account type is business
+        // Show business step after identity verification, but allow skipping for individuals
         if (accountType === 'business') {
           setActiveStep('business');
         } else {
-          // For individuals, verification is complete - call onSuccess callback if provided
+          // For individuals, business verification is optional - they can skip it
+          // They'll have a $2,000/month payout limit but can still receive payouts
           if (onSuccess) {
-            // Small delay to ensure state is updated
             setTimeout(() => {
               onSuccess();
             }, 500);
@@ -751,21 +751,31 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-primary" />
-                    Step 2: Business Verification (Optional)
+                    Step 2: Business Information {accountType === 'individual' && '(Optional)'}
                   </CardTitle>
                   <CardDescription>
-                    Complete business verification for unlimited events and payouts
+                    {accountType === 'individual' 
+                      ? "Optional: Provide business information to unlock unlimited payouts. You can skip this and still receive payouts up to $2,000/month with just identity verification."
+                      : "Complete business verification for unlimited events and payouts"}
                   </CardDescription>
                 </div>
-                {status?.verificationLevel === 3 && (
+                {status?.verificationLevel === 3 && status.kycStatus === 'APPROVED' && (
                   <Badge className="bg-primary/10 text-primary border-primary/20">
                     <CheckCircle2 className="h-3 w-3 mr-1" />Completed
                   </Badge>
                 )}
               </div>
             </CardHeader>
-            {status?.verificationLevel !== 3 && (
+            {status?.verificationLevel !== 3 && status?.kycStatus !== 'APPROVED' && (
               <CardContent>
+                {accountType === 'individual' && (
+                  <Alert className="mb-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
+                    <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                      <strong>Optional Step:</strong> You can skip business verification and still receive payouts up to $2,000 per month. Complete this step to unlock unlimited payouts.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <form onSubmit={handleBusinessSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="businessName">Business Name *</Label>
@@ -928,20 +938,39 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                     </div>
                   </div>
                   
-                  <Button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white"
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      'Submit Business Verification'
+                  <div className="flex gap-3">
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="flex-1 bg-accent-coral hover:bg-accent-coral/90 text-white"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        'Submit Business Verification'
+                      )}
+                    </Button>
+                    {accountType === 'individual' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          // Allow individuals to skip business verification
+                          if (onSuccess) {
+                            onSuccess();
+                          } else if (redirectAfterBusinessVerification) {
+                            navigate(redirectAfterBusinessVerification);
+                          }
+                        }}
+                        className="flex-1"
+                      >
+                        Skip for Now
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 </form>
               </CardContent>
             )}

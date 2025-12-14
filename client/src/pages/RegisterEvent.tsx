@@ -11,8 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // App Components
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import PublicLayout from "@/components/PublicLayout";
 
 // Hooks & API
 import { useEvent } from "@/hooks/useEvent";
@@ -46,6 +45,7 @@ const EventRegistration = () => {
   const [promoCode, setPromoCode] = useState<string>('');
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
+  const [existingRegistrationId, setExistingRegistrationId] = useState<string | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
 
   // Fetch event data
@@ -297,6 +297,14 @@ const EventRegistration = () => {
           const registration = response.data.registration;
           setIsGuestRegistration(response.data.user.isNewUser || true);
 
+          // Check if this is an existing registration with pending payment
+          if (registration.paymentStatus === 'PENDING' && !event.isFree && event.price !== 0) {
+            // User already registered with pending payment - show message with continue button
+            setExistingRegistrationId(registration.id);
+            setSubmitError('ALREADY_REGISTERED_PENDING_PAYMENT');
+            return;
+          }
+
           // Check if event is free
           const isFree = event.isFree || event.price === 0;
 
@@ -365,6 +373,14 @@ const EventRegistration = () => {
       if (response.success && response.data) {
         const registration = response.data.registration;
 
+        // Check if this is an existing registration with pending payment
+        if (registration.paymentStatus === 'PENDING' && !event.isFree && event.price !== 0) {
+          // User already registered with pending payment - show message with continue button
+          setExistingRegistrationId(registration.id);
+          setSubmitError('ALREADY_REGISTERED_PENDING_PAYMENT');
+          return;
+        }
+
         // Check if event is free
         const isFree = event.isFree || event.price === 0;
 
@@ -429,7 +445,15 @@ const EventRegistration = () => {
       const errorMessage = err && typeof err === 'object' && 'message' in err
         ? (err.message as string)
         : 'Failed to register for event. Please try again.';
-      setSubmitError(errorMessage);
+      
+      // Check if user is already registered with pending payment
+      if (errorMessage.toLowerCase().includes('already registered')) {
+        // Try to get existing registration to check payment status
+        // For now, show a message with continue to payment button
+        setSubmitError('ALREADY_REGISTERED_PENDING_PAYMENT');
+      } else {
+        setSubmitError(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -656,10 +680,8 @@ const EventRegistration = () => {
   const eventLocation = event.location || event.venue || "Location TBA";
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
-
-      <main className="flex-1 pt-20 pb-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
+    <PublicLayout className="bg-gradient-to-b from-primary/5 via-background to-muted/10">
+      <div className="pt-20 pb-10">
         <div className="max-w-3xl mx-auto px-4 space-y-8">
           {/* Progress Indicator */}
           <div className="flex items-center justify-center mb-6">
@@ -1116,7 +1138,58 @@ const EventRegistration = () => {
                       </div>
                     </div>
                     
-                    {submitError && (
+                    {submitError && submitError === 'ALREADY_REGISTERED_PENDING_PAYMENT' && (
+                      <Alert className="mt-4 border-primary/50 bg-primary/5">
+                        <AlertCircle className="h-4 w-4 text-primary" />
+                        <AlertDescription className="space-y-3">
+                          <p className="font-medium">You are already registered for this event.</p>
+                          <p className="text-sm">Your registration is pending payment. Complete your payment to secure your spot.</p>
+                          <Button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const isFree = event.isFree || event.price === 0;
+                                if (!isFree && existingRegistrationId) {
+                                  // Get ticket details from existing registration or use selected tickets
+                                  // For now, use selected tickets or default to 1
+                                  const tickets = event.ticketTypes?.map(t => ({
+                                    name: t.name,
+                                    quantity: selectedTickets[t.name] || 1,
+                                    price: t.price
+                                  })).filter(t => t.quantity > 0) || [];
+                                  
+                                  const totalPrice = event.ticketTypes?.reduce((sum, ticket) => {
+                                    const qty = selectedTickets[ticket.name] || 1;
+                                    return sum + (ticket.price * qty);
+                                  }, 0) || 0;
+                                  
+                                  navigate(`/event/${eventId}/payment`, {
+                                    state: {
+                                      registrationId: existingRegistrationId,
+                                      eventId: eventId,
+                                      eventTitle: event.title,
+                                      tickets: tickets.length > 0 ? tickets : [{
+                                        name: 'Standard',
+                                        quantity: 1,
+                                        price: totalPrice
+                                      }],
+                                      totalPrice: totalPrice,
+                                    }
+                                  });
+                                }
+                              } catch (error) {
+                                console.error('Error navigating to payment:', error);
+                                setSubmitError('Failed to navigate to payment. Please try again.');
+                              }
+                            }}
+                            className="mt-2"
+                          >
+                            Continue to Payment
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    {submitError && submitError !== 'ALREADY_REGISTERED_PENDING_PAYMENT' && (
                       <Alert variant="destructive" className="mt-4">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>{submitError}</AlertDescription>
@@ -1217,9 +1290,8 @@ const EventRegistration = () => {
           </section>
 
         </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </PublicLayout>
   );
 };
 

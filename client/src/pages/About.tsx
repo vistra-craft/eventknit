@@ -2,8 +2,7 @@ import { Users, Target, Award, Heart, MapPin, Mail, Phone, Linkedin, Twitter, In
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import PublicLayout from "@/components/PublicLayout";
 import { useState, useEffect } from "react";
 
 const About = () => {
@@ -147,7 +146,7 @@ const About = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
       {/* Hero Section with Fading Image - PRESERVED AS REQUESTED */}
@@ -194,13 +193,14 @@ const About = () => {
         </div>
       </div>
 
-      <div className="relative">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/10 to-background"></div>
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/5 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-primary/5 to-transparent"></div>
-        
-        <div className="relative container mx-auto px-6 pt-16 pb-20">
+      <main className="flex-1">
+        <div className="relative">
+          {/* Subtle background pattern */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/10 to-background"></div>
+          <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/5 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-primary/5 to-transparent"></div>
+          
+          <div className="relative container mx-auto px-6 pt-16 pb-20">
         {/* Interactive Stats Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
           {stats.map((stat, index) => (
@@ -1115,9 +1115,8 @@ const About = () => {
           </div>
         </div>
         </div>
-      </div>
-      <Footer />
-    </div>
+        </div>
+    </PublicLayout>
   );
 };
 

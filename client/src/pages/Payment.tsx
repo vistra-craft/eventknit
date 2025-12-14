@@ -1,19 +1,15 @@
 import { useState, useEffect } from "react";
-import { CreditCard, Lock, ArrowLeft, Loader2, Ticket, Calendar, MapPin, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Ticket, Calendar, MapPin, AlertCircle, Lock } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
 // UI Components
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // App Components
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import PublicLayout from "@/components/PublicLayout";
 
 // API
 import { initializePayment, verifyPayment } from "@/lib/payment-api";
@@ -33,19 +29,6 @@ interface PaymentData {
   totalPrice: number;
 }
 
-interface CardDetails {
-  cardNumber: string;
-  expiryDate: string;
-  cvv: string;
-  cardholderName: string;
-}
-
-interface BillingDetails {
-  address: string;
-  city: string;
-  zipCode: string;
-  country: string;
-}
 
 const PaymentPage = () => {
   const location = useLocation();
@@ -54,7 +37,7 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [initializing, setInitializing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("card");
+  const [hasInitialized, setHasInitialized] = useState<boolean>(false);
   
   // Get payment data from location state
   const paymentData = location.state as PaymentData | undefined;
@@ -62,20 +45,6 @@ const PaymentPage = () => {
   // Check if this is a payment callback (from Paystack redirect)
   const reference = searchParams.get('reference');
   const trxref = searchParams.get('trxref');
-  
-  const [cardDetails, setCardDetails] = useState<CardDetails>({
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-    cardholderName: "",
-  });
-
-  const [billingDetails, setBillingDetails] = useState<BillingDetails>({
-    address: "",
-    city: "",
-    zipCode: "",
-    country: "United States",
-  });
 
   // Handle payment callback from Paystack
   useEffect(() => {
@@ -120,21 +89,52 @@ const PaymentPage = () => {
     }
   }, [reference, trxref, paymentData, navigate]);
 
-  // Handle initial data load and navigation
+  // Auto-initialize payment and redirect to Paystack when page loads
   useEffect(() => {
-    if (!paymentData && !reference && !trxref) {
-      navigate('/');
-    }
-  }, [paymentData, reference, trxref, navigate]);
+    const autoInitializePayment = async () => {
+      // Skip if this is a callback (reference exists), no payment data, or already initialized
+      if (reference || trxref || !paymentData?.registrationId || hasInitialized) {
+        return;
+      }
 
-  if (!paymentData) {
+      setHasInitialized(true);
+      setInitializing(true);
+      setError(null);
+
+      try {
+        // Initialize Paystack payment
+        const response = await initializePayment(paymentData.registrationId);
+
+        if (response.success && response.data?.authorizationUrl) {
+          // Immediately redirect to Paystack checkout
+          window.location.href = response.data.authorizationUrl;
+        } else {
+          throw new Error(response.message || 'Failed to initialize payment');
+        }
+      } catch (err: unknown) {
+        const errorMessage = err && typeof err === 'object' && 'message' in err
+          ? (err.message as string)
+          : 'Failed to initialize payment. Please try again.';
+        setError(errorMessage);
+        setInitializing(false);
+        setHasInitialized(false); // Allow retry
+      }
+    };
+
+    autoInitializePayment();
+  }, [paymentData, reference, trxref, hasInitialized]);
+
+  // Show loading state if initializing payment or if no payment data
+  if (!paymentData || initializing) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin" />
+      <PublicLayout>
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">
+            {initializing ? 'Redirecting to secure payment...' : 'Loading payment...'}
+          </p>
         </div>
-      </div>
+      </PublicLayout>
     );
   }
 
@@ -142,66 +142,8 @@ const PaymentPage = () => {
   const subtotal = paymentTickets.reduce((sum: number, ticket: TicketType) => sum + (ticket.price * ticket.quantity), 0);
   const tax = paymentData.totalPrice - subtotal;
 
-  const handleCardInputChange = (field: keyof CardDetails, value: string) => {
-    let formattedValue = value;
-    
-    // Format card number with spaces
-    if (field === 'cardNumber') {
-      formattedValue = value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-    }
-    // Format expiry date
-    else if (field === 'expiryDate') {
-      formattedValue = value.replace(/\D/g, '').replace(/(\d{2})(?=\d{2})/, '$1/').slice(0, 5);
-    }
-    // Format CVV
-    else if (field === 'cvv') {
-      formattedValue = value.replace(/\D/g, '').slice(0, 4);
-    }
-    
-    setCardDetails(prev => ({
-      ...prev,
-      [field]: formattedValue
-    }));
-  };
-
-  const handleBillingInputChange = (field: keyof BillingDetails, value: string) => {
-    setBillingDetails((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!paymentData?.registrationId) {
-      setError('Registration ID is missing. Please go back and try again.');
-      return;
-    }
-
-    setError(null);
-    setInitializing(true);
-
-    try {
-      // Initialize Paystack payment
-      const response = await initializePayment(paymentData.registrationId);
-
-      if (response.success && response.data) {
-        // Redirect to Paystack checkout
-        window.location.href = response.data.authorizationUrl;
-      } else {
-        throw new Error(response.message || 'Failed to initialize payment');
-      }
-    } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'Failed to initialize payment. Please try again.';
-      setError(errorMessage);
-      setInitializing(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
+    <PublicLayout>
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Progress Indicators */}
         <div className="flex items-center justify-center mb-8">
@@ -236,180 +178,59 @@ const PaymentPage = () => {
           <h1 className="text-2xl font-bold">Complete Your Purchase</h1>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+            <div className="mt-4">
+              <Button
+                onClick={() => {
+                  setError(null);
+                  setInitializing(true);
+                  initializePayment(paymentData.registrationId)
+                    .then((response) => {
+                      if (response.success && response.data?.authorizationUrl) {
+                        window.location.href = response.data.authorizationUrl;
+                      } else {
+                        throw new Error(response.message || 'Failed to initialize payment');
+                      }
+                    })
+                    .catch((err: unknown) => {
+                      const errorMessage = err && typeof err === 'object' && 'message' in err
+                        ? (err.message as string)
+                        : 'Failed to initialize payment. Please try again.';
+                      setError(errorMessage);
+                      setInitializing(false);
+                    });
+                }}
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          </Alert>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Payment Form - Left Column */}
+          {/* Payment Info - Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              {/* Payment Method Selection */}
+            {!error && (
               <Card variant="default">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Payment Method
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Credit/Debit Card
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="paypal" id="paypal" />
-                      <Label htmlFor="paypal" className="flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
-                        PayPal
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
-
-              {/* Card Details */}
-              {paymentMethod === 'card' && (
-                <Card variant="default">
-                  <CardHeader>
-                    <CardTitle>Card Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input
-                        id="cardNumber"
-                        placeholder="1234 5678 9012 3456"
-                        value={cardDetails.cardNumber}
-                        onChange={(e) =>
-                          handleCardInputChange("cardNumber", e.target.value)
-                        }
-                        className="h-10"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiryDate">Expiry Date</Label>
-                        <Input
-                          id="expiryDate"
-                          placeholder="MM/YY"
-                          value={cardDetails.expiryDate}
-                          onChange={(e) =>
-                            handleCardInputChange("expiryDate", e.target.value)
-                          }
-                          className="h-10"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input
-                          id="cvv"
-                          placeholder="123"
-                          value={cardDetails.cvv}
-                          onChange={(e) =>
-                            handleCardInputChange("cvv", e.target.value)
-                          }
-                          className="h-10"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cardholderName">Cardholder Name</Label>
-                      <Input
-                        id="cardholderName"
-                        placeholder="John Doe"
-                        value={cardDetails.cardholderName}
-                        onChange={(e) =>
-                          handleCardInputChange("cardholderName", e.target.value)
-                        }
-                        className="h-10"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Billing Address */}
-              <Card variant="default">
-                <CardHeader>
-                  <CardTitle>Billing Address</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      placeholder="123 Main Street"
-                      value={billingDetails.address}
-                      onChange={(e) =>
-                        handleBillingInputChange("address", e.target.value)
-                      }
-                      className="h-10"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
-                        placeholder="New York"
-                        value={billingDetails.city}
-                        onChange={(e) =>
-                          handleBillingInputChange("city", e.target.value)
-                        }
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="zipCode">ZIP Code</Label>
-                      <Input
-                        id="zipCode"
-                        placeholder="10001"
-                        value={billingDetails.zipCode}
-                        onChange={(e) =>
-                          handleBillingInputChange("zipCode", e.target.value)
-                        }
-                        className="h-10"
-                      />
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    <div className="text-center space-y-2">
+                      <h3 className="text-xl font-semibold">Redirecting to Secure Payment</h3>
+                      <p className="text-muted-foreground">
+                        You will be redirected to Paystack's secure payment page to complete your purchase.
+                      </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Submit Button */}
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  disabled={loading || initializing}
-                  className="px-8 py-3 text-lg font-semibold"
-                >
-                  {initializing ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Initializing Payment...
-                    </>
-                  ) : loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    `Pay $${paymentData.totalPrice.toFixed(2)}`
-                  )}
-                </Button>
-              </div>
-            </form>
+            )}
           </div>
 
           {/* Order Summary - Right Column */}
@@ -485,8 +306,7 @@ const PaymentPage = () => {
           </div>
         </div>
       </div>
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 };
 

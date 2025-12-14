@@ -311,6 +311,60 @@ describe('Event System', () => {
         .expect(401);
     });
 
+    it('should create event with tags', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Event with Tags',
+        description: 'This is a test event with tags',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: true,
+        tags: ['technology', 'networking', 'workshop'],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.tags).toBeDefined();
+      expect(Array.isArray(response.body.data.event.tags)).toBe(true);
+      expect(response.body.data.event.tags).toEqual(['technology', 'networking', 'workshop']);
+    });
+
+    it('should create event with empty tags array', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Event with Empty Tags',
+        description: 'This is a test event with empty tags',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: true,
+        tags: [],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.tags).toBeDefined();
+      expect(Array.isArray(response.body.data.event.tags)).toBe(true);
+      expect(response.body.data.event.tags).toEqual([]);
+    });
+
     it('should fail to create event with invalid data', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
@@ -925,6 +979,317 @@ describe('Event System', () => {
 
       expect(auditLog).toBeDefined();
       expect(auditLog?.action).toBe('EVENT_UPDATED');
+    });
+
+    it('should update event tags', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event with Tags',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+          tags: ['original', 'tag'],
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ tags: ['updated', 'tags', 'array'] })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.tags).toBeDefined();
+      expect(Array.isArray(response.body.data.event.tags)).toBe(true);
+      expect(response.body.data.event.tags).toEqual(['updated', 'tags', 'array']);
+    });
+
+    it('should update event with empty tags array', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event with Tags',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+          tags: ['original', 'tag'],
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ tags: [] })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.tags).toBeDefined();
+      expect(Array.isArray(response.body.data.event.tags)).toBe(true);
+      expect(response.body.data.event.tags).toEqual([]);
+    });
+
+    it('should preserve tags when updating other fields', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event with Tags',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+          tags: ['preserve', 'these', 'tags'],
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ title: 'Updated Title' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.title).toBe('Updated Title');
+      expect(response.body.data.event.tags).toEqual(['preserve', 'these', 'tags']);
+    });
+
+    it('should create event with socialLinks', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Event with Social Links',
+        description: 'This is a test event with social links',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: true,
+        socialLinks: {
+          facebook: 'https://facebook.com/event',
+          twitter: 'https://twitter.com/event',
+          instagram: 'https://instagram.com/event',
+        },
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.socialLinks).toBeDefined();
+      expect(response.body.data.event.socialLinks).toEqual({
+        facebook: 'https://facebook.com/event',
+        twitter: 'https://twitter.com/event',
+        instagram: 'https://instagram.com/event',
+      });
+    });
+
+    it('should update event socialLinks', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event with Social Links',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+          socialLinks: {
+            facebook: 'https://facebook.com/original',
+          },
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          socialLinks: {
+            facebook: 'https://facebook.com/updated',
+            twitter: 'https://twitter.com/updated',
+            linkedin: 'https://linkedin.com/updated',
+          },
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.socialLinks).toBeDefined();
+      expect(response.body.data.event.socialLinks).toEqual({
+        facebook: 'https://facebook.com/updated',
+        twitter: 'https://twitter.com/updated',
+        linkedin: 'https://linkedin.com/updated',
+      });
+    });
+
+    it('should create event with agenda', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Event with Agenda',
+        description: 'This is a test event with agenda',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: true,
+        agenda: [
+          {
+            title: 'Opening Keynote',
+            description: 'Welcome and opening remarks',
+            startTime: '09:00 AM',
+            endTime: '10:00 AM',
+          },
+          {
+            title: 'Workshop Session',
+            description: 'Interactive workshop',
+            startTime: '10:30 AM',
+            endTime: '12:00 PM',
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.agenda).toBeDefined();
+      expect(Array.isArray(response.body.data.event.agenda)).toBe(true);
+      expect(response.body.data.event.agenda.length).toBe(2);
+      expect(response.body.data.event.agenda[0].title).toBe('Opening Keynote');
+      expect(response.body.data.event.agenda[0].startTime).toBe('09:00 AM');
+    });
+
+    it('should update event agenda', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event with Agenda',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+          agenda: [
+            {
+              title: 'Original Session',
+              startTime: '09:00 AM',
+              endTime: '10:00 AM',
+            },
+          ],
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          agenda: [
+            {
+              title: 'Updated Session 1',
+              description: 'Updated description',
+              startTime: '09:00 AM',
+              endTime: '10:00 AM',
+            },
+            {
+              title: 'Updated Session 2',
+              startTime: '10:30 AM',
+              endTime: '12:00 PM',
+            },
+          ],
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.agenda).toBeDefined();
+      expect(Array.isArray(response.body.data.event.agenda)).toBe(true);
+      expect(response.body.data.event.agenda.length).toBe(2);
+      expect(response.body.data.event.agenda[0].title).toBe('Updated Session 1');
+      expect(response.body.data.event.agenda[1].title).toBe('Updated Session 2');
+    });
+
+    it('should preserve socialLinks and agenda when updating other fields', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event with Social and Agenda',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+          socialLinks: {
+            facebook: 'https://facebook.com/preserve',
+            twitter: 'https://twitter.com/preserve',
+          },
+          agenda: [
+            {
+              title: 'Preserve This Session',
+              startTime: '09:00 AM',
+              endTime: '10:00 AM',
+            },
+          ],
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ title: 'Updated Title' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.title).toBe('Updated Title');
+      expect(response.body.data.event.socialLinks).toBeDefined();
+      expect(response.body.data.event.socialLinks).toEqual({
+        facebook: 'https://facebook.com/preserve',
+        twitter: 'https://twitter.com/preserve',
+      });
+      expect(response.body.data.event.agenda).toBeDefined();
+      expect(Array.isArray(response.body.data.event.agenda)).toBe(true);
+      expect(response.body.data.event.agenda.length).toBe(1);
+      expect(response.body.data.event.agenda[0].title).toBe('Preserve This Session');
     });
 
     it('should fail without authentication', async () => {
@@ -1778,6 +2143,104 @@ describe('Event System', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.registrations).toEqual([]);
+    });
+
+    it('should include payment status in registrations list', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a paid event
+      const paidEvent = await prisma.event.create({
+        data: {
+          title: 'Paid Event with Registrations',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: false,
+          price: 50,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      // Create attendee with pending payment
+      const pendingAttendeePassword = await hashPassword('Test123!@$');
+      const pendingAttendee = await prisma.user.create({
+        data: {
+          email: 'pending@test.com',
+          password: pendingAttendeePassword,
+          firstName: 'Pending',
+          lastName: 'Attendee',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Create attendee with completed payment
+      const completedAttendeePassword = await hashPassword('Test123!@$');
+      const completedAttendee = await prisma.user.create({
+        data: {
+          email: 'completed@test.com',
+          password: completedAttendeePassword,
+          firstName: 'Completed',
+          lastName: 'Attendee',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Create registrations with different payment statuses
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: paidEvent.id,
+          attendeeId: pendingAttendee.id,
+          quantity: 1,
+          totalAmount: 50,
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+        },
+      });
+
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: paidEvent.id,
+          attendeeId: completedAttendee.id,
+          quantity: 1,
+          totalAmount: 50,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/events/${paidEvent.id}/registrations`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.registrations).toBeDefined();
+      expect(Array.isArray(response.body.data.registrations)).toBe(true);
+      expect(response.body.data.registrations.length).toBe(2);
+
+      // Verify payment status is included
+      const pendingRegistration = response.body.data.registrations.find(
+        (r: any) => r.attendee?.email === 'pending@test.com'
+      );
+      const completedRegistration = response.body.data.registrations.find(
+        (r: any) => r.attendee?.email === 'completed@test.com'
+      );
+
+      expect(pendingRegistration).toBeDefined();
+      expect(pendingRegistration.paymentStatus).toBe('PENDING');
+      expect(pendingRegistration.status).toBe('PENDING');
+
+      expect(completedRegistration).toBeDefined();
+      expect(completedRegistration.paymentStatus).toBe('COMPLETED');
+      expect(completedRegistration.status).toBe('CONFIRMED');
     });
   });
 });

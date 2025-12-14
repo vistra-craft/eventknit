@@ -9,11 +9,15 @@ import { Mail, Lock, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide
 import * as authApi from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import Logo from '@/components/Logo';
+import { ProfileDropdown } from '@/components/ProfileDropdown';
+import { useAuth } from '@/hooks/useAuth';
 
 const CreateAccount = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { dispatch } = useAuthContext();
+  const { isAuthenticated } = useAuth();
   
   const token = searchParams.get('token');
   const [email, setEmail] = useState('');
@@ -43,17 +47,34 @@ const CreateAccount = () => {
     return null;
   };
 
-  // Verify token and get email (optional - we can skip this and just show form)
+  // Verify token and get email
   useEffect(() => {
-    if (!token) {
-      setError('Invalid invitation link. Please check your email for the correct link.');
-      setShowResend(true);
-      setIsVerifyingToken(false);
-      return;
-    }
-    // For now, we'll just show the form - email will be pre-filled from the token verification
-    // In a full implementation, we could verify the token first to show the email
-    setIsVerifyingToken(false);
+    const verifyToken = async () => {
+      if (!token) {
+        setError('Invalid invitation link. Please check your email for the correct link.');
+        setShowResend(true);
+        setIsVerifyingToken(false);
+        return;
+      }
+
+      try {
+        const response = await authApi.verifyInvitationToken(token);
+        if (response.success && response.data) {
+          setEmail(response.data.email);
+        }
+      } catch (err: unknown) {
+        const errorMessage =
+          err && typeof err === 'object' && 'message' in err
+            ? (err.message as string)
+            : 'Failed to verify invitation link';
+        setError(errorMessage);
+        setShowResend(true);
+      } finally {
+        setIsVerifyingToken(false);
+      }
+    };
+
+    verifyToken();
   }, [token]);
 
   const handleResendInvitation = async () => {
@@ -185,8 +206,23 @@ const CreateAccount = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background">
+      {/* Navbar with Logo */}
+      <header className="border-b border-border bg-card">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Logo to="/" onClick={() => navigate('/')} />
+            
+            {/* Profile Dropdown */}
+            {isAuthenticated && <ProfileDropdown />}
+          </div>
+        </div>
+      </header>
+
+      {/* Create Account Form */}
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>
           <CardDescription>
@@ -195,7 +231,7 @@ const CreateAccount = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email (read-only if token exists, editable if resending) */}
+            {/* Email (read-only if token exists and email is pre-filled, editable if resending) */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -206,12 +242,12 @@ const CreateAccount = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your.email@example.com"
-                  disabled={!showResend && token !== null}
+                  disabled={!showResend && token !== null && email !== ''}
                   className="pl-10"
                   required={showResend}
                 />
               </div>
-              {!showResend && token && (
+              {!showResend && token && email && (
                 <p className="text-xs text-muted-foreground">
                   Your email is pre-filled from your event registration
                 </p>
@@ -341,12 +377,13 @@ const CreateAccount = () => {
               </div>
             )}
 
-            <p className="text-xs text-center text-muted-foreground">
-              By creating an account, you agree to our Terms of Service and Privacy Policy
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+              <p className="text-xs text-center text-muted-foreground">
+                By creating an account, you agree to our Terms of Service and Privacy Policy
+              </p>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

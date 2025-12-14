@@ -3,8 +3,7 @@ import { EventSearchFilter } from "../components/EventSearchFilter";
 import type { SearchFilters } from "../components/EventSearchFilter";
 import { EventGrid } from "../components/EventGrid";
 import { Hero } from "../components/Hero";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import PublicLayout from "../components/PublicLayout";
 
 const Index = () => {
   const [filters, setFilters] = useState<SearchFilters>({});
@@ -14,15 +13,13 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      <main className="pt-16">
+    <PublicLayout className="text-foreground">
+      <div className="pt-16">
         <Hero />
         <EventSearchFilter filters={filters} onFiltersChange={handleFiltersChange} />
         <EventGrid filters={filters} />
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </PublicLayout>
   );
 };
 

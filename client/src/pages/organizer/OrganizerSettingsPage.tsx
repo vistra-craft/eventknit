@@ -37,6 +37,176 @@ import {
 } from "@/lib/user-preferences-api";
 import { SettingsSection, ThemeSelector } from "@/components/settings";
 import VerificationForm from "@/components/verification/VerificationForm";
+import { CardDescription } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getVerificationStatus, type VerificationStatus } from "@/lib/verification-api";
+import { CheckCircle2, Circle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Verification Settings Content Component
+const VerificationSettingsContent = ({ redirectPath }: { redirectPath?: string }) => {
+  const [accountType, setAccountType] = useState<'individual' | 'business' | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        setLoadingStatus(true);
+        const response = await getVerificationStatus();
+        if (response.success && response.data) {
+          setVerificationStatus(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading verification status:', error);
+      } finally {
+        setLoadingStatus(false);
+      }
+    };
+    loadStatus();
+
+    // Listen for verification status updates
+    const handleVerificationUpdate = () => {
+      loadStatus();
+    };
+    window.addEventListener('verificationStatusUpdated', handleVerificationUpdate);
+
+    return () => {
+      window.removeEventListener('verificationStatusUpdated', handleVerificationUpdate);
+    };
+  }, []);
+
+  const handleAccountTypeSelect = (type: 'individual' | 'business') => {
+    setAccountType(type);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Verification Steps Indicator */}
+      {!loadingStatus && verificationStatus && (
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
+          <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="space-y-3">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">
+              Verification Steps
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                {verificationStatus.identityVerified ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                ) : (
+                  <Circle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`font-medium ${verificationStatus.identityVerified ? 'text-green-700 dark:text-green-300' : 'text-blue-900 dark:text-blue-100'}`}>
+                      Step 1: Identity Verification
+                    </span>
+                    {verificationStatus.identityVerified && (
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700">
+                        Completed
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    {verificationStatus.identityVerified 
+                      ? "Your identity has been verified. You can now create paid events."
+                      : "Provide your personal information and upload a government-issued ID (passport, driver's license, or national ID)."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                {verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED' ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                ) : (
+                  <Circle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`font-medium ${verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED' ? 'text-green-700 dark:text-green-300' : 'text-blue-900 dark:text-blue-100'}`}>
+                      Step 2: Business Information
+                    </span>
+                    {verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED' && (
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700">
+                        Completed
+                      </Badge>
+                    )}
+                    {verificationStatus.kycStatus === 'PENDING' && (
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                        Under Review
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    {verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED'
+                      ? "Your business information is complete. You can receive unlimited payouts."
+                      : verificationStatus.kycStatus === 'PENDING'
+                      ? "Your business information is under review."
+                      : verificationStatus.payoutLimit
+                      ? `Optional: Provide business information to remove the $${verificationStatus.payoutLimit.toLocaleString()}/month payout limit. You can still receive payouts with just identity verification.`
+                      : "Optional: Provide business information for unlimited payouts and higher event limits."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Account Type Selection */}
+      {!accountType ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Type</CardTitle>
+            <CardDescription>
+              Are you registering as an individual or a business?
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <RadioGroup
+              value={accountType || ''}
+              onValueChange={(value) => handleAccountTypeSelect(value as 'individual' | 'business')}
+            >
+              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                <RadioGroupItem value="individual" id="individual" />
+                <Label htmlFor="individual" className="flex-1 cursor-pointer">
+                  <div>
+                    <div className="font-medium">Individual</div>
+                    <div className="text-sm text-muted-foreground">
+                      I'm registering as an individual person
+                    </div>
+                  </div>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                <RadioGroupItem value="business" id="business" />
+                <Label htmlFor="business" className="flex-1 cursor-pointer">
+                  <div>
+                    <div className="font-medium">Business</div>
+                    <div className="text-sm text-muted-foreground">
+                      I'm registering as a business or organization
+                    </div>
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+          </CardContent>
+        </Card>
+      ) : (
+        <VerificationForm
+          redirectAfterBusinessVerification={redirectPath}
+          accountType={accountType}
+          onSuccess={() => {
+            // Refresh verification status after success
+            window.dispatchEvent(new CustomEvent('verificationStatusUpdated'));
+          }}
+        />
+      )}
+    </div>
+  );
+};
 
 interface OrganizerSettingsData {
   // Profile Settings
@@ -79,7 +249,7 @@ interface OrganizerSettingsData {
 
 const OrganizerSettingsPage = () => {
   const location = useLocation();
-  const { user, refreshProfile } = useAuth();
+  const { user: authUser, refreshProfile } = useAuth();
   const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -123,7 +293,7 @@ const OrganizerSettingsPage = () => {
   // Load user preferences from API
   useEffect(() => {
     const loadPreferences = async () => {
-      if (!user) return;
+      if (!authUser) return;
 
       try {
         const response = await getUserPreferences();
@@ -166,12 +336,12 @@ const OrganizerSettingsPage = () => {
 
     loadPreferences();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [authUser]);
 
   // Load user profile data from API
   useEffect(() => {
     const loadProfile = async () => {
-      if (!user) {
+      if (!authUser) {
         setIsLoading(false);
         return;
       }
@@ -181,18 +351,28 @@ const OrganizerSettingsPage = () => {
         const response = await authApi.getProfile();
         if (response.success && response.data?.user) {
           const userData = response.data.user;
+          // Debug logging to see what we're getting from the API
+          console.log('Profile data from API:', {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            otherName: userData.otherName,
+            email: userData.email,
+            fullUserData: userData,
+          });
+          
+          // Use actual values from API, only fallback to empty string if null/undefined
           setSettings(prev => ({
             ...prev,
-            firstName: userData.firstName || "",
-            lastName: userData.lastName || "",
-            otherName: userData.otherName || "",
-            email: userData.email || "",
-            phone: userData.phoneNumber || "",
+            firstName: userData.firstName ?? "",
+            lastName: userData.lastName ?? "",
+            otherName: userData.otherName ?? "",
+            email: userData.email ?? "",
+            phone: userData.phoneNumber ?? "",
             companyAffiliation: "", // Not in User interface yet
-            company: userData.organizationName || "",
-            organizationName: userData.organizationName || "",
-            businessEmail: userData.businessEmail || "",
-            kycStatus: userData.kycStatus || null,
+            company: userData.organizationName ?? "",
+            organizationName: userData.organizationName ?? "",
+            businessEmail: userData.businessEmail ?? "",
+            kycStatus: userData.kycStatus ?? null,
             // Keep other settings as they are (notifications, appearance, etc.)
           }));
           setAccountInfo({
@@ -218,7 +398,7 @@ const OrganizerSettingsPage = () => {
     };
 
     loadProfile();
-  }, [user]);
+  }, [authUser]);
   
   // Account info (read-only)
   const [accountInfo, setAccountInfo] = useState({
@@ -234,21 +414,21 @@ const OrganizerSettingsPage = () => {
     kycApprovedAt: null as string | null,
   });
 
-  // Settings state - initialized with user data
+  // Settings state - initialized with user data from auth context if available
   const [settings, setSettings] = useState<OrganizerSettingsData>({
-    firstName: "",
-    lastName: "",
-    otherName: "",
-    email: "",
-    phone: "",
+    firstName: authUser?.firstName || "",
+    lastName: authUser?.lastName || "",
+    otherName: authUser?.otherName || "",
+    email: authUser?.email || "",
+    phone: authUser?.phoneNumber || "",
     companyAffiliation: "",
-    company: "",
+    company: authUser?.organizationName || "",
     position: "",
     location: "",
     bio: "",
     avatar: "",
-    organizationName: "",
-    businessEmail: "",
+    organizationName: authUser?.organizationName || "",
+    businessEmail: authUser?.businessEmail || "",
     kycStatus: null,
     emailNotifications: true,
     eventUpdates: true,
@@ -374,6 +554,21 @@ const OrganizerSettingsPage = () => {
         if (response.success) {
           // Refresh user profile in context
           await refreshProfile();
+          // Reload profile data to ensure we have the latest from the API
+          const profileResponse = await authApi.getProfile();
+          if (profileResponse.success && profileResponse.data?.user) {
+            const updatedUserData = profileResponse.data.user;
+            setSettings(prev => ({
+              ...prev,
+              firstName: updatedUserData.firstName ?? "",
+              lastName: updatedUserData.lastName ?? "",
+              otherName: updatedUserData.otherName ?? "",
+              email: updatedUserData.email ?? "",
+              phone: updatedUserData.phoneNumber ?? "",
+              organizationName: updatedUserData.organizationName ?? "",
+              businessEmail: updatedUserData.businessEmail ?? "",
+            }));
+          }
           setSaveStatus("success");
           setSaveMessage("Profile updated successfully");
         } else {
@@ -520,7 +715,9 @@ const OrganizerSettingsPage = () => {
       <div className="flex items-center space-x-6">
         <Avatar
           src={settings.avatar}
-          name={`${settings.firstName} ${settings.lastName}`}
+          name={settings.firstName && settings.lastName 
+            ? `${settings.firstName} ${settings.lastName}`.trim()
+            : settings.firstName || settings.lastName || settings.email || "User"}
           alt="Profile"
           size="xl"
           className="h-24 w-24"
@@ -1047,9 +1244,7 @@ const OrganizerSettingsPage = () => {
   );
 
   const renderVerificationSettings = () => {
-    // Check if user came from event creation page (via location state)
-    const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification;
-    return <VerificationForm redirectAfterBusinessVerification={redirectPath} />;
+    return <VerificationSettingsContent redirectPath="/organizer/settings?tab=verification" />;
   };
 
   const renderTabContent = () => {

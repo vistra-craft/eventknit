@@ -819,7 +819,7 @@ describe('Event Registration System', () => {
         .expect(404);
     });
 
-    it('should prevent duplicate registration for same event', async () => {
+    it('should prevent duplicate registration for same free event', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -845,7 +845,7 @@ describe('Event Registration System', () => {
         .send({ quantity: 1 })
         .expect(201);
 
-      // Try to register again
+      // Try to register again - should fail for free events (already confirmed)
       const response = await request(app)
         .post(`/api/v1/events/${event.id}/register`)
         .set('Authorization', `Bearer ${attendeeToken}`)
@@ -853,6 +853,96 @@ describe('Event Registration System', () => {
         .expect(409); // Conflict
 
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('already registered');
+    });
+
+    it('should return existing registration for paid event with pending payment', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Paid Event',
+          description: 'Paid Event Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: false,
+          price: 50,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+        },
+      });
+
+      // First registration - creates PENDING registration
+      const firstResponse = await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(201);
+
+      expect(firstResponse.body.success).toBe(true);
+      expect(firstResponse.body.data.registration.status).toBe('PENDING');
+      expect(firstResponse.body.data.registration.paymentStatus).toBe('PENDING');
+
+      const firstRegistrationId = firstResponse.body.data.registration.id;
+
+      // Try to register again - should return existing registration (not throw error)
+      const secondResponse = await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(200); // Returns existing registration, not 201
+
+      expect(secondResponse.body.success).toBe(true);
+      expect(secondResponse.body.data.registration.id).toBe(firstRegistrationId);
+      expect(secondResponse.body.data.registration.status).toBe('PENDING');
+      expect(secondResponse.body.data.registration.paymentStatus).toBe('PENDING');
+    });
+
+    it('should prevent duplicate registration for paid event after payment completed', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Paid Event',
+          description: 'Paid Event Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: false,
+          price: 50,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+        },
+      });
+
+      // Create a registration with completed payment
+      const registration = await prisma.eventRegistration.create({
+        data: {
+          eventId: event.id,
+          attendeeId,
+          quantity: 1,
+          totalAmount: 50,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      // Try to register again - should fail (already paid)
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(409); // Conflict
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('already registered');
     });
   });
 
@@ -1600,6 +1690,128 @@ describe('Event Registration System', () => {
       });
 
       expect(invitationToken).toBeNull();
+    });
+
+    it('should return existing registration for paid event with pending payment (guest)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Paid Guest Event',
+          description: 'Paid Event for Guest Registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          price: 50,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+        },
+      });
+
+      const guestData = {
+        email: 'pendingpayment@test.com',
+        firstName: 'Pending',
+        lastName: 'Payment',
+        quantity: 1,
+      };
+
+      // First registration - creates PENDING registration
+      const firstResponse = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send(guestData);
+
+      // Email service may not be configured
+      if (firstResponse.status === 503 || firstResponse.status === 500) {
+        logger.info('⏭️  Skipping test - email service not available');
+        return;
+      }
+
+      expect(firstResponse.status).toBe(201);
+      expect(firstResponse.body.success).toBe(true);
+      expect(firstResponse.body.data.registration.status).toBe('PENDING');
+      expect(firstResponse.body.data.registration.paymentStatus).toBe('PENDING');
+
+      const firstRegistrationId = firstResponse.body.data.registration.id;
+
+      // Try to register again - should return existing registration (not throw error)
+      const secondResponse = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send(guestData);
+
+      // Email service may not be configured
+      if (secondResponse.status === 503 || secondResponse.status === 500) {
+        logger.info('⏭️  Skipping test - email service not available');
+        return;
+      }
+
+      expect(secondResponse.status).toBe(200); // Returns existing registration, not 201
+      expect(secondResponse.body.success).toBe(true);
+      expect(secondResponse.body.data.registration.id).toBe(firstRegistrationId);
+      expect(secondResponse.body.data.registration.status).toBe('PENDING');
+      expect(secondResponse.body.data.registration.paymentStatus).toBe('PENDING');
+    });
+
+    it('should prevent duplicate registration for paid event after payment completed (guest)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Paid Guest Event',
+          description: 'Paid Event for Guest Registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          price: 50,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+        },
+      });
+
+      // Create user and registration with completed payment
+      const user = await prisma.user.create({
+        data: {
+          email: 'paidguest@test.com',
+          password: null,
+          firstName: 'Paid',
+          lastName: 'Guest',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      await prisma.eventRegistration.create({
+        data: {
+          eventId: event.id,
+          attendeeId: user.id,
+          quantity: 1,
+          totalAmount: 50,
+          status: 'CONFIRMED',
+          paymentStatus: 'COMPLETED',
+        },
+      });
+
+      // Try to register again - should fail (already paid)
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register-guest`)
+        .send({
+          email: 'paidguest@test.com',
+          firstName: 'Paid',
+          lastName: 'Guest',
+          quantity: 1,
+        })
+        .expect(409); // Conflict
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('already registered');
     });
   });
 

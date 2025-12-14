@@ -1,14 +1,14 @@
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import PublicLayout from "@/components/PublicLayout";
 import { Shield, Eye, Lock, Database, Mail, Phone } from "lucide-react";
 
 const PrivacyPolicy = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      {/* Hero Section */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
+      <main className="flex-1">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col items-center gap-6 text-center py-8 md:py-10">
@@ -346,10 +346,8 @@ const PrivacyPolicy = () => {
             </div>
           </section>
         </div>
-      </div>
-
-      <Footer />
-    </div>
+        </div>
+    </PublicLayout>
   );
 };
 

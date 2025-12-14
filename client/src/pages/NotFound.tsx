@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import PublicLayout from "@/components/PublicLayout";
 import { 
   Home, 
   ArrowLeft, 
@@ -12,9 +11,7 @@ const NotFound = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <Navbar />
-      
+    <PublicLayout className="bg-gradient-to-br from-background via-background to-muted/20">
       <div className="container mx-auto px-4 sm:px-6 py-16">
         <div className="max-w-4xl mx-auto">
           
@@ -73,9 +70,7 @@ const NotFound = () => {
           <div className="absolute bottom-40 right-1/3 w-16 h-16 bg-primary/10 rounded-full blur-sm"></div>
         </div>
       </div>
-
-      <Footer />
-    </div>
+    </PublicLayout>
   );
 };
 

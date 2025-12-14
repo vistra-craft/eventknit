@@ -208,7 +208,7 @@ const SignIn = () => {
               <div className="mb-6">
                 <Button
                   variant="outline"
-                  className="w-full h-12 bg-white border border-primary text-primary font-medium flex items-center justify-center gap-3 shadow-none focus:shadow-none focus-visible:shadow-none"
+                  className="w-full h-12 bg-white dark:bg-card border border-primary text-primary font-medium flex items-center justify-center gap-3 shadow-none focus:shadow-none focus-visible:shadow-none hover:bg-accent-coral hover:text-white hover:border-transparent transition-colors"
                   onClick={handleFacebookSignIn}
                   disabled={isLoading}
                   type="button"
@@ -405,7 +405,7 @@ const SignIn = () => {
                   <Button 
                     variant="outline"
                     type="submit" 
-                    className="w-full h-12 bg-white border border-primary text-primary font-medium shadow-none focus:shadow-none focus-visible:shadow-none"
+                    className="w-full h-12 bg-white dark:bg-card border border-primary text-primary font-medium shadow-none focus:shadow-none focus-visible:shadow-none hover:bg-accent-coral hover:text-white hover:border-transparent transition-colors"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Signing in...' : 'Log In'}

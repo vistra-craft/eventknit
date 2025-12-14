@@ -201,6 +201,13 @@ export const verifyMagicLink = async (token: string): Promise<LoginResponse> => 
 };
 
 /**
+ * Verify invitation token and get email (for displaying in create account form)
+ */
+export const verifyInvitationToken = async (token: string): Promise<ApiResponse<{ email: string }>> => {
+  return apiGet<ApiResponse<{ email: string }>>(`/auth/verify-invitation?token=${token}`);
+};
+
+/**
  * Create account from invitation token (for guest users)
  */
 export const createAccountFromInvitation = async (token: string, password: string): Promise<LoginResponse> => {
@@ -214,6 +221,14 @@ export interface ResendInvitationResponse {
 
 export const resendAccountInvitation = async (email: string): Promise<ResendInvitationResponse> => {
   return apiPost<ResendInvitationResponse>('/auth/resend-invitation', { email });
+};
+
+/**
+ * Request password setup email (Eventbrite-style)
+ * For users who registered as guests and need to set a password
+ */
+export const requestPasswordSetup = async (email: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/password/setup-request', { email });
 };
 
 

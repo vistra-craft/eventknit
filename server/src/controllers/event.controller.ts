@@ -47,6 +47,7 @@ export class EventController {
       const filters: {
         status?: EventStatus;
         category?: string;
+        tags?: string[];
         isFree?: boolean;
         organizerId?: string;
         search?: string;
@@ -63,6 +64,15 @@ export class EventController {
       }
       if (req.query.category) {
         filters.category = req.query.category as string;
+      }
+      if (req.query.tags) {
+        // Tags can be comma-separated string or array
+        const tagsParam = req.query.tags;
+        if (Array.isArray(tagsParam)) {
+          filters.tags = tagsParam as string[];
+        } else if (typeof tagsParam === 'string') {
+          filters.tags = tagsParam.split(',').map(tag => tag.trim()).filter(Boolean);
+        }
       }
       if (req.query.isFree !== undefined) {
         filters.isFree = req.query.isFree === 'true' || req.query.isFree === '1';

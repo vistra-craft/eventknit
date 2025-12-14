@@ -598,8 +598,16 @@ export class AuthService {
     }
     // DEACTIVATED users can login but will be restricted from actions in middleware
 
-    // Verify password - password is now required
+    // Eventbrite-style: If user exists but has no password, send password setup email
     if (!user.password) {
+      // Don't reveal that user exists without password (security best practice)
+      // Instead, send password setup email and return generic error
+      try {
+        await this.requestPasswordSetup(data.email);
+      } catch (error) {
+        // Log error but don't expose it to user
+        logger.error('Failed to send password setup email:', error);
+      }
       throw new AuthenticationError('Invalid email or password');
     }
 
@@ -1042,6 +1050,45 @@ export class AuthService {
   }
 
   /**
+   * Verify invitation token and get email (for displaying in create account form)
+   */
+  static async verifyInvitationToken(token: string): Promise<{ email: string }> {
+    // Find email verification record with this token
+    const emailVerification = await prisma.emailVerification.findUnique({
+      where: { token },
+      include: {
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!emailVerification) {
+      throw new NotFoundError('Invalid or expired invitation link');
+    }
+
+    // Check if token is expired
+    if (emailVerification.expiresAt && new Date(emailVerification.expiresAt) < new Date()) {
+      throw new ValidationError('Invitation link has expired');
+    }
+
+    // Check if already used
+    if (emailVerification.verified) {
+      throw new ValidationError('This invitation link has already been used');
+    }
+
+    if (!emailVerification.user) {
+      throw new NotFoundError('User not found');
+    }
+
+    return {
+      email: emailVerification.user.email,
+    };
+  }
+
+  /**
    * Create account from invitation token (for guest users who registered for events)
    * Verifies token, loads existing guest account, sets password, and returns auth response
    */
@@ -1268,6 +1315,76 @@ export class AuthService {
     } else {
       logger.warn(`Failed to resend account invitation email to ${user.email} after ${emailResult.attempts} attempts:`, emailResult.error);
       throw new ServiceUnavailableError('Failed to send account invitation email. Please try again later.');
+    }
+  }
+
+  /**
+   * Request password setup email (Eventbrite-style)
+   * For users who registered as guests and need to set a password
+   */
+  static async requestPasswordSetup(email: string): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+    });
+
+    // Don't reveal if user exists (security best practice)
+    if (!user) {
+      return;
+    }
+
+    // Check if user already has a password
+    if (user.password) {
+      // User already has password - don't send setup email
+      return;
+    }
+
+    // Check user status
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
+    }
+
+    if (user.status === UserStatus.DEACTIVATED) {
+      throw new ConflictError('This account has been deactivated. Please contact support to appeal or wait for the deactivation period to end.');
+    }
+
+    // Invalidate existing password setup tokens
+    await prisma.emailVerification.updateMany({
+      where: {
+        userId: user.id,
+        email: user.email,
+        verified: false,
+        expiresAt: {
+          gte: new Date(),
+        },
+      },
+      data: {
+        verified: true, // Mark as used to invalidate
+        verifiedAt: new Date(),
+      },
+    });
+
+    // Generate password setup token (90 days expiration - Eventbrite-style)
+    const passwordSetupToken = crypto.randomBytes(32).toString('hex');
+    const passwordSetupExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
+
+    // Store password setup token in EmailVerification table
+    await prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        token: passwordSetupToken,
+        expiresAt: passwordSetupExpiresAt,
+        verified: false,
+      },
+    });
+
+    // Send password setup email
+    try {
+      await emailService.sendPasswordSetupEmail(user.email, passwordSetupToken);
+      logger.info(`Password setup email sent to: ${user.email}`);
+    } catch (error) {
+      logger.error('Failed to send password setup email:', error);
+      throw new ServiceUnavailableError('Failed to send password setup email. Please try again later.');
     }
   }
 

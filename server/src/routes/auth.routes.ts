@@ -186,6 +186,17 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/auth/verify-invitation
+ * @desc    Verify invitation token and get email (for displaying in create account form)
+ * @access  Public
+ */
+router.get(
+  '/verify-invitation',
+  authRateLimiter,
+  AuthController.verifyInvitationToken,
+);
+
+/**
  * @route   POST /api/v1/auth/create-account
  * @desc    Create account from invitation token (for guest users)
  * @access  Public
@@ -207,6 +218,18 @@ router.post(
   authRateLimiter,
   validate(authValidations.resendAccountInvitation),
   AuthController.resendAccountInvitation,
+);
+
+/**
+ * @route   POST /api/v1/auth/password/setup-request
+ * @desc    Request password setup email (Eventbrite-style)
+ * @access  Public
+ */
+router.post(
+  '/password/setup-request',
+  authRateLimiter,
+  validate(authValidations.forgotPassword), // Reuse forgot password validation (just needs email)
+  AuthController.requestPasswordSetup,
 );
 
 /**
