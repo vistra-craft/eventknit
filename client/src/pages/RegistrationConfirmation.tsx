@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
 import { downloadTicket } from "@/lib/utils/ticket";
@@ -288,7 +290,8 @@ END:VCALENDAR`;
 
   if (!confirmationData && !eventData) {
     return (
-      <PublicLayout>
+      <div className="min-h-screen bg-background">
+        <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
           <Alert variant="destructive">
             <AlertDescription>
@@ -299,7 +302,8 @@ END:VCALENDAR`;
             Go Home
           </Button>
         </div>
-      </PublicLayout>
+        <Footer />
+      </div>
     );
   }
 
@@ -307,7 +311,8 @@ END:VCALENDAR`;
   const isFree = confirmationData?.isFreeEvent ?? event?.isFree ?? false;
 
   return (
-    <PublicLayout>
+    <div className="min-h-screen bg-background">
+      <Navbar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
         {/* Success Header */}
         <div className="text-center mb-8 mt-8">
@@ -624,7 +629,8 @@ END:VCALENDAR`;
           </CardContent>
         </Card>
       </div>
-    </PublicLayout>
+      <Footer />
+    </div>
   );
 };
 

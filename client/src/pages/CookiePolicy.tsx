@@ -1,11 +1,14 @@
-import PublicLayout from "@/components/PublicLayout";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Cookie, Settings, BarChart3, Shield, Eye, Database } from "lucide-react";
 
 const CookiePolicy = () => {
   return (
-    <PublicLayout>
-        {/* Hero Section */}
-        <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      {/* Hero Section */}
+      <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col items-center gap-6 text-center py-8 md:py-10">
@@ -508,8 +511,10 @@ const CookiePolicy = () => {
             </div>
           </section>
         </div>
-        </div>
-    </PublicLayout>
+      </div>
+
+      <Footer />
+    </div>
   );
 };
 

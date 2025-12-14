@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import PublicLayout from "@/components/PublicLayout";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { 
   MessageCircle, 
   Search, 
@@ -357,9 +358,11 @@ const Support = () => {
   );
 
   return (
-    <PublicLayout>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
       {/* Header */}
-        <div className="border-b bg-gradient-to-r from-primary/5 to-secondary/5 mt-24">
+      <div className="border-b bg-gradient-to-r from-primary/5 to-secondary/5 mt-24">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-2">Support Center</h1>
@@ -441,8 +444,10 @@ const Support = () => {
           <div className="absolute top-40 right-10 w-24 h-24 bg-accent-electric/20 rounded-full blur-lg"></div>
           <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-accent-neon/20 rounded-full blur-md"></div>
         </div>
-        </div>
-    </PublicLayout>
+      </div>
+
+      <Footer />
+    </div>
   );
 };
 

@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Building, Mail, ExternalLink, ChevronDown, ChevronUp, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe } from "lucide-react";
+import { Building, Mail, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import type { EventData } from "@/types/event";
 
 interface OrganizerInfoProps {
   organizer: EventData['organizer'];
   organizerName?: string;
   organizerDescription?: string | null;
-  socialLinks?: Record<string, string> | null;
 }
 
-export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, socialLinks }: OrganizerInfoProps) => {
+export const OrganizerInfo = ({ organizer, organizerName, organizerDescription }: OrganizerInfoProps) => {
   const name = organizerName || (organizer ? `${organizer.firstName} ${organizer.lastName}` : 'Unknown Organizer');
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -67,7 +66,7 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
               </div>
             )}
 
-            <div className="flex flex-wrap gap-3 justify-center md:justify-start items-center">
+            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
               <Button variant="outline" size="sm" className="h-9">
                 <Mail className="w-4 h-4 mr-2" />
                 Contact
@@ -77,48 +76,6 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
                   <ExternalLink className="w-4 h-4 mr-2" />
                   {organizer.organizationName}
                 </Button>
-              )}
-              
-              {/* Social Links */}
-              {socialLinks && Object.keys(socialLinks).length > 0 && (
-                <>
-                  {Object.entries(socialLinks).map(([platform, url]) => {
-                    if (!url) return null;
-                    const Icon = {
-                      facebook: Facebook,
-                      twitter: Twitter,
-                      instagram: Instagram,
-                      linkedin: Linkedin,
-                      youtube: Youtube,
-                      tiktok: Globe,
-                      website: Globe
-                    }[platform.toLowerCase()] || Globe;
-                    
-                    const platformLabels: Record<string, string> = {
-                      facebook: 'Facebook',
-                      twitter: 'Twitter / X',
-                      instagram: 'Instagram',
-                      linkedin: 'LinkedIn',
-                      youtube: 'YouTube',
-                      tiktok: 'TikTok',
-                      website: 'Website'
-                    };
-                    
-                    return (
-                      <a
-                        key={platform}
-                        href={url.startsWith('http') ? url : `https://${url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all hover:shadow-md h-9"
-                        title={platformLabels[platform.toLowerCase()] || platform}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span className="text-sm font-medium">{platformLabels[platform.toLowerCase()] || platform}</span>
-                      </a>
-                    );
-                  })}
-                </>
               )}
             </div>
           </div>

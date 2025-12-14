@@ -2,13 +2,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvent";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { Button } from "@/components/ui/button";
-import PublicLayout from "@/components/PublicLayout";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { EventHero } from "@/components/event-details/EventHero";
 import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { AboutSection } from "@/components/event-details/AboutSection";
 import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, CalendarDays, Clock, Store } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
@@ -66,34 +66,40 @@ const EventDetails = () => {
 
   if (isLoading) {
     return (
-      <PublicLayout className="bg-gradient-to-b from-primary/5 via-background to-muted/10">
-        <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Loading event...</p>
           </div>
         </div>
-      </PublicLayout>
+        <Footer />
+      </div>
     );
   }
 
   if (error || !event) {
     return (
-      <PublicLayout className="bg-gradient-to-b from-primary/5 via-background to-muted/10">
-        <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center max-w-md px-4">
             <h2 className="text-2xl font-bold mb-4">Event not found</h2>
             <p className="text-muted-foreground mb-6">{error || 'The event you are looking for does not exist.'}</p>
             <Button onClick={() => navigate('/')}>Back to Home</Button>
           </div>
         </div>
-      </PublicLayout>
+        <Footer />
+      </div>
     );
   }
 
   return (
-    <PublicLayout className="bg-gradient-to-b from-primary/5 via-background to-muted/10">
-      <div className="pb-12">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar />
+      
+      <main className="flex-1 pb-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24">
           {/* Back Button */}
           <div className="mb-6">
@@ -127,14 +133,63 @@ const EventDetails = () => {
                 organizer={event.organizer}
                 organizerName={event.organizerName}
                 organizerDescription={event.organizerDescription}
-                socialLinks={event.socialLinks}
               />
 
+              
+              {/* Social Links */}
+              {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (
+                <Card className="border-0 bg-card-surface shadow-sm p-6">
+                  <h3 className="text-xl font-bold mb-4">Connect With Us</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {Object.entries(event.socialLinks).map(([platform, url]) => {
+                      if (!url) return null;
+                      const Icon = {
+                        facebook: Facebook,
+                        twitter: Twitter,
+                        instagram: Instagram,
+                        linkedin: Linkedin,
+                        youtube: Youtube,
+                        tiktok: Globe,
+                        website: Globe
+                      }[platform.toLowerCase()] || Globe;
+                      
+                      const platformLabels: Record<string, string> = {
+                        facebook: 'Facebook',
+                        twitter: 'Twitter / X',
+                        instagram: 'Instagram',
+                        linkedin: 'LinkedIn',
+                        youtube: 'YouTube',
+                        tiktok: 'TikTok',
+                        website: 'Website'
+                      };
+                      
+                      return (
+                        <a
+                          key={platform}
+                          href={url.startsWith('http') ? url : `https://${url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all hover:shadow-md"
+                          title={platformLabels[platform.toLowerCase()] || platform}
+                        >
+                          <Icon className="w-5 h-5" />
+                          <span className="text-sm font-medium">{platformLabels[platform.toLowerCase()] || platform}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </Card>
+              )}
+
               {/* About Section */}
-              <AboutSection 
-                fullDescription={event.fullDescription}
-                description={event.description}
-              />
+              <section>
+                <h2 className="text-3xl font-bold mb-4">About This Event</h2>
+                <div className="prose prose-lg max-w-none text-muted-foreground">
+                  <p className="leading-relaxed whitespace-pre-line">
+                    {event.fullDescription || event.description || 'No description available.'}
+                  </p>
+                </div>
+              </section>
 
               {/* Event Agenda */}
               {event.agenda && event.agenda.length > 0 && (
@@ -210,6 +265,15 @@ const EventDetails = () => {
                 </section>
               )}
 
+              {/* Venue Information */}
+              <VenueSection 
+                venue={event.venue}
+                location={event.location}
+                coordinates={event.coordinates}
+              />
+              
+              <EventTags tags={event.tags} />
+
               {/* Speakers (if any) */}
               {event.speakers && event.speakers.length > 0 && (
                 <section>
@@ -234,15 +298,6 @@ const EventDetails = () => {
                   </div>
                 </section>
               )}
-
-              {/* Venue Information */}
-              <VenueSection 
-                venue={event.venue}
-                location={event.location}
-                coordinates={event.coordinates}
-              />
-              
-              <EventTags tags={event.tags} />
 
 
               {/* Exhibitors & Sponsors */}

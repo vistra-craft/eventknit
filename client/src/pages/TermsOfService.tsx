@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import PublicLayout from "@/components/PublicLayout";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Scale, AlertTriangle, Users, CreditCard, Shield, Clock, RefreshCcw } from "lucide-react";
 
 const TermsOfService = () => {
@@ -17,7 +18,9 @@ const TermsOfService = () => {
     }
   }, [location.hash]);
   return (
-    <PublicLayout>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
       {/* Hero Section */}
       <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 pt-16 pb-4 md:pt-20 md:pb-6">
         <div className="container mx-auto px-6">
@@ -478,8 +481,10 @@ const TermsOfService = () => {
             </div>
           </section>
         </div>
-        </div>
-    </PublicLayout>
+      </div>
+
+      <Footer />
+    </div>
   );
 };
 

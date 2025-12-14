@@ -61,15 +61,6 @@ export interface CreateEventData {
   speakers?: Array<{ name: string; title: string; bio: string; image?: string }>;
   sponsors?: Array<{ name: string; level: string; logo: string }>;
   faqs?: Array<{ question: string; answer: string }>;
-  socialLinks?: Record<string, string>; // Object containing social media links (e.g., { facebook: 'url', twitter: 'url' })
-  agenda?: Array<{
-    title: string;
-    description?: string;
-    startTime: string;
-    endTime: string;
-    speakers?: string[]; // IDs of speakers
-  }>;
-  exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }>;
   registrationFields?: Array<{
     id: string;
     name: string;
@@ -295,9 +286,6 @@ export class EventService {
         speakers: data.speakers || undefined,
         sponsors: data.sponsors || undefined,
         faqs: data.faqs || undefined,
-        socialLinks: data.socialLinks || undefined,
-        agenda: data.agenda || undefined,
-        exhibitors: data.exhibitors || undefined,
         registrationFields: data.registrationFields || undefined,
         registrationCode: data.generateRegistrationCode !== false ? this.generateRegistrationCode() : null,
         organizerId,
@@ -372,7 +360,6 @@ export class EventService {
   static async getEvents(filters: {
     status?: EventStatus;
     category?: string;
-    tags?: string[];
     isFree?: boolean;
     organizerId?: string;
     search?: string;
@@ -393,13 +380,6 @@ export class EventService {
 
     if (filters.category) {
       where.category = filters.category;
-    }
-
-    // Filter by tags - events that have at least one matching tag
-    if (filters.tags && filters.tags.length > 0) {
-      where.tags = {
-        hasSome: filters.tags, // Prisma array filter: event tags array contains at least one of the filter tags
-      };
     }
 
     if (filters.isFree !== undefined) {
@@ -443,8 +423,6 @@ export class EventService {
               firstName: true,
               lastName: true,
               organizationName: true,
-              isIdentityVerified: true,
-              verificationLevel: true,
             },
           },
           _count: {
@@ -498,8 +476,6 @@ export class EventService {
             email: true,
             organizationName: true,
             businessEmail: true,
-            isIdentityVerified: true,
-            verificationLevel: true,
           },
         },
         _count: {
@@ -592,10 +568,7 @@ export class EventService {
     if (data.fullDescription !== undefined) updateData.fullDescription = data.fullDescription?.trim();
     if (data.organizerDescription !== undefined) updateData.organizerDescription = data.organizerDescription?.trim();
     if (data.category !== undefined) updateData.category = data.category?.trim();
-    if (data.tags !== undefined) {
-      // Ensure tags is always an array (even if empty)
-      updateData.tags = Array.isArray(data.tags) ? data.tags : [];
-    }
+    if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.startDate !== undefined) updateData.startDate = new Date(data.startDate);
     if (data.endDate !== undefined) updateData.endDate = data.endDate ? new Date(data.endDate) : null;
     if (data.startTime !== undefined) updateData.startTime = data.startTime?.trim();
@@ -634,9 +607,6 @@ export class EventService {
     if (data.speakers !== undefined) updateData.speakers = data.speakers;
     if (data.sponsors !== undefined) updateData.sponsors = data.sponsors;
     if (data.faqs !== undefined) updateData.faqs = data.faqs;
-    if (data.socialLinks !== undefined) updateData.socialLinks = data.socialLinks;
-    if (data.agenda !== undefined) updateData.agenda = data.agenda;
-    if (data.exhibitors !== undefined) updateData.exhibitors = data.exhibitors;
     if (data.registrationFields !== undefined) updateData.registrationFields = data.registrationFields;
 
     // Handle ticket types
@@ -882,57 +852,9 @@ export class EventService {
           attendeeId,
         },
       },
-      include: {
-        ticketLineItems: true,
-        event: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            startDate: true,
-            endDate: true,
-            startTime: true,
-            endTime: true,
-            venue: true,
-            location: true,
-            address: true,
-            isOnline: true,
-            onlineLink: true,
-            image: true,
-            isFree: true,
-            ticketTypes: true,
-            price: true,
-            organizer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                organizationName: true,
-                email: true,
-              },
-            },
-          },
-        },
-        attendee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            companyAffiliation: true,
-          },
-        },
-      },
     });
 
-    // If already registered and not cancelled, return existing registration info
-    // This allows users to continue to payment if payment is pending
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
-      // For paid events with pending payment, return the existing registration
-      if (!event.isFree && existingRegistration.paymentStatus === 'PENDING') {
-        return existingRegistration;
-      }
-      // For free events or already paid, throw error (they're already registered)
       throw new ConflictError('You are already registered for this event');
     }
 
@@ -2775,66 +2697,9 @@ export class EventService {
           attendeeId: user.id,
         },
       },
-      include: {
-        ticketLineItems: true,
-        event: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            startDate: true,
-            endDate: true,
-            startTime: true,
-            endTime: true,
-            venue: true,
-            location: true,
-            address: true,
-            isOnline: true,
-            onlineLink: true,
-            image: true,
-            isFree: true,
-            ticketTypes: true,
-            price: true,
-            organizer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                organizationName: true,
-                email: true,
-              },
-            },
-          },
-        },
-        attendee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            companyAffiliation: true,
-          },
-        },
-      },
     });
 
-    // If already registered and not cancelled, return existing registration info
-    // This allows users to continue to payment if payment is pending
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
-      // For paid events with pending payment, return the existing registration
-      if (!event.isFree && existingRegistration.paymentStatus === 'PENDING') {
-        return {
-          registration: existingRegistration,
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            isNewUser: false,
-          },
-        };
-      }
-      // For free events or already paid, throw error (they're already registered)
       throw new ConflictError('You are already registered for this event');
     }
 
@@ -3328,9 +3193,105 @@ export class EventService {
     
     logger.debug(`[registerForEvent] Email sending process completed for registration ${registration.id}`);
 
-    // Eventbrite-style: Don't send automatic invitation email
-    // Users can set password when they visit the sign-in page
-    // Account invitation token generation removed - users will request password setup via sign-in page
+    // Generate account invitation token (only for new users or existing users without passwords)
+    // Skip account invitation for existing users who already have passwords
+    let accountInvitationToken: string | undefined;
+    if (finalIsNewUser || !finalUserHasPassword) {
+      accountInvitationToken = crypto.randomBytes(32).toString('hex');
+      const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      // Store account invitation token in EmailVerification table
+      await prisma.emailVerification.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          token: accountInvitationToken,
+          expiresAt: accountInvitationExpiresAt,
+          verified: false,
+        },
+      });
+
+      // Send account invitation email (Email 2: Account Setup)
+      try {
+        const accountCreationUrl = `${config.frontend.url}/auth/create-account?token=${accountInvitationToken}`;
+
+        const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Create Your EventKnit Account</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #4a6cf7 0%, #5b7cfa 100%); padding: 40px 20px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Welcome to EventKnit!</h1>
+                <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">You're registered for ${event.title}</p>
+              </div>
+
+              <!-- Content -->
+              <div style="padding: 40px 30px;">
+                <h2 style="margin: 0 0 20px 0; font-size: 22px; color: #333;">Create Your Account</h2>
+                <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                  You've successfully registered for <strong>${event.title}</strong>. Your ticket has been sent to this email.
+                </p>
+                <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
+                  Create your EventKnit account to easily manage your tickets, view your event history, and register for future events.
+                </p>
+
+                <!-- CTA Button -->
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${accountCreationUrl}" style="background-color: #4a6cf7; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(74, 108, 247, 0.3);">
+                    Create Account
+                  </a>
+                </div>
+
+                <p style="margin: 20px 0 0 0; color: #999; font-size: 14px; text-align: center;">
+                  This link will expire in 7 days. You can still access your tickets via the email link.
+                </p>
+              </div>
+
+              <!-- Footer -->
+              <div style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e5e5;">
+                <p style="margin: 0 0 10px 0; font-size: 12px; color: #999; text-align: center;">
+                  Need help? Contact us at <a href="mailto:support@eventknit.com" style="color: #4a6cf7; text-decoration: none;">support@eventknit.com</a>
+                </p>
+                <p style="margin: 0; font-size: 11px; color: #bbb; text-align: center;">
+                  This is an automated message. Please do not reply.
+                </p>
+              </div>
+            </div>
+          </body>
+        </html>
+        `;
+
+        // Account invitation emails are important but not critical
+        // User can still access their account via ticket email or request a new invitation
+        const emailResult = await emailService.sendEmail({
+          to: user.email,
+          subject: `Create Your EventKnit Account - ${event.title}`,
+          html,
+          isCritical: false, // Not critical - user can request new invitation
+        });
+
+        if (emailResult.success) {
+          if (emailResult.attempts > 1) {
+            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId} after ${emailResult.attempts} attempts`);
+          } else {
+            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId}`);
+          }
+        } else {
+          logger.warn(`Failed to send account invitation email to ${user.email} after ${emailResult.attempts} attempts:`, emailResult.error);
+          // Don't throw - account invitation email failure is not critical
+          // User can still access their account and request a new invitation
+        }
+      } catch (error) {
+        logger.error('Failed to send account invitation email:', error);
+        // Don't throw error - registration is complete, email is optional
+      }
+    }
 
     // Audit log
     await createAuditLog({

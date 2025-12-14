@@ -520,14 +520,6 @@ const EventManagement = () => {
                             <Badge className={getStatusColor(attendee.status || 'pending')}>
                               {attendee.status || 'pending'}
                             </Badge>
-                            {attendee.paymentStatus && (
-                              <Badge 
-                                variant={attendee.paymentStatus === 'COMPLETED' ? 'default' : 'destructive'}
-                                className={attendee.paymentStatus === 'PENDING' ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' : ''}
-                              >
-                                {attendee.paymentStatus === 'PENDING' ? 'Not Paid' : attendee.paymentStatus === 'COMPLETED' ? 'Paid' : attendee.paymentStatus}
-                              </Badge>
-                            )}
                             <Button variant="outline" size="sm">View Details</Button>
                           </div>
                         </div>

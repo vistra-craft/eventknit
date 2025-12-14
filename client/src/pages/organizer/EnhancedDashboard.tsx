@@ -14,15 +14,11 @@ import {
   CheckCircle2,
   Shield,
   X,
-  Circle,
-  AlertCircle,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 import { getOrganizerDashboardStats, getOrganizerDashboardEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
-import { getVerificationStatus, type VerificationStatus } from "../../lib/verification-api";
 
 const EnhancedDashboard = () => {
   const location = useLocation();
@@ -89,9 +85,6 @@ const EnhancedDashboard = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
-  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
-  const [loadingVerification, setLoadingVerification] = useState(true);
-  const [showVerificationBanner, setShowVerificationBanner] = useState(true);
 
   const fetchDashboardEvents = async (pageNum: number = 1, append: boolean = false) => {
     try {
@@ -138,46 +131,6 @@ const EnhancedDashboard = () => {
       setShowVerificationReminder(true);
     }
   }, [location.state]);
-
-  // Fetch verification status
-  const fetchVerificationStatus = async () => {
-    try {
-      setLoadingVerification(true);
-      const response = await getVerificationStatus();
-      if (response.success && response.data) {
-        setVerificationStatus(response.data);
-        // Check if banner was dismissed for this session
-        const dismissed = sessionStorage.getItem('verificationBannerDismissed');
-        if (dismissed && !response.data.identityVerified) {
-          setShowVerificationBanner(false);
-        } else {
-          setShowVerificationBanner(true);
-          // Clear dismissal if verification is complete
-          if (response.data.identityVerified) {
-            sessionStorage.removeItem('verificationBannerDismissed');
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching verification status:", error);
-    } finally {
-      setLoadingVerification(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchVerificationStatus();
-
-    // Listen for verification status updates
-    const handleVerificationUpdate = () => {
-      fetchVerificationStatus();
-    };
-    window.addEventListener('verificationStatusUpdated', handleVerificationUpdate);
-
-    return () => {
-      window.removeEventListener('verificationStatusUpdated', handleVerificationUpdate);
-    };
-  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -323,153 +276,6 @@ const EnhancedDashboard = () => {
                 >
                   <X className="h-4 w-4" />
                 </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Verification Notification Banner */}
-        {!loadingVerification && verificationStatus && !verificationStatus.identityVerified && showVerificationBanner && (
-          <Alert className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/50">
-            <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            <AlertDescription className="space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-2 text-lg">
-                    Complete Your Verification
-                  </h3>
-                  <p className="text-amber-800 dark:text-amber-200 mb-4">
-                    Verify your identity to create paid events and receive payouts from ticket sales.
-                  </p>
-                  
-                  {/* Verification Steps */}
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-start gap-3">
-                      {verificationStatus.identityVerified ? (
-                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`font-medium ${verificationStatus.identityVerified ? 'text-green-700 dark:text-green-300' : 'text-amber-900 dark:text-amber-100'}`}>
-                            Step 1: Identity Verification
-                          </span>
-                          {verificationStatus.identityVerified && (
-                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700">
-                              Completed
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-amber-700 dark:text-amber-300">
-                          {verificationStatus.identityVerified 
-                            ? "Your identity has been verified. You can now create paid events."
-                            : "Provide your personal information and upload a government-issued ID (passport, driver's license, or national ID)."}
-                        </p>
-                      </div>
-                    </div>
-
-                    {verificationStatus.identityVerified && (
-                      <div className="flex items-start gap-3">
-                        {verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED' ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                        )}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`font-medium ${verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED' ? 'text-green-700 dark:text-green-300' : 'text-amber-900 dark:text-amber-100'}`}>
-                              Step 2: Business Verification (Optional)
-                            </span>
-                            {verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED' && (
-                              <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700">
-                                Completed
-                              </Badge>
-                            )}
-                            {verificationStatus.kycStatus === 'PENDING' && (
-                              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 border-amber-300 dark:border-amber-700">
-                                Under Review
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-amber-700 dark:text-amber-300">
-                            {verificationStatus.verificationLevel === 3 && verificationStatus.kycStatus === 'APPROVED'
-                              ? "Your business verification is complete. You can receive unlimited payouts."
-                              : verificationStatus.kycStatus === 'PENDING'
-                              ? "Your business verification documents are under review."
-                              : verificationStatus.payoutLimit
-                              ? `Optional: Complete business verification to remove the $${verificationStatus.payoutLimit.toLocaleString()}/month payout limit. You can still receive payouts with just identity verification.`
-                              : "Optional: Complete business verification for unlimited payouts and higher event limits."}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {!verificationStatus.identityVerified && (
-                    <div className="flex items-center gap-3 pt-2 border-t border-amber-200 dark:border-amber-800">
-                      <Button
-                        onClick={() => {
-                          navigate('/organizer/verification', { 
-                            state: { redirectAfterVerification: '/organizer/dashboard' } 
-                          });
-                        }}
-                        className="bg-amber-600 hover:bg-amber-700 text-white"
-                      >
-                        <Shield className="h-4 w-4 mr-2" />
-                        Start Verification
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          // Store dismissal in sessionStorage to hide for this session
-                          sessionStorage.setItem('verificationBannerDismissed', 'true');
-                          setShowVerificationBanner(false);
-                        }}
-                        className="text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900"
-                      >
-                        Dismiss
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Partial Verification Notice (Identity verified but not business) */}
-        {!loadingVerification && verificationStatus && verificationStatus.identityVerified && 
-         verificationStatus.verificationLevel < 3 && (
-          <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
-            <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <AlertDescription className="space-y-3">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                    Upgrade to Full Verification
-                  </h3>
-                  <p className="text-blue-800 dark:text-blue-200 mb-3">
-                    {verificationStatus.payoutLimit 
-                      ? `You currently have a $${verificationStatus.payoutLimit.toLocaleString()}/month payout limit. Optional: Complete business verification for unlimited payouts. You can still receive payouts with just identity verification.`
-                      : "Optional: Complete business verification to unlock unlimited payouts and higher event limits."}
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigate('/organizer/verification', { 
-                          state: { redirectAfterVerification: '/organizer/dashboard' } 
-                        });
-                      }}
-                      className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
-                    >
-                      Complete Business Verification
-                    </Button>
-                  </div>
-                </div>
               </div>
             </AlertDescription>
           </Alert>

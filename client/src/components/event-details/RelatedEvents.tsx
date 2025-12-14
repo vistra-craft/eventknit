@@ -19,81 +19,29 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
       try {
         setIsLoading(true);
         
-        // Build filters - try tags first, then category, then just approved events
-        const filters: any = {
+        // Fetch events with same category or tags
+        const response = await getEvents({
           status: EventStatus.APPROVED,
+          category: category,
           limit: 20, // Fetch more to filter out current event
-        };
-        
-        // Add tags filter if we have tags
-        if (tags && tags.length > 0) {
-          filters.tags = tags;
-        }
-        // Add category filter if we have category (and no tags, or as fallback)
-        if (category) {
-          filters.category = category;
-        }
-        
-        console.log('[RelatedEvents] Fetching with filters:', filters);
-        
-        const response = await getEvents(filters);
-
-        console.log('[RelatedEvents] Response:', {
-          success: response.success,
-          eventCount: response.data?.events?.length || 0,
-          events: response.data?.events?.map(e => ({ id: e.id, title: e.title, tags: e.tags, category: e.category })) || []
         });
 
         if (response.success && response.data.events) {
-          // Filter out the current event
-          let filtered = response.data.events.filter((event) => event.id !== currentEventId);
+          // Filter out the current event and limit to 4
+          const filtered = response.data.events
+            .filter((event) => event.id !== currentEventId)
+            .slice(0, 4);
           
-          console.log('[RelatedEvents] After filtering current event:', filtered.length);
-          
-          // If we have tags, prioritize events with matching tags
-          if (tags && tags.length > 0) {
-            // Sort: events with more matching tags first
-            filtered = filtered.sort((a, b) => {
-              const aTagMatches = a.tags?.filter(tag => tags.includes(tag)).length || 0;
-              const bTagMatches = b.tags?.filter(tag => tags.includes(tag)).length || 0;
-              if (bTagMatches !== aTagMatches) {
-                return bTagMatches - aTagMatches;
-              }
-              // If same tag matches, prefer same category
-              if (category) {
-                if (a.category === category && b.category !== category) return -1;
-                if (b.category === category && a.category !== category) return 1;
-              }
-              return 0;
-            });
-          } else if (category) {
-            // If no tags but have category, prioritize same category
-            filtered = filtered.sort((a, b) => {
-              if (a.category === category && b.category !== category) return -1;
-              if (b.category === category && a.category !== category) return 1;
-              return 0;
-            });
-          }
-          
-          // Limit to 4 events
-          const finalEvents = filtered.slice(0, 4);
-          console.log('[RelatedEvents] Final events to display:', finalEvents.length);
-          setRelatedEvents(finalEvents);
-        } else {
-          console.log('[RelatedEvents] No events found or response failed');
-          setRelatedEvents([]);
+          setRelatedEvents(filtered);
         }
       } catch (error) {
         console.error("Error fetching related events:", error);
-        setRelatedEvents([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (currentEventId) {
-      fetchRelatedEvents();
-    }
+    fetchRelatedEvents();
   }, [currentEventId, category, tags]);
 
   if (isLoading) {

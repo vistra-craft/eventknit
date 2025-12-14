@@ -633,11 +633,6 @@ export default function CreateEventStepwise() {
             category: transformedEvent.category || "",
             timezone: (transformedEvent as { timezone?: string }).timezone || timezone,
             currency: transformedEvent.currency || DEFAULT_CURRENCY,
-            socialLinks: (transformedEvent as { socialLinks?: Record<string, string> }).socialLinks || {},
-            agenda: (transformedEvent as { agenda?: any[] }).agenda || [],
-            speakers: (transformedEvent as { speakers?: any[] }).speakers || [],
-            exhibitors: (transformedEvent as { exhibitors?: any[] }).exhibitors || [],
-            sponsors: (transformedEvent as { sponsors?: any[] }).sponsors || [],
           }));
 
           // Set image preview if image exists
@@ -697,26 +692,6 @@ export default function CreateEventStepwise() {
 
           // Set privacy
           setIsPrivate(transformedEvent.isPrivate || false);
-
-          // Set social links (always set, even if empty)
-          const eventSocialLinks = (transformedEvent as { socialLinks?: Record<string, string> }).socialLinks;
-          setSocialLinks(eventSocialLinks || {});
-
-          // Set agenda (always set, even if empty)
-          const eventAgenda = (transformedEvent as { agenda?: any[] }).agenda;
-          setAgenda(eventAgenda || []);
-
-          // Set speakers (always set, even if empty)
-          const eventSpeakers = (transformedEvent as { speakers?: any[] }).speakers;
-          setSpeakers(eventSpeakers || []);
-
-          // Set exhibitors (always set, even if empty)
-          const eventExhibitors = (transformedEvent as { exhibitors?: any[] }).exhibitors;
-          setExhibitors(eventExhibitors || []);
-
-          // Set sponsors (always set, even if empty)
-          const eventSponsors = (transformedEvent as { sponsors?: any[] }).sponsors;
-          setSponsors(eventSponsors || []);
         } else {
           setError('Failed to load event data');
         }
@@ -1048,8 +1023,7 @@ export default function CreateEventStepwise() {
       fullDescription: eventData.fullDescription?.trim() || undefined,
       organizerDescription: eventData.organizerDescription?.trim() || undefined,
       category: eventData.category || categories[0] || undefined,
-      // Always send tags array when editing (even if empty), or when creating with tags
-      tags: isEditMode ? (tags || []) : (tags.length > 0 ? tags : undefined),
+      tags: tags.length > 0 ? tags : undefined,
       startDate,
       endDate,
       startTime: eventData.time,

@@ -250,7 +250,6 @@ export class AuthController {
           email: true,
           firstName: true,
           lastName: true,
-          otherName: true,
           phoneNumber: true,
           role: true,
           status: true,
@@ -342,7 +341,6 @@ export class AuthController {
           email: true,
           firstName: true,
           lastName: true,
-          otherName: true,
           phoneNumber: true,
           role: true,
           status: true,
@@ -481,32 +479,6 @@ export class AuthController {
   }
 
   /**
-   * Verify invitation token and get email (for displaying in create account form)
-   */
-  static async verifyInvitationToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const token = req.query.token as string || req.params.token;
-      
-      if (!token) {
-        res.status(400).json({
-          success: false,
-          message: 'Token is required',
-        });
-        return;
-      }
-
-      const result = await AuthService.verifyInvitationToken(token);
-
-      res.status(200).json({
-        success: true,
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * Create account from invitation token (for guest users)
    */
   static async createAccountFromInvitation(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -545,24 +517,6 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Account invitation email sent successfully',
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Request password setup email (Eventbrite-style)
-   * For users who registered as guests and need to set a password
-   */
-  static async requestPasswordSetup(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      await AuthService.requestPasswordSetup(req.body.email);
-
-      // Don't reveal if user exists (security best practice)
-      res.status(200).json({
-        success: true,
-        message: 'If an account exists with this email, a password setup link has been sent',
       });
     } catch (error) {
       next(error);

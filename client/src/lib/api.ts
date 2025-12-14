@@ -246,9 +246,6 @@ export const apiRequest = async <T>(
       if (endpoint.includes('/auth/login') ||
         endpoint.includes('/auth/register') ||
         endpoint.includes('/auth/refresh') ||
-        endpoint.includes('/auth/verify-invitation') ||
-        endpoint.includes('/auth/create-account') ||
-        endpoint.includes('/auth/resend-invitation') ||
         endpoint.includes('/register-guest')) {
         throw error;
       }

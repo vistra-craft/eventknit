@@ -33,7 +33,6 @@ export enum EventType {
 export interface EventFilters {
   status?: EventStatus;
   category?: string;
-  tags?: string[];
   isFree?: boolean;
   organizerId?: string;
   search?: string;
@@ -224,9 +223,6 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
 
   if (filters?.status) queryParams.append('status', filters.status);
   if (filters?.category) queryParams.append('category', filters.category);
-  if (filters?.tags && filters.tags.length > 0) {
-    queryParams.append('tags', filters.tags.join(','));
-  }
   if (filters?.isFree !== undefined) queryParams.append('isFree', filters.isFree.toString());
   if (filters?.organizerId) queryParams.append('organizerId', filters.organizerId);
   if (filters?.search) queryParams.append('search', filters.search);
