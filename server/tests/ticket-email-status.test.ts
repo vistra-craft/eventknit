@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-var-requires */
 import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/database';
@@ -648,7 +649,7 @@ describe('Ticket Email Status Tracking', () => {
 
         // Check for PDF or HTML ticket
         const ticketPDF = attachmentsUsed.find(att => 
-          att.filename?.includes('ticket.pdf') || att.filename?.includes('ticket.html')
+          att.filename?.includes('ticket.pdf') || att.filename?.includes('ticket.html'),
         );
         expect(ticketPDF).toBeDefined();
       } finally {
@@ -678,3 +679,6 @@ describe('Ticket Email Status Tracking', () => {
     });
   });
 });
+
+
+

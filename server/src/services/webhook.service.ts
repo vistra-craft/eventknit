@@ -1,3 +1,4 @@
+/* global URL */
 import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
@@ -5,6 +6,76 @@ import crypto from 'crypto';
 import axios from 'axios';
 
 export class WebhookService {
+  /**
+   * Create webhook configuration (used by tests and admin UI)
+   */
+  static async createWebhook(data: {
+    name: string;
+    url: string;
+    secret: string;
+    events: string[];
+    isActive?: boolean;
+  }) {
+    try {
+      // basic URL validation
+      try {
+        new URL(data.url);
+      } catch {
+        throw new ValidationError('Invalid webhook URL');
+      }
+
+      const config = await prisma.webhookEndpoint.create({
+        data: {
+          name: data.name,
+          url: data.url,
+          secret: data.secret,
+          eventTypes: data.events,
+          isActive: data.isActive ?? true,
+        },
+      });
+
+      return config;
+    } catch (error) {
+      if (error instanceof ValidationError) throw error;
+      logger.error('Error creating webhook config:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sign an outgoing payload using the stored secret
+   */
+  static async signPayload(configId: string, payload: unknown) {
+    const config = await prisma.webhookEndpoint.findUnique({
+      where: { id: configId },
+    });
+
+    if (!config || !config.isActive) {
+      throw new NotFoundError('Webhook config not found');
+    }
+
+    const body = JSON.stringify(payload);
+    const hmac = crypto.createHmac('sha256', config.secret || '');
+    hmac.update(body);
+    return hmac.digest('hex');
+  }
+
+  /**
+   * Verify an incoming payload signature
+   */
+  static async verifySignature(configId: string, payload: unknown, signature: string) {
+    const config = await prisma.webhookEndpoint.findUnique({
+      where: { id: configId },
+    });
+
+    if (!config || !config.isActive) {
+      return false;
+    }
+
+    const expected = await this.signPayload(configId, payload);
+    return expected === signature;
+  }
+
   /**
    * Create webhook endpoint
    */
@@ -136,7 +207,7 @@ export class WebhookService {
       maxRetries?: number;
       retryDelay?: number;
       isActive?: boolean;
-    }
+    },
   ) {
     try {
       const endpoint = await prisma.webhookEndpoint.findUnique({
@@ -216,7 +287,7 @@ export class WebhookService {
   static async triggerWebhook(
     eventType: string,
     eventData: Record<string, unknown>,
-    eventId?: string
+    eventId?: string,
   ) {
     try {
       // Find all active endpoints subscribed to this event type
@@ -234,7 +305,7 @@ export class WebhookService {
 
       // Trigger webhook for each endpoint
       const promises = endpoints.map((endpoint) =>
-        this.deliverWebhook(endpoint.id, eventType, eventData, eventId)
+        this.deliverWebhook(endpoint.id, eventType, eventData, eventId),
       );
 
       await Promise.allSettled(promises);
@@ -255,7 +326,7 @@ export class WebhookService {
     endpointId: string,
     eventType: string,
     eventData: Record<string, unknown>,
-    eventId?: string
+    eventId?: string,
   ) {
     try {
       const endpoint = await prisma.webhookEndpoint.findUnique({
@@ -272,7 +343,7 @@ export class WebhookService {
           endpointId,
           eventType,
           eventId,
-          payload: eventData,
+          payload: eventData as any,
           status: 'PENDING',
           maxAttempts: endpoint.maxRetries,
         },
@@ -450,7 +521,7 @@ export class WebhookService {
         timestamp: new Date().toISOString(),
       };
 
-      const result = await this.deliverWebhook(endpointId, 'webhook.test', testPayload.data, 'test');
+      await this.deliverWebhook(endpointId, 'webhook.test', testPayload.data, 'test');
 
       return { success: true, message: 'Test webhook sent' };
     } catch (error: any) {

@@ -15,6 +15,7 @@ import {
   MediaResponse,
   PostMetrics,
 } from '../platform.interface';
+import { URLSearchParams } from 'url';
 import { logger } from '../../../utils/logger.js';
 import { config } from '../../../config/index.js';
 
@@ -43,7 +44,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
   }
 
-  async exchangeCodeForToken(code: string, redirectUri: string): Promise<TokenResponse> {
+  async exchangeCodeForToken(_code: string, _redirectUri: string): Promise<TokenResponse> {
     // TODO: Implement actual Facebook OAuth token exchange
     // Reference: https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow
     
@@ -72,7 +73,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getUserProfile(accessToken: string): Promise<SocialProfile> {
+  async getUserProfile(_accessToken: string): Promise<SocialProfile> {
     // TODO: Implement Facebook Graph API call: GET /me
     // Reference: https://developers.facebook.com/docs/graph-api/reference/user
     
@@ -87,7 +88,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     };
   }
 
-  async createPost(accessToken: string, post: PostData): Promise<PostResponse> {
+  async createPost(_accessToken: string, post: PostData): Promise<PostResponse> {
     // TODO: Implement Facebook Graph API call: POST /{page-id}/feed
     // Reference: https://developers.facebook.com/docs/graph-api/reference/page/feed
     
@@ -105,7 +106,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     };
   }
 
-  async uploadMedia(accessToken: string, media: MediaData): Promise<MediaResponse> {
+  async uploadMedia(_accessToken: string, media: MediaData): Promise<MediaResponse> {
     // TODO: Implement Facebook Graph API call: POST /{page-id}/photos
     // Reference: https://developers.facebook.com/docs/graph-api/reference/page/photos
     
@@ -118,7 +119,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getPostMetrics(accessToken: string, postId: string): Promise<PostMetrics> {
+  async getPostMetrics(_accessToken: string, postId: string): Promise<PostMetrics> {
     // TODO: Implement Facebook Graph API call: GET /{post-id}/insights
     // Reference: https://developers.facebook.com/docs/graph-api/reference/insights
     
@@ -136,7 +137,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     };
   }
 
-  async deletePost(accessToken: string, postId: string): Promise<boolean> {
+  async deletePost(_accessToken: string, postId: string): Promise<boolean> {
     // TODO: Implement Facebook Graph API call: DELETE /{post-id}
     // Reference: https://developers.facebook.com/docs/graph-api/reference/post
     
@@ -145,7 +146,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     return true;
   }
 
-  async validateToken(accessToken: string): Promise<boolean> {
+  async validateToken(_accessToken: string): Promise<boolean> {
     // TODO: Implement Facebook Graph API call: GET /me?access_token={token}
     
     logger.info('Facebook: Validating token (placeholder)');

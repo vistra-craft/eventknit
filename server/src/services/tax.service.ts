@@ -35,7 +35,7 @@ export class TaxService {
       country: string;
       state?: string;
       city?: string;
-    }
+    },
   ): Promise<TaxCalculationResult> {
     try {
       // Find applicable tax rate
@@ -119,7 +119,7 @@ export class TaxService {
         });
       }
 
-      return taxRate;
+      return taxRate as any;
     } catch (error: any) {
       logger.error('Error fetching tax rate:', error);
       return null;
@@ -309,12 +309,12 @@ export class TaxService {
       // Calculate totals
       const totalTax = invoices.reduce(
         (sum, invoice) => sum.plus(invoice.taxAmount || new Decimal(0)),
-        new Decimal(0)
+        new Decimal(0),
       );
 
       const totalRevenue = invoices.reduce(
         (sum, invoice) => sum.plus(invoice.totalAmount),
-        new Decimal(0)
+        new Decimal(0),
       );
 
       // Group by country

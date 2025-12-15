@@ -3,7 +3,7 @@ import { NotFoundError } from '../src/utils/errors';
 
 const prismaMock = {
   event: { findFirst: jest.fn() },
-  advancedTicketType: {
+  ticketPackage: {
     create: jest.fn(),
     findMany: jest.fn(),
     update: jest.fn(),
@@ -34,16 +34,16 @@ describe('AdvancedTicketTypesService', () => {
 
   it('creates advanced ticket type', async () => {
     prismaMock.event.findFirst.mockResolvedValue({ id: 'evt-1', organizerId: 'org-1' });
-    prismaMock.advancedTicketType.create.mockResolvedValue({ id: 'adv-1' });
+    prismaMock.ticketPackage.create.mockResolvedValue({ id: 'adv-1' });
 
     const t = await AdvancedTicketTypesService.createTicketType('org-1', ticketData as any);
 
-    expect(prismaMock.advancedTicketType.create).toHaveBeenCalledWith(
+    expect(prismaMock.ticketPackage.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           eventId: 'evt-1',
           name: 'VIP',
-          basePrice: 100,
+          price: 100,
           maxPerOrder: 2,
         }),
       }),

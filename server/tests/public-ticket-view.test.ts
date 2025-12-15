@@ -13,7 +13,7 @@ const hashPassword = async (password: string): Promise<string> => {
 
 describe('Public Ticket View Endpoint', () => {
   let dbConnected = false;
-  let organizerToken: string;
+  let _organizerToken: string;
   let organizerId: string;
   let attendeeId: string;
   let eventId: string;
@@ -77,7 +77,7 @@ describe('Public Ticket View Endpoint', () => {
       },
     });
     organizerId = organizer.id;
-    organizerToken = generateAccessToken({
+    _organizerToken = generateAccessToken({
       userId: organizer.id,
       email: organizer.email,
       role: organizer.role,
@@ -305,3 +305,6 @@ describe('Public Ticket View Endpoint', () => {
     });
   });
 });
+
+
+

@@ -8,6 +8,7 @@
 import { ScheduledPostsService } from '../services/social-media/scheduled-posts.service';
 import { logger } from '../utils/logger.js';
 
+/* global NodeJS */
 class SocialMediaScheduler {
   private intervalId: NodeJS.Timeout | null = null;
   private isRunning = false;

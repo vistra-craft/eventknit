@@ -1,11 +1,54 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { emailService } from './email.service.js';
 
 export class AttendeeCommunicationService {
+  /**
+   * Schedule a message to a saved audience segment
+   * Used by tests to ensure the segment exists and message is persisted
+   */
+  static async scheduleMessage(
+    organizerId: string,
+    data: {
+      audienceId: string;
+      subject: string;
+      content: string;
+      scheduledFor?: Date;
+    },
+  ) {
+    // Ensure segment belongs to organizer
+    const segment = await prisma.attendeeSegment.findFirst({
+      where: {
+        id: data.audienceId,
+        organizerId,
+      },
+    });
+
+    if (!segment) {
+      throw new NotFoundError('Audience segment not found');
+    }
+
+    // Persist as a bulk message entry with audience metadata
+    const message = await prisma.bulkMessage.create({
+      data: {
+        title: data.subject,
+        content: data.content,
+        type: 'announcement',
+        targetAudience: 'SPECIFIC_EVENT' as any,
+        eventId: data.audienceId, // store audience/segment reference
+        channels: { email: true, inApp: true, push: false, sms: false } as any,
+        status: 'SCHEDULED' as any,
+        scheduledAt: data.scheduledFor,
+        createdBy: organizerId,
+      },
+    });
+
+    return message;
+  }
+
   /**
    * Send message to segment
    */

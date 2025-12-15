@@ -2,9 +2,8 @@
  * Venue Controller
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { VenueService } from '../services/venue.service';
-import { logger } from '../utils/logger.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
 export class VenueController {

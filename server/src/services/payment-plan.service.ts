@@ -16,7 +16,7 @@ export class PaymentPlanService {
       startDate: Date;
       autoPaymentEnabled?: boolean;
       paymentMethod?: string;
-    }
+    },
   ) {
     try {
       // Get registration
@@ -102,7 +102,7 @@ export class PaymentPlanService {
       frequency: string;
       startDate: Date;
       currency: string;
-    }
+    },
   ) {
     const installments = [];
     let currentDate = new Date(config.startDate);
@@ -132,8 +132,8 @@ export class PaymentPlanService {
   private static calculateEndDate(startDate: Date, installmentCount: number, frequency: string): Date {
     const endDate = new Date(startDate);
     const monthsToAdd = frequency === 'MONTHLY' ? installmentCount - 1 :
-                        frequency === 'BIWEEKLY' ? Math.floor((installmentCount - 1) / 2) :
-                        frequency === 'WEEKLY' ? Math.floor((installmentCount - 1) / 4) : 0;
+      frequency === 'BIWEEKLY' ? Math.floor((installmentCount - 1) / 2) :
+        frequency === 'WEEKLY' ? Math.floor((installmentCount - 1) / 4) : 0;
 
     endDate.setMonth(endDate.getMonth() + monthsToAdd);
     return endDate;
@@ -146,17 +146,17 @@ export class PaymentPlanService {
     const nextDate = new Date(currentDate);
     
     switch (frequency) {
-      case 'WEEKLY':
-        nextDate.setDate(nextDate.getDate() + 7);
-        break;
-      case 'BIWEEKLY':
-        nextDate.setDate(nextDate.getDate() + 14);
-        break;
-      case 'MONTHLY':
-        nextDate.setMonth(nextDate.getMonth() + 1);
-        break;
-      default:
-        nextDate.setMonth(nextDate.getMonth() + 1);
+    case 'WEEKLY':
+      nextDate.setDate(nextDate.getDate() + 7);
+      break;
+    case 'BIWEEKLY':
+      nextDate.setDate(nextDate.getDate() + 14);
+      break;
+    case 'MONTHLY':
+      nextDate.setMonth(nextDate.getMonth() + 1);
+      break;
+    default:
+      nextDate.setMonth(nextDate.getMonth() + 1);
     }
     
     return nextDate;
@@ -264,7 +264,7 @@ export class PaymentPlanService {
       transactionId?: string;
       gateway?: string;
       gatewayReference?: string;
-    }
+    },
   ) {
     try {
       const installment = await prisma.paymentInstallment.findUnique({

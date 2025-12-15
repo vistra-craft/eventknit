@@ -30,7 +30,7 @@ export class AuthController {
         req.body.code,
         req.body.password,
         req.body.firstName,
-        req.body.lastName
+        req.body.lastName,
       );
 
       // Set refresh token as HttpOnly cookie

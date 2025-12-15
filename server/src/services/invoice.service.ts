@@ -25,7 +25,7 @@ export class InvoiceService {
       dueDate?: Date;
       notes?: string;
       terms?: string;
-    }
+    },
   ) {
     try {
       // Get transaction with related data
@@ -114,7 +114,7 @@ export class InvoiceService {
                   country: attendee.country,
                   state: attendee.state || undefined,
                   city: attendee.city || undefined,
-                }
+                },
               );
               taxAmount = new Decimal(taxCalculation.taxAmount);
             }
@@ -245,6 +245,7 @@ export class InvoiceService {
               event: true,
             },
           },
+          event: true,
         },
       });
 
@@ -291,6 +292,7 @@ export class InvoiceService {
               event: true,
             },
           },
+          event: true,
         },
       });
 

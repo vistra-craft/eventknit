@@ -795,6 +795,7 @@ export class TicketService {
     // Use stored QR code if available (generated at registration time, like Eventbrite/vf-ticket)
     // Otherwise generate on-the-fly (backward compatibility for existing registrations)
     let qrCodeDataUrl: string;
+    let ticketDataForResponse: ReturnType<typeof TicketService.generateTicketData> | undefined;
     if (registration.qrCodeDataUrl) {
       // Use stored QR code (faster, like Eventbrite/vf-ticket)
       qrCodeDataUrl = registration.qrCodeDataUrl;
@@ -803,6 +804,7 @@ export class TicketService {
       // Generate QR code on-the-fly (backward compatibility for old registrations)
       logger.debug(`Generating QR code on-the-fly for registration ${registrationId} (no stored QR code found)`);
       const ticketData = this.generateTicketData(registration.id, registration.eventId, registration.attendee.email);
+      ticketDataForResponse = ticketData;
       qrCodeDataUrl = await this.generateQRCode(ticketData);
       
       // Store generated QR code for future use
@@ -833,7 +835,7 @@ export class TicketService {
       backupCode: registration.backupCode || undefined,
       createdAt: registration.createdAt.toISOString(),
       registration,
-      ticketData,
+      ticketData: ticketDataForResponse,
     };
   }
 

@@ -47,6 +47,51 @@ export class UnifiedMessagingService {
   }
 
   /**
+   * Send a direct message between two users.
+   * Creates a conversation if none exists.
+   */
+  static async sendMessage(data: {
+    senderId: string;
+    recipientId: string;
+    content: string;
+  }) {
+    const message = await prisma.directMessage.create({
+      data: {
+        senderId: data.senderId,
+        recipientId: data.recipientId,
+        content: data.content,
+      },
+    });
+
+    return message;
+  }
+
+  /**
+   * Get a conversation ensuring the user is a participant.
+   */
+  static async getConversation(conversationId: string, userId: string) {
+    const messages = await prisma.directMessage.findMany({
+      where: {
+        OR: [
+          { senderId: userId, recipientId: conversationId },
+          { senderId: conversationId, recipientId: userId },
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!messages.length) {
+      throw new NotFoundError('Conversation not found');
+    }
+
+    return {
+      id: conversationId,
+      participants: [userId, conversationId],
+      messages,
+    } as any;
+  }
+
+  /**
    * Send unified message across all channels
    * This is the single interface for all outbound communications
    */

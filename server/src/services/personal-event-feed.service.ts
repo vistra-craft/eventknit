@@ -87,7 +87,7 @@ export class PersonalEventFeedService {
    */
   static async refreshFeed(userId: string) {
     try {
-      const feed = await this.getOrCreateFeed(userId);
+      const _feed = await this.getOrCreateFeed(userId);
 
       // Get user preferences
       const userInterests = await prisma.userInterest.findMany({
@@ -157,6 +157,7 @@ export class PersonalEventFeedService {
           location: true,
           category: true,
           image: true,
+          tags: true,
           isFree: true,
           price: true,
           currency: true,
@@ -183,7 +184,7 @@ export class PersonalEventFeedService {
         }
 
         return {
-          feedId: feed.id,
+          feedId: _feed.id,
           eventId: event.id,
           relevanceScore: new Decimal(Math.min(relevanceScore, 1.0)),
           reason: this.generateReason(event, preferredCategories, preferredTags, preferredLocations),
@@ -194,7 +195,7 @@ export class PersonalEventFeedService {
       await prisma.$transaction([
         prisma.feedItem.deleteMany({
           where: {
-            feedId: feed.id,
+            feedId: _feed.id,
             viewed: true,
           },
         }),
@@ -202,7 +203,7 @@ export class PersonalEventFeedService {
           prisma.feedItem.upsert({
             where: {
               feedId_eventId: {
-                feedId: feed.id,
+                feedId: _feed.id,
                 eventId: item.eventId,
               },
             },
@@ -213,10 +214,10 @@ export class PersonalEventFeedService {
               viewed: false,
               dismissed: false,
             },
-          })
+          }),
         ),
         prisma.personalEventFeed.update({
-          where: { id: feed.id },
+          where: { id: _feed.id },
           data: { lastUpdated: new Date() },
         }),
       ]);
@@ -237,16 +238,16 @@ export class PersonalEventFeedService {
     preferences: {
       preferences?: any;
       filters?: any;
-    }
+    },
   ) {
     try {
-      const feed = await this.getOrCreateFeed(userId);
+      const _feed = await this.getOrCreateFeed(userId);
 
       const updated = await prisma.personalEventFeed.update({
-        where: { id: feed.id },
+        where: { id: _feed.id },
         data: {
-          preferences: preferences.preferences || feed.preferences,
-          filters: preferences.filters || feed.filters,
+          preferences: preferences.preferences || _feed.preferences,
+          filters: preferences.filters || _feed.filters,
         },
       });
 
@@ -262,7 +263,7 @@ export class PersonalEventFeedService {
    */
   static async markItemViewed(userId: string, itemId: string) {
     try {
-      const feed = await this.getOrCreateFeed(userId);
+      await this.getOrCreateFeed(userId);
       const item = await prisma.feedItem.findUnique({
         where: { id: itemId },
         include: { feed: true },
@@ -295,7 +296,7 @@ export class PersonalEventFeedService {
    */
   static async dismissItem(userId: string, itemId: string) {
     try {
-      const feed = await this.getOrCreateFeed(userId);
+      await this.getOrCreateFeed(userId);
       const item = await prisma.feedItem.findUnique({
         where: { id: itemId },
         include: { feed: true },
@@ -327,7 +328,7 @@ export class PersonalEventFeedService {
     event: any,
     categories: Set<string>,
     tags: Set<string>,
-    locations: Set<string>
+    locations: Set<string>,
   ): string {
     const reasons: string[] = [];
 

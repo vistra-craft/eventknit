@@ -15,6 +15,7 @@ import {
   MediaResponse,
   PostMetrics,
 } from '../platform.interface';
+import { URLSearchParams } from 'url';
 import { logger } from '../../../utils/logger.js';
 import { config } from '../../../config/index.js';
 
@@ -44,7 +45,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
     return `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
   }
 
-  async exchangeCodeForToken(code: string, redirectUri: string): Promise<TokenResponse> {
+  async exchangeCodeForToken(_code: string, _redirectUri: string): Promise<TokenResponse> {
     // TODO: Implement actual LinkedIn OAuth token exchange
     // Reference: https://learn.microsoft.com/en-us/linkedin/shared/authentication/authentication
     
@@ -72,7 +73,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getUserProfile(accessToken: string): Promise<SocialProfile> {
+  async getUserProfile(_accessToken: string): Promise<SocialProfile> {
     // TODO: Implement LinkedIn API call: GET /v2/userinfo
     // Reference: https://learn.microsoft.com/en-us/linkedin/shared/authentication/authentication#retrieve-member-basic-profile
     
@@ -88,7 +89,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
     };
   }
 
-  async createPost(accessToken: string, post: PostData): Promise<PostResponse> {
+  async createPost(_accessToken: string, post: PostData): Promise<PostResponse> {
     // TODO: Implement LinkedIn API call: POST /v2/ugcPosts
     // Reference: https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/ugc-post-api
     
@@ -105,7 +106,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
     };
   }
 
-  async uploadMedia(accessToken: string, media: MediaData): Promise<MediaResponse> {
+  async uploadMedia(_accessToken: string, media: MediaData): Promise<MediaResponse> {
     // TODO: Implement LinkedIn API call: POST /v2/assets
     // Reference: https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/ugc-post-api#uploading-images-and-videos
     
@@ -118,7 +119,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getPostMetrics(accessToken: string, postId: string): Promise<PostMetrics> {
+  async getPostMetrics(_accessToken: string, postId: string): Promise<PostMetrics> {
     // TODO: Implement LinkedIn API call: GET /v2/socialActions/{postId}
     // Reference: https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/ugc-post-api#retrieve-ugc-post
     
@@ -135,7 +136,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
     };
   }
 
-  async deletePost(accessToken: string, postId: string): Promise<boolean> {
+  async deletePost(_accessToken: string, postId: string): Promise<boolean> {
     // TODO: Implement LinkedIn API call: DELETE /v2/ugcPosts/{postId}
     // Reference: https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/ugc-post-api#delete-ugc-post
     
@@ -144,7 +145,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
     return true;
   }
 
-  async validateToken(accessToken: string): Promise<boolean> {
+  async validateToken(_accessToken: string): Promise<boolean> {
     // TODO: Implement LinkedIn API call: GET /v2/userinfo
     
     logger.info('LinkedIn: Validating token (placeholder)');

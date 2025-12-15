@@ -111,13 +111,13 @@ export class PaymentService {
 
     // Select gateway (use specified or default)
     const gatewayType = data.gateway || this.gatewayManager.getDefaultGateway().getName() as GatewayType;
-    const gateway = this.gatewayManager.getGateway(gatewayType);
+    const gatewayInstance = this.gatewayManager.getGateway(gatewayType);
 
     // Generate unique reference
     const reference = `EVT-${registration.id}-${Date.now()}`;
 
     try {
-      const response = await gateway.initializePayment({
+      const response = await gatewayInstance.initializePayment({
         amount: data.amount,
         currency: data.currency || registration.event?.currency || 'NGN',
         email: data.email,
@@ -488,7 +488,7 @@ export class PaymentService {
                 currency: gatewayVerification.currency,
                 gateway: detectedGatewayType,
               },
-              paymentTransaction.id
+              paymentTransaction.id,
             );
           } catch (webhookError) {
             // Log error but don't fail the payment - webhook failures shouldn't break the flow
@@ -501,7 +501,7 @@ export class PaymentService {
         try {
           // Ensure required fields are present before sending email
           if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
-            logger.debug(`[PaymentService.handleWebhook] Organizer info present, preparing ticket email data`);
+            logger.debug('[PaymentService.handleWebhook] Organizer info present, preparing ticket email data');
             
             // Transform registration data to match TicketEmailData interface
             // Convert Decimal types to numbers for ticketLineItems
@@ -525,10 +525,10 @@ export class PaymentService {
             }> | undefined;
             
             try {
-              logger.debug(`[PaymentService.handleWebhook] Extracting ticketLineItems from registration`);
+              logger.debug('[PaymentService.handleWebhook] Extracting ticketLineItems from registration');
               // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
               const lineItems = (registrationWithLineItems as any).ticketLineItems;
-              logger.debug(`[PaymentService.handleWebhook] ticketLineItems raw value:`, lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
+              logger.debug('[PaymentService.handleWebhook] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
               
               if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
                 ticketLineItems = lineItems.map((item: {
@@ -544,7 +544,7 @@ export class PaymentService {
                 }));
                 logger.debug(`[PaymentService.handleWebhook] Successfully extracted ${ticketLineItems.length} ticket line items`);
               } else {
-                logger.debug(`[PaymentService.handleWebhook] No ticket line items to extract`);
+                logger.debug('[PaymentService.handleWebhook] No ticket line items to extract');
               }
             } catch (lineItemsError) {
               // If ticketLineItems extraction fails, just log and continue without them
@@ -739,8 +739,6 @@ export class PaymentService {
     const crypto = require('crypto');
     
     // Use gateway manager to get the correct gateway
-    const gateway = this.gatewayManager.getGateway(gatewayType);
-    
     // Get secret key from gateway configuration
     // For Paystack, we need the secret key for HMAC verification
     if (gatewayType === 'PAYSTACK') {
@@ -786,7 +784,7 @@ export class PaymentService {
     details: Array<{ reference: string; action: string; reason?: string }>;
   }> {
     // Use gateway manager instead of direct config access
-    const paystackGateway = this.gatewayManager.getGateway('PAYSTACK');
+    const _paystackGateway = this.gatewayManager.getGateway('PAYSTACK');
     
     if (!config.paystack?.secretKey) {
       throw new ValidationError('Paystack payment service is not configured');

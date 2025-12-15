@@ -1,5 +1,4 @@
 import { AdminFinancialService } from '../src/services/admin-financial.service';
-import { ValidationError } from '../src/utils/errors';
 import { Decimal } from '@prisma/client/runtime/library';
 
 const prismaMock = {

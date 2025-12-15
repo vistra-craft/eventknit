@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { ValidationError } from '../utils/errors.js';
 
 export class PayoutManagementService {
   /**
@@ -52,9 +52,24 @@ export class PayoutManagementService {
         where: { organizerId },
         create: {
           organizerId,
+          primaryMethod: data.primaryMethod || 'bank_transfer',
           ...data,
         },
-        update: data,
+        update: {
+          ...(data.primaryMethod && { primaryMethod: data.primaryMethod }),
+          ...(data.bankName !== undefined && { bankName: data.bankName }),
+          ...(data.accountName !== undefined && { accountName: data.accountName }),
+          ...(data.accountNumber !== undefined && { accountNumber: data.accountNumber }),
+          ...(data.bankCode !== undefined && { bankCode: data.bankCode }),
+          ...(data.routingNumber !== undefined && { routingNumber: data.routingNumber }),
+          ...(data.paystackRecipientCode !== undefined && { paystackRecipientCode: data.paystackRecipientCode }),
+          ...(data.alternativeMethods !== undefined && { alternativeMethods: data.alternativeMethods }),
+          ...(data.autoPayoutEnabled !== undefined && { autoPayoutEnabled: data.autoPayoutEnabled }),
+          ...(data.autoPayoutThreshold !== undefined && { autoPayoutThreshold: data.autoPayoutThreshold }),
+          ...(data.autoPayoutSchedule !== undefined && { autoPayoutSchedule: data.autoPayoutSchedule }),
+          ...(data.taxId !== undefined && { taxId: data.taxId }),
+          ...(data.taxCountry !== undefined && { taxCountry: data.taxCountry }),
+        },
       });
 
       return preferences;
@@ -181,7 +196,7 @@ export class PayoutManagementService {
 
       const totalAmount = data.amount || platformFees.reduce(
         (sum, fee) => sum + Number(fee.organizerAmount),
-        0
+        0,
       );
 
       // Get payout preferences
@@ -190,6 +205,7 @@ export class PayoutManagementService {
       // Create disbursement
       const disbursement = await prisma.organizerDisbursement.create({
         data: {
+          disbursementNumber: `DISB-${Date.now()}`,
           organizerId,
           eventId: data.eventId || platformFees[0].eventId,
           totalAmount,
@@ -241,7 +257,7 @@ export class PayoutManagementService {
 
       const pendingAmount = pendingFees.reduce(
         (sum, fee) => sum + Number(fee.organizerAmount),
-        0
+        0,
       );
 
       // Get completed disbursements
@@ -254,7 +270,7 @@ export class PayoutManagementService {
 
       const totalPaid = completedDisbursements.reduce(
         (sum, d) => sum + Number(d.totalAmount),
-        0
+        0,
       );
 
       // Get pending disbursements
@@ -269,7 +285,7 @@ export class PayoutManagementService {
 
       const pendingPayoutAmount = pendingDisbursements.reduce(
         (sum, d) => sum + Number(d.totalAmount),
-        0
+        0,
       );
 
       return {

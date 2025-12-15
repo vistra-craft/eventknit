@@ -142,7 +142,7 @@ export class VenueService {
    */
   static async updateVenue(venueId: string, organizerId: string, data: UpdateVenueData) {
     try {
-      const venue = await this.getVenueById(venueId, organizerId);
+      await this.getVenueById(venueId, organizerId);
 
       const updated = await prisma.venue.update({
         where: { id: venueId },
@@ -176,7 +176,7 @@ export class VenueService {
    */
   static async deleteVenue(venueId: string, organizerId: string) {
     try {
-      const venue = await this.getVenueById(venueId, organizerId);
+      await this.getVenueById(venueId, organizerId);
 
       // Check if venue is used in any active events
       const activeSeatMaps = await prisma.seatMap.count({

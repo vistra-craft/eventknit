@@ -1,5 +1,5 @@
 import { EmailMarketingService } from '../src/services/email-marketing.service';
-import { NotFoundError, ValidationError } from '../src/utils/errors';
+import { ValidationError } from '../src/utils/errors';
 
 const prismaMock = {
   event: { findFirst: jest.fn() },

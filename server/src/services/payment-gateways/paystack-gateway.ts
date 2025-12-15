@@ -13,7 +13,7 @@ import {
 } from '../payment-gateway.interface.js';
 
 export class PaystackGateway implements PaymentGateway {
-  private paystack: Paystack;
+  private paystack: Paystack | null = null;
   private gatewayConfig: PaymentGatewayConfig;
 
   constructor(gatewayConfig?: PaymentGatewayConfig) {
@@ -37,7 +37,7 @@ export class PaystackGateway implements PaymentGateway {
   }
 
   async initializePayment(request: InitializePaymentRequest): Promise<InitializePaymentResponse> {
-    if (!this.isConfigured()) {
+    if (!this.isConfigured() || !this.paystack) {
       throw new Error('Paystack is not configured');
     }
 
@@ -54,14 +54,15 @@ export class PaystackGateway implements PaymentGateway {
         callback_url: request.callbackUrl,
       });
 
-      if (response.status && response.data) {
+      if ((response as any).status && (response as any).data) {
+        const data: any = (response as any).data;
         return {
           success: true,
-          authorizationUrl: response.data.authorization_url,
-          accessCode: response.data.access_code,
-          reference: response.data.reference,
+          authorizationUrl: data.authorization_url,
+          accessCode: data.access_code,
+          reference: data.reference,
           gateway: 'PAYSTACK',
-          metadata: response.data,
+          metadata: data as Record<string, unknown>,
         };
       }
 
@@ -73,17 +74,17 @@ export class PaystackGateway implements PaymentGateway {
   }
 
   async verifyPayment(request: VerifyPaymentRequest): Promise<VerifyPaymentResponse> {
-    if (!this.isConfigured()) {
+    if (!this.isConfigured() || !this.paystack) {
       throw new Error('Paystack is not configured');
     }
 
     try {
       const response = await this.paystack.transaction.verify(request.reference);
 
-      if (response.status && response.data) {
-        const transaction = response.data;
+      if ((response as any).status && (response as any).data) {
+        const transaction: any = (response as any).data;
         const status = transaction.status === 'success' ? 'success' : 
-                      transaction.status === 'failed' ? 'failed' : 'pending';
+          transaction.status === 'failed' ? 'failed' : 'pending';
 
         return {
           success: transaction.status === 'success',
@@ -99,7 +100,7 @@ export class PaystackGateway implements PaymentGateway {
           },
           gateway: 'PAYSTACK',
           gatewayTransactionId: transaction.id?.toString(),
-          metadata: transaction as any,
+          metadata: transaction as Record<string, unknown>,
           paidAt: transaction.paid_at ? new Date(transaction.paid_at) : undefined,
         };
       }
@@ -112,7 +113,7 @@ export class PaystackGateway implements PaymentGateway {
   }
 
   async refundPayment(request: RefundPaymentRequest): Promise<RefundPaymentResponse> {
-    if (!this.isConfigured()) {
+    if (!this.isConfigured() || !this.paystack) {
       throw new Error('Paystack is not configured');
     }
 
@@ -131,8 +132,8 @@ export class PaystackGateway implements PaymentGateway {
 
       const response = await this.paystack.refund.create(refundData);
 
-      if (response.status && response.data) {
-        const refund = response.data;
+      if ((response as any).status && (response as any).data) {
+        const refund: any = (response as any).data;
         return {
           success: refund.status === 'success',
           refundId: refund.id?.toString() || '',
@@ -151,7 +152,7 @@ export class PaystackGateway implements PaymentGateway {
     }
   }
 
-  async handleWebhook(payload: unknown, signature?: string): Promise<{
+  async handleWebhook(payload: unknown, _signature?: string): Promise<{
     event: string;
     data: Record<string, unknown>;
     reference?: string;

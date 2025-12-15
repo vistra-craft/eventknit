@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { WhiteLabelService } from '../services/white-label.service';
 import { logger } from '../utils/logger.js';
 import { UserRole } from '@prisma/client';
@@ -7,11 +8,12 @@ export class WhiteLabelController {
   /**
    * Get organizer's branding
    */
-  static async getBranding(req: Request, res: Response) {
+  static async getBranding(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
       if (!organizerId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const branding = await WhiteLabelService.getOrCreateBranding(organizerId);
@@ -27,17 +29,17 @@ export class WhiteLabelController {
   /**
    * Create or update branding
    */
-  static async upsertBranding(req: Request, res: Response) {
+  static async upsertBranding(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
       if (!organizerId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const branding = await WhiteLabelService.upsertBranding(
         organizerId,
         req.body,
-        organizerId,
       );
       res.json(branding);
     } catch (error: any) {
@@ -51,11 +53,12 @@ export class WhiteLabelController {
   /**
    * Get all brandings (admin only)
    */
-  static async getAllBrandings(req: Request, res: Response) {
+  static async getAllBrandings(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userRole = req.user?.role;
       if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
-        return res.status(403).json({ error: 'Forbidden: Admin access required' });
+        res.status(403).json({ error: 'Forbidden: Admin access required' });
+        return;
       }
 
       const brandings = await WhiteLabelService.getAllBrandings(req.query as any);
@@ -71,11 +74,12 @@ export class WhiteLabelController {
   /**
    * Update branding status (admin only)
    */
-  static async updateBrandingStatus(req: Request, res: Response) {
+  static async updateBrandingStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userRole = req.user?.role;
       if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
-        return res.status(403).json({ error: 'Forbidden: Admin access required' });
+        res.status(403).json({ error: 'Forbidden: Admin access required' });
+        return;
       }
 
       const { brandingId } = req.params;
@@ -83,7 +87,8 @@ export class WhiteLabelController {
       const approvedBy = req.user?.id;
 
       if (!approvedBy) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const branding = await WhiteLabelService.updateBrandingStatus(
@@ -104,11 +109,12 @@ export class WhiteLabelController {
   /**
    * Get custom domains for organizer
    */
-  static async getCustomDomains(req: Request, res: Response) {
+  static async getCustomDomains(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
       if (!organizerId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const domains = await WhiteLabelService.getCustomDomains(organizerId);
@@ -124,11 +130,12 @@ export class WhiteLabelController {
   /**
    * Add custom domain
    */
-  static async addCustomDomain(req: Request, res: Response) {
+  static async addCustomDomain(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
       if (!organizerId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const domain = await WhiteLabelService.addCustomDomain(organizerId, req.body);
@@ -144,7 +151,7 @@ export class WhiteLabelController {
   /**
    * Get custom domain by ID
    */
-  static async getCustomDomainById(req: Request, res: Response) {
+  static async getCustomDomainById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
       const { domainId } = req.params;
@@ -162,11 +169,12 @@ export class WhiteLabelController {
   /**
    * Update custom domain
    */
-  static async updateCustomDomain(req: Request, res: Response) {
+  static async updateCustomDomain(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
       if (!organizerId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const { domainId } = req.params;
@@ -187,11 +195,12 @@ export class WhiteLabelController {
   /**
    * Verify custom domain (admin only)
    */
-  static async verifyCustomDomain(req: Request, res: Response) {
+  static async verifyCustomDomain(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const userRole = req.user?.role;
       if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
-        return res.status(403).json({ error: 'Forbidden: Admin access required' });
+        res.status(403).json({ error: 'Forbidden: Admin access required' });
+        return;
       }
 
       const { domainId } = req.params;
@@ -199,7 +208,8 @@ export class WhiteLabelController {
       const verifiedBy = req.user?.id;
 
       if (!verifiedBy) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const domain = await WhiteLabelService.verifyCustomDomain(
@@ -220,11 +230,12 @@ export class WhiteLabelController {
   /**
    * Delete custom domain
    */
-  static async deleteCustomDomain(req: Request, res: Response) {
+  static async deleteCustomDomain(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
       if (!organizerId) {
-        return res.status(401).json({ error: 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
       }
 
       const { domainId } = req.params;
@@ -241,13 +252,14 @@ export class WhiteLabelController {
   /**
    * Get active branding (public API)
    */
-  static async getActiveBranding(req: Request, res: Response) {
+  static async getActiveBranding(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { organizerId } = req.params;
       const branding = await WhiteLabelService.getActiveBranding(organizerId);
       
       if (!branding) {
-        return res.status(404).json({ error: 'Active branding not found' });
+        res.status(404).json({ error: 'Active branding not found' });
+        return;
       }
 
       res.json(branding);
@@ -262,13 +274,14 @@ export class WhiteLabelController {
   /**
    * Get active custom domain (public API)
    */
-  static async getActiveCustomDomain(req: Request, res: Response) {
+  static async getActiveCustomDomain(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const { organizerId } = req.params;
       const domain = await WhiteLabelService.getActiveCustomDomain(organizerId);
       
       if (!domain) {
-        return res.status(404).json({ error: 'Active custom domain not found' });
+        res.status(404).json({ error: 'Active custom domain not found' });
+        return;
       }
 
       res.json(domain);

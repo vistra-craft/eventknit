@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
-import { generateAccessToken } from '../src/utils/jwt';
+import { generateAccessToken as _generateAccessToken } from '../src/utils/jwt';
 import { EventService } from '../src/services/event.service';
 import { TicketService } from '../src/services/ticket.service';
 import { cleanupTestData } from './test-helpers';
@@ -507,7 +508,7 @@ describe('QR Code Storage at Registration (Eventbrite/vf-ticket Approach)', () =
         expect(registration.id).toBeDefined();
 
         // QR code might not be stored, but registration should succeed
-        const registrationWithQR = await prisma.eventRegistration.findUnique({
+        const _registrationWithQR = await prisma.eventRegistration.findUnique({
           where: { id: registration.id },
           select: {
             qrCodeDataUrl: true,
@@ -613,7 +614,7 @@ describe('QR Code Storage at Registration (Eventbrite/vf-ticket Approach)', () =
 
         // Check for PDF or HTML ticket
         const ticketPDF = attachmentsUsed.find(att => 
-          att.filename?.includes('ticket.pdf') || att.filename?.includes('ticket.html')
+          att.filename?.includes('ticket.pdf') || att.filename?.includes('ticket.html'),
         );
         expect(ticketPDF).toBeDefined();
       } finally {
@@ -622,3 +623,6 @@ describe('QR Code Storage at Registration (Eventbrite/vf-ticket Approach)', () =
     });
   });
 });
+
+
+

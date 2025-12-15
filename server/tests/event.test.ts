@@ -1033,6 +1033,33 @@ describe('Event System', () => {
       expect(deletedEvent?.deletedAt).not.toBeNull();
     });
 
+    it('should block deletion of approved (published) events and require cancel/unpublish', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const approvedEvent = await prisma.event.create({
+        data: {
+          title: 'Approved Event',
+          description: 'Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+        },
+      });
+
+      const response = await request(app)
+        .delete(`/api/v1/events/${approvedEvent.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/cannot be deleted/i);
+    });
+
     it('should fail if organizer does not own the event', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
@@ -1177,6 +1204,58 @@ describe('Event System', () => {
         .expect(404);
 
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('Organizer dashboard events visibility', () => {
+    it('should include cancelled and unpublished events in organizer dashboard list', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const pendingTitle = `Pending Dashboard Event ${Date.now()}`;
+      const cancelledTitle = `Cancelled Dashboard Event ${Date.now()}`;
+
+      await prisma.event.create({
+        data: {
+          title: pendingTitle,
+          description: 'Dashboard pending event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.PENDING,
+        },
+      });
+
+      await prisma.event.create({
+        data: {
+          title: cancelledTitle,
+          description: 'Dashboard cancelled event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.CANCELLED,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/events?limit=20')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      const events = response.body.data?.events || [];
+
+      const pendingEvent = events.find((e: any) => e.title === pendingTitle);
+      const cancelledEvent = events.find((e: any) => e.title === cancelledTitle);
+
+      expect(pendingEvent).toBeDefined();
+      expect(cancelledEvent).toBeDefined();
+      expect(pendingEvent.status).toBe('unpublished');
+      expect(cancelledEvent.status).toBe('cancelled');
     });
   });
 

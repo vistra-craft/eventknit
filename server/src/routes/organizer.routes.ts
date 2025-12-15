@@ -10,10 +10,8 @@ import { AuthorizationError } from '../utils/errors.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
 import {
   createBrandingSchema,
-  updateBrandingStatusSchema,
   createCustomDomainSchema,
   updateCustomDomainSchema,
-  verifyCustomDomainSchema,
 } from '../validations/white-label.validations.js';
 import Joi from 'joi';
 
@@ -207,7 +205,7 @@ router.get(
     page: Joi.number().integer().min(1).optional(),
     limit: Joi.number().integer().min(1).max(100).optional(),
   })),
-  InvoiceController.getEventInvoices
+  InvoiceController.getEventInvoices,
 );
 
 // ========== White-Label Branding ==========

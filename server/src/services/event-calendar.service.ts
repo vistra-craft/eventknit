@@ -10,7 +10,7 @@ export class EventCalendarService {
     userId: string,
     registrationId: string,
     calendarType: 'GOOGLE' | 'APPLE' | 'OUTLOOK' | 'ICAL',
-    reminderMinutes?: number
+    reminderMinutes?: number,
   ) {
     try {
       const registration = await prisma.eventRegistration.findUnique({
@@ -203,7 +203,7 @@ export class EventCalendarService {
   }
 
   private static formatICalDate(date: Date): string {
-    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    return `${date.toISOString().replace(/[-:]/g, '').split('.')[0]  }Z`;
   }
 
   private static generateJSONCalendar(sync: any) {
@@ -222,14 +222,14 @@ export class EventCalendarService {
       },
       reminders: sync.reminderEnabled && sync.reminderMinutes
         ? {
-            useDefault: false,
-            overrides: [
-              {
-                method: 'popup',
-                minutes: sync.reminderMinutes,
-              },
-            ],
-          }
+          useDefault: false,
+          overrides: [
+            {
+              method: 'popup',
+              minutes: sync.reminderMinutes,
+            },
+          ],
+        }
         : undefined,
     };
   }

@@ -82,7 +82,7 @@ export class SocialNetworkingService {
     filters?: {
       page?: number;
       limit?: number;
-    }
+    },
   ) {
     try {
       const limit = filters?.limit || 20;
@@ -132,7 +132,7 @@ export class SocialNetworkingService {
     filters?: {
       page?: number;
       limit?: number;
-    }
+    },
   ) {
     try {
       const limit = filters?.limit || 20;
@@ -230,13 +230,13 @@ export class SocialNetworkingService {
         prisma.userFollow.count({ where: { followerId: userId } }),
         viewerId
           ? prisma.userFollow.findUnique({
-              where: {
-                followerId_followingId: {
-                  followerId: viewerId,
-                  followingId: userId,
-                },
+            where: {
+              followerId_followingId: {
+                followerId: viewerId,
+                followingId: userId,
               },
-            })
+            },
+          })
           : null,
       ]);
 

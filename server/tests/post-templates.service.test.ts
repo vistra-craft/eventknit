@@ -1,5 +1,5 @@
-import { PostTemplatesService } from '../../../src/services/social-media/post-templates.service';
-import { NotFoundError } from '../../../src/utils/errors';
+import { PostTemplatesService } from '../src/services/social-media/post-templates.service';
+import { NotFoundError } from '../src/utils/errors';
 
 const prismaMock = {
   socialMediaPostTemplate: {

@@ -13,7 +13,7 @@ const hashPassword = async (password: string): Promise<string> => {
 
 describe('Guest Registration with Access Tokens', () => {
   let dbConnected = false;
-  let organizerToken: string;
+  let _organizerToken: string;
   let organizerId: string;
   let eventId: string;
 
@@ -72,7 +72,7 @@ describe('Guest Registration with Access Tokens', () => {
       },
     });
     organizerId = organizer.id;
-    organizerToken = generateAccessToken({
+    _organizerToken = generateAccessToken({
       userId: organizer.id,
       email: organizer.email,
       role: organizer.role,
@@ -262,3 +262,6 @@ describe('Guest Registration with Access Tokens', () => {
     });
   });
 });
+
+
+

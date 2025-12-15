@@ -1,10 +1,155 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors';
+import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { platformManager } from './social-media/platform-manager';
 import { SocialMediaOAuthService } from './social-media/oauth.service';
 
 export class SocialMediaService {
+  // ========== Social Accounts ==========
+
+  static async connectAccount(data: {
+    platform: string;
+    accountId: string;
+    accountName: string;
+    accountHandle?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    tokenExpiry?: Date | string;
+    metadata?: Record<string, unknown>;
+  }) {
+    try {
+      const account = await prisma.socialAccount.upsert({
+        where: {
+          platform_accountId: {
+            platform: data.platform as any,
+            accountId: data.accountId,
+          },
+        },
+        create: {
+          platform: data.platform as any,
+          accountId: data.accountId,
+          accountName: data.accountName,
+          accountHandle: data.accountHandle,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          tokenExpiry: data.tokenExpiry ? new Date(data.tokenExpiry) : undefined,
+          metadata: data.metadata as any,
+        },
+        update: {
+          accountName: data.accountName,
+          accountHandle: data.accountHandle,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          tokenExpiry: data.tokenExpiry ? new Date(data.tokenExpiry) : undefined,
+          metadata: data.metadata as any,
+          isActive: true,
+          lastSyncedAt: new Date(),
+        },
+      });
+
+      return account;
+    } catch (error) {
+      logger.error('Error connecting social account:', error);
+      throw error;
+    }
+  }
+
+  static async getAccounts(filters?: { platform?: string; isActive?: boolean }) {
+    try {
+      const where: any = {};
+      if (filters?.platform) {
+        where.platform = filters.platform as any;
+      }
+      if (filters?.isActive !== undefined) {
+        where.isActive = filters.isActive;
+      }
+
+      return await prisma.socialAccount.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (error) {
+      logger.error('Error getting social accounts:', error);
+      throw error;
+    }
+  }
+
+  static async getAccountById(id: string) {
+    try {
+      const account = await prisma.socialAccount.findUnique({
+        where: { id },
+      });
+      if (!account) {
+        throw new NotFoundError('Social account not found');
+      }
+      return account;
+    } catch (error) {
+      logger.error('Error getting social account by id:', error);
+      throw error;
+    }
+  }
+
+  static async updateAccount(
+    id: string,
+    data: {
+      accountName?: string;
+      accountHandle?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      tokenExpiry?: Date | string;
+      followers?: number;
+      following?: number;
+      isActive?: boolean;
+      lastSyncedAt?: Date | string;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    try {
+      const account = await prisma.socialAccount.update({
+        where: { id },
+        data: {
+          ...(data.accountName !== undefined && { accountName: data.accountName }),
+          ...(data.accountHandle !== undefined && { accountHandle: data.accountHandle }),
+          ...(data.accessToken !== undefined && { accessToken: data.accessToken }),
+          ...(data.refreshToken !== undefined && { refreshToken: data.refreshToken }),
+          ...(data.tokenExpiry !== undefined && {
+            tokenExpiry: data.tokenExpiry ? new Date(data.tokenExpiry) : null,
+          }),
+          ...(data.followers !== undefined && { followers: data.followers }),
+          ...(data.following !== undefined && { following: data.following }),
+          ...(data.isActive !== undefined && { isActive: data.isActive }),
+          ...(data.lastSyncedAt !== undefined && {
+            lastSyncedAt: data.lastSyncedAt ? new Date(data.lastSyncedAt) : null,
+          }),
+          ...(data.metadata !== undefined && { metadata: data.metadata as any }),
+        },
+      });
+
+      return account;
+    } catch (error) {
+      if (error instanceof NotFoundError) throw error;
+      logger.error('Error updating social account:', error);
+      throw error;
+    }
+  }
+
+  static async disconnectAccount(id: string) {
+    try {
+      await prisma.socialAccount.update({
+        where: { id },
+        data: {
+          isActive: false,
+          accessToken: null,
+          refreshToken: null,
+          tokenExpiry: null,
+        },
+      });
+    } catch (error) {
+      logger.error('Error disconnecting social account:', error);
+      throw error;
+    }
+  }
+
   /**
    * Create social media post
    */
@@ -116,6 +261,248 @@ export class SocialMediaService {
       };
     } catch (error) {
       logger.error('Error getting social media posts:', error);
+      throw error;
+    }
+  }
+
+  static async getPostById(id: string) {
+    try {
+      const post = await prisma.socialMediaPost.findUnique({
+        where: { id },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              image: true,
+            },
+          },
+        },
+      });
+      if (!post) {
+        throw new NotFoundError('Social media post not found');
+      }
+      return post;
+    } catch (error) {
+      logger.error('Error getting social media post by id:', error);
+      throw error;
+    }
+  }
+
+  static async updatePost(
+    id: string,
+    data: {
+      content?: string;
+      mediaUrls?: string[];
+      status?: string;
+      scheduledAt?: Date | string;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    try {
+      const post = await prisma.socialMediaPost.update({
+        where: { id },
+        data: {
+          ...(data.content !== undefined && { content: data.content }),
+          ...(data.mediaUrls !== undefined && { mediaUrls: data.mediaUrls as any }),
+          ...(data.status !== undefined && { status: data.status as any }),
+          ...(data.scheduledAt !== undefined && {
+            scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
+          }),
+          ...(data.metadata !== undefined && { metadata: data.metadata as any }),
+        },
+      });
+      return post;
+    } catch (error) {
+      if (error instanceof NotFoundError) throw error;
+      logger.error('Error updating social media post:', error);
+      throw error;
+    }
+  }
+
+  static async deletePost(id: string) {
+    try {
+      await prisma.socialMediaPost.delete({
+        where: { id },
+      });
+    } catch (error) {
+      logger.error('Error deleting social media post:', error);
+      throw error;
+    }
+  }
+
+  static async updatePostMetrics(
+    id: string,
+    metrics: {
+      likes?: number;
+      comments?: number;
+      shares?: number;
+      views?: number;
+      clicks?: number;
+      reach?: number;
+      impressions?: number;
+    },
+  ) {
+    try {
+      const post = await prisma.socialMediaPost.findUnique({ where: { id } });
+      if (!post) {
+        throw new NotFoundError('Social media post not found');
+      }
+
+      const existing = await prisma.socialPostMetrics.findUnique({
+        where: { postId: id },
+      });
+
+      const updatedMetrics = existing
+        ? await prisma.socialPostMetrics.update({
+          where: { postId: id },
+          data: {
+            ...(metrics.likes !== undefined && { likes: metrics.likes }),
+            ...(metrics.comments !== undefined && { comments: metrics.comments }),
+            ...(metrics.shares !== undefined && { shares: metrics.shares }),
+            ...(metrics.views !== undefined && { views: metrics.views }),
+            ...(metrics.clicks !== undefined && { clicks: metrics.clicks }),
+            ...(metrics.reach !== undefined && { reach: metrics.reach }),
+            ...(metrics.impressions !== undefined && { impressions: metrics.impressions }),
+          },
+        })
+        : await prisma.socialPostMetrics.create({
+          data: {
+            postId: id,
+            likes: metrics.likes ?? 0,
+            comments: metrics.comments ?? 0,
+            shares: metrics.shares ?? 0,
+            views: metrics.views ?? 0,
+            clicks: metrics.clicks ?? 0,
+            reach: metrics.reach ?? 0,
+            impressions: metrics.impressions ?? 0,
+          },
+        });
+
+      return updatedMetrics;
+    } catch (error) {
+      logger.error('Error updating social media post metrics:', error);
+      throw error;
+    }
+  }
+
+  // ========== Social Messages (Support) ==========
+
+  static async getMessages(filters: {
+    socialAccountId?: string;
+    platform?: string;
+    status?: string;
+    priority?: string;
+    assignedTo?: string;
+    postId?: string;
+    startDate?: Date | string;
+    endDate?: Date | string;
+  }) {
+    try {
+      const where: any = {};
+      if (filters.socialAccountId) where.socialAccountId = filters.socialAccountId;
+      if (filters.platform) where.platform = filters.platform as any;
+      if (filters.status) where.status = filters.status as any;
+      if (filters.priority) where.priority = filters.priority as any;
+      if (filters.assignedTo) where.assignedTo = filters.assignedTo;
+      if (filters.postId) where.postId = filters.postId;
+      if (filters.startDate || filters.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
+        if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+      }
+
+      return await prisma.socialMessage.findMany({
+        where,
+        include: {
+          socialPost: true,
+          assignedAgent: true,
+          _count: {
+            select: { responses: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (error) {
+      logger.error('Error getting social messages:', error);
+      throw error;
+    }
+  }
+
+  static async getMessageById(id: string) {
+    try {
+      const message = await prisma.socialMessage.findUnique({
+        where: { id },
+        include: {
+          socialPost: true,
+          assignedAgent: true,
+          responses: true,
+        },
+      });
+      if (!message) {
+        throw new NotFoundError('Support message not found');
+      }
+      return message;
+    } catch (error) {
+      logger.error('Error getting social message by id:', error);
+      throw error;
+    }
+  }
+
+  static async assignMessage(id: string, agentId: string) {
+    try {
+      const message = await prisma.socialMessage.update({
+        where: { id },
+        data: {
+          assignedTo: agentId,
+          assignedAt: new Date(),
+        },
+        include: {
+          assignedAgent: true,
+        },
+      });
+      return message;
+    } catch (error) {
+      logger.error('Error assigning social message:', error);
+      throw error;
+    }
+  }
+
+  static async updateMessageStatus(id: string, status: any, updatedBy: string) {
+    try {
+      const message = await prisma.socialMessage.update({
+        where: { id },
+        data: {
+          status,
+          resolvedAt: status === 'RESOLVED' ? new Date() : undefined,
+          assignedTo: updatedBy,
+        },
+      });
+      return message;
+    } catch (error) {
+      logger.error('Error updating social message status:', error);
+      throw error;
+    }
+  }
+
+  static async addResponse(
+    messageId: string,
+    response: string,
+    agentId: string,
+    isInternal: boolean = false,
+  ) {
+    try {
+      const created = await prisma.supportResponse.create({
+        data: {
+          messageId,
+          response,
+          sentBy: agentId,
+          isInternal,
+        },
+      });
+      return created;
+    } catch (error) {
+      logger.error('Error adding support response:', error);
       throw error;
     }
   }

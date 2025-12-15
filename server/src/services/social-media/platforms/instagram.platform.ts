@@ -15,6 +15,7 @@ import {
   MediaResponse,
   PostMetrics,
 } from '../platform.interface';
+import { URLSearchParams } from 'url';
 import { logger } from '../../../utils/logger.js';
 import { config } from '../../../config/index.js';
 
@@ -42,7 +43,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     return `https://api.instagram.com/oauth/authorize?${params.toString()}`;
   }
 
-  async exchangeCodeForToken(code: string, redirectUri: string): Promise<TokenResponse> {
+  async exchangeCodeForToken(_code: string, _redirectUri: string): Promise<TokenResponse> {
     // TODO: Implement actual Instagram OAuth token exchange
     // Note: Instagram uses Facebook's OAuth system
     // Reference: https://developers.facebook.com/docs/instagram-basic-display-api/overview
@@ -71,7 +72,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getUserProfile(accessToken: string): Promise<SocialProfile> {
+  async getUserProfile(_accessToken: string): Promise<SocialProfile> {
     // TODO: Implement Instagram Graph API call: GET /{ig-user-id}
     // Reference: https://developers.facebook.com/docs/instagram-api/reference/ig-user
     
@@ -86,7 +87,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     };
   }
 
-  async createPost(accessToken: string, post: PostData): Promise<PostResponse> {
+  async createPost(_accessToken: string, post: PostData): Promise<PostResponse> {
     // TODO: Implement Instagram Graph API call: POST /{ig-user-id}/media
     // Reference: https://developers.facebook.com/docs/instagram-api/reference/ig-user/media
     
@@ -103,7 +104,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     };
   }
 
-  async uploadMedia(accessToken: string, media: MediaData): Promise<MediaResponse> {
+  async uploadMedia(_accessToken: string, media: MediaData): Promise<MediaResponse> {
     // TODO: Implement Instagram Graph API media upload
     // Reference: https://developers.facebook.com/docs/instagram-api/guides/content-publishing
     
@@ -116,7 +117,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getPostMetrics(accessToken: string, postId: string): Promise<PostMetrics> {
+  async getPostMetrics(_accessToken: string, postId: string): Promise<PostMetrics> {
     // TODO: Implement Instagram Graph API call: GET /{ig-media-id}/insights
     // Reference: https://developers.facebook.com/docs/instagram-api/reference/ig-media/insights
     
@@ -134,7 +135,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     };
   }
 
-  async deletePost(accessToken: string, postId: string): Promise<boolean> {
+  async deletePost(_accessToken: string, postId: string): Promise<boolean> {
     // TODO: Implement Instagram Graph API call: DELETE /{ig-media-id}
     // Reference: https://developers.facebook.com/docs/instagram-api/reference/ig-media
     
@@ -143,7 +144,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     return true;
   }
 
-  async validateToken(accessToken: string): Promise<boolean> {
+  async validateToken(_accessToken: string): Promise<boolean> {
     // TODO: Implement Instagram Graph API call: GET /{ig-user-id}
     
     logger.info('Instagram: Validating token (placeholder)');

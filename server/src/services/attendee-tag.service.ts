@@ -229,16 +229,14 @@ export class AttendeeTagService {
 
       const taggedUser = await prisma.attendeeTaggedUser.upsert({
         where: {
-          tagId_userId_eventId: {
-            tagId,
-            userId: data.userId,
-            eventId: data.eventId || null,
-          },
+          tagId_userId_eventId: data.eventId
+            ? { tagId, userId: data.userId, eventId: data.eventId }
+            : undefined,
         },
         create: {
           tagId,
           userId: data.userId,
-          eventId: data.eventId,
+          ...(data.eventId ? { eventId: data.eventId } : {}),
           notes: data.notes,
           taggedBy: data.taggedBy || organizerId,
         },
@@ -284,11 +282,7 @@ export class AttendeeTagService {
 
       await prisma.attendeeTaggedUser.delete({
         where: {
-          tagId_userId_eventId: {
-            tagId,
-            userId,
-            eventId: eventId || null,
-          },
+          tagId_userId_eventId: eventId ? { tagId, userId, eventId } : undefined,
         },
       });
 

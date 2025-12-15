@@ -5,7 +5,6 @@
  */
 
 import { platformManager } from './platform-manager';
-import { SocialMediaPlatform } from './platform.interface';
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
 import { NotFoundError, ValidationError } from '../../utils/errors';
@@ -59,7 +58,7 @@ export class SocialMediaOAuthService {
     }
 
     // Extract organizerId from state (format: state:organizerId)
-    const [stateToken, organizerId] = state.split(':');
+    const [_stateToken, organizerId] = state.split(':');
     if (!organizerId) {
       throw new ValidationError('Invalid state token');
     }

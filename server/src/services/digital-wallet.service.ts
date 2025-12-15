@@ -28,7 +28,6 @@ export class DigitalWalletService {
                 },
               },
             },
-            orderBy: { addedAt: 'desc' },
           },
         },
       });
@@ -59,7 +58,6 @@ export class DigitalWalletService {
                 },
               },
             },
-            orderBy: { addedAt: 'desc' },
           },
         });
       }
@@ -189,7 +187,7 @@ export class DigitalWalletService {
     preferences: {
       autoAddTickets?: boolean;
       backupEnabled?: boolean;
-    }
+    },
   ) {
     try {
       const wallet = await this.getOrCreateWallet(userId);
@@ -327,12 +325,12 @@ export class DigitalWalletService {
           },
           locations: walletTicket.registration.event.location
             ? [
-                {
-                  kind: 'walletobjects#latLongPoint',
-                  latitude: 0, // Would need actual coordinates
-                  longitude: 0,
-                },
-              ]
+              {
+                kind: 'walletobjects#latLongPoint',
+                latitude: 0, // Would need actual coordinates
+                longitude: 0,
+              },
+            ]
             : [],
           barcode: {
             type: 'QR_CODE',

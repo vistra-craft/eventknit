@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 import crypto from 'crypto';
 
 export class EventTemplateService {

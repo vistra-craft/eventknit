@@ -99,7 +99,7 @@ export class SeatMapService {
    */
   static async getSeatMapByEventId(eventId: string, organizerId?: string) {
     try {
-      const where: any = { eventId };
+      const _where: any = { eventId };
       
       const seatMap = await prisma.seatMap.findUnique({
         where: { eventId },

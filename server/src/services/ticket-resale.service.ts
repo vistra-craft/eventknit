@@ -11,7 +11,7 @@ export class TicketResaleService {
     userId: string,
     registrationId: string,
     resalePrice: number,
-    expiresAt?: Date
+    expiresAt?: Date,
   ) {
     try {
       // Verify registration belongs to user

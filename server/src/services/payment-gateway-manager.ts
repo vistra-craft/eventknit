@@ -1,8 +1,7 @@
-import { PaymentGateway, PaymentGatewayConfig } from './payment-gateway.interface.js';
+import { PaymentGateway } from './payment-gateway.interface.js';
 import { PaystackGateway } from './payment-gateways/paystack-gateway.js';
 import { StripeGateway } from './payment-gateways/stripe-gateway.js';
 import { logger } from '../utils/logger.js';
-import { config } from '../config/index.js';
 
 export type GatewayType = 'PAYSTACK' | 'STRIPE' | 'PAYPAL';
 

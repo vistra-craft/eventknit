@@ -56,7 +56,7 @@ export class SocialOAuthController {
   static async callback(
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> {
     try {
       const { platform } = req.params;
@@ -70,7 +70,7 @@ export class SocialOAuthController {
         return;
       }
 
-      const account = await SocialMediaOAuthService.handleCallback(
+      const _account = await SocialMediaOAuthService.handleCallback(
         platform,
         code as string,
         state as string,

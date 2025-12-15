@@ -16,7 +16,7 @@ export class SavedSearchService {
       filters?: any;
       notifyOnNewEvents?: boolean;
       notificationFrequency?: string;
-    }
+    },
   ) {
     try {
       const savedSearch = await prisma.savedSearch.create({
@@ -66,7 +66,7 @@ export class SavedSearchService {
       filters?: any;
       notifyOnNewEvents?: boolean;
       notificationFrequency?: string;
-    }
+    },
   ) {
     try {
       const search = await prisma.savedSearch.findUnique({

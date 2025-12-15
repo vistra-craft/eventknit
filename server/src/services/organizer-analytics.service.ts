@@ -70,7 +70,7 @@ export class OrganizerAnalyticsService {
       };
 
       // Geographic distribution
-      const geographicData = registrations.reduce((acc: any, reg) => {
+      const geographicData = registrations.reduce((acc: any, _reg) => {
         // Would need to extract location from registration data
         return acc;
       }, {});
@@ -211,7 +211,7 @@ export class OrganizerAnalyticsService {
         },
       });
 
-      const totalRefunds = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
+      const totalRefunds = refunds.reduce((sum, r) => sum + Number(r.refundAmount ?? 0), 0);
       const refundRate = totalRevenue > 0 ? (totalRefunds / totalRevenue) * 100 : 0;
 
       // Average order value
@@ -236,6 +236,7 @@ export class OrganizerAnalyticsService {
         revenueByTicketType: Object.values(revenueByTicketType),
         refunds: {
           total: totalRefunds,
+          totalRefunds,
           rate: refundRate,
           count: refunds.length,
         },
@@ -301,8 +302,8 @@ export class OrganizerAnalyticsService {
       }, {});
 
       const repeatAttendees = Object.entries(attendeeEventCount)
-        .filter(([_, count]: [string, number]) => count > 1)
-        .map(([userId]) => userId);
+        .filter(([_reg, count]) => (count as number) > 1)
+        .map(([userId]) => userId as string);
 
       demographics.returningAttendees = repeatAttendees.length;
       demographics.newAttendees = registrations.length - repeatAttendees.length;
@@ -338,7 +339,7 @@ export class OrganizerAnalyticsService {
             reviewed: reviews > 0,
             transferred: transfers > 0,
           };
-        })
+        }),
       );
 
       // Attendee feedback aggregation
@@ -531,7 +532,7 @@ export class OrganizerAnalyticsService {
     }, {});
 
     return Object.values(grouped).sort((a: any, b: any) => 
-      a.date.localeCompare(b.date)
+      a.date.localeCompare(b.date),
     );
   }
 
@@ -549,7 +550,7 @@ export class OrganizerAnalyticsService {
 
     // Simple linear regression for forecasting
     const sorted = transactions.sort((a, b) => 
-      new Date(a.paymentDate || a.createdAt).getTime() - new Date(b.paymentDate || b.createdAt).getTime()
+      new Date(a.paymentDate || a.createdAt).getTime() - new Date(b.paymentDate || b.createdAt).getTime(),
     );
 
     const dailyRevenue = this.calculateTrends(sorted, 'paymentDate', 'amount');

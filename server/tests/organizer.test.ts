@@ -1646,7 +1646,7 @@ describe('Organizer Staff Management', () => {
 
       // Create a new organizer without any events
       const newOrganizerPassword = await hashPassword('NewOrg123!@$');
-      const newOrganizer = await prisma.user.create({
+      const _newOrganizer = await prisma.user.create({
         data: {
           email: 'neworganizer@test.com',
           password: newOrganizerPassword,

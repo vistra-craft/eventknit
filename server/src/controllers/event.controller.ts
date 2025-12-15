@@ -225,7 +225,7 @@ export class EventController {
         data: { registration },
       });
     } catch (error) {
-      logger.error(`[EventController.registerForEvent] Error in registration controller:`, {
+      logger.error('[EventController.registerForEvent] Error in registration controller:', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         eventId: req.params.id,

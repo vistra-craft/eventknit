@@ -120,6 +120,8 @@ describe('DisbursementService', () => {
     const paymentTransaction = await prisma.eventPaymentTransaction.create({
       data: {
         transactionNumber: 'EPT-2024-000001',
+        gatewayReference: 'gw-001',
+        gatewayAmount: 10000,
         paystackReference: 'test_ref_001',
         paystackAmount: 1000000,
         currency: 'NGN',
@@ -343,6 +345,8 @@ describe('DisbursementService', () => {
       const unverifiedPayment = await prisma.eventPaymentTransaction.create({
         data: {
           transactionNumber: 'EPT-2024-000002',
+          gatewayReference: 'gw-002',
+          gatewayAmount: 20000,
           paystackReference: 'test_ref_002',
           paystackAmount: 1000000,
           currency: 'NGN',
@@ -418,6 +422,8 @@ describe('DisbursementService', () => {
       const unverifiedPayment = await prisma.eventPaymentTransaction.create({
         data: {
           transactionNumber: 'EPT-2024-000003',
+          gatewayReference: 'gw-003',
+          gatewayAmount: 30000,
           paystackReference: 'test_ref_003',
           paystackAmount: 1000000,
           currency: 'NGN',

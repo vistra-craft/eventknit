@@ -15,6 +15,7 @@ import {
   MediaResponse,
   PostMetrics,
 } from '../platform.interface';
+import { URLSearchParams } from 'url';
 import { logger } from '../../../utils/logger.js';
 import { config } from '../../../config/index.js';
 
@@ -39,7 +40,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
     return `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
   }
 
-  async exchangeCodeForToken(code: string, redirectUri: string): Promise<TokenResponse> {
+  async exchangeCodeForToken(_code: string, _redirectUri: string): Promise<TokenResponse> {
     // TODO: Implement actual Twitter OAuth 2.0 token exchange
     // Reference: https://developer.twitter.com/en/docs/authentication/oauth-2-0/user-access-token
     
@@ -67,7 +68,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getUserProfile(accessToken: string): Promise<SocialProfile> {
+  async getUserProfile(_accessToken: string): Promise<SocialProfile> {
     // TODO: Implement Twitter API v2 call: GET /2/users/me
     // Reference: https://developer.twitter.com/en/docs/twitter-api/users/lookup/api-reference/get-users-me
     
@@ -82,7 +83,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
     };
   }
 
-  async createPost(accessToken: string, post: PostData): Promise<PostResponse> {
+  async createPost(_accessToken: string, post: PostData): Promise<PostResponse> {
     // TODO: Implement Twitter API v2 call: POST /2/tweets
     // Reference: https://developer.twitter.com/en/docs/twitter-api/tweets/manage-tweets/api-reference/post-tweets
     
@@ -99,7 +100,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
     };
   }
 
-  async uploadMedia(accessToken: string, media: MediaData): Promise<MediaResponse> {
+  async uploadMedia(_accessToken: string, media: MediaData): Promise<MediaResponse> {
     // TODO: Implement Twitter API v1.1 call: POST /1.1/media/upload
     // Reference: https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media
     
@@ -112,7 +113,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
     };
   }
 
-  async getPostMetrics(accessToken: string, postId: string): Promise<PostMetrics> {
+  async getPostMetrics(_accessToken: string, postId: string): Promise<PostMetrics> {
     // TODO: Implement Twitter API v2 call: GET /2/tweets/:id
     // Reference: https://developer.twitter.com/en/docs/twitter-api/tweets/lookup/api-reference
     
@@ -129,7 +130,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
     };
   }
 
-  async deletePost(accessToken: string, postId: string): Promise<boolean> {
+  async deletePost(_accessToken: string, postId: string): Promise<boolean> {
     // TODO: Implement Twitter API v2 call: DELETE /2/tweets/:id
     // Reference: https://developer.twitter.com/en/docs/twitter-api/tweets/manage-tweets/api-reference/delete-tweets-id
     
@@ -138,7 +139,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
     return true;
   }
 
-  async validateToken(accessToken: string): Promise<boolean> {
+  async validateToken(_accessToken: string): Promise<boolean> {
     // TODO: Implement Twitter API v2 call: GET /2/users/me
     
     logger.info('Twitter: Validating token (placeholder)');

@@ -6,7 +6,6 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger.js';
-import { SocialMediaService } from '../services/social-media.service';
 import { prisma } from '../config/database.js';
 
 export class SocialWebhookController {
@@ -17,7 +16,7 @@ export class SocialWebhookController {
   static async handleFacebookWebhook(
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> {
     try {
       // TODO: Verify Facebook webhook signature
@@ -47,13 +46,13 @@ export class SocialWebhookController {
   static async handleTwitterWebhook(
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> {
     try {
       // TODO: Verify Twitter webhook signature
       // Reference: https://developer.twitter.com/en/docs/twitter-api/enterprise/account-activity-api/guides/getting-started-with-webhooks
 
-      const { tweet_create_events, favorite_events, follow_events } = req.body;
+      const { tweet_create_events } = req.body;
 
       if (tweet_create_events) {
         for (const event of tweet_create_events) {
@@ -75,7 +74,7 @@ export class SocialWebhookController {
   static async handleInstagramWebhook(
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> {
     try {
       // TODO: Verify Instagram webhook signature
@@ -136,7 +135,7 @@ export class SocialWebhookController {
   /**
    * Process Instagram event
    */
-  private static async processInstagramEvent(event: any) {
+  private static async processInstagramEvent(_event: any) {
     try {
       // Handle Instagram events (comments, likes, etc.)
       logger.info('Instagram event received');

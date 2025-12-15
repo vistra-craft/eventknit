@@ -18,7 +18,7 @@ export class EventCollaborationService {
       canViewAnalytics?: boolean;
       canManageStaff?: boolean;
       canPublish?: boolean;
-    }
+    },
   ) {
     try {
       // Verify event belongs to organizer
@@ -198,7 +198,7 @@ export class EventCollaborationService {
       canViewAnalytics?: boolean;
       canManageStaff?: boolean;
       canPublish?: boolean;
-    }
+    },
   ) {
     try {
       const collaboration = await prisma.eventCollaborator.findFirst({
@@ -380,7 +380,7 @@ export class EventCollaborationService {
     action: string,
     metadata?: any,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
   ) {
     try {
       await prisma.eventActivityLog.create({
@@ -423,7 +423,7 @@ export class EventCollaborationService {
   static async canPerformAction(
     eventId: string,
     userId: string,
-    action: 'edit' | 'manageAttendees' | 'manageTickets' | 'viewAnalytics' | 'manageStaff' | 'publish'
+    action: 'edit' | 'manageAttendees' | 'manageTickets' | 'viewAnalytics' | 'manageStaff' | 'publish',
   ): Promise<boolean> {
     try {
       const event = await prisma.event.findFirst({
@@ -467,7 +467,7 @@ export class EventCollaborationService {
         publish: 'canPublish',
       };
 
-      return collaboration[permissionMap[action]] || false;
+      return Boolean(collaboration[permissionMap[action]]);
     } catch (error) {
       logger.error('Error checking permissions:', error);
       return false;

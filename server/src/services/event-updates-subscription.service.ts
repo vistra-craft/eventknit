@@ -10,7 +10,7 @@ export class EventUpdatesSubscriptionService {
     userId: string,
     eventId: string,
     updateTypes: string[] = ['SCHEDULE', 'VENUE', 'CANCELLATION', 'ANNOUNCEMENT'],
-    channels: string[] = ['EMAIL', 'PUSH', 'IN_APP']
+    channels: string[] = ['EMAIL', 'PUSH', 'IN_APP'],
   ) {
     try {
       const event = await prisma.event.findUnique({
@@ -149,7 +149,7 @@ export class EventUpdatesSubscriptionService {
     preferences: {
       updateTypes?: string[];
       channels?: string[];
-    }
+    },
   ) {
     try {
       const subscription = await prisma.eventUpdateSubscription.findUnique({

@@ -23,7 +23,7 @@ export class UserFeaturesController {
         userId,
         registrationId,
         resalePrice,
-        expiresAt ? new Date(expiresAt) : undefined
+        expiresAt ? new Date(expiresAt) : undefined,
       );
 
       res.status(201).json({
@@ -45,8 +45,8 @@ export class UserFeaturesController {
       if (category) filters.category = category as string;
       if (minPrice) filters.minPrice = parseFloat(minPrice as string);
       if (maxPrice) filters.maxPrice = parseFloat(maxPrice as string);
-      if (page) filters.page = parseInt(page as string);
-      if (limit) filters.limit = parseInt(limit as string);
+      if (page) filters.page = parseInt(page as string, 10);
+      if (limit) filters.limit = parseInt(limit as string, 10);
 
       const result = await TicketResaleService.getMarketplaceTickets(filters);
 
@@ -260,7 +260,7 @@ export class UserFeaturesController {
         userId,
         registrationId,
         calendarType,
-        reminderMinutes
+        reminderMinutes,
       );
 
       res.status(201).json({
@@ -432,7 +432,7 @@ export class UserFeaturesController {
         userId,
         eventId,
         updateTypes,
-        channels
+        channels,
       );
 
       res.status(201).json({
@@ -476,7 +476,7 @@ export class UserFeaturesController {
       const { activeOnly } = req.query;
       const subscriptions = await EventUpdatesSubscriptionService.getUserSubscriptions(
         userId,
-        activeOnly !== 'false'
+        activeOnly !== 'false',
       );
 
       res.status(200).json({
@@ -491,7 +491,7 @@ export class UserFeaturesController {
   static async updateSubscriptionPreferences(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       const userId = req.user?.id;
@@ -505,7 +505,7 @@ export class UserFeaturesController {
       const subscription = await EventUpdatesSubscriptionService.updateSubscriptionPreferences(
         userId,
         eventId,
-        { updateTypes, channels }
+        { updateTypes, channels },
       );
 
       res.status(200).json({

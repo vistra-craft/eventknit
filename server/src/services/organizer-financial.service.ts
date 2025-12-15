@@ -180,11 +180,11 @@ export class OrganizerFinancialService {
 
       const grossRevenue = revenueTransactions.reduce(
         (sum, t) => sum + Number(t.amount),
-        0
+        0,
       );
       const platformFees = revenueTransactions.reduce(
         (sum, t) => sum + (t.platformFee ? Number(t.platformFee.feeAmount) : 0),
-        0
+        0,
       );
       const netRevenue = grossRevenue - platformFees;
 
@@ -251,6 +251,11 @@ export class OrganizerFinancialService {
           totalTransactions: revenueTransactions.length,
           totalExpenses: expenses.length,
         },
+        // Backward-compatible aliases expected by tests
+        netRevenue,
+        totalExpenses,
+        netProfit: profit,
+        taxDeductibleExpenses,
       };
     } catch (error) {
       logger.error('Error getting profit/loss statement:', error);
@@ -364,8 +369,9 @@ export class OrganizerFinancialService {
         return sum + netAmount;
       }, 0);
 
-      const progressPercentage = goal.targetAmount > 0
-        ? Math.min((currentAmount / Number(goal.targetAmount)) * 100, 100)
+      const targetAmountNumber = Number(goal.targetAmount);
+      const progressPercentage = targetAmountNumber > 0
+        ? Math.min((currentAmount / targetAmountNumber) * 100, 100)
         : 0;
 
       const status = progressPercentage >= 100 ? 'completed' : goal.status;
@@ -425,7 +431,7 @@ export class OrganizerFinancialService {
         goals.map(async (goal) => {
           const updated = await this.updateGoalProgress(goal.id, organizerId);
           return updated;
-        })
+        }),
       );
 
       return goalsWithProgress;
@@ -468,11 +474,11 @@ export class OrganizerFinancialService {
 
       const grossRevenue = transactions.reduce(
         (sum, t) => sum + Number(t.amount),
-        0
+        0,
       );
       const platformFees = transactions.reduce(
         (sum, t) => sum + (t.platformFee ? Number(t.platformFee.feeAmount) : 0),
-        0
+        0,
       );
       const netRevenue = grossRevenue - platformFees;
 
@@ -494,7 +500,7 @@ export class OrganizerFinancialService {
 
       const taxDeductibleExpenses = expenses.reduce(
         (sum, e) => sum + Number(e.amount),
-        0
+        0,
       );
 
       const taxableIncome = netRevenue - taxDeductibleExpenses;
@@ -515,6 +521,9 @@ export class OrganizerFinancialService {
           totalTransactions: transactions.length,
           totalExpenses: expenses.length,
         },
+        // Backward-compatible aliases expected by tests
+        netRevenue,
+        taxDeductibleExpenses,
       };
     } catch (error) {
       logger.error('Error getting tax summary:', error);

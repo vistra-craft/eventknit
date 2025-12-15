@@ -28,7 +28,7 @@ router.get(
   '/recommendations',
   authenticate,
   validateQuery(userDashboardValidations.recommendationsQuery),
-  UserDashboardController.getRecommendations
+  UserDashboardController.getRecommendations,
 );
 
 // Analytics
@@ -37,7 +37,7 @@ router.get(
   '/activity-history',
   authenticate,
   validateQuery(userDashboardValidations.activityHistoryQuery),
-  UserDashboardController.getActivityHistory
+  UserDashboardController.getActivityHistory,
 );
 
 // Reviews
@@ -46,19 +46,19 @@ router.post(
   authenticate,
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   validate(userDashboardValidations.createReview),
-  UserDashboardController.createReview
+  UserDashboardController.createReview,
 );
 router.get(
   '/events/:eventId/reviews',
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   validateQuery(userDashboardValidations.reviewsQuery),
-  UserDashboardController.getEventReviews
+  UserDashboardController.getEventReviews,
 );
 router.post(
   '/reviews/:reviewId/helpful',
   authenticate,
   validateParams(Joi.object({ reviewId: Joi.string().uuid().required() })),
-  UserDashboardController.markReviewHelpful
+  UserDashboardController.markReviewHelpful,
 );
 
 // Ticket Transfers
@@ -67,25 +67,25 @@ router.post(
   authenticate,
   validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
   validate(userDashboardValidations.initiateTransfer),
-  UserDashboardController.initiateTransfer
+  UserDashboardController.initiateTransfer,
 );
 router.post(
   '/transfers/accept/:transferToken',
   authenticate,
   validateParams(Joi.object({ transferToken: Joi.string().required() })),
-  UserDashboardController.acceptTransfer
+  UserDashboardController.acceptTransfer,
 );
 router.post(
   '/transfers/:transferId/cancel',
   authenticate,
   validateParams(Joi.object({ transferId: Joi.string().uuid().required() })),
-  UserDashboardController.cancelTransfer
+  UserDashboardController.cancelTransfer,
 );
 router.get(
   '/transfers',
   authenticate,
   validateQuery(userDashboardValidations.transferHistoryQuery),
-  UserDashboardController.getTransferHistory
+  UserDashboardController.getTransferHistory,
 );
 
 // Event Collections
@@ -93,24 +93,24 @@ router.post(
   '/collections',
   authenticate,
   validate(userDashboardValidations.createCollection),
-  UserDashboardController.createCollection
+  UserDashboardController.createCollection,
 );
 router.get(
   '/collections',
   authenticate,
   validateQuery(userDashboardValidations.collectionsQuery),
-  UserDashboardController.getUserCollections
+  UserDashboardController.getUserCollections,
 );
 router.get(
   '/collections/public',
   validateQuery(userDashboardValidations.paginationQuery),
-  UserDashboardController.getPublicCollections
+  UserDashboardController.getPublicCollections,
 );
 router.get(
   '/collections/:collectionId',
   validateParams(Joi.object({ collectionId: Joi.string().uuid().required() })),
   authenticate,
-  UserDashboardController.getCollectionById
+  UserDashboardController.getCollectionById,
 );
 router.post(
   '/collections/:collectionId/events/:eventId',
@@ -120,7 +120,7 @@ router.post(
     eventId: Joi.string().uuid().required(),
   })),
   validate(userDashboardValidations.addEventToCollection),
-  UserDashboardController.addEventToCollection
+  UserDashboardController.addEventToCollection,
 );
 router.delete(
   '/collections/:collectionId/events/:eventId',
@@ -129,26 +129,26 @@ router.delete(
     collectionId: Joi.string().uuid().required(),
     eventId: Joi.string().uuid().required(),
   })),
-  UserDashboardController.removeEventFromCollection
+  UserDashboardController.removeEventFromCollection,
 );
 router.post(
   '/collections/:collectionId/follow',
   authenticate,
   validateParams(Joi.object({ collectionId: Joi.string().uuid().required() })),
-  UserDashboardController.toggleFollowCollection
+  UserDashboardController.toggleFollowCollection,
 );
 router.put(
   '/collections/:collectionId',
   authenticate,
   validateParams(Joi.object({ collectionId: Joi.string().uuid().required() })),
   validate(userDashboardValidations.updateCollection),
-  UserDashboardController.updateCollection
+  UserDashboardController.updateCollection,
 );
 router.delete(
   '/collections/:collectionId',
   authenticate,
   validateParams(Joi.object({ collectionId: Joi.string().uuid().required() })),
-  UserDashboardController.deleteCollection
+  UserDashboardController.deleteCollection,
 );
 
 // User Interests
@@ -156,21 +156,21 @@ router.post(
   '/interests',
   authenticate,
   validate(userDashboardValidations.upsertInterest),
-  UserDashboardController.upsertInterest
+  UserDashboardController.upsertInterest,
 );
 router.get('/interests', authenticate, UserDashboardController.getUserInterests);
 router.delete(
   '/interests/:category',
   authenticate,
   validateParams(Joi.object({ category: Joi.string().required() })),
-  UserDashboardController.removeInterest
+  UserDashboardController.removeInterest,
 );
 router.patch(
   '/interests/:category/weight',
   authenticate,
   validateParams(Joi.object({ category: Joi.string().required() })),
   validate(userDashboardValidations.updateInterestWeight),
-  UserDashboardController.updateInterestWeight
+  UserDashboardController.updateInterestWeight,
 );
 
 // Saved Searches
@@ -178,7 +178,7 @@ router.post(
   '/saved-searches',
   authenticate,
   validate(userDashboardValidations.createSavedSearch),
-  UserDashboardController.createSavedSearch
+  UserDashboardController.createSavedSearch,
 );
 router.get('/saved-searches', authenticate, UserDashboardController.getUserSavedSearches);
 router.put(
@@ -186,19 +186,19 @@ router.put(
   authenticate,
   validateParams(Joi.object({ searchId: Joi.string().uuid().required() })),
   validate(userDashboardValidations.updateSavedSearch),
-  UserDashboardController.updateSavedSearch
+  UserDashboardController.updateSavedSearch,
 );
 router.delete(
   '/saved-searches/:searchId',
   authenticate,
   validateParams(Joi.object({ searchId: Joi.string().uuid().required() })),
-  UserDashboardController.deleteSavedSearch
+  UserDashboardController.deleteSavedSearch,
 );
 router.post(
   '/saved-searches/:searchId/execute',
   authenticate,
   validateParams(Joi.object({ searchId: Joi.string().uuid().required() })),
-  UserDashboardController.executeSavedSearch
+  UserDashboardController.executeSavedSearch,
 );
 
 // Direct Messaging
@@ -206,37 +206,37 @@ router.post(
   '/messages',
   authenticate,
   validate(userDashboardValidations.sendMessage),
-  UserDashboardController.sendMessage
+  UserDashboardController.sendMessage,
 );
 router.get(
   '/messages/inbox',
   authenticate,
   validateQuery(userDashboardValidations.messagesQuery),
-  UserDashboardController.getInbox
+  UserDashboardController.getInbox,
 );
 router.get(
   '/messages/sent',
   authenticate,
   validateQuery(userDashboardValidations.paginationQuery),
-  UserDashboardController.getSentMessages
+  UserDashboardController.getSentMessages,
 );
 router.get(
   '/messages/:messageId',
   authenticate,
   validateParams(Joi.object({ messageId: Joi.string().uuid().required() })),
-  UserDashboardController.getMessageThread
+  UserDashboardController.getMessageThread,
 );
 router.post(
   '/messages/:messageId/read',
   authenticate,
   validateParams(Joi.object({ messageId: Joi.string().uuid().required() })),
-  UserDashboardController.markMessageAsRead
+  UserDashboardController.markMessageAsRead,
 );
 router.delete(
   '/messages/:messageId',
   authenticate,
   validateParams(Joi.object({ messageId: Joi.string().uuid().required() })),
-  UserDashboardController.deleteMessage
+  UserDashboardController.deleteMessage,
 );
 
 // Social Networking
@@ -244,37 +244,37 @@ router.post(
   '/social/follow/:userId',
   authenticate,
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
-  UserDashboardController.followUser
+  UserDashboardController.followUser,
 );
 router.post(
   '/social/unfollow/:userId',
   authenticate,
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
-  UserDashboardController.unfollowUser
+  UserDashboardController.unfollowUser,
 );
 router.get(
   '/social/followers/:userId',
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
   validateQuery(userDashboardValidations.socialQuery),
-  UserDashboardController.getFollowers
+  UserDashboardController.getFollowers,
 );
 router.get(
   '/social/following/:userId',
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
   validateQuery(userDashboardValidations.socialQuery),
-  UserDashboardController.getFollowing
+  UserDashboardController.getFollowing,
 );
 router.get(
   '/social/is-following/:userId',
   authenticate,
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
-  UserDashboardController.isFollowing
+  UserDashboardController.isFollowing,
 );
 router.get(
   '/social/profile/:userId',
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
   authenticate,
-  UserDashboardController.getUserProfile
+  UserDashboardController.getUserProfile,
 );
 
 // Event Sharing
@@ -283,13 +283,13 @@ router.post(
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   authenticate,
   validate(userDashboardValidations.trackShare),
-  UserDashboardController.trackShare
+  UserDashboardController.trackShare,
 );
 router.get(
   '/events/:eventId/share/analytics',
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   authenticate,
-  UserDashboardController.getShareAnalytics
+  UserDashboardController.getShareAnalytics,
 );
 
 // ========== Ticket Resale ==========
@@ -297,7 +297,7 @@ router.post(
   '/resale/list',
   authenticate,
   validate(listTicketForResaleSchema),
-  UserFeaturesController.listTicketForResale
+  UserFeaturesController.listTicketForResale,
 );
 router.get('/resale/marketplace', UserFeaturesController.getMarketplaceTickets);
 router.get('/resale/my-listings', authenticate, UserFeaturesController.getUserResales);
@@ -305,13 +305,13 @@ router.post(
   '/resale/:resaleId/purchase',
   authenticate,
   validateParams(Joi.object({ resaleId: Joi.string().uuid().required() })),
-  UserFeaturesController.purchaseResaleTicket
+  UserFeaturesController.purchaseResaleTicket,
 );
 router.post(
   '/resale/:resaleId/cancel',
   authenticate,
   validateParams(Joi.object({ resaleId: Joi.string().uuid().required() })),
-  UserFeaturesController.cancelResale
+  UserFeaturesController.cancelResale,
 );
 
 // ========== Digital Wallet ==========
@@ -320,31 +320,31 @@ router.post(
   '/wallet/add',
   authenticate,
   validate(addTicketToWalletSchema),
-  UserFeaturesController.addTicketToWallet
+  UserFeaturesController.addTicketToWallet,
 );
 router.delete(
   '/wallet/:registrationId',
   authenticate,
   validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
-  UserFeaturesController.removeTicketFromWallet
+  UserFeaturesController.removeTicketFromWallet,
 );
 router.put(
   '/wallet/preferences',
   authenticate,
   validate(updateWalletPreferencesSchema),
-  UserFeaturesController.updateWalletPreferences
+  UserFeaturesController.updateWalletPreferences,
 );
 router.get(
   '/wallet/:registrationId/apple-pass',
   authenticate,
   validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
-  UserFeaturesController.generateAppleWalletPass
+  UserFeaturesController.generateAppleWalletPass,
 );
 router.get(
   '/wallet/:registrationId/google-pass',
   authenticate,
   validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
-  UserFeaturesController.generateGooglePayPass
+  UserFeaturesController.generateGooglePayPass,
 );
 
 // ========== Event Calendar Integration ==========
@@ -352,14 +352,14 @@ router.post(
   '/calendar/sync',
   authenticate,
   validate(syncToCalendarSchema),
-  UserFeaturesController.syncToCalendar
+  UserFeaturesController.syncToCalendar,
 );
 router.get('/calendar/syncs', authenticate, UserFeaturesController.getUserCalendarSyncs);
 router.delete(
   '/calendar/syncs/:syncId',
   authenticate,
   validateParams(Joi.object({ syncId: Joi.string().uuid().required() })),
-  UserFeaturesController.removeCalendarSync
+  UserFeaturesController.removeCalendarSync,
 );
 
 // ========== Personal Event Feed ==========
@@ -369,19 +369,19 @@ router.put(
   '/feed/preferences',
   authenticate,
   validate(updateFeedPreferencesSchema),
-  UserFeaturesController.updateFeedPreferences
+  UserFeaturesController.updateFeedPreferences,
 );
 router.post(
   '/feed/items/:itemId/viewed',
   authenticate,
   validateParams(Joi.object({ itemId: Joi.string().uuid().required() })),
-  UserFeaturesController.markFeedItemViewed
+  UserFeaturesController.markFeedItemViewed,
 );
 router.post(
   '/feed/items/:itemId/dismiss',
   authenticate,
   validateParams(Joi.object({ itemId: Joi.string().uuid().required() })),
-  UserFeaturesController.dismissFeedItem
+  UserFeaturesController.dismissFeedItem,
 );
 
 // ========== Event Updates Subscription ==========
@@ -390,13 +390,13 @@ router.post(
   authenticate,
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   validate(subscribeToEventSchema),
-  UserFeaturesController.subscribeToEvent
+  UserFeaturesController.subscribeToEvent,
 );
 router.post(
   '/events/:eventId/unsubscribe',
   authenticate,
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
-  UserFeaturesController.unsubscribeFromEvent
+  UserFeaturesController.unsubscribeFromEvent,
 );
 router.get('/subscriptions', authenticate, UserFeaturesController.getUserSubscriptions);
 router.put(
@@ -404,7 +404,7 @@ router.put(
   authenticate,
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   validate(updateSubscriptionPreferencesSchema),
-  UserFeaturesController.updateSubscriptionPreferences
+  UserFeaturesController.updateSubscriptionPreferences,
 );
 
 // ========== Invoices ==========
@@ -417,31 +417,31 @@ router.get(
     page: Joi.number().integer().min(1).optional(),
     limit: Joi.number().integer().min(1).max(100).optional(),
   })),
-  InvoiceController.getUserInvoices
+  InvoiceController.getUserInvoices,
 );
 router.get(
   '/invoices/:invoiceId',
   authenticate,
   validateParams(Joi.object({ invoiceId: Joi.string().uuid().required() })),
-  InvoiceController.getInvoiceById
+  InvoiceController.getInvoiceById,
 );
 router.get(
   '/invoices/number/:invoiceNumber',
   authenticate,
   validateParams(Joi.object({ invoiceNumber: Joi.string().required() })),
-  InvoiceController.getInvoiceByNumber
+  InvoiceController.getInvoiceByNumber,
 );
 router.get(
   '/invoices/:invoiceId/html',
   authenticate,
   validateParams(Joi.object({ invoiceId: Joi.string().uuid().required() })),
-  InvoiceController.generateInvoiceHTML
+  InvoiceController.generateInvoiceHTML,
 );
 router.get(
   '/invoices/:invoiceId/download',
   authenticate,
   validateParams(Joi.object({ invoiceId: Joi.string().uuid().required() })),
-  InvoiceController.downloadInvoice
+  InvoiceController.downloadInvoice,
 );
 
 // ========== Payment Plans ==========
@@ -452,13 +452,13 @@ router.get(
     status: Joi.string().optional(),
     eventId: Joi.string().uuid().optional(),
   })),
-  PaymentPlanController.getUserPaymentPlans
+  PaymentPlanController.getUserPaymentPlans,
 );
 router.post(
   '/payment-plans',
   authenticate,
   validate(createPaymentPlanSchema),
-  PaymentPlanController.createPaymentPlan
+  PaymentPlanController.createPaymentPlan,
 );
 router.get(
   '/payment-plans',
@@ -467,31 +467,31 @@ router.get(
     status: Joi.string().optional(),
     eventId: Joi.string().uuid().optional(),
   })),
-  PaymentPlanController.getUserPaymentPlans
+  PaymentPlanController.getUserPaymentPlans,
 );
 router.get(
   '/payment-plans/registration/:registrationId',
   authenticate,
   validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
-  PaymentPlanController.getPaymentPlanByRegistration
+  PaymentPlanController.getPaymentPlanByRegistration,
 );
 router.post(
   '/payment-plans/installments/:installmentId/pay',
   authenticate,
   validateParams(Joi.object({ installmentId: Joi.string().uuid().required() })),
   validate(processInstallmentPaymentSchema),
-  PaymentPlanController.processInstallmentPayment
+  PaymentPlanController.processInstallmentPayment,
 );
 router.get(
   '/payment-plans/overdue',
   authenticate,
-  PaymentPlanController.getOverdueInstallments
+  PaymentPlanController.getOverdueInstallments,
 );
 router.post(
   '/payment-plans/:planId/cancel',
   authenticate,
   validateParams(Joi.object({ planId: Joi.string().uuid().required() })),
-  PaymentPlanController.cancelPaymentPlan
+  PaymentPlanController.cancelPaymentPlan,
 );
 
 export default router;

@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 
 const prisma = new PrismaClient();
+export { prisma };
 
 export class UserDashboardService {
   /**
@@ -9,7 +10,7 @@ export class UserDashboardService {
    */
   static async getPersonalizedRecommendations(
     userId: string,
-    limit: number = 10
+    limit: number = 10,
   ) {
     try {
       // Get user's past events and interests
@@ -63,8 +64,10 @@ export class UserDashboardService {
         OR: [
           ...Array.from(categories).map((cat) => ({ category: cat })),
           ...Array.from(tags).map((tag) => ({ tags: { has: tag } })),
-          ...Array.from(locations).map((loc) => ({ location: { contains: loc, mode: 'insensitive' } })),
-        ],
+          ...Array.from(locations).map((loc) => ({
+            location: { contains: loc, mode: 'insensitive' as const },
+          })),
+        ] as Prisma.EventWhereInput[],
       };
 
       const recommendations = await prisma.event.findMany({
@@ -169,7 +172,7 @@ export class UserDashboardService {
             if (event?.category) {
               categoryMap.set(
                 event.category,
-                (categoryMap.get(event.category) || 0) + group._count
+                (categoryMap.get(event.category) || 0) + group._count,
               );
             }
           });
@@ -206,7 +209,7 @@ export class UserDashboardService {
             if (reg.event.category) {
               categoryCount.set(
                 reg.event.category,
-                (categoryCount.get(reg.event.category) || 0) + 1
+                (categoryCount.get(reg.event.category) || 0) + 1,
               );
             }
           });
@@ -229,6 +232,12 @@ export class UserDashboardService {
           count: Number(m.count),
         })),
         favoriteCategories,
+        overview: {
+          totalEvents,
+          completedEvents,
+          upcomingEvents,
+          totalSpent: totalSpent._sum.totalAmount || 0,
+        },
       };
     } catch (error) {
       logger.error('Error getting personal analytics:', error);
@@ -245,7 +254,7 @@ export class UserDashboardService {
       page?: number;
       limit?: number;
       activityType?: string;
-    }
+    },
   ) {
     try {
       const limit = filters?.limit || 20;

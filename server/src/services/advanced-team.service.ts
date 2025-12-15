@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 
 export class AdvancedTeamService {
   /**
@@ -184,7 +184,7 @@ export class AdvancedTeamService {
     action: string,
     description: string,
     metadata?: any,
-    eventId?: string
+    eventId?: string,
   ) {
     try {
       await prisma.teamActivityFeed.create({
@@ -290,7 +290,7 @@ export class AdvancedTeamService {
       attendeesManaged?: number;
     },
     periodStart: Date,
-    periodEnd: Date
+    periodEnd: Date,
   ) {
     try {
       const metric = await prisma.teamPerformanceMetric.upsert({

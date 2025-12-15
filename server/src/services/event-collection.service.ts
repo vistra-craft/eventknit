@@ -16,7 +16,7 @@ export class EventCollectionService {
       description?: string;
       isPublic?: boolean;
       coverImage?: string;
-    }
+    },
   ) {
     try {
       const shareToken = crypto.randomBytes(16).toString('hex');
@@ -57,7 +57,7 @@ export class EventCollectionService {
       page?: number;
       limit?: number;
       isPublic?: boolean;
-    }
+    },
   ) {
     try {
       const limit = filters?.limit || 20;
@@ -232,7 +232,7 @@ export class EventCollectionService {
     collectionId: string,
     eventId: string,
     userId: string,
-    notes?: string
+    notes?: string,
   ) {
     try {
       // Verify collection belongs to user
@@ -303,7 +303,7 @@ export class EventCollectionService {
   static async removeEventFromCollection(
     collectionId: string,
     eventId: string,
-    userId: string
+    userId: string,
   ) {
     try {
       const collection = await prisma.eventCollection.findUnique({
@@ -416,7 +416,7 @@ export class EventCollectionService {
       description?: string;
       isPublic?: boolean;
       coverImage?: string;
-    }
+    },
   ) {
     try {
       const collection = await prisma.eventCollection.findUnique({

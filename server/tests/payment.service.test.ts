@@ -1098,6 +1098,8 @@ describe('PaymentService', () => {
       const paymentTransaction = await prisma.eventPaymentTransaction.create({
         data: {
           transactionNumber: `EPT-TEST-${Date.now()}`,
+          gatewayReference: `gw-ref-${Date.now()}`,
+          gatewayAmount: 10000,
           paystackReference: `test-ref-${Date.now()}`,
           paystackAmount: 1000000,
           currency: 'NGN',

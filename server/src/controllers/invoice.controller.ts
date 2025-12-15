@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { InvoiceService } from '../services/invoice.service.js';
 import { InvoiceTemplateService } from '../services/invoice-template.service.js';
-import { logger } from '../utils/logger.js';
 
 export class InvoiceController {
   /**
@@ -79,8 +78,8 @@ export class InvoiceController {
       const result = await InvoiceService.getUserInvoices(userId, {
         status: status as string,
         eventId: eventId as string,
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        page: page ? parseInt(page as string, 10) : undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
       });
 
       res.status(200).json({
@@ -102,8 +101,8 @@ export class InvoiceController {
 
       const result = await InvoiceService.getEventInvoices(eventId, {
         status: status as string,
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        page: page ? parseInt(page as string, 10) : undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
       });
 
       res.status(200).json({

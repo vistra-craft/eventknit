@@ -1,6 +1,6 @@
 import { EventReviewService } from '../src/services/event-review.service';
 import { ValidationError } from '../src/utils/errors';
-import { prisma } from '../src/services/event-review.service'; // service uses internal prisma instance
+import { prisma } from '../src/services/event-review.service.js'; // service uses internal prisma instance
 
 describe('EventReviewService', () => {
   const prismaAny: any = prisma;

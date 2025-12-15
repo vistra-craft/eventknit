@@ -6,7 +6,7 @@
 
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
-import { NotFoundError, ValidationError } from '../../utils/errors';
+import { NotFoundError } from '../../utils/errors';
 
 export interface CreatePostTemplateData {
   name: string;
@@ -202,7 +202,7 @@ export class PostTemplatesService {
     data: Partial<CreatePostTemplateData>,
   ) {
     try {
-      const template = await this.getTemplateById(templateId, organizerId);
+      await this.getTemplateById(templateId, organizerId);
 
       const updated = await prisma.socialMediaPostTemplate.update({
         where: { id: templateId },

@@ -39,7 +39,7 @@ export async function cleanupTestData(tx?: any) {
         try {
           const { Prisma } = await import('@prisma/client');
           await (client as any).$executeRaw(Prisma.sql`ROLLBACK TO SAVEPOINT ${Prisma.raw(savepointName)}`);
-        } catch (rollbackError) {
+        } catch (_rollbackError) {
           // If rollback fails, transaction might already be aborted - that's okay
           // The outer transaction will handle the rollback
         }

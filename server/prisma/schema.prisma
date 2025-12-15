@@ -97,6 +97,12 @@ model User {
   otherName          String? // Middle name or other names
   phoneNumber        String?
   companyAffiliation String? // Company or institutional affiliation
+  // Contact address information
+  address            String?
+  city               String?
+  state              String?
+  country            String?
+  zipCode            String?
   role               UserRole   @default(ATTENDEE)
   status             UserStatus @default(ACTIVE)
   isEmailVerified    Boolean    @default(false)
@@ -428,6 +434,9 @@ model Event {
 
   // Registration code for SMS/USSD registration
   registrationCode String? @unique // Short code for SMS/USSD registration (e.g., "EVENT1")
+
+  // Ticket transfer configuration
+  allowTransfers Boolean @default(true)
 
   // Scan configuration
   allowReEntry    Boolean @default(false) // Allow attendees to re-enter after check-out
@@ -864,6 +873,9 @@ model EventPaymentTransaction {
   // Gateway Details (supports multiple gateways)
   gateway              String  @default("PAYSTACK") // PAYSTACK, STRIPE, PAYPAL
   gatewayReference     String  @unique // Gateway transaction reference
+  // Legacy/paystack-specific reference (kept for backward compatibility with older code/tests)
+  paystackReference    String?
+  paystackAmount       Decimal? @db.Decimal(10, 2) // Legacy amount field (kobo/cents converted)
   gatewayAmount        Decimal @db.Decimal(10, 2) // Amount from gateway (in smallest unit)
   gatewayTransactionId String? // Gateway's internal transaction ID
   currency             String  @default("NGN")
@@ -2141,8 +2153,8 @@ model TicketTransfer {
 
   fromUserId String
   fromUser   User    @relation("TicketTransfersFrom", fields: [fromUserId], references: [id], onDelete: Restrict)
-  toUserId   String
-  toUser     User    @relation("TicketTransfersTo", fields: [toUserId], references: [id], onDelete: Restrict)
+  toUserId   String?
+  toUser     User?   @relation("TicketTransfersTo", fields: [toUserId], references: [id], onDelete: Restrict)
   toEmail    String? // Email if transferring to non-user
 
   // Transfer details

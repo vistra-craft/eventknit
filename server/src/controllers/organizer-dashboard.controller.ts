@@ -986,7 +986,7 @@ export class OrganizerDashboardController {
       const collaboration = await EventCollaborationService.updateCollaboratorPermissions(
         collaborationId,
         req.user.id,
-        req.body
+        req.body,
       );
       res.status(200).json({ success: true, data: { collaboration } });
     } catch (error) {
@@ -1160,7 +1160,7 @@ export class OrganizerDashboardController {
         eventId,
         ticketType as string,
         parseInt(quantity as string, 10) || 1,
-        req.user.id
+        req.user.id,
       );
       res.status(200).json({ success: true, data: result });
     } catch (error) {

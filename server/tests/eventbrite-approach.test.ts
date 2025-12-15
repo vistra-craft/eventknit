@@ -328,6 +328,8 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
       const verifiedPayment = await prisma.eventPaymentTransaction.create({
         data: {
           transactionNumber: 'EPT-VERIFIED-001',
+          gatewayReference: 'gw-ver-001',
+          gatewayAmount: 10000,
           paystackReference: 'ref_verified_001',
           paystackAmount: 1000000,
           currency: 'NGN',
@@ -345,6 +347,8 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
       const unverifiedPayment = await prisma.eventPaymentTransaction.create({
         data: {
           transactionNumber: 'EPT-UNVERIFIED-001',
+          gatewayReference: 'gw-unver-001',
+          gatewayAmount: 10000,
           paystackReference: 'ref_unverified_001',
           paystackAmount: 1000000,
           currency: 'NGN',
@@ -500,6 +504,8 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
       const payment = await prisma.eventPaymentTransaction.create({
         data: {
           transactionNumber: 'EPT-INTEGRATION-001',
+          gatewayReference: 'gw-int-001',
+          gatewayAmount: 5000,
           paystackReference: 'ref_integration_001',
           paystackAmount: 500000,
           currency: 'NGN',

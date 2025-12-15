@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { hashPassword } from '../utils/password.js';
-import { UserRole, UserStatus, EventStatus } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 import {
   NotFoundError,
   ConflictError,
@@ -619,19 +619,32 @@ export class OrganizerService {
       const attendees = confirmedRegistrations.reduce((sum, reg) => sum + reg.quantity, 0);
       const revenue = confirmedRegistrations.reduce((sum, reg) => sum + Number(reg.totalAmount), 0);
 
-      // Determine status based on dates
+      // Determine status based on dates and platform rules (Eventbrite-style)
       let status = 'upcoming';
       const now = new Date();
-      if (event.status === 'COMPLETED') {
+      switch (event.status) {
+      case 'CANCELLED':
+        status = 'cancelled';
+        break;
+      case 'REJECTED':
+        status = 'unpublished';
+        break;
+      case 'PENDING':
+        status = 'unpublished';
+        break;
+      case 'COMPLETED':
         status = 'completed';
-      } else if (event.endDate && new Date(event.endDate) < now) {
-        status = 'completed';
-      } else if (event.startDate && new Date(event.startDate) <= now) {
-        status = 'active';
-      } else if (event.status === 'APPROVED') {
-        status = 'active';
-      } else if (event.status === 'PENDING') {
-        status = 'pending';
+        break;
+      case 'APPROVED':
+      default:
+        if (event.endDate && new Date(event.endDate) < now) {
+          status = 'completed';
+        } else if (event.startDate && new Date(event.startDate) <= now) {
+          status = 'active';
+        } else if (event.status === 'APPROVED') {
+          status = 'active';
+        }
+        break;
       }
 
       return {

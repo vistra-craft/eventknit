@@ -31,8 +31,8 @@ export class AdminFinancialController {
       if (status) filters.status = status as string;
       if (startDate) filters.startDate = new Date(startDate as string);
       if (endDate) filters.endDate = new Date(endDate as string);
-      if (page) filters.page = parseInt(page as string);
-      if (limit) filters.limit = parseInt(limit as string);
+      if (page) filters.page = parseInt(page as string, 10);
+      if (limit) filters.limit = parseInt(limit as string, 10);
 
       const result = await AdminFinancialService.getExpenses(filters);
 
@@ -119,8 +119,8 @@ export class AdminFinancialController {
       if (status) filters.status = status as string;
       if (startDate) filters.startDate = new Date(startDate as string);
       if (endDate) filters.endDate = new Date(endDate as string);
-      if (page) filters.page = parseInt(page as string);
-      if (limit) filters.limit = parseInt(limit as string);
+      if (page) filters.page = parseInt(page as string, 10);
+      if (limit) filters.limit = parseInt(limit as string, 10);
 
       const result = await AdminFinancialService.getIncomes(filters);
 
@@ -191,8 +191,8 @@ export class AdminFinancialController {
       }
 
       const summary = await AdminFinancialService.getMonthlySummary(
-        parseInt(year as string),
-        parseInt(month as string)
+        parseInt(year as string, 10),
+        parseInt(month as string, 10),
       );
 
       res.status(200).json({

@@ -32,7 +32,7 @@ export class ApiKeyService {
       const apiKeys = await prisma.apiKey.findMany({
         where: {
           isActive: true,
-          keyPrefix: keyPrefix,
+          keyPrefix,
           OR: [
             { expiresAt: null },
             { expiresAt: { gt: new Date() } },
@@ -141,7 +141,7 @@ export class ApiKeyService {
 
       // Remove keyHash from response for security
       return apiKeys.map((key) => {
-        const { keyHash, ...rest } = key;
+        const { keyHash: _keyHash, ...rest } = key;
         return rest;
       });
     } catch (error: any) {
@@ -170,7 +170,7 @@ export class ApiKeyService {
       }
 
       // Remove keyHash from response
-      const { keyHash, ...rest } = apiKey;
+      const { keyHash: _keyHash, ...rest } = apiKey;
       return rest;
     } catch (error: any) {
       if (error instanceof NotFoundError) {
@@ -194,7 +194,7 @@ export class ApiKeyService {
       rateLimitWindow?: number;
       expiresAt?: Date | null;
       isActive?: boolean;
-    }
+    },
   ) {
     try {
       const apiKey = await prisma.apiKey.findUnique({
@@ -221,7 +221,7 @@ export class ApiKeyService {
       logger.info(`API key updated: ${apiKeyId}`);
 
       // Remove keyHash from response
-      const { keyHash, ...rest } = updated;
+      const { keyHash: _keyHash, ...rest } = updated;
       return rest;
     } catch (error: any) {
       if (error instanceof NotFoundError) {
@@ -284,7 +284,7 @@ export class ApiKeyService {
           responseTime: data.responseTime,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
-          requestBody: data.requestBody || {},
+          requestBody: data.requestBody ? (data.requestBody as any) : undefined,
           errorMessage: data.errorMessage,
         },
       });

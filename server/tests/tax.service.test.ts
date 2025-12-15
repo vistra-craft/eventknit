@@ -1,5 +1,4 @@
 import { TaxService } from '../src/services/tax.service';
-import { Decimal } from '@prisma/client/runtime/library';
 
 const prismaMock = {
   taxRate: {

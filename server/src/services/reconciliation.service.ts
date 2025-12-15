@@ -237,7 +237,7 @@ export class ReconciliationService {
 
       // Check system transactions
       for (const [reference, systemData] of systemMap.entries()) {
-        if (!paystackMap.has(reference)) {
+        if (reference && !paystackMap.has(reference)) {
           // Transaction in system but not in Paystack
           discrepancies.push({
             type: 'missing_in_paystack',

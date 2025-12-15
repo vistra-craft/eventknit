@@ -54,7 +54,7 @@ export class SocialMediaController {
       }
 
       const account = await SocialMediaService.connectAccount({
-        platform,
+        platform: platform as SocialPlatform,
         accountId,
         accountName,
         accountHandle,
@@ -251,10 +251,10 @@ export class SocialMediaController {
         platform,
         content,
         mediaUrls,
-        status,
+        status: _status,
         scheduledAt,
-        campaignId,
-        metadata,
+        campaignId: _campaignId,
+        metadata: _metadata,
       } = req.body;
 
       if (!socialAccountId || typeof socialAccountId !== 'string') {
@@ -271,16 +271,12 @@ export class SocialMediaController {
         throw new ValidationError('Post must have content or media');
       }
 
-      const post = await SocialMediaService.createPost({
-        socialAccountId,
-        platform,
+      const post = await SocialMediaService.createPost(req.user.id, {
+        eventId: req.body.eventId,
+        platform: platform as any,
         content,
         mediaUrls,
-        status,
-        scheduledAt,
-        campaignId,
-        createdBy: req.user.id,
-        metadata,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
       });
 
       res.status(201).json({
@@ -340,7 +336,7 @@ export class SocialMediaController {
       if (startDate) filters.startDate = new Date(startDate as string);
       if (endDate) filters.endDate = new Date(endDate as string);
 
-      const posts = await SocialMediaService.getPosts(filters);
+      const posts = await SocialMediaService.getPosts(req.user.id, filters);
 
       res.status(200).json({
         success: true,
@@ -403,21 +399,19 @@ export class SocialMediaController {
       const {
         content,
         mediaUrls,
-        status,
+        status: _statusUpdate,
         scheduledAt,
-        publishedAt,
-        postId,
-        metadata,
+        publishedAt: _publishedAt,
+        postId: _postId,
+        metadata: _metadata,
       } = req.body;
 
       const post = await SocialMediaService.updatePost(id, {
         content,
         mediaUrls,
-        status,
-        scheduledAt,
-        publishedAt,
-        postId,
-        metadata,
+        status: _statusUpdate,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,
+        metadata: _metadata,
       });
 
       res.status(200).json({

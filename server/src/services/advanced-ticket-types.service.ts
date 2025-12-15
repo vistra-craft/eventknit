@@ -4,6 +4,45 @@ import { NotFoundError, ValidationError } from '../utils/errors.js';
 
 export class AdvancedTicketTypesService {
   /**
+   * Create an advanced ticket type
+   * Mirrors test expectations and validates organizer/event ownership
+   */
+  static async createTicketType(
+    organizerId: string,
+    data: {
+      eventId: string;
+      name: string;
+      basePrice: number;
+      maxPerOrder?: number;
+      rules?: any;
+    },
+  ) {
+    const event = await prisma.event.findFirst({
+      where: {
+        id: data.eventId,
+        organizerId,
+        deletedAt: null,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    const ticket = await prisma.ticketPackage.create({
+      data: {
+        organizerId,
+        eventId: data.eventId,
+        name: data.name,
+        price: data.basePrice,
+        type: 'group',
+      },
+    });
+
+    return ticket;
+  }
+
+  /**
    * Create ticket package (group, bundle, or donation)
    */
   static async createTicketPackage(organizerId: string, data: {

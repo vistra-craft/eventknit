@@ -17,7 +17,7 @@ export class DirectMessageService {
       eventId?: string;
       registrationId?: string;
       parentMessageId?: string;
-    }
+    },
   ) {
     try {
       // Check if recipient allows messages
@@ -91,7 +91,7 @@ export class DirectMessageService {
       page?: number;
       limit?: number;
       isRead?: boolean;
-    }
+    },
   ) {
     try {
       const limit = filters?.limit || 20;
@@ -169,7 +169,7 @@ export class DirectMessageService {
     filters?: {
       page?: number;
       limit?: number;
-    }
+    },
   ) {
     try {
       const limit = filters?.limit || 20;

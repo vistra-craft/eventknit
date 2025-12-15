@@ -68,8 +68,8 @@ export class StripeGateway implements PaymentGateway {
         metadata: request.metadata ? Object.fromEntries(
           Object.entries(request.metadata).map(([key, value]) => [
             key,
-            typeof value === 'string' || typeof value === 'number' ? String(value) : String(value)
-          ])
+            typeof value === 'string' || typeof value === 'number' ? String(value) : String(value),
+          ]),
         ) as Record<string, string> : {},
         client_reference_id: request.reference,
       });
@@ -121,8 +121,8 @@ export class StripeGateway implements PaymentGateway {
       }
 
       const status = intent.status === 'succeeded' ? 'success' :
-                    intent.status === 'canceled' ? 'cancelled' :
-                    intent.status === 'requires_payment_method' ? 'failed' : 'pending';
+        intent.status === 'canceled' ? 'cancelled' :
+          intent.status === 'requires_payment_method' ? 'failed' : 'pending';
 
       return {
         success: intent.status === 'succeeded',
@@ -213,7 +213,7 @@ export class StripeGateway implements PaymentGateway {
       const event = this.stripe!.webhooks.constructEvent(
         JSON.stringify(payload),
         signature || '',
-        this.gatewayConfig.webhookSecret
+        this.gatewayConfig.webhookSecret,
       );
 
       // Extract reference from event data

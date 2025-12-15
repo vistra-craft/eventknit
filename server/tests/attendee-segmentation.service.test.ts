@@ -20,18 +20,18 @@ describe('AttendeeSegmentationService', () => {
     jest.resetAllMocks();
   });
 
-  const rules = [{ field: 'city', operator: 'eq', value: 'NYC' }];
+  const criteria = [{ field: 'city', operator: 'eq', value: 'NYC' }];
 
   it('creates segment with organizer scope', async () => {
     prismaMock.attendeeSegment.create.mockResolvedValue({ id: 'seg-1' });
     const segment = await AttendeeSegmentationService.createSegment('org-1', {
       name: 'NYC',
       description: 'NYC attendees',
-      rules,
+      criteria,
     });
     expect(prismaMock.attendeeSegment.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ organizerId: 'org-1', name: 'NYC', rules }),
+        data: expect.objectContaining({ organizerId: 'org-1', name: 'NYC', criteria }),
       }),
     );
     expect(segment).toEqual({ id: 'seg-1' });

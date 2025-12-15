@@ -98,11 +98,11 @@ export class AdvancedPromoCodeService {
       const totalRedemptions = promoCode.redemptions.length;
       const totalDiscountGiven = promoCode.redemptions.reduce(
         (sum, r) => sum + Number(r.discountAmount),
-        0
+        0,
       );
       const totalRevenue = promoCode.redemptions.reduce(
         (sum, r) => sum + Number(r.finalAmount),
-        0
+        0,
       );
 
       // Redemptions over time
@@ -211,11 +211,11 @@ export class AdvancedPromoCodeService {
       const analytics = promoCodes.map(pc => {
         const totalDiscount = pc.redemptions.reduce(
           (sum, r) => sum + Number(r.discountAmount),
-          0
+          0,
         );
         const totalRevenue = pc.redemptions.reduce(
           (sum, r) => sum + Number(r.finalAmount),
-          0
+          0,
         );
 
         return {
@@ -279,7 +279,7 @@ export class AdvancedPromoCodeService {
     promoCodeId: string,
     redemptionId: string,
     variantId?: string,
-    revenue?: number
+    revenue?: number,
   ) {
     try {
       if (variantId) {

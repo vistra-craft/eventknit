@@ -14,7 +14,7 @@ export class EventShareService {
       platform: string;
       shareUrl?: string;
       referrer?: string;
-    }
+    },
   ) {
     try {
       const share = await prisma.eventShare.create({

@@ -1,5 +1,6 @@
-import { PrismaClient, BrandingStatus, CustomDomainStatus } from '@prisma/client';
-import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors';
+/* global URL */
+import { BrandingStatus, CustomDomainStatus } from '@prisma/client';
+import { NotFoundError, ValidationError } from '../utils/errors';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../config/database.js';
 
@@ -50,6 +51,69 @@ export interface UpdateCustomDomainData {
 }
 
 export class WhiteLabelService {
+  /**
+   * Simple creator used by tests to ensure organizer scoped record
+   */
+  static async createBranding(
+    organizerId: string,
+    data: { domain: string; theme?: Record<string, unknown> },
+  ) {
+    const branding = await prisma.whiteLabelBranding.create({
+      data: {
+        organizerId,
+        brandName: data.domain,
+        metadata: { domain: data.domain, theme: data.theme || {} } as any,
+      },
+    });
+
+    return branding;
+  }
+
+  /**
+   * Update branding scoped to organizer
+   */
+  static async updateBranding(
+    organizerId: string,
+    brandingId: string,
+    data: { domain?: string; theme?: Record<string, unknown> },
+  ) {
+    const existing = await prisma.whiteLabelBranding.findFirst({
+      where: {
+        id: brandingId,
+        organizerId,
+      },
+    });
+
+    if (!existing) {
+      // Distinguish cross-org from missing
+      const ownedByOther = await prisma.whiteLabelBranding.findFirst({
+        where: { id: brandingId },
+      });
+      if (ownedByOther) {
+        throw new ValidationError('Branding does not belong to organizer');
+      }
+      throw new NotFoundError('Branding not found');
+    }
+
+    const updated = await prisma.whiteLabelBranding.update({
+      where: { id: brandingId },
+      data: {
+        ...(data.domain ? { brandName: data.domain } : {}),
+        ...(data.domain || data.theme
+          ? {
+            metadata: {
+              ...(existing.metadata as any),
+              ...(data.domain ? { domain: data.domain } : {}),
+              ...(data.theme ? { theme: data.theme } : {}),
+            } as any,
+          }
+          : {}),
+      },
+    });
+
+    return updated;
+  }
+
   /**
    * Get or create branding for organizer
    */
@@ -114,7 +178,6 @@ export class WhiteLabelService {
   static async upsertBranding(
     organizerId: string,
     data: CreateBrandingData,
-    updatedBy?: string,
   ) {
     try {
       // Validate color formats if provided
@@ -127,7 +190,8 @@ export class WhiteLabelService {
         'linkColor',
       ];
       for (const field of colorFields) {
-        const value = data[field as keyof CreateBrandingData];
+        const raw = data[field as keyof CreateBrandingData];
+        const value = typeof raw === 'string' ? raw : null;
         if (value && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) {
           throw new ValidationError(`Invalid color format for ${field}. Use hex format (e.g., #FF5733)`);
         }
@@ -570,11 +634,11 @@ export class WhiteLabelService {
                       <tr>
                         <td align="center" style="padding: 30px 20px; background-color: ${branding.primaryColor || '#4a6cf7'};">
                           ${branding.emailHeaderImage ? 
-                            `<img src="${branding.emailHeaderImage}" alt="${branding.brandName || 'Logo'}" style="max-width: 200px; height: auto;">` :
-                            branding.logoUrl ? 
-                              `<img src="${branding.logoUrl}" alt="${branding.brandName || 'Logo'}" style="max-width: 200px; height: auto;">` :
-                              ''
-                          }
+    `<img src="${branding.emailHeaderImage}" alt="${branding.brandName || 'Logo'}" style="max-width: 200px; height: auto;">` :
+    branding.logoUrl ? 
+      `<img src="${branding.logoUrl}" alt="${branding.brandName || 'Logo'}" style="max-width: 200px; height: auto;">` :
+      ''
+}
                         </td>
                       </tr>
                     ` : ''}

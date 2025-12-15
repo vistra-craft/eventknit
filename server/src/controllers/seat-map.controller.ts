@@ -5,7 +5,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { SeatMapService } from '../services/seat-map.service';
 import { SeatSelectionService } from '../services/seat-selection.service';
-import { logger } from '../utils/logger.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
 export class SeatMapController {

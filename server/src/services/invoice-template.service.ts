@@ -32,7 +32,7 @@ export class InvoiceTemplateService {
           type: data.type || 'STANDARD',
           htmlContent: data.htmlContent,
           cssContent: data.cssContent,
-          variables: data.variables || {},
+          variables: (data.variables || {}) as any,
           isDefault: data.isDefault || false,
           isActive: true,
           createdBy: data.createdBy,
@@ -143,7 +143,7 @@ export class InvoiceTemplateService {
       variables?: Record<string, unknown>;
       isDefault?: boolean;
       isActive?: boolean;
-    }
+    },
   ) {
     try {
       const template = await prisma.invoiceTemplate.findUnique({
@@ -173,7 +173,7 @@ export class InvoiceTemplateService {
           ...(data.type && { type: data.type }),
           ...(data.htmlContent && { htmlContent: data.htmlContent }),
           ...(data.cssContent !== undefined && { cssContent: data.cssContent }),
-          ...(data.variables && { variables: data.variables }),
+          ...(data.variables && { variables: data.variables as any }),
           ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
           ...(data.isActive !== undefined && { isActive: data.isActive }),
         },

@@ -1060,7 +1060,10 @@ describe('Event Registration System', () => {
       });
 
       expect(registration).toBeDefined();
-      expect(registration?.status).toBe('CONFIRMED');
+      if (!registration) {
+        throw new Error('Registration not created');
+      }
+      expect(registration.status).toBe('CONFIRMED');
 
       // Verify QR code was generated and stored at registration time (Eventbrite/vf-ticket approach)
       const registrationWithQR = await prisma.eventRegistration.findUnique({

@@ -146,8 +146,8 @@ export class WebhookController {
         endpointId: endpointId as string,
         eventType: eventType as string,
         status: status as string,
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        page: page ? parseInt(page as string, 10) : undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
       });
 
       res.status(200).json({

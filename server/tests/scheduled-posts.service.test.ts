@@ -1,5 +1,5 @@
-import { ScheduledPostsService } from '../../src/services/social-media/scheduled-posts.service';
-import { SocialMediaService } from '../../src/services/social-media.service';
+import { ScheduledPostsService } from '../src/services/social-media/scheduled-posts.service';
+import { SocialMediaService } from '../src/services/social-media.service';
 
 const prismaMock = {
   socialMediaPost: {

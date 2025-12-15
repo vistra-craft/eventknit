@@ -521,7 +521,7 @@ router.get(
 router.post(
   '/invoices/templates',
   validate(createTemplateSchema),
-  InvoiceController.createTemplate
+  InvoiceController.createTemplate,
 );
 router.get(
   '/invoices/templates',
@@ -530,34 +530,34 @@ router.get(
     isActive: Joi.boolean().optional(),
     includeInactive: Joi.boolean().optional(),
   })),
-  InvoiceController.getTemplates
+  InvoiceController.getTemplates,
 );
 router.get(
   '/invoices/templates/default',
-  InvoiceController.getDefaultTemplate
+  InvoiceController.getDefaultTemplate,
 );
 router.get(
   '/invoices/templates/:templateId',
   validateParams(Joi.object({ templateId: Joi.string().uuid().required() })),
-  InvoiceController.getTemplateById
+  InvoiceController.getTemplateById,
 );
 router.put(
   '/invoices/templates/:templateId',
   validateParams(Joi.object({ templateId: Joi.string().uuid().required() })),
   validate(updateTemplateSchema),
-  InvoiceController.updateTemplate
+  InvoiceController.updateTemplate,
 );
 router.delete(
   '/invoices/templates/:templateId',
   validateParams(Joi.object({ templateId: Joi.string().uuid().required() })),
-  InvoiceController.deleteTemplate
+  InvoiceController.deleteTemplate,
 );
 
 // ========== Tax Management ==========
 router.post(
   '/tax/calculate',
   validate(calculateTaxSchema),
-  TaxController.calculateTax
+  TaxController.calculateTax,
 );
 router.get(
   '/tax/rates',
@@ -566,7 +566,7 @@ router.get(
     state: Joi.string().optional(),
     isActive: Joi.boolean().optional(),
   })),
-  TaxController.getTaxRates
+  TaxController.getTaxRates,
 );
 router.get(
   '/tax/rate',
@@ -575,22 +575,22 @@ router.get(
     state: Joi.string().optional(),
     city: Joi.string().optional(),
   })),
-  TaxController.getTaxRate
+  TaxController.getTaxRate,
 );
 router.post(
   '/tax/rates',
   validate(upsertTaxRateSchema),
-  TaxController.upsertTaxRate
+  TaxController.upsertTaxRate,
 );
 router.get(
   '/tax/rates/:taxRateId',
   validateParams(Joi.object({ taxRateId: Joi.string().uuid().required() })),
-  TaxController.getTaxRateById
+  TaxController.getTaxRateById,
 );
 router.delete(
   '/tax/rates/:taxRateId',
   validateParams(Joi.object({ taxRateId: Joi.string().uuid().required() })),
-  TaxController.deleteTaxRate
+  TaxController.deleteTaxRate,
 );
 router.get(
   '/tax/report',
@@ -600,14 +600,14 @@ router.get(
     country: Joi.string().optional(),
     eventId: Joi.string().uuid().optional(),
   })),
-  TaxController.getTaxReport
+  TaxController.getTaxReport,
 );
 
 // ========== Webhook Management ==========
 router.post(
   '/webhooks/endpoints',
   validate(createEndpointSchema),
-  WebhookController.createEndpoint
+  WebhookController.createEndpoint,
 );
 router.get(
   '/webhooks/endpoints',
@@ -615,28 +615,28 @@ router.get(
     isActive: Joi.boolean().optional(),
     eventType: Joi.string().optional(),
   })),
-  WebhookController.getEndpoints
+  WebhookController.getEndpoints,
 );
 router.get(
   '/webhooks/endpoints/:endpointId',
   validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
-  WebhookController.getEndpointById
+  WebhookController.getEndpointById,
 );
 router.put(
   '/webhooks/endpoints/:endpointId',
   validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
   validate(updateEndpointSchema),
-  WebhookController.updateEndpoint
+  WebhookController.updateEndpoint,
 );
 router.delete(
   '/webhooks/endpoints/:endpointId',
   validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
-  WebhookController.deleteEndpoint
+  WebhookController.deleteEndpoint,
 );
 router.post(
   '/webhooks/endpoints/:endpointId/test',
   validateParams(Joi.object({ endpointId: Joi.string().uuid().required() })),
-  WebhookController.testEndpoint
+  WebhookController.testEndpoint,
 );
 router.get(
   '/webhooks/deliveries',
@@ -647,41 +647,41 @@ router.get(
     page: Joi.number().integer().min(1).optional(),
     limit: Joi.number().integer().min(1).max(100).optional(),
   })),
-  WebhookController.getDeliveryHistory
+  WebhookController.getDeliveryHistory,
 );
 router.post(
   '/webhooks/retry',
-  WebhookController.retryFailedDeliveries
+  WebhookController.retryFailedDeliveries,
 );
 
 // ========== API Key Management ==========
 router.post(
   '/api-keys',
   validate(createApiKeySchema),
-  ApiKeyController.createApiKey
+  ApiKeyController.createApiKey,
 );
 router.get(
   '/api-keys',
   validateQuery(Joi.object({
     isActive: Joi.boolean().optional(),
   })),
-  ApiKeyController.getApiKeys
+  ApiKeyController.getApiKeys,
 );
 router.get(
   '/api-keys/:apiKeyId',
   validateParams(Joi.object({ apiKeyId: Joi.string().uuid().required() })),
-  ApiKeyController.getApiKeyById
+  ApiKeyController.getApiKeyById,
 );
 router.put(
   '/api-keys/:apiKeyId',
   validateParams(Joi.object({ apiKeyId: Joi.string().uuid().required() })),
   validate(updateApiKeySchema),
-  ApiKeyController.updateApiKey
+  ApiKeyController.updateApiKey,
 );
 router.delete(
   '/api-keys/:apiKeyId',
   validateParams(Joi.object({ apiKeyId: Joi.string().uuid().required() })),
-  ApiKeyController.deleteApiKey
+  ApiKeyController.deleteApiKey,
 );
 router.get(
   '/api-keys/:apiKeyId/stats',
@@ -690,14 +690,14 @@ router.get(
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
   })),
-  ApiKeyController.getApiUsageStats
+  ApiKeyController.getApiUsageStats,
 );
 
 // ========== Payment Plans (Admin) ==========
 router.post(
   '/payment-plans',
   validate(createPaymentPlanSchema),
-  PaymentPlanController.createPaymentPlan
+  PaymentPlanController.createPaymentPlan,
 );
 
 // ========== White-Label Management (Admin) ==========
@@ -713,7 +713,7 @@ router.get(
     isActive: Joi.boolean().optional(),
     search: Joi.string().optional(),
   })),
-  WhiteLabelController.getAllBrandings
+  WhiteLabelController.getAllBrandings,
 );
 
 /**
@@ -725,7 +725,7 @@ router.put(
   '/white-label/brandings/:brandingId/status',
   validateParams(Joi.object({ brandingId: Joi.string().uuid().required() })),
   validate(updateBrandingStatusSchema),
-  WhiteLabelController.updateBrandingStatus
+  WhiteLabelController.updateBrandingStatus,
 );
 
 /**
@@ -737,7 +737,7 @@ router.put(
   '/white-label/custom-domains/:domainId/verify',
   validateParams(Joi.object({ domainId: Joi.string().uuid().required() })),
   validate(verifyCustomDomainSchema),
-  WhiteLabelController.verifyCustomDomain
+  WhiteLabelController.verifyCustomDomain,
 );
 
 export default router;

@@ -73,8 +73,9 @@ export class SupportService {
           );
         }
 
+        const sm = SocialMediaService as any;
         // Use SocialMediaService to create the message
-        return await SocialMediaService.createMessage({
+        return await sm.createMessage?.({
           socialAccountId: data.socialAccountId,
           platform: data.platform,
           messageId: data.messageId,
@@ -145,10 +146,11 @@ export class SupportService {
         socialFilters.endDate = filters.endDate;
       }
 
-      const messages = await SocialMediaService.getMessages(socialFilters);
+      const sm = SocialMediaService as any;
+      const messages = (await sm.getMessages?.(socialFilters)) || [];
 
       // Transform to unified format
-      return messages.map((msg) => ({
+      return messages.map((msg: any) => ({
         id: msg.id,
         channel: SupportChannel.SOCIAL,
         platform: msg.platform,
@@ -181,7 +183,8 @@ export class SupportService {
     try {
       // For now, assume it's a social media message
       // In the future, check channel and route accordingly
-      const message = await SocialMediaService.getMessageById(queryId);
+      const sm = SocialMediaService as any;
+      const message = await sm.getMessageById?.(queryId);
 
       return {
         id: message.id,
@@ -218,7 +221,8 @@ export class SupportService {
   static async assignQuery(queryId: string, agentId: string, _channel?: SupportChannel) {
     try {
       // For now, assume it's a social media message
-      const message = await SocialMediaService.assignMessage(queryId, agentId);
+      const sm = SocialMediaService as any;
+      const message = await sm.assignMessage?.(queryId, agentId);
 
       return {
         id: message.id,
@@ -249,7 +253,8 @@ export class SupportService {
   ) {
     try {
       // For now, assume it's a social media message
-      const message = await SocialMediaService.updateMessageStatus(queryId, status);
+      const sm = SocialMediaService as any;
+      const message = await sm.updateMessageStatus?.(queryId, status);
 
       return {
         id: message.id,
@@ -277,12 +282,8 @@ export class SupportService {
   ) {
     try {
       // For now, assume it's a social media message
-      const supportResponse = await SocialMediaService.addResponse(
-        queryId,
-        response,
-        agentId,
-        isInternal,
-      );
+      const sm = SocialMediaService as any;
+      const supportResponse = await sm.addResponse?.(queryId, response, agentId, isInternal);
 
       return supportResponse;
     } catch (error) {

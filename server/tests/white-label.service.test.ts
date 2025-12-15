@@ -1,5 +1,5 @@
 import { WhiteLabelService } from '../src/services/white-label.service';
-import { NotFoundError, ValidationError } from '../src/utils/errors';
+import { ValidationError } from '../src/utils/errors';
 
 const prismaMock = {
   whiteLabelBranding: {
@@ -29,8 +29,8 @@ describe('WhiteLabelService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           organizerId: 'org-1',
-          domain: 'events.example.com',
-          theme: { primary: '#000' },
+          brandName: 'events.example.com',
+          metadata: { domain: 'events.example.com', theme: { primary: '#000' } },
         }),
       }),
     );
@@ -38,11 +38,11 @@ describe('WhiteLabelService', () => {
   });
 
   it('updates branding for organizer', async () => {
-    prismaMock.whiteLabelBranding.findFirst.mockResolvedValue({ id: 'brand-1', organizerId: 'org-1' });
-    prismaMock.whiteLabelBranding.update.mockResolvedValue({ id: 'brand-1', domain: 'new.example.com' });
+    prismaMock.whiteLabelBranding.findFirst.mockResolvedValue({ id: 'brand-1', organizerId: 'org-1', metadata: {} });
+    prismaMock.whiteLabelBranding.update.mockResolvedValue({ id: 'brand-1', brandName: 'new.example.com' });
 
     const updated = await WhiteLabelService.updateBranding('org-1', 'brand-1', { domain: 'new.example.com' });
-    expect(updated).toEqual({ id: 'brand-1', domain: 'new.example.com' });
+    expect(updated).toEqual({ id: 'brand-1', brandName: 'new.example.com' });
   });
 
   it('throws on cross-organizer update', async () => {

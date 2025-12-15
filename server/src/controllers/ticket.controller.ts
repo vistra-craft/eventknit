@@ -1,10 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { TicketService } from '../services/ticket.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { AuthorizationError, NotFoundError, ValidationError } from '../utils/errors.js';
+import { AuthorizationError, NotFoundError } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import crypto from 'crypto';
 
 export class TicketController {
   /**

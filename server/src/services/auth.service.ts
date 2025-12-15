@@ -182,7 +182,7 @@ export class AuthService {
     code: string,
     password: string,
     firstName: string,
-    lastName: string
+    lastName: string,
   ): Promise<AuthResponse> {
     // Find verification record
     const verification = await prisma.emailVerification.findFirst({

@@ -2,11 +2,7 @@ import { UnifiedMessagingService } from '../src/services/unified-messaging.servi
 import { NotFoundError } from '../src/utils/errors';
 
 const prismaMock = {
-  conversation: {
-    findFirst: jest.fn(),
-    create: jest.fn(),
-  },
-  message: {
+  directMessage: {
     create: jest.fn(),
     findMany: jest.fn(),
   },
@@ -21,10 +17,8 @@ describe('UnifiedMessagingService', () => {
     jest.resetAllMocks();
   });
 
-  it('creates conversation when absent', async () => {
-    prismaMock.conversation.findFirst.mockResolvedValue(null);
-    prismaMock.conversation.create.mockResolvedValue({ id: 'conv-1' });
-    prismaMock.message.create.mockResolvedValue({ id: 'msg-1' });
+  it('creates direct message', async () => {
+    prismaMock.directMessage.create.mockResolvedValue({ id: 'msg-1' });
 
     const result = await UnifiedMessagingService.sendMessage({
       senderId: 'user-1',
@@ -32,14 +26,12 @@ describe('UnifiedMessagingService', () => {
       content: 'hello',
     });
 
-    expect(prismaMock.conversation.create).toHaveBeenCalled();
-    expect(prismaMock.message.create).toHaveBeenCalledWith(
+    expect(prismaMock.directMessage.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           senderId: 'user-1',
           recipientId: 'user-2',
           content: 'hello',
-          conversationId: 'conv-1',
         }),
       }),
     );
@@ -47,7 +39,7 @@ describe('UnifiedMessagingService', () => {
   });
 
   it('throws when fetching missing conversation', async () => {
-    prismaMock.conversation.findFirst.mockResolvedValue(null);
+    prismaMock.directMessage.findMany.mockResolvedValue([]);
     await expect(
       UnifiedMessagingService.getConversation('conv-x', 'user-1'),
     ).rejects.toBeInstanceOf(NotFoundError);

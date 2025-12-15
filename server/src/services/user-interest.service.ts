@@ -15,7 +15,7 @@ export class UserInterestService {
       subcategory?: string;
       tags?: string[];
       weight?: number;
-    }
+    },
   ) {
     try {
       const interest = await prisma.userInterest.upsert({
@@ -93,7 +93,7 @@ export class UserInterestService {
   static async updateInterestWeight(
     userId: string,
     category: string,
-    weight: number
+    weight: number,
   ) {
     try {
       if (weight < 1 || weight > 10) {

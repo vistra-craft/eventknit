@@ -16,7 +16,7 @@ export class TicketTransferService {
       toUserId?: string;
       toEmail?: string;
       message?: string;
-    }
+    },
   ) {
     try {
       // Validate registration belongs to user
@@ -245,7 +245,7 @@ export class TicketTransferService {
       page?: number;
       limit?: number;
       type?: 'sent' | 'received';
-    }
+    },
   ) {
     try {
       const limit = filters?.limit || 20;

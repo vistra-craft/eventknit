@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiKeyService } from '../services/api-key.service.js';
-import { AuthorizationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
 export interface ApiKeyRequest extends Request {
@@ -18,7 +17,7 @@ export interface ApiKeyRequest extends Request {
 export async function authenticateApiKey(
   req: ApiKeyRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     // Get API key from header
@@ -109,7 +108,7 @@ export function requireApiPermission(permission: string) {
 export async function logApiRequest(
   req: ApiKeyRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const startTime = Date.now();
 

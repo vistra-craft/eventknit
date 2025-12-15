@@ -1,7 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import crypto from 'crypto';
 
 export class AffiliateProgramService {
   /**
@@ -271,7 +270,7 @@ export class AffiliateProgramService {
   /**
    * Track affiliate click
    */
-  static async trackAffiliateClick(affiliateCode: string, eventId?: string) {
+  static async trackAffiliateClick(affiliateCode: string, _eventId?: string) {
     try {
       const affiliate = await prisma.affiliate.findUnique({
         where: { affiliateCode },
@@ -303,7 +302,7 @@ export class AffiliateProgramService {
   static async recordConversion(
     registrationId: string,
     affiliateCode: string,
-    revenueAmount: number
+    revenueAmount: number,
   ) {
     try {
       const affiliate = await prisma.affiliate.findUnique({

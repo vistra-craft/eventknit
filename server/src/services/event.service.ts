@@ -1,5 +1,4 @@
 import { prisma } from '../config/database.js';
-import { config } from '../config/index.js';
 import { EventStatus, EventType, RegistrationStatus, UserRole, Prisma, UserStatus, InviteType, DataAccessLevel } from '@prisma/client';
 import {
   NotFoundError,
@@ -16,7 +15,6 @@ import { emailService } from './email.service.js';
 import { TicketService } from './ticket.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
-import { EventCollaborationService } from './event-collaboration.service.js';
 import { EventCollaborationService } from './event-collaboration.service.js';
 
 export interface CreateEventData {
@@ -561,7 +559,7 @@ export class EventService {
       'startTime', 'endTime', 'venue', 'location', 'address', 'isOnline',
       'onlineLink', 'price', 'ticketTypes', 'capacity', 'category', 'type',
       'requirements', 'ageRestriction', 'duration', 'speakers', 'sponsors',
-      'exhibitors', 'agenda', 'faqs', 'registrationFields'
+      'exhibitors', 'agenda', 'faqs', 'registrationFields',
     ];
     
     const hasSignificantChanges = significantFields.some(field => data[field as keyof UpdateEventData] !== undefined);
@@ -706,7 +704,7 @@ export class EventService {
       'event_updated',
       { changes: Object.keys(data) },
       ipAddress,
-      userAgent
+      userAgent,
     );
 
     logger.info(`Event updated: ${eventId} by organizer: ${organizerId}`);
@@ -770,6 +768,7 @@ export class EventService {
         id: true,
         organizerId: true,
         title: true,
+        status: true,
       },
     });
 
@@ -782,6 +781,18 @@ export class EventService {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to delete this event');
       }
+    }
+
+    // Eventbrite-style rule:
+    // - Only drafts/unpublished (PENDING/REJECTED) can be deleted
+    // - Published/approved events must be cancelled or unpublished instead
+    if (
+      event.status !== EventStatus.PENDING &&
+      event.status !== EventStatus.REJECTED
+    ) {
+      throw new ValidationError(
+        'Published events cannot be deleted. Please cancel or unpublish the event instead.',
+      );
     }
 
     // Soft delete
@@ -1151,7 +1162,11 @@ export class EventService {
     // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
     // This ensures QR code is always available and stored for fast access
     try {
-      const ticketData = TicketService.generateTicketData(registration.id, event.id, user.email);
+      const ticketData = TicketService.generateTicketData(
+        registration.id,
+        event.id,
+        registration.attendee.email,
+      );
       const qrCodeDataUrl = await TicketService.generateQRCode(ticketData);
       
       // Store QR code in database for fast access
@@ -1344,7 +1359,7 @@ export class EventService {
     if (event.isFree || isComplementaryTicket) {
       // Send ticket email immediately for free events
       try {
-        logger.debug(`[registerForEvent] Authenticated user - preparing ticket email for free event`);
+        logger.debug('[registerForEvent] Authenticated user - preparing ticket email for free event');
         
         // Safely extract ticketLineItems if they exist
         // Type assertion needed because Prisma types may not fully include ticketLineItems relation
@@ -1365,10 +1380,10 @@ export class EventService {
         }> | undefined;
         
         try {
-          logger.debug(`[registerForEvent] Authenticated user - extracting ticketLineItems`);
+          logger.debug('[registerForEvent] Authenticated user - extracting ticketLineItems');
           // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
           const lineItems = (registrationWithLineItems as any).ticketLineItems;
-          logger.debug(`[registerForEvent] Authenticated user - ticketLineItems raw value:`, lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
+          logger.debug('[registerForEvent] Authenticated user - ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
           
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
             ticketLineItems = lineItems.map((item: {
@@ -1384,7 +1399,7 @@ export class EventService {
             }));
             logger.debug(`[registerForEvent] Authenticated user - successfully extracted ${ticketLineItems.length} ticket line items`);
           } else {
-            logger.debug(`[registerForEvent] Authenticated user - no ticket line items to extract`);
+            logger.debug('[registerForEvent] Authenticated user - no ticket line items to extract');
           }
         } catch (lineItemsError) {
           // If ticketLineItems extraction fails, just log and continue without them
@@ -1410,7 +1425,7 @@ export class EventService {
           attendee: registration.attendee,
         }).catch((error) => {
           // Log email error but don't fail registration - email can be resent later
-          logger.error(`[registerForEvent] Authenticated user - failed to send ticket email (async):`, {
+          logger.error('[registerForEvent] Authenticated user - failed to send ticket email (async):', {
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
             registrationId: registration.id,
@@ -1445,7 +1460,7 @@ export class EventService {
         }
       } catch (error) {
         // Log error but don't fail registration - email/notification can be sent later
-        logger.error(`[registerForEvent] Authenticated user - error in ticket email/notification flow:`, {
+        logger.error('[registerForEvent] Authenticated user - error in ticket email/notification flow:', {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
           registrationId: registration.id,
@@ -3116,7 +3131,7 @@ export class EventService {
     try {
       if (event.isFree) {
         // Free event - send ticket email immediately
-        logger.debug(`[registerForEvent] Processing free event - preparing ticket email`);
+        logger.debug('[registerForEvent] Processing free event - preparing ticket email');
         
         // Type assertion needed because Prisma types may not fully include ticketLineItems relation
         // The query includes ticketLineItems, but TypeScript may not infer it correctly
@@ -3138,10 +3153,10 @@ export class EventService {
         }> | undefined;
         
         try {
-          logger.debug(`[registerForEvent] Extracting ticketLineItems from registration`);
+          logger.debug('[registerForEvent] Extracting ticketLineItems from registration');
           // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
           const lineItems = (registrationWithLineItems as any).ticketLineItems;
-          logger.debug(`[registerForEvent] ticketLineItems raw value:`, lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
+          logger.debug('[registerForEvent] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
           
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
             ticketLineItems = lineItems.map((item: {
@@ -3218,7 +3233,7 @@ export class EventService {
         }
       } else {
         // Paid event - send payment pending email
-        logger.debug(`[registerForEvent] Processing paid event - preparing payment pending email`);
+        logger.debug('[registerForEvent] Processing paid event - preparing payment pending email');
         // Note: Payment URL will be generated by frontend, so we don't include it here
         try {
           logger.debug(`[registerForEvent] Calling TicketService.sendPaymentPendingEmail for registration ${registration.id}`);
@@ -3288,6 +3303,7 @@ export class EventService {
 
       // Send account invitation email (Email 2: Account Setup)
       try {
+        const { config } = await import('../config/index.js');
         const accountCreationUrl = `${config.frontend.url}/auth/create-account?token=${accountInvitationToken}`;
 
         const html = `
@@ -3573,6 +3589,9 @@ export class EventService {
         type: originalEvent.type,
         createdBy: organizerId,
         updatedBy: organizerId,
+        description: originalEvent.description || 'Event description pending',
+        startDate: originalEvent.startDate || new Date(),
+        location: originalEvent.location || 'To be announced',
       };
 
       // Copy selected fields
@@ -3643,6 +3662,11 @@ export class EventService {
       if (copyFields.includes('registrationFields') && !excludeFields.includes('registrationFields')) {
         newEventData.registrationFields = originalEvent.registrationFields as Prisma.InputJsonValue;
       }
+
+      // Ensure required fields are present even if not explicitly copied
+      newEventData.description = newEventData.description || originalEvent.description || 'Event description pending';
+      newEventData.startDate = newEventData.startDate || originalEvent.startDate || new Date();
+      newEventData.location = newEventData.location || originalEvent.location || 'To be announced';
 
       // Dates are not copied by default - user must set new dates
       // But if dates are in copyFields, copy them

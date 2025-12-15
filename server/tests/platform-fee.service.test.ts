@@ -128,6 +128,8 @@ describe('PlatformFeeService', () => {
     const paymentTransaction = await prisma.eventPaymentTransaction.create({
       data: {
         transactionNumber: 'EPT-2024-000001',
+        gatewayReference: 'gw-001',
+        gatewayAmount: 10000,
         paystackReference: 'test_ref_001',
         paystackAmount: 1000000, // 10000 in kobo
         currency: 'NGN',
