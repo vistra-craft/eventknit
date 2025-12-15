@@ -1,23 +1,28 @@
 import { PaymentPlanService } from '../src/services/payment-plan.service';
 import { NotFoundError, ValidationError } from '../src/utils/errors';
 import { Decimal } from '@prisma/client/runtime/library';
-
-const prismaMock = {
-  eventRegistration: {
-    findUnique: jest.fn(),
-  },
-  paymentPlan: {
-    findUnique: jest.fn(),
-    create: jest.fn(),
-  },
-  paymentInstallment: {
-    createMany: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    eventRegistration: {
+      findUnique: jest.fn(),
+    },
+    paymentPlan: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    paymentInstallment: {
+      createMany: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  eventRegistration: { findUnique: jest.Mock };
+  paymentPlan: { findUnique: jest.Mock; create: jest.Mock };
+  paymentInstallment: { createMany: jest.Mock };
+};
 
 describe('PaymentPlanService', () => {
   beforeEach(() => {

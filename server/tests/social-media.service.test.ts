@@ -1,18 +1,26 @@
 import { SocialMediaService } from '../src/services/social-media.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  event: { findFirst: jest.fn() },
-  socialMediaPost: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    event: { findFirst: jest.fn() },
+    socialMediaPost: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  event: { findFirst: jest.Mock };
+  socialMediaPost: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+  };
+};
 
 describe('SocialMediaService', () => {
   beforeEach(() => {

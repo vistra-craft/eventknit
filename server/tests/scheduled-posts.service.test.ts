@@ -1,19 +1,26 @@
 import { ScheduledPostsService } from '../src/services/social-media/scheduled-posts.service';
 import { SocialMediaService } from '../src/services/social-media.service';
+import { prisma } from '../src/config/database';
 
-const prismaMock = {
-  socialMediaPost: {
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
+jest.mock('../src/config/database', () => ({
+  prisma: {
+    socialMediaPost: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
   },
-};
-
-jest.mock('../../src/config/database', () => ({
-  prisma: prismaMock,
 }));
 
-jest.mock('../../src/services/social-media.service', () => ({
+const prismaMock = prisma as unknown as {
+  socialMediaPost: {
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+};
+
+jest.mock('../src/services/social-media.service', () => ({
   SocialMediaService: {
     publishPost: jest.fn(),
   },

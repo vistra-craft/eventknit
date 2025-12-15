@@ -1,17 +1,30 @@
 import { SeatMapService } from '../src/services/seat-map.service';
 import { NotFoundError, ValidationError } from '../src/utils/errors';
-
-const prismaMock = {
-  event: { findFirst: jest.fn() },
-  venue: { findFirst: jest.fn() },
-  seatMap: { upsert: jest.fn(), findUnique: jest.fn() },
-  seat: { findMany: jest.fn() },
-  seatReservation: { findMany: jest.fn() },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    event: { findFirst: jest.fn() },
+    venue: { findFirst: jest.fn() },
+    seatMap: { upsert: jest.fn(), findUnique: jest.fn() },
+    seat: {
+      findMany: jest.fn(),
+      deleteMany: jest.fn(),
+      create: jest.fn(),
+    },
+    seatReservation: { findMany: jest.fn() },
+    // Simple no-op transaction mock – we don't assert on its side effects in these tests
+    $transaction: jest.fn(async () => undefined),
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  event: { findFirst: jest.Mock };
+  venue: { findFirst: jest.Mock };
+  seatMap: { upsert: jest.Mock; findUnique: jest.Mock };
+  seat: { findMany: jest.Mock };
+  seatReservation: { findMany: jest.Mock };
+};
 
 describe('SeatMapService', () => {
   beforeEach(() => {

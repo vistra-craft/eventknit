@@ -1,19 +1,28 @@
 import { EventDraftService } from '../src/services/event-draft.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  eventDraft: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    eventDraft: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  eventDraft: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
+};
 
 describe('EventDraftService', () => {
   beforeEach(() => {

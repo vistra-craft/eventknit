@@ -58,7 +58,6 @@ router.use(authenticate);
  */
 router.post(
   '/',
-  requireMinRole(UserRole.ORGANIZER),
   validate(eventValidations.createEvent),
   EventController.createEvent,
 );

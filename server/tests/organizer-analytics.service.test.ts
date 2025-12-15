@@ -1,16 +1,22 @@
 import { OrganizerAnalyticsService } from '../src/services/organizer-analytics.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  event: { findFirst: jest.fn() },
-  eventRegistration: { findMany: jest.fn() },
-  eventPaymentTransaction: { findMany: jest.fn() },
-  refund: { findMany: jest.fn() },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    event: { findFirst: jest.fn() },
+    eventRegistration: { findMany: jest.fn() },
+    eventPaymentTransaction: { findMany: jest.fn() },
+    refund: { findMany: jest.fn() },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  event: { findFirst: jest.Mock };
+  eventRegistration: { findMany: jest.Mock };
+  eventPaymentTransaction: { findMany: jest.Mock };
+  refund: { findMany: jest.Mock };
+};
 
 describe('OrganizerAnalyticsService', () => {
   beforeEach(() => {

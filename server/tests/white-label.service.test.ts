@@ -1,17 +1,24 @@
 import { WhiteLabelService } from '../src/services/white-label.service';
 import { ValidationError } from '../src/utils/errors';
-
-const prismaMock = {
-  whiteLabelBranding: {
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    whiteLabelBranding: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  whiteLabelBranding: {
+    create: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+};
 
 describe('WhiteLabelService', () => {
   beforeEach(() => {

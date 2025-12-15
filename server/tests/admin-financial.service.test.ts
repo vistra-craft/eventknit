@@ -1,21 +1,32 @@
 import { AdminFinancialService } from '../src/services/admin-financial.service';
 import { Decimal } from '@prisma/client/runtime/library';
-
-const prismaMock = {
-  platformExpense: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    count: jest.fn(),
-    aggregate: jest.fn(),
-  },
-  platformIncome: {
-    findMany: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    platformExpense: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+      aggregate: jest.fn(),
+    },
+    platformIncome: {
+      findMany: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  platformExpense: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    count: jest.Mock;
+    aggregate: jest.Mock;
+  };
+  platformIncome: {
+    findMany: jest.Mock;
+  };
+};
 
 describe('AdminFinancialService', () => {
   beforeEach(() => {

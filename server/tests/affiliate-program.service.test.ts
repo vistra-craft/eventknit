@@ -1,27 +1,44 @@
 import { AffiliateProgramService } from '../src/services/affiliate-program.service';
 import { NotFoundError, ValidationError } from '../src/utils/errors';
-
-const prismaMock = {
-  event: { findFirst: jest.fn() },
-  affiliateProgram: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-  },
-  affiliate: {
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
-  affiliateConversion: {
-    create: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    event: { findFirst: jest.fn() },
+    affiliateProgram: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    affiliate: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    affiliateConversion: {
+      create: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  event: { findFirst: jest.Mock };
+  affiliateProgram: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+  };
+  affiliate: {
+    findUnique: jest.Mock;
+    create: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+  affiliateConversion: {
+    create: jest.Mock;
+  };
+};
 
 describe('AffiliateProgramService', () => {
   beforeEach(() => {

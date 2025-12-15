@@ -1,14 +1,19 @@
 import { TaxService } from '../src/services/tax.service';
-
-const prismaMock = {
-  taxRate: {
-    findFirst: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    taxRate: {
+      findFirst: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  taxRate: {
+    findFirst: jest.Mock;
+  };
+};
 
 describe('TaxService', () => {
   beforeEach(() => {

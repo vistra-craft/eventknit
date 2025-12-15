@@ -1,16 +1,21 @@
 import { InvoiceService } from '../src/services/invoice.service';
 import { NotFoundError } from '../src/utils/errors';
 import { Decimal } from '@prisma/client/runtime/library';
-
-const prismaMock = {
-  eventPaymentTransaction: { findUnique: jest.fn() },
-  invoice: { findUnique: jest.fn(), create: jest.fn() },
-  invoiceTemplate: { findUnique: jest.fn(), findFirst: jest.fn() },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    eventPaymentTransaction: { findUnique: jest.fn() },
+    invoice: { findUnique: jest.fn(), create: jest.fn() },
+    invoiceTemplate: { findUnique: jest.fn(), findFirst: jest.fn() },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  eventPaymentTransaction: { findUnique: jest.Mock };
+  invoice: { findUnique: jest.Mock; create: jest.Mock };
+  invoiceTemplate: { findUnique: jest.Mock; findFirst: jest.Mock };
+};
 
 describe('InvoiceService', () => {
   beforeEach(() => {

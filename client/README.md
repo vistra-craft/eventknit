@@ -2,7 +2,7 @@
 
 The frontend application for EventKnit, built with React, Vite, TypeScript, and Tailwind CSS.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: React 19
 - **Build Tool**: Vite
@@ -14,12 +14,12 @@ The frontend application for EventKnit, built with React, Vite, TypeScript, and 
 - **State Management**: React Context / Hooks
 - **Testing**: Vitest + React Testing Library
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Node.js** (v18 or higher)
 - **npm** (v9 or higher)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Installation
 
@@ -61,6 +61,10 @@ npm run dev
 ```
 The app will be available at `http://localhost:5173`.
 
+**Quality Checks**:
+- TypeScript: `npm run type-check`
+- Lint: `npm run lint`
+
 **Production Build**:
 Builds the application for production.
 ```bash
@@ -73,7 +77,7 @@ Locally preview the production build.
 npm run preview
 ```
 
-## 🧪 Testing
+## Testing
 
 Run the test suite using Vitest:
 
@@ -86,7 +90,7 @@ Run tests with coverage:
 npm run test:coverage
 ```
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 client/
@@ -112,7 +116,7 @@ client/
 └── package.json
 ```
 
-## 🧩 Key Features
+## Key Features
 
 -   **Responsive Design**: Mobile-first UI built with Tailwind CSS.
 -   **Authentication**: Login, Registration, Password Reset flows.
@@ -121,14 +125,14 @@ client/
 -   **Ticket Scanning**: Integrated QR code scanner.
 -   **Real-time Updates**: Optimistic UI updates and feedback.
 
-## 🎨 Styling Guide
+## Styling Guide
 
 We use **Tailwind CSS** for styling.
 -   Use utility classes for layout and spacing.
 -   Use the `cn()` utility (from `src/lib/utils.ts`) for conditional class merging.
 -   UI components are located in `src/components/ui`.
 
-## 🔄 API Integration
+## API Integration
 
 API calls are centralized in `src/lib/`.
 -   `api.ts`: Contains the base `apiRequest` function with interceptors for auth tokens.

@@ -2,7 +2,7 @@ import { Router, Request } from 'express';
 import { TicketController } from '../controllers/ticket.controller.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import rateLimit from 'express-rate-limit';
-import { config } from '../config/index.js';
+import { config as _config } from '../config/index.js';
 
 const router = Router();
 
@@ -16,12 +16,17 @@ const resendTicketRateLimiter = rateLimit({
   message: 'Too many resend requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, _next) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many resend requests. Please try again later.',
+    });
+  },
   keyGenerator: (req: Request) => {
     // Rate limit per user, not per IP
     const authReq = req as AuthenticatedRequest;
     return authReq.user?.id || req.ip || 'unknown';
   },
-  skip: () => config.env === 'test' || process.env.NODE_ENV === 'test',
 });
 
 /**

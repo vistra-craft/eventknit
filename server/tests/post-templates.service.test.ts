@@ -1,17 +1,24 @@
 import { PostTemplatesService } from '../src/services/social-media/post-templates.service';
 import { NotFoundError } from '../src/utils/errors';
+import { prisma } from '../src/config/database';
 
-const prismaMock = {
-  socialMediaPostTemplate: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
+jest.mock('../src/config/database', () => ({
+  prisma: {
+    socialMediaPostTemplate: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
   },
-};
-
-jest.mock('../../../src/config/database', () => ({
-  prisma: prismaMock,
 }));
+
+const prismaMock = prisma as unknown as {
+  socialMediaPostTemplate: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+  };
+};
 
 describe('PostTemplatesService', () => {
   beforeEach(() => {

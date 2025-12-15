@@ -217,12 +217,20 @@ export class EventController {
 
       logger.debug(`[EventController.registerForEvent] Registration completed successfully: ${registration.id}, status: ${registration.status}`);
 
+      // Normalize totalAmount for API consumers as a fixed-precision string
+      const normalizedRegistration = {
+        ...registration,
+        totalAmount: registration.totalAmount !== null && registration.totalAmount !== undefined
+          ? Number(registration.totalAmount as any).toFixed(2)
+          : '0.00',
+      };
+
       res.status(201).json({
         success: true,
         message: registration.status === 'CONFIRMED'
           ? 'Registration successful'
           : 'Registration pending. Payment will be processed when payment system is implemented.',
-        data: { registration },
+        data: { registration: normalizedRegistration },
       });
     } catch (error) {
       logger.error('[EventController.registerForEvent] Error in registration controller:', {
@@ -569,7 +577,12 @@ export class EventController {
         success: true,
         message: 'Registration successful. Check your email for ticket confirmation and account setup.',
         data: {
-          registration: result.registration,
+          registration: {
+            ...result.registration,
+            totalAmount: result.registration.totalAmount !== null && result.registration.totalAmount !== undefined
+              ? Number(result.registration.totalAmount as any).toFixed(2)
+              : '0.00',
+          },
           user: result.user,
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,

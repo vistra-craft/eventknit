@@ -1,18 +1,26 @@
 import { AdvancedTicketTypesService } from '../src/services/advanced-ticket-types.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  event: { findFirst: jest.fn() },
-  ticketPackage: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    event: { findFirst: jest.fn() },
+    ticketPackage: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  event: { findFirst: jest.Mock };
+  ticketPackage: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+  };
+};
 
 describe('AdvancedTicketTypesService', () => {
   beforeEach(() => {

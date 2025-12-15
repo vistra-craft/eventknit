@@ -1,16 +1,22 @@
 import { UnifiedMessagingService } from '../src/services/unified-messaging.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  directMessage: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    directMessage: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  directMessage: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+  };
+};
 
 describe('UnifiedMessagingService', () => {
   beforeEach(() => {

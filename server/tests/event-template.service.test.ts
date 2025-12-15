@@ -1,18 +1,26 @@
 import { EventTemplateService } from '../src/services/event-template.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  eventTemplate: {
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    eventTemplate: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  eventTemplate: {
+    create: jest.Mock;
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+  };
+};
 
 describe('EventTemplateService', () => {
   beforeEach(() => {

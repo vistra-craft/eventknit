@@ -1,19 +1,28 @@
 import { AttendeeSegmentationService } from '../src/services/attendee-segmentation.service';
 import { ValidationError } from '../src/utils/errors';
-
-const prismaMock = {
-  attendeeSegment: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    attendeeSegment: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  attendeeSegment: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
+};
 
 describe('AttendeeSegmentationService', () => {
   beforeEach(() => {

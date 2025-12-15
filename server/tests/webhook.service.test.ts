@@ -1,19 +1,28 @@
 import { WebhookService } from '../src/services/webhook.service.js';
 import { NotFoundError } from '../src/utils/errors.js';
-
-const prismaMock = {
-  webhookEndpoint: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    webhookEndpoint: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  webhookEndpoint: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
+};
 
 describe('WebhookService', () => {
   beforeEach(() => {

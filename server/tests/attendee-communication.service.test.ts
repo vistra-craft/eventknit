@@ -1,14 +1,18 @@
 import { AttendeeCommunicationService } from '../src/services/attendee-communication.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  attendeeSegment: { findFirst: jest.fn() },
-  bulkMessage: { create: jest.fn(), findMany: jest.fn() },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    attendeeSegment: { findFirst: jest.fn() },
+    bulkMessage: { create: jest.fn(), findMany: jest.fn() },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  attendeeSegment: { findFirst: jest.Mock };
+  bulkMessage: { create: jest.Mock; findMany: jest.Mock };
+};
 
 describe('AttendeeCommunicationService', () => {
   beforeEach(() => {

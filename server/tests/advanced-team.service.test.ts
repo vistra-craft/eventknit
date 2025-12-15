@@ -1,23 +1,36 @@
 import { AdvancedTeamService } from '../src/services/advanced-team.service';
 import { NotFoundError } from '../src/utils/errors';
-
-const prismaMock = {
-  teamRoleTemplate: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
-  teamActivityFeed: {
-    findMany: jest.fn(),
-    count: jest.fn(),
-    create: jest.fn(),
-  },
-};
+import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
+  prisma: {
+    teamRoleTemplate: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    teamActivityFeed: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+      create: jest.fn(),
+    },
+  },
 }));
+
+const prismaMock = prisma as unknown as {
+  teamRoleTemplate: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+  teamActivityFeed: {
+    findMany: jest.Mock;
+    count: jest.Mock;
+    create: jest.Mock;
+  };
+};
 
 describe('AdvancedTeamService', () => {
   beforeEach(() => {

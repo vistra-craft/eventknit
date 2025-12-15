@@ -284,11 +284,23 @@ describe('Ticket Email Status Tracking', () => {
         return;
       }
 
-      // Create a registration without proper event data to force an error
+      // Create a separate attendee to avoid unique (eventId, attendeeId) constraint conflicts
+      const failingAttendee = await prisma.user.create({
+        data: {
+          email: `bad-attendee-${Date.now()}@test.com`,
+          firstName: 'Bad',
+          lastName: 'Attendee',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
+      // Create a registration without proper event data to force an error when sending email
       const badRegistration = await prisma.eventRegistration.create({
         data: {
           eventId,
-          attendeeId,
+          attendeeId: failingAttendee.id,
           quantity: 1,
           status: 'CONFIRMED',
           paymentStatus: 'COMPLETED',

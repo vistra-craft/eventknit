@@ -869,7 +869,7 @@ export class EventService {
       throw new ValidationError('Event has already started');
     }
 
-    // Check if already registered
+    // Check if already registered (for capacity we still need to count total tickets, but block exact duplicates)
     const existingRegistration = await prisma.eventRegistration.findUnique({
       where: {
         eventId_attendeeId: {
@@ -1043,6 +1043,26 @@ export class EventService {
 
     const finalAmount = totalAmount.minus(discountAmount);
 
+    // Enforce overall event capacity BEFORE creating registration (Eventbrite-style)
+    if (event.capacity !== null && event.capacity > 0) {
+      // Count existing active tickets for this event
+      const existingTicketsForEvent = await prisma.ticketLineItem.count({
+        where: {
+          registration: {
+            eventId,
+            status: {
+              in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+            },
+          },
+        },
+      });
+
+      const projectedTotalTickets = existingTicketsForEvent + totalQuantity;
+      if (projectedTotalTickets > event.capacity) {
+        throw new ValidationError('Event capacity exceeded. Not enough tickets remaining for this registration.');
+      }
+    }
+
     // Check capacity (using total quantity from all ticket types)
     if (event.capacity !== null && totalQuantity > 0) {
       // Count total tickets (not registrations) for capacity check
@@ -1103,6 +1123,7 @@ export class EventService {
         attendeeId,
         ticketType: legacyTicketType, // Backward compatibility
         quantity: legacyQuantity, // Backward compatibility
+        // Store as Decimal(10,2)
         totalAmount: finalAmount,
         registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
         backupCode,

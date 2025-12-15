@@ -46,6 +46,11 @@ export async function authenticateApiKey(
     const rateLimitCheck = await ApiKeyService.checkRateLimit(verification.apiKeyRecord.id);
 
     if (!rateLimitCheck.allowed) {
+      // Add rate limit headers even when blocked so clients (and tests) can inspect limits
+      res.setHeader('X-RateLimit-Limit', verification.apiKeyRecord.rateLimit.toString());
+      res.setHeader('X-RateLimit-Remaining', rateLimitCheck.remaining.toString());
+      res.setHeader('X-RateLimit-Reset', Math.ceil(rateLimitCheck.resetAt.getTime() / 1000).toString());
+
       res.status(429).json({
         success: false,
         message: 'Rate limit exceeded',

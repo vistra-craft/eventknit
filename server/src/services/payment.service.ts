@@ -304,7 +304,11 @@ export class PaymentService {
       }
 
       // Process webhook through gateway
-      const webhookResult = await gateway.handleWebhook(data, event);
+      // For Paystack (and similar gateways), the handler expects the raw webhook payload
+      // including both the event name and data. Our tests call PaymentService.handleWebhook
+      // with (event, data), so we reconstruct the original payload shape here.
+      const webhookPayload = { event, data };
+      const webhookResult = await gateway.handleWebhook(webhookPayload, event);
       const reference = webhookResult.reference;
 
       if (!reference) {

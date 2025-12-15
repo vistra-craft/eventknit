@@ -125,7 +125,7 @@ export class AdminFinancialService {
         if (filters.endDate) where.expenseDate.lte = filters.endDate;
       }
 
-      const [expenses, total] = await Promise.all([
+      const [expenses, total, aggregate] = await Promise.all([
         prisma.platformExpense.findMany({
           where,
           orderBy: { expenseDate: 'desc' },
@@ -133,9 +133,21 @@ export class AdminFinancialService {
           take: limit,
         }),
         prisma.platformExpense.count({ where }),
+        prisma.platformExpense.aggregate({
+          where,
+          _sum: { amount: true },
+        }),
       ]);
 
+      const totalAmount = Number(aggregate._sum.amount || 0);
+
+      // Backward-compatible shape plus richer pagination metadata
       return {
+        // Legacy-style fields expected by tests and callers
+        items: expenses,
+        total,
+        totalAmount,
+        // Newer structured fields for pagination-aware consumers
         expenses,
         pagination: {
           page,

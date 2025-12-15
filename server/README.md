@@ -2,7 +2,7 @@
 
 The backend API for the EventKnit platform, built with Node.js, Express, TypeScript, and Prisma (PostgreSQL).
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Runtime**: Node.js
 - **Framework**: Express.js
@@ -15,7 +15,7 @@ The backend API for the EventKnit platform, built with Node.js, Express, TypeScr
 - **Email**: Nodemailer
 - **SMS**: Twilio
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 - **Node.js** (v18 or higher)
@@ -23,7 +23,7 @@ Before you begin, ensure you have the following installed:
 - **PostgreSQL** (v14 or higher)
 - **Redis** (v6 or higher)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Installation
 
@@ -121,7 +121,13 @@ npm start
 
 The server will start at `http://localhost:3000` (or the port specified in `.env`).
 
-## 🧪 Testing
+### 5. Quality Checks
+
+- **TypeScript**: `npm run type-check`
+- **Lint**: `npm run lint` (auto-fix with `npm run lint:fix`)
+- **Tests**: `npm test`
+
+## Testing
 
 Run the test suite using Jest:
 
@@ -134,7 +140,7 @@ Run tests in watch mode:
 npm run test:watch
 ```
 
-## 🗄️ Database Management
+## Database Management
 
 Common Prisma commands:
 
@@ -143,7 +149,7 @@ Common Prisma commands:
 -   `npx prisma db push`: Push schema changes to the database without creating a migration (useful for prototyping).
 -   `npx prisma generate`: Regenerate the Prisma Client after schema changes.
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 server/
@@ -164,7 +170,7 @@ server/
 └── package.json
 ```
 
-## 🔑 Key Features
+## Key Features
 
 -   **Authentication**: Secure user registration and login with JWT.
 -   **Role-Based Access Control (RBAC)**: Different permissions for Admins, Organizers, and Attendees.
@@ -173,7 +179,7 @@ server/
 -   **Payments**: Integrated with Paystack for secure transactions.
 -   **Notifications**: Email and SMS notification system.
 
-## 🛠️ Useful Commands
+## Useful Commands
 
 Here is a collection of useful commands for development and maintenance.
 
@@ -248,7 +254,7 @@ Required for running scripts with specific env files.
 npm install dotenv-cli --save-dev
 ```
 
-### 🗄️ Prisma & Database
+### Prisma & Database
 
 **Open Database GUI**:
 ```bash

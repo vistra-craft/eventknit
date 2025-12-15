@@ -35,7 +35,12 @@ export class AdvancedTicketTypesService {
         eventId: data.eventId,
         name: data.name,
         price: data.basePrice,
+        // For now we map maxPerOrder into the existing quantity fields:
+        // maxQuantity determines the per-order upper bound; minQuantity stays undefined here.
+        maxQuantity: data.maxPerOrder,
         type: 'group',
+        // Advanced rules can later be materialized into DynamicPricingRule;
+        // we keep them at service level for now.
       },
     });
 

@@ -1,26 +1,38 @@
 import { EmailMarketingService } from '../src/services/email-marketing.service';
 import { ValidationError } from '../src/utils/errors';
+import { prisma } from '../src/config/database';
 
-const prismaMock = {
-  event: { findFirst: jest.fn() },
-  emailCampaign: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    count: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
+jest.mock('../src/config/database', () => ({
+  prisma: {
+    event: { findFirst: jest.fn() },
+    emailCampaign: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    eventRegistration: { findMany: jest.fn() },
   },
-  eventRegistration: { findMany: jest.fn() },
+}));
+
+const prismaMock = prisma as unknown as {
+  event: { findFirst: jest.Mock };
+  emailCampaign: {
+    create: jest.Mock;
+    findMany: jest.Mock;
+    count: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+  eventRegistration: { findMany: jest.Mock };
 };
 
+// Dedicated mock object so tests can assert on calls
 const attendeeCommMock = {
   getSegmentRecipients: jest.fn(),
   getTaggedUsersRecipients: jest.fn(),
 };
-
-jest.mock('../src/config/database', () => ({
-  prisma: prismaMock,
-}));
 
 jest.mock('../src/services/attendee-communication.service', () => ({
   AttendeeCommunicationService: attendeeCommMock,
