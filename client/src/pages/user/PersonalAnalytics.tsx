@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, Calendar, DollarSign, Users, BarChart3, Star } from "lucide-react";
+import { Loader2, TrendingUp, Calendar, DollarSign, BarChart3, Star } from "lucide-react";
 import {
   CustomAreaChart,
   CustomBarChart,
@@ -38,7 +38,7 @@ const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
   const [activityHistory, setActivityHistory] = useState<any[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
+  // const [activityLoading, setActivityLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {

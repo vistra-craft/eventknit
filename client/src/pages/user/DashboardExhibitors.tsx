@@ -61,16 +61,16 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
         const response = await getEventById(eventData.id.toString());
         if (response.success && response.data?.event?.exhibitors) {
           // Transform exhibitors data to display format
-          const eventExhibitors = response.data.event.exhibitors.map((exhibitor: any, index: number) => ({
+          const eventExhibitors = response.data.event.exhibitors.map((exhibitor: Record<string, unknown>, index: number) => ({
             id: index + 1,
-            name: exhibitor.name || 'Exhibitor',
-            logo: exhibitor.logo || '/api/placeholder/200/100',
+            name: typeof exhibitor.name === 'string' ? exhibitor.name : 'Exhibitor',
+            logo: typeof exhibitor.logo === 'string' ? exhibitor.logo : '/api/placeholder/200/100',
             category: 'Exhibitor',
             sponsorType: 'partner' as const,
-            booth: exhibitor.booth || '',
-            description: exhibitor.description || '',
+            booth: typeof exhibitor.booth === 'string' ? exhibitor.booth : '',
+            description: typeof exhibitor.description === 'string' ? exhibitor.description : '',
             website: undefined,
-            email: exhibitor.contactEmail,
+            email: typeof exhibitor.contactEmail === 'string' ? exhibitor.contactEmail : undefined,
             phone: undefined,
             location: undefined,
             products: [],

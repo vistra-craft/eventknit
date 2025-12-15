@@ -14,9 +14,9 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <Navbar />
-      <main className="pt-16">
+      <main className="flex-1 pt-16">
         <Hero />
         <EventSearchFilter filters={filters} onFiltersChange={handleFiltersChange} />
         <EventGrid filters={filters} />

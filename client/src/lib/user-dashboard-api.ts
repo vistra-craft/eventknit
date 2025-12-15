@@ -14,7 +14,7 @@ export const getPersonalizedRecommendations = async (limit?: number): Promise<Ap
   
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/recommendations?${queryString}` : '/user-dashboard/recommendations';
-  return apiGet<{ recommendations: any[] }>(endpoint);
+  return apiGet<ApiResponse<{ recommendations: any[] }>>(endpoint);
 };
 
 /**

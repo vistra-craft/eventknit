@@ -35,9 +35,9 @@ interface FormErrors {
 const EventRegistration = () => {
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user: authUser } = useAuth();
   const { event, isLoading, error: eventError, fetchEvent } = useEvent();
-  const [currentStep, setCurrentStep] = useState<'registration' | 'confirmation'>('registration');
+  const [currentStep] = useState<'registration' | 'confirmation'>('registration');
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -327,7 +327,7 @@ const EventRegistration = () => {
                   price: t.price
                 })).filter(t => t.quantity > 0) || [],
                 isGuestUser: !isAuthenticated,
-                userEmail: email || user?.email,
+                userEmail: email || authUser?.email,
                 isFreeEvent: true,
                 date: new Date().toISOString(),
                 accessToken: response.data.accessToken, // Pass token to confirmation page
@@ -396,7 +396,7 @@ const EventRegistration = () => {
                 price: t.price
               })).filter(t => t.quantity > 0) || [],
               isGuestUser: false,
-              userEmail: user?.email,
+              userEmail: authUser?.email,
               isFreeEvent: true,
               date: new Date().toISOString(),
             },

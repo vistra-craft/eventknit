@@ -252,7 +252,28 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
 
   // Transform backend events to frontend format
   if (response.success && response.data) {
-    response.data.events = transformEventsData(response.data.events);
+    const normalizedEvents = (response.data.events || []).map(event => ({
+      ...event,
+      agenda: event.agenda
+        ? event.agenda.map(item => ({
+            title: item.title || "",
+            description: item.description || "",
+            startTime: item.startTime || "",
+            endTime: item.endTime || "",
+            speakers: item.speakers || [],
+          }))
+        : event.agenda,
+      exhibitors: event.exhibitors
+        ? event.exhibitors.map(exhibitor => ({
+            ...exhibitor,
+            description: exhibitor.description || "",
+            logo: exhibitor.logo || "",
+            contactEmail: exhibitor.contactEmail || "",
+            booth: exhibitor.booth || "",
+          }))
+        : event.exhibitors,
+    }));
+    response.data.events = transformEventsData(normalizedEvents);
     console.log('[event-api] After transformation:', {
       eventCount: response.data.events.length,
       events: response.data.events.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type }))
@@ -270,7 +291,29 @@ export const getEventById = async (id: string): Promise<EventResponse> => {
 
   // Transform backend event to frontend format
   if (response.success && response.data) {
-    response.data.event = transformEventData(response.data.event);
+    const event = response.data.event;
+    const normalizedEvent = {
+      ...event,
+      agenda: event.agenda
+        ? event.agenda.map(item => ({
+            title: item.title || "",
+            description: item.description || "",
+            startTime: item.startTime || "",
+            endTime: item.endTime || "",
+            speakers: item.speakers || [],
+          }))
+        : event.agenda,
+      exhibitors: event.exhibitors
+        ? event.exhibitors.map(exhibitor => ({
+            ...exhibitor,
+            description: exhibitor.description || "",
+            logo: exhibitor.logo || "",
+            contactEmail: exhibitor.contactEmail || "",
+            booth: exhibitor.booth || "",
+          }))
+        : event.exhibitors,
+    };
+    response.data.event = transformEventData(normalizedEvent);
   }
 
   return response;
@@ -284,7 +327,29 @@ export const createEvent = async (data: CreateEventData): Promise<EventResponse>
 
   // Transform backend event to frontend format
   if (response.success && response.data) {
-    response.data.event = transformEventData(response.data.event);
+    const event = response.data.event;
+    const normalizedEvent = {
+      ...event,
+      agenda: event.agenda
+        ? event.agenda.map(item => ({
+            title: item.title || "",
+            description: item.description || "",
+            startTime: item.startTime || "",
+            endTime: item.endTime || "",
+            speakers: item.speakers || [],
+          }))
+        : event.agenda,
+      exhibitors: event.exhibitors
+        ? event.exhibitors.map(exhibitor => ({
+            ...exhibitor,
+            description: exhibitor.description || "",
+            logo: exhibitor.logo || "",
+            contactEmail: exhibitor.contactEmail || "",
+            booth: exhibitor.booth || "",
+          }))
+        : event.exhibitors,
+    };
+    response.data.event = transformEventData(normalizedEvent);
   }
 
   return response;
@@ -298,7 +363,29 @@ export const updateEvent = async (id: string, data: UpdateEventData): Promise<Ev
 
   // Transform backend event to frontend format
   if (response.success && response.data) {
-    response.data.event = transformEventData(response.data.event);
+    const event = response.data.event;
+    const normalizedEvent = {
+      ...event,
+      agenda: event.agenda
+        ? event.agenda.map(item => ({
+            title: item.title || "",
+            description: item.description || "",
+            startTime: item.startTime || "",
+            endTime: item.endTime || "",
+            speakers: item.speakers || [],
+          }))
+        : event.agenda,
+      exhibitors: event.exhibitors
+        ? event.exhibitors.map(exhibitor => ({
+            ...exhibitor,
+            description: exhibitor.description || "",
+            logo: exhibitor.logo || "",
+            contactEmail: exhibitor.contactEmail || "",
+            booth: exhibitor.booth || "",
+          }))
+        : event.exhibitors,
+    };
+    response.data.event = transformEventData(normalizedEvent);
   }
 
   return response;

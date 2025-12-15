@@ -32,6 +32,8 @@ import {
   type Income,
   type MonthlySummary,
   type FinancialOverview,
+  type CreateExpenseData,
+  type CreateIncomeData,
 } from "@/lib/admin-financial-api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -59,7 +61,7 @@ const AdminFinancialManagement = () => {
           getExpenses({ limit: 10 }),
           getIncomes({ limit: 10 }),
         ]);
-        if (overviewRes.success) setOverview(overviewRes.data);
+        if (overviewRes.success) setOverview(overviewRes.data || null);
         if (expensesRes.success && expensesRes.data) {
           setExpenses(expensesRes.data.expenses || []);
         }
@@ -115,9 +117,31 @@ const AdminFinancialManagement = () => {
     }
   }, [activeTab, loadMonthlySummary]);
 
-  const handleCreateExpense = async (data: Expense) => {
+  const allowedExpenseMethods = ["cash", "bank_transfer", "credit_card", "check"] as const;
+  type ExpenseMethod = (typeof allowedExpenseMethods)[number];
+
+  const handleCreateExpense = async (data: CreateExpenseData) => {
     try {
-      const response = await createExpense(data);
+      const paymentMethod = allowedExpenseMethods.includes(data.paymentMethod as ExpenseMethod)
+        ? (data.paymentMethod as ExpenseMethod)
+        : undefined;
+
+      const payload: Parameters<typeof createExpense>[0] = {
+        category: data.category,
+        description: data.description,
+        amount: data.amount,
+        currency: data.currency,
+        paymentMethod,
+        recipient: data.recipient,
+        reference: data.reference,
+        receiptUrl: data.receiptUrl,
+        receiptDate: data.receiptDate,
+        taxAmount: data.taxAmount,
+        taxRate: data.taxRate,
+        isTaxDeductible: data.isTaxDeductible,
+        expenseDate: data.expenseDate,
+      };
+      const response = await createExpense(payload);
       if (response.success) {
         toast({
           title: "Success",
@@ -137,7 +161,27 @@ const AdminFinancialManagement = () => {
 
   const handleUpdateExpense = async (id: string, data: Partial<Expense>) => {
     try {
-      const response = await updateExpense(id, data);
+      const paymentMethod = allowedExpenseMethods.includes(data.paymentMethod as ExpenseMethod)
+        ? (data.paymentMethod as ExpenseMethod)
+        : undefined;
+
+      const payload: Parameters<typeof updateExpense>[1] = {
+        category: data.category,
+        description: data.description,
+        amount: data.amount,
+        currency: data.currency,
+        paymentMethod,
+        recipient: data.recipient,
+        reference: data.reference,
+        receiptUrl: data.receiptUrl,
+        receiptDate: data.receiptDate,
+        taxAmount: data.taxAmount,
+        taxRate: data.taxRate,
+        isTaxDeductible: data.isTaxDeductible,
+        status: data.status as Parameters<typeof updateExpense>[1]["status"],
+        expenseDate: data.expenseDate,
+      };
+      const response = await updateExpense(id, payload);
       if (response.success) {
         toast({
           title: "Success",
@@ -177,7 +221,7 @@ const AdminFinancialManagement = () => {
     }
   };
 
-  const handleCreateIncome = async (data: Income) => {
+  const handleCreateIncome = async (data: CreateIncomeData) => {
     try {
       const response = await createIncome(data);
       if (response.success) {
@@ -199,7 +243,22 @@ const AdminFinancialManagement = () => {
 
   const handleUpdateIncome = async (id: string, data: Partial<Income>) => {
     try {
-      const response = await updateIncome(id, data);
+      const payload: Parameters<typeof updateIncome>[1] = {
+        category: data.category,
+        description: data.description,
+        amount: data.amount,
+        currency: data.currency,
+        source: data.source,
+        reference: data.reference,
+        paymentMethod: data.paymentMethod,
+        eventId: data.eventId,
+        transactionId: data.transactionId,
+        taxAmount: data.taxAmount,
+        taxRate: data.taxRate,
+        status: data.status as Parameters<typeof updateIncome>[1]["status"],
+        incomeDate: data.incomeDate,
+      };
+      const response = await updateIncome(id, payload);
       if (response.success) {
         toast({
           title: "Success",
@@ -428,7 +487,10 @@ const AdminFinancialManagement = () => {
                       if (selectedExpense) {
                         handleUpdateExpense(selectedExpense.id, data);
                       } else {
-                        handleCreateExpense(data);
+                        handleCreateExpense({
+                          ...data,
+                          paymentMethod: data.paymentMethod as CreateExpenseData["paymentMethod"],
+                        });
                       }
                     }}
                     onCancel={() => {
@@ -785,7 +847,7 @@ const ExpenseForm = ({
   onCancel,
 }: {
   expense?: Expense | null;
-  onSubmit: (data: Expense) => void;
+  onSubmit: (data: CreateExpenseData) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -811,14 +873,20 @@ const ExpenseForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const allowedMethods = ["cash", "bank_transfer", "credit_card", "check"] as const;
+    const paymentMethod =
+      typeof formData.paymentMethod === "string" && allowedMethods.includes(formData.paymentMethod as (typeof allowedMethods)[number])
+        ? (formData.paymentMethod as (typeof allowedMethods)[number])
+        : undefined;
+
     onSubmit({
       ...formData,
       amount: parseFloat(formData.amount),
       taxAmount: formData.taxAmount ? parseFloat(formData.taxAmount) : undefined,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : undefined,
       receiptDate: formData.receiptDate || undefined,
-      expenseDate: formData.expenseDate || undefined,
-      paymentMethod: formData.paymentMethod || undefined,
+      expenseDate: formData.expenseDate,
+      paymentMethod,
     });
   };
 
@@ -955,7 +1023,7 @@ const IncomeForm = ({
   onCancel,
 }: {
   income?: Income | null;
-  onSubmit: (data: Income) => void;
+  onSubmit: (data: CreateIncomeData) => void;
   onCancel: () => void;
 }) => {
   const [formData, setFormData] = useState({
@@ -983,7 +1051,7 @@ const IncomeForm = ({
       amount: parseFloat(formData.amount),
       taxAmount: formData.taxAmount ? parseFloat(formData.taxAmount) : undefined,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : undefined,
-      incomeDate: formData.incomeDate || undefined,
+      incomeDate: formData.incomeDate,
       eventId: formData.eventId || undefined,
       transactionId: formData.transactionId || undefined,
     });

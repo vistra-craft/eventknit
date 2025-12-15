@@ -13,7 +13,6 @@ import OrganizerLayout from "./OrganizerLayout";
 import {
   Ticket,
   Plus,
-  Edit,
   Trash2,
   Users,
   Gift,
@@ -49,11 +48,18 @@ interface TicketPackage {
 const AdvancedTicketTypes = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [packages, setPackages] = useState<TicketPackage[]>([]);
-  const [reservedSeating, setReservedSeating] = useState<Record<string, unknown>[]>([]);
+  interface ReservedSeating {
+    id: string;
+    name?: string;
+    soldQuantity?: number;
+    quantity?: number | null;
+    seatingChart?: unknown;
+  }
+
+  const [reservedSeating, setReservedSeating] = useState<ReservedSeating[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("packages");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedPackage] = useState<TicketPackage | null>(null);
   const { toast } = useToast();
 
   const fetchPackages = useCallback(async () => {
@@ -81,7 +87,10 @@ const AdvancedTicketTypes = () => {
     try {
       const response = await getReservedSeating(eventId);
       if (response.success && response.data) {
-        setReservedSeating(response.data.seating || []);
+        const seatingData = Array.isArray(response.data.seating)
+          ? (response.data.seating as ReservedSeating[])
+          : [];
+        setReservedSeating(seatingData);
       }
     } catch (error) {
       console.error("Error fetching reserved seating:", error);
@@ -97,10 +106,36 @@ const AdvancedTicketTypes = () => {
     }
   }, [eventId, activeTab, fetchPackages, fetchReservedSeating]);
 
+  type CreatePackagePayload = Parameters<typeof createTicketPackage>[0];
+
   const handleCreatePackage = async (data: Partial<TicketPackage>) => {
     if (!eventId) return;
     try {
-      const response = await createTicketPackage({ ...data, eventId });
+      if (!data.name) {
+        toast({
+          title: "Name is required",
+          description: "Please provide a package name.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const payload: CreatePackagePayload = {
+        eventId,
+        name: data.name,
+        description: data.description,
+        type: data.type ?? "group",
+        price: data.price,
+        minQuantity: data.minQuantity,
+        maxQuantity: data.maxQuantity,
+        isDonation: data.isDonation ?? false,
+        minDonation: data.minDonation,
+        maxDonation: data.maxDonation,
+        hasReservedSeating: data.hasReservedSeating ?? false,
+        quantity: data.quantity,
+      };
+
+      const response = await createTicketPackage(payload);
       if (response.success) {
         toast({
           title: "Success",
@@ -275,16 +310,6 @@ const AdvancedTicketTypes = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              setSelectedPackage(pkg);
-                            }}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
                             onClick={() => handleDeletePackage(pkg.id)}
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
@@ -311,23 +336,23 @@ const AdvancedTicketTypes = () => {
               </Card>
             ) : (
               <div className="space-y-4">
-                {reservedSeating.map((seating) => (
-                  <Card key={seating.id}>
+                {reservedSeating.map((seating, index) => (
+                  <Card key={seating.id || `seating-${index}`}>
                     <CardHeader>
-                      <CardTitle>{seating.name}</CardTitle>
+                      <CardTitle>{seating.name || "Reserved Seating"}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-sm text-muted-foreground">
-                        Sold: {seating.soldQuantity} / {seating.quantity || "∞"}
+                        Sold: {seating.soldQuantity ?? 0} / {seating.quantity ?? "∞"}
                       </div>
-                      {seating.seatingChart && (
+                      {seating.seatingChart ? (
                         <div className="mt-4">
                           <p className="text-sm font-semibold mb-2">Seating Chart</p>
                           <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs">
                             {JSON.stringify(seating.seatingChart, null, 2)}
                           </pre>
                         </div>
-                      )}
+                      ) : null}
                     </CardContent>
                   </Card>
                 ))}
@@ -357,11 +382,8 @@ const CreatePackageForm = ({
     isDonation: false,
     minDonation: "",
     maxDonation: "",
-    suggestedAmounts: "",
     hasReservedSeating: false,
     quantity: "",
-    availableFrom: "",
-    availableUntil: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -383,24 +405,11 @@ const CreatePackageForm = ({
       data.isDonation = true;
       data.minDonation = formData.minDonation ? parseFloat(formData.minDonation) : undefined;
       data.maxDonation = formData.maxDonation ? parseFloat(formData.maxDonation) : undefined;
-      if (formData.suggestedAmounts) {
-        data.suggestedAmounts = formData.suggestedAmounts
-          .split(",")
-          .map((a) => parseFloat(a.trim()))
-          .filter((a) => !isNaN(a));
-      }
+      // suggestedAmounts not supported by payload; ignore
     }
 
     if (formData.quantity) {
       data.quantity = parseInt(formData.quantity);
-    }
-
-    if (formData.availableFrom) {
-      data.availableFrom = new Date(formData.availableFrom).toISOString();
-    }
-
-    if (formData.availableUntil) {
-      data.availableUntil = new Date(formData.availableUntil).toISOString();
     }
 
     onSubmit(data);
@@ -519,15 +528,7 @@ const CreatePackageForm = ({
               />
             </div>
           </div>
-          <div>
-            <Label htmlFor="suggestedAmounts">Suggested Amounts (comma-separated)</Label>
-            <Input
-              id="suggestedAmounts"
-              value={formData.suggestedAmounts}
-              onChange={(e) => setFormData({ ...formData, suggestedAmounts: e.target.value })}
-              placeholder="e.g., 10, 25, 50, 100"
-            />
-          </div>
+          {/* Suggested amounts not supported by payload */}
         </>
       )}
 

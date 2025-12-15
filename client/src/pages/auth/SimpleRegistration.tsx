@@ -132,7 +132,11 @@ const SimpleRegistration = () => {
         if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
           // New organizers go to onboarding, existing ones go to dashboard
           // Check onboarding status from user data (will be added to response)
-          const needsOnboarding = !response.data.user.onboardingCompleted;
+        const needsOnboarding =
+          response.data.user &&
+          typeof (response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === "boolean"
+            ? !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
+            : false;
           navigate(needsOnboarding ? '/organizer/onboarding' : '/organizer/dashboard');
         } else if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
           navigate('/admin/dashboard');

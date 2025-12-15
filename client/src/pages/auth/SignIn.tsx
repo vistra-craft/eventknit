@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Calendar, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, facebookAuth } from '@/lib/auth-api';
@@ -190,9 +190,7 @@ const SignIn = () => {
               {/* Logo at top */}
               <div className="mb-6">
                 <div className="flex items-center justify-between gap-4 mb-2">
-                  <Link to="/" className="inline-flex items-center gap-2">
-                    <Logo />
-                  </Link>
+                  <Logo className="inline-flex items-center gap-2" />
                   <button
                     type="button"
                     onClick={() => navigate('/')}

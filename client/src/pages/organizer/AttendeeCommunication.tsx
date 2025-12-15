@@ -36,6 +36,7 @@ const AttendeeCommunication = () => {
   const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [recipientType] = useState<"segment" | "tag" | "event">("segment");
   const { toast } = useToast();
 
   const loadData = useCallback(async () => {
@@ -52,11 +53,35 @@ const AttendeeCommunication = () => {
       }
 
       if (segmentsRes.success && segmentsRes.data) {
-        setSegments(segmentsRes.data.segments || []);
+        const segmentList = Array.isArray(segmentsRes.data.segments)
+          ? segmentsRes.data.segments
+              .map((s) => {
+                if (!s || typeof s !== "object") return null;
+                const raw = s as Record<string, unknown>;
+                const id = raw.id ?? raw.segmentId;
+                const name = raw.name ?? raw.segmentName;
+                if (!id || !name) return null;
+                return { id: String(id), name: String(name) };
+              })
+              .filter((s): s is { id: string; name: string } => !!s)
+          : [];
+        setSegments(segmentList);
       }
 
       if (tagsRes.success && tagsRes.data) {
-        setTags(tagsRes.data.tags || []);
+        const tagList = Array.isArray(tagsRes.data.tags)
+          ? tagsRes.data.tags
+              .map((t) => {
+                if (!t || typeof t !== "object") return null;
+                const raw = t as Record<string, unknown>;
+                const id = raw.id;
+                const name = raw.name;
+                if (!id || !name) return null;
+                return { id: String(id), name: String(name) };
+              })
+              .filter((t): t is { id: string; name: string } => !!t)
+          : [];
+        setTags(tagList);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -146,7 +171,7 @@ const AttendeeCommunication = () => {
                 <DialogTitle>Send Message</DialogTitle>
               </DialogHeader>
               <SendMessageForm
-                recipientType={recipientType}
+                recipientType={recipientType as "segment" | "tag" | "event"}
                 segments={segments}
                 tags={tags}
                 onSubmit={handleSendMessage}

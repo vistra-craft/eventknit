@@ -55,7 +55,8 @@ export const useAuth = () => {
           const role = response.data.user.role;
           const needsOnboarding = 
             (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') &&
-            !response.data.user.onboardingCompleted;
+            !("onboardingCompleted" in response.data.user) ||
+            !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted;
 
           if (needsOnboarding) {
             navigate('/organizer/onboarding');

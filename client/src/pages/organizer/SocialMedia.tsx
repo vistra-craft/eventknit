@@ -86,8 +86,8 @@ const SocialMedia = () => {
       if (response.success && response.data) {
         setPosts(response.data.posts || []);
       }
-    } catch {
-      console.error("Error fetching posts:", error);
+    } catch (err) {
+      console.error("Error fetching posts:", err);
       toast({
         title: "Error",
         description: "Failed to load social media posts",
@@ -104,8 +104,8 @@ const SocialMedia = () => {
       if (response.success && response.data) {
         setAnalytics(response.data as SocialAnalytics);
       }
-    } catch {
-      console.error("Error fetching analytics:", error);
+    } catch (err) {
+      console.error("Error fetching analytics:", err);
     }
   }, []);
 

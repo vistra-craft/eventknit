@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, no-case-declarations */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-case-declarations */
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import EmptyState from "@/components/EmptyState";
 
 const AdvancedSearch: React.FC = () => {
-  const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [savedSearches, setSavedSearches] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);

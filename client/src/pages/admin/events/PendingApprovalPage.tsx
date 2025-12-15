@@ -100,8 +100,15 @@ const PendingApprovalPage = () => {
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerName: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerId: event.organizer?.id,
-            organizerVerified: event.organizer?.isIdentityVerified || false,
-            organizerVerificationLevel: event.organizer?.verificationLevel || 1,
+            organizerVerified: Boolean(
+              event.organizer && typeof (event.organizer as { isIdentityVerified?: boolean }).isIdentityVerified === "boolean"
+                ? (event.organizer as { isIdentityVerified?: boolean }).isIdentityVerified
+                : false
+            ),
+            organizerVerificationLevel:
+              typeof (event.organizer as { verificationLevel?: number })?.verificationLevel === "number"
+                ? (event.organizer as { verificationLevel?: number }).verificationLevel
+                : 1,
             date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
             startDate: event.startDate,
             startTime: event.startTime || '',

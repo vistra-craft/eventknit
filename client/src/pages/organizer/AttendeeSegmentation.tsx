@@ -42,7 +42,16 @@ const AttendeeSegmentation = () => {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
-  const [segmentMembers, setSegmentMembers] = useState<Record<string, unknown>[]>([]);
+  interface SegmentMember {
+    userId: string;
+    user: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+    } | undefined;
+  }
+
+  const [segmentMembers, setSegmentMembers] = useState<SegmentMember[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -52,7 +61,30 @@ const AttendeeSegmentation = () => {
       setLoading(true);
       const response = await getOrganizerSegments();
       if (response.success && response.data) {
-        setSegments(response.data.segments || []);
+        const segmentData = Array.isArray(response.data.segments)
+          ? response.data.segments
+              .map((s) => {
+                if (!s || typeof s !== "object") return null;
+                const raw = s as Record<string, unknown>;
+                const id = raw.id ?? raw.segmentId;
+                const name = raw.name ?? raw.segmentName;
+                const createdAt = raw.createdAt ?? raw.created_at;
+                const updatedAt = raw.updatedAt ?? raw.updated_at;
+                if (!id || !name || !createdAt || !updatedAt) return null;
+                return {
+                  id: String(id),
+                  name: String(name),
+                  description: typeof raw.description === "string" ? raw.description : undefined,
+                  criteria: typeof raw.criteria === "object" && raw.criteria ? (raw.criteria as Record<string, unknown>) : {},
+                  memberCount: typeof raw.memberCount === "number" ? raw.memberCount : undefined,
+                  eventId: typeof raw.eventId === "string" ? raw.eventId : undefined,
+                  createdAt: String(createdAt),
+                  updatedAt: String(updatedAt),
+                } as Segment;
+              })
+              .filter((seg): seg is Segment => !!seg)
+          : [];
+        setSegments(segmentData);
       }
     } catch (error) {
       console.error("Error fetching segments:", error);
@@ -120,11 +152,26 @@ const AttendeeSegmentation = () => {
     try {
       const response = await getSegmentById(segmentId);
       if (response.success && response.data) {
-        setSelectedSegment(response.data.segment);
-        setSegmentMembers(response.data.members || []);
+        const segment = response.data.segment as unknown;
+        const membersRaw = Array.isArray(response.data.members) ? response.data.members : [];
+        if (segment && typeof segment === "object" && "id" in segment) {
+          setSelectedSegment(segment as Segment);
+        }
+        const members = membersRaw
+          .map((m) => {
+            if (!m || typeof m !== "object") return null;
+            const casted = m as Partial<SegmentMember>;
+            if (!casted.userId) return null;
+            return {
+              userId: String(casted.userId),
+              user: casted.user,
+            };
+          })
+          .filter((m): m is SegmentMember => !!m?.userId);
+        setSegmentMembers(members);
       }
-    } catch {
-      console.error("Error loading segment details:", error);
+    } catch (err) {
+      console.error("Error loading segment details:", err);
     }
   };
 
@@ -323,9 +370,9 @@ const AttendeeSegmentation = () => {
                     {segmentMembers.length === 0 ? (
                       <p className="text-muted-foreground text-sm">No members in this segment</p>
                     ) : (
-                      segmentMembers.map((member) => (
+                      segmentMembers.map((member, index) => (
                         <div
-                          key={member.userId}
+                          key={member.userId || member.user?.email || `member-${index}`}
                           className="flex items-center justify-between p-2 bg-muted rounded"
                         >
                           <span className="text-sm">

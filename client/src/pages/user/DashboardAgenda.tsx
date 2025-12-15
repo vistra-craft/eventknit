@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import EmptyState from '../../components/EmptyState';
@@ -100,36 +100,44 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
   };
 
   // Transform organizer agenda to display format
-  const transformAgenda = (organizerAgenda: any[]): AgendaItem[] => {
+  const transformAgenda = useCallback((organizerAgenda: Array<Record<string, unknown>>): AgendaItem[] => {
     if (!organizerAgenda || !Array.isArray(organizerAgenda)) {
       return [];
     }
 
     return organizerAgenda.map((item, index) => {
-      const startTime = item.startTime || '';
-      const endTime = item.endTime || '';
+      const startTime = typeof item.startTime === 'string' ? item.startTime : '';
+      const endTime = typeof item.endTime === 'string' ? item.endTime : '';
       const time = startTime ? startTime.substring(0, 5) : ''; // Format as HH:MM
       
       // Map speakers array to string
       let speakerString = '';
-      if (item.speakers && Array.isArray(item.speakers)) {
-        if (item.speakers.length > 0) {
-          // If speakers are IDs, we'd need to look them up, but for now just join
-          speakerString = item.speakers
-            .map((s: any) => typeof s === 'string' ? s : (s?.name || s))
-            .filter(Boolean)
-            .join(', ');
-        }
+      const speakers = Array.isArray(item.speakers) ? item.speakers : [];
+      if (speakers.length > 0) {
+        speakerString = speakers
+          .map((s: unknown) => {
+            if (typeof s === 'string') return s;
+            if (s && typeof s === 'object' && 'name' in s) {
+              const speaker = s as { name?: string };
+              return speaker.name;
+            }
+            return '';
+          })
+          .filter(Boolean)
+          .join(', ');
       }
 
       return {
         id: `agenda-${index}`,
-        time: time,
-        title: item.title || 'Untitled Session',
-        type: inferType(item.title || '', item.description),
+        time,
+        title: typeof item.title === 'string' ? item.title : 'Untitled Session',
+        type: inferType(
+          typeof item.title === 'string' ? item.title : '',
+          typeof item.description === 'string' ? item.description : undefined
+        ),
         speaker: speakerString || undefined,
         location: eventLocation,
-        description: item.description,
+        description: typeof item.description === 'string' ? item.description : undefined,
         duration: calculateDuration(startTime, endTime),
       };
     }).sort((a, b) => {
@@ -139,7 +147,7 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
       if (!b.time) return -1;
       return a.time.localeCompare(b.time);
     });
-  };
+  }, [eventLocation]);
 
   useEffect(() => {
     const fetchAgenda = async () => {
@@ -177,7 +185,7 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
     };
 
     fetchAgenda();
-  }, [eventData?.id]);
+  }, [eventData?.id, transformAgenda]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {

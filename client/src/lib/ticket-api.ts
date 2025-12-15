@@ -142,3 +142,4 @@ export const resendTicketEmail = async (registrationId: string): Promise<ApiResp
 
   return response.json();
 };
+

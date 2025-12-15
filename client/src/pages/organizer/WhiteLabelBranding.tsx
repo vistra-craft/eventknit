@@ -9,18 +9,18 @@ import { useToast } from '@/hooks/use-toast';
 import {
   getBranding,
   upsertBranding,
-  type WhiteLabelBranding,
+  type WhiteLabelBranding as WhiteLabelBrandingData,
   type CreateBrandingData,
 } from '@/lib/white-label-api';
 import { Save, Palette, Mail, Globe, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import OrganizerLayout from './OrganizerLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const WhiteLabelBranding = () => {
+const WhiteLabelBrandingPage = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [branding, setBranding] = useState<WhiteLabelBranding | null>(null);
+  const [branding, setBranding] = useState<WhiteLabelBrandingData | null>(null);
   const [formData, setFormData] = useState<CreateBrandingData>({
     logoUrl: '',
     logoLightUrl: '',
@@ -49,32 +49,35 @@ const WhiteLabelBranding = () => {
   const loadBranding = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await getBranding();
-      setBranding(data);
-      setFormData({
-        logoUrl: data.logoUrl || '',
-        logoLightUrl: data.logoLightUrl || '',
-        logoDarkUrl: data.logoDarkUrl || '',
-        faviconUrl: data.faviconUrl || '',
-        coverImageUrl: data.coverImageUrl || '',
-        primaryColor: data.primaryColor || '#4a6cf7',
-        secondaryColor: data.secondaryColor || '#6c757d',
-        accentColor: data.accentColor || '#ffc107',
-        backgroundColor: data.backgroundColor || '#ffffff',
-        textColor: data.textColor || '#333333',
-        linkColor: data.linkColor || '#4a6cf7',
-        fontFamily: data.fontFamily || '',
-        headingFont: data.headingFont || '',
-        brandName: data.brandName || '',
-        tagline: data.tagline || '',
-        supportEmail: data.supportEmail || '',
-        supportPhone: data.supportPhone || '',
-        websiteUrl: data.websiteUrl || '',
-        emailHeaderImage: data.emailHeaderImage || '',
-        emailFooterText: data.emailFooterText || '',
-        emailSignature: data.emailSignature || '',
-        socialLinks: data.socialLinks || {},
-      });
+      const res = await getBranding();
+      const data = res.data;
+      if (data) {
+        setBranding(data);
+        setFormData({
+          logoUrl: data.logoUrl || '',
+          logoLightUrl: data.logoLightUrl || '',
+          logoDarkUrl: data.logoDarkUrl || '',
+          faviconUrl: data.faviconUrl || '',
+          coverImageUrl: data.coverImageUrl || '',
+          primaryColor: data.primaryColor || '#4a6cf7',
+          secondaryColor: data.secondaryColor || '#6c757d',
+          accentColor: data.accentColor || '#ffc107',
+          backgroundColor: data.backgroundColor || '#ffffff',
+          textColor: data.textColor || '#333333',
+          linkColor: data.linkColor || '#4a6cf7',
+          fontFamily: data.fontFamily || '',
+          headingFont: data.headingFont || '',
+          brandName: data.brandName || '',
+          tagline: data.tagline || '',
+          supportEmail: data.supportEmail || '',
+          supportPhone: data.supportPhone || '',
+          websiteUrl: data.websiteUrl || '',
+          emailHeaderImage: data.emailHeaderImage || '',
+          emailFooterText: data.emailFooterText || '',
+          emailSignature: data.emailSignature || '',
+          socialLinks: data.socialLinks || {},
+        });
+      }
     } catch (error: unknown) {
       const message =
         typeof error === 'object' && error !== null && 'response' in error
@@ -98,7 +101,9 @@ const WhiteLabelBranding = () => {
     try {
       setIsSaving(true);
       const updated = await upsertBranding(formData);
-      setBranding(updated);
+      if (updated.data) {
+        setBranding(updated.data);
+      }
       toast({
         title: 'Success',
         description: 'Branding updated successfully. Pending admin approval.',
@@ -560,5 +565,5 @@ const WhiteLabelBranding = () => {
   );
 };
 
-export default WhiteLabelBranding;
+export default WhiteLabelBrandingPage;
 

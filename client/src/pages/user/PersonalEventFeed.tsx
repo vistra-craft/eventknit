@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Sparkles,
   RefreshCw,
   X,
-  Eye,
   Settings,
   Calendar,
   MapPin,
@@ -288,12 +287,9 @@ const FeedSettingsForm = ({
   onSubmit: (preferences: { preferences?: any; filters?: any }) => void;
   onCancel: () => void;
 }) => {
-  const [preferences, setPreferences] = useState(feed.preferences || {});
-  const [filters, setFilters] = useState(feed.filters || {});
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ preferences, filters });
+    onSubmit({ preferences: feed.preferences, filters: feed.filters });
   };
 
   return (

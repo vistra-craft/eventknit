@@ -11,9 +11,7 @@ import {
   BellOff,
   Plus,
   Settings,
-  Calendar,
   CheckCircle,
-  X,
 } from "lucide-react";
 import {
   subscribeToEvent,

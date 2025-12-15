@@ -1,4 +1,5 @@
 import apiClient from './api-client';
+import type { ApiResponse } from './api';
 
 const BASE_URL = '/api/v1/admin/financial';
 
@@ -59,9 +60,8 @@ export interface Expense {
   updatedAt: string;
 }
 
-export const createExpense = async (data: CreateExpenseData) => {
-  const response = await apiClient.post(`${BASE_URL}/expenses`, data);
-  return response.data;
+export const createExpense = async (data: CreateExpenseData): Promise<ApiResponse<Expense>> => {
+  return apiClient.post<ApiResponse<Expense>>(`${BASE_URL}/expenses`, data);
 };
 
 export const getExpenses = async (filters?: {
@@ -71,24 +71,30 @@ export const getExpenses = async (filters?: {
   endDate?: string;
   page?: number;
   limit?: number;
-}) => {
-  const response = await apiClient.get(`${BASE_URL}/expenses`, { params: filters });
-  return response.data;
+}): Promise<ApiResponse<{ expenses: Expense[]; total?: number }>> => {
+  const params = new URLSearchParams();
+  if (filters?.category) params.append('category', filters.category);
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.page !== undefined) params.append('page', filters.page.toString());
+  if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
+  const qs = params.toString();
+  return apiClient.get<ApiResponse<{ expenses: Expense[]; total?: number }>>(
+    `${BASE_URL}/expenses${qs ? `?${qs}` : ''}`,
+  );
 };
 
-export const getExpenseById = async (id: string) => {
-  const response = await apiClient.get(`${BASE_URL}/expenses/${id}`);
-  return response.data;
+export const getExpenseById = async (id: string): Promise<ApiResponse<Expense>> => {
+  return apiClient.get<ApiResponse<Expense>>(`${BASE_URL}/expenses/${id}`);
 };
 
-export const updateExpense = async (id: string, data: UpdateExpenseData) => {
-  const response = await apiClient.put(`${BASE_URL}/expenses/${id}`, data);
-  return response.data;
+export const updateExpense = async (id: string, data: UpdateExpenseData): Promise<ApiResponse<Expense>> => {
+  return apiClient.put<ApiResponse<Expense>>(`${BASE_URL}/expenses/${id}`, data);
 };
 
-export const deleteExpense = async (id: string) => {
-  const response = await apiClient.delete(`${BASE_URL}/expenses/${id}`);
-  return response.data;
+export const deleteExpense = async (id: string): Promise<ApiResponse<void>> => {
+  return apiClient.delete<ApiResponse<void>>(`${BASE_URL}/expenses/${id}`);
 };
 
 // ========== Platform Income ==========
@@ -148,9 +154,8 @@ export interface Income {
   };
 }
 
-export const createIncome = async (data: CreateIncomeData) => {
-  const response = await apiClient.post(`${BASE_URL}/incomes`, data);
-  return response.data;
+export const createIncome = async (data: CreateIncomeData): Promise<ApiResponse<Income>> => {
+  return apiClient.post<ApiResponse<Income>>(`${BASE_URL}/incomes`, data);
 };
 
 export const getIncomes = async (filters?: {
@@ -160,24 +165,30 @@ export const getIncomes = async (filters?: {
   endDate?: string;
   page?: number;
   limit?: number;
-}) => {
-  const response = await apiClient.get(`${BASE_URL}/incomes`, { params: filters });
-  return response.data;
+}): Promise<ApiResponse<{ incomes: Income[]; total?: number }>> => {
+  const params = new URLSearchParams();
+  if (filters?.category) params.append('category', filters.category);
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.page !== undefined) params.append('page', filters.page.toString());
+  if (filters?.limit !== undefined) params.append('limit', filters.limit.toString());
+  const qs = params.toString();
+  return apiClient.get<ApiResponse<{ incomes: Income[]; total?: number }>>(
+    `${BASE_URL}/incomes${qs ? `?${qs}` : ''}`,
+  );
 };
 
-export const getIncomeById = async (id: string) => {
-  const response = await apiClient.get(`${BASE_URL}/incomes/${id}`);
-  return response.data;
+export const getIncomeById = async (id: string): Promise<ApiResponse<Income>> => {
+  return apiClient.get<ApiResponse<Income>>(`${BASE_URL}/incomes/${id}`);
 };
 
-export const updateIncome = async (id: string, data: UpdateIncomeData) => {
-  const response = await apiClient.put(`${BASE_URL}/incomes/${id}`, data);
-  return response.data;
+export const updateIncome = async (id: string, data: UpdateIncomeData): Promise<ApiResponse<Income>> => {
+  return apiClient.put<ApiResponse<Income>>(`${BASE_URL}/incomes/${id}`, data);
 };
 
-export const deleteIncome = async (id: string) => {
-  const response = await apiClient.delete(`${BASE_URL}/incomes/${id}`);
-  return response.data;
+export const deleteIncome = async (id: string): Promise<ApiResponse<void>> => {
+  return apiClient.delete<ApiResponse<void>>(`${BASE_URL}/incomes/${id}`);
 };
 
 // ========== Monthly Summaries ==========
@@ -200,11 +211,13 @@ export interface MonthlySummary {
   incomes: number;
 }
 
-export const getMonthlySummary = async (year: number, month: number) => {
-  const response = await apiClient.get(`${BASE_URL}/monthly-summary`, {
-    params: { year, month },
-  });
-  return response.data;
+export const getMonthlySummary = async (year: number, month: number): Promise<ApiResponse<MonthlySummary>> => {
+  const params = new URLSearchParams();
+  params.append('year', year.toString());
+  params.append('month', month.toString());
+  return apiClient.get<ApiResponse<MonthlySummary>>(
+    `${BASE_URL}/monthly-summary?${params.toString()}`,
+  );
 };
 
 // ========== Financial Overview ==========
@@ -220,7 +233,12 @@ export interface FinancialOverview {
 export const getFinancialOverview = async (filters?: {
   startDate?: string;
   endDate?: string;
-}) => {
-  const response = await apiClient.get(`${BASE_URL}/overview`, { params: filters });
-  return response.data;
+}): Promise<ApiResponse<FinancialOverview>> => {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  const qs = params.toString();
+  return apiClient.get<ApiResponse<FinancialOverview>>(
+    `${BASE_URL}/overview${qs ? `?${qs}` : ''}`,
+  );
 };

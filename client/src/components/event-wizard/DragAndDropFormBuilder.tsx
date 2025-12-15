@@ -1,27 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Trash2, GripVertical, Type, List, CheckSquare, Mail, Phone, Plus } from 'lucide-react';
-import { RegistrationField } from '@/types/event';
+import type { RegistrationField } from '@/types/event';
 
 interface DragAndDropFormBuilderProps {
   fields: RegistrationField[];
   onChange: (fields: RegistrationField[]) => void;
-  onNext: () => void;
-  onBack: () => void;
 }
 
 export const DragAndDropFormBuilder: React.FC<DragAndDropFormBuilderProps> = ({
   fields,
   onChange,
-  onNext,
-  onBack
 }) => {
-  const [activeDraggable, setActiveDraggable] = useState<string | null>(null);
-
   const addField = (type: RegistrationField['type']) => {
     const newField: RegistrationField = {
       id: crypto.randomUUID(),

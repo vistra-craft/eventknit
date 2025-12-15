@@ -1,17 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Star, ThumbsUp, MessageSquare, Plus, CheckCircle, X } from "lucide-react";
+import { Loader2, Star, ThumbsUp, Plus, X, CheckCircle } from "lucide-react";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { getEventReviews, createEventReview, markReviewHelpful } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { Avatar } from "@/components/ui/avatar";
 
 const EventReviews: React.FC = () => {
@@ -32,7 +30,6 @@ const EventReviews: React.FC = () => {
   const [proInput, setProInput] = useState("");
   const [conInput, setConInput] = useState("");
   const { toast } = useToast();
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchUserEvents();

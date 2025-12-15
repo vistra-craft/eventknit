@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,24 +8,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Send, X, CheckCircle, Clock, User, Mail, Calendar, MapPin } from "lucide-react";
+import { Loader2, Send, X, CheckCircle, Clock, User, Calendar, MapPin } from "lucide-react";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { initiateTicketTransfer, getTransferHistory, cancelTicketTransfer } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 
 const TicketTransfer: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [transferring, setTransferring] = useState(false);
   const [userEvents, setUserEvents] = useState<any[]>([]);
   const [transferHistory, setTransferHistory] = useState<any[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [, setSelectedEvent] = useState<any>(null);
   const [transferData, setTransferData] = useState({
     toEmail: "",
     message: "",
   });
   const { toast } = useToast();
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchData();

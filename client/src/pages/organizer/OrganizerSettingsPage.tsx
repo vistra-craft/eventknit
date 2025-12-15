@@ -15,7 +15,6 @@ import {
   Mail,
   Camera,
   X,
-  Upload,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -559,6 +558,8 @@ const OrganizerSettingsPage = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setIsUploadingAvatar(true);
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
@@ -585,6 +586,7 @@ const OrganizerSettingsPage = () => {
     const reader = new FileReader();
     reader.onloadend = () => {
       setAvatarPreview(reader.result as string);
+      setIsUploadingAvatar(false);
     };
     reader.onerror = () => {
       toast({
@@ -594,6 +596,7 @@ const OrganizerSettingsPage = () => {
       });
       setAvatarFile(null);
       setAvatarPreview(null);
+      setIsUploadingAvatar(false);
     };
     reader.readAsDataURL(file);
   };

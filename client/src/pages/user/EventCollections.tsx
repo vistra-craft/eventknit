@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, FolderPlus, Share2, Users, Calendar, MapPin, Heart, Trash2, Edit, Eye, X } from "lucide-react";
+import { Loader2, Plus, FolderPlus, Users, Calendar, MapPin } from "lucide-react";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+// import { useAuth } from "@/hooks/useAuth";
 import EmptyState from "@/components/EmptyState";
-import { getEvents } from "@/lib/event-api";
+// import { getEvents } from "@/lib/event-api";
 
 const EventCollections: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -31,7 +31,7 @@ const EventCollections: React.FC = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   useEffect(() => {
     fetchCollections();

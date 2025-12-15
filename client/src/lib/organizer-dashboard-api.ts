@@ -301,7 +301,10 @@ export const untagUser = async (tagId: string, data: {
   userId: string;
   eventId?: string;
 }): Promise<ApiResponse<{ success: boolean }>> => {
-  return apiDelete(`/organizer-dashboard/tags/${tagId}/untag`, data);
+  const params = new URLSearchParams();
+  params.append('userId', data.userId);
+  if (data.eventId) params.append('eventId', data.eventId);
+  return apiDelete(`/organizer-dashboard/tags/${tagId}/untag?${params.toString()}`);
 };
 
 export const getTaggedUsers = async (tagId: string, filters?: {

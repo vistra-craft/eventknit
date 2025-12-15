@@ -129,7 +129,7 @@ const SeatMapSelector = ({
         typeof err === "object" && err !== null && "response" in err
           ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
           : undefined;
-      setError(errorMsg);
+      setError(errorMsg || 'Failed to reserve seats');
       toast({
         title: 'Error',
         description: errorMsg || 'Failed to reserve seats',
@@ -316,7 +316,9 @@ const SeatMapSelector = ({
                 return (
                   <div key={sectionId} className="space-y-3">
                     <h3 className="font-semibold text-lg">
-                      {seatMap.layout?.sections?.find((s) => s.id === sectionId)?.name || sectionId}
+                      {Array.isArray(seatMap.layout?.sections)
+                        ? seatMap.layout.sections.find((s: { id?: string; name?: string }) => s.id === sectionId)?.name || sectionId
+                        : sectionId}
                     </h3>
                     {Object.entries(seatsByRow).map(([rowLabel, rowSeats]) => (
                       <div key={rowLabel} className="flex items-center gap-2">

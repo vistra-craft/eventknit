@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import OrganizerLayout from "./OrganizerLayout";
 import {
   Link as LinkIcon,
@@ -32,6 +33,17 @@ interface AffiliateProgram {
   affiliates?: { id: string; name?: string }[];
   _count?: { affiliates: number };
 }
+
+type CreateProgramFormFields = {
+  name: string;
+  description?: string;
+  commissionType: "PERCENTAGE" | "FIXED_AMOUNT";
+  commissionValue: string;
+  minCommission?: string;
+  maxCommission?: string;
+  cookieDuration?: string;
+  eventId?: string;
+};
 
 const AffiliateProgram = () => {
   const [programs, setPrograms] = useState<AffiliateProgram[]>([]);
@@ -65,29 +77,35 @@ const AffiliateProgram = () => {
     fetchPrograms();
   }, [fetchPrograms]);
 
+  const loadAffiliateDashboard = useCallback(async () => {
+    // Placeholder for future dashboard data fetch
+    return;
+  }, []);
+
   useEffect(() => {
     if (selectedProgram && activeTab === "dashboard") {
       loadAffiliateDashboard();
     }
   }, [selectedProgram, activeTab, loadAffiliateDashboard]);
 
-  const loadAffiliateDashboard = useCallback(async () => {
-    // Placeholder for future dashboard data fetch
-    return;
-  }, []);
-
   const handleCreateProgram = async (data: {
     eventId?: string;
     name: string;
     description?: string;
     commissionType: "PERCENTAGE" | "FIXED_AMOUNT";
-    commissionValue: number;
-    minCommission?: number;
-    maxCommission?: number;
-    cookieDuration?: number;
+    commissionValue: string;
+    minCommission?: string;
+    maxCommission?: string;
+    cookieDuration?: string;
   }) => {
     try {
-      const response = await createAffiliateProgram(data);
+      const response = await createAffiliateProgram({
+        ...data,
+        commissionValue: Number(data.commissionValue),
+        minCommission: data.minCommission ? Number(data.minCommission) : undefined,
+        maxCommission: data.maxCommission ? Number(data.maxCommission) : undefined,
+        cookieDuration: data.cookieDuration ? Number(data.cookieDuration) : undefined,
+      });
       if (response.success) {
         toast({
           title: "Success",
@@ -322,14 +340,14 @@ const CreateProgramForm = ({
     name: string;
     description?: string;
     commissionType: "PERCENTAGE" | "FIXED_AMOUNT";
-    commissionValue: number;
-    minCommission?: number;
-    maxCommission?: number;
-    cookieDuration?: number;
+    commissionValue: string;
+    minCommission?: string;
+    maxCommission?: string;
+    cookieDuration?: string;
   }) => void;
   onCancel: () => void;
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateProgramFormFields>({
     name: "",
     description: "",
     commissionType: "PERCENTAGE" as "PERCENTAGE" | "FIXED_AMOUNT",
@@ -344,10 +362,10 @@ const CreateProgramForm = ({
     e.preventDefault();
     onSubmit({
       ...formData,
-      commissionValue: parseFloat(formData.commissionValue),
-      minCommission: formData.minCommission ? parseFloat(formData.minCommission) : undefined,
-      maxCommission: formData.maxCommission ? parseFloat(formData.maxCommission) : undefined,
-      cookieDuration: parseInt(formData.cookieDuration),
+      commissionValue: formData.commissionValue,
+      minCommission: formData.minCommission || undefined,
+      maxCommission: formData.maxCommission || undefined,
+      cookieDuration: formData.cookieDuration,
       eventId: formData.eventId || undefined,
     });
   };

@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EventPreferencesStep } from '@/components/onboarding/EventPreferencesStep';
 import { ProcessOverview } from '@/components/onboarding/ProcessOverview';
 import { ActionChoiceStep } from '@/components/onboarding/ActionChoiceStep';
-import * as authApi from '@/lib/auth-api';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import Logo from '@/components/Logo';
@@ -16,7 +15,7 @@ type OnboardingStep = 1 | 2 | 3;
 const OnboardingWizard = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { dispatch } = useAuthContext();
+  const { state: { user }, dispatch } = useAuthContext();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -92,10 +91,10 @@ const OnboardingWizard = () => {
       try {
         const { completeOnboarding } = await import('@/lib/organizer-api');
         const response = await completeOnboarding(formData);
-        if (response.success && response.data) {
+        if (response.success && response.data && user) {
           dispatch({ 
             type: 'UPDATE_USER', 
-            payload: { onboardingCompleted: true } 
+            payload: { ...user, onboardingCompleted: true }
           });
         }
       } catch (err) {
@@ -115,11 +114,11 @@ const OnboardingWizard = () => {
       const { completeOnboarding } = await import('@/lib/organizer-api');
       const response = await completeOnboarding(formData);
 
-      if (response.success && response.data) {
+      if (response.success && response.data && user) {
         // Update user context with completed onboarding
         dispatch({ 
           type: 'UPDATE_USER', 
-          payload: { onboardingCompleted: true } 
+          payload: { ...user, onboardingCompleted: true }
         });
 
         // Navigate to standalone event creation (onboarding complete, but need to create first event)

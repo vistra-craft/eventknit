@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Plus, Trash2, Download, Clock, CheckCircle, Chrome, Apple, Mail } from "lucide-react";
+import { Calendar, Plus, Trash2, Clock, Chrome, Apple, Mail } from "lucide-react";
 import {
   syncToCalendar,
   getUserCalendarSyncs,

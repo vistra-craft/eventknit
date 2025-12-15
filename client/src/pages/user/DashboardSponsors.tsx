@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import EmptyState from '../../components/EmptyState';
-import { Award, Globe, Mail, Loader2 } from 'lucide-react';
+import { Award, Globe, Loader2 } from 'lucide-react';
 import { getEventById } from '../../lib/event-api';
 
 interface EventData {
@@ -40,13 +40,13 @@ const DashboardSponsors: React.FC<DashboardSponsorsProps> = ({ eventData }) => {
         const response = await getEventById(eventData.id.toString());
         if (response.success && response.data?.event?.sponsors) {
           // Transform sponsors data to display format
-          const eventSponsors = response.data.event.sponsors.map((sponsor: any, index: number) => ({
+          const eventSponsors = response.data.event.sponsors.map((sponsor: Record<string, unknown>, index: number) => ({
             id: index + 1,
-            name: sponsor.name || 'Sponsor',
-            logo: sponsor.logo || '/api/placeholder/200/100',
-            level: (sponsor.level?.toLowerCase() as 'platinum' | 'gold' | 'silver' | 'bronze' | 'partner') || 'partner',
-            description: sponsor.description,
-            website: sponsor.website,
+            name: typeof sponsor.name === 'string' ? sponsor.name : 'Sponsor',
+            logo: typeof sponsor.logo === 'string' ? sponsor.logo : '/api/placeholder/200/100',
+            level: (typeof sponsor.level === 'string' ? sponsor.level.toLowerCase() : 'partner') as 'platinum' | 'gold' | 'silver' | 'bronze' | 'partner',
+            description: typeof sponsor.description === 'string' ? sponsor.description : undefined,
+            website: typeof sponsor.website === 'string' ? sponsor.website : undefined,
           }));
           setSponsors(eventSponsors);
         } else {

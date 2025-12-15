@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Calendar, Users, Briefcase, Award } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 
 interface AgendaItem {
   title: string;
@@ -44,9 +43,10 @@ interface AgendaBuilderStepProps {
   speakers: Speaker[];
   exhibitors: Exhibitor[];
   sponsors: Sponsor[];
-  onUpdate: (field: string, value: any) => void;
-  onNext: () => void;
-  onBack: () => void;
+  onUpdate: (
+    field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors',
+    value: AgendaItem[] | Speaker[] | Exhibitor[] | Sponsor[]
+  ) => void;
 }
 
 export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
@@ -55,8 +55,6 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
   exhibitors,
   sponsors,
   onUpdate,
-  onNext,
-  onBack
 }) => {
   const [activeTab, setActiveTab] = useState('schedule');
 
@@ -65,7 +63,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
     onUpdate('agenda', [...agenda, { title: '', description: '', startTime: '', endTime: '', speakers: [] }]);
   };
 
-  const updateAgendaItem = (index: number, field: keyof AgendaItem, value: any) => {
+  const updateAgendaItem = (index: number, field: keyof AgendaItem, value: AgendaItem[keyof AgendaItem]) => {
     const newAgenda = [...agenda];
     newAgenda[index] = { ...newAgenda[index], [field]: value };
     onUpdate('agenda', newAgenda);
@@ -82,7 +80,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
     onUpdate('speakers', [...speakers, { id: crypto.randomUUID(), name: '', title: '', bio: '', image: '' }]);
   };
 
-  const updateSpeaker = (index: number, field: keyof Speaker, value: any) => {
+  const updateSpeaker = (index: number, field: keyof Speaker, value: Speaker[keyof Speaker]) => {
     const newSpeakers = [...speakers];
     newSpeakers[index] = { ...newSpeakers[index], [field]: value };
     onUpdate('speakers', newSpeakers);
@@ -99,7 +97,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
     onUpdate('exhibitors', [...exhibitors, { name: '', description: '', logo: '', contactEmail: '', booth: '' }]);
   };
 
-  const updateExhibitor = (index: number, field: keyof Exhibitor, value: any) => {
+  const updateExhibitor = (index: number, field: keyof Exhibitor, value: Exhibitor[keyof Exhibitor]) => {
     const newExhibitors = [...exhibitors];
     newExhibitors[index] = { ...newExhibitors[index], [field]: value };
     onUpdate('exhibitors', newExhibitors);
@@ -116,7 +114,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
     onUpdate('sponsors', [...sponsors, { name: '', level: 'bronze', logo: '' }]);
   };
 
-  const updateSponsor = (index: number, field: keyof Sponsor, value: any) => {
+  const updateSponsor = (index: number, field: keyof Sponsor, value: Sponsor[keyof Sponsor]) => {
     const newSponsors = [...sponsors];
     newSponsors[index] = { ...newSponsors[index], [field]: value };
     onUpdate('sponsors', newSponsors);

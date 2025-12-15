@@ -9,7 +9,7 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, CalendarDays, Clock, Store } from "lucide-react";
+import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, Clock, Store } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const EventDetails = () => {
@@ -217,10 +217,13 @@ const EventDetails = () => {
                               <div className="flex items-center gap-2 mt-2">
                                 <Users className="w-4 h-4 text-primary" />
                                 <span className="text-sm font-medium">
-                                  {item.speakers.map(s => {
-                                      // If speaker is an ID string, try to find name in event.speakers if available, else show ID
-                                      // Or if speaker is object (agenda builder might store objects)
-                                      return typeof s === 'string' ? s : (s as any).name || 'Speaker';
+                                  {item.speakers.map((s) => {
+                                      if (typeof s === 'string') return s;
+                                      if (s && typeof s === 'object' && 'name' in s) {
+                                        const speaker = s as { name?: string };
+                                        return speaker.name || 'Speaker';
+                                      }
+                                      return 'Speaker';
                                   }).join(', ')}
                                 </span>
                               </div>

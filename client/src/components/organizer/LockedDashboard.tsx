@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Plus, Calendar, Users, BarChart3, DollarSign, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Calendar, Users, BarChart3, DollarSign, Clock } from 'lucide-react';
 
 interface LockedDashboardProps {
   pendingEvents?: Array<{

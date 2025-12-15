@@ -5,19 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrganizerLayout from "./OrganizerLayout";
-import {
-  Tag,
-  Plus,
-  Edit,
-  Trash2,
-  Users,
-  Mail,
-  X,
-} from "lucide-react";
+import { Tag, Plus, Trash2, Users, Mail, X } from "lucide-react";
 import {
   createTag,
   getOrganizerTags,
@@ -42,7 +33,18 @@ interface AttendeeTag {
 const AttendeeTagsManagement = () => {
   const [tags, setTags] = useState<AttendeeTag[]>([]);
   const [selectedTag, setSelectedTag] = useState<AttendeeTag | null>(null);
-  const [taggedUsers, setTaggedUsers] = useState<Record<string, unknown>[]>([]);
+  interface TaggedUser {
+    userId: string;
+    eventId?: string;
+    user?: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+    };
+    notes?: string | null;
+  }
+
+  const [taggedUsers, setTaggedUsers] = useState<TaggedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("tags");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -73,23 +75,38 @@ const AttendeeTagsManagement = () => {
     fetchTags();
   }, [fetchTags]);
 
-  useEffect(() => {
-    if (selectedTag && activeTab === "users") {
-      loadTaggedUsers();
-    }
-  }, [selectedTag, activeTab, loadTaggedUsers]);
-
   const loadTaggedUsers = useCallback(async () => {
     if (!selectedTag) return;
     try {
       const response = await getTaggedUsers(selectedTag.id);
       if (response.success && response.data) {
-        setTaggedUsers(response.data.users || []);
+        const users = Array.isArray(response.data.users)
+          ? response.data.users
+              .map((u) => {
+                if (!u || typeof u !== "object") return null;
+                const raw = u as Record<string, unknown>;
+                if (!raw.userId && !raw.user) return null;
+                return {
+                  userId: raw.userId ? String(raw.userId) : "",
+                  eventId: typeof raw.eventId === "string" ? raw.eventId : undefined,
+                  user: raw.user as TaggedUser["user"],
+                  notes: typeof raw.notes === "string" ? raw.notes : null,
+                } as TaggedUser;
+              })
+              .filter((t): t is TaggedUser => !!t)
+          : [];
+        setTaggedUsers(users);
       }
     } catch (error) {
       console.error("Error loading tagged users:", error);
     }
   }, [selectedTag]);
+
+  useEffect(() => {
+    if (selectedTag && activeTab === "users") {
+      loadTaggedUsers();
+    }
+  }, [selectedTag, activeTab, loadTaggedUsers]);
 
   const handleCreateTag = async (data: {
     name: string;
@@ -364,8 +381,8 @@ const AttendeeTagsManagement = () => {
                   </Card>
                 ) : (
                   <div className="space-y-2">
-                    {taggedUsers.map((taggedUser) => (
-                      <Card key={taggedUser.userId}>
+                    {taggedUsers.map((taggedUser, index) => (
+                      <Card key={taggedUser.userId || taggedUser.user?.email || `tagged-${index}`}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div>
@@ -375,7 +392,7 @@ const AttendeeTagsManagement = () => {
                               <p className="text-sm text-muted-foreground">
                                 {taggedUser.user?.email}
                               </p>
-                              {taggedUser.notes && (
+                              {typeof taggedUser.notes === "string" && taggedUser.notes && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   {taggedUser.notes}
                                 </p>
@@ -419,7 +436,6 @@ const AttendeeTagsManagement = () => {
                   <DialogTitle>Tag User</DialogTitle>
                 </DialogHeader>
                 <TagUserForm
-                  tag={selectedTag}
                   onSubmit={(data) => handleTagUser(selectedTag.id, data)}
                   onCancel={() => setIsTagUserDialogOpen(false)}
                 />
@@ -510,11 +526,9 @@ const CreateTagForm = ({
 };
 
 const TagUserForm = ({
-  tag,
   onSubmit,
   onCancel,
 }: {
-  tag: AttendeeTag;
   onSubmit: (data: { userId: string; eventId?: string; notes?: string }) => void;
   onCancel: () => void;
 }) => {

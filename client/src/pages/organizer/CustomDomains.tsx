@@ -42,8 +42,8 @@ const CustomDomains = () => {
   const loadDomains = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await getCustomDomains();
-      setDomains(data);
+      const res = await getCustomDomains();
+      setDomains(res.data || []);
     } catch (error: unknown) {
       const message =
         typeof error === 'object' && error !== null && 'response' in error

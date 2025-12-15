@@ -1,15 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, UserPlus, UserMinus, Users, Calendar, Building2, Mail } from "lucide-react";
+import { Loader2, UserPlus, UserMinus, Users, Building2, Mail } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { getFollowers, getFollowing, followUser, unfollowUser, getUserProfile, isFollowing } from "@/lib/user-dashboard-api";
+import { getFollowers, getFollowing, followUser, unfollowUser, getUserProfile } from "@/lib/user-dashboard-api";
 import EmptyState from "@/components/EmptyState";
 
 const SocialNetworking: React.FC = () => {

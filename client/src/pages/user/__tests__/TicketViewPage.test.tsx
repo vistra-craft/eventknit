@@ -17,12 +17,31 @@ vi.mock('@/hooks/use-toast', () => ({
   }),
 }));
 
+let mockLocation: {
+  state?: Record<string, unknown> | null;
+  pathname?: string;
+  search?: string;
+  hash?: string;
+};
+let mockNavigate = vi.fn();
+let mockParams: { registrationId?: string } = {};
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  return {
+    ...actual,
+    useLocation: () => mockLocation,
+    useParams: () => mockParams,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 const mockUseAuth = useAuth as ReturnType<typeof vi.fn>;
 const mockGetTicket = ticketApi.getTicket as ReturnType<typeof vi.fn>;
 const mockGetTicketPublic = ticketApi.getTicketPublic as ReturnType<typeof vi.fn>;
 const mockGetEventById = eventApi.getEventById as ReturnType<typeof vi.fn>;
 
-const renderWithRouter = (component: React.ReactElement, initialEntries = ['/user/tickets/test-registration-id']) => {
+const renderWithRouter = (component: React.ReactElement) => {
   return render(
     <BrowserRouter>
       {component}
@@ -55,6 +74,17 @@ describe('TicketViewPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetTicket.mockReset();
+    mockGetTicketPublic.mockReset();
+    mockGetEventById.mockReset();
+    mockLocation = {
+      state: null,
+      pathname: '/user/tickets/test-registration-id',
+      search: '',
+      hash: '',
+    };
+    mockParams = { registrationId: 'test-registration-id' };
+    mockNavigate = vi.fn();
   });
 
   it('should render loading state initially', () => {
@@ -107,22 +137,13 @@ describe('TicketViewPage', () => {
       data: { event: mockEvent },
     });
 
-    // Mock useLocation to provide email
-    const mockLocation = {
+    // Provide email via mocked location
+    mockLocation = {
       state: { userEmail: 'john@test.com' },
       pathname: '/user/tickets/test-registration-id',
       search: '',
       hash: '',
     };
-    vi.mock('react-router-dom', async () => {
-      const actual = await vi.importActual('react-router-dom');
-      return {
-        ...actual,
-        useLocation: () => mockLocation,
-        useParams: () => ({ registrationId: 'test-registration-id' }),
-        useNavigate: () => vi.fn(),
-      };
-    });
 
     renderWithRouter(<TicketViewPage />);
 
@@ -189,3 +210,5 @@ describe('TicketViewPage', () => {
     });
   });
 });
+
+

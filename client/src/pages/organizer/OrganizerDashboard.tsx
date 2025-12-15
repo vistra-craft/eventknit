@@ -4,17 +4,14 @@ import OrganizerLayout from "./OrganizerLayout";
 import EnhancedDashboard from "./EnhancedDashboard";
 import OrganizerTellerDashboard from "./OrganizerTellerDashboard";
 import OrganizerStaffDashboard from "./OrganizerStaffDashboard";
-import { LockedDashboard } from "@/components/organizer/LockedDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
-import { getDashboardAccess, getOrganizerEvents } from "@/lib/organizer-api";
+import { getDashboardAccess } from "@/lib/organizer-api";
 
 const OrganizerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const userRole = user?.role;
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
-  const [pendingEvents, setPendingEvents] = useState<Array<{ id: string; title: string; status: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,28 +22,11 @@ const OrganizerDashboard = () => {
           const accessResponse = await getDashboardAccess();
           if (accessResponse.success) {
             const hasDashboardAccess = accessResponse.data.hasAccess;
-            setHasAccess(hasDashboardAccess);
             
             // If no access, redirect to standalone event creation immediately
             if (!hasDashboardAccess) {
               navigate('/organizer/events/create-standalone', { replace: true });
               return;
-            }
-            
-            // If has access, fetch pending events (optional - for display)
-            try {
-              const eventsResponse = await getOrganizerEvents({ status: 'PENDING', limit: 10 });
-              if (eventsResponse.success && eventsResponse.data?.events) {
-                setPendingEvents(
-                  eventsResponse.data.events.map(event => ({
-                    id: event.id,
-                    title: event.title,
-                    status: event.status || 'PENDING'
-                  }))
-                );
-              }
-            } catch (error) {
-              console.error('Error fetching pending events:', error);
             }
           }
         } catch (error) {

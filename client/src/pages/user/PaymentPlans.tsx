@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   CreditCard,
-  Calendar,
-  DollarSign,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -20,7 +18,6 @@ import {
 } from "lucide-react";
 import {
   getUserPaymentPlans,
-  getPaymentPlanByRegistration,
   processInstallmentPayment,
   getOverdueInstallments,
   cancelPaymentPlan,
@@ -106,7 +103,7 @@ const PaymentPlans = () => {
         });
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to process payment",
@@ -127,7 +124,7 @@ const PaymentPlans = () => {
         });
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to cancel payment plan",
@@ -193,7 +190,7 @@ const PaymentPlans = () => {
                   });
                   setIsCreateDialogOpen(false);
                   loadData();
-                } catch (error) {
+                } catch {
                   toast({
                     title: "Error",
                     description: "Failed to create payment plan",

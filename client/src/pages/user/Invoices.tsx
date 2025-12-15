@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import DashboardLayout from "./DashboardLayout";
+// DashboardLayout missing; use fragment wrapper instead
 import {
   FileText,
   Download,
@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import {
   getUserInvoices,
-  getInvoiceById,
   downloadInvoice,
   generateInvoiceHTML,
 } from "@/lib/invoice-api";
@@ -58,8 +57,8 @@ const Invoices = () => {
       if (response.success && response.data) {
         setInvoices(response.data.invoices || []);
       }
-    } catch (error) {
-      console.error("Error loading invoices:", error);
+    } catch {
+      console.error("Error loading invoices");
       toast({
         title: "Error",
         description: "Failed to load invoices",
@@ -75,7 +74,7 @@ const Invoices = () => {
       const html = await generateInvoiceHTML(invoiceId);
       setInvoiceHTML(html);
       setSelectedInvoice(invoiceId);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load invoice",
@@ -91,7 +90,7 @@ const Invoices = () => {
         title: "Success",
         description: "Invoice downloaded successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to download invoice",

@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Send, Mail, MailOpen, Trash2, Reply, User, Calendar } from "lucide-react";
+import { Loader2, Send, Mail, MailOpen, Trash2, Reply, Calendar } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { getInbox, getSentMessages, sendMessage, getMessageThread, markMessageAsRead, deleteMessage } from "@/lib/user-dashboard-api";
 import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,7 +30,6 @@ const DirectMessaging: React.FC = () => {
     eventId: "",
   });
   const { toast } = useToast();
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchMessages();
@@ -82,7 +80,7 @@ const DirectMessaging: React.FC = () => {
     try {
       setSending(true);
       const response = await sendMessage({
-        recipientId: messageData.recipientId || undefined,
+        recipientId: messageData.recipientId || "",
         subject: messageData.subject || undefined,
         content: messageData.content,
         eventId: messageData.eventId || undefined,

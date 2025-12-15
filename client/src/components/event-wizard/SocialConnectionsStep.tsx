@@ -1,26 +1,18 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Facebook, Twitter, Instagram, Linkedin, Globe, MessageCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
 
 interface SocialConnectionsStepProps {
   socialLinks: Record<string, string>;
   onChange: (links: Record<string, string>) => void;
-  onNext: () => void;
-  onBack: () => void;
 }
 
 export const SocialConnectionsStep: React.FC<SocialConnectionsStepProps> = ({
   socialLinks,
   onChange,
-  onNext,
-  onBack
 }) => {
-  const { user } = useAuth();
-  
   // Pre-fill from user profile if available and not already set
   // This is a placeholder for when we have organization social links in the user profile
   // useEffect(() => {

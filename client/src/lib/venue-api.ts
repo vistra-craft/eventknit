@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import api from "./api";
+import type { ApiResponse } from "./api";
 
 export interface Venue {
   id: string;
@@ -71,8 +72,8 @@ export interface SeatReservation {
 
 // Venue APIs
 export const createVenue = async (data: Partial<Venue>): Promise<Venue> => {
-  const response = await api.post('/organizer-dashboard/venues', data);
-  return response.data.data.venue;
+  const response = await api.post<ApiResponse<{ venue: Venue }>>('/organizer-dashboard/venues', data);
+  return response.data?.venue as Venue;
 };
 
 export const getVenues = async (filters?: {
@@ -80,18 +81,25 @@ export const getVenues = async (filters?: {
   venueType?: string;
   search?: string;
 }): Promise<Venue[]> => {
-  const response = await api.get('/organizer-dashboard/venues', { params: filters });
-  return response.data.data.venues;
+  const params = new URLSearchParams();
+  if (filters?.isActive !== undefined) params.append('isActive', String(filters.isActive));
+  if (filters?.venueType) params.append('venueType', filters.venueType);
+  if (filters?.search) params.append('search', filters.search);
+  const qs = params.toString();
+  const response = await api.get<ApiResponse<{ venues: Venue[] }>>(
+    `/organizer-dashboard/venues${qs ? `?${qs}` : ''}`,
+  );
+  return response.data?.venues || [];
 };
 
 export const getVenueById = async (venueId: string): Promise<Venue> => {
-  const response = await api.get(`/organizer-dashboard/venues/${venueId}`);
-  return response.data.data.venue;
+  const response = await api.get<ApiResponse<{ venue: Venue }>>(`/organizer-dashboard/venues/${venueId}`);
+  return response.data?.venue as Venue;
 };
 
 export const updateVenue = async (venueId: string, data: Partial<Venue>): Promise<Venue> => {
-  const response = await api.put(`/organizer-dashboard/venues/${venueId}`, data);
-  return response.data.data.venue;
+  const response = await api.put<ApiResponse<{ venue: Venue }>>(`/organizer-dashboard/venues/${venueId}`, data);
+  return response.data?.venue as Venue;
 };
 
 export const deleteVenue = async (venueId: string): Promise<void> => {
@@ -108,13 +116,13 @@ export const upsertSeatMap = async (eventId: string, data: {
   width?: number;
   height?: number;
 }): Promise<SeatMap> => {
-  const response = await api.post(`/organizer-dashboard/events/${eventId}/seat-map`, data);
-  return response.data.data.seatMap;
+  const response = await api.post<ApiResponse<{ seatMap: SeatMap }>>(`/organizer-dashboard/events/${eventId}/seat-map`, data);
+  return response.data?.seatMap as SeatMap;
 };
 
 export const getSeatMap = async (eventId: string): Promise<SeatMap> => {
-  const response = await api.get(`/organizer-dashboard/events/${eventId}/seat-map`);
-  return response.data.data.seatMap;
+  const response = await api.get<ApiResponse<{ seatMap: SeatMap }>>(`/organizer-dashboard/events/${eventId}/seat-map`);
+  return response.data?.seatMap as SeatMap;
 };
 
 export const getAvailableSeats = async (eventId: string, filters?: {
@@ -123,10 +131,16 @@ export const getAvailableSeats = async (eventId: string, filters?: {
   minPrice?: number;
   maxPrice?: number;
 }): Promise<Seat[]> => {
-  const response = await api.get(`/organizer-dashboard/events/${eventId}/seats/available`, {
-    params: filters,
-  });
-  return response.data.data.seats;
+  const params = new URLSearchParams();
+  if (filters?.sectionId) params.append('sectionId', filters.sectionId);
+  if (filters?.seatType) params.append('seatType', filters.seatType);
+  if (filters?.minPrice !== undefined) params.append('minPrice', filters.minPrice.toString());
+  if (filters?.maxPrice !== undefined) params.append('maxPrice', filters.maxPrice.toString());
+  const qs = params.toString();
+  const response = await api.get<ApiResponse<{ seats: Seat[] }>>(
+    `/organizer-dashboard/events/${eventId}/seats/available${qs ? `?${qs}` : ''}`,
+  );
+  return response.data?.seats || [];
 };
 
 export const deleteSeatMap = async (eventId: string): Promise<void> => {
@@ -135,8 +149,8 @@ export const deleteSeatMap = async (eventId: string): Promise<void> => {
 
 // Seat Selection APIs (Public/Attendee)
 export const getSeatMapAvailability = async (eventId: string): Promise<SeatMap> => {
-  const response = await api.get(`/events/${eventId}/seat-map`);
-  return response.data.data.seatMap;
+  const response = await api.get<ApiResponse<{ seatMap: SeatMap }>>(`/events/${eventId}/seat-map`);
+  return response.data?.seatMap as SeatMap;
 };
 
 export const reserveSeats = async (eventId: string, data: {
@@ -144,13 +158,13 @@ export const reserveSeats = async (eventId: string, data: {
   registrationId: string;
   reservationTimeoutMinutes?: number;
 }): Promise<SeatReservation[]> => {
-  const response = await api.post(`/events/${eventId}/seats/reserve`, data);
-  return response.data.data.reservations;
+  const response = await api.post<ApiResponse<{ reservations: SeatReservation[] }>>(`/events/${eventId}/seats/reserve`, data);
+  return response.data?.reservations || [];
 };
 
 export const confirmSeatReservation = async (registrationId: string): Promise<SeatReservation> => {
-  const response = await api.post(`/events/registrations/${registrationId}/seats/confirm`);
-  return response.data.data.reservation;
+  const response = await api.post<ApiResponse<{ reservation: SeatReservation }>>(`/events/registrations/${registrationId}/seats/confirm`);
+  return response.data?.reservation as SeatReservation;
 };
 
 export const cancelSeatReservation = async (registrationId: string): Promise<void> => {
@@ -158,7 +172,7 @@ export const cancelSeatReservation = async (registrationId: string): Promise<voi
 };
 
 export const getSeatSelection = async (registrationId: string): Promise<SeatReservation> => {
-  const response = await api.get(`/events/registrations/${registrationId}/seats`);
-  return response.data.data.selection;
+  const response = await api.get<ApiResponse<{ selection: SeatReservation }>>(`/events/registrations/${registrationId}/seats`);
+  return response.data?.selection as SeatReservation;
 };
 

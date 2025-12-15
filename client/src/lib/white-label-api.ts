@@ -1,4 +1,5 @@
 import api from './api';
+import type { ApiResponse } from './api';
 
 export interface WhiteLabelBranding {
   id: string;
@@ -103,38 +104,32 @@ export interface UpdateCustomDomainData {
 }
 
 // Branding APIs
-export const getBranding = async (): Promise<WhiteLabelBranding> => {
-  const response = await api.get('/organizer/branding');
-  return response.data;
+export const getBranding = async (): Promise<ApiResponse<WhiteLabelBranding>> => {
+  return api.get<ApiResponse<WhiteLabelBranding>>('/organizer/branding');
 };
 
-export const upsertBranding = async (data: CreateBrandingData): Promise<WhiteLabelBranding> => {
-  const response = await api.put('/organizer/branding', data);
-  return response.data;
+export const upsertBranding = async (data: CreateBrandingData): Promise<ApiResponse<WhiteLabelBranding>> => {
+  return api.put<ApiResponse<WhiteLabelBranding>>('/organizer/branding', data);
 };
 
 // Custom Domain APIs
-export const getCustomDomains = async (): Promise<CustomDomain[]> => {
-  const response = await api.get('/organizer/custom-domains');
-  return response.data;
+export const getCustomDomains = async (): Promise<ApiResponse<CustomDomain[]>> => {
+  return api.get<ApiResponse<CustomDomain[]>>('/organizer/custom-domains');
 };
 
-export const addCustomDomain = async (data: CreateCustomDomainData): Promise<CustomDomain> => {
-  const response = await api.post('/organizer/custom-domains', data);
-  return response.data;
+export const addCustomDomain = async (data: CreateCustomDomainData): Promise<ApiResponse<CustomDomain>> => {
+  return api.post<ApiResponse<CustomDomain>>('/organizer/custom-domains', data);
 };
 
-export const getCustomDomainById = async (domainId: string): Promise<CustomDomain> => {
-  const response = await api.get(`/organizer/custom-domains/${domainId}`);
-  return response.data;
+export const getCustomDomainById = async (domainId: string): Promise<ApiResponse<CustomDomain>> => {
+  return api.get<ApiResponse<CustomDomain>>(`/organizer/custom-domains/${domainId}`);
 };
 
 export const updateCustomDomain = async (
   domainId: string,
   data: UpdateCustomDomainData,
-): Promise<CustomDomain> => {
-  const response = await api.put(`/organizer/custom-domains/${domainId}`, data);
-  return response.data;
+): Promise<ApiResponse<CustomDomain>> => {
+  return api.put<ApiResponse<CustomDomain>>(`/organizer/custom-domains/${domainId}`, data);
 };
 
 export const deleteCustomDomain = async (domainId: string): Promise<void> => {
@@ -146,42 +141,50 @@ export const getAllBrandings = async (filters?: {
   status?: 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL';
   isActive?: boolean;
   search?: string;
-}): Promise<WhiteLabelBranding[]> => {
-  const response = await api.get('/admin/white-label/brandings', { params: filters });
-  return response.data;
+}): Promise<ApiResponse<WhiteLabelBranding[]>> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.isActive !== undefined) params.append('isActive', String(filters.isActive));
+  if (filters?.search) params.append('search', filters.search);
+  const qs = params.toString();
+  return api.get<ApiResponse<WhiteLabelBranding[]>>(
+    `/admin/white-label/brandings${qs ? `?${qs}` : ''}`,
+  );
 };
 
 export const updateBrandingStatus = async (
   brandingId: string,
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL',
   rejectionReason?: string,
-): Promise<WhiteLabelBranding> => {
-  const response = await api.put(`/admin/white-label/brandings/${brandingId}/status`, {
-    status,
-    rejectionReason,
-  });
-  return response.data;
+): Promise<ApiResponse<WhiteLabelBranding>> => {
+  return api.put<ApiResponse<WhiteLabelBranding>>(
+    `/admin/white-label/brandings/${brandingId}/status`,
+    {
+      status,
+      rejectionReason,
+    },
+  );
 };
 
 export const verifyCustomDomain = async (
   domainId: string,
   status: 'VERIFIED' | 'FAILED' | 'SUSPENDED',
   failureReason?: string,
-): Promise<CustomDomain> => {
-  const response = await api.put(`/admin/white-label/custom-domains/${domainId}/verify`, {
-    status,
-    failureReason,
-  });
-  return response.data;
+): Promise<ApiResponse<CustomDomain>> => {
+  return api.put<ApiResponse<CustomDomain>>(
+    `/admin/white-label/custom-domains/${domainId}/verify`,
+    {
+      status,
+      failureReason,
+    },
+  );
 };
 
 // Public APIs
-export const getActiveBranding = async (organizerId: string): Promise<WhiteLabelBranding> => {
-  const response = await api.get(`/public/organizers/${organizerId}/branding`);
-  return response.data;
+export const getActiveBranding = async (organizerId: string): Promise<ApiResponse<WhiteLabelBranding>> => {
+  return api.get<ApiResponse<WhiteLabelBranding>>(`/public/organizers/${organizerId}/branding`);
 };
 
-export const getActiveCustomDomain = async (organizerId: string): Promise<CustomDomain> => {
-  const response = await api.get(`/public/organizers/${organizerId}/custom-domain`);
-  return response.data;
+export const getActiveCustomDomain = async (organizerId: string): Promise<ApiResponse<CustomDomain>> => {
+  return api.get<ApiResponse<CustomDomain>>(`/public/organizers/${organizerId}/custom-domain`);
 };

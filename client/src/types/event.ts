@@ -2,7 +2,17 @@ export interface RegistrationField {
   id: string;
   name: string;
   label: string;
-  type: 'text' | 'email' | 'tel' | 'select' | 'radio' | 'checkbox' | 'textarea';
+  type:
+    | 'text'
+    | 'email'
+    | 'tel'
+    | 'phone'
+    | 'select'
+    | 'radio'
+    | 'checkbox'
+    | 'textarea'
+    | 'date'
+    | 'number';
   required: boolean;
   options?: string[];
   placeholder?: string;

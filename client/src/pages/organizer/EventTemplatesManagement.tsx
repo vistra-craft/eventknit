@@ -60,11 +60,17 @@ const EventTemplatesManagement = () => {
       ]);
 
       if (myTemplatesRes.success && myTemplatesRes.data) {
-        setTemplates(myTemplatesRes.data.templates || []);
+        const templatesData = Array.isArray(myTemplatesRes.data.templates)
+          ? (myTemplatesRes.data.templates as unknown as EventTemplate[])
+          : [];
+        setTemplates(templatesData);
       }
 
       if (publicTemplatesRes.success && publicTemplatesRes.data) {
-        setPublicTemplates(publicTemplatesRes.data.templates || []);
+        const publicTemplatesData = Array.isArray(publicTemplatesRes.data.templates)
+          ? (publicTemplatesRes.data.templates as unknown as EventTemplate[])
+          : [];
+        setPublicTemplates(publicTemplatesData);
       }
     } catch (error) {
       console.error("Error fetching templates:", error);

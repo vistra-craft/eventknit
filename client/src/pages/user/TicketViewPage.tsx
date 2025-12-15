@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, QrCode, Calendar, MapPin, Ticket as TicketIcon, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Download, Calendar, MapPin, Ticket as TicketIcon, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,19 @@ import type { TicketData } from "@/lib/ticket-api";
 import { getEventById } from "@/lib/event-api";
 import { useLocation, useSearchParams } from "react-router-dom";
 
+type TicketEventDetails = {
+  startDate?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+  venue?: string;
+};
+
+type TicketLocationState = {
+  userEmail?: string;
+  email?: string;
+} | null;
+
 const TicketViewPage: React.FC = () => {
   const { registrationId } = useParams<{ registrationId: string }>();
   const location = useLocation();
@@ -22,7 +35,7 @@ const TicketViewPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [ticket, setTicket] = useState<TicketData | null>(null);
-  const [eventData, setEventData] = useState<any>(null);
+  const [eventData, setEventData] = useState<TicketEventDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -40,14 +53,16 @@ const TicketViewPage: React.FC = () => {
         setError(null);
         
         let ticketResponse;
+        let authErrorMessage: string | null = null;
         
         // Try authenticated first, fallback to public if not authenticated
         if (isAuthenticated) {
           try {
             ticketResponse = await getTicket(registrationId);
           } catch (authError) {
+            authErrorMessage = authError instanceof Error ? authError.message : null;
             // If auth fails, try public endpoint with email from location state or user
-            const email = (location.state as any)?.userEmail || user?.email;
+            const email = (location.state as TicketLocationState)?.userEmail || user?.email;
             if (email) {
               ticketResponse = await getTicketPublic(registrationId, email);
             } else {
@@ -56,7 +71,8 @@ const TicketViewPage: React.FC = () => {
           }
         } else {
           // Not authenticated - try public endpoint
-          const email = (location.state as any)?.userEmail || (location.state as any)?.email || searchParams.get('email');
+          const state = location.state as TicketLocationState;
+          const email = state?.userEmail || state?.email || searchParams.get('email');
           if (email) {
             ticketResponse = await getTicketPublic(registrationId, email);
           } else {
@@ -66,39 +82,66 @@ const TicketViewPage: React.FC = () => {
           }
         }
         
-        if (ticketResponse.success && ticketResponse.data) {
-          // Handle both response formats (with registration object or direct ticket data)
-          const ticketData = ticketResponse.data.registration 
-            ? {
-                id: ticketResponse.data.registration.id,
-                registrationId: ticketResponse.data.registration.id,
-                eventId: ticketResponse.data.registration.eventId,
-                eventTitle: ticketResponse.data.registration.event?.title || '',
-                attendeeName: `${ticketResponse.data.registration.attendee?.firstName || ''} ${ticketResponse.data.registration.attendee?.lastName || ''}`.trim() || ticketResponse.data.registration.attendee?.email || '',
-                attendeeEmail: ticketResponse.data.registration.attendee?.email || '',
-                ticketType: ticketResponse.data.registration.ticketType || undefined,
-                qrCode: ticketResponse.data.qrCode,
-                backupCode: ticketResponse.data.registration.backupCode || undefined,
-                createdAt: ticketResponse.data.registration.createdAt || new Date().toISOString(),
-              }
-            : ticketResponse.data;
-          
+        if (ticketResponse && ticketResponse.success && ticketResponse.data) {
+          const data = ticketResponse.data as unknown;
+
+          type RegistrationPayload = {
+            id: string;
+            eventId?: string;
+            event?: { title?: string | null } | null;
+            attendee?: { firstName?: string | null; lastName?: string | null; email?: string | null } | null;
+            ticketType?: string | null;
+            backupCode?: string | null;
+            createdAt?: string | null;
+          };
+
+          type TicketResponseWithRegistration = {
+            registration: RegistrationPayload;
+            qrCode?: string | null;
+          };
+
+          const ticketData: TicketData = (() => {
+            if (
+              data &&
+              typeof data === "object" &&
+              "registration" in data &&
+              (data as TicketResponseWithRegistration).registration
+            ) {
+              const reg = (data as TicketResponseWithRegistration).registration;
+              return {
+                id: reg.id,
+                registrationId: reg.id,
+                eventId: reg.eventId || "",
+                eventTitle: reg.event?.title || "",
+                attendeeName:
+                  `${reg.attendee?.firstName || ""} ${reg.attendee?.lastName || ""}`.trim() ||
+                  reg.attendee?.email ||
+                  "",
+                attendeeEmail: reg.attendee?.email || "",
+                ticketType: reg.ticketType || undefined,
+                qrCode: (data as TicketResponseWithRegistration).qrCode || undefined,
+                backupCode: reg.backupCode || undefined,
+                createdAt: reg.createdAt || new Date().toISOString(),
+              };
+            }
+            return data as TicketData;
+          })();
+
           setTicket(ticketData);
-          
-          // Fetch event details
-          const eventId = ticketData.eventId || ticketResponse.data.registration?.eventId;
-          if (eventId) {
-            const eventResponse = await getEventById(eventId);
+
+          const eventIdFromTicket = ticketData.eventId;
+          if (eventIdFromTicket) {
+            const eventResponse = await getEventById(eventIdFromTicket);
             if (eventResponse.success && eventResponse.data?.event) {
-              setEventData(eventResponse.data.event);
+              setEventData(eventResponse.data.event as TicketEventDetails);
             }
           }
         } else {
-          setError(ticketResponse.message || "Failed to load ticket");
+          setError(ticketResponse?.message || authErrorMessage || "Ticket not found");
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Failed to load ticket";
-        setError(errorMessage);
+        setError(errorMessage || "Ticket not found");
         toast({
           title: "Error",
           description: errorMessage,
@@ -110,7 +153,7 @@ const TicketViewPage: React.FC = () => {
     };
 
     fetchTicket();
-  }, [registrationId, isAuthenticated, location.state, user?.email, toast]);
+  }, [registrationId, isAuthenticated, location.state, user?.email, toast, searchParams]);
 
   const handleDownload = async () => {
     if (!registrationId) return;
@@ -153,6 +196,7 @@ const TicketViewPage: React.FC = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-16 text-center">
           <Alert variant="destructive" className="max-w-md mx-auto">
+            <AlertTitle>Ticket issue</AlertTitle>
             <AlertDescription>{error || "Ticket not found"}</AlertDescription>
           </Alert>
           <Button onClick={() => navigate("/user/dashboard")} className="mt-4">
@@ -318,3 +362,5 @@ const TicketViewPage: React.FC = () => {
 };
 
 export default TicketViewPage;
+
+

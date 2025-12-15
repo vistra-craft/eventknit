@@ -14,8 +14,6 @@ import {
   X,
   Calendar,
   MapPin,
-  DollarSign,
-  TrendingUp,
 } from "lucide-react";
 import {
   listTicketForResale,

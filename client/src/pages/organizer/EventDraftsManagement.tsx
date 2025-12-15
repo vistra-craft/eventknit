@@ -53,7 +53,10 @@ const EventDraftsManagement = () => {
       setLoading(true);
       const response = await getOrganizerDrafts();
       if (response.success && response.data) {
-        setDrafts(response.data.drafts || []);
+        const drafts = Array.isArray(response.data.drafts)
+          ? (response.data.drafts as unknown as Draft[])
+          : [];
+        setDrafts(drafts);
       }
     } catch (error) {
       console.error("Error fetching drafts:", error);
@@ -305,7 +308,6 @@ const EventDraftsManagement = () => {
                 <DialogTitle>Schedule Draft Publication</DialogTitle>
               </DialogHeader>
               <ScheduleDraftForm
-                draft={selectedDraft}
                 onSubmit={(scheduledDate) => handleScheduleDraft(selectedDraft.id, scheduledDate)}
                 onCancel={() => {
                   setIsScheduleDialogOpen(false);
@@ -458,11 +460,9 @@ const EditDraftForm = ({
 };
 
 const ScheduleDraftForm = ({
-  draft,
   onSubmit,
   onCancel,
 }: {
-  draft: Draft;
   onSubmit: (scheduledDate: string) => void;
   onCancel: () => void;
 }) => {

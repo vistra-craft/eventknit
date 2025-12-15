@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +44,7 @@ const Navbar: React.FC<NavbarProps> = () => {
         // Silently fail - token might be invalid, will be handled by useAuth
       });
     }
-  }, []); // Only run once on mount
+  }, [isAuthenticated, isLoading, refreshProfile, user]);
 
   useEffect(() => {
     const handleScroll = () => {

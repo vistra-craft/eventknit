@@ -43,6 +43,7 @@ import { getVerificationStatus, type VerificationStatus } from '@/lib/verificati
 import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
 import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
 import { DragAndDropFormBuilder } from '@/components/event-wizard/DragAndDropFormBuilder';
+import type { RegistrationField } from '@/types/event';
 
 // Currency options with KES as default
 const CURRENCIES = [
@@ -68,15 +69,35 @@ const DEFAULT_CURRENCY = 'KES';
 //   logo: string;
 // }
 
-interface RegistrationField {
+type AgendaFormItem = {
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  speakers: string[];
+};
+
+type SpeakerFormItem = {
   id: string;
   name: string;
-  type: string;
-  label: string;
-  required: boolean;
-  placeholder: string;
-  options?: string[];
-}
+  title: string;
+  bio: string;
+  image: string;
+};
+
+type ExhibitorFormItem = {
+  name: string;
+  description: string;
+  logo: string;
+  contactEmail: string;
+  booth: string;
+};
+
+type SponsorFormItem = {
+  name: string;
+  level: string;
+  logo: string;
+};
 
 interface TicketType {
   id: number;
@@ -116,10 +137,10 @@ interface EventData {
   category?: string;
   timezone?: string;
   socialLinks?: Record<string, string>;
-  exhibitors?: any[];
-  sponsors?: any[];
-  agenda?: any[];
-  speakers?: any[];
+  exhibitors?: ExhibitorFormItem[];
+  sponsors?: SponsorFormItem[];
+  agenda?: AgendaFormItem[];
+  speakers?: SpeakerFormItem[];
 }
 
 type Tag = string;
@@ -183,10 +204,10 @@ export default function CreateEventStepwise() {
 
   // Restored missing state for enhancements
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
-  const [agenda, setAgenda] = useState<any[]>([]);
-  const [speakers, setSpeakers] = useState<any[]>([]);
-  const [exhibitors, setExhibitors] = useState<any[]>([]);
-  const [sponsors, setSponsors] = useState<any[]>([]);
+  const [agenda, setAgenda] = useState<AgendaFormItem[]>([]);
+  const [speakers, setSpeakers] = useState<SpeakerFormItem[]>([]);
+  const [exhibitors, setExhibitors] = useState<ExhibitorFormItem[]>([]);
+  const [sponsors, setSponsors] = useState<SponsorFormItem[]>([]);
   
   // Verification state
   const [loadingVerification, setLoadingVerification] = useState(false);
@@ -692,8 +713,15 @@ export default function CreateEventStepwise() {
 
           // Set agenda
           if (transformedEvent.agenda && Array.isArray(transformedEvent.agenda)) {
-            setAgenda(transformedEvent.agenda);
-            setEventData(prev => ({ ...prev, agenda: transformedEvent.agenda || [] }));
+            const mappedAgenda: AgendaFormItem[] = transformedEvent.agenda.map((item) => ({
+              title: item.title || "",
+              description: item.description || "",
+              startTime: item.startTime || "",
+              endTime: item.endTime || "",
+              speakers: item.speakers || [],
+            }));
+            setAgenda(mappedAgenda);
+            setEventData(prev => ({ ...prev, agenda: mappedAgenda }));
           }
 
           // Set speakers
@@ -711,14 +739,26 @@ export default function CreateEventStepwise() {
 
           // Set exhibitors
           if (transformedEvent.exhibitors && Array.isArray(transformedEvent.exhibitors)) {
-            setExhibitors(transformedEvent.exhibitors);
-            setEventData(prev => ({ ...prev, exhibitors: transformedEvent.exhibitors || [] }));
+            const mappedExhibitors: ExhibitorFormItem[] = transformedEvent.exhibitors.map((exhibitor) => ({
+              name: exhibitor.name || "",
+              description: exhibitor.description || "",
+              logo: exhibitor.logo || "",
+              contactEmail: exhibitor.contactEmail || "",
+              booth: exhibitor.booth || "",
+            }));
+            setExhibitors(mappedExhibitors);
+            setEventData(prev => ({ ...prev, exhibitors: mappedExhibitors }));
           }
 
           // Set sponsors
           if (transformedEvent.sponsors && Array.isArray(transformedEvent.sponsors)) {
-            setSponsors(transformedEvent.sponsors);
-            setEventData(prev => ({ ...prev, sponsors: transformedEvent.sponsors || [] }));
+            const mappedSponsors: SponsorFormItem[] = transformedEvent.sponsors.map((sponsor) => ({
+              name: sponsor.name || "",
+              level: sponsor.level || "",
+              logo: sponsor.logo || "",
+            }));
+            setSponsors(mappedSponsors);
+            setEventData(prev => ({ ...prev, sponsors: mappedSponsors }));
           }
 
           // Set social links
@@ -930,7 +970,7 @@ export default function CreateEventStepwise() {
 
 
   const addRegistrationField = () => {
-    const newField = {
+    const newField: RegistrationField = {
       id: `field_${Date.now()}`,
       name: `field_${Date.now()}`,
       type: "text",
@@ -1603,8 +1643,6 @@ export default function CreateEventStepwise() {
           setSocialLinks(newLinks);
           setEventData(prev => ({ ...prev, socialLinks: newLinks }));
         }}
-        onNext={handleNext}
-        onBack={handleBack}
       />
     </div>
   );
@@ -1618,24 +1656,22 @@ export default function CreateEventStepwise() {
         sponsors={sponsors}
         onUpdate={(field, value) => {
           if (field === 'agenda') {
-             setAgenda(value);
-             setEventData(prev => ({ ...prev, agenda: value }));
+             setAgenda(value as AgendaFormItem[]);
+             setEventData(prev => ({ ...prev, agenda: value as AgendaFormItem[] }));
           }
           if (field === 'speakers') {
-             setSpeakers(value);
-             setEventData(prev => ({ ...prev, speakers: value }));
+             setSpeakers(value as SpeakerFormItem[]);
+             setEventData(prev => ({ ...prev, speakers: value as SpeakerFormItem[] }));
           }
           if (field === 'exhibitors') {
-             setExhibitors(value);
-             setEventData(prev => ({ ...prev, exhibitors: value }));
+             setExhibitors(value as ExhibitorFormItem[]);
+             setEventData(prev => ({ ...prev, exhibitors: value as ExhibitorFormItem[] }));
           }
           if (field === 'sponsors') {
-             setSponsors(value);
-             setEventData(prev => ({ ...prev, sponsors: value }));
+             setSponsors(value as SponsorFormItem[]);
+             setEventData(prev => ({ ...prev, sponsors: value as SponsorFormItem[] }));
           }
         }}
-        onNext={handleNext}
-        onBack={handleBack}
       />
     </div>
   );
@@ -2015,7 +2051,7 @@ export default function CreateEventStepwise() {
           fields={registrationFields.map((field: RegistrationField) => ({
             id: field.id,
             name: field.id,
-            type: field.type as any,
+            type: field.type,
             label: field.label,
             required: field.required,
             placeholder: field.placeholder,
@@ -2033,8 +2069,6 @@ export default function CreateEventStepwise() {
             }));
             setRegistrationFields(mappedFields);
           }}
-          onNext={() => {}}
-          onBack={() => {}}
         />
       ) : (
         <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-hide">
@@ -2073,7 +2107,12 @@ export default function CreateEventStepwise() {
                   </div>
                   <div className="space-y-2">
                     <Label>Field Type</Label>
-                    <Select value={field.type} onValueChange={(value) => updateRegistrationField(index, { type: value })}>
+                    <Select
+                      value={field.type}
+                      onValueChange={(value) =>
+                        updateRegistrationField(index, { type: value as RegistrationField["type"] })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

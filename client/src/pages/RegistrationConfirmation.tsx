@@ -10,15 +10,11 @@ import {
   Lock,
   ArrowLeft,
   ExternalLink,
-  Clock,
   MapPin,
-  User,
   CreditCard,
-  QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,10 +22,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
-import { downloadTicket } from "@/lib/utils/ticket";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/use-toast";
-import { setupPassword } from "@/lib/auth-api";
 import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
 import { setAccessToken } from "@/lib/api";
 
@@ -59,6 +53,27 @@ interface ConfirmationData {
   promoCode?: string;
 }
 
+type EventApiData = {
+  startDate?: string | null;
+  endDate?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  location?: string | null;
+  eventLocation?: string | null;
+  title?: string | null;
+  eventTitle?: string | null;
+  description?: string | null;
+  image?: string | null;
+  venue?: string | null;
+  currency?: string | null;
+  isFree?: boolean | null;
+  eventId?: string | null;
+} & Record<string, unknown>;
+
+type LocationState = {
+  accessToken?: string;
+} | null;
+
 const RegistrationConfirmation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -66,7 +81,7 @@ const RegistrationConfirmation: React.FC = () => {
   const { user, isAuthenticated, refreshProfile } = useAuth();
   const { toast } = useToast();
 
-  const [eventData, setEventData] = useState<any>(null);
+  const [eventData, setEventData] = useState<EventApiData | ConfirmationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingPassword, setSettingPassword] = useState(false);
   const [passwordSetSuccess, setPasswordSetSuccess] = useState(false);
@@ -81,7 +96,7 @@ const RegistrationConfirmation: React.FC = () => {
 
   // Store access token if provided (for guest users) and refresh auth
   useEffect(() => {
-    const state = location.state as any;
+    const state = location.state as LocationState;
     if (state?.accessToken) {
       setAccessToken(state.accessToken);
       // Trigger auth refresh to load user data
@@ -100,7 +115,7 @@ const RegistrationConfirmation: React.FC = () => {
         setLoading(true);
         const response = await getEventById(eventId);
         if (response.success && response.data?.event) {
-          setEventData(response.data.event);
+          setEventData(response.data.event as unknown as EventApiData);
         }
       } catch (error) {
         console.error("Error fetching event:", error);
@@ -120,6 +135,66 @@ const RegistrationConfirmation: React.FC = () => {
   // Determine if user is guest (new account created)
   const isGuestUser = confirmationData?.isGuestUser ?? false;
   const userEmail = confirmationData?.userEmail || user?.email || "";
+
+  const event = eventData || confirmationData;
+
+  const getStartDate = (): string | undefined => {
+    if (!event) return undefined;
+    if ("startDate" in event && typeof event.startDate === "string") return event.startDate;
+    if ("eventDate" in event && typeof event.eventDate === "string") return event.eventDate;
+    return undefined;
+  };
+
+  const getEndDate = (): string | undefined => {
+    if (!event) return undefined;
+    if ("endDate" in event && typeof event.endDate === "string") return event.endDate;
+    return getStartDate();
+  };
+
+  const getStartTime = (): string | undefined => {
+    if (!event) return undefined;
+    if ("startTime" in event && typeof event.startTime === "string") return event.startTime;
+    if ("eventTime" in event && typeof event.eventTime === "string") return event.eventTime;
+    return undefined;
+  };
+
+  const getEndTime = (): string | undefined => {
+    if (!event) return undefined;
+    if ("endTime" in event && typeof event.endTime === "string") return event.endTime;
+    return undefined;
+  };
+
+  const getLocation = (): string => {
+    if (!event) return "";
+    if ("location" in event && typeof event.location === "string") return event.location || "";
+    if ("eventLocation" in event && typeof event.eventLocation === "string") return event.eventLocation || "";
+    return "";
+  };
+
+  const getTitle = (): string => {
+    if (!event) return "";
+    if ("title" in event && typeof event.title === "string") return event.title || "";
+    if ("eventTitle" in event && typeof event.eventTitle === "string") return event.eventTitle || "";
+    return "";
+  };
+
+  const getDescription = (): string => {
+    if (!event) return "";
+    if ("description" in event && typeof event.description === "string") return event.description || "";
+    return "";
+  };
+
+  const getCurrency = (): string => {
+    if (event && "currency" in event && typeof event.currency === "string") return event.currency || "$";
+    return "$";
+  };
+
+  const getEventIdForShare = (): string => {
+    if (event && "eventId" in event && typeof (event as EventApiData).eventId === "string") {
+      return (event as EventApiData).eventId || "";
+    }
+    return eventId || confirmationData?.eventId || "";
+  };
 
   // Format event date
   const formatDate = (dateString?: string) => {
@@ -180,7 +255,8 @@ const RegistrationConfirmation: React.FC = () => {
 
       // Clear password form
       setPasswordData({ password: "", confirmPassword: "" });
-    } catch (error) {
+      setPasswordSetSuccess(true);
+    } catch {
       setPasswordError("Failed to set password. Please try again.");
     } finally {
       setSettingPassword(false);
@@ -191,11 +267,14 @@ const RegistrationConfirmation: React.FC = () => {
   const handleAddToCalendar = (type: "google" | "apple" | "outlook") => {
     if (!eventData && !confirmationData) return;
 
-    const event = eventData || confirmationData;
-    const startDate = event?.startDate || event?.eventDate;
-    const endDate = event?.endDate || startDate;
-    const startTime = event?.startTime || event?.eventTime || "10:00";
-    const location = event?.location || event?.eventLocation || "";
+    const startDate = getStartDate();
+    const endDate = getEndDate();
+    const startTime = getStartTime() || "10:00";
+    const location = getLocation();
+
+    if (!startDate) {
+      return;
+    }
 
     const formatDateForCalendar = (date: string, time?: string) => {
       const d = new Date(date);
@@ -207,15 +286,15 @@ const RegistrationConfirmation: React.FC = () => {
     };
 
     const start = formatDateForCalendar(startDate, startTime);
-    const end = formatDateForCalendar(endDate || startDate, event?.endTime || "18:00");
+    const end = formatDateForCalendar(endDate || startDate, getEndTime() || "18:00");
 
     let url = "";
 
     if (type === "google") {
       url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-        event?.title || event?.eventTitle || ""
+        getTitle()
       )}&dates=${start}/${end}&details=${encodeURIComponent(
-        event?.description || ""
+        getDescription()
       )}&location=${encodeURIComponent(location)}`;
     } else if (type === "apple") {
       // Generate .ics file for Apple Calendar
@@ -225,8 +304,8 @@ PRODID:-//EventKnit//Event Calendar//EN
 BEGIN:VEVENT
 DTSTART:${start}
 DTEND:${end}
-SUMMARY:${event?.title || event?.eventTitle || ""}
-DESCRIPTION:${event?.description || ""}
+SUMMARY:${getTitle()}
+DESCRIPTION:${getDescription()}
 LOCATION:${location}
 END:VEVENT
 END:VCALENDAR`;
@@ -235,15 +314,15 @@ END:VCALENDAR`;
       const url2 = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url2;
-      link.download = `${event?.title || "event"}.ics`;
+      link.download = `${getTitle() || "event"}.ics`;
       link.click();
       URL.revokeObjectURL(url2);
       return;
     } else if (type === "outlook") {
       url = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
-        event?.title || event?.eventTitle || ""
+        getTitle()
       )}&startdt=${start}&enddt=${end}&body=${encodeURIComponent(
-        event?.description || ""
+        getDescription()
       )}&location=${encodeURIComponent(location)}`;
     }
 
@@ -289,14 +368,7 @@ END:VCALENDAR`;
   const handleShareEvent = () => {
     if (!eventData && !confirmationData) return;
 
-    const event = eventData || confirmationData;
-    const shareData = {
-      title: event?.title || event?.eventTitle || "",
-      text: `Check out ${event?.title || event?.eventTitle || ""} on EventKnit!`,
-      url: window.location.origin + `/event/${eventId || event?.eventId || ""}`,
-    };
-
-    shareEvent(shareData);
+    shareEvent(getTitle(), getEventIdForShare());
   };
 
   if (loading) {
@@ -328,9 +400,9 @@ END:VCALENDAR`;
       </div>
     );
   }
-
-  const event = eventData || confirmationData;
-  const isFree = confirmationData?.isFreeEvent ?? event?.isFree ?? false;
+  const isFree =
+    confirmationData?.isFreeEvent ??
+    (event && "isFree" in event && typeof event.isFree === "boolean" ? event.isFree : false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -345,7 +417,7 @@ END:VCALENDAR`;
             🎉 You're Registered!
           </h1>
           <p className="text-muted-foreground text-lg">
-            Your registration for <strong>{event?.title || event?.eventTitle}</strong> is confirmed.
+            Your registration for <strong>{getTitle()}</strong> is confirmed.
           </p>
           {confirmationData?.registrationId && (
             <p className="text-sm text-muted-foreground mt-2">
@@ -492,15 +564,15 @@ END:VCALENDAR`;
           <CardContent className="space-y-4">
             {/* Event Info */}
             <div className="space-y-3 pb-4 border-b">
-              <h3 className="font-semibold text-lg">{event?.title || event?.eventTitle}</h3>
+              <h3 className="font-semibold text-lg">{getTitle()}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div className="flex items-start gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="font-medium">Date & Time</p>
                     <p className="text-muted-foreground">
-                      {formatDate(event?.startDate || event?.eventDate)}
-                      {event?.startTime || event?.eventTime ? ` at ${formatTime(event?.startTime || event?.eventTime)}` : ""}
+                      {formatDate(getStartDate())}
+                      {getStartTime() ? ` at ${formatTime(getStartTime())}` : ""}
                     </p>
                   </div>
                 </div>
@@ -509,7 +581,7 @@ END:VCALENDAR`;
                   <div>
                     <p className="font-medium">Location</p>
                     <p className="text-muted-foreground">
-                      {event?.location || event?.eventLocation || "TBA"}
+                      {getLocation() || "TBA"}
                     </p>
                   </div>
                 </div>
@@ -531,14 +603,14 @@ END:VCALENDAR`;
                         <p className="font-medium">{ticket.quantity}x {ticket.name}</p>
                         {!isFree && (
                           <p className="text-sm text-muted-foreground">
-                            {event?.currency || "$"}{ticket.price.toFixed(2)} each
+                            {getCurrency()}{ticket.price.toFixed(2)} each
                           </p>
                         )}
                       </div>
                     </div>
                     {!isFree && (
                       <p className="font-semibold">
-                        {event?.currency || "$"}{(ticket.price * ticket.quantity).toFixed(2)}
+                        {getCurrency()}{(ticket.price * ticket.quantity).toFixed(2)}
                       </p>
                     )}
                   </div>
@@ -553,13 +625,13 @@ END:VCALENDAR`;
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Discount</span>
                     <span className="text-green-600">
-                      -{event?.currency || "$"}{confirmationData.discount.toFixed(2)}
+                      -{getCurrency()}{confirmationData.discount.toFixed(2)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-semibold pt-2">
                   <span>Total</span>
-                  <span>{event?.currency || "$"}{confirmationData.totalPrice?.toFixed(2) || "0.00"}</span>
+                  <span>{getCurrency()}{confirmationData.totalPrice?.toFixed(2) || "0.00"}</span>
                 </div>
                 {confirmationData.paymentMethod && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">

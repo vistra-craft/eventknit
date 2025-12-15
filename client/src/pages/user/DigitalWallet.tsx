@@ -295,29 +295,35 @@ const DigitalWallet = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Auto-add Tickets</p>
-                      <p className="text-sm text-muted-foreground">
-                        Automatically add new tickets to wallet
-                      </p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={wallet.autoAddTickets}
-                      onChange={(e) =>
-                        handleUpdatePreferences({ autoAddTickets: e.target.checked })
-                      }
-                      className="rounded"
-                    />
+                  <div>
+                    <Label htmlFor="auto-add-tickets" className="font-medium">
+                      Auto-add Tickets
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically add new tickets to wallet
+                    </p>
+                  </div>
+                  <input
+                    id="auto-add-tickets"
+                    type="checkbox"
+                    checked={wallet.autoAddTickets}
+                    onChange={(e) =>
+                      handleUpdatePreferences({ autoAddTickets: e.target.checked })
+                    }
+                    className="rounded"
+                  />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Backup Enabled</p>
+                    <Label htmlFor="backup-enabled" className="font-medium">
+                      Backup Enabled
+                    </Label>
                       <p className="text-sm text-muted-foreground">
                         Enable cloud backup for tickets
                       </p>
                     </div>
                     <input
+                    id="backup-enabled"
                       type="checkbox"
                       checked={wallet.backupEnabled}
                       onChange={(e) =>
