@@ -9,30 +9,39 @@ jobs:
   deploy:
     name: Deploy to Contabo Server
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 15  # Prevent hanging builds
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Execute deployment script via SSH
-        uses: appleboy/ssh-action@master
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
+          timeout: 10m
+          command_timeout: 10m
           script: |
+            set -e
+
+            echo "=== Syncing code from GitHub ==="
             cd eventknit
-            # Fetch latest changes from GitHub
             git fetch origin
             git checkout development
-            
-            # Force reset to match remote exactly (fixes divergent branches)
             git reset --hard origin/development
             git clean -fd
-            
-            # Make sure script is executable
+
+            echo "=== Running deployment script ==="
             chmod +x deploy.sh
-            
-            # Run the deployment script
             ./deploy.sh
+
+            echo "=== Deployment completed ==="
+
+      - name: Verify deployment
+        if: success()
+        run: |
+          echo "Deployment triggered successfully"
+          echo "Check server health at: http://${{ secrets.SERVER_HOST }}/api/v1/health"
