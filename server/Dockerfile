@@ -24,7 +24,7 @@ COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for building)
 # Using --ignore-scripts to prevent postinstall from running before source is copied
-RUN npm ci --ignore-scripts --prefer-offline --no-audit
+RUN npm ci --ignore-scripts --no-audit
 
 # Copy Prisma schema for client generation
 COPY prisma ./prisma
@@ -74,7 +74,7 @@ COPY --from=builder /app/scripts ./scripts
 
 # Install production dependencies only
 # Use --ignore-scripts since Prisma Client is already generated in builder stage
-RUN npm ci --only=production --ignore-scripts --prefer-offline --no-audit && \
+RUN npm ci --only=production --ignore-scripts --no-audit && \
   npm cache clean --force && \
   rm -rf /tmp/* && \
   rm -rf /root/.npm
