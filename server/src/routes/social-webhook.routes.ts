@@ -5,7 +5,7 @@
  */
 
 import { Router } from 'express';
-import { SocialWebhookController } from '../controllers/social-webhook.controller';
+import { SocialWebhookController } from '../controllers/social-webhook.controller.js';
 
 const router = Router();
 
