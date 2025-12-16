@@ -28,9 +28,13 @@ git reset --hard origin/development
 # Clean up any untracked files
 git clean -fd
 
-# Build and start containers
-echo "📦 Building and starting containers..."
-docker compose -f docker-compose.prod.yml up -d --build
+# Build containers with no cache to ensure fresh builds
+echo "📦 Building containers (no cache)..."
+docker compose -f docker-compose.prod.yml build --no-cache
+
+# Start containers
+echo "🚀 Starting containers..."
+docker compose -f docker-compose.prod.yml up -d
 
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
