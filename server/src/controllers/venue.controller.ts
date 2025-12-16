@@ -3,8 +3,8 @@
  */
 
 import { Response, NextFunction } from 'express';
-import { VenueService } from '../services/venue.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { VenueService } from '../services/venue.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class VenueController {
   /**

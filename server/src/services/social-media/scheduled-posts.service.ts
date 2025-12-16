@@ -6,7 +6,7 @@
 
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
-import { SocialMediaService } from '../social-media.service';
+import { SocialMediaService } from '../social-media.service.js';
 
 export class ScheduledPostsService {
   /**

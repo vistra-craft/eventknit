@@ -6,7 +6,7 @@
 
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors';
+import { NotFoundError, ValidationError } from '../utils/errors.js';
 
 export interface CreateVenueData {
   name: string;

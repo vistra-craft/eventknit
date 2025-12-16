@@ -6,7 +6,7 @@
 
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError } from '../../utils/errors.js';
 
 export interface CreatePostTemplateData {
   name: string;

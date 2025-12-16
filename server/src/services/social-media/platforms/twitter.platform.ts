@@ -14,7 +14,7 @@ import {
   MediaData,
   MediaResponse,
   PostMetrics,
-} from '../platform.interface';
+} from '../platform.interface.js';
 import { URLSearchParams } from 'url';
 import { logger } from '../../../utils/logger.js';
 import { config } from '../../../config/index.js';

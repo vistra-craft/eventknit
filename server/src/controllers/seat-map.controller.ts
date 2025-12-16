@@ -3,9 +3,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { SeatMapService } from '../services/seat-map.service';
-import { SeatSelectionService } from '../services/seat-selection.service';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { SeatMapService } from '../services/seat-map.service.js';
+import { SeatSelectionService } from '../services/seat-selection.service.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class SeatMapController {
   /**

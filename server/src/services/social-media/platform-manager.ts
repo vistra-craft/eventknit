@@ -4,11 +4,11 @@
  * Manages and provides access to configured social media platforms
  */
 
-import { SocialMediaPlatform } from './platform.interface';
-import { FacebookPlatform } from './platforms/facebook.platform';
-import { TwitterPlatform } from './platforms/twitter.platform';
-import { InstagramPlatform } from './platforms/instagram.platform';
-import { LinkedInPlatform } from './platforms/linkedin.platform';
+import { SocialMediaPlatform } from './platform.interface.js';
+import { FacebookPlatform } from './platforms/facebook.platform.js';
+import { TwitterPlatform } from './platforms/twitter.platform.js';
+import { InstagramPlatform } from './platforms/instagram.platform.js';
+import { LinkedInPlatform } from './platforms/linkedin.platform.js';
 import { logger } from '../../utils/logger.js';
 import { config } from '../../config/index.js';
 

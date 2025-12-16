@@ -1,6 +1,6 @@
 /* global URL */
 import { BrandingStatus, CustomDomainStatus } from '@prisma/client';
-import { NotFoundError, ValidationError } from '../utils/errors';
+import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../config/database.js';
 

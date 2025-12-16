@@ -1,8 +1,8 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { platformManager } from './social-media/platform-manager';
-import { SocialMediaOAuthService } from './social-media/oauth.service';
+import { platformManager } from './social-media/platform-manager.js';
+import { SocialMediaOAuthService } from './social-media/oauth.service.js';
 
 export class SocialMediaService {
   // ========== Social Accounts ==========

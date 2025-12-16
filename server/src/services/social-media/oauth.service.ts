@@ -4,10 +4,10 @@
  * Handles OAuth flows for connecting social media accounts
  */
 
-import { platformManager } from './platform-manager';
+import { platformManager } from './platform-manager.js';
 import { prisma } from '../../config/database.js';
 import { logger } from '../../utils/logger.js';
-import { NotFoundError, ValidationError } from '../../utils/errors';
+import { NotFoundError, ValidationError } from '../../utils/errors.js';
 import { SocialPlatform } from '@prisma/client';
 import crypto from 'crypto';
 

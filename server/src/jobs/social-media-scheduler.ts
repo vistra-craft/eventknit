@@ -5,7 +5,7 @@
  * Run this as a cron job (e.g., every 5 minutes)
  */
 
-import { ScheduledPostsService } from '../services/social-media/scheduled-posts.service';
+import { ScheduledPostsService } from '../services/social-media/scheduled-posts.service.js';
 import { logger } from '../utils/logger.js';
 
 /* global NodeJS */

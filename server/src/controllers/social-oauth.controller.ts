@@ -5,9 +5,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { SocialMediaOAuthService } from '../services/social-media/oauth.service';
+import { SocialMediaOAuthService } from '../services/social-media/oauth.service.js';
 import { logger } from '../utils/logger.js';
-import { AuthenticatedRequest } from '../middleware/auth.middleware';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class SocialOAuthController {
   /**

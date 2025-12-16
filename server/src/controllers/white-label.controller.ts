@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { WhiteLabelService } from '../services/white-label.service';
+import { WhiteLabelService } from '../services/white-label.service.js';
 import { logger } from '../utils/logger.js';
 import { UserRole } from '@prisma/client';
 
