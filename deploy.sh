@@ -28,13 +28,16 @@ git reset --hard origin/development
 # Clean up any untracked files
 git clean -fd
 
-# Build containers with no cache to ensure fresh builds
-echo "📦 Building containers (no cache)..."
-docker compose -f docker-compose.prod.yml build --no-cache
+# Stop containers and remove old images to force fresh build
+echo "🛑 Stopping containers..."
+docker compose -f docker-compose.prod.yml down
 
-# Start containers
-echo "🚀 Starting containers..."
-docker compose -f docker-compose.prod.yml up -d
+echo "🗑️ Removing old application images..."
+docker rmi eventknit-client:latest eventknit-server:latest 2>/dev/null || true
+
+# Build and start containers
+echo "📦 Building and starting containers..."
+docker compose -f docker-compose.prod.yml up -d --build
 
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
