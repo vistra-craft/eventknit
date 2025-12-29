@@ -14,6 +14,7 @@ import {
   HeadphonesIcon,
   Monitor,
   LogOut,
+  Ticket,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -37,6 +38,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     marketing: location.pathname.startsWith('/admin/marketing'),
     // Auto-expand finance section if on finance pages
     finance: location.pathname.startsWith('/admin/finance'),
+    // Auto-expand tickets section if on tickets pages
+    tickets: location.pathname.startsWith('/admin/tickets'),
     // Auto-expand users section if on users pages
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     // Auto-expand settings section if on settings pages
@@ -102,6 +105,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       group: "main",
       children: [
         { name: "Financial Management", href: "/admin/financial" },
+        { name: "Expenses", href: "/admin/financial" },
+        { name: "Profit & Loss", href: "/admin/financial" },
+        { name: "Goals", href: "/admin/financial" },
+        { name: "Payouts", href: "/admin/financial/payouts" },
       ]
     },
     { 
@@ -115,7 +122,19 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Social Media", href: "/admin/marketing/social" },
         { name: "Email Marketing", href: "/admin/marketing/email" },
         { name: "Promotions", href: "/admin/marketing/promotions" },
+        { name: "Promo Codes", href: "/admin/marketing/promo-codes" },
+        { name: "Affiliate Program", href: "/admin/marketing/affiliate" },
         { name: "Partnerships", href: "/admin/marketing/partnerships" },
+      ]
+    },
+    { 
+      id: "tickets", 
+      label: "Tickets", 
+      icon: Ticket,
+      group: "main",
+      children: [
+        { name: "Advanced Types", href: "/admin/tickets/advanced" },
+        { name: "Dynamic Pricing", href: "/admin/tickets/pricing" },
       ]
     },
     { 
@@ -196,6 +215,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       events: location.pathname.startsWith('/admin/events'),
       marketing: location.pathname.startsWith('/admin/marketing'),
       finance: location.pathname.startsWith('/admin/finance'),
+      tickets: location.pathname.startsWith('/admin/tickets'),
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/moderation'),
       support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings')

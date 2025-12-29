@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
 import { useToast } from '@/hooks/use-toast';
-import OrganizerLayout from '../OrganizerLayout';
+import AdminLayout from '../../admin/AdminLayout';
 
 const PromoCodeManager = () => {
   const { toast } = useToast();
@@ -234,7 +234,7 @@ const PromoCodeManager = () => {
   });
 
   return (
-    <OrganizerLayout>
+    <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -577,7 +577,7 @@ const PromoCodeManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </OrganizerLayout>
+    </AdminLayout>
   );
 };
 

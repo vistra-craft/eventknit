@@ -11,9 +11,6 @@ import {
   ChevronRight,
   LogOut,
   Users,
-  DollarSign,
-  Share2,
-  Ticket,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -86,40 +83,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Attendee Insights", href: "/organizer/analytics/attendees" },
         { name: "Revenue Reports", href: "/organizer/analytics/revenue" },
         { name: "Marketing Analytics", href: "/organizer/analytics/marketing" },
-      ]
-    },
-    { 
-      id: "marketing", 
-      label: "Marketing", 
-      icon: Share2,
-      group: "main",
-      children: [
-        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
-        { name: "Email Campaigns", href: "/organizer/marketing/email" },
-        { name: "Social Media", href: "/organizer/marketing/social" },
-        { name: "Affiliate Program", href: "/organizer/marketing/affiliate" },
-      ]
-    },
-    { 
-      id: "financial", 
-      label: "Financial", 
-      icon: DollarSign,
-      group: "main",
-      children: [
-        { name: "Expenses", href: "/organizer/financial" },
-        { name: "Profit & Loss", href: "/organizer/financial" },
-        { name: "Goals", href: "/organizer/financial" },
-        { name: "Payouts", href: "/organizer/financial/payouts" },
-      ]
-    },
-    { 
-      id: "tickets", 
-      label: "Tickets", 
-      icon: Ticket,
-      group: "main",
-      children: [
-        { name: "Advanced Types", href: "/organizer/tickets/advanced" },
-        { name: "Dynamic Pricing", href: "/organizer/tickets/pricing" },
       ]
     },
     { 

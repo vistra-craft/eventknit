@@ -1077,24 +1077,7 @@ export default function CreateEventStepwise() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleNext = useCallback(() => {
-    if (currentStep < 8) {
-      if (validateStep(currentStep)) {
-        setError(null);
-        // Save draft before navigating to next step
-        if (!isEditMode) {
-          saveDraft();
-        }
-        setCurrentStep(currentStep + 1);
-      } else {
-        setError('Please fix the errors before proceeding');
-      }
-    } else {
-      handleSubmit();
-    }
-  }, [currentStep, isEditMode, saveDraft, validateStep, handleSubmit]);
-
-  const transformFormDataToAPI = (): CreateEventData => {
+  const transformFormDataToAPI = useCallback((): CreateEventData => {
     // Determine if event is free
     const isFree = ticketTypes.every(t => t.type === 'free');
     
@@ -1175,9 +1158,9 @@ export default function CreateEventStepwise() {
     };
 
     return apiData;
-  };
+  }, [ticketTypes, eventData, categories, tags, speakers, faqs, registrationFields, eventType, isPrivate]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     // Final validation
     if (!validateStep(6)) {
       setError('Please fix all errors before submitting');
@@ -1278,7 +1261,24 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, verificationStatus]);
+
+  const handleNext = useCallback(() => {
+    if (currentStep < 8) {
+      if (validateStep(currentStep)) {
+        setError(null);
+        // Save draft before navigating to next step
+        if (!isEditMode) {
+          saveDraft();
+        }
+        setCurrentStep(currentStep + 1);
+      } else {
+        setError('Please fix the errors before proceeding');
+      }
+    } else {
+      handleSubmit();
+    }
+  }, [currentStep, isEditMode, saveDraft, validateStep, handleSubmit]);
 
   const handleBack = useCallback(() => {
     if (currentStep > 1) {
