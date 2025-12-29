@@ -339,6 +339,79 @@ describe('Early Bird Tickets', () => {
       expect(earlyBirdTicket?.availableFrom).toBeDefined();
       expect(earlyBirdTicket?.availableUntil).toBeDefined();
     });
+
+    it('should reject event creation with invalid early bird date range (from >= until)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const now = new Date();
+      const availableFrom = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // Next week
+      const availableUntil = new Date(now.getTime() - 24 * 60 * 60 * 1000); // Yesterday (invalid - before from)
+
+      const eventData = {
+        title: 'Invalid Early Bird Event',
+        description: 'Test Description',
+        startDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        ticketTypes: [
+          {
+            name: 'Invalid Early Bird',
+            price: 99.99,
+            originalPrice: 149.99,
+            availableFrom: availableFrom.toISOString(),
+            availableUntil: availableUntil.toISOString(), // Invalid: until is before from
+            quantity: 100,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('available from');
+      expect(response.body.message).toContain('available until');
+    });
+
+    it('should reject event creation with invalid date format', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Invalid Date Format Event',
+        description: 'Test Description',
+        startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        ticketTypes: [
+          {
+            name: 'Invalid Date Early Bird',
+            price: 99.99,
+            originalPrice: 149.99,
+            availableFrom: 'invalid-date',
+            availableUntil: 'also-invalid',
+            quantity: 100,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('valid date strings');
+    });
   });
 });
 

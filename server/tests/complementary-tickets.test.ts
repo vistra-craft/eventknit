@@ -294,11 +294,9 @@ describe('Complementary Tickets', () => {
         .set('Authorization', `Bearer ${organizerToken}`)
         .send(eventData);
 
-      // The validation should reject this - either Joi or service validation
-      // Currently Joi is rejecting it because fields are "not allowed" when stripUnknown: false
-      // This is actually correct behavior - the validation is working, just with a different error
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Complementary tickets must have price of 0');
     });
   });
 });

@@ -165,14 +165,35 @@ export class EventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Validate complementary tickets FIRST - before any other processing
+    // Validate ticket types data integrity - before any other processing
     if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
       for (const ticket of data.ticketTypes) {
-        // Check if isComplementary is explicitly true
+        // Validate complementary tickets
         if (ticket.isComplementary === true) {
           const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
           if (price !== 0 && !isNaN(price)) {
             throw new ValidationError('Complementary tickets must have price of 0');
+          }
+        }
+        
+        // Validate discount: if originalPrice exists, it must be > current price
+        if (ticket.originalPrice !== undefined && ticket.originalPrice !== null) {
+          const origPrice = typeof ticket.originalPrice === 'string' ? parseFloat(ticket.originalPrice) : Number(ticket.originalPrice);
+          const currPrice = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+          if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
+            throw new ValidationError('Original price must be greater than current price for discounts');
+          }
+        }
+        
+        // Validate early bird date ranges
+        if (ticket.availableFrom && ticket.availableUntil) {
+          const fromDate = new Date(ticket.availableFrom);
+          const untilDate = new Date(ticket.availableUntil);
+          if (isNaN(fromDate.getTime()) || isNaN(untilDate.getTime())) {
+            throw new ValidationError('Early bird dates must be valid date strings');
+          }
+          if (fromDate >= untilDate) {
+            throw new ValidationError('Early bird "available from" date must be before "available until" date');
           }
         }
       }
@@ -620,6 +641,40 @@ export class EventService {
     if (data.sponsors !== undefined) updateData.sponsors = data.sponsors;
     if (data.faqs !== undefined) updateData.faqs = data.faqs;
     if (data.registrationFields !== undefined) updateData.registrationFields = data.registrationFields;
+
+    // Validate ticket types data integrity before processing
+    if (data.ticketTypes !== undefined && Array.isArray(data.ticketTypes)) {
+      for (const ticket of data.ticketTypes) {
+        // Validate complementary tickets
+        if (ticket.isComplementary === true) {
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+          if (price !== 0 && !isNaN(price)) {
+            throw new ValidationError('Complementary tickets must have price of 0');
+          }
+        }
+        
+        // Validate discount: if originalPrice exists, it must be > current price
+        if (ticket.originalPrice !== undefined && ticket.originalPrice !== null) {
+          const origPrice = typeof ticket.originalPrice === 'string' ? parseFloat(ticket.originalPrice) : Number(ticket.originalPrice);
+          const currPrice = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+          if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
+            throw new ValidationError('Original price must be greater than current price for discounts');
+          }
+        }
+        
+        // Validate early bird date ranges
+        if (ticket.availableFrom && ticket.availableUntil) {
+          const fromDate = new Date(ticket.availableFrom);
+          const untilDate = new Date(ticket.availableUntil);
+          if (isNaN(fromDate.getTime()) || isNaN(untilDate.getTime())) {
+            throw new ValidationError('Early bird dates must be valid date strings');
+          }
+          if (fromDate >= untilDate) {
+            throw new ValidationError('Early bird "available from" date must be before "available until" date');
+          }
+        }
+      }
+    }
 
     // Handle ticket types
     if (data.ticketTypes !== undefined) {

@@ -1908,4 +1908,309 @@ describe('Event System', () => {
       expect(response.body.data.registrations).toEqual([]);
     });
   });
+
+  describe('Ticket Data Integrity Validation', () => {
+    it('should reject event creation with discount where originalPrice <= currentPrice', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Invalid Discount Event',
+        description: 'Test Description',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        ticketTypes: [
+          {
+            name: 'Invalid Discount',
+            price: 100,
+            originalPrice: 100, // Should be > current price
+            discountLabel: 'Test Discount',
+            quantity: 100,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Original price must be greater than current price');
+    });
+
+    it('should reject event creation with discount where originalPrice < currentPrice', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Invalid Discount Event 2',
+        description: 'Test Description',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        ticketTypes: [
+          {
+            name: 'Invalid Discount',
+            price: 100,
+            originalPrice: 50, // Invalid: less than current price
+            discountLabel: 'Test Discount',
+            quantity: 100,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Original price must be greater than current price');
+    });
+
+    it('should allow event creation with valid discount (originalPrice > currentPrice)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const eventData = {
+        title: 'Valid Discount Event',
+        description: 'Test Description',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        ticketTypes: [
+          {
+            name: 'Discounted Ticket',
+            price: 75,
+            originalPrice: 100, // Valid: greater than current price
+            discountLabel: '25% Off',
+            quantity: 100,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      const ticketTypes = response.body.data.event.ticketTypes as Array<{
+        name: string;
+        price: number;
+        originalPrice?: number;
+        discountLabel?: string;
+      }>;
+      const discountedTicket = ticketTypes.find((t) => t.name === 'Discounted Ticket');
+      expect(discountedTicket).toBeDefined();
+      expect(discountedTicket?.price).toBe(75);
+      expect(discountedTicket?.originalPrice).toBe(100);
+      expect(discountedTicket?.discountLabel).toBe('25% Off');
+    });
+
+    it('should allow organizer to create event with all advanced features', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const now = new Date();
+      const availableFrom = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const availableUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const eventData = {
+        title: 'Event with All Features',
+        description: 'Test Description',
+        startDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: false,
+        ticketTypes: [
+          {
+            name: 'Regular',
+            price: 100,
+            quantity: 100,
+          },
+          {
+            name: 'Early Bird Discounted',
+            price: 75,
+            originalPrice: 100,
+            discountLabel: 'Early Bird Special',
+            availableFrom: availableFrom.toISOString(),
+            availableUntil: availableUntil.toISOString(),
+            quantity: 50,
+          },
+          {
+            name: 'VIP Complimentary',
+            price: 0,
+            isComplementary: true,
+            requiresInvitation: true,
+            quantity: 20,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      const ticketTypes = response.body.data.event.ticketTypes as Array<{
+        name: string;
+        price: number;
+        originalPrice?: number;
+        discountLabel?: string;
+        isComplementary?: boolean;
+        availableFrom?: string;
+        availableUntil?: string;
+      }>;
+      
+      expect(ticketTypes.length).toBe(3);
+      
+      const regularTicket = ticketTypes.find((t) => t.name === 'Regular');
+      expect(regularTicket).toBeDefined();
+      expect(regularTicket?.price).toBe(100);
+      
+      const earlyBirdTicket = ticketTypes.find((t) => t.name === 'Early Bird Discounted');
+      expect(earlyBirdTicket).toBeDefined();
+      expect(earlyBirdTicket?.price).toBe(75);
+      expect(earlyBirdTicket?.originalPrice).toBe(100);
+      expect(earlyBirdTicket?.discountLabel).toBe('Early Bird Special');
+      expect(earlyBirdTicket?.availableFrom).toBeDefined();
+      expect(earlyBirdTicket?.availableUntil).toBeDefined();
+      
+      const complementaryTicket = ticketTypes.find((t) => t.name === 'VIP Complimentary');
+      expect(complementaryTicket).toBeDefined();
+      expect(complementaryTicket?.price).toBe(0);
+      expect(complementaryTicket?.isComplementary).toBe(true);
+    });
+  });
+
+  describe('Event Update with Ticket Types Validation', () => {
+    it('should reject event update with invalid discount (originalPrice <= currentPrice)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Test Event',
+          description: 'Test Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          organizerId,
+          status: EventStatus.PENDING,
+        },
+      });
+
+      const updateData = {
+        ticketTypes: [
+          {
+            name: 'Invalid Discount',
+            price: 100,
+            originalPrice: 100, // Invalid: should be > current price
+            discountLabel: 'Test',
+            quantity: 100,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(updateData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Original price must be greater than current price');
+    });
+
+    it('should allow organizer to update event with valid advanced ticket features', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Test Event',
+          description: 'Test Description',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          isFree: false,
+          organizerId,
+          status: EventStatus.PENDING,
+        },
+      });
+
+      const now = new Date();
+      const availableFrom = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const availableUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const updateData = {
+        ticketTypes: [
+          {
+            name: 'Early Bird Discounted',
+            price: 75,
+            originalPrice: 100,
+            discountLabel: 'Early Bird Special',
+            availableFrom: availableFrom.toISOString(),
+            availableUntil: availableUntil.toISOString(),
+            quantity: 50,
+          },
+          {
+            name: 'VIP Complimentary',
+            price: 0,
+            isComplementary: true,
+            requiresInvitation: true,
+            quantity: 20,
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .put(`/api/v1/events/${event.id}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send(updateData)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      const ticketTypes = response.body.data.event.ticketTypes as Array<{
+        name: string;
+        price: number;
+        originalPrice?: number;
+        isComplementary?: boolean;
+        availableFrom?: string;
+        availableUntil?: string;
+      }>;
+      
+      expect(ticketTypes.length).toBe(2);
+      
+      const earlyBirdTicket = ticketTypes.find((t) => t.name === 'Early Bird Discounted');
+      expect(earlyBirdTicket).toBeDefined();
+      expect(earlyBirdTicket?.price).toBe(75);
+      expect(earlyBirdTicket?.originalPrice).toBe(100);
+      expect(earlyBirdTicket?.availableFrom).toBeDefined();
+      expect(earlyBirdTicket?.availableUntil).toBeDefined();
+      
+      const complementaryTicket = ticketTypes.find((t) => t.name === 'VIP Complimentary');
+      expect(complementaryTicket).toBeDefined();
+      expect(complementaryTicket?.price).toBe(0);
+      expect(complementaryTicket?.isComplementary).toBe(true);
+    });
+  });
 });

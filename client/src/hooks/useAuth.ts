@@ -53,10 +53,15 @@ export const useAuth = () => {
 
           // Check if organizer needs onboarding
           const role = response.data.user.role;
-          const needsOnboarding = 
-            (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') &&
+          const isOrganizerRole = 
+            role === 'ORGANIZER' || 
+            role === 'ORGANIZER_STAFF' || 
+            role === 'ORGANIZER_TELLER';
+          
+          const needsOnboarding = isOrganizerRole && (
             !("onboardingCompleted" in response.data.user) ||
-            !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted;
+            !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
+          );
 
           if (needsOnboarding) {
             navigate('/organizer/onboarding');

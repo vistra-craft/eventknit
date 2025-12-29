@@ -43,7 +43,6 @@ import { getVerificationStatus, type VerificationStatus } from '@/lib/verificati
 import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
 import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
 import { DragAndDropFormBuilder } from '@/components/event-wizard/DragAndDropFormBuilder';
-import type { RegistrationField } from '@/types/event';
 
 // Currency options with KES as default
 const CURRENCIES = [
@@ -69,35 +68,15 @@ const DEFAULT_CURRENCY = 'KES';
 //   logo: string;
 // }
 
-type AgendaFormItem = {
-  title: string;
-  description: string;
-  startTime: string;
-  endTime: string;
-  speakers: string[];
-};
-
-type SpeakerFormItem = {
+interface RegistrationField {
   id: string;
   name: string;
-  title: string;
-  bio: string;
-  image: string;
-};
-
-type ExhibitorFormItem = {
-  name: string;
-  description: string;
-  logo: string;
-  contactEmail: string;
-  booth: string;
-};
-
-type SponsorFormItem = {
-  name: string;
-  level: string;
-  logo: string;
-};
+  type: string;
+  label: string;
+  required: boolean;
+  placeholder: string;
+  options?: string[];
+}
 
 interface TicketType {
   id: number;
@@ -137,10 +116,10 @@ interface EventData {
   category?: string;
   timezone?: string;
   socialLinks?: Record<string, string>;
-  exhibitors?: ExhibitorFormItem[];
-  sponsors?: SponsorFormItem[];
-  agenda?: AgendaFormItem[];
-  speakers?: SpeakerFormItem[];
+  exhibitors?: any[];
+  sponsors?: any[];
+  agenda?: any[];
+  speakers?: any[];
 }
 
 type Tag = string;
@@ -204,10 +183,10 @@ export default function CreateEventStepwise() {
 
   // Restored missing state for enhancements
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
-  const [agenda, setAgenda] = useState<AgendaFormItem[]>([]);
-  const [speakers, setSpeakers] = useState<SpeakerFormItem[]>([]);
-  const [exhibitors, setExhibitors] = useState<ExhibitorFormItem[]>([]);
-  const [sponsors, setSponsors] = useState<SponsorFormItem[]>([]);
+  const [agenda, setAgenda] = useState<any[]>([]);
+  const [speakers, setSpeakers] = useState<any[]>([]);
+  const [exhibitors, setExhibitors] = useState<any[]>([]);
+  const [sponsors, setSponsors] = useState<any[]>([]);
   
   // Verification state
   const [loadingVerification, setLoadingVerification] = useState(false);
@@ -518,11 +497,18 @@ export default function CreateEventStepwise() {
   const saveDraft = useCallback(() => {
     try {
       setIsSavingDraft(true);
+      // Ensure eventData includes the latest values from separate state
+      const syncedEventData = {
+        ...eventData,
+        socialLinks,
+        agenda,
+        speakers,
+        exhibitors,
+        sponsors,
+        timezone,
+      };
       const draftData = {
-        data: {
-          ...eventData,
-          timezone,
-        },
+        data: syncedEventData,
         ticketTypes,
         categories,
         tags,
@@ -530,6 +516,12 @@ export default function CreateEventStepwise() {
         registrationFields,
         eventType,
         isPrivate,
+        // Include separate state fields explicitly for safety
+        socialLinks,
+        agenda,
+        speakers,
+        exhibitors,
+        sponsors,
         timestamp: Date.now(),
       };
       localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
@@ -541,7 +533,7 @@ export default function CreateEventStepwise() {
       setIsSavingDraft(false);
       return false;
     }
-  }, [eventData, timezone, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate]);
+  }, [eventData, timezone, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, socialLinks, agenda, speakers, exhibitors, sponsors]);
 
   // Reset all form state when starting fresh after successful event creation
   useEffect(() => {
@@ -581,7 +573,7 @@ export default function CreateEventStepwise() {
         clearInterval(autoSaveIntervalRef.current);
       }
     };
-  }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone, saveDraft, isEditMode]);
+  }, [eventData, ticketTypes, categories, tags, faqs, registrationFields, eventType, isPrivate, timezone, socialLinks, agenda, speakers, exhibitors, sponsors, saveDraft, isEditMode]);
 
   // Load event data when in edit mode
   useEffect(() => {
@@ -713,15 +705,8 @@ export default function CreateEventStepwise() {
 
           // Set agenda
           if (transformedEvent.agenda && Array.isArray(transformedEvent.agenda)) {
-            const mappedAgenda: AgendaFormItem[] = transformedEvent.agenda.map((item) => ({
-              title: item.title || "",
-              description: item.description || "",
-              startTime: item.startTime || "",
-              endTime: item.endTime || "",
-              speakers: item.speakers || [],
-            }));
-            setAgenda(mappedAgenda);
-            setEventData(prev => ({ ...prev, agenda: mappedAgenda }));
+            setAgenda(transformedEvent.agenda);
+            setEventData(prev => ({ ...prev, agenda: transformedEvent.agenda || [] }));
           }
 
           // Set speakers
@@ -739,26 +724,14 @@ export default function CreateEventStepwise() {
 
           // Set exhibitors
           if (transformedEvent.exhibitors && Array.isArray(transformedEvent.exhibitors)) {
-            const mappedExhibitors: ExhibitorFormItem[] = transformedEvent.exhibitors.map((exhibitor) => ({
-              name: exhibitor.name || "",
-              description: exhibitor.description || "",
-              logo: exhibitor.logo || "",
-              contactEmail: exhibitor.contactEmail || "",
-              booth: exhibitor.booth || "",
-            }));
-            setExhibitors(mappedExhibitors);
-            setEventData(prev => ({ ...prev, exhibitors: mappedExhibitors }));
+            setExhibitors(transformedEvent.exhibitors);
+            setEventData(prev => ({ ...prev, exhibitors: transformedEvent.exhibitors || [] }));
           }
 
           // Set sponsors
           if (transformedEvent.sponsors && Array.isArray(transformedEvent.sponsors)) {
-            const mappedSponsors: SponsorFormItem[] = transformedEvent.sponsors.map((sponsor) => ({
-              name: sponsor.name || "",
-              level: sponsor.level || "",
-              logo: sponsor.logo || "",
-            }));
-            setSponsors(mappedSponsors);
-            setEventData(prev => ({ ...prev, sponsors: mappedSponsors }));
+            setSponsors(transformedEvent.sponsors);
+            setEventData(prev => ({ ...prev, sponsors: transformedEvent.sponsors || [] }));
           }
 
           // Set social links
@@ -783,6 +756,56 @@ export default function CreateEventStepwise() {
     loadEventForEdit();
   }, [editEventId, user, timezone]);
 
+  // Restore separate state from draft when loading
+  useEffect(() => {
+    if (!isEditMode && !editEventId) {
+      try {
+        const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (draft) {
+          const parsed = JSON.parse(draft);
+          if (parsed.timestamp && Date.now() - parsed.timestamp < 7 * 24 * 60 * 60 * 1000) {
+            // Restore separate state variables from draft
+            if (parsed.socialLinks) {
+              setSocialLinks(parsed.socialLinks);
+            }
+            if (parsed.agenda) {
+              setAgenda(parsed.agenda);
+            }
+            if (parsed.speakers) {
+              setSpeakers(parsed.speakers);
+            }
+            if (parsed.exhibitors) {
+              setExhibitors(parsed.exhibitors);
+            }
+            if (parsed.sponsors) {
+              setSponsors(parsed.sponsors);
+            }
+            // Also restore from data object if present (for backward compatibility)
+            if (parsed.data) {
+              if (parsed.data.socialLinks) {
+                setSocialLinks(parsed.data.socialLinks);
+              }
+              if (parsed.data.agenda) {
+                setAgenda(parsed.data.agenda);
+              }
+              if (parsed.data.speakers) {
+                setSpeakers(parsed.data.speakers);
+              }
+              if (parsed.data.exhibitors) {
+                setExhibitors(parsed.data.exhibitors);
+              }
+              if (parsed.data.sponsors) {
+                setSponsors(parsed.data.sponsors);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error restoring draft state:', error);
+      }
+    }
+  }, [isEditMode, editEventId]);
+
   // Clear form when navigating to create a new event (not in edit mode) and after successful submission
   useEffect(() => {
     // Only reset if we're not in edit mode
@@ -806,6 +829,12 @@ export default function CreateEventStepwise() {
         setValidationErrors({});
         setNewCategory("");
         setNewTag("");
+        // Reset separate state
+        setSocialLinks({});
+        setAgenda([]);
+        setSpeakers([]);
+        setExhibitors([]);
+        setSponsors([]);
       }
     }
   }, [editEventId, isEditMode, loadDraft, resetForm]);
@@ -970,7 +999,7 @@ export default function CreateEventStepwise() {
 
 
   const addRegistrationField = () => {
-    const newField: RegistrationField = {
+    const newField = {
       id: `field_${Date.now()}`,
       name: `field_${Date.now()}`,
       type: "text",
@@ -1048,10 +1077,14 @@ export default function CreateEventStepwise() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentStep < 8) {
       if (validateStep(currentStep)) {
         setError(null);
+        // Save draft before navigating to next step
+        if (!isEditMode) {
+          saveDraft();
+        }
         setCurrentStep(currentStep + 1);
       } else {
         setError('Please fix the errors before proceeding');
@@ -1059,7 +1092,7 @@ export default function CreateEventStepwise() {
     } else {
       handleSubmit();
     }
-  };
+  }, [currentStep, isEditMode, saveDraft, validateStep, handleSubmit]);
 
   const transformFormDataToAPI = (): CreateEventData => {
     // Determine if event is free
@@ -1247,8 +1280,12 @@ export default function CreateEventStepwise() {
     }
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (currentStep > 1) {
+      // Save draft before navigating to previous step
+      if (!isEditMode) {
+        saveDraft();
+      }
       setCurrentStep(currentStep - 1);
     } else {
       // Navigate to appropriate dashboard based on current route
@@ -1256,7 +1293,7 @@ export default function CreateEventStepwise() {
       const dashboardRoute = isAdminRoute ? '/admin/dashboard' : '/organizer/dashboard';
       navigate(dashboardRoute);
     }
-  };
+  }, [currentStep, isEditMode, saveDraft, location.pathname, navigate]);
 
   const renderBasicInfoStep = () => (
     <div className="space-y-6">
@@ -1643,6 +1680,8 @@ export default function CreateEventStepwise() {
           setSocialLinks(newLinks);
           setEventData(prev => ({ ...prev, socialLinks: newLinks }));
         }}
+        onNext={handleNext}
+        onBack={handleBack}
       />
     </div>
   );
@@ -1656,22 +1695,24 @@ export default function CreateEventStepwise() {
         sponsors={sponsors}
         onUpdate={(field, value) => {
           if (field === 'agenda') {
-             setAgenda(value as AgendaFormItem[]);
-             setEventData(prev => ({ ...prev, agenda: value as AgendaFormItem[] }));
+             setAgenda(value);
+             setEventData(prev => ({ ...prev, agenda: value }));
           }
           if (field === 'speakers') {
-             setSpeakers(value as SpeakerFormItem[]);
-             setEventData(prev => ({ ...prev, speakers: value as SpeakerFormItem[] }));
+             setSpeakers(value);
+             setEventData(prev => ({ ...prev, speakers: value }));
           }
           if (field === 'exhibitors') {
-             setExhibitors(value as ExhibitorFormItem[]);
-             setEventData(prev => ({ ...prev, exhibitors: value as ExhibitorFormItem[] }));
+             setExhibitors(value);
+             setEventData(prev => ({ ...prev, exhibitors: value }));
           }
           if (field === 'sponsors') {
-             setSponsors(value as SponsorFormItem[]);
-             setEventData(prev => ({ ...prev, sponsors: value as SponsorFormItem[] }));
+             setSponsors(value);
+             setEventData(prev => ({ ...prev, sponsors: value }));
           }
         }}
+        onNext={handleNext}
+        onBack={handleBack}
       />
     </div>
   );
@@ -2051,7 +2092,7 @@ export default function CreateEventStepwise() {
           fields={registrationFields.map((field: RegistrationField) => ({
             id: field.id,
             name: field.id,
-            type: field.type,
+            type: field.type as any,
             label: field.label,
             required: field.required,
             placeholder: field.placeholder,
@@ -2069,6 +2110,8 @@ export default function CreateEventStepwise() {
             }));
             setRegistrationFields(mappedFields);
           }}
+          onNext={() => {}}
+          onBack={() => {}}
         />
       ) : (
         <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-hide">
@@ -2107,12 +2150,7 @@ export default function CreateEventStepwise() {
                   </div>
                   <div className="space-y-2">
                     <Label>Field Type</Label>
-                    <Select
-                      value={field.type}
-                      onValueChange={(value) =>
-                        updateRegistrationField(index, { type: value as RegistrationField["type"] })
-                      }
-                    >
+                    <Select value={field.type} onValueChange={(value) => updateRegistrationField(index, { type: value })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
