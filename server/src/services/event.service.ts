@@ -58,6 +58,16 @@ export interface CreateEventData {
   duration?: string;
   speakers?: Array<{ name: string; title: string; bio: string; image?: string }>;
   sponsors?: Array<{ name: string; level: string; logo: string }>;
+  exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }>;
+  agenda?: Array<{
+    title: string;
+    description?: string;
+    date?: string; // Optional date for multi-day events (defaults to event start date)
+    startTime: string;
+    endTime: string;
+    speakers?: string[]; // IDs of speakers
+  }>;
+  socialLinks?: Record<string, string>;
   faqs?: Array<{ question: string; answer: string }>;
   registrationFields?: Array<{
     id: string;
@@ -68,7 +78,17 @@ export interface CreateEventData {
     placeholder?: string;
     options?: string[];
   }>;
+  registrationFields?: Array<{
+    id: string;
+    name: string;
+    label: string;
+    type: string;
+    required: boolean;
+    placeholder?: string;
+    options?: string[];
+  }>;
   generateRegistrationCode?: boolean; // Auto-generate registration code (default: true)
+  timezone?: string;
 }
 
 export interface UpdateEventData extends Partial<CreateEventData> {
@@ -175,7 +195,7 @@ export class EventService {
             throw new ValidationError('Complementary tickets must have price of 0');
           }
         }
-        
+
         // Validate discount: if originalPrice exists, it must be > current price
         if (ticket.originalPrice !== undefined && ticket.originalPrice !== null) {
           const origPrice = typeof ticket.originalPrice === 'string' ? parseFloat(ticket.originalPrice) : Number(ticket.originalPrice);
@@ -184,7 +204,7 @@ export class EventService {
             throw new ValidationError('Original price must be greater than current price for discounts');
           }
         }
-        
+
         // Validate early bird date ranges
         if (ticket.availableFrom && ticket.availableUntil) {
           const fromDate = new Date(ticket.availableFrom);
@@ -219,8 +239,8 @@ export class EventService {
     // Verify organizer can create events (check actual role from database, not token)
     const actualRole = organizer.role;
     if (actualRole !== UserRole.ORGANIZER &&
-        actualRole !== UserRole.SUPERADMIN &&
-        actualRole !== UserRole.ADMIN_STAFF) {
+      actualRole !== UserRole.SUPERADMIN &&
+      actualRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers and admins can create events');
     }
 
@@ -246,7 +266,7 @@ export class EventService {
           quantity: ticket.quantity ? Number(ticket.quantity) : null,
           features: ticket.features || [],
         };
-        
+
         // Add optional fields if present
         if ('originalPrice' in ticket && ticket.originalPrice !== undefined) {
           ticketData.originalPrice = Number(ticket.originalPrice);
@@ -266,7 +286,7 @@ export class EventService {
         if ('availableUntil' in ticket && ticket.availableUntil) {
           ticketData.availableUntil = ticket.availableUntil;
         }
-        
+
         return ticketData;
       }) as Prisma.InputJsonValue;
     }
@@ -296,8 +316,10 @@ export class EventService {
         ticketTypes: ticketTypesJson || undefined,
         capacity,
         availableSlots,
+        availableSlots,
         image: data.image?.trim(),
         images: data.images || [],
+        timezone: data.timezone || null,
         type: data.type || EventType.PUBLIC,
         status: EventStatus.PENDING, // Events start as PENDING, need admin approval
         requirements: data.requirements || [],
@@ -305,6 +327,9 @@ export class EventService {
         duration: data.duration?.trim(),
         speakers: data.speakers || undefined,
         sponsors: data.sponsors || undefined,
+        exhibitors: data.exhibitors || undefined,
+        agenda: data.agenda || undefined,
+        socialLinks: data.socialLinks || undefined,
         faqs: data.faqs || undefined,
         registrationFields: data.registrationFields || undefined,
         registrationCode: data.generateRegistrationCode !== false ? this.generateRegistrationCode() : null,
@@ -343,10 +368,10 @@ export class EventService {
     // Auto-generate default invitation links for the event
     try {
       const { InvitationService } = await import('./invitation.service');
-      
+
       // Generate default links for different invite types
       const defaultInviteTypes: InviteType[] = [InviteType.ATTENDEE, InviteType.SPEAKER, InviteType.EXHIBITOR];
-      
+
       for (const inviteType of defaultInviteTypes) {
         try {
           await InvitationService.createInvitation(
@@ -576,15 +601,15 @@ export class EventService {
     // Determine if status should be reset to PENDING
     // Only reset for significant changes, not minor updates like adding an image
     const significantFields = [
-      'title', 'description', 'fullDescription', 'startDate', 'endDate', 
+      'title', 'description', 'fullDescription', 'startDate', 'endDate',
       'startTime', 'endTime', 'venue', 'location', 'address', 'isOnline',
       'onlineLink', 'price', 'ticketTypes', 'capacity', 'category', 'type',
       'requirements', 'ageRestriction', 'duration', 'speakers', 'sponsors',
       'exhibitors', 'agenda', 'faqs', 'registrationFields',
     ];
-    
+
     const hasSignificantChanges = significantFields.some(field => data[field as keyof UpdateEventData] !== undefined);
-    
+
     // Only reset to PENDING if there are significant changes (not just image/media updates)
     const newStatus = (event.status === EventStatus.APPROVED && hasSignificantChanges)
       ? EventStatus.PENDING
@@ -632,13 +657,18 @@ export class EventService {
       updateData.availableSlots = capacity ? capacity - currentRegistrations : null;
     }
     if (data.image !== undefined) updateData.image = data.image?.trim();
+    if (data.image !== undefined) updateData.image = data.image?.trim();
     if (data.images !== undefined) updateData.images = data.images;
+    if (data.timezone !== undefined) updateData.timezone = data.timezone;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.requirements !== undefined) updateData.requirements = data.requirements;
     if (data.ageRestriction !== undefined) updateData.ageRestriction = data.ageRestriction?.trim();
     if (data.duration !== undefined) updateData.duration = data.duration?.trim();
     if (data.speakers !== undefined) updateData.speakers = data.speakers;
     if (data.sponsors !== undefined) updateData.sponsors = data.sponsors;
+    if (data.exhibitors !== undefined) updateData.exhibitors = data.exhibitors;
+    if (data.agenda !== undefined) updateData.agenda = data.agenda;
+    if (data.socialLinks !== undefined) updateData.socialLinks = data.socialLinks;
     if (data.faqs !== undefined) updateData.faqs = data.faqs;
     if (data.registrationFields !== undefined) updateData.registrationFields = data.registrationFields;
 
@@ -652,7 +682,7 @@ export class EventService {
             throw new ValidationError('Complementary tickets must have price of 0');
           }
         }
-        
+
         // Validate discount: if originalPrice exists, it must be > current price
         if (ticket.originalPrice !== undefined && ticket.originalPrice !== null) {
           const origPrice = typeof ticket.originalPrice === 'string' ? parseFloat(ticket.originalPrice) : Number(ticket.originalPrice);
@@ -661,7 +691,7 @@ export class EventService {
             throw new ValidationError('Original price must be greater than current price for discounts');
           }
         }
-        
+
         // Validate early bird date ranges
         if (ticket.availableFrom && ticket.availableUntil) {
           const fromDate = new Date(ticket.availableFrom);
@@ -686,7 +716,7 @@ export class EventService {
             quantity: ticket.quantity ? Number(ticket.quantity) : null,
             features: ticket.features || [],
           };
-          
+
           // Add optional fields if present
           if ('originalPrice' in ticket && ticket.originalPrice !== undefined) {
             ticketData.originalPrice = Number(ticket.originalPrice);
@@ -706,7 +736,7 @@ export class EventService {
           if ('availableUntil' in ticket && ticket.availableUntil) {
             ticketData.availableUntil = ticket.availableUntil;
           }
-          
+
           return ticketData;
         }) as Prisma.InputJsonValue;
       } else {
@@ -940,7 +970,7 @@ export class EventService {
 
     // Process tickets: Support both new tickets array and legacy ticketType/quantity
     let ticketSelections: TicketSelection[] = [];
-    
+
     if (data.tickets && data.tickets.length > 0) {
       // New format: multiple ticket types
       ticketSelections = data.tickets;
@@ -1039,7 +1069,7 @@ export class EventService {
               ticketType: selection.ticketType,
             },
           });
-          
+
           if (existingTickets + selection.quantity > ticketConfig.quantity) {
             throw new ValidationError(
               `Insufficient tickets available for "${selection.ticketType}". Only ${ticketConfig.quantity - existingTickets} remaining.`,
@@ -1244,7 +1274,7 @@ export class EventService {
         registration.attendee.email,
       );
       const qrCodeDataUrl = await TicketService.generateQRCode(ticketData);
-      
+
       // Store QR code in database for fast access
       await prisma.eventRegistration.update({
         where: { id: registration.id },
@@ -1253,7 +1283,7 @@ export class EventService {
           qrCodeGeneratedAt: new Date(),
         },
       });
-      
+
       logger.debug(`[registerForEvent] QR code generated and stored for registration ${registration.id}`);
     } catch (qrError) {
       // Log error but don't fail registration - QR code can be generated later
@@ -1436,7 +1466,7 @@ export class EventService {
       // Send ticket email immediately for free events
       try {
         logger.debug('[registerForEvent] Authenticated user - preparing ticket email for free event');
-        
+
         // Safely extract ticketLineItems if they exist
         // Type assertion needed because Prisma types may not fully include ticketLineItems relation
         const registrationWithLineItems = registration as typeof registration & {
@@ -1447,20 +1477,20 @@ export class EventService {
             totalPrice: any; // Decimal from Prisma
           }>;
         };
-        
+
         let ticketLineItems: Array<{
           ticketType: string;
           quantity: number;
           unitPrice: number;
           totalPrice: number;
         }> | undefined;
-        
+
         try {
           logger.debug('[registerForEvent] Authenticated user - extracting ticketLineItems');
           // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
           const lineItems = (registrationWithLineItems as any).ticketLineItems;
           logger.debug('[registerForEvent] Authenticated user - ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
-          
+
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
             ticketLineItems = lineItems.map((item: {
               ticketType: string;
@@ -1485,7 +1515,7 @@ export class EventService {
           });
           ticketLineItems = undefined;
         }
-        
+
         logger.debug(`[registerForEvent] Authenticated user - calling TicketService.sendTicketEmail for registration ${registration.id}`);
         // Send email asynchronously (non-blocking) - user gets immediate response
         TicketService.sendTicketEmail({
@@ -2154,7 +2184,7 @@ export class EventService {
     // Filter data based on access level (admins always see everything)
     if (!isAdmin && event.organizerDataAccess) {
       const accessLevel = event.organizerDataAccess;
-      
+
       return registrations.map(reg => {
         const filtered: Record<string, unknown> = {
           id: reg.id,
@@ -2330,7 +2360,7 @@ export class EventService {
       const event = registration.event;
       const now = new Date();
       let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
-      
+
       if (event.status === EventStatus.COMPLETED || (event.endDate && new Date(event.endDate) < now)) {
         status = 'completed';
       } else if (event.startDate && new Date(event.startDate) <= now) {
@@ -2344,26 +2374,26 @@ export class EventService {
         if (event.endDate) {
           const endDate = new Date(event.endDate);
           if (startDate.toDateString() === endDate.toDateString()) {
-            dateString = startDate.toLocaleDateString('en-US', { 
-              year: 'numeric', 
-              month: 'long', 
+            dateString = startDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
               day: 'numeric',
             });
           } else {
-            dateString = `${startDate.toLocaleDateString('en-US', { 
-              month: 'long', 
+            dateString = `${startDate.toLocaleDateString('en-US', {
+              month: 'long',
               day: 'numeric',
               year: 'numeric',
-            })} - ${endDate.toLocaleDateString('en-US', { 
-              month: 'long', 
+            })} - ${endDate.toLocaleDateString('en-US', {
+              month: 'long',
               day: 'numeric',
               year: 'numeric',
             })}`;
           }
         } else {
-          dateString = startDate.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
+          dateString = startDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
             day: 'numeric',
           });
         }
@@ -2407,7 +2437,7 @@ export class EventService {
   ) {
     // Import InvitationService here to avoid circular dependency
     const { InvitationService } = await import('./invitation.service');
-    
+
     // Get and validate invitation
     const invitation = await InvitationService.getInvitationByToken(token);
     const eventId = invitation.event.id;
@@ -2846,7 +2876,7 @@ export class EventService {
 
     // Process tickets: Support both new tickets array and legacy ticketType/quantity
     let ticketSelections: TicketSelection[] = [];
-    
+
     if (guestData.tickets && guestData.tickets.length > 0) {
       // New format: multiple ticket types
       ticketSelections = guestData.tickets;
@@ -2922,7 +2952,7 @@ export class EventService {
               ticketType: selection.ticketType,
             },
           });
-          
+
           if (existingTickets + selection.quantity > ticketConfig.quantity) {
             throw new ValidationError(
               `Insufficient tickets available for "${selection.ticketType}". Only ${ticketConfig.quantity - existingTickets} remaining.`,
@@ -3179,7 +3209,7 @@ export class EventService {
     try {
       const ticketData = TicketService.generateTicketData(registration.id, event.id, user.email);
       const qrCodeDataUrl = await TicketService.generateQRCode(ticketData);
-      
+
       // Store QR code in database for fast access
       await prisma.eventRegistration.update({
         where: { id: registration.id },
@@ -3188,7 +3218,7 @@ export class EventService {
           qrCodeGeneratedAt: new Date(),
         },
       });
-      
+
       logger.debug(`[registerAsGuest] QR code generated and stored for registration ${registration.id}`);
     } catch (qrError) {
       // Log error but don't fail registration - QR code can be generated later
@@ -3203,12 +3233,12 @@ export class EventService {
     // For free events: Send ticket email immediately
     // For paid events: Send payment pending email (ticket email will be sent after payment confirmation)
     logger.debug(`[registerForEvent] Starting email sending process for event ${eventId}, isFree: ${event.isFree}, registrationId: ${registration.id}`);
-    
+
     try {
       if (event.isFree) {
         // Free event - send ticket email immediately
         logger.debug('[registerForEvent] Processing free event - preparing ticket email');
-        
+
         // Type assertion needed because Prisma types may not fully include ticketLineItems relation
         // The query includes ticketLineItems, but TypeScript may not infer it correctly
         const registrationWithLineItems = registration as typeof registration & {
@@ -3219,7 +3249,7 @@ export class EventService {
             totalPrice: any; // Decimal from Prisma
           }>;
         };
-        
+
         // Safely extract ticketLineItems if they exist
         let ticketLineItems: Array<{
           ticketType: string;
@@ -3227,13 +3257,13 @@ export class EventService {
           unitPrice: number;
           totalPrice: number;
         }> | undefined;
-        
+
         try {
           logger.debug('[registerForEvent] Extracting ticketLineItems from registration');
           // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
           const lineItems = (registrationWithLineItems as any).ticketLineItems;
           logger.debug('[registerForEvent] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
-          
+
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
             ticketLineItems = lineItems.map((item: {
               ticketType: string;
@@ -3258,7 +3288,7 @@ export class EventService {
           });
           ticketLineItems = undefined;
         }
-        
+
         // Send email asynchronously (non-blocking) - user gets immediate response
         logger.debug(`[registerForEvent] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
         TicketService.sendTicketEmail({
@@ -3344,7 +3374,7 @@ export class EventService {
       // Ticket email will be sent after payment confirmation
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : undefined;
-      
+
       logger.error(`[registerForEvent] Outer catch: Failed to send ${event.isFree ? 'ticket' : 'payment pending'} email:`, {
         error: errorMessage,
         stack: errorStack,
@@ -3356,7 +3386,7 @@ export class EventService {
       // Don't throw error - registration is complete, email is optional
       // This catch should never be reached if inner try-catches are working properly
     }
-    
+
     logger.debug(`[registerForEvent] Email sending process completed for registration ${registration.id}`);
 
     // Generate account invitation token (only for new users or existing users without passwords)
@@ -3484,13 +3514,13 @@ export class EventService {
     // Generate access token for guest user so they can immediately view their ticket
     const { generateAccessToken, generateRefreshToken, parseExpiresIn } = await import('../utils/jwt.js');
     const { config } = await import('../config/index.js');
-    
+
     const tokenPayload = {
       userId: user.id,
       email: user.email,
       role: user.role,
     };
-    
+
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
     const expiresIn = parseExpiresIn(config.jwt.expiresIn);
@@ -3517,14 +3547,14 @@ export class EventService {
   static generateRegistrationCode(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Exclude confusing chars (0, O, I, 1)
     let code = '';
-    
+
     // Generate 6-8 character code
     const length = 6 + Math.floor(Math.random() * 3); // 6, 7, or 8 characters
-    
+
     for (let i = 0; i < length; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
+
     return code;
   }
 

@@ -57,6 +57,7 @@ export interface CreateEventData {
   startTime?: string;
   endTime?: string;
   registrationDeadline?: string; // ISO date string
+  timezone?: string;
   venue?: string;
   location: string;
   address?: string;
@@ -93,6 +94,7 @@ export interface CreateEventData {
   agenda?: Array<{
     title: string;
     description?: string;
+    date?: string; // Optional date for multi-day events (defaults to event start date)
     startTime: string;
     endTime: string;
     speakers?: string[]; // IDs of speakers
@@ -258,6 +260,7 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
         ? event.agenda.map(item => ({
             title: item.title || "",
             description: item.description || "",
+            date: item.date || undefined,
             startTime: item.startTime || "",
             endTime: item.endTime || "",
             speakers: item.speakers || [],
@@ -298,6 +301,7 @@ export const getEventById = async (id: string): Promise<EventResponse> => {
         ? event.agenda.map(item => ({
             title: item.title || "",
             description: item.description || "",
+            date: item.date || undefined,
             startTime: item.startTime || "",
             endTime: item.endTime || "",
             speakers: item.speakers || [],
@@ -334,6 +338,7 @@ export const createEvent = async (data: CreateEventData): Promise<EventResponse>
         ? event.agenda.map(item => ({
             title: item.title || "",
             description: item.description || "",
+            date: item.date || undefined,
             startTime: item.startTime || "",
             endTime: item.endTime || "",
             speakers: item.speakers || [],
@@ -370,6 +375,7 @@ export const updateEvent = async (id: string, data: UpdateEventData): Promise<Ev
         ? event.agenda.map(item => ({
             title: item.title || "",
             description: item.description || "",
+            date: item.date || undefined,
             startTime: item.startTime || "",
             endTime: item.endTime || "",
             speakers: item.speakers || [],

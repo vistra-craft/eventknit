@@ -92,6 +92,7 @@ interface TicketType {
   availableUntil?: string;
 }
 
+// Local form state interface - distinct from shared EventData which matches DB
 interface EventData {
   title: string;
   organizer: string;
@@ -164,12 +165,12 @@ export default function CreateEventStepwise() {
   /* Renaming STEPS constant if it exists or adding it */
   const steps = [
     { title: "Basic Info", icon: FileText },
-    { title: "Social", icon: Layout }, 
-    { title: "Agenda", icon: Clock },
     { title: "Date & Location", icon: Calendar },
+    { title: "Agenda", icon: Clock },
     { title: "Tickets", icon: Ticket },
     { title: "Registration", icon: Users },
     { title: "Media", icon: Camera },
+    { title: "Social", icon: Layout },
     { title: "Review", icon: CheckCircle }
   ];
 
@@ -587,7 +588,18 @@ export default function CreateEventStepwise() {
         const response = await getOrganizerEventById(editEventId);
         
         if (response.success && response.data) {
-          const transformedEvent = transformEventData(response.data.event);
+          const orgEvent = response.data.event;
+          const transformedEvent = transformEventData(orgEvent as unknown as BackendEvent);
+          
+          // Debug: Log the transformed event data to verify fields are present
+          console.log('Loading event for edit - Transformed event data:', {
+            timezone: transformedEvent.timezone,
+            category: transformedEvent.category,
+            tags: transformedEvent.tags,
+            agenda: transformedEvent.agenda,
+            agendaType: typeof transformedEvent.agenda,
+            agendaIsArray: Array.isArray(transformedEvent.agenda),
+          });
           
           // Parse dates from ISO format to form format (YYYY-MM-DD)
           const parseDate = (isoDate?: string | null): string => {
@@ -644,7 +656,20 @@ export default function CreateEventStepwise() {
             isOnline: transformedEvent.isOnline || false,
             capacity: transformedEvent.capacity?.toString() || "",
             category: transformedEvent.category || "",
-            timezone: (transformedEvent as { timezone?: string }).timezone || timezone,
+            timezone: transformedEvent.timezone || timezone,
+          }));
+          
+          // Set timezone separately to ensure it's loaded
+          const eventTimezone = transformedEvent.timezone;
+          if (eventTimezone && eventTimezone.trim() !== '') {
+            setTimezone(eventTimezone);
+          } else {
+            // If no timezone in event, keep the default (user's timezone)
+            console.log('No timezone found in event data, using default:', timezone);
+          }
+          
+          setEventData(prev => ({
+            ...prev,
             currency: transformedEvent.currency || DEFAULT_CURRENCY,
           }));
 
@@ -691,11 +716,28 @@ export default function CreateEventStepwise() {
           // Set categories
           if (transformedEvent.category) {
             setCategories([transformedEvent.category]);
+          } else {
+            // Reset to default if no category
+            setCategories([]);
           }
 
-          // Set tags
-          if (transformedEvent.tags && transformedEvent.tags.length > 0) {
-            setTags(transformedEvent.tags);
+          // Set tags - handle both array and string formats
+          if (transformedEvent.tags) {
+            if (Array.isArray(transformedEvent.tags)) {
+              setTags(transformedEvent.tags);
+            } else if (typeof transformedEvent.tags === 'string') {
+              try {
+                const parsedTags = JSON.parse(transformedEvent.tags);
+                setTags(Array.isArray(parsedTags) ? parsedTags : []);
+              } catch {
+                // If parsing fails, treat as single tag
+                setTags([transformedEvent.tags]);
+              }
+            } else {
+              setTags([]);
+            }
+          } else {
+            setTags([]);
           }
 
           // Set FAQs
@@ -703,10 +745,34 @@ export default function CreateEventStepwise() {
             setFaqs(transformedEvent.faqs);
           }
 
-          // Set agenda
-          if (transformedEvent.agenda && Array.isArray(transformedEvent.agenda)) {
-            setAgenda(transformedEvent.agenda);
-            setEventData(prev => ({ ...prev, agenda: transformedEvent.agenda || [] }));
+          // Set agenda - ensure proper structure and handle JSON strings
+          let agendaData = transformedEvent.agenda;
+          
+          // If agenda is a string, try to parse it
+          if (typeof agendaData === 'string' && agendaData.trim() !== '') {
+            try {
+              agendaData = JSON.parse(agendaData);
+            } catch (e) {
+              console.error('Failed to parse agenda JSON:', e);
+              agendaData = null;
+            }
+          }
+          
+          if (agendaData && Array.isArray(agendaData) && agendaData.length > 0) {
+            // Map agenda items to ensure they have the correct structure
+            const mappedAgenda = agendaData.map((item: any) => ({
+              title: item.title || '',
+              description: item.description || '',
+              date: item.date || '',
+              startTime: item.startTime || '',
+              endTime: item.endTime || '',
+              speakers: Array.isArray(item.speakers) ? item.speakers : [],
+            }));
+            setAgenda(mappedAgenda);
+            setEventData(prev => ({ ...prev, agenda: mappedAgenda }));
+          } else {
+            setAgenda([]);
+            setEventData(prev => ({ ...prev, agenda: [] }));
           }
 
           // Set speakers
@@ -1071,6 +1137,29 @@ export default function CreateEventStepwise() {
       if (hasInvalidTickets) {
         errors.tickets = 'All tickets must have a name and valid price (if paid)';
       }
+      
+      // Validate capacity matches sum of ticket quantities
+      if (eventData.capacity && eventData.capacity.trim() !== '') {
+        const capacity = parseInt(eventData.capacity, 10);
+        if (!isNaN(capacity) && capacity > 0) {
+          // Sum up all ticket quantities (only count tickets with quantities set)
+          const totalTicketQuantity = ticketTypes.reduce((sum, ticket) => {
+            if (ticket.quantity && ticket.quantity.trim() !== '') {
+              const qty = parseInt(ticket.quantity, 10);
+              if (!isNaN(qty) && qty > 0) {
+                return sum + qty;
+              }
+            }
+            return sum;
+          }, 0);
+          
+          // Only validate if at least one ticket has a quantity set
+          if (totalTicketQuantity > 0 && totalTicketQuantity !== capacity) {
+            errors.capacity = `Event capacity (${capacity}) must match the sum of ticket quantities (${totalTicketQuantity}). Please adjust either the capacity or ticket quantities.`;
+            errors.tickets = errors.tickets || 'Ticket quantities must match event capacity';
+          }
+        }
+      }
     }
     
     setValidationErrors(errors);
@@ -1130,14 +1219,33 @@ export default function CreateEventStepwise() {
       price: singlePrice,
       currency: eventData.currency || DEFAULT_CURRENCY,
       ticketTypes: apiTicketTypes.length > 0 ? apiTicketTypes : undefined,
-      capacity: eventData.capacity ? parseInt(eventData.capacity, 10) : undefined,
+      capacity: (() => {
+        // Ensure we're using the capacity from form, not availableSlots
+        const capacityValue = eventData.capacity;
+        if (!capacityValue || capacityValue.trim() === '') {
+          return undefined;
+        }
+        const parsed = parseInt(capacityValue, 10);
+        if (isNaN(parsed) || parsed < 0) {
+          console.warn('Invalid capacity value:', capacityValue);
+          return undefined;
+        }
+        console.log('Saving capacity:', parsed, 'from form value:', capacityValue);
+        return parsed;
+      })(),
+      // Only include image if it has a value (preserves existing image in edit mode if not changed)
       image: eventData.image?.trim() || undefined,
+      timezone: timezone || undefined,
       type: isPrivate ? EventType.PRIVATE : EventType.PUBLIC,
       requirements: eventData.requirements?.trim() 
         ? eventData.requirements.split(/[,\n]/).map(r => r.trim()).filter(Boolean)
         : undefined,
       ageRestriction: eventData.ageRestriction?.trim() || undefined,
       speakers: speakers.length > 0 ? speakers : undefined,
+      agenda: agenda.length > 0 ? agenda : undefined,
+      exhibitors: exhibitors.length > 0 ? exhibitors : undefined,
+      sponsors: sponsors.length > 0 ? sponsors : undefined,
+      socialLinks: socialLinks && Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
       faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()).length > 0
         ? faqs.filter(faq => faq.question.trim() && faq.answer.trim()).map(faq => ({
             question: faq.question.trim(),
@@ -1158,7 +1266,7 @@ export default function CreateEventStepwise() {
     };
 
     return apiData;
-  }, [ticketTypes, eventData, categories, tags, speakers, faqs, registrationFields, eventType, isPrivate]);
+  }, [ticketTypes, eventData, categories, tags, speakers, agenda, exhibitors, sponsors, socialLinks, faqs, registrationFields, eventType, isPrivate]);
 
   const handleSubmit = useCallback(async () => {
     // Final validation
@@ -1654,11 +1762,31 @@ export default function CreateEventStepwise() {
         <Input 
           id="capacity" 
           type="number"
+          min="1"
           placeholder="Maximum number of attendees"
           value={eventData.capacity}
-          onChange={(e) => handleInputChange("capacity", e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Only allow positive integers or empty string
+            if (value === '' || /^\d+$/.test(value)) {
+              handleInputChange("capacity", value);
+            }
+          }}
+          onBlur={(e) => {
+            // Ensure value is valid on blur
+            const value = e.target.value.trim();
+            if (value === '' || parseInt(value, 10) > 0) {
+              handleInputChange("capacity", value);
+            } else {
+              // Reset to empty if invalid
+              handleInputChange("capacity", "");
+            }
+          }}
           className="h-12 border-border focus-visible:border-primary/30"
         />
+        <p className="text-xs text-muted-foreground">
+          Enter the maximum number of attendees for this event
+        </p>
       </div>
     </div>
   );
@@ -1676,15 +1804,29 @@ export default function CreateEventStepwise() {
 
       <SocialConnectionsStep
         socialLinks={socialLinks}
-        onChange={(newLinks) => {
-          setSocialLinks(newLinks);
-          setEventData(prev => ({ ...prev, socialLinks: newLinks }));
-        }}
-        onNext={handleNext}
-        onBack={handleBack}
+        onChange={(newLinks) => handleInputChange('socialLinks', newLinks)}
       />
     </div>
   );
+
+  const handleAgendaUpdate = useCallback((field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors', value: any) => {
+    if (field === 'agenda') {
+      setAgenda(value);
+      setEventData(prev => ({ ...prev, agenda: value }));
+    }
+    if (field === 'speakers') {
+      setSpeakers(value);
+      setEventData(prev => ({ ...prev, speakers: value }));
+    }
+    if (field === 'exhibitors') {
+      setExhibitors(value);
+      setEventData(prev => ({ ...prev, exhibitors: value }));
+    }
+    if (field === 'sponsors') {
+      setSponsors(value);
+      setEventData(prev => ({ ...prev, sponsors: value }));
+    }
+  }, []);
 
   const renderAgendaStep = () => (
     <div className="space-y-6">
@@ -1693,26 +1835,8 @@ export default function CreateEventStepwise() {
         speakers={speakers}
         exhibitors={exhibitors}
         sponsors={sponsors}
-        onUpdate={(field, value) => {
-          if (field === 'agenda') {
-             setAgenda(value);
-             setEventData(prev => ({ ...prev, agenda: value }));
-          }
-          if (field === 'speakers') {
-             setSpeakers(value);
-             setEventData(prev => ({ ...prev, speakers: value }));
-          }
-          if (field === 'exhibitors') {
-             setExhibitors(value);
-             setEventData(prev => ({ ...prev, exhibitors: value }));
-          }
-          if (field === 'sponsors') {
-             setSponsors(value);
-             setEventData(prev => ({ ...prev, sponsors: value }));
-          }
-        }}
-        onNext={handleNext}
-        onBack={handleBack}
+        eventStartDate={eventData.date}
+        onUpdate={handleAgendaUpdate}
       />
     </div>
   );
@@ -2061,6 +2185,49 @@ export default function CreateEventStepwise() {
           <Plus className="w-4 h-4 mr-2" />
           Add Another Ticket Type
         </Button>
+        
+        {/* Capacity Validation Summary */}
+        {eventData.capacity && eventData.capacity.trim() !== '' && (() => {
+          const capacity = parseInt(eventData.capacity, 10);
+          const totalTicketQuantity = ticketTypes.reduce((sum, ticket) => {
+            if (ticket.quantity && ticket.quantity.trim() !== '') {
+              const qty = parseInt(ticket.quantity, 10);
+              if (!isNaN(qty) && qty > 0) {
+                return sum + qty;
+              }
+            }
+            return sum;
+          }, 0);
+          
+          if (!isNaN(capacity) && capacity > 0 && totalTicketQuantity > 0) {
+            const matches = totalTicketQuantity === capacity;
+            return (
+              <Card className={`mt-4 border-2 ${matches ? 'border-green-500 bg-green-50/50' : 'border-destructive bg-destructive/10'}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {matches ? '✓ Capacity matches ticket quantities' : '⚠ Capacity mismatch'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Event Capacity: <strong>{capacity}</strong> | Total Ticket Quantities: <strong>{totalTicketQuantity}</strong>
+                      </p>
+                    </div>
+                    {!matches && (
+                      <AlertCircle className="w-5 h-5 text-destructive" />
+                    )}
+                  </div>
+                  {!matches && (
+                    <p className="text-xs text-destructive mt-2">
+                      Please adjust either the event capacity or ticket quantities so they match.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          }
+          return null;
+        })()}
       </div>
     </div>
   );
@@ -2543,8 +2710,8 @@ export default function CreateEventStepwise() {
 
   // Render preview modal
   const renderPreview = () => {
-    // Show registration form preview if on step 4
-    if (currentStep === 4) {
+    // Show registration form preview if on step 5 (Registration step)
+    if (currentStep === 5) {
       return (
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -2880,12 +3047,12 @@ export default function CreateEventStepwise() {
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
           <CardContent className="p-6 sm:p-8">
             {currentStep === 1 && renderBasicInfoStep()}
-            {currentStep === 2 && renderSocialStep()}
+            {currentStep === 2 && renderDateLocationStep()}
             {currentStep === 3 && renderAgendaStep()}
-            {currentStep === 4 && renderDateLocationStep()}
-            {currentStep === 5 && renderTicketsStep()}
-            {currentStep === 6 && renderRegistrationStep()}
-            {currentStep === 7 && renderMediaStep()}
+            {currentStep === 4 && renderTicketsStep()}
+            {currentStep === 5 && renderRegistrationStep()}
+            {currentStep === 6 && renderMediaStep()}
+            {currentStep === 7 && renderSocialStep()}
             {currentStep === 8 && renderReviewStep()}
 
             {/* Navigation Buttons */}

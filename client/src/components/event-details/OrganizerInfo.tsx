@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Building, Mail, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Building, Mail, ExternalLink, ChevronDown, ChevronUp, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe } from "lucide-react";
 import type { EventData } from "@/types/event";
 
 interface OrganizerInfoProps {
   organizer: EventData['organizer'];
   organizerName?: string;
   organizerDescription?: string | null;
+  socialLinks?: Record<string, string> | null;
 }
 
-export const OrganizerInfo = ({ organizer, organizerName, organizerDescription }: OrganizerInfoProps) => {
+export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, socialLinks }: OrganizerInfoProps) => {
   const name = organizerName || (organizer ? `${organizer.firstName} ${organizer.lastName}` : 'Unknown Organizer');
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -78,6 +79,40 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription }
                 </Button>
               )}
             </div>
+            
+            {/* Social Links */}
+            {socialLinks && Object.keys(socialLinks).length > 0 && (
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start pt-2">
+                {Object.entries(socialLinks).map(([platform, url]) => {
+                  if (!url || url.trim() === '') return null;
+                  
+                  const platformLower = platform.toLowerCase();
+                  const iconMap: Record<string, React.ReactNode> = {
+                    facebook: <Facebook className="w-4 h-4" />,
+                    twitter: <Twitter className="w-4 h-4" />,
+                    instagram: <Instagram className="w-4 h-4" />,
+                    linkedin: <Linkedin className="w-4 h-4" />,
+                    youtube: <Youtube className="w-4 h-4" />,
+                    website: <Globe className="w-4 h-4" />,
+                  };
+                  
+                  const Icon = iconMap[platformLower] || <ExternalLink className="w-4 h-4" />;
+                  
+                  return (
+                    <a
+                      key={platform}
+                      href={url.startsWith('http') ? url : `https://${url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card-surface hover:bg-primary/10 hover:border-primary transition-colors"
+                      title={platform}
+                    >
+                      {Icon}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
     </section>

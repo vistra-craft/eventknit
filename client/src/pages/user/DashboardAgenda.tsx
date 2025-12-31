@@ -36,6 +36,7 @@ interface DashboardAgendaProps {
 
 interface AgendaItem {
   id: string;
+  date?: string; // Date for multi-day events
   time: string;
   title: string;
   type: 'keynote' | 'panel' | 'workshop' | 'break' | 'meal' | 'networking';
@@ -109,6 +110,7 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
       const startTime = typeof item.startTime === 'string' ? item.startTime : '';
       const endTime = typeof item.endTime === 'string' ? item.endTime : '';
       const time = startTime ? startTime.substring(0, 5) : ''; // Format as HH:MM
+      const date = typeof item.date === 'string' ? item.date : undefined;
       
       // Map speakers array to string
       let speakerString = '';
@@ -129,6 +131,7 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
 
       return {
         id: `agenda-${index}`,
+        date,
         time,
         title: typeof item.title === 'string' ? item.title : 'Untitled Session',
         type: inferType(
@@ -141,6 +144,13 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
         duration: calculateDuration(startTime, endTime),
       };
     }).sort((a, b) => {
+      // Sort by date first (if available), then by time
+      if (a.date && b.date) {
+        const dateCompare = a.date.localeCompare(b.date);
+        if (dateCompare !== 0) return dateCompare;
+      } else if (a.date) return -1;
+      else if (b.date) return 1;
+      
       // Sort by time
       if (!a.time && !b.time) return 0;
       if (!a.time) return 1;
@@ -211,19 +221,35 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
     }
   };
 
-  const groupAgendaByTime = () => {
+  const groupAgendaByDateAndTime = () => {
     const groups: { [key: string]: AgendaItem[] } = {};
     agendaItems.forEach(item => {
-      const timeSlot = item.time;
-      if (!groups[timeSlot]) {
-        groups[timeSlot] = [];
+      // Group by date (if available) and time, or just time if no date
+      // Use | separator to avoid conflicts with date formats that might contain dashes
+      const groupKey = item.date ? `${item.date}|${item.time}` : item.time;
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
       }
-      groups[timeSlot].push(item);
+      groups[groupKey].push(item);
     });
     return groups;
   };
 
-  const agendaGroups = groupAgendaByTime();
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const agendaGroups = groupAgendaByDateAndTime();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -269,15 +295,26 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
                   </div>
                 ) : agendaItems.length > 0 ? (
                   <div className="space-y-6">
-                    {Object.entries(agendaGroups).map(([timeSlot, items]) => (
-                    <div key={timeSlot} className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-semibold text-foreground">{timeSlot}</span>
+                    {Object.entries(agendaGroups).map(([groupKey, items]) => {
+                      // Extract date and time from group key (format: "date-time" or just "time")
+                      const parts = groupKey.split('|');
+                      const displayDate = parts[0] && parts[0] !== 'undefined' ? formatDate(parts[0]) : null;
+                      const displayTime = parts[1] || items[0]?.time || '';
+                      
+                      return (
+                      <div key={groupKey} className="space-y-3">
+                        {displayDate && (
+                          <div className="mb-2">
+                            <h3 className="text-lg font-bold text-foreground">{displayDate}</h3>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-semibold text-foreground">{displayTime}</span>
+                          </div>
+                          <div className="flex-1 h-px bg-border"></div>
                         </div>
-                        <div className="flex-1 h-px bg-border"></div>
-                      </div>
                       
                       <div className="space-y-3 ml-6">
                         {items.map((item) => (
@@ -321,7 +358,8 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
                         ))}
                       </div>
                     </div>
-                  ))}
+                    );
+                    })}
                   </div>
                 ) : (
                   <EmptyState

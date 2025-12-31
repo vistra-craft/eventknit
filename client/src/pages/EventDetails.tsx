@@ -12,6 +12,117 @@ import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, Clock, Store } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
+// Helper function to format time for display
+const formatTimeForDisplay = (timeStr: string): string => {
+  if (!timeStr) return '';
+  
+  // If already in readable format (contains AM/PM), return as is
+  if (/AM|PM/i.test(timeStr)) {
+    return timeStr;
+  }
+  
+  // Try to parse as HH:MM or HH:MM:SS format
+  const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (timeMatch) {
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = timeMatch[2];
+    const period = hours >= 12 ? 'PM' : 'AM';
+    if (hours > 12) hours -= 12;
+    if (hours === 0) hours = 12;
+    return `${hours}:${minutes} ${period}`;
+  }
+  
+  return timeStr;
+};
+
+// Helper function to generate agenda summary
+const generateAgendaSummary = (agenda: any[]) => {
+  if (!agenda || agenda.length === 0) return null;
+  
+  // Group agenda items by session type
+  const sessionGroups = new Map<string, { times: string[], count: number }>();
+  
+  agenda.forEach((item) => {
+    const title = item.title || '';
+    const lower = title.toLowerCase();
+    
+    let sessionType = 'Session';
+    if (lower.includes('keynote')) sessionType = 'Keynote';
+    else if (lower.includes('workshop')) sessionType = 'Workshop';
+    else if (lower.includes('panel')) sessionType = 'Panel';
+    else if (lower.includes('networking') || lower.includes('meet')) sessionType = 'Networking';
+    else if (lower.includes('break') || lower.includes('coffee')) sessionType = 'Break';
+    else if (lower.includes('lunch') || lower.includes('meal') || lower.includes('dinner') || lower.includes('breakfast')) sessionType = 'Meal';
+    else if (lower.includes('registration') || lower.includes('check-in') || lower.includes('badge')) sessionType = 'Registration';
+    else if (lower.includes('closing') || lower.includes('wrap') || lower.includes('remark')) sessionType = 'Closing';
+    else if (lower.includes('intro') || lower.includes('welcome') || lower.includes('opening')) sessionType = 'Opening';
+    else if (lower.includes('demo') || lower.includes('showcase')) sessionType = 'Demo';
+    else if (lower.includes('qa') || lower.includes('q&a') || lower.includes('question')) sessionType = 'Q&A';
+    
+    if (!sessionGroups.has(sessionType)) {
+      sessionGroups.set(sessionType, { times: [], count: 0 });
+    }
+    
+    const group = sessionGroups.get(sessionType)!;
+    if (item.startTime) {
+      const formattedTime = formatTimeForDisplay(item.startTime);
+      if (formattedTime && !group.times.includes(formattedTime)) {
+        group.times.push(formattedTime);
+      }
+    }
+    group.count += 1;
+  });
+  
+  // Create summary text
+  const summaryParts: string[] = [];
+  
+  sessionGroups.forEach((group, type) => {
+    if (group.times.length === 0) {
+      // If no times, just mention the type
+      if (group.count === 1) {
+        summaryParts.push(`${type}`);
+      } else {
+        summaryParts.push(`${group.count} ${type}s`);
+      }
+    } else if (group.times.length === 1) {
+      summaryParts.push(`${type} at ${group.times[0]}`);
+    } else if (group.times.length === 2) {
+      summaryParts.push(`${type} at ${group.times[0]} & ${group.times[1]}`);
+    } else if (group.count === 1) {
+      summaryParts.push(`${type} at ${group.times[0]}`);
+    } else {
+      // Sort times and show range
+      const sortedTimes = group.times.sort((a, b) => {
+        // Try to parse both formats
+        const parseTime = (time: string): number => {
+          // Format with AM/PM
+          const ampmMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+          if (ampmMatch) {
+            let hours = parseInt(ampmMatch[1], 10);
+            const minutes = parseInt(ampmMatch[2], 10);
+            const period = ampmMatch[3].toUpperCase();
+            if (period === 'PM' && hours !== 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            return hours * 60 + minutes;
+          }
+          // Format HH:MM
+          const hhmmMatch = time.match(/(\d{1,2}):(\d{2})/);
+          if (hhmmMatch) {
+            const hours = parseInt(hhmmMatch[1], 10);
+            const minutes = parseInt(hhmmMatch[2], 10);
+            return hours * 60 + minutes;
+          }
+          return 0;
+        };
+        return parseTime(a) - parseTime(b);
+      });
+      summaryParts.push(`${type}s from ${sortedTimes[0]} to ${sortedTimes[sortedTimes.length - 1]}`);
+    }
+  });
+  
+  return summaryParts.length > 0 ? summaryParts.join(', ') : null;
+};
+
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -133,6 +244,7 @@ const EventDetails = () => {
                 organizer={event.organizer}
                 organizerName={event.organizerName}
                 organizerDescription={event.organizerDescription}
+                socialLinks={event.socialLinks}
               />
 
               
@@ -143,15 +255,16 @@ const EventDetails = () => {
                   <div className="flex flex-wrap gap-3">
                     {Object.entries(event.socialLinks).map(([platform, url]) => {
                       if (!url) return null;
+                      const platformKey = platform.toLowerCase();
                       const Icon = {
                         facebook: Facebook,
                         twitter: Twitter,
                         instagram: Instagram,
                         linkedin: Linkedin,
                         youtube: Youtube,
-                        tiktok: Globe,
+                        tiktok: Globe, // TikTok icon not available in lucide-react yet, using Globe as fallback
                         website: Globe
-                      }[platform.toLowerCase()] || Globe;
+                      }[platformKey] || Globe;
                       
                       const platformLabels: Record<string, string> = {
                         facebook: 'Facebook',
@@ -170,10 +283,10 @@ const EventDetails = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all hover:shadow-md"
-                          title={platformLabels[platform.toLowerCase()] || platform}
+                          title={platformLabels[platformKey] || platform}
                         >
                           <Icon className="w-5 h-5" />
-                          <span className="text-sm font-medium">{platformLabels[platform.toLowerCase()] || platform}</span>
+                          <span className="text-sm font-medium">{platformLabels[platformKey] || platform}</span>
                         </a>
                       );
                     })}
@@ -191,50 +304,75 @@ const EventDetails = () => {
                 </div>
               </section>
 
-              {/* Event Agenda */}
-              {event.agenda && event.agenda.length > 0 && (
-                <section>
-                  <h2 className="text-3xl font-bold mb-6">Event Agenda</h2>
-                  <div className="space-y-4">
-                    {event.agenda.map((item, index) => (
-                      <Card key={index} className="border-0 bg-card-surface shadow-sm p-4">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                          <div className="flex-shrink-0 w-32 flex flex-col justify-center text-center sm:text-left sm:border-r border-border/50 pr-4">
-                            <div className="flex items-center gap-2 text-primary font-semibold">
-                              <Clock className="w-4 h-4" />
-                              <span>{item.startTime}</span>
-                            </div>
-                            <span className="text-muted-foreground text-sm pl-6 sm:pl-0 block">
-                              to {item.endTime}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold mb-1">{item.title}</h3>
-                            {item.description && (
-                              <p className="text-muted-foreground text-sm mb-2">{item.description}</p>
-                            )}
-                            {item.speakers && item.speakers.length > 0 && (
-                              <div className="flex items-center gap-2 mt-2">
-                                <Users className="w-4 h-4 text-primary" />
-                                <span className="text-sm font-medium">
-                                  {item.speakers.map((s) => {
-                                      if (typeof s === 'string') return s;
-                                      if (s && typeof s === 'object' && 'name' in s) {
-                                        const speaker = s as { name?: string };
-                                        return speaker.name || 'Speaker';
-                                      }
-                                      return 'Speaker';
-                                  }).join(', ')}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
+              {/* Event Agenda Summary */}
+              <section>
+                <h2 className="text-3xl font-bold mb-6">Event Schedule</h2>
+                <Card className="border-0 bg-card-surface shadow-sm p-6">
+                  <div className="space-y-3">
+                    {(() => {
+                      // Debug logging
+                      console.log('Event object:', event);
+                      console.log('Event.agenda:', event.agenda);
+                      console.log('Event.agenda type:', typeof event.agenda);
+                      console.log('Event.agenda is array?', Array.isArray(event.agenda));
+                      console.log('Event.agenda length:', event.agenda?.length);
+                      
+                      // Handle different data formats
+                      let agendaData = event.agenda;
+                      
+                      // If agenda is a string, try to parse it
+                      if (typeof agendaData === 'string') {
+                        try {
+                          agendaData = JSON.parse(agendaData);
+                        } catch (e) {
+                          console.error('Failed to parse agenda string:', e);
+                          agendaData = null;
+                        }
+                      }
+                      
+                      // Check if we have valid agenda data
+                      const hasAgenda = agendaData && Array.isArray(agendaData) && agendaData.length > 0;
+                      
+                      if (hasAgenda) {
+                        const summary = generateAgendaSummary(agendaData);
+                        console.log('Generated Summary:', summary);
+                        if (summary && summary.trim() !== '') {
+                          return (
+                            <>
+                              <p className="text-muted-foreground leading-relaxed text-lg">
+                                {summary}
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border/50">
+                                <strong>Full agenda with detailed session descriptions, speaker information, and session locations available in your attendee dashboard after registration.</strong>
+                              </p>
+                            </>
+                          );
+                        } else {
+                          // If summary is empty/null, show a generic message
+                          return (
+                            <>
+                              <p className="text-muted-foreground leading-relaxed text-lg">
+                                Full schedule with multiple sessions and activities throughout the event.
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border/50">
+                                <strong>Full agenda with detailed session descriptions, speaker information, and session locations available in your attendee dashboard after registration.</strong>
+                              </p>
+                            </>
+                          );
+                        }
+                      } else {
+                        return (
+                          <p className="text-muted-foreground">Full schedule will be available after registration.</p>
+                        );
+                      }
+                    })()}
                   </div>
-                </section>
-              )}
+                </Card>
+                {/* Agenda Details Hint */}
+                <p className="text-sm text-center text-muted-foreground mt-2 italic">
+                  * Full detailed agenda available after registration
+                </p>
+              </section>
 
               {/* Important Information */}
               {(event.requirements?.length || event.ageRestriction) && (
@@ -275,32 +413,64 @@ const EventDetails = () => {
                 coordinates={event.coordinates}
               />
               
-              <EventTags tags={event.tags} />
+              <EventTags 
+                tags={Array.isArray(event.tags) ? event.tags : (event.tags ? [event.tags] : [])} 
+                category={event.category} 
+              />
 
-              {/* Speakers (if any) */}
-              {event.speakers && event.speakers.length > 0 && (
-                <section>
-                  <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {event.speakers.map((speaker, index) => (
-                      <div key={index} className="p-4 flex items-start gap-4 rounded-lg border-0 bg-white shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
-                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-                          {speaker.image ? (
-                            <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Users className="w-8 h-8 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-lg">{speaker.name}</h4>
-                          <p className="text-primary font-medium text-sm">{speaker.title}</p>
-                          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{speaker.bio}</p>
-                        </div>
+              {/* Featured Speakers (Names/Titles Only) */}
+              {(() => {
+                // Debug logging
+                console.log('Event.speakers:', event.speakers);
+                console.log('Event.speakers type:', typeof event.speakers);
+                console.log('Event.speakers is array?', Array.isArray(event.speakers));
+                console.log('Event.speakers length:', event.speakers?.length);
+                
+                // Handle different data formats
+                let speakersData = event.speakers;
+                
+                // If speakers is a string, try to parse it
+                if (typeof speakersData === 'string') {
+                  try {
+                    speakersData = JSON.parse(speakersData);
+                  } catch (e) {
+                    console.error('Failed to parse speakers string:', e);
+                    speakersData = null;
+                  }
+                }
+                
+                // Check if we have valid speakers data
+                const hasSpeakers = speakersData && Array.isArray(speakersData) && speakersData.length > 0;
+                
+                if (hasSpeakers) {
+                  return (
+                    <section>
+                      <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {speakersData.slice(0, 8).map((speaker: any, index: number) => (
+                          <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border-0 bg-card-surface shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
+                              {speaker?.image ? (
+                                <img src={speaker.image} alt={speaker.name || 'Speaker'} className="w-full h-full object-cover" />
+                              ) : (
+                                <Users className="w-8 h-8 text-muted-foreground" />
+                              )}
+                            </div>
+                            <h4 className="font-bold text-sm mb-1">{speaker?.name || 'Speaker'}</h4>
+                            <p className="text-primary font-medium text-xs line-clamp-2">{speaker?.title || ''}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+                      {speakersData.length > 8 && (
+                        <p className="text-sm text-muted-foreground mt-4 text-center">
+                          + {speakersData.length - 8} more speakers. View full speaker profiles in your attendee dashboard after registration.
+                        </p>
+                      )}
+                    </section>
+                  );
+                }
+                return null;
+              })()}
 
 
               {/* Exhibitors & Sponsors */}
@@ -397,24 +567,40 @@ const EventDetails = () => {
 
                   {/* Event Stats */}
                   <div className="pt-4 border-t space-y-2 text-sm">
-                    {event.capacity && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Capacity:</span>
-                        <span className="font-medium">{event.capacity} attendees</span>
-                      </div>
-                    )}
-                    {event.registrationCount !== undefined && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Registered:</span>
-                        <span className="font-medium">{event.registrationCount}</span>
-                      </div>
-                    )}
-                    {event.availableSlots && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Available:</span>
-                        <span className="font-medium text-primary">{event.availableSlots} spots</span>
-                      </div>
-                    )}
+                    {(() => {
+                      // Debug logging
+                      console.log('Event capacity:', event.capacity);
+                      console.log('Event availableSlots:', event.availableSlots);
+                      console.log('Event registrationCount:', event.registrationCount);
+                      
+                      // Always show capacity if it exists (this is the total, not available)
+                      const capacity = event.capacity;
+                      const registered = event.registrationCount || 0;
+                      const available = event.availableSlots;
+                      
+                      return (
+                        <>
+                          {capacity !== null && capacity !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Capacity:</span>
+                              <span className="font-medium">{capacity} attendees</span>
+                            </div>
+                          )}
+                          {registered !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Registered:</span>
+                              <span className="font-medium">{registered}</span>
+                            </div>
+                          )}
+                          {available !== null && available !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Available:</span>
+                              <span className="font-medium text-primary">{available} spots</span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </Card>

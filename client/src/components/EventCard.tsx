@@ -16,6 +16,7 @@ interface EventCardProps {
   price: string;
   currency?: string;
   category: string;
+  tags?: string[];
 }
 
 export const EventCard: React.FC<EventCardProps> = ({
@@ -31,7 +32,19 @@ export const EventCard: React.FC<EventCardProps> = ({
   price,
   currency,
   category,
+  tags,
 }) => {
+  const getFrontendUrl = () => {
+    const envUrl = import.meta.env.VITE_FRONTEND_URL;
+    if (envUrl) {
+      return envUrl.replace(/\/$/, '');
+    }
+    return window.location.origin;
+  };
+  const frontendUrl = getFrontendUrl();
+  const imageUrl = image 
+    ? (image.startsWith('http') ? image : `${frontendUrl}${image}`)
+    : null;
   const navigate = useNavigate();
   const handleCardClick = () => {
     navigate(`/event/${id}`);
@@ -88,9 +101,21 @@ export const EventCard: React.FC<EventCardProps> = ({
     >
       {/* Event Image */}
       <div className="relative overflow-hidden h-64 rounded-lg">
-        {image ? (
-          <img src={image} alt={title} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
-        ) : (
+        {imageUrl && imageUrl.trim() !== '' ? (
+          <img 
+            src={imageUrl} 
+            alt={title} 
+            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              // Hide image on error and show placeholder
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const placeholder = target.nextElementSibling as HTMLElement;
+              if (placeholder) placeholder.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        {(!imageUrl || imageUrl.trim() === '') && (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <span className="text-muted-foreground text-sm">No image</span>
           </div>
@@ -101,6 +126,13 @@ export const EventCard: React.FC<EventCardProps> = ({
           <span className="px-3 py-1 bg-accent-coral text-white backdrop-blur-sm rounded-full text-xs font-bold shadow-none">
             {category}
           </span>
+          {tags && tags.length > 0 && tags.map((tag, i) => (
+             i < 2 && ( // Limit to 2 tags
+               <span key={i} className="ml-1 px-3 py-1 bg-black/50 text-white backdrop-blur-sm rounded-full text-xs font-bold shadow-none">
+                 {tag}
+               </span>
+             )
+          ))}
         </div>
       </div>
 

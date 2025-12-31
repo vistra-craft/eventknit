@@ -11,6 +11,7 @@ import { Plus, Trash2, Calendar, Users, Briefcase, Award } from 'lucide-react';
 interface AgendaItem {
   title: string;
   description: string;
+  date?: string; // Optional date field for multi-day events
   startTime: string;
   endTime: string;
   speakers: string[];
@@ -43,6 +44,7 @@ interface AgendaBuilderStepProps {
   speakers: Speaker[];
   exhibitors: Exhibitor[];
   sponsors: Sponsor[];
+  eventStartDate?: string; // Event start date to default agenda items to
   onUpdate: (
     field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors',
     value: AgendaItem[] | Speaker[] | Exhibitor[] | Sponsor[]
@@ -54,13 +56,14 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
   speakers,
   exhibitors,
   sponsors,
+  eventStartDate,
   onUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState('schedule');
 
   // --- Schedule Handlers ---
   const addAgendaItem = () => {
-    onUpdate('agenda', [...agenda, { title: '', description: '', startTime: '', endTime: '', speakers: [] }]);
+    onUpdate('agenda', [...agenda, { title: '', description: '', date: eventStartDate || '', startTime: '', endTime: '', speakers: [] }]);
   };
 
   const updateAgendaItem = (index: number, field: keyof AgendaItem, value: AgendaItem[keyof AgendaItem]) => {
@@ -183,7 +186,19 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="space-y-2">
+                        <Label>Date {eventStartDate && <span className="text-xs text-muted-foreground">(optional)</span>}</Label>
+                        <Input
+                          type="date"
+                          value={item.date || eventStartDate || ''}
+                          onChange={(e) => updateAgendaItem(index, 'date', e.target.value)}
+                          placeholder={eventStartDate || 'Select date'}
+                        />
+                        {eventStartDate && !item.date && (
+                          <p className="text-xs text-muted-foreground">Defaults to event start date</p>
+                        )}
+                      </div>
                       <div className="space-y-2">
                         <Label>Start Time</Label>
                         <Input

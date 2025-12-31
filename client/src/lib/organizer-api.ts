@@ -4,6 +4,7 @@
 
 import { apiGet, apiPost, apiPut, apiDelete } from './api';
 import type { EventsListResponse, EventResponse, EventRegistrationsResponse, CreateEventData, UpdateEventData } from './event-api';
+import { transformEventData } from './event-utils';
 
 /**
  * Organizer Dashboard Stats Response
@@ -226,7 +227,65 @@ export const getOrganizerPastEvents = async (filters?: {
  * Get organizer event by ID
  */
 export const getOrganizerEventById = async (eventId: string): Promise<EventResponse> => {
-  return apiGet<EventResponse>(`/events/${eventId}`);
+  const response = await apiGet<EventResponse>(`/events/${eventId}`);
+  
+  // Transform backend event to frontend format (same as getEventById)
+  if (response.success && response.data) {
+    const event = response.data.event;
+    const normalizedEvent = {
+      ...event,
+      agenda: event.agenda
+        ? (Array.isArray(event.agenda) 
+            ? event.agenda.map(item => ({
+                title: item.title || "",
+                description: item.description || "",
+                date: item.date || undefined,
+                startTime: item.startTime || "",
+                endTime: item.endTime || "",
+                speakers: item.speakers || [],
+              }))
+            : (typeof event.agenda === 'string' 
+                ? JSON.parse(event.agenda).map((item: any) => ({
+                    title: item.title || "",
+                    description: item.description || "",
+                    date: item.date || undefined,
+                    startTime: item.startTime || "",
+                    endTime: item.endTime || "",
+                    speakers: item.speakers || [],
+                  }))
+                : event.agenda))
+        : event.agenda,
+      exhibitors: event.exhibitors
+        ? (Array.isArray(event.exhibitors)
+            ? event.exhibitors.map(exhibitor => ({
+                ...exhibitor,
+                description: exhibitor.description || "",
+                logo: exhibitor.logo || "",
+                contactEmail: exhibitor.contactEmail || "",
+                booth: exhibitor.booth || "",
+              }))
+            : (typeof event.exhibitors === 'string'
+                ? JSON.parse(event.exhibitors).map((exhibitor: any) => ({
+                    name: exhibitor.name || "",
+                    description: exhibitor.description || "",
+                    logo: exhibitor.logo || "",
+                    contactEmail: exhibitor.contactEmail || "",
+                    booth: exhibitor.booth || "",
+                  }))
+                : event.exhibitors))
+        : event.exhibitors,
+      tags: event.tags
+        ? (Array.isArray(event.tags)
+            ? event.tags
+            : (typeof event.tags === 'string'
+                ? JSON.parse(event.tags)
+                : event.tags))
+        : event.tags,
+    };
+    response.data.event = transformEventData(normalizedEvent);
+  }
+  
+  return response;
 };
 
 /**

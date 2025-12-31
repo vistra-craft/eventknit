@@ -83,6 +83,7 @@ interface BackendEvent {
   speakers?: Array<{ name: string; title: string; bio: string; image?: string }> | null;
   sponsors?: Array<{ name: string; level: string; logo: string }> | null;
   exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }> | null;
+  timezone?: string;
   agenda?: Array<{ title: string; description?: string; startTime: string; endTime: string; speakers?: string[] }> | null;
   socialLinks?: Record<string, string> | null;
   faqs?: Array<{ question: string; answer: string }> | null;
@@ -114,7 +115,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
   // Extract organizer name
   const organizerName = backendEvent.organizer
     ? backendEvent.organizer.organizationName ||
-      `${backendEvent.organizer.firstName} ${backendEvent.organizer.lastName}`
+    `${backendEvent.organizer.firstName} ${backendEvent.organizer.lastName}`
     : 'Unknown Organizer';
 
   // Convert price - ensure it's always number | null | undefined
@@ -164,6 +165,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
     ageRestriction: backendEvent.ageRestriction || null,
     duration: backendEvent.duration || null,
     coordinates: backendEvent.coordinates || null,
+    timezone: backendEvent.timezone || null,
     // Convert ticket types if needed
     ticketTypes: backendEvent.ticketTypes
       ? Array.isArray(backendEvent.ticketTypes)
@@ -193,8 +195,8 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
       : null,
     socialLinks: backendEvent.socialLinks
       ? (typeof backendEvent.socialLinks === 'object' && !Array.isArray(backendEvent.socialLinks)
-          ? backendEvent.socialLinks as Record<string, string>
-          : null)
+        ? backendEvent.socialLinks as Record<string, string>
+        : null)
       : null,
     faqs: backendEvent.faqs
       ? Array.isArray(backendEvent.faqs)
@@ -204,14 +206,14 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
     registrationFields: backendEvent.registrationFields
       ? Array.isArray(backendEvent.registrationFields)
         ? (backendEvent.registrationFields as Array<{
-            id: string;
-            name: string;
-            label: string;
-            type: 'text' | 'email' | 'tel' | 'select' | 'radio' | 'checkbox' | 'textarea';
-            required: boolean;
-            placeholder?: string;
-            options?: string[];
-          }>)
+          id: string;
+          name: string;
+          label: string;
+          type: 'text' | 'email' | 'tel' | 'select' | 'radio' | 'checkbox' | 'textarea';
+          required: boolean;
+          placeholder?: string;
+          options?: string[];
+        }>)
         : null
       : null,
     // Registration count from _count

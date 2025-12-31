@@ -14,17 +14,15 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
   onMenuToggle
 }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
-  // Mock user data - replace with actual user data
-  const user = {
-    name: "John Doe",
-    email: "john@example.com",
-    organization: "Tech Events Co.",
-    avatar: null
-  };
+  // Get user display name and organization from actual user data
+  const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User' : 'User';
+  const userEmail = user?.email || '';
+  const userOrganization = user?.organizationName || '';
+  const userAvatar = user?.avatar;
 
   const handleLogout = () => {
     // Use proper logout function from useAuth
@@ -50,7 +48,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                 Organizer Dashboard
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Welcome back, {user.name}
+                Welcome back, {userName}
               </p>
             </div>
         </div>
@@ -81,12 +79,22 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="flex items-center space-x-2 hover:bg-accent-coral hover:text-white transition-colors"
             >
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-primary-foreground" />
-              </div>
+              {userAvatar ? (
+                <img 
+                  src={userAvatar} 
+                  alt={userName}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary-foreground" />
+                </div>
+              )}
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.organization}</p>
+                <p className="text-sm font-medium text-foreground">{userName}</p>
+                {userOrganization && (
+                  <p className="text-xs text-muted-foreground">{userOrganization}</p>
+                )}
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
@@ -96,16 +104,26 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
               <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
                 <div className="p-4 border-b border-border">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary-foreground" />
-                    </div>
+                    {userAvatar ? (
+                      <img 
+                        src={userAvatar} 
+                        alt={userName}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary-foreground" />
+                      </div>
+                    )}
                     <div>
-                      <p className="font-medium text-foreground">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <Building2 className="h-3 w-3 mr-1" />
-                        {user.organization}
-                      </p>
+                      <p className="font-medium text-foreground">{userName}</p>
+                      <p className="text-sm text-muted-foreground">{userEmail}</p>
+                      {userOrganization && (
+                        <p className="text-sm text-muted-foreground flex items-center">
+                          <Building2 className="h-3 w-3 mr-1" />
+                          {userOrganization}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

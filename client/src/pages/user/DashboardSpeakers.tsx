@@ -55,7 +55,7 @@ interface Speaker {
 }
 
 interface DashboardSpeakersProps {
-  eventData: EventData;
+  eventData?: EventData;
 }
 
 const SpeakerCard: React.FC<{ speaker: Speaker; onClick: () => void }> = ({ speaker, onClick }) => {

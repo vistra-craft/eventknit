@@ -3,16 +3,16 @@ export interface RegistrationField {
   name: string;
   label: string;
   type:
-    | 'text'
-    | 'email'
-    | 'tel'
-    | 'phone'
-    | 'select'
-    | 'radio'
-    | 'checkbox'
-    | 'textarea'
-    | 'date'
-    | 'number';
+  | 'text'
+  | 'email'
+  | 'tel'
+  | 'phone'
+  | 'select'
+  | 'radio'
+  | 'checkbox'
+  | 'textarea'
+  | 'date'
+  | 'number';
   required: boolean;
   options?: string[];
   placeholder?: string;
@@ -64,6 +64,8 @@ export interface EventData {
     availableUntil?: string | null;
   }> | null;
 
+  timezone?: string | null;
+
   // Capacity
   capacity?: number | null;
   availableSlots?: number | null;
@@ -88,6 +90,7 @@ export interface EventData {
   agenda?: Array<{
     title: string;
     description?: string;
+    date?: string; // Optional date for multi-day events (defaults to event start date)
     startTime: string;
     endTime: string;
     speakers?: string[]; // IDs of speakers

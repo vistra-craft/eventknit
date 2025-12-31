@@ -392,6 +392,7 @@ model Event {
   price       Decimal? @db.Decimal(10, 2) // Single price for simple events
   currency    String   @default("USD") // Currency code (e.g., "USD", "KES", "NGN")
   ticketTypes Json? // Array of ticket types with prices
+  timezone    String? // Event timezone
 
   // Capacity
   capacity       Int? // Total capacity (null = unlimited)

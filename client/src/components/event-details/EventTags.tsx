@@ -2,20 +2,31 @@ import { Badge } from "@/components/ui/badge";
 
 interface EventTagsProps {
   tags?: string[];
+  category?: string | null;
 }
 
-export const EventTags = ({ tags }: EventTagsProps) => {
-  // If no tags are provided, we show the section but with a placeholder or empty state
-  // per user request "let it be blank but atleast it should show"
+export const EventTags = ({ tags, category }: EventTagsProps) => {
+  // Combine tags and category for display
+  const allTags: string[] = [];
+  
+  // Add category first if it exists
+  if (category) {
+    allTags.push(category);
+  }
+  
+  // Add tags if they exist
+  if (tags && tags.length > 0) {
+    allTags.push(...tags);
+  }
   
   return (
     <section>
-      <h3 className="text-xl font-bold mb-3">Tags</h3>
+      <h3 className="text-xl font-bold mb-3">Tags & Categories</h3>
       <div className="flex flex-wrap gap-2">
-        {tags && tags.length > 0 ? (
-          tags.map((tag) => (
+        {allTags.length > 0 ? (
+          allTags.map((tag, index) => (
             <Badge 
-              key={tag} 
+              key={`${tag}-${index}`}
               variant="secondary"
               className="px-3 py-1.5 text-sm hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
             >
@@ -23,7 +34,7 @@ export const EventTags = ({ tags }: EventTagsProps) => {
             </Badge>
           ))
         ) : (
-          <p className="text-sm text-muted-foreground italic">No tags available</p>
+          <p className="text-sm text-muted-foreground italic">No tags or categories available</p>
         )}
       </div>
     </section>
