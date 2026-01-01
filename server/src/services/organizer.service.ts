@@ -44,8 +44,8 @@ export class OrganizerService {
   ) {
     // Validate organizer can create staff
     if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.SUPERADMIN &&
+      organizerRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers can create staff members');
     }
 
@@ -133,8 +133,8 @@ export class OrganizerService {
   static async getStaff(organizerId: string, organizerRole: UserRole) {
     // Validate organizer can view staff
     if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.SUPERADMIN &&
+      organizerRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers can view staff members');
     }
 
@@ -194,8 +194,8 @@ export class OrganizerService {
   static async getStaffById(staffId: string, organizerId: string, organizerRole: UserRole) {
     // Validate organizer can view staff
     if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.SUPERADMIN &&
+      organizerRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers can view staff members');
     }
 
@@ -515,8 +515,8 @@ export class OrganizerService {
   static async getDashboardStats(organizerId: string, organizerRole: UserRole) {
     // Validate organizer can view dashboard
     if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.SUPERADMIN &&
+      organizerRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers can view dashboard');
     }
 
@@ -542,7 +542,7 @@ export class OrganizerService {
 
     // Calculate stats
     const totalEvents = events.length;
-    
+
     // Count speakers, exhibitors (sponsors) from all events
     let totalSpeakers = 0;
     let totalExhibitors = 0;
@@ -676,8 +676,8 @@ export class OrganizerService {
           const ticketTypes = Array.isArray(event.ticketTypes)
             ? event.ticketTypes
             : typeof event.ticketTypes === 'string'
-            ? JSON.parse(event.ticketTypes)
-            : [];
+              ? JSON.parse(event.ticketTypes)
+              : [];
 
           ticketTypes.forEach((ticketType: any) => {
             if (ticketType.availableUntil) {
@@ -778,8 +778,8 @@ export class OrganizerService {
   ) {
     // Validate organizer can view dashboard
     if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.SUPERADMIN &&
+      organizerRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers can view dashboard');
     }
 
@@ -836,39 +836,39 @@ export class OrganizerService {
       let status = 'upcoming';
       const now = new Date();
       switch (event.status) {
-      case 'CANCELLED':
-        status = 'cancelled';
-        break;
-      case 'REJECTED':
-        status = 'unpublished';
-        break;
-      case 'PENDING':
-        status = 'unpublished';
-        break;
-      case 'COMPLETED':
-        status = 'completed';
-        break;
-      case 'APPROVED':
-      default:
-        if (event.endDate && new Date(event.endDate) < now) {
+        case 'CANCELLED':
+          status = 'cancelled';
+          break;
+        case 'REJECTED':
+          status = 'unpublished';
+          break;
+        case 'PENDING':
+          status = 'unpublished';
+          break;
+        case 'COMPLETED':
           status = 'completed';
-        } else if (event.startDate && new Date(event.startDate) <= now) {
-          status = 'active';
-        } else if (event.status === 'APPROVED') {
-          status = 'active';
-        }
-        break;
+          break;
+        case 'APPROVED':
+        default:
+          if (event.endDate && new Date(event.endDate) < now) {
+            status = 'completed';
+          } else if (event.startDate && new Date(event.startDate) <= now) {
+            status = 'active';
+          } else if (event.status === 'APPROVED') {
+            status = 'active';
+          }
+          break;
       }
 
       return {
         id: event.id,
         title: event.title,
-        date: event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
+        date: event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
           day: 'numeric',
         }) : '',
-        time: event.startTime && event.endTime 
+        time: event.startTime && event.endTime
           ? `${event.startTime} - ${event.endTime}`
           : event.startTime || '',
         location: event.location,
@@ -878,7 +878,7 @@ export class OrganizerService {
         capacity: event.capacity || 0,
         revenue,
         views: 0, // TODO: Add view tracking
-        conversion: event.capacity && event.capacity > 0 
+        conversion: event.capacity && event.capacity > 0
           ? ((attendees / event.capacity) * 100).toFixed(1)
           : '0',
         speakers: speakers.length,
@@ -926,8 +926,8 @@ export class OrganizerService {
   ) {
     // Validate organizer can view events
     if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.SUPERADMIN &&
+      organizerRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers can view their events');
     }
 
@@ -971,7 +971,7 @@ export class OrganizerService {
         { description: { contains: filters.search, mode: 'insensitive' } },
         { location: { contains: filters.search, mode: 'insensitive' } },
       ];
-      
+
       if (where.AND && Array.isArray(where.AND)) {
         where.AND.push({ OR: searchConditions });
       } else {
@@ -1045,12 +1045,12 @@ export class OrganizerService {
       return {
         id: event.id,
         title: event.title,
-        date: event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
+        date: event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
           day: 'numeric',
         }) : '',
-        time: event.startTime && event.endTime 
+        time: event.startTime && event.endTime
           ? `${event.startTime} - ${event.endTime}`
           : event.startTime || '',
         location: event.location,
@@ -1060,7 +1060,7 @@ export class OrganizerService {
         capacity: event.capacity || 0,
         revenue,
         views: 0, // TODO: Add view tracking
-        conversion: event.capacity && event.capacity > 0 
+        conversion: event.capacity && event.capacity > 0
           ? ((attendees / event.capacity) * 100).toFixed(1)
           : '0',
         speakers: speakers.length,
@@ -1093,217 +1093,3 @@ export class OrganizerService {
     };
   }
 }
-
-
-        exhibitors: sponsors.length,
-        sponsors: sponsors.length,
-        image: event.image || '',
-        description: event.description,
-        category: event.category || '',
-        organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
-        price: event.isFree ? 'Free' : event.price ? `$${Number(event.price)}` : 'N/A',
-        rating: 0, // TODO: Add rating system
-        fullDescription: event.fullDescription || event.description,
-        duration: event.duration || '',
-        ageRestriction: event.ageRestriction || '',
-      };
-    });
-
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      events: dashboardEvents,
-      total,
-      page,
-      limit,
-      totalPages,
-      hasMore: page < totalPages,
-    };
-  }
-
-  /**
-   * Get all organizer events (with filters)
-   */
-  static async getOrganizerEvents(
-    organizerId: string,
-    organizerRole: UserRole,
-    filters: {
-      status?: string;
-      category?: string;
-      search?: string;
-      limit?: number;
-      offset?: number;
-      page?: number;
-      upcoming?: boolean; // true for upcoming, false for past
-    } = {},
-  ) {
-    // Validate organizer can view events
-    if (organizerRole !== UserRole.ORGANIZER &&
-        organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only organizers can view their events');
-    }
-
-    const where: Record<string, unknown> = {
-      organizerId,
-      deletedAt: null,
-    };
-
-    if (filters.status) {
-      where.status = filters.status;
-    }
-
-    if (filters.category) {
-      where.category = filters.category;
-    }
-
-    // Filter by date (upcoming vs past) - must be before search OR
-    const now = new Date();
-    if (filters.upcoming === true) {
-      where.startDate = { gte: now };
-    } else if (filters.upcoming === false) {
-      where.AND = [
-        {
-          OR: [
-            { endDate: { lt: now } },
-            {
-              AND: [
-                { endDate: null },
-                { startDate: { lt: now } },
-              ],
-            },
-          ],
-        },
-      ];
-    }
-
-    // Add search filter
-    if (filters.search) {
-      const searchConditions = [
-        { title: { contains: filters.search, mode: 'insensitive' } },
-        { description: { contains: filters.search, mode: 'insensitive' } },
-        { location: { contains: filters.search, mode: 'insensitive' } },
-      ];
-      
-      if (where.AND && Array.isArray(where.AND)) {
-        where.AND.push({ OR: searchConditions });
-      } else {
-        where.OR = searchConditions;
-      }
-    }
-
-    const limit = filters.limit || 50;
-    // Support both page and offset for backward compatibility
-    let skip = 0;
-    if (filters.page !== undefined) {
-      skip = (filters.page - 1) * limit;
-    } else if (filters.offset !== undefined) {
-      skip = filters.offset;
-    }
-
-    const [events, total] = await Promise.all([
-      prisma.event.findMany({
-        where,
-        include: {
-          organizer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              organizationName: true,
-            },
-          },
-          registrations: {
-            where: {
-              status: {
-                in: ['CONFIRMED', 'PENDING'],
-              },
-            },
-          },
-          _count: {
-            select: {
-              registrations: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip,
-      }),
-      prisma.event.count({ where }),
-    ]);
-
-    // Transform events with dashboard data
-    const transformedEvents = events.map(event => {
-      const speakers = (event.speakers as Array<{ name: string; title: string; bio: string }>) || [];
-      const sponsors = (event.sponsors as Array<{ name: string; level: string; logo: string }>) || [];
-      const confirmedRegistrations = event.registrations.filter(r => r.status === 'CONFIRMED');
-      const attendees = confirmedRegistrations.reduce((sum, reg) => sum + reg.quantity, 0);
-      const revenue = confirmedRegistrations.reduce((sum, reg) => sum + Number(reg.totalAmount), 0);
-
-      // Determine status based on dates
-      let status = 'upcoming';
-      if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
-        status = event.status.toLowerCase();
-      } else if (event.endDate && new Date(event.endDate) < now) {
-        status = 'completed';
-      } else if (event.startDate && new Date(event.startDate) <= now) {
-        status = 'active';
-      } else if (event.status === 'APPROVED') {
-        status = 'active';
-      } else if (event.status === 'PENDING') {
-        status = 'pending';
-      }
-
-      return {
-        id: event.id,
-        title: event.title,
-        date: event.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-        }) : '',
-        time: event.startTime && event.endTime 
-          ? `${event.startTime} - ${event.endTime}`
-          : event.startTime || '',
-        location: event.location,
-        venue: event.venue || '',
-        status,
-        attendees,
-        capacity: event.capacity || 0,
-        revenue,
-        views: 0, // TODO: Add view tracking
-        conversion: event.capacity && event.capacity > 0 
-          ? ((attendees / event.capacity) * 100).toFixed(1)
-          : '0',
-        speakers: speakers.length,
-        exhibitors: sponsors.length,
-        sponsors: sponsors.length,
-        image: event.image || '',
-        description: event.description,
-        category: event.category || '',
-        organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
-        price: event.isFree ? 'Free' : event.price ? `$${Number(event.price)}` : 'N/A',
-        rating: 0, // TODO: Add rating system
-        fullDescription: event.fullDescription || event.description,
-        duration: event.duration || '',
-        ageRestriction: event.ageRestriction || '',
-      };
-    });
-
-    const page = filters.page !== undefined ? filters.page : Math.floor(skip / limit) + 1;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      events: transformedEvents,
-      total,
-      limit,
-      page,
-      totalPages,
-      hasMore: page < totalPages,
-      // Keep offset for backward compatibility
-      offset: skip,
-    };
-  }
-}
-

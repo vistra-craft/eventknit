@@ -65,12 +65,7 @@ import AttendeeTagsManagement from "./pages/organizer/AttendeeTagsManagement";
 import AttendeeCommunication from "./pages/organizer/AttendeeCommunication";
 import FinancialManagement from "./pages/organizer/FinancialManagement";
 import EventCollaboration from "./pages/organizer/EventCollaboration";
-import EmailMarketing from "./pages/organizer/EmailMarketing";
-import AdvancedTicketTypes from "./pages/organizer/AdvancedTicketTypes";
-import DynamicPricing from "./pages/organizer/DynamicPricing";
 import AffiliateProgram from "./pages/organizer/AffiliateProgram";
-import SocialMedia from "./pages/organizer/SocialMedia";
-// Marketing imports
 import PromoCodeManager from "./pages/organizer/marketing/PromoCodeManager";
 // Admin Dashboard imports
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -129,8 +124,6 @@ import AdminNotificationSettingsPage from "./pages/admin/AdminNotificationSettin
 import { AdminAnalyticsOverview } from "./pages/admin/analytics";
 // Admin Support import
 import SupportPage from "./pages/admin/SupportPage";
-// Admin Financial import
-import AdminFinancialManagement from "./pages/admin/AdminFinancialManagement";
 // Admin Finance imports
 import { 
   FinanceDashboard,
@@ -377,7 +370,5 @@ const App = () => (
     </AuthProvider>
   </ThemeProvider>
 );
-
-export default App;
 
 export default App;

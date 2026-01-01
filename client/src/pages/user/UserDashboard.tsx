@@ -28,6 +28,8 @@ import PersonalEventFeed from "./PersonalEventFeed";
 import EventUpdatesSubscription from "./EventUpdatesSubscription";
 import PaymentPlans from "./PaymentPlans";
 import Invoices from "./Invoices";
+import MyTickets from "./MyTickets";
+import SavedEvents from "./SavedEvents";
 
 const UserDashboard = () => {
   const location = useLocation();
@@ -55,11 +57,18 @@ const UserDashboard = () => {
   // Show success message if available
   const successMessage = location.state?.message;
 
-  // Check if we should show navigation buttons (only on specific sections)
-  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'attendees', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
+  // No longer check for specific event sections - using simplified structure
 
   const renderSection = () => {
     switch (activeSection) {
+      case "my-events":
+        return (
+          <DashboardMyEvent eventData={eventData} registration={registration} user={user} />
+        );
+      case "tickets":
+        return <MyTickets />;
+      case "saved":
+        return <SavedEvents />;
       case "speakers":
         return <DashboardSpeakers eventData={eventData} />;
       case "exhibitors":
@@ -70,10 +79,6 @@ const UserDashboard = () => {
         return <DashboardAttendees />;
       case "agenda":
         return <DashboardAgenda eventData={eventData} user={user} />;
-      case "my-event":
-        return (
-          <DashboardMyEvent eventData={eventData} registration={registration} user={user} />
-        );
       case "my-badge":
         return (
           <DashboardMyBadge
@@ -138,7 +143,7 @@ const UserDashboard = () => {
         activeSection={activeSection}
         eventTitle={eventData?.title}
       />
-      <main className={`${shouldShowNavigationButtons ? 'pt-36' : 'pt-24'} flex-1`}>
+      <main className="pt-24 flex-1">
         {/* Success Message */}
         {successMessage && (
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">

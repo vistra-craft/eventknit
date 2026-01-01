@@ -647,20 +647,3 @@ const AnalyticsOverview = () => {
 };
 
 export default AnalyticsOverview;
-
-                      if (name === "Attendees") return (value as number).toLocaleString();
-                      return (value as number).toString();
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-        </div>
-      </div>
-    </OrganizerLayout>
-  );
-};
-
-export default AnalyticsOverview;

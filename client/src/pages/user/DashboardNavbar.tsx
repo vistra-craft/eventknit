@@ -3,20 +3,15 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   MessageCircle,
   Home,
-  User,
   Settings,
-  Users,
   HelpCircle,
   FileText,
   LogOut,
   Calendar,
-  Mic,
-  Building2,
-  CalendarDays,
   Badge,
   Moon,
   Sun,
-  Award,
+  Heart,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import Logo from '../../components/Logo';
@@ -44,15 +39,12 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  // Navigation items for the center of the navbar
+  // Navigation items for mobile and secondary navigation
   const navigationItems = [
-    { key: "speakers", label: "Speakers", icon: Mic },
-    { key: "exhibitors", label: "Exhibitors", icon: Building2 },
-    { key: "sponsors", label: "Sponsors", icon: Award },
-    { key: "attendees", label: "Attendees", icon: Users },
-    { key: "agenda", label: "Agenda", icon: CalendarDays },
-    { key: "my-badge", label: "My Badge", icon: Badge },
-    { key: "abstracts", label: "Submit Abstract", icon: FileText },
+    { key: "home", label: "Dashboard", icon: Home },
+    { key: "my-events", label: "My Events", icon: Calendar },
+    { key: "tickets", label: "My Tickets", icon: Badge },
+    { key: "saved", label: "Saved Events", icon: Heart },
   ];
 
   const handleNavigation = (section: string) => {
@@ -66,11 +58,10 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
     logout();
   };
 
-  // Check if we should show navigation buttons (only on specific sections)
-  const shouldShowNavigationButtons = ['speakers', 'exhibitors', 'sponsors', 'attendees', 'agenda', 'my-badge', 'abstracts'].includes(activeSection);
+  // No longer need special navigation buttons - using simpler structure
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-sm ${shouldShowNavigationButtons ? 'h-32' : 'h-16'}`}>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-sm h-16">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Row - Main Navbar Content */}
         <div className="flex justify-between items-center h-16">
@@ -243,34 +234,6 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
             )}
           </div>
         </div>
-
-        {/* Bottom Row - Navigation Buttons (Conditional) */}
-        {shouldShowNavigationButtons && (
-          <div className="flex justify-center items-center h-16 border-t border-border/50">
-            <div className="flex items-center space-x-1">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeSection === item.key;
-                return (
-                  <Button
-                    key={item.key}
-                    onClick={() => handleNavigation(item.key)}
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
-                    className={`px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {item.label}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );

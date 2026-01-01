@@ -295,13 +295,122 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Main Content - My Events */}
+          {/* Main Content - Dashboard Overview */}
           <div className="lg:col-span-3">
             <div className="mb-8">
-              <h1 className="text-lg font-semibold text-foreground mb-2">My Events</h1>
+              <h1 className="text-2xl font-semibold text-foreground mb-2">Dashboard</h1>
               <p className="text-muted-foreground">
-                Manage and explore all your registered events
+                Welcome back! Here's your event overview
               </p>
+            </div>
+
+            {/* Quick Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-accent-electric/10 rounded-lg flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-accent-electric" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-semibold text-foreground mb-1">
+                    {userEvents.filter(e => e.status === 'upcoming').length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Upcoming Events</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-primary" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-semibold text-foreground mb-1">
+                    {totalEvents || userEvents.length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Registered</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-accent-coral/10 rounded-lg flex items-center justify-center">
+                      <Star className="h-6 w-6 text-accent-coral" />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-semibold text-foreground mb-1">
+                    {completedEvents || userEvents.filter(e => e.status === 'completed').length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Events Attended</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Upcoming Events Widget */}
+            {userEvents.filter(e => e.status === 'upcoming').length > 0 && (
+              <div className="mb-8">
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md transition-all">
+                  <div className="p-6 border-b border-border">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" />
+                      Your Next Events
+                    </h3>
+                  </div>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      {userEvents
+                        .filter(e => e.status === 'upcoming')
+                        .slice(0, 3)
+                        .map((event) => (
+                          <div 
+                            key={event.id}
+                            className="flex items-start gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/user/dashboard?section=my-event`, { state: { eventData: event } })}
+                          >
+                            <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                              <img 
+                                src={event.image} 
+                                alt={event.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-foreground mb-1 truncate">{event.title}</h4>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>{event.date}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                <span className="truncate">{event.location}</span>
+                              </div>
+                            </div>
+                            <Badge className="bg-blue-100 text-blue-800 border-0">
+                              Upcoming
+                            </Badge>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* My Events Section */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-foreground">All My Events</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/')}
+                >
+                  Browse More Events
+                </Button>
+              </div>
             </div>
 
             {/* Events Grid */}

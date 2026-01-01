@@ -753,30 +753,3 @@ export const organizerDashboardValidations = {
     tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
   }),
 };
-
-    eventId: Joi.string().uuid().optional(),
-    userId: Joi.string().uuid().optional(),
-    page: Joi.number().integer().min(1).optional(),
-    limit: Joi.number().integer().min(1).max(100).optional(),
-  }),
-
-  teamMetricsQuery: Joi.object({
-    userId: Joi.string().uuid().optional(),
-    startDate: Joi.date().iso().optional(),
-    endDate: Joi.date().iso().optional(),
-  }),
-
-  // Subscription Management
-  upgradeSubscription: Joi.object({
-    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
-    billingEmail: Joi.string().email().when('tier', {
-      is: 'PREMIUM',
-      then: Joi.required(),
-      otherwise: Joi.optional().allow(null, ''),
-    }),
-  }),
-
-  downgradeSubscription: Joi.object({
-    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
-  }),
-};

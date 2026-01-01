@@ -177,35 +177,4 @@ export const EventCard: React.FC<EventCardProps> = ({
     </Card>
   );
 };
-          <Calendar className="w-4 h-4" />
-          <span>{dateDisplay}</span>
-        </div>
-
-        {/* Time */}
-        {timeDisplay && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="w-4 h-4" />
-            <span>{timeDisplay}</span>
-          </div>
-        )}
-
-        {/* Location */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4" />
-          <span className="truncate">{venue ? `${venue}, ${location}` : location}</span>
-        </div>
-
-        {/* Price */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{price === 'Free' || price === '0' || !price
-            ? 'Free'
-            : price === 'See tickets'
-              ? 'See tickets'
-              : currency
-                ? `From ${currency}${price}`
-                : `From ${price}`}</span>
-        </div>
-      </div>
-    </Card>
-  );
-};
+        

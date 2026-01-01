@@ -25,7 +25,7 @@ const RevenueReports = () => {
   const [timeRange, setTimeRange] = useState("30d");
   const [selectedEvent, setSelectedEvent] = useState("all");
   const [stats, setStats] = useState<{ totalRevenue?: number } | null>(null);
-  const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string }>>([]);
+  const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string; category?: string }>>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,7 +43,7 @@ const RevenueReports = () => {
         ]);
         if (statsResponse.success) setStats(statsResponse.data.stats);
         if (eventsResponse.success && eventsResponse.data?.events) {
-          setEvents(eventsResponse.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string }>);
+          setEvents(eventsResponse.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string; category?: string }>);
         }
       } catch (err) {
         console.error('Failed to load revenue data:', err);
@@ -531,20 +531,6 @@ const RevenueReports = () => {
                         <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-        </div>
-      </div>
-    </OrganizerLayout>
-  );
-};
-
-export default RevenueReports;
-
                   </CardContent>
                 </Card>
               ))}

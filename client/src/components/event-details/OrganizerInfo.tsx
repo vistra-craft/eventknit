@@ -117,35 +117,4 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
   );
 };
 
-                  const Icon = iconMap[platformLower] || <ExternalLink className="w-4 h-4" />;
-                  
-                  const platformLabels: Record<string, string> = {
-                    facebook: 'Facebook',
-                    twitter: 'Twitter / X',
-                    instagram: 'Instagram',
-                    linkedin: 'LinkedIn',
-                    youtube: 'YouTube',
-                    tiktok: 'TikTok',
-                    website: 'Website'
-                  };
-                  
-                  return (
-                    <a
-                      key={platform}
-                      href={url.startsWith('http') ? url : `https://${url}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card-surface hover:bg-primary/10 hover:border-primary transition-colors"
-                      title={platformLabels[platformLower] || platform}
-                    >
-                      {Icon}
-                    </a>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-    </section>
-  );
-};
+              

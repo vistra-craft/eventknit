@@ -29,7 +29,7 @@ export class AdvancedTeamService {
         const permissions = await prisma.permission.findMany({
           where: { key: { in: data.permissionKeys } },
         });
-        
+
         if (permissions.length !== data.permissionKeys.length) {
           const foundKeys = permissions.map(p => p.key);
           const missingKeys = data.permissionKeys.filter(k => !foundKeys.includes(k));
@@ -162,7 +162,7 @@ export class AdvancedTeamService {
         const permissions = await prisma.permission.findMany({
           where: { key: { in: data.permissionKeys } },
         });
-        
+
         if (permissions.length !== data.permissionKeys.length) {
           const foundKeys = permissions.map(p => p.key);
           const missingKeys = data.permissionKeys.filter(k => !foundKeys.includes(k));
@@ -336,197 +336,6 @@ export class AdvancedTeamService {
                 id: true,
                 firstName: true,
                 lastName: true,
-                email: true,
-              },
-            },
-            event: {
-              select: {
-                id: true,
-                title: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: limit,
-          skip,
-        }),
-        prisma.teamActivityFeed.count({ where }),
-      ]);
-
-      return {
-        activities,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      };
-    } catch (error) {
-      logger.error('Error getting team activity feed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Log team activity
-   */
-  static async logActivity(
-    organizerId: string,
-    userId: string,
-    action: string,
-    description: string,
-    metadata?: any,
-    eventId?: string,
-  ) {
-    try {
-      await prisma.teamActivityFeed.create({
-        data: {
-          organizerId,
-          userId,
-          eventId,
-          action,
-          description,
-          metadata,
-        },
-      });
-
-      return { success: true };
-    } catch (error) {
-      logger.error('Error logging team activity:', error);
-      // Don't throw - activity logging shouldn't break the flow
-      return { success: false };
-    }
-  }
-
-  /**
-   * Get team performance metrics
-   */
-  static async getTeamPerformanceMetrics(organizerId: string, filters?: {
-    userId?: string;
-    startDate?: Date;
-    endDate?: Date;
-  }) {
-    try {
-      const where: any = {
-        organizerId,
-      };
-
-      if (filters?.userId) {
-        where.userId = filters.userId;
-      }
-
-      if (filters?.startDate || filters?.endDate) {
-        where.periodStart = {};
-        where.periodEnd = {};
-        if (filters.startDate) {
-          where.periodStart.gte = filters.startDate;
-        }
-        if (filters.endDate) {
-          where.periodEnd.lte = filters.endDate;
-        }
-      }
-
-      const metrics = await prisma.teamPerformanceMetric.findMany({
-        where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-        },
-        orderBy: { periodStart: 'desc' },
-      });
-
-      // Aggregate metrics
-      const aggregated = metrics.reduce((acc: any, metric) => {
-        if (!acc[metric.userId]) {
-          acc[metric.userId] = {
-            user: metric.user,
-            eventsCreated: 0,
-            ticketsSold: 0,
-            revenueGenerated: 0,
-            attendeesManaged: 0,
-          };
-        }
-        acc[metric.userId].eventsCreated += metric.eventsCreated;
-        acc[metric.userId].ticketsSold += metric.ticketsSold;
-        acc[metric.userId].revenueGenerated += Number(metric.revenueGenerated);
-        acc[metric.userId].attendeesManaged += metric.attendeesManaged;
-        return acc;
-      }, {});
-
-      return {
-        metrics: Object.values(aggregated),
-        total: metrics.length,
-      };
-    } catch (error) {
-      logger.error('Error getting team performance metrics:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update team performance metrics
-   */
-  static async updateTeamMetrics(
-    organizerId: string,
-    userId: string,
-    data: {
-      eventsCreated?: number;
-      ticketsSold?: number;
-      revenueGenerated?: number;
-      attendeesManaged?: number;
-    },
-    periodStart: Date,
-    periodEnd: Date,
-  ) {
-    try {
-      const metric = await prisma.teamPerformanceMetric.upsert({
-        where: {
-          organizerId_userId_periodStart_periodEnd: {
-            organizerId,
-            userId,
-            periodStart,
-            periodEnd,
-          },
-        },
-        create: {
-          organizerId,
-          userId,
-          eventsCreated: data.eventsCreated || 0,
-          ticketsSold: data.ticketsSold || 0,
-          revenueGenerated: data.revenueGenerated || 0,
-          attendeesManaged: data.attendeesManaged || 0,
-          periodStart,
-          periodEnd,
-        },
-        update: {
-          eventsCreated: {
-            increment: data.eventsCreated || 0,
-          },
-          ticketsSold: {
-            increment: data.ticketsSold || 0,
-          },
-          revenueGenerated: {
-            increment: data.revenueGenerated || 0,
-          },
-          attendeesManaged: {
-            increment: data.attendeesManaged || 0,
-          },
-        },
-      });
-
-      return metric;
-    } catch (error) {
-      logger.error('Error updating team metrics:', error);
-      throw error;
-    }
-  }
-}
-
                 email: true,
               },
             },

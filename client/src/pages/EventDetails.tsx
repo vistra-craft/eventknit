@@ -36,7 +36,7 @@ const formatTimeForDisplay = (timeStr: string): string => {
 };
 
 // Helper function to generate agenda summary
-const generateAgendaSummary = (agenda: any[]) => {
+const generateAgendaSummary = (agenda: any[] | null | undefined) => {
   if (!agenda || agenda.length === 0) return null;
   
   // Group agenda items by session type
@@ -396,11 +396,12 @@ const EventDetails = () => {
                 const hasSpeakers = speakersData && Array.isArray(speakersData) && speakersData.length > 0;
                 
                 if (hasSpeakers) {
+                  const safeSpeakers = speakersData as any[];
                   return (
                     <section>
                       <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {speakersData.slice(0, 8).map((speaker: any, index: number) => (
+                        {safeSpeakers.slice(0, 8).map((speaker: any, index: number) => (
                           <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border-0 bg-card-surface shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
                               {speaker?.image ? (
@@ -414,9 +415,9 @@ const EventDetails = () => {
                           </div>
                         ))}
                       </div>
-                      {speakersData.length > 8 && (
+                      {safeSpeakers.length > 8 && (
                         <p className="text-sm text-muted-foreground mt-4 text-center">
-                          + {speakersData.length - 8} more speakers. View full speaker profiles in your attendee dashboard after registration.
+                          + {safeSpeakers.length - 8} more speakers. View full speaker profiles in your attendee dashboard after registration.
                         </p>
                       )}
                     </section>
@@ -549,94 +550,4 @@ const EventDetails = () => {
 
 export default EventDetails;
 
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
-                      <Heart className="w-4 h-4" />
-                      Save
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
-                      <Share2 className="w-4 h-4" />
-                      Share
-                    </Button>
-                  </div>
-
-                  {/* Event Stats */}
-                  <div className="pt-4 border-t space-y-2 text-sm">
-                    {(() => {
-                      // Debug logging
-                      console.log('Event capacity:', event.capacity);
-                      console.log('Event availableSlots:', event.availableSlots);
-                      console.log('Event registrationCount:', event.registrationCount);
-                      
-                      // Always show capacity if it exists (this is the total, not available)
-                      const capacity = event.capacity;
-                      const registered = event.registrationCount || 0;
-                      const available = event.availableSlots;
-                      
-                      return (
-                        <>
-                          {capacity !== null && capacity !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Capacity:</span>
-                              <span className="font-medium">{capacity} attendees</span>
-                            </div>
-                          )}
-                          {registered !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Registered:</span>
-                              <span className="font-medium">{registered}</span>
-                            </div>
-                          )}
-                          {available !== null && available !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Available:</span>
-                              <span className="font-medium text-primary">{available} spots</span>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </Card>
-
-            </div>
-          </div>
-
-          {/* Related Events - Full Width */}
-          <section className="pt-6 border-t border-border/60 mt-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">You May Also Like</h2>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  navigate('/');
-                  // Scroll to events section after navigation
-                  setTimeout(() => {
-                    const eventsSection = document.querySelector('[data-section="events"]');
-                    if (eventsSection) {
-                      eventsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }, 100);
-                }}
-                className="gap-2 text-primary hover:bg-accent-coral hover:text-white transition-colors"
-              >
-                View All
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-            <RelatedEvents 
-              currentEventId={event.id}
-              category={event.category || undefined}
-              tags={event.tags}
-            />
-          </section>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
-  );
-};
-
-export default EventDetails;
+                 

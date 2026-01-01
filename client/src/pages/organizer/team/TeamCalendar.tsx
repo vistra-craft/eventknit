@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getOrganizerStaffAssignments, getOrganizerEvents, type EventStaffAssignment } from "@/lib/organizer-api";
-import type { Event } from "@/lib/event-api";
 
 interface EventAssignment {
   id: string;
@@ -453,86 +452,4 @@ const TeamCalendar = () => {
 
 export default TeamCalendar;
 
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : staffSchedules.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No staff schedules available
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {staffSchedules.map((staff) => (
-                    <div key={staff.id} className="border border-border rounded-lg p-3">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-foreground">{staff.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {staff.role}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        {staff.events.map((event) => (
-                          <div key={event.eventId} className="text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-foreground">{event.eventName}</span>
-                              <Badge className={`text-xs ${getStatusColor(event.status)}`}>
-                                {getStatusIcon(event.status)}
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatDate(event.date)} • {event.time}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-base">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Upcoming Events</span>
-                  <span className="font-medium text-foreground">{eventAssignments.length}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Staff Assigned</span>
-                  <span className="font-medium text-foreground">
-                    {eventAssignments.reduce((sum, event) => sum + event.staff.length, 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Confirmed</span>
-                  <span className="font-medium text-green-600">
-                    {eventAssignments.reduce((sum, event) => 
-                      sum + event.staff.filter(s => s.status === 'confirmed').length, 0
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Active Staff</span>
-                  <span className="font-medium text-foreground">
-                    {new Set(staffSchedules.map(s => s.id)).size}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default TeamCalendar;
+         
