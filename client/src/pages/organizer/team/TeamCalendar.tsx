@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,12 @@ import {
   Search,
   User,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { getOrganizerStaffAssignments, getOrganizerEvents, type EventStaffAssignment } from "@/lib/organizer-api";
+import type { Event } from "@/lib/event-api";
 
 interface EventAssignment {
   id: string;
@@ -47,72 +52,128 @@ interface StaffSchedule {
 }
 
 const TeamCalendar = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
+  const [loading, setLoading] = useState(true);
+  const [eventAssignments, setEventAssignments] = useState<EventAssignment[]>([]);
+  const [staffSchedules, setStaffSchedules] = useState<StaffSchedule[]>([]);
 
-  // Mock data
-  const eventAssignments: EventAssignment[] = [
-    {
-      id: "1",
-      eventName: "Tech Conference 2024",
-      date: "2024-01-15",
-      time: "09:00 - 17:00",
-      location: "Convention Center",
-      staff: [
-        { id: "1", name: "Alex Rodriguez", role: "Ticket Scanner", status: "confirmed" },
-        { id: "2", name: "Maria Santos", role: "Event Manager", status: "confirmed" },
-        { id: "3", name: "David Kim", role: "Check-in Staff", status: "pending" }
-      ],
-      totalCapacity: 500,
-      confirmedAttendees: 450
-    },
-    {
-      id: "2",
-      eventName: "Music Festival",
-      date: "2024-01-20",
-      time: "14:00 - 23:00",
-      location: "Central Park",
-      staff: [
-        { id: "1", name: "Alex Rodriguez", role: "Ticket Scanner", status: "confirmed" },
-        { id: "4", name: "Sarah Johnson", role: "Supervisor", status: "confirmed" }
-      ],
-      totalCapacity: 2000,
-      confirmedAttendees: 1850
-    },
-    {
-      id: "3",
-      eventName: "Workshop Series",
-      date: "2024-01-22",
-      time: "10:00 - 16:00",
-      location: "Community Center",
-      staff: [
-        { id: "2", name: "Maria Santos", role: "Event Manager", status: "confirmed" },
-        { id: "3", name: "David Kim", role: "Check-in Staff", status: "confirmed" }
-      ],
-      totalCapacity: 100,
-      confirmedAttendees: 95
-    }
-  ];
+  const fetchCalendarData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Get upcoming events
+      const eventsResponse = await getOrganizerEvents({ 
+        status: 'APPROVED',
+        upcoming: true,
+      });
+      
+      // Get all staff assignments
+      const assignmentsResponse = await getOrganizerStaffAssignments();
+      
+      if (!eventsResponse.success || !eventsResponse.data || !assignmentsResponse.success || !assignmentsResponse.data) {
+        return;
+      }
 
-  const staffSchedules: StaffSchedule[] = [
-    {
-      id: "1",
-      name: "Alex Rodriguez",
-      role: "Ticket Scanner",
-      events: [
-        { eventId: "1", eventName: "Tech Conference 2024", date: "2024-01-15", time: "09:00 - 17:00", status: "confirmed" },
-        { eventId: "2", eventName: "Music Festival", date: "2024-01-20", time: "14:00 - 23:00", status: "confirmed" }
-      ]
-    },
-    {
-      id: "2",
-      name: "Maria Santos",
-      role: "Event Manager",
-      events: [
-        { eventId: "1", eventName: "Tech Conference 2024", date: "2024-01-15", time: "09:00 - 17:00", status: "confirmed" },
-        { eventId: "3", eventName: "Workshop Series", date: "2024-01-22", time: "10:00 - 16:00", status: "confirmed" }
-      ]
+      const events = eventsResponse.data.events || [];
+      const assignments = assignmentsResponse.data.assignments || [];
+
+      // Group assignments by event
+      const assignmentsByEvent = new Map<string, EventStaffAssignment[]>();
+      assignments.forEach(assignment => {
+        if (assignment.eventId) {
+          const existing = assignmentsByEvent.get(assignment.eventId) || [];
+          existing.push(assignment);
+          assignmentsByEvent.set(assignment.eventId, existing);
+        }
+      });
+
+      // Transform to EventAssignment format
+      const transformedEvents: EventAssignment[] = events
+        .filter(event => {
+          const eventDate = event.startDate ? new Date(event.startDate) : null;
+          if (!eventDate) return false;
+          return eventDate >= new Date(); // Only upcoming events
+        })
+        .map(event => {
+          const eventAssignments = assignmentsByEvent.get(event.id) || [];
+          const eventDate = event.startDate ? new Date(event.startDate) : new Date();
+          
+          return {
+            id: event.id,
+            eventName: event.title,
+            date: event.startDate || eventDate.toISOString().split('T')[0],
+            time: event.startTime && event.endTime 
+              ? `${event.startTime} - ${event.endTime}` 
+              : event.startTime || 'TBA',
+            location: event.venue || event.location || 'TBA',
+            staff: eventAssignments
+              .filter(a => a.isActive)
+              .map(a => ({
+                id: a.staffId,
+                name: `${a.staff.firstName} ${a.staff.lastName}`,
+                role: a.role,
+                status: a.isActive ? 'confirmed' as const : 'pending' as const,
+              })),
+            totalCapacity: event.capacity || 0,
+            confirmedAttendees: 0, // Would need registration count - placeholder
+          };
+        })
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      setEventAssignments(transformedEvents);
+
+      // Transform to StaffSchedule format
+      const staffMap = new Map<string, StaffSchedule>();
+      
+      assignments
+        .filter(a => a.isActive && a.event)
+        .forEach(assignment => {
+          const staffId = assignment.staffId;
+          const staffName = `${assignment.staff.firstName} ${assignment.staff.lastName}`;
+          const event = assignment.event!;
+          
+          if (!staffMap.has(staffId)) {
+            staffMap.set(staffId, {
+              id: staffId,
+              name: staffName,
+              role: assignment.staff.role,
+              events: [],
+            });
+          }
+          
+          const schedule = staffMap.get(staffId)!;
+          const eventDate = event.startDate ? new Date(event.startDate) : new Date();
+          const eventTime = event.startTime && event.endTime 
+            ? `${event.startTime} - ${event.endTime}` 
+            : event.startTime || 'TBA';
+          
+          schedule.events.push({
+            eventId: event.id,
+            eventName: event.title,
+            date: event.startDate || eventDate.toISOString().split('T')[0],
+            time: eventTime,
+            status: assignment.isActive ? 'confirmed' : 'pending',
+          });
+        });
+
+      setStaffSchedules(Array.from(staffMap.values()));
+    } catch (error) {
+      console.error("Error fetching calendar data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load calendar data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, [toast]);
+
+  useEffect(() => {
+    fetchCalendarData();
+  }, [fetchCalendarData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -140,10 +201,6 @@ const TeamCalendar = () => {
     });
   };
 
-  const getUpcomingEvents = () => {
-    const today = new Date();
-    return eventAssignments.filter(event => new Date(event.date) >= today);
-  };
 
   return (
     <div className="space-y-8">
@@ -174,9 +231,12 @@ const TeamCalendar = () => {
               Month
             </Button>
           </div>
-          <Button className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto">
+          <Button 
+            className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto"
+            onClick={() => navigate('/organizer/events')}
+          >
             <Plus className="h-4 w-4 mr-2" />
-            Assign Staff
+            Manage Events
           </Button>
         </div>
       </div>
@@ -221,40 +281,55 @@ const TeamCalendar = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {getUpcomingEvents().map((event) => (
-                  <div key={event.id} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-medium text-foreground">{event.eventName}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            {formatDate(event.date)}
-                          </Badge>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : eventAssignments.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No upcoming events with staff assignments
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {eventAssignments.map((event) => (
+                    <div key={event.id} className="border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h3 className="font-medium text-foreground">{event.eventName}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {formatDate(event.date)}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
+                            <span className="flex items-center">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {event.time}
+                            </span>
+                            <span className="flex items-center">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {event.location}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-4 text-sm">
+                            {event.totalCapacity > 0 && (
+                              <span className="text-muted-foreground">
+                                Capacity: <span className="font-medium text-foreground">{event.confirmedAttendees}/{event.totalCapacity}</span>
+                              </span>
+                            )}
+                            <span className="text-muted-foreground">
+                              Staff: <span className="font-medium text-foreground">{event.staff.length}</span>
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
-                          <span className="flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {event.time}
-                          </span>
-                          <span className="flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            {event.location}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm">
-                          <span className="text-muted-foreground">
-                            Capacity: <span className="font-medium text-foreground">{event.confirmedAttendees}/{event.totalCapacity}</span>
-                          </span>
-                          <span className="text-muted-foreground">
-                            Staff: <span className="font-medium text-foreground">{event.staff.length}</span>
-                          </span>
-                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => navigate(`/organizer/event/${event.id}`)}
+                        >
+                          Manage
+                        </Button>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Manage
-                      </Button>
-                    </div>
                     
                     {/* Staff Assignments */}
                     <div className="mt-4 pt-4 border-t">
@@ -279,7 +354,8 @@ const TeamCalendar = () => {
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -294,34 +370,44 @@ const TeamCalendar = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {staffSchedules.map((staff) => (
-                  <div key={staff.id} className="border border-border rounded-lg p-3">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium text-foreground">{staff.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {staff.role}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1">
-                      {staff.events.map((event) => (
-                        <div key={event.eventId} className="text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="text-foreground">{event.eventName}</span>
-                            <Badge className={`text-xs ${getStatusColor(event.status)}`}>
-                              {getStatusIcon(event.status)}
-                            </Badge>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : staffSchedules.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No staff schedules available
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {staffSchedules.map((staff) => (
+                    <div key={staff.id} className="border border-border rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-foreground">{staff.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {staff.role}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        {staff.events.map((event) => (
+                          <div key={event.eventId} className="text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-foreground">{event.eventName}</span>
+                              <Badge className={`text-xs ${getStatusColor(event.status)}`}>
+                                {getStatusIcon(event.status)}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatDate(event.date)} • {event.time}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatDate(event.date)} • {event.time}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -334,7 +420,7 @@ const TeamCalendar = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Upcoming Events</span>
-                  <span className="font-medium text-foreground">{getUpcomingEvents().length}</span>
+                  <span className="font-medium text-foreground">{eventAssignments.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Staff Assigned</span>
@@ -351,11 +437,93 @@ const TeamCalendar = () => {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Pending</span>
-                  <span className="font-medium text-yellow-600">
+                  <span className="text-sm text-muted-foreground">Active Staff</span>
+                  <span className="font-medium text-foreground">
+                    {new Set(staffSchedules.map(s => s.id)).size}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TeamCalendar;
+
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : staffSchedules.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No staff schedules available
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {staffSchedules.map((staff) => (
+                    <div key={staff.id} className="border border-border rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-foreground">{staff.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {staff.role}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        {staff.events.map((event) => (
+                          <div key={event.eventId} className="text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-foreground">{event.eventName}</span>
+                              <Badge className={`text-xs ${getStatusColor(event.status)}`}>
+                                {getStatusIcon(event.status)}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatDate(event.date)} • {event.time}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Stats */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-base">Quick Stats</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Upcoming Events</span>
+                  <span className="font-medium text-foreground">{eventAssignments.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Staff Assigned</span>
+                  <span className="font-medium text-foreground">
+                    {eventAssignments.reduce((sum, event) => sum + event.staff.length, 0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Confirmed</span>
+                  <span className="font-medium text-green-600">
                     {eventAssignments.reduce((sum, event) => 
-                      sum + event.staff.filter(s => s.status === 'pending').length, 0
+                      sum + event.staff.filter(s => s.status === 'confirmed').length, 0
                     )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Active Staff</span>
+                  <span className="font-medium text-foreground">
+                    {new Set(staffSchedules.map(s => s.id)).size}
                   </span>
                 </div>
               </div>

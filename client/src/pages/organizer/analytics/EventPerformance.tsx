@@ -35,7 +35,14 @@ const EventPerformance = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await getOrganizerEvents({ limit: 100 });
+        const filters: { limit?: number; status?: string } = { limit: 100 };
+        
+        // Apply status filter
+        if (selectedEvent !== 'all') {
+          filters.status = selectedEvent.toUpperCase();
+        }
+        
+        const response = await getOrganizerEvents(filters);
         if (response.success && response.data?.events) {
           setEvents(response.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; capacity?: number; duration?: string; location?: string; venue?: string; speakers?: Array<unknown>; exhibitors?: Array<unknown>; image?: string; category?: string }>);
         }
@@ -44,7 +51,7 @@ const EventPerformance = () => {
       }
     };
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, selectedEvent]);
 
   const eventPerformanceData = events.map(e => {
     const revenue = typeof e.price === 'number' ? e.price * (e.attendees || 0) : 0;
@@ -134,47 +141,85 @@ const EventPerformance = () => {
     },
   ];
 
-  // Chart data for performance analysis
-  const performanceTrendsData = [
-    { month: "Jan", attendance: 85, satisfaction: 4.2, engagement: 78, revenue: 45000 },
-    { month: "Feb", attendance: 88, satisfaction: 4.4, engagement: 82, revenue: 32000 },
-    { month: "Mar", attendance: 92, satisfaction: 4.6, engagement: 89, revenue: 145200 },
-    { month: "Apr", attendance: 87, satisfaction: 4.5, engagement: 85, revenue: 28000 },
-    { month: "May", attendance: 90, satisfaction: 4.7, engagement: 91, revenue: 18000 },
-    { month: "Jun", attendance: 94, satisfaction: 4.8, engagement: 93, revenue: 165000 },
-  ];
+  // Calculate performance trends from real events (grouped by month)
+  const getPerformanceTrendsData = () => {
+    const monthMap = new Map<string, { attendance: number[]; satisfaction: number[]; engagement: number[]; revenue: number[] }>();
+    
+    events.forEach(event => {
+      if (event.startDate) {
+        const date = new Date(event.startDate);
+        const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+        const existing = monthMap.get(monthKey) || { attendance: [], satisfaction: [], engagement: [], revenue: [] };
+        
+        const attendanceRate = event.attendees && event.capacity ? (event.attendees / event.capacity) * 100 : 0;
+        const conversion = event.views ? ((event.attendees || 0) / event.views * 100) : 0;
+        const revenue = typeof event.price === 'number' ? event.price * (event.attendees || 0) : 0;
+        
+        existing.attendance.push(attendanceRate);
+        existing.satisfaction.push(event.rating || 0);
+        existing.engagement.push(conversion);
+        existing.revenue.push(revenue);
+        monthMap.set(monthKey, existing);
+      }
+    });
+    
+    return Array.from(monthMap.entries()).map(([month, data]) => ({
+      month,
+      attendance: data.attendance.length > 0 ? Math.round(data.attendance.reduce((a, b) => a + b, 0) / data.attendance.length) : 0,
+      satisfaction: data.satisfaction.length > 0 ? parseFloat((data.satisfaction.reduce((a, b) => a + b, 0) / data.satisfaction.length).toFixed(1)) : 0,
+      engagement: data.engagement.length > 0 ? Math.round(data.engagement.reduce((a, b) => a + b, 0) / data.engagement.length) : 0,
+      revenue: data.revenue.reduce((a, b) => a + b, 0),
+    }));
+  };
 
-  const eventComparisonData = [
-    { name: "Tech Summit", attendees: 485, revenue: 145200, conversion: 14.9, rating: 4.8 },
-    { name: "Marketing Conf", attendees: 450, revenue: 67500, conversion: 21.4, rating: 4.6 },
-    { name: "Business Workshop", attendees: 78, revenue: 15600, conversion: 8.8, rating: 4.7 },
-    { name: "Food & Wine Expo", attendees: 320, revenue: 25600, conversion: 16.9, rating: 4.5 },
-  ];
+  const performanceTrendsData = getPerformanceTrendsData();
 
-  const satisfactionDistributionData = [
-    { rating: "5 stars", count: 45, percentage: 45 },
-    { rating: "4 stars", count: 35, percentage: 35 },
-    { rating: "3 stars", count: 15, percentage: 15 },
-    { rating: "2 stars", count: 3, percentage: 3 },
-    { rating: "1 star", count: 2, percentage: 2 },
-  ];
+  // Event comparison data from real events (top 10 by attendees)
+  const eventComparisonData = eventPerformanceData
+    .sort((a, b) => b.attendees - a.attendees)
+    .slice(0, 10)
+    .map(event => ({
+      name: event.title.length > 20 ? event.title.substring(0, 20) + '...' : event.title,
+      attendees: event.attendees,
+      revenue: event.revenue,
+      conversion: parseFloat(event.conversion),
+      rating: event.rating,
+    }));
 
-  const attendanceVsRevenueData = [
-    { attendees: 78, revenue: 15600, event: "Business Workshop" },
-    { attendees: 320, revenue: 25600, event: "Food & Wine Expo" },
-    { attendees: 450, revenue: 67500, event: "Marketing Conf" },
-    { attendees: 485, revenue: 145200, event: "Tech Summit" },
-  ];
+  // Calculate satisfaction distribution from real ratings
+  const satisfactionDistributionData = (() => {
+    const ratings = eventPerformanceData.map(e => e.rating).filter(r => r > 0);
+    if (ratings.length === 0) return [];
+    
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    ratings.forEach(rating => {
+      const rounded = Math.round(rating);
+      if (rounded >= 5) distribution[5]++;
+      else if (rounded >= 4) distribution[4]++;
+      else if (rounded >= 3) distribution[3]++;
+      else if (rounded >= 2) distribution[2]++;
+      else distribution[1]++;
+    });
+    
+    const total = ratings.length;
+    return [
+      { rating: "5 stars", count: distribution[5], percentage: Math.round((distribution[5] / total) * 100) },
+      { rating: "4 stars", count: distribution[4], percentage: Math.round((distribution[4] / total) * 100) },
+      { rating: "3 stars", count: distribution[3], percentage: Math.round((distribution[3] / total) * 100) },
+      { rating: "2 stars", count: distribution[2], percentage: Math.round((distribution[2] / total) * 100) },
+      { rating: "1 star", count: distribution[1], percentage: Math.round((distribution[1] / total) * 100) },
+    ].filter(item => item.count > 0);
+  })();
 
-  // Use imported data
+  // Attendance vs Revenue scatter data from real events
+  const attendanceVsRevenueData = eventPerformanceData.map(event => ({
+    attendees: event.attendees,
+    revenue: event.revenue,
+    event: event.title,
+  }));
+
   const eventsData = eventPerformanceData;
-
-  // Use imported performance metrics
   const metricsData = performanceMetrics;
-
-  // Debug: Log the data to console
-  console.log('EventPerformance - metricsData:', metricsData);
-  console.log('EventPerformance - eventsData:', eventsData);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -599,6 +644,51 @@ const EventPerformance = () => {
                 </CardContent>
               </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Attendance Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendance Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomBarChart
+                    data={performanceTrendsData}
+                    dataKey="attendance"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.info}
+                    formatter={(value) => `${value}%`}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Satisfaction Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Satisfaction Trends</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CustomLineChart
+                    data={performanceTrendsData}
+                    dataKey="satisfaction"
+                    xAxisKey="month"
+                    height={300}
+                    color={CHART_COLORS.warning}
+                    formatter={(value) => (value as number).toFixed(1)}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+        </div>
+      </div>
+    </OrganizerLayout>
+  );
+};
+
+export default EventPerformance;
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Attendance Trends */}

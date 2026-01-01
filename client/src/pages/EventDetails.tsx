@@ -9,7 +9,7 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, Clock, Store } from "lucide-react";
+import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, Clock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 // Helper function to format time for display
@@ -247,53 +247,6 @@ const EventDetails = () => {
                 socialLinks={event.socialLinks}
               />
 
-              
-              {/* Social Links */}
-              {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (
-                <Card className="border-0 bg-card-surface shadow-sm p-6">
-                  <h3 className="text-xl font-bold mb-4">Connect With Us</h3>
-                  <div className="flex flex-wrap gap-3">
-                    {Object.entries(event.socialLinks).map(([platform, url]) => {
-                      if (!url) return null;
-                      const platformKey = platform.toLowerCase();
-                      const Icon = {
-                        facebook: Facebook,
-                        twitter: Twitter,
-                        instagram: Instagram,
-                        linkedin: Linkedin,
-                        youtube: Youtube,
-                        tiktok: Globe, // TikTok icon not available in lucide-react yet, using Globe as fallback
-                        website: Globe
-                      }[platformKey] || Globe;
-                      
-                      const platformLabels: Record<string, string> = {
-                        facebook: 'Facebook',
-                        twitter: 'Twitter / X',
-                        instagram: 'Instagram',
-                        linkedin: 'LinkedIn',
-                        youtube: 'YouTube',
-                        tiktok: 'TikTok',
-                        website: 'Website'
-                      };
-                      
-                      return (
-                        <a
-                          key={platform}
-                          href={url.startsWith('http') ? url : `https://${url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all hover:shadow-md"
-                          title={platformLabels[platformKey] || platform}
-                        >
-                          <Icon className="w-5 h-5" />
-                          <span className="text-sm font-medium">{platformLabels[platformKey] || platform}</span>
-                        </a>
-                      );
-                    })}
-                  </div>
-                </Card>
-              )}
-
               {/* About Section */}
               <section>
                 <h2 className="text-3xl font-bold mb-4">About This Event</h2>
@@ -472,56 +425,6 @@ const EventDetails = () => {
                 return null;
               })()}
 
-
-              {/* Exhibitors & Sponsors */}
-              {( (event.exhibitors && event.exhibitors.length > 0) || (event.sponsors && event.sponsors.length > 0) ) && (
-                  <section className="space-y-8">
-                    {/* Exhibitors */}
-                    {event.exhibitors && event.exhibitors.length > 0 && (
-                      <div>
-                         <h2 className="text-3xl font-bold mb-4">Exhibitors</h2>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {event.exhibitors.map((exhibitor, idx) => (
-                              <Card key={idx} className="p-4 border-0 bg-card-surface shadow-sm hover:shadow-md transition-all">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                                     <Store className="w-6 h-6 text-muted-foreground" />
-                                  </div>
-                                  <div>
-                                    <h4 className="font-bold">{exhibitor.name}</h4>
-                                    {exhibitor.description && <p className="text-xs text-muted-foreground line-clamp-1">{exhibitor.description}</p>}
-                                  </div>
-                                </div>
-                              </Card>
-                            ))}
-                         </div>
-                      </div>
-                    )}
-
-                    {/* Sponsors */}
-                    {event.sponsors && event.sponsors.length > 0 && (
-                      <div>
-                        <h2 className="text-3xl font-bold mb-4">Sponsors</h2>
-                         <div className="flex flex-wrap gap-6 items-center">
-                            {event.sponsors.map((sponsor, idx) => (
-                              <div key={idx} className="text-center group">
-                                <div className="w-24 h-24 rounded-full bg-white shadow-sm border flex items-center justify-center p-2 mb-2 group-hover:scale-105 transition-transform">
-                                   {sponsor.logo ? (
-                                     <img src={sponsor.logo} alt={sponsor.name} className="max-w-full max-h-full object-contain" />
-                                   ) : (
-                                     <span className="text-xl font-bold text-primary">{sponsor.name.charAt(0)}</span>
-                                   )}
-                                </div>
-                                <span className="text-sm font-medium">{sponsor.name}</span>
-                                <span className="block text-xs text-muted-foreground uppercase">{sponsor.level}</span>
-                              </div>
-                            ))}
-                         </div>
-                      </div>
-                    )}
-                  </section>
-              )}
-
             </div>
 
             {/* Right Column - Action Button and Info */}
@@ -554,6 +457,98 @@ const EventDetails = () => {
                   </Button>
 
                   {/* Secondary Actions */}
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <Button variant="outline" size="sm" className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                      <Heart className="w-4 h-4" />
+                      Save
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                      <Share2 className="w-4 h-4" />
+                      Share
+                    </Button>
+                  </div>
+
+                  {/* Event Stats */}
+                  <div className="pt-4 border-t space-y-2 text-sm">
+                    {(() => {
+                      // Debug logging
+                      console.log('Event capacity:', event.capacity);
+                      console.log('Event availableSlots:', event.availableSlots);
+                      console.log('Event registrationCount:', event.registrationCount);
+                      
+                      // Always show capacity if it exists (this is the total, not available)
+                      const capacity = event.capacity;
+                      const registered = event.registrationCount || 0;
+                      const available = event.availableSlots;
+                      
+                      return (
+                        <>
+                          {capacity !== null && capacity !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Capacity:</span>
+                              <span className="font-medium">{capacity} attendees</span>
+                            </div>
+                          )}
+                          {registered !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Registered:</span>
+                              <span className="font-medium">{registered}</span>
+                            </div>
+                          )}
+                          {available !== null && available !== undefined && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Available:</span>
+                              <span className="font-medium text-primary">{available} spots</span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </Card>
+
+            </div>
+          </div>
+
+          {/* Related Events - Full Width */}
+          <section className="pt-6 border-t border-border/60 mt-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">You May Also Like</h2>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  navigate('/');
+                  // Scroll to events section after navigation
+                  setTimeout(() => {
+                    const eventsSection = document.querySelector('[data-section="events"]');
+                    if (eventsSection) {
+                      eventsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
+                }}
+                className="gap-2 text-primary hover:bg-accent-coral hover:text-white transition-colors"
+              >
+                View All
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+            <RelatedEvents 
+              currentEventId={event.id}
+              category={event.category || undefined}
+              tags={event.tags}
+            />
+          </section>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default EventDetails;
+
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <Button variant="outline" size="sm" className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
                       <Heart className="w-4 h-4" />

@@ -33,9 +33,10 @@ export const validate = (schema: Joi.ObjectSchema) => {
  */
 export const validateQuery = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const { error, value } = schema.validate(req.query, {
+    const { error } = schema.validate(req.query, {
       abortEarly: false,
-      stripUnknown: true,
+      stripUnknown: false, // Don't strip - just validate
+      allowUnknown: true, // Allow unknown fields to pass through
     });
 
     if (error) {
@@ -47,7 +48,8 @@ export const validateQuery = (schema: Joi.ObjectSchema) => {
       return next(new ValidationError(errors.map((e) => e.message).join(', ')));
     }
 
-    req.query = value;
+    // Note: req.query is read-only in Express, so we can't modify it
+    // The handlers will use req.query directly with the original parsed values
     next();
   };
 };
@@ -57,9 +59,10 @@ export const validateQuery = (schema: Joi.ObjectSchema) => {
  */
 export const validateParams = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const { error, value } = schema.validate(req.params, {
+    const { error } = schema.validate(req.params, {
       abortEarly: false,
-      stripUnknown: true,
+      stripUnknown: false, // Don't strip - just validate
+      allowUnknown: true, // Allow unknown fields to pass through
     });
 
     if (error) {
@@ -71,10 +74,15 @@ export const validateParams = (schema: Joi.ObjectSchema) => {
       return next(new ValidationError(errors.map((e) => e.message).join(', ')));
     }
 
-    req.params = value;
+    // Note: req.params is read-only in Express, so we can't modify it
+    // The handlers will use req.params directly with the original parsed values
     next();
   };
 };
+
+
+
+
 
 
 

@@ -78,15 +78,6 @@ export interface CreateEventData {
     placeholder?: string;
     options?: string[];
   }>;
-  registrationFields?: Array<{
-    id: string;
-    name: string;
-    label: string;
-    type: string;
-    required: boolean;
-    placeholder?: string;
-    options?: string[];
-  }>;
   generateRegistrationCode?: boolean; // Auto-generate registration code (default: true)
   timezone?: string;
 }
@@ -109,6 +100,13 @@ export interface RegisterForEventData {
   registrationData?: Record<string, unknown>;
   invitationId?: string; // For complementary tickets
   promoCode?: string; // Promo code to apply
+  // Consent data
+  consent?: {
+    operationalConsent?: boolean; // Default: true (required)
+    marketingConsent?: boolean;
+    demographicsConsent?: boolean;
+    analyticsConsent?: boolean;
+  };
 }
 
 export class EventService {
@@ -315,7 +313,6 @@ export class EventService {
         price: data.price ? new Decimal(Number(data.price)) : null,
         ticketTypes: ticketTypesJson || undefined,
         capacity,
-        availableSlots,
         availableSlots,
         image: data.image?.trim(),
         images: data.images || [],
@@ -1306,6 +1303,29 @@ export class EventService {
       );
     }
 
+    // Create consent record for data sharing
+    try {
+      const { ConsentService } = await import('./consent.service.js');
+      await ConsentService.createConsent(
+        registration.id,
+        attendeeId,
+        eventId,
+        {
+          operationalConsent: data.consent?.operationalConsent ?? true, // Default: true (required)
+          marketingConsent: data.consent?.marketingConsent ?? false,
+          demographicsConsent: data.consent?.demographicsConsent ?? false,
+          analyticsConsent: data.consent?.analyticsConsent ?? false,
+        },
+      );
+      logger.debug(`[registerForEvent] Consent created for registration ${registration.id}`);
+    } catch (consentError) {
+      // Log error but don't fail registration - consent can be created later
+      logger.error(`[registerForEvent] Failed to create consent for registration ${registration.id}:`, {
+        error: consentError instanceof Error ? consentError.message : String(consentError),
+      });
+      // Registration still succeeds - consent can be created/updated later
+    }
+
     // Update available slots if capacity exists (using totalQuantity)
     let newAvailableSlots: number | null = null;
     if (event.capacity !== null && totalQuantity > 0) {
@@ -2181,48 +2201,17 @@ export class EventService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Filter data based on access level (admins always see everything)
-    if (!isAdmin && event.organizerDataAccess) {
-      const accessLevel = event.organizerDataAccess;
+    // Use new tier-based filtering system (admins always see everything)
+    if (!isAdmin) {
+      // Import DataAccessService dynamically to avoid circular dependencies
+      const { DataAccessService } = await import('./data-access.service.js');
 
-      return registrations.map(reg => {
-        const filtered: Record<string, unknown> = {
-          id: reg.id,
-          eventId: reg.eventId,
-          attendeeId: reg.attendeeId,
-          status: reg.status,
-          ticketType: reg.ticketType,
-          quantity: reg.quantity,
-          createdAt: reg.createdAt,
-          attendee: reg.attendee,
-        };
-
-        // RESTRICTED: Only basic info, no payment data
-        if (accessLevel === 'RESTRICTED') {
-          // Only return minimal data
-          return filtered;
-        }
-
-        // STANDARD: Include payment status and amounts, but NO transaction IDs
-        if (accessLevel === 'STANDARD') {
-          filtered.totalAmount = reg.totalAmount;
-          filtered.paymentStatus = reg.paymentStatus;
-          filtered.paymentMethod = reg.paymentMethod;
-          // Explicitly exclude paymentTransactionId
-          return filtered;
-        }
-
-        // FULL: Include all payment details except transaction IDs
-        if (accessLevel === 'FULL') {
-          filtered.totalAmount = reg.totalAmount;
-          filtered.paymentStatus = reg.paymentStatus;
-          filtered.paymentMethod = reg.paymentMethod;
-          // Still exclude paymentTransactionId - organizers never see this
-          return filtered;
-        }
-
-        return filtered;
-      });
+      // Filter data based on subscription tier and consent
+      return await DataAccessService.filterAttendeeData(
+        registrations,
+        organizerId,
+        eventId,
+      );
     }
 
     // Admins see everything including transaction IDs
@@ -3829,4 +3818,3 @@ export class EventService {
     }
   }
 }
-

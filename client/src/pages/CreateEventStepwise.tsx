@@ -10,7 +10,6 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { ImageCropper } from '@/components/ImageCropper';
 import { 
   Users, 
   Ticket, 
@@ -37,9 +36,11 @@ import {
 } from 'lucide-react';
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
 import { getOrganizerEventById } from '@/lib/organizer-api';
-import { transformEventData } from '@/lib/event-utils';
+import { transformEventData, type BackendEvent } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
+import { useTemplate } from '@/lib/organizer-dashboard-api';
+import { useToast } from '@/hooks/use-toast';
 import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
 import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
 import { DragAndDropFormBuilder } from '@/components/event-wizard/DragAndDropFormBuilder';
@@ -74,7 +75,7 @@ interface RegistrationField {
   type: string;
   label: string;
   required: boolean;
-  placeholder: string;
+  placeholder?: string;
   options?: string[];
 }
 
@@ -103,6 +104,7 @@ interface EventData {
   time: string;
   endDate: string;
   endTime: string;
+  registrationDeadline: string;
   location: string;
   venue: string;
   address: string;
@@ -154,13 +156,16 @@ export default function CreateEventStepwise() {
   const location = useLocation();
   const { user } = useAuth();
   
-  // Check for edit mode from URL query params
+  // Check for edit mode and template from URL query params
   const searchParams = new URLSearchParams(location.search);
   const editEventId = searchParams.get('edit');
+  const templateId = searchParams.get('template');
   const stepParam = searchParams.get('step');
   const isEditMode = !!editEventId;
   const [isLoadingEvent, setIsLoadingEvent] = useState(isEditMode);
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(!!templateId && !isEditMode);
   const [useDragAndDrop, setUseDragAndDrop] = useState(false);
+  const { toast } = useToast();
   
   /* Renaming STEPS constant if it exists or adding it */
   const steps = [
@@ -243,6 +248,7 @@ export default function CreateEventStepwise() {
         time: "",
         endDate: "",
         endTime: "",
+        registrationDeadline: "",
         location: "",
         venue: "",
         address: "",
@@ -282,6 +288,7 @@ export default function CreateEventStepwise() {
             time: draftData.time || "",
             endDate: draftData.endDate || "",
             endTime: draftData.endTime || "",
+            registrationDeadline: draftData.registrationDeadline || "",
             location: draftData.location || "",
             venue: draftData.venue || "",
             address: draftData.address || "",
@@ -320,6 +327,7 @@ export default function CreateEventStepwise() {
       time: "",
       endDate: "",
       endTime: "",
+      registrationDeadline: "",
       location: "",
       venue: "",
       address: "",
@@ -343,8 +351,6 @@ export default function CreateEventStepwise() {
   });
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [showImageCropper, setShowImageCropper] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -370,6 +376,7 @@ export default function CreateEventStepwise() {
       time: "",
       endDate: "",
       endTime: "",
+      registrationDeadline: "",
       location: "",
       venue: "",
       address: "",
@@ -397,7 +404,6 @@ export default function CreateEventStepwise() {
     setEventType("physical");
     setIsPrivate(false);
     setImagePreview(null);
-    setUploadedImage(null);
     setCurrentStep(1);
     setError(null);
     setValidationErrors({});
@@ -549,7 +555,6 @@ export default function CreateEventStepwise() {
         setEventType("in-person");
         setIsPrivate(false);
         setImagePreview(null);
-        setUploadedImage(null);
         setCurrentStep(1);
         // Flag is already cleared in eventData initializer
       }
@@ -642,6 +647,7 @@ export default function CreateEventStepwise() {
             time: parseTime(transformedEvent.startTime) || transformedEvent.time || "",
             endDate: parseDate(transformedEvent.endDate) || "",
             endTime: parseTime(transformedEvent.endTime) || "",
+            registrationDeadline: parseDate((transformedEvent as { registrationDeadline?: string }).registrationDeadline) || "",
             location: transformedEvent.location || "",
             venue: transformedEvent.venue || "",
             address: (transformedEvent as { address?: string }).address || "",
@@ -746,7 +752,7 @@ export default function CreateEventStepwise() {
           }
 
           // Set agenda - ensure proper structure and handle JSON strings
-          let agendaData = transformedEvent.agenda;
+          let agendaData: any = transformedEvent.agenda;
           
           // If agenda is a string, try to parse it
           if (typeof agendaData === 'string' && agendaData.trim() !== '') {
@@ -822,9 +828,216 @@ export default function CreateEventStepwise() {
     loadEventForEdit();
   }, [editEventId, user, timezone]);
 
-  // Restore separate state from draft when loading
+  // Load template data when template parameter is present
   useEffect(() => {
-    if (!isEditMode && !editEventId) {
+    const loadTemplate = async () => {
+      if (!templateId || isEditMode) return;
+
+      try {
+        setIsLoadingTemplate(true);
+        setError(null);
+        
+        const response = await useTemplate(templateId);
+        
+        if (response.success && response.data) {
+          // The API returns { templateData, templateName }
+          // Handle both templateData and eventData for compatibility
+          const templateData = (response.data as any).templateData || (response.data as any).eventData || {};
+          const templateName = (response.data as any).templateName || '';
+          
+          // Clear any existing draft when loading from template
+          localStorage.removeItem(DRAFT_STORAGE_KEY);
+          
+          // Map template data to form fields (dates are cleared - user must enter new ones)
+          setEventData(prev => ({
+            ...prev,
+            title: "", // Always clear title - user must enter new one
+            organizer: user?.organizationName || "",
+            description: (templateData.description as string) || "",
+            fullDescription: (templateData.fullDescription as string) || "",
+            organizerDescription: (templateData.organizerDescription as string) || "",
+            date: "", // Clear dates - user must enter new ones
+            time: "",
+            endDate: "",
+            endTime: "",
+            registrationDeadline: "",
+            location: (templateData.location as string) || "",
+            venue: (templateData.venue as string) || "",
+            address: (templateData.address as string) || "",
+            onlineLink: (templateData.onlineLink as string) || "",
+            price: templateData.price ? String(templateData.price) : "",
+            totalSlots: (templateData.capacity as number) || 0,
+            image: (templateData.image as string) || "",
+            requirements: Array.isArray(templateData.requirements)
+              ? (templateData.requirements as string[]).join('\n')
+              : (typeof templateData.requirements === 'string' ? templateData.requirements : ""),
+            ageRestriction: (templateData.ageRestriction as string) || "",
+            isOnline: (templateData.isOnline as boolean) || false,
+            capacity: templateData.capacity ? String(templateData.capacity) : "",
+            category: (templateData.category as string) || "",
+            timezone: (templateData.timezone as string) || timezone,
+            currency: (templateData.currency as string) || DEFAULT_CURRENCY,
+          }));
+          
+          // Set timezone separately
+          if (templateData.timezone && (templateData.timezone as string).trim() !== '') {
+            setTimezone(templateData.timezone as string);
+          }
+
+          // Set image preview if image exists
+          if (templateData.image) {
+            setImagePreview(templateData.image as string);
+          }
+
+          // Set event type based on isOnline
+          setEventType((templateData.isOnline as boolean) ? "online" : "in-person");
+
+          // Set ticket types
+          if (templateData.ticketTypes && Array.isArray(templateData.ticketTypes) && templateData.ticketTypes.length > 0) {
+            const mappedTicketTypes: TicketType[] = (templateData.ticketTypes as any[]).map((tt, index) => ({
+              id: index + 1,
+              name: tt.name || "",
+              type: (tt.price === 0 || tt.isComplementary) ? "free" : "paid",
+              price: tt.price ? String(tt.price) : "",
+              originalPrice: tt.originalPrice ? String(tt.originalPrice) : undefined,
+              discountLabel: tt.discountLabel || undefined,
+              quantity: tt.quantity ? String(tt.quantity) : "",
+              isComplementary: tt.isComplementary || false,
+              requiresInvitation: tt.requiresInvitation || false,
+              availableFrom: tt.availableFrom || undefined,
+              availableUntil: tt.availableUntil || undefined,
+            }));
+            setTicketTypes(mappedTicketTypes);
+          }
+
+          // Set registration fields
+          if (templateData.registrationFields && Array.isArray(templateData.registrationFields) && templateData.registrationFields.length > 0) {
+            const mappedFields: RegistrationField[] = (templateData.registrationFields as any[]).map(field => ({
+              id: field.id || `field-${Date.now()}-${Math.random()}`,
+              name: field.name || field.id,
+              type: field.type || "text",
+              label: field.label || field.name || "",
+              required: field.required || false,
+              placeholder: field.placeholder || "",
+              options: field.options || undefined,
+            }));
+            setRegistrationFields(mappedFields);
+          }
+
+          // Set categories
+          if (templateData.category) {
+            setCategories([templateData.category as string]);
+          }
+
+          // Set tags
+          if (templateData.tags) {
+            if (Array.isArray(templateData.tags)) {
+              setTags(templateData.tags as string[]);
+            } else if (typeof templateData.tags === 'string') {
+              try {
+                const parsedTags = JSON.parse(templateData.tags);
+                setTags(Array.isArray(parsedTags) ? parsedTags : [templateData.tags]);
+              } catch {
+                setTags([templateData.tags]);
+              }
+            }
+          }
+
+          // Set FAQs
+          if (templateData.faqs && Array.isArray(templateData.faqs) && templateData.faqs.length > 0) {
+            setFaqs(templateData.faqs as Array<{ question: string; answer: string }>);
+          }
+
+          // Set agenda
+          let agendaData: any = templateData.agenda;
+          if (typeof agendaData === 'string' && agendaData.trim() !== '') {
+            try {
+              agendaData = JSON.parse(agendaData);
+            } catch (e) {
+              console.error('Failed to parse agenda JSON:', e);
+              agendaData = null;
+            }
+          }
+          
+          if (agendaData && Array.isArray(agendaData) && agendaData.length > 0) {
+            const mappedAgenda = agendaData.map((item: any) => ({
+              title: item.title || '',
+              description: item.description || '',
+              date: item.date || '',
+              startTime: item.startTime || '',
+              endTime: item.endTime || '',
+              speakers: Array.isArray(item.speakers) ? item.speakers : [],
+            }));
+            setAgenda(mappedAgenda);
+            setEventData(prev => ({ ...prev, agenda: mappedAgenda }));
+          }
+
+          // Set speakers
+          if (templateData.speakers && Array.isArray(templateData.speakers) && templateData.speakers.length > 0) {
+            const mappedSpeakers = (templateData.speakers as any[]).map((speaker, index) => ({
+              id: `speaker-${index}`,
+              name: speaker.name || "",
+              title: speaker.title || "",
+              bio: speaker.bio || "",
+              image: speaker.image || "",
+            }));
+            setSpeakers(mappedSpeakers);
+            setEventData(prev => ({ ...prev, speakers: mappedSpeakers }));
+          }
+
+          // Set exhibitors
+          if (templateData.exhibitors && Array.isArray(templateData.exhibitors) && templateData.exhibitors.length > 0) {
+            setExhibitors(templateData.exhibitors as any[]);
+            setEventData(prev => ({ ...prev, exhibitors: templateData.exhibitors || [] }));
+          }
+
+          // Set sponsors
+          if (templateData.sponsors && Array.isArray(templateData.sponsors) && templateData.sponsors.length > 0) {
+            setSponsors(templateData.sponsors as any[]);
+            setEventData(prev => ({ ...prev, sponsors: templateData.sponsors || [] }));
+          }
+
+          // Set social links
+          if (templateData.socialLinks && typeof templateData.socialLinks === 'object') {
+            setSocialLinks(templateData.socialLinks as Record<string, string>);
+            setEventData(prev => ({ ...prev, socialLinks: templateData.socialLinks || {} }));
+          }
+
+          // Set privacy
+          setIsPrivate((templateData.isPrivate as boolean) || false);
+
+          // Show success message
+          toast({
+            title: "Template Loaded",
+            description: templateName ? `Template "${templateName}" loaded successfully. Please fill in the title and dates.` : "Template loaded successfully. Please fill in the title and dates.",
+          });
+
+          // Save initial state as draft
+          setTimeout(() => {
+            saveDraft();
+          }, 1000);
+        } else {
+          setError('Failed to load template data');
+        }
+      } catch (err) {
+        console.error('Error loading template:', err);
+        setError('Failed to load template data. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to load template. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingTemplate(false);
+      }
+    };
+
+    loadTemplate();
+  }, [templateId, isEditMode, user, timezone, toast, saveDraft]);
+
+  // Restore separate state from draft when loading (skip if template is being loaded)
+  useEffect(() => {
+    if (!isEditMode && !editEventId && !templateId) {
       try {
         const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
         if (draft) {
@@ -846,6 +1059,21 @@ export default function CreateEventStepwise() {
             if (parsed.sponsors) {
               setSponsors(parsed.sponsors);
             }
+            if (parsed.ticketTypes && Array.isArray(parsed.ticketTypes)) {
+              setTicketTypes(parsed.ticketTypes);
+            }
+            if (parsed.categories && Array.isArray(parsed.categories)) {
+              setCategories(parsed.categories);
+            }
+            if (parsed.tags && Array.isArray(parsed.tags)) {
+              setTags(parsed.tags);
+            }
+            if (parsed.faqs && Array.isArray(parsed.faqs)) {
+              setFaqs(parsed.faqs);
+            }
+            if (parsed.timezone) {
+              setTimezone(parsed.timezone);
+            }
             // Also restore from data object if present (for backward compatibility)
             if (parsed.data) {
               if (parsed.data.socialLinks) {
@@ -862,6 +1090,9 @@ export default function CreateEventStepwise() {
               }
               if (parsed.data.sponsors) {
                 setSponsors(parsed.data.sponsors);
+              }
+              if (parsed.data.timezone) {
+                setTimezone(parsed.data.timezone);
               }
             }
           }
@@ -889,7 +1120,6 @@ export default function CreateEventStepwise() {
         setEventType("in-person");
         setIsPrivate(false);
         setImagePreview(null);
-        setUploadedImage(null);
         setCurrentStep(1);
         setError(null);
         setValidationErrors({});
@@ -922,7 +1152,6 @@ export default function CreateEventStepwise() {
         setEventType("in-person");
         setIsPrivate(false);
         setImagePreview(null);
-        setUploadedImage(null);
         setCurrentStep(1);
         setError(null);
         setValidationErrors({});
@@ -962,8 +1191,8 @@ export default function CreateEventStepwise() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        setUploadedImage(base64String);
-        setShowImageCropper(true);
+        setImagePreview(base64String);
+        setEventData(prev => ({ ...prev, image: base64String }));
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
@@ -975,14 +1204,6 @@ export default function CreateEventStepwise() {
       setError('Failed to upload image');
       setIsUploadingImage(false);
     }
-  };
-
-  // Handle cropped image
-  const handleImageCrop = (croppedImage: string) => {
-    setImagePreview(croppedImage);
-    setEventData(prev => ({ ...prev, image: croppedImage }));
-    setShowImageCropper(false);
-    setUploadedImage(null);
   };
 
   // Format date with timezone
@@ -1194,6 +1415,11 @@ export default function CreateEventStepwise() {
       ? new Date(`${eventData.endDate}T${eventData.endTime}`).toISOString()
       : undefined;
 
+    // Build registration deadline date (date only, no time)
+    const registrationDeadline = eventData.registrationDeadline
+      ? new Date(`${eventData.registrationDeadline}T00:00:00`).toISOString()
+      : undefined;
+
     // Determine single price if all tickets have same price
     const singlePrice = !isFree && ticketTypes.length === 1 && ticketTypes[0].type === 'paid'
       ? parseFloat(ticketTypes[0].price)
@@ -1210,6 +1436,7 @@ export default function CreateEventStepwise() {
       endDate,
       startTime: eventData.time,
       endTime: eventData.endTime || undefined,
+      registrationDeadline,
       venue: eventData.venue?.trim() || undefined,
       location: eventData.location?.trim() || eventData.onlineLink?.trim() || '',
       address: eventData.address?.trim() || undefined,
@@ -1670,6 +1897,23 @@ export default function CreateEventStepwise() {
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="registrationDeadline" className="flex items-center gap-2">
+          <Calendar className="w-4 h-4" />
+          Registration Deadline (Optional)
+        </Label>
+        <Input 
+          id="registrationDeadline" 
+          type="date"
+          value={eventData.registrationDeadline}
+          onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
+          className="h-12 border-border focus-visible:border-primary/30"
+        />
+        <p className="text-xs text-muted-foreground">
+          Set a deadline for when registrations close. Leave empty to allow registration until event start.
+        </p>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="timezone" className="flex items-center gap-2">
           <Globe className="w-4 h-4" />
           Timezone *
@@ -1804,7 +2048,10 @@ export default function CreateEventStepwise() {
 
       <SocialConnectionsStep
         socialLinks={socialLinks}
-        onChange={(newLinks) => handleInputChange('socialLinks', newLinks)}
+        onChange={(newLinks) => {
+          setSocialLinks(newLinks);
+          setEventData(prev => ({ ...prev, socialLinks: newLinks }));
+        }}
       />
     </div>
   );
@@ -2277,8 +2524,6 @@ export default function CreateEventStepwise() {
             }));
             setRegistrationFields(mappedFields);
           }}
-          onNext={() => {}}
-          onBack={() => {}}
         />
       ) : (
         <div className="space-y-4 max-h-[600px] overflow-y-auto scrollbar-hide">
@@ -2399,18 +2644,6 @@ export default function CreateEventStepwise() {
                 className="w-full h-64 object-cover rounded-lg border"
               />
               <div className="absolute top-2 right-2 flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setUploadedImage(imagePreview || eventData.image || '');
-                    setShowImageCropper(true);
-                  }}
-                  className="bg-white/90 hover:bg-white"
-                  title="Reposition image"
-                >
-                  <Camera className="w-4 h-4" />
-                </Button>
                 <Button
                   variant="destructive"
                   size="sm"
@@ -2952,12 +3185,14 @@ export default function CreateEventStepwise() {
   };
 
   // Show loading state while fetching event data
-  if (isLoadingEvent) {
+  if (isLoadingEvent || isLoadingTemplate) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading event data...</p>
+          <p className="text-muted-foreground">
+            {isLoadingEvent ? "Loading event data..." : "Loading template..."}
+          </p>
         </div>
       </div>
     );
@@ -3116,21 +3351,393 @@ export default function CreateEventStepwise() {
       
       {/* Preview Modal */}
       {renderPreview()}
+    </div>
+  );
+}
 
-      {/* Image Cropper Modal */}
-      {uploadedImage && (
-        <ImageCropper
-          image={uploadedImage}
-          isOpen={showImageCropper}
-          onClose={() => {
-            setShowImageCropper(false);
-            setUploadedImage(null);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-          }}
-          onCrop={handleImageCrop}
-          aspectRatio={16 / 9}
-        />
-      )}
+                  {/* Event Title */}
+                  <h3 className="text-2xl font-bold mb-2">{eventData.title || 'Event Registration'}</h3>
+                  
+                  {/* Organizer */}
+                  {eventData.organizer && (
+                    <p className="text-sm text-muted-foreground mb-4">by {eventData.organizer}</p>
+                  )}
+                  
+                  {/* Event Details */}
+                  <div className="space-y-2 mb-6 text-sm">
+                    {/* Date & Time */}
+                    {eventData.date && eventData.time && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {new Date(`${eventData.date}T${eventData.time}`).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })} at {new Date(`${eventData.date}T${eventData.time}`).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Location/Venue */}
+                    {(eventData.venue || eventData.location || eventData.onlineLink) && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="w-4 h-4" />
+                        <span>
+                          {eventData.venue && `${eventData.venue}, `}
+                          {eventData.location || eventData.onlineLink}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Category */}
+                    {eventData.category && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span className="text-xs bg-muted px-2 py-1 rounded">{eventData.category}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="text-lg font-semibold mb-4">Registration Form</h4>
+                    <form className="space-y-4">
+                  {registrationFields.map((field, index) => (
+                    <div key={field.id || index} className="space-y-2">
+                      <Label htmlFor={`preview-${field.id}`}>
+                        {field.label || `Field ${index + 1}`}
+                        {field.required && <span className="text-destructive ml-1">*</span>}
+                      </Label>
+                      {field.type === 'textarea' ? (
+                        <Textarea
+                          id={`preview-${field.id}`}
+                          placeholder={field.placeholder || `Enter ${field.label?.toLowerCase() || 'value'}`}
+                          disabled
+                          className="bg-muted"
+                        />
+                      ) : field.type === 'select' ? (
+                        <Select disabled>
+                          <SelectTrigger>
+                            <SelectValue placeholder={field.placeholder || `Select ${field.label?.toLowerCase() || 'option'}`} />
+                          </SelectTrigger>
+                        </Select>
+                      ) : field.type === 'checkbox' ? (
+                        <div className="flex items-center space-x-2">
+                          <input type="checkbox" id={`preview-${field.id}`} disabled className="bg-muted" />
+                          <Label htmlFor={`preview-${field.id}`} className="font-normal">{field.placeholder || field.label}</Label>
+                        </div>
+                      ) : (
+                        <Input
+                          id={`preview-${field.id}`}
+                          type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                          placeholder={field.placeholder || `Enter ${field.label?.toLowerCase() || 'value'}`}
+                          disabled
+                          className="bg-muted"
+                        />
+                      )}
+                    </div>
+                  ))}
+                      <Button type="submit" className="w-full" disabled>
+                        Register Now
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+
+    // Default event preview for other steps
+    return (
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Preview</DialogTitle>
+            <DialogDescription>
+              This is how your event will appear to attendees
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Event Image */}
+            {(imagePreview || eventData.image) && (
+              <img
+                src={imagePreview || eventData.image}
+                alt={eventData.title || 'Event'}
+                className="w-full h-64 object-cover rounded-lg"
+              />
+            )}
+            
+            {/* Event Title */}
+            <div>
+              <h2 className="text-3xl font-bold">{eventData.title || 'Untitled Event'}</h2>
+              {eventData.organizer && (
+                <p className="text-muted-foreground mt-1">by {eventData.organizer}</p>
+              )}
+            </div>
+
+            {/* Date & Time */}
+            {eventData.date && eventData.time && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{formatDateWithTimezone(eventData.date, eventData.time)}</p>
+                  <p className="text-sm text-muted-foreground">{timezone}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Location */}
+            {(eventData.venue || eventData.location || eventData.onlineLink) && (
+              <div className="flex items-start gap-2">
+                <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div>
+                  {eventData.venue && <p className="font-medium">{eventData.venue}</p>}
+                  {eventData.location && <p className="text-muted-foreground">{eventData.location}</p>}
+                  {eventData.onlineLink && (
+                    <a href={eventData.onlineLink} className="text-primary hover:underline">
+                      {eventData.onlineLink}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            {eventData.description && (
+              <div>
+                <h3 className="font-semibold mb-2">About this event</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{eventData.description}</p>
+              </div>
+            )}
+
+            {/* Tickets */}
+            {ticketTypes.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Tickets</h3>
+                <div className="space-y-2">
+                  {ticketTypes.map((ticket, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{ticket.name || `Ticket ${index + 1}`}</p>
+                        {ticket.quantity && (
+                          <p className="text-sm text-muted-foreground">
+                            {ticket.quantity} available
+                          </p>
+                        )}
+                      </div>
+                      <p className="font-bold">
+                        {ticket.type === 'free'
+                          ? 'Free'
+                          : `${eventData.currency || DEFAULT_CURRENCY}${parseFloat(ticket.price || '0').toFixed(2)}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* FAQs */}
+            {faqs.filter(f => f.question && f.answer).length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Frequently Asked Questions</h3>
+                <div className="space-y-3">
+                  {faqs.filter(f => f.question && f.answer).map((faq, index) => (
+                    <div key={index}>
+                      <p className="font-medium">{faq.question}</p>
+                      <p className="text-muted-foreground text-sm">{faq.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <Badge key={tag} variant="outline">{tag}</Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  // Show loading state while fetching event data
+  if (isLoadingEvent || isLoadingTemplate) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">
+            {isLoadingEvent ? "Loading event data..." : "Loading template..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 max-w-4xl">
+        {/* Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+            {isEditMode ? 'Edit Event' : 'Create New Event'}
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            {isEditMode ? 'Update your event details' : 'Set up your event with all the details attendees need to know'}
+          </p>
+          
+          {/* Draft Save Indicator */}
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            {isSavingDraft ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving draft...</span>
+              </>
+            ) : lastSaved ? (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Draft saved {lastSaved.toLocaleTimeString()}</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Auto-saving every 30 seconds</span>
+              </>
+            )}
+          </div>
+          
+          {/* Progress Indicator */}
+          <div className="mt-4 sm:mt-6">
+            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mb-2">
+              <span>Step {currentStep} of {steps.length}</span>
+              <span>{Math.round((currentStep / steps.length) * 100)}% complete</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(currentStep / steps.length) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Step Navigation - Hidden on mobile, shown on desktop */}
+
+        </div>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Verification Info Banner - Eventbrite style: Verification needed for payouts, not event creation */}
+        {!loadingVerification && !isEditMode && hasPaidTickets() && !verificationStatus?.identityVerified && (
+          <Alert className="mb-4 border-blue-200 bg-blue-50">
+            <Shield className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-blue-900">
+                <strong>Note:</strong> Identity verification is required to receive payouts from ticket sales. You can create and publish your event now, but complete verification to receive funds.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/organizer/verification', { 
+                  state: { redirectAfterVerification: location.pathname } 
+                })}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                Verify Identity
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Form Content */}
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
+          <CardContent className="p-6 sm:p-8">
+            {currentStep === 1 && renderBasicInfoStep()}
+            {currentStep === 2 && renderDateLocationStep()}
+            {currentStep === 3 && renderAgendaStep()}
+            {currentStep === 4 && renderTicketsStep()}
+            {currentStep === 5 && renderRegistrationStep()}
+            {currentStep === 6 && renderMediaStep()}
+            {currentStep === 7 && renderSocialStep()}
+            {currentStep === 8 && renderReviewStep()}
+
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
+              {/* Left side - Back button (only from step 2 onwards) */}
+              <div>
+                {currentStep >= 2 && (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Back</span>
+                  </button>
+                )}
+              </div>
+              
+              {/* Right side - Preview (middle) and Next (right) */}
+              <div className="flex items-center gap-3 ml-auto">
+                {/* Preview Button - Show from step 3 onwards, in the middle */}
+                {currentStep >= 3 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPreview(true)}
+                    className="px-6 border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+                    disabled={isSubmitting}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview
+                  </Button>
+                )}
+                
+                {/* Next Button - Always on the right */}
+                {isSubmitting ? (
+                  <Button
+                    onClick={handleNext}
+                    className="px-6 h-11 rounded-xl bg-transparent text-primary hover:bg-accent-coral hover:text-white transition-colors shadow-none"
+                    disabled={isSubmitting}
+                  >
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {currentStep === 8 ? 'Publishing...' : 'Validating...'}
+                  </Button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    <span>{currentStep === 8 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>
+                    {currentStep !== 8 && <ArrowRight className="w-3 h-3" />}
+                  </button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Preview Modal */}
+      {renderPreview()}
     </div>
   );
 }

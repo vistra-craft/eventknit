@@ -30,9 +30,16 @@ const RevenueReports = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const filters: { limit?: number; status?: string } = { limit: 100 };
+        
+        // Apply status filter
+        if (selectedEvent !== 'all') {
+          filters.status = selectedEvent.toUpperCase();
+        }
+        
         const [statsResponse, eventsResponse] = await Promise.all([
           getOrganizerDashboardStats(),
-          getOrganizerEvents({ limit: 100 }),
+          getOrganizerEvents(filters),
         ]);
         if (statsResponse.success) setStats(statsResponse.data.stats);
         if (eventsResponse.success && eventsResponse.data?.events) {
@@ -43,7 +50,7 @@ const RevenueReports = () => {
       }
     };
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, selectedEvent]);
 
   // Calculate revenue data from real events
   const revenueStats = stats ? [
@@ -100,38 +107,45 @@ const RevenueReports = () => {
 
   const insightsData = financialInsights;
 
-  // Chart data for revenue analysis
-  const monthlyRevenueData = [
-    { month: "Jan", revenue: 45000, events: 3, attendees: 1200 },
-    { month: "Feb", revenue: 32000, events: 2, attendees: 800 },
-    { month: "Mar", revenue: 145200, events: 4, attendees: 1800 },
-    { month: "Apr", revenue: 28000, events: 3, attendees: 950 },
-    { month: "May", revenue: 18000, events: 2, attendees: 600 },
-    { month: "Jun", revenue: 165000, events: 5, attendees: 2200 },
-  ];
+  // Calculate monthly revenue data from real events (using revenueTrends which is already calculated)
+  const monthlyRevenueData = revenueTrends.map(trend => ({
+    month: trend.month,
+    revenue: trend.revenue,
+    events: trend.events,
+    attendees: events.filter(e => {
+      if (!e.startDate) return false;
+      const date = new Date(e.startDate);
+      return date.toLocaleDateString('en-US', { month: 'short' }) === trend.month;
+    }).reduce((sum, e) => sum + (e.attendees || 0), 0),
+  }));
 
-  const revenueByEventTypeData = [
-    { type: "Technology", revenue: 145200, percentage: 45 },
-    { type: "Business", revenue: 67500, percentage: 21 },
-    { type: "Marketing", revenue: 25600, percentage: 8 },
-    { type: "Health", revenue: 15600, percentage: 5 },
-    { type: "Other", revenue: 67550, percentage: 21 },
-  ];
+  // Calculate revenue by event category from real events
+  const revenueByCategoryMap = new Map<string, number>();
+  events.forEach(event => {
+    const category = event.category || 'Other';
+    const revenue = typeof event.price === 'number' ? event.price * (event.attendees || 0) : 0;
+    revenueByCategoryMap.set(category, (revenueByCategoryMap.get(category) || 0) + revenue);
+  });
+  const totalCategoryRevenue = Array.from(revenueByCategoryMap.values()).reduce((a, b) => a + b, 0);
+  const revenueByEventTypeData = Array.from(revenueByCategoryMap.entries()).map(([type, revenue]) => ({
+    type,
+    revenue,
+    percentage: totalCategoryRevenue > 0 ? Math.round((revenue / totalCategoryRevenue) * 100) : 0,
+  })).sort((a, b) => b.revenue - a.revenue);
 
-  const paymentMethodData = [
-    { method: "Credit Card", percentage: 68, amount: 86666 },
-    { method: "PayPal", percentage: 18, amount: 22941 },
-    { method: "Bank Transfer", percentage: 8, amount: 10196 },
-    { method: "Cryptocurrency", percentage: 4, amount: 5098 },
-    { method: "Other", percentage: 2, amount: 2549 },
-  ];
+  // Payment method data uses real paymentMethods which is calculated from stats
+  const paymentMethodData = paymentMethods.map(method => ({
+    method: method.method,
+    percentage: method.percentage,
+    amount: method.amount,
+  }));
 
-  const revenueVsAttendeesData = [
-    { attendees: 78, revenue: 15600, event: "Business Workshop" },
-    { attendees: 320, revenue: 25600, event: "Food & Wine Expo" },
-    { attendees: 450, revenue: 67500, event: "Marketing Conf" },
-    { attendees: 485, revenue: 145200, event: "Tech Summit" },
-  ];
+  // Revenue vs Attendees from real events
+  const revenueVsAttendeesData = revenueBreakdown.map(event => ({
+    attendees: event.attendees,
+    revenue: event.revenue,
+    event: event.event,
+  }));
 
   // Use imported data
   const statsData = revenueStats;
@@ -517,6 +531,20 @@ const RevenueReports = () => {
                         <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+        </div>
+      </div>
+    </OrganizerLayout>
+  );
+};
+
+export default RevenueReports;
+
                   </CardContent>
                 </Card>
               ))}

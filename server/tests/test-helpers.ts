@@ -95,10 +95,34 @@ export async function cleanupTestData(tx?: any) {
   await safeDelete(() => client.emailTemplate.deleteMany(), 'emailTemplate');
   await safeDelete(() => client.refund.deleteMany(), 'refund');
   await safeDelete(() => client.paymentReconciliation.deleteMany(), 'paymentReconciliation');
+  await safeDelete(() => client.dataAccessAuditLog.deleteMany(), 'dataAccessAuditLog');
+  await safeDelete(() => client.organizerSubscription.deleteMany(), 'organizerSubscription');
+  await safeDelete(() => client.attendeeConsent.deleteMany(), 'attendeeConsent');
+  await safeDelete(() => client.dataAccessAuditLog.deleteMany(), 'dataAccessAuditLog');
+  await safeDelete(() => client.organizerSubscription.deleteMany(), 'organizerSubscription');
+  await safeDelete(() => client.attendeeConsent.deleteMany(), 'attendeeConsent');
+  await safeDelete(() => client.organizerDirector.deleteMany(), 'organizerDirector');
   await safeDelete(() => client.kYCDocument.deleteMany(), 'kYCDocument');
   await safeDelete(() => client.notificationPreference.deleteMany(), 'notificationPreference');
   await safeDelete(() => client.notification.deleteMany(), 'notification');
   await safeDelete(() => client.event.deleteMany(), 'event');
+  // Permission system cleanup (must be before user cleanup due to foreign keys)
+  await safeDelete(() => client.teamRolePermission.deleteMany(), 'teamRolePermission');
+  await safeDelete(() => client.teamRoleTemplate.deleteMany(), 'teamRoleTemplate');
+  await safeDelete(() => client.permission.deleteMany(), 'permission');
+  
+  await safeDelete(() => client.auditLog.deleteMany(), 'auditLog');
+  await safeDelete(() => client.refreshToken.deleteMany(), 'refreshToken');
+  await safeDelete(() => client.magicLinkToken.deleteMany(), 'magicLinkToken');
+  await safeDelete(() => client.passwordReset.deleteMany(), 'passwordReset');
+  await safeDelete(() => client.emailVerification.deleteMany(), 'emailVerification');
+  await safeDelete(() => client.user.deleteMany(), 'user');
+}
+
+
+
+
+
   await safeDelete(() => client.auditLog.deleteMany(), 'auditLog');
   await safeDelete(() => client.refreshToken.deleteMany(), 'refreshToken');
   await safeDelete(() => client.magicLinkToken.deleteMany(), 'magicLinkToken');

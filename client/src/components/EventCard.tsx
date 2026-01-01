@@ -43,7 +43,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   };
   const frontendUrl = getFrontendUrl();
   const imageUrl = image 
-    ? (image.startsWith('http') ? image : `${frontendUrl}${image}`)
+    ? (image.startsWith('http') || image.startsWith('data:') ? image : `${frontendUrl}${image}`)
     : null;
   const navigate = useNavigate();
   const handleCardClick = () => {
@@ -145,6 +145,38 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         {/* Date */}
         <div className="flex items-center gap-2 text-sm font-medium text-primary group-hover:text-accent-coral transition-colors">
+          <Calendar className="w-4 h-4" />
+          <span>{dateDisplay}</span>
+        </div>
+
+        {/* Time */}
+        {timeDisplay && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" />
+            <span>{timeDisplay}</span>
+          </div>
+        )}
+
+        {/* Location */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <MapPin className="w-4 h-4" />
+          <span className="truncate">{venue ? `${venue}, ${location}` : location}</span>
+        </div>
+
+        {/* Price */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{price === 'Free' || price === '0' || !price
+            ? 'Free'
+            : price === 'See tickets'
+              ? 'See tickets'
+              : currency
+                ? `From ${currency}${price}`
+                : `From ${price}`}</span>
+        </div>
+      </div>
+    </Card>
+  );
+};
           <Calendar className="w-4 h-4" />
           <span>{dateDisplay}</span>
         </div>

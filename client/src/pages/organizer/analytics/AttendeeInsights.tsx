@@ -30,6 +30,9 @@ const AttendeeInsights = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Note: selectedEvent filter is not applied here as demographics data
+        // would need to come from backend API for specific events
+        // For now, we show aggregate data
         const statsResponse = await getOrganizerDashboardStats();
         if (statsResponse.success) setStats(statsResponse.data.stats);
       } catch (err) {
@@ -37,7 +40,7 @@ const AttendeeInsights = () => {
       }
     };
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, selectedEvent]);
 
   const attendeeStats = stats ? [
     { title: "Total Attendees", value: stats.totalAttendees?.toLocaleString() || "0", change: "+0%", changeType: "positive" as const, trend: "up", description: "Total registered attendees", bgColor: "bg-green-100", color: "text-green-600" },
@@ -46,30 +49,38 @@ const AttendeeInsights = () => {
   ] : [];
 
 
-  const demographicsData = {
+  // Demographics data - Note: Percentages are placeholders
+  // Real demographic data would require backend API support for attendee demographics
+  // Counts are calculated from total attendees for display purposes
+  const demographicsData = stats?.totalAttendees ? {
     ageGroups: [
-      { range: "18-25", percentage: 35, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.35) : 0 },
-      { range: "26-35", percentage: 40, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0 },
-      { range: "36-45", percentage: 20, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.2) : 0 },
-      { range: "45+", percentage: 5, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.05) : 0 },
+      { range: "18-25", percentage: 35, count: Math.round(stats.totalAttendees * 0.35) },
+      { range: "26-35", percentage: 40, count: Math.round(stats.totalAttendees * 0.4) },
+      { range: "36-45", percentage: 20, count: Math.round(stats.totalAttendees * 0.2) },
+      { range: "45+", percentage: 5, count: Math.round(stats.totalAttendees * 0.05) },
     ],
     locations: [
-      { city: "Nairobi", percentage: 45, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.45) : 0 },
-      { city: "Mombasa", percentage: 25, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.25) : 0 },
-      { city: "Kisumu", percentage: 15, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.15) : 0 },
-      { city: "Other", percentage: 15, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.15) : 0 },
+      { city: "Nairobi", percentage: 45, count: Math.round(stats.totalAttendees * 0.45) },
+      { city: "Mombasa", percentage: 25, count: Math.round(stats.totalAttendees * 0.25) },
+      { city: "Kisumu", percentage: 15, count: Math.round(stats.totalAttendees * 0.15) },
+      { city: "Other", percentage: 15, count: Math.round(stats.totalAttendees * 0.15) },
     ],
     industries: [
-      { industry: "Technology", percentage: 40, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0 },
-      { industry: "Business", percentage: 30, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.3) : 0 },
-      { industry: "Education", percentage: 20, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.2) : 0 },
-      { industry: "Other", percentage: 10, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.1) : 0 },
+      { industry: "Technology", percentage: 40, count: Math.round(stats.totalAttendees * 0.4) },
+      { industry: "Business", percentage: 30, count: Math.round(stats.totalAttendees * 0.3) },
+      { industry: "Education", percentage: 20, count: Math.round(stats.totalAttendees * 0.2) },
+      { industry: "Other", percentage: 10, count: Math.round(stats.totalAttendees * 0.1) },
     ],
     experience: [
-      { level: "Beginner", percentage: 30, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.3) : 0 },
-      { level: "Intermediate", percentage: 45, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.45) : 0 },
-      { level: "Advanced", percentage: 25, count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.25) : 0 },
+      { level: "Beginner", percentage: 30, count: Math.round(stats.totalAttendees * 0.3) },
+      { level: "Intermediate", percentage: 45, count: Math.round(stats.totalAttendees * 0.45) },
+      { level: "Advanced", percentage: 25, count: Math.round(stats.totalAttendees * 0.25) },
     ],
+  } : {
+    ageGroups: [],
+    locations: [],
+    industries: [],
+    experience: [],
   };
 
   const behaviorInsights = [
@@ -77,12 +88,14 @@ const AttendeeInsights = () => {
     { id: 2, type: "trend", title: "Engagement", insight: "Engagement", description: `Average ${stats?.totalAttendees ? Math.round(stats.totalAttendees / (stats.totalEvents || 1)) : 0} attendees per event`, impact: "positive" },
   ];
 
-  const attendeeSegments = [
+  // Attendee segments - Note: Percentages, satisfaction, and retention are placeholders
+  // Real segment data would require backend API support for attendee segmentation
+  const attendeeSegments = stats?.totalAttendees ? [
     { 
       segment: "First-time",
       name: "First-time",
       percentage: 60, 
-      count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.6) : 0,
+      count: Math.round(stats.totalAttendees * 0.6),
       satisfaction: 4.5,
       retention: 65,
       characteristics: ["New to platform", "High engagement", "Tech-savvy"],
@@ -91,48 +104,25 @@ const AttendeeInsights = () => {
       segment: "Returning",
       name: "Returning",
       percentage: 40, 
-      count: stats?.totalAttendees ? Math.round(stats.totalAttendees * 0.4) : 0,
+      count: Math.round(stats.totalAttendees * 0.4),
       satisfaction: 4.7,
       retention: 80,
       characteristics: ["Loyal customers", "High retention", "Brand advocates"],
     },
-  ];
+  ] : [];
 
-  // Chart data for attendee analysis
-  const engagementTrendsData = [
-    { month: "Jan", engagement: 78, satisfaction: 4.2, retention: 72 },
-    { month: "Feb", engagement: 82, satisfaction: 4.4, retention: 75 },
-    { month: "Mar", engagement: 89, satisfaction: 4.6, retention: 78 },
-    { month: "Apr", engagement: 85, satisfaction: 4.5, retention: 76 },
-    { month: "May", engagement: 91, satisfaction: 4.7, retention: 80 },
-    { month: "Jun", engagement: 93, satisfaction: 4.8, retention: 82 },
-  ];
-
-  const registrationTimingData = [
-    { hour: "9AM", registrations: 12, views: 180 },
-    { hour: "10AM", registrations: 18, views: 220 },
-    { hour: "11AM", registrations: 25, views: 280 },
-    { hour: "12PM", registrations: 22, views: 250 },
-    { hour: "1PM", registrations: 15, views: 200 },
-    { hour: "2PM", registrations: 35, views: 320 },
-    { hour: "3PM", registrations: 42, views: 380 },
-    { hour: "4PM", registrations: 38, views: 350 },
-    { hour: "5PM", registrations: 28, views: 280 },
-    { hour: "6PM", registrations: 20, views: 220 },
-  ];
-
-  const deviceUsageData = [
-    { device: "Mobile", percentage: 68, count: 2890 },
-    { device: "Desktop", percentage: 28, count: 1190 },
-    { device: "Tablet", percentage: 4, count: 170 },
-  ];
-
-  const satisfactionBySegmentData = [
-    { segment: "Tech Enthusiasts", satisfaction: 4.8, retention: 78 },
-    { segment: "Business Professionals", satisfaction: 4.5, retention: 72 },
-    { segment: "Students & Newcomers", satisfaction: 4.7, retention: 65 },
-    { segment: "Industry Veterans", satisfaction: 4.6, retention: 85 },
-  ];
+  // Chart data for attendee analysis - placeholders (would need backend API support)
+  // Engagement trends would need backend support for monthly engagement metrics
+  const engagementTrendsData: Array<{ month: string; engagement: number; satisfaction: number; retention: number }> = [];
+  
+  // Registration timing would need backend API support for hourly registration data
+  const registrationTimingData: Array<{ hour: string; registrations: number; views: number }> = [];
+  
+  // Device usage would need backend API support for device analytics
+  const deviceUsageData: Array<{ device: string; percentage: number; count: number }> = [];
+  
+  // Satisfaction by segment would need backend API support for segment analytics
+  const satisfactionBySegmentData: Array<{ segment: string; satisfaction: number; retention: number }> = [];
 
   // Use imported data
   const statsData = attendeeStats;
@@ -189,9 +179,9 @@ const AttendeeInsights = () => {
               className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
             >
               <option value="all">All Events</option>
-              <option value="tech">Tech Events</option>
-              <option value="business">Business Events</option>
-              <option value="marketing">Marketing Events</option>
+              <option value="completed">Completed Events</option>
+              <option value="upcoming">Upcoming Events</option>
+              <option value="active">Active Events</option>
             </select>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
@@ -327,17 +317,23 @@ const AttendeeInsights = () => {
                   <CardTitle>Registration Timing Patterns</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CustomComposedChart
-                    data={registrationTimingData}
-                    xAxisKey="hour"
-                    bars={[
-                      { dataKey: "registrations", name: "Registrations", color: CHART_COLORS.primary },
-                    ]}
-                    lines={[
-                      { dataKey: "views", name: "Page Views", color: CHART_COLORS.secondary },
-                    ]}
-                    height={300}
-                  />
+                  {registrationTimingData.length > 0 ? (
+                    <CustomComposedChart
+                      data={registrationTimingData}
+                      xAxisKey="hour"
+                      bars={[
+                        { dataKey: "registrations", name: "Registrations", color: CHART_COLORS.primary },
+                      ]}
+                      lines={[
+                        { dataKey: "views", name: "Page Views", color: CHART_COLORS.secondary },
+                      ]}
+                      height={300}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                      <p>Registration timing data requires backend API support</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -347,13 +343,19 @@ const AttendeeInsights = () => {
                   <CardTitle>Device Usage Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CustomPieChart
-                    data={deviceUsageData}
-                    dataKey="percentage"
-                    nameKey="device"
-                    height={300}
-                    formatter={(value) => `${value}%`}
-                  />
+                  {deviceUsageData.length > 0 ? (
+                    <CustomPieChart
+                      data={deviceUsageData}
+                      dataKey="percentage"
+                      nameKey="device"
+                      height={300}
+                      formatter={(value) => `${value}%`}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                      <p>Device usage data requires backend API support</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -389,22 +391,28 @@ const AttendeeInsights = () => {
                   <CardTitle>Satisfaction by Segment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CustomComposedChart
-                    data={satisfactionBySegmentData}
-                    xAxisKey="segment"
-                    bars={[
-                      { dataKey: "retention", name: "Retention Rate", color: CHART_COLORS.success },
-                    ]}
-                    lines={[
-                      { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
-                    ]}
-                    height={300}
-                    formatter={(value, name) => {
-                      if (name === "Retention Rate") return `${value}%`;
-                      if (name === "Satisfaction Score") return (value as number).toFixed(1);
-                      return (value as number).toString();
-                    }}
-                  />
+                  {satisfactionBySegmentData.length > 0 ? (
+                    <CustomComposedChart
+                      data={satisfactionBySegmentData}
+                      xAxisKey="segment"
+                      bars={[
+                        { dataKey: "retention", name: "Retention Rate", color: CHART_COLORS.success },
+                      ]}
+                      lines={[
+                        { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
+                      ]}
+                      height={300}
+                      formatter={(value, name) => {
+                        if (name === "Retention Rate") return `${value}%`;
+                        if (name === "Satisfaction Score") return (value as number).toFixed(1);
+                        return (value as number).toString();
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                      <p>Satisfaction by segment data requires backend API support</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -469,22 +477,28 @@ const AttendeeInsights = () => {
                   <CardTitle>Engagement Trends Over Time</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CustomMultiLineChart
-                    data={engagementTrendsData}
-                    xAxisKey="month"
-                    lines={[
-                      { dataKey: "engagement", name: "Engagement Score", color: CHART_COLORS.primary },
-                      { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
-                      { dataKey: "retention", name: "Retention Rate", color: CHART_COLORS.success },
-                    ]}
-                    height={300}
-                    formatter={(value, name) => {
-                      if (name === "Engagement Score") return `${value}%`;
-                      if (name === "Satisfaction Score") return (value as number).toFixed(1);
-                      if (name === "Retention Rate") return `${value}%`;
-                      return (value as number).toString();
-                    }}
-                  />
+                  {engagementTrendsData.length > 0 ? (
+                    <CustomMultiLineChart
+                      data={engagementTrendsData}
+                      xAxisKey="month"
+                      lines={[
+                        { dataKey: "engagement", name: "Engagement Score", color: CHART_COLORS.primary },
+                        { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
+                        { dataKey: "retention", name: "Retention Rate", color: CHART_COLORS.success },
+                      ]}
+                      height={300}
+                      formatter={(value, name) => {
+                        if (name === "Engagement Score") return `${value}%`;
+                        if (name === "Satisfaction Score") return (value as number).toFixed(1);
+                        if (name === "Retention Rate") return `${value}%`;
+                        return (value as number).toString();
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                      <p>Engagement trends data requires backend API support</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -494,48 +508,10 @@ const AttendeeInsights = () => {
                   <CardTitle>Engagement Metrics</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Session Duration</p>
-                      <p className="text-xs text-muted-foreground">Average time spent</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">4.2h</p>
-                      <p className="text-xs text-muted-foreground">+12% vs last event</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Q&A Participation</p>
-                      <p className="text-xs text-muted-foreground">Questions asked</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">67%</p>
-                      <p className="text-xs text-muted-foreground">of attendees</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Networking Activity</p>
-                      <p className="text-xs text-muted-foreground">Connections made</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">3.4</p>
-                      <p className="text-xs text-muted-foreground">avg per attendee</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Social Sharing</p>
-                      <p className="text-xs text-muted-foreground">Social media posts</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">23%</p>
-                      <p className="text-xs text-muted-foreground">of attendees</p>
-                    </div>
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground">
+                      Engagement metrics require backend API support for detailed analytics
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -568,13 +544,19 @@ const AttendeeInsights = () => {
                   <CardTitle>Engagement by Time of Day</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CustomAreaChart
-                    data={registrationTimingData}
-                    dataKey="registrations"
-                    xAxisKey="hour"
-                    height={300}
-                    color={CHART_COLORS.info}
-                  />
+                  {registrationTimingData.length > 0 ? (
+                    <CustomAreaChart
+                      data={registrationTimingData}
+                      dataKey="registrations"
+                      xAxisKey="hour"
+                      height={300}
+                      color={CHART_COLORS.info}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                      <p>Time of day data requires backend API support</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

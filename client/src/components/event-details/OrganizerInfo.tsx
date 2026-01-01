@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Building, Mail, ExternalLink, ChevronDown, ChevronUp, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe } from "lucide-react";
+import { Building, ExternalLink, ChevronDown, ChevronUp, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, MessageCircle } from "lucide-react";
 import type { EventData } from "@/types/event";
 
 interface OrganizerInfoProps {
@@ -67,19 +67,6 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
               </div>
             )}
 
-            <div className="flex flex-wrap gap-3 justify-center md:justify-start">
-              <Button variant="outline" size="sm" className="h-9">
-                <Mail className="w-4 h-4 mr-2" />
-                Contact
-              </Button>
-              {organizer?.organizationName && (
-                <Button variant="ghost" size="sm" className="h-9">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  {organizer.organizationName}
-                </Button>
-              )}
-            </div>
-            
             {/* Social Links */}
             {socialLinks && Object.keys(socialLinks).length > 0 && (
               <div className="flex flex-wrap gap-2 justify-center md:justify-start pt-2">
@@ -93,10 +80,21 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
                     instagram: <Instagram className="w-4 h-4" />,
                     linkedin: <Linkedin className="w-4 h-4" />,
                     youtube: <Youtube className="w-4 h-4" />,
+                    tiktok: <MessageCircle className="w-4 h-4" />,
                     website: <Globe className="w-4 h-4" />,
                   };
                   
                   const Icon = iconMap[platformLower] || <ExternalLink className="w-4 h-4" />;
+                  
+                  const platformLabels: Record<string, string> = {
+                    facebook: 'Facebook',
+                    twitter: 'Twitter / X',
+                    instagram: 'Instagram',
+                    linkedin: 'LinkedIn',
+                    youtube: 'YouTube',
+                    tiktok: 'TikTok',
+                    website: 'Website'
+                  };
                   
                   return (
                     <a
@@ -105,7 +103,40 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card-surface hover:bg-primary/10 hover:border-primary transition-colors"
-                      title={platform}
+                      title={platformLabels[platformLower] || platform}
+                    >
+                      {Icon}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+    </section>
+  );
+};
+
+                  const Icon = iconMap[platformLower] || <ExternalLink className="w-4 h-4" />;
+                  
+                  const platformLabels: Record<string, string> = {
+                    facebook: 'Facebook',
+                    twitter: 'Twitter / X',
+                    instagram: 'Instagram',
+                    linkedin: 'LinkedIn',
+                    youtube: 'YouTube',
+                    tiktok: 'TikTok',
+                    website: 'Website'
+                  };
+                  
+                  return (
+                    <a
+                      key={platform}
+                      href={url.startsWith('http') ? url : `https://${url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card-surface hover:bg-primary/10 hover:border-primary transition-colors"
+                      title={platformLabels[platformLower] || platform}
                     >
                       {Icon}
                     </a>

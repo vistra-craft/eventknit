@@ -31,6 +31,87 @@ enum KYCStatus {
   REJECTED
 }
 
+enum OrganizerEntityType {
+  INDIVIDUAL
+  SOLE_PROPRIETOR
+  PARTNERSHIP
+  LIMITED_LIABILITY_COMPANY
+  LIMITED_LIABILITY_PARTNERSHIP
+  EMPLOYMENT_AGENCY_LLC
+  FOREIGN_COMPANY_COMPLIANCE
+  PRIVATE_HOSPITAL_SOLE_PROPRIETOR
+  PRIVATE_HOSPITAL_LLC
+  PUBLIC_HOSPITAL
+  PRIVATE_EDUCATION_SOLE_PROPRIETOR
+  PRIVATE_EDUCATION_LLC
+  INTERNATIONAL_EDUCATION_LLC
+  PUBLIC_EDUCATION
+  COOPERATIVE_SOCIETY
+  INSURANCE_REINSURANCE
+  NGO
+  EMBASSY_UN_WORLD_BANK
+  DENOMINATIONAL_CHURCH
+  PARTNERSHIP_PROFESSIONAL
+  TRUST
+}
+
+enum KYCDocumentType {
+  // Common documents
+  PP_NEW_CONTRACT
+  NATIONAL_ID
+  PASSPORT
+  ALIEN_ID
+  MILITARY_ID
+  KRA_PIN
+  CERTIFICATE_OF_REGISTRATION
+  CERTIFICATE_OF_INCORPORATION
+  COMPANY_KRA_PIN
+  BANK_STATEMENT
+  CANCELLED_CHEQUE
+  BANK_LETTER
+  LETTER_AUTHORIZING_ENTRY
+  
+  // Company-specific
+  CR12
+  CR13
+  PARTNERSHIP_DEED
+  AFFIDAVIT
+  
+  // Industry-specific
+  MINISTRY_OF_HEALTH_LICENSE
+  KMPDB_LICENSE
+  MINISTRY_OF_EDUCATION_LICENSE
+  EPRA_LICENSE
+  IRA_LICENSE
+  TRA_MEMBERSHIP
+  KATO_MEMBERSHIP
+  KATA_MEMBERSHIP
+  KCAA_REGISTRATION
+  TOUR_OPERATOR_LICENSE
+  
+  // Organization-specific
+  ORGANIZATION_CONSTITUTION
+  BOARD_ELECTION_MINUTES
+  TRUST_DEED
+  ACCREDITATION_LETTER
+  AGREEMENT_LETTER
+  LETTER_OF_INTRODUCTION
+  COUNTY_CONTRACT_FORM
+  
+  // Special documents
+  COMPANY_PROFILE
+  ONLINE_LINK
+  TRADE_NAME_CERTIFICATE
+  GRANT_PROBATE
+  AUTHORIZED_SIGNATORY_LETTER
+  
+  // Till-specific (separate from basic KYC)
+  TILL_APPLICATION_FORM
+  MPESA_AUTHORIZATION_FORM
+  ANNUAL_RETURNS
+  DIRECTORS_LIST_LETTERHEAD
+}
+
 enum TokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
@@ -72,6 +153,12 @@ enum DataAccessLevel {
   RESTRICTED // Summary cards only (total attendees, total revenue)
   STANDARD // Attendee list + payment summaries (no transaction IDs)
   FULL // Everything except transaction IDs (detailed payment info)
+}
+
+enum SubscriptionTier {
+  BASIC // Free tier - aggregated data only
+  STANDARD // Free tier - basic attendee data with consent
+  PREMIUM // Paid tier - advanced analytics and demographics
 }
 
 enum TicketStatus {
@@ -119,9 +206,14 @@ model User {
   managedUsers  User[]  @relation("ManagedUsers")
 
   // KYC fields (for organizers)
-  kycStatus      KYCStatus?
-  kycSubmittedAt DateTime?
-  kycApprovedAt  DateTime?
+  kycStatus            KYCStatus?
+  kycSubmittedAt       DateTime?
+  kycApprovedAt        DateTime?
+  organizerEntityType  OrganizerEntityType?
+  organizerIndustry    String? // Industry/business type (for conditional requirements)
+  organizerBusinessName String? // Trade name (if different from registration name)
+  organizerCountry     String? @default("KE") // Default to Kenya, expandable for multi-country
+  organizerRegistrationNumber String? // Business registration/incorporation number
 
   // Verification levels (progressive verification system)
   isIdentityVerified Boolean   @default(false) // Level 2: Identity verified (can create paid events with limits)
@@ -158,6 +250,10 @@ model User {
   passwordResets                    PasswordReset[]
   magicLinkTokens                   MagicLinkToken[]
   kycDocuments                      KYCDocument[]
+  organizerDirectors                OrganizerDirector[] @relation("OrganizerDirectors")
+  attendeeConsents                  AttendeeConsent[]   @relation("AttendeeConsents")
+  organizerSubscription             OrganizerSubscription? @relation("OrganizerSubscriptions")
+  dataAccessAuditLogs               DataAccessAuditLog[] @relation("DataAccessAuditLogs")
   auditLogs                         AuditLog[]
   eventsCreated                     Event[]                      @relation("EventOrganizer")
   eventRegistrations                EventRegistration[]
@@ -226,6 +322,8 @@ model User {
   socialCalendars                   SocialMediaCalendar[]        @relation("OrganizerSocialCalendars")
   postTemplates                     SocialMediaPostTemplate[]    @relation("OrganizerPostTemplates")
   roleTemplates                     TeamRoleTemplate[]           @relation("OrganizerRoleTemplates")
+  customRole                        TeamRoleTemplate?            @relation("StaffCustomRole", fields: [customRoleId], references: [id], onDelete: SetNull)
+  customRoleId                      String?
   teamActivities                    TeamActivityFeed[]           @relation("OrganizerTeamActivities")
   userTeamActivities                TeamActivityFeed[]           @relation("UserTeamActivities")
   teamMetrics                       TeamPerformanceMetric[]      @relation("OrganizerTeamMetrics")
@@ -321,22 +419,54 @@ model MagicLinkToken {
 }
 
 model KYCDocument {
-  id              String    @id @default(uuid())
-  userId          String
-  documentType    String // BUSINESS_LICENSE, TAX_ID, etc.
-  documentNumber  String?
-  documentUrl     String?
-  status          KYCStatus @default(PENDING)
-  rejectionReason String?
-  reviewedBy      String?
-  reviewedAt      DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                String          @id @default(uuid())
+  userId            String
+  documentType      KYCDocumentType
+  documentNumber    String?
+  documentUrl       String?
+  documentCategory  String? // For grouping (e.g., "identity", "registration", "financial")
+  status            KYCStatus       @default(PENDING)
+  rejectionReason   String?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  
+  // Document metadata
+  issueDate         DateTime? // When document was issued
+  expiryDate        DateTime? // When document expires
+  isRequired        Boolean   @default(true) // Whether this document is required
+  isConditional     Boolean   @default(false) // Whether this is a conditional requirement
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
+  @@index([documentType])
+  @@index([userId, documentType]) // For checking if user has specific document type
+}
+
+model OrganizerDirector {
+  id              String   @id @default(uuid())
+  userId          String // Organizer user ID
+  fullName        String
+  nationality     String
+  dateOfBirth     DateTime
+  documentType    String // NATIONAL_ID, PASSPORT, ALIEN_ID, MILITARY_ID
+  documentNumber  String
+  kraPin          String?
+  sharePercentage Decimal? @db.Decimal(5, 2) // Percentage of shares (null for directors without shares)
+  isTopFive       Boolean  @default(true) // Whether this is in the top 5 by share percentage
+  position        String? // Director, Shareholder, Trustee, Partner, etc.
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation("OrganizerDirectors", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isTopFive])
 }
 
 model AuditLog {
@@ -454,6 +584,7 @@ model Event {
 
   // Relations
   registrations          EventRegistration[]
+  consents               AttendeeConsent[] @relation("EventConsents")
   invitations            EventInvitation[]
   ticketTemplates        TicketTemplate[]
   featuredEvents         FeaturedEvent[]
@@ -595,6 +726,92 @@ model EventRegistration {
   @@index([ticketStatus])
   @@index([checkedInAt])
   @@index([isCurrentlyInside])
+  
+  // Consent relations
+  consent AttendeeConsent?
+}
+
+// Attendee Consent Management
+model AttendeeConsent {
+  id             String   @id @default(uuid())
+  attendeeId     String
+  eventId        String
+  registrationId String   @unique
+  
+  // Consent flags
+  operationalConsent  Boolean  @default(true) // Required for ticket delivery
+  marketingConsent    Boolean  @default(false) // Opt-in for marketing/analytics
+  demographicsConsent Boolean  @default(false) // Opt-in for demographics (Premium)
+  analyticsConsent    Boolean  @default(false) // Opt-in for engagement tracking (Premium)
+  
+  // Consent metadata
+  consentedAt    DateTime @default(now())
+  revokedAt      DateTime?
+  consentVersion String   @default("1.0") // Track policy version
+  
+  // Relations
+  attendee    User             @relation("AttendeeConsents", fields: [attendeeId], references: [id], onDelete: Cascade)
+  event       Event            @relation("EventConsents", fields: [eventId], references: [id], onDelete: Cascade)
+  registration EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  @@index([attendeeId])
+  @@index([eventId])
+  @@index([registrationId])
+  @@index([marketingConsent])
+  @@index([demographicsConsent])
+  @@index([analyticsConsent])
+}
+
+// Organizer Subscription Management
+model OrganizerSubscription {
+  id          String           @id @default(uuid())
+  organizerId String           @unique
+  tier        SubscriptionTier @default(BASIC)
+  startedAt   DateTime         @default(now())
+  expiresAt   DateTime?
+  isActive    Boolean          @default(true)
+  canceledAt  DateTime?
+  
+  // Billing information (if Premium)
+  billingEmail    String?
+  nextBillingDate DateTime?
+  
+  // Relations
+  organizer User @relation("OrganizerSubscriptions", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([organizerId])
+  @@index([tier])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// Data Access Audit Log
+model DataAccessAuditLog {
+  id          String   @id @default(uuid())
+  organizerId String
+  attendeeId  String?
+  eventId     String?
+  action      String // "VIEW", "EXPORT", "DELETE", "UPDATE", "EMAIL_SENT"
+  dataType    String // "ATTENDEE_LIST", "ANALYTICS", "EXPORT", "DEMOGRAPHICS", "ENGAGEMENT"
+  timestamp   DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+  
+  // Additional context
+  details Json? // Store additional metadata (export format, filters applied, etc.)
+  
+  // Relations
+  organizer User @relation("DataAccessAuditLogs", fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  @@index([organizerId])
+  @@index([attendeeId])
+  @@index([eventId])
+  @@index([timestamp])
+  @@index([action])
+  @@index([dataType])
 }
 
 model TicketLineItem {
@@ -872,14 +1089,14 @@ model EventPaymentTransaction {
   transactionNumber String @unique // Auto-generated (e.g., "EPT-2024-001")
 
   // Gateway Details (supports multiple gateways)
-  gateway              String  @default("PAYSTACK") // PAYSTACK, STRIPE, PAYPAL
-  gatewayReference     String  @unique // Gateway transaction reference
+  gateway              String   @default("PAYSTACK") // PAYSTACK, STRIPE, PAYPAL
+  gatewayReference     String   @unique // Gateway transaction reference
   // Legacy/paystack-specific reference (kept for backward compatibility with older code/tests)
   paystackReference    String?
   paystackAmount       Decimal? @db.Decimal(10, 2) // Legacy amount field (kobo/cents converted)
-  gatewayAmount        Decimal @db.Decimal(10, 2) // Amount from gateway (in smallest unit)
+  gatewayAmount        Decimal  @db.Decimal(10, 2) // Amount from gateway (in smallest unit)
   gatewayTransactionId String? // Gateway's internal transaction ID
-  currency             String  @default("NGN")
+  currency             String   @default("NGN")
 
   // Payment Details
   amount        Decimal   @db.Decimal(10, 2) // Actual amount paid
@@ -3441,6 +3658,24 @@ model SeatReservation {
 }
 
 // Advanced Team Features
+model Permission {
+  id          String  @id @default(uuid())
+  key         String  @unique // e.g., "events.view", "attendees.manage"
+  name        String
+  description String?
+  category    String // "events", "attendees", "analytics", "financial", "team", "communication", "settings"
+  isSystem    Boolean @default(true) // System-defined permissions cannot be deleted
+
+  // Relations
+  rolePermissions TeamRolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([key])
+}
+
 model TeamRoleTemplate {
   id          String @id @default(uuid())
   organizerId String
@@ -3449,7 +3684,7 @@ model TeamRoleTemplate {
   name        String
   description String? @db.Text
 
-  // Permissions
+  // Legacy permissions (kept for backward compatibility - will migrate to Permission model)
   canEdit                Boolean @default(false)
   canManageAttendees     Boolean @default(false)
   canManageTickets       Boolean @default(false)
@@ -3457,6 +3692,12 @@ model TeamRoleTemplate {
   canManageStaff         Boolean @default(false)
   canPublish             Boolean @default(false)
   canManageCollaborators Boolean @default(false)
+
+  // New granular permissions system
+  permissions TeamRolePermission[]
+
+  // Relations
+  staffWithCustomRole User[] @relation("StaffCustomRole")
 
   // Usage
   usageCount Int @default(0)
@@ -3466,6 +3707,277 @@ model TeamRoleTemplate {
   updatedAt DateTime @updatedAt
 
   @@index([organizerId])
+  @@index([isActive])
+}
+
+model TeamRolePermission {
+  id           String           @id @default(uuid())
+  roleId       String
+  permissionId String
+  role         TeamRoleTemplate @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission       @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model TeamActivityFeed {
+  id          String  @id @default(uuid())
+  organizerId String
+  organizer   User    @relation("OrganizerTeamActivities", fields: [organizerId], references: [id], onDelete: Cascade)
+  eventId     String?
+  event       Event?  @relation("EventTeamActivities", fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User    @relation("UserTeamActivities", fields: [userId], references: [id], onDelete: Cascade)
+
+  action      String // e.g., "event_created", "ticket_updated", "attendee_added"
+  description String @db.Text
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model TeamPerformanceMetric {
+  id          String @id @default(uuid())
+  organizerId String
+  organizer   User   @relation("OrganizerTeamMetrics", fields: [organizerId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User   @relation("UserTeamMetrics", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Metrics
+  eventsCreated    Int     @default(0)
+  ticketsSold      Int     @default(0)
+  revenueGenerated Decimal @default(0) @db.Decimal(10, 2)
+  attendeesManaged Int     @default(0)
+
+  // Period
+  periodStart DateTime
+  periodEnd   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizerId, userId, periodStart, periodEnd])
+  @@index([organizerId])
+  @@index([userId])
+  @@index([periodStart])
+}
+
+// Admin Platform Financial Management
+model PlatformExpense {
+  id String @id @default(uuid())
+
+  // Expense Details
+  category    String // e.g., "Teller Payments", "Marketing", "Facilitation", "Utilities", "Office Supplies", "Other"
+  description String  @db.Text
+  amount      Decimal @db.Decimal(10, 2)
+  currency    String  @default("NGN")
+
+  // Payment Details
+  paymentMethod String? // "cash", "bank_transfer", "credit_card", "check"
+  recipient     String? // Who received the payment (e.g., teller name, vendor name)
+  reference     String? // Payment reference number
+
+  // Receipt/Proof
+  receiptUrl  String?
+  receiptDate DateTime?
+
+  // Tax
+  taxAmount       Decimal? @db.Decimal(10, 2)
+  taxRate         Decimal? @db.Decimal(5, 2)
+  isTaxDeductible Boolean  @default(false)
+
+  // Status
+  status String @default("pending") // pending, approved, paid, cancelled
+
+  // Recorded by
+  recordedBy String? // Admin user ID who recorded this
+  approvedBy String? // Admin user ID who approved this
+
+  expenseDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([expenseDate])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PlatformIncome {
+  id String @id @default(uuid())
+
+  // Income Details
+  category    String // e.g., "Platform Fees", "Subscriptions", "Event Registration Fees", "Other"
+  description String  @db.Text
+  amount      Decimal @db.Decimal(10, 2)
+  currency    String  @default("NGN")
+
+  // Source Details
+  source    String? // Where the income came from (e.g., "EventKnit Platform", "Subscription Revenue")
+  reference String? // Reference number (e.g., transaction ID, subscription ID)
+
+  // Payment Details
+  paymentMethod String? // "bank_transfer", "credit_card", "paystack", etc.
+
+  // Related Entities (optional)
+  eventId       String? // If income is related to a specific event
+  event         Event?  @relation("PlatformIncomeEvents", fields: [eventId], references: [id], onDelete: SetNull)
+  transactionId String? // If related to a payment transaction
+
+  // Tax
+  taxAmount Decimal? @db.Decimal(10, 2)
+  taxRate   Decimal? @db.Decimal(5, 2)
+
+  // Status
+  status String @default("received") // received, pending, cancelled
+
+  // Recorded by
+  recordedBy String? // Admin user ID who recorded this
+
+  incomeDate DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([category])
+  @@index([incomeDate])
+  @@index([status])
+  @@index([createdAt])
+  @@index([eventId])
+}
+
+// ============================================
+// White-Label Solution Models
+// ============================================
+
+enum CustomDomainStatus {
+  PENDING // Domain added but not verified
+  VERIFIED // Domain verified and active
+  FAILED // Domain verification failed
+  SUSPENDED // Domain suspended by admin
+}
+
+enum BrandingStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_APPROVAL // For admin review
+}
+
+model WhiteLabelBranding {
+  id          String @id @default(uuid())
+  organizerId String @unique
+  organizer   User   @relation("OrganizerBranding", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  // Branding Assets
+  logoUrl       String? // Main logo URL
+  logoLightUrl  String? // Logo for light backgrounds
+  logoDarkUrl   String? // Logo for dark backgrounds
+  faviconUrl    String? // Favicon URL
+  coverImageUrl String? // Cover/hero image
+
+  // Color Scheme
+  primaryColor    String? // Primary brand color (hex)
+  secondaryColor  String? // Secondary brand color (hex)
+  accentColor     String? // Accent color (hex)
+  backgroundColor String? // Background color (hex)
+  textColor       String? // Primary text color (hex)
+  linkColor       String? // Link color (hex)
+
+  // Typography
+  fontFamily  String? // Primary font family
+  headingFont String? // Heading font family
+
+  // Branding Details
+  brandName    String? // Custom brand name (if different from organization name)
+  tagline      String? // Brand tagline/slogan
+  supportEmail String? // Custom support email
+  supportPhone String? // Custom support phone
+  websiteUrl   String? // Organization website
+
+  // Email Branding
+  emailHeaderImage String? // Image for email headers
+  emailFooterText  String? // Custom footer text for emails
+  emailSignature   String? @db.Text // Email signature HTML
+
+  // Social Media
+  socialLinks Json? // {facebook, twitter, instagram, linkedin, etc.}
+
+  // Status
+  status          BrandingStatus @default(PENDING_APPROVAL)
+  isActive        Boolean        @default(false)
+  approvedBy      String? // Admin user ID who approved
+  approvedAt      DateTime?
+  rejectionReason String?        @db.Text
+
+  // Metadata
+  metadata  Json? // Additional branding settings
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([status])
+  @@index([isActive])
+}
+
+model CustomDomain {
+  id          String @id @default(uuid())
+  organizerId String
+  organizer   User   @relation("OrganizerCustomDomains", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  // Domain Details
+  domain    String  @unique // e.g., events.example.com
+  subdomain String? // If using subdomain approach
+  isPrimary Boolean @default(false) // Primary domain for the organizer
+
+  // DNS Verification
+  status            CustomDomainStatus @default(PENDING)
+  verificationToken String? // Token for DNS verification
+  verificationCode  String? // Code to add to DNS TXT record
+  verifiedAt        DateTime?
+  verifiedBy        String? // Admin user ID who verified
+
+  // SSL Certificate
+  sslEnabled     Boolean   @default(false)
+  sslCertificate String?   @db.Text // SSL certificate (if self-hosted)
+  sslKey         String?   @db.Text // SSL private key (if self-hosted)
+  sslExpiresAt   DateTime?
+
+  // Configuration
+  cnameTarget String? // CNAME target for DNS setup
+  ipAddress   String? // IP address for A record setup
+
+  // Status
+  isActive      Boolean   @default(false)
+  lastCheckedAt DateTime? // Last DNS verification check
+  failureReason String?   @db.Text
+
+  // Metadata
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([domain])
+  @@index([status])
+  @@index([isActive])
+  @@index([isPrimary])
+}
+
+  permission   Permission       @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
 }
 
 model TeamActivityFeed {

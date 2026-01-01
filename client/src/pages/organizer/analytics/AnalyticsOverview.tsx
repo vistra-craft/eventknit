@@ -190,7 +190,8 @@ const AnalyticsOverview = () => {
     count,
   }));
 
-  // Simplified chart data (would need more complex calculations for real trends)
+  // Registration trends data - placeholder (would need backend support for daily registration data)
+  // For now, show empty data with proper structure
   const registrationTrendsData = [
     { day: "Mon", registrations: 0, views: 0 },
     { day: "Tue", registrations: 0, views: 0 },
@@ -447,38 +448,54 @@ const AnalyticsOverview = () => {
                   <CardTitle>Quick Stats</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Best Performing Event</p>
-                      <p className="text-xs text-muted-foreground">Tech Innovation Summit</p>
+                  {topPerformingEvents.length > 0 ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Best Performing Event</p>
+                          <p className="text-xs text-muted-foreground">
+                            {topPerformingEvents[0].title.length > 30 
+                              ? topPerformingEvents[0].title.substring(0, 30) + '...' 
+                              : topPerformingEvents[0].title}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-green-600">{topPerformingEvents[0].conversion}%</p>
+                          <p className="text-xs text-muted-foreground">conversion</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Average Rating</p>
+                          <p className="text-xs text-muted-foreground">All events</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-primary">
+                            {events.length > 0 
+                              ? (events.reduce((sum, e) => sum + (e.rating || 0), 0) / events.filter(e => e.rating && e.rating > 0).length || 1).toFixed(1)
+                              : '0.0'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">stars</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Total Events</p>
+                          <p className="text-xs text-muted-foreground">In this period</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-primary">{events.length}</p>
+                          <p className="text-xs text-muted-foreground">events</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">No events data available</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-green-600">21.4%</p>
-                      <p className="text-xs text-muted-foreground">conversion</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Average Rating</p>
-                      <p className="text-xs text-muted-foreground">All events</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">4.6</p>
-                      <p className="text-xs text-muted-foreground">stars</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Revenue Growth</p>
-                      <p className="text-xs text-muted-foreground">vs last period</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-green-600">+24%</p>
-                      <p className="text-xs text-muted-foreground">increase</p>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -614,6 +631,23 @@ const AnalyticsOverview = () => {
                     height={300}
                     formatter={(value, name) => {
                       if (name === "Page Views") return (value as number).toLocaleString();
+                      if (name === "Attendees") return (value as number).toLocaleString();
+                      return (value as number).toString();
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+        </div>
+      </div>
+    </OrganizerLayout>
+  );
+};
+
+export default AnalyticsOverview;
+
                       if (name === "Attendees") return (value as number).toLocaleString();
                       return (value as number).toString();
                     }}

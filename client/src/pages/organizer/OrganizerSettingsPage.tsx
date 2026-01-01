@@ -48,10 +48,6 @@ interface OrganizerSettingsData {
   email: string;
   phone: string;
   companyAffiliation: string;
-  company: string;
-  position: string;
-  location: string;
-  bio: string;
   avatar: string;
   // Organizer-specific
   organizationName: string;
@@ -69,9 +65,6 @@ interface OrganizerSettingsData {
   
   // Appearance Settings
   theme: "light" | "dark" | "system";
-  dashboardLayout: "compact" | "spacious";
-  showMetrics: boolean;
-  showCharts: boolean;
   
   // Security Settings
   twoFactorAuth: boolean;
@@ -141,9 +134,6 @@ const OrganizerSettingsPage = () => {
             ...prev,
             // Appearance
             theme: prefs.theme || "system",
-            dashboardLayout: prefs.dashboardLayout || "spacious",
-            showMetrics: prefs.showMetrics ?? true,
-            showCharts: prefs.showCharts ?? true,
             // Security
             twoFactorAuth: prefs.twoFactorAuth ?? false,
             sessionTimeout: prefs.sessionTimeout || 30,
@@ -197,7 +187,6 @@ const OrganizerSettingsPage = () => {
             email: userData.email || "",
             phone: userData.phoneNumber || "",
             companyAffiliation: "", // Not in User interface yet
-            company: userData.organizationName || "",
             organizationName: userData.organizationName || "",
             businessEmail: userData.businessEmail || "",
             avatar: userData.avatar || "",
@@ -251,10 +240,6 @@ const OrganizerSettingsPage = () => {
     email: "",
     phone: "",
     companyAffiliation: "",
-    company: "",
-    position: "",
-    location: "",
-    bio: "",
     avatar: "",
     organizationName: "",
     businessEmail: "",
@@ -267,9 +252,6 @@ const OrganizerSettingsPage = () => {
     weeklyDigest: true,
     notificationEmail: "",
     theme: "system",
-    dashboardLayout: "spacious",
-    showMetrics: true,
-    showCharts: true,
     twoFactorAuth: false,
     sessionTimeout: 30,
     loginAlerts: true,
@@ -424,9 +406,6 @@ const OrganizerSettingsPage = () => {
         
         if (activeTab === "appearance") {
           preferencesToUpdate.theme = settings.theme;
-          preferencesToUpdate.dashboardLayout = settings.dashboardLayout;
-          preferencesToUpdate.showMetrics = settings.showMetrics;
-          preferencesToUpdate.showCharts = settings.showCharts;
         } else if (activeTab === "security") {
           preferencesToUpdate.twoFactorAuth = settings.twoFactorAuth;
           preferencesToUpdate.sessionTimeout = settings.sessionTimeout;
@@ -496,9 +475,6 @@ const OrganizerSettingsPage = () => {
             ...prev,
             // Appearance
             theme: prefs.theme || "system",
-            dashboardLayout: prefs.dashboardLayout || "spacious",
-            showMetrics: prefs.showMetrics ?? true,
-            showCharts: prefs.showCharts ?? true,
             // Security
             twoFactorAuth: prefs.twoFactorAuth ?? false,
             sessionTimeout: prefs.sessionTimeout || 30,
@@ -532,15 +508,6 @@ const OrganizerSettingsPage = () => {
       } finally {
         setIsSaving(false);
       }
-    } else {
-      // Reset to default values for profile
-      setSettings({
-        ...settings,
-        theme: "system",
-        dashboardLayout: "spacious",
-        showMetrics: true,
-        showCharts: true,
-      });
     }
   };
 
@@ -952,50 +919,10 @@ const OrganizerSettingsPage = () => {
           value={settings.theme}
           onChange={(value) => updateSetting("theme", value)}
         />
+        <p className="text-sm text-muted-foreground mt-2">
+          Choose your preferred color theme. System theme will match your device settings.
+        </p>
       </SettingsSection>
-
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Dashboard Layout</h3>
-        
-        <div>
-          <Label htmlFor="dashboardLayout">Layout Style</Label>
-          <Select value={settings.dashboardLayout} onValueChange={(value) => updateSetting("dashboardLayout", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select layout" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="compact">Compact</SelectItem>
-              <SelectItem value="spacious">Spacious</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="showMetrics">Show Metrics Cards</Label>
-              <p className="text-sm text-muted-foreground">Display metric cards on dashboard</p>
-            </div>
-            <Switch
-              id="showMetrics"
-              checked={settings.showMetrics}
-              onCheckedChange={(checked) => updateSetting("showMetrics", checked)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="showCharts">Show Charts</Label>
-              <p className="text-sm text-muted-foreground">Display charts and graphs</p>
-            </div>
-            <Switch
-              id="showCharts"
-              checked={settings.showCharts}
-              onCheckedChange={(checked) => updateSetting("showCharts", checked)}
-            />
-          </div>
-        </div>
-      </div>
     </div>
   );
 

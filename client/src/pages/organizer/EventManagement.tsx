@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Users,
   Mic,
-  Building2,
   DollarSign,
   Star,
-  FileText,
   Clock,
   MapPin,
   ArrowLeft,
@@ -18,39 +16,270 @@ import {
   CheckCircle,
   TrendingUp,
   Download,
-  Filter,
-  Activity,
   Target,
-  Zap,
-  Heart,
   Share2,
   MessageSquare,
   X,
   MoreHorizontal,
   Copy,
+  Loader2,
+  AlertCircle,
+  Mail,
+  Plus,
+  XCircle,
+  Lock,
+  Filter,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Pagination } from "../../components/ui/pagination";
-import { Loader2, AlertCircle } from "lucide-react";
-import { CustomAreaChart, CustomBarChart, CustomPieChart } from "../../components/charts/ChartComponents";
-import { CHART_COLORS } from "../../components/charts/chartConstants";
-import { getOrganizerEventById, getEventRegistrations, cancelEvent } from "../../lib/organizer-api";
+import { getOrganizerEventById, getEventRegistrations, cancelEvent, getSubscription, type OrganizerSubscription } from "../../lib/organizer-api";
 import { transformEventData } from "../../lib/event-utils";
 import type { EventData } from "../../types/event";
 import { shareEvent } from "../../lib/utils/share";
 import { exportEventData } from "../../lib/utils/export";
 import { useToast } from "../../hooks/use-toast";
-import { getEventConfig, updateEventConfig, type EventScanConfig } from "../../lib/workstation-api";
+import { OrganizerEventStaffAssignment } from "../../components/OrganizerEventStaffAssignment";
+import { sendToEventRegistrations, getCommunicationHistory } from "../../lib/organizer-dashboard-api";
+import { Textarea } from "../../components/ui/textarea";
 import { Switch } from "../../components/ui/switch";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { OrganizerEventStaffAssignment } from "../../components/OrganizerEventStaffAssignment";
+import { ConsentStatisticsCard } from "../../components/organizer/ConsentStatisticsCard";
+import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
+import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
+
+interface CommunicationMessage {
+  id: string;
+  subject: string;
+  content: string;
+  recipientType: string;
+  sentCount: number;
+  failedCount: number;
+  createdAt: string;
+  event?: { id: string; title: string };
+}
+
+const EventCommunicationSection = ({ eventId, eventTitle }: { eventId: string; eventTitle: string }) => {
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<CommunicationMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [content, setContent] = useState("");
+  const [sendEmail, setSendEmail] = useState(true);
+  const [sendNotification, setSendNotification] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!eventId) return;
+      try {
+        setLoading(true);
+        const response = await getCommunicationHistory({ eventId });
+        if (response.success && response.data) {
+          setMessages(response.data.messages || []);
+        }
+      } catch (error) {
+        console.error("Error loading communication history:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMessages();
+  }, [eventId]);
+
+  const handleSendMessage = async () => {
+    if (!eventId || !subject.trim() || !content.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in subject and content",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSending(true);
+      const response = await sendToEventRegistrations(eventId, {
+        subject: subject.trim(),
+        content: content.trim(),
+        sendEmail,
+        sendNotification,
+      });
+
+      if (response.success && response.data) {
+        toast({
+          title: "Success",
+          description: `Message sent to ${response.data.sent} recipients`,
+        });
+        setIsSendDialogOpen(false);
+        setSubject("");
+        setContent("");
+        // Reload messages
+        const historyResponse = await getCommunicationHistory({ eventId });
+        if (historyResponse.success && historyResponse.data) {
+          setMessages(historyResponse.data.messages || []);
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-semibold">Communication</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Send messages to all attendees of {eventTitle}
+          </p>
+        </div>
+        <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Send Message
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Send Message to Attendees</DialogTitle>
+              <DialogDescription>
+                Send a message to all registered attendees for this event
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="subject">Subject *</Label>
+                <Input
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Enter message subject"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="content">Message Content *</Label>
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Enter your message..."
+                  className="mt-2 min-h-[200px]"
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="send-email"
+                    checked={sendEmail}
+                    onCheckedChange={setSendEmail}
+                  />
+                  <Label htmlFor="send-email">Send via Email</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="send-notification"
+                    checked={sendNotification}
+                    onCheckedChange={setSendNotification}
+                  />
+                  <Label htmlFor="send-notification">Send via In-App Notification</Label>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsSendDialogOpen(false);
+                  setSubject("");
+                  setContent("");
+                }}
+                disabled={sending}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSendMessage} disabled={sending}>
+                {sending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send Message"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Communication History</h2>
+        {loading ? (
+          <div className="text-center py-8">Loading messages...</div>
+        ) : messages.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No messages sent yet</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <Card key={message.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold">{message.subject}</h3>
+                        <Badge variant="outline">Event Registrations</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                        {message.content}
+                      </p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          {message.sentCount} sent
+                        </span>
+                        {message.failedCount > 0 && (
+                          <span className="flex items-center gap-1 text-red-600">
+                            <XCircle className="h-3 w-3" />
+                            {message.failedCount} failed
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(message.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const EventManagement = () => {
   const { eventId } = useParams();
@@ -67,35 +296,8 @@ const EventManagement = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [attendeesPage, setAttendeesPage] = useState(1);
   const [attendeesLimit, setAttendeesLimit] = useState(25);
-  const [scanConfig, setScanConfig] = useState<EventScanConfig | null>(null);
-  const [scanConfigLoading, setScanConfigLoading] = useState(false);
-  const [scanConfigSaving, setScanConfigSaving] = useState(false);
-
-  // Load scan config when scan-settings section is active
-  useEffect(() => {
-    const loadScanConfig = async () => {
-      if (!eventId || activeSection !== 'scan-settings') return;
-
-      try {
-        setScanConfigLoading(true);
-        const response = await getEventConfig(eventId);
-        if (response.success && response.data) {
-          setScanConfig(response.data.config);
-        }
-      } catch (error) {
-        console.error('Error loading scan config:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load scan settings",
-          variant: "destructive",
-        });
-      } finally {
-        setScanConfigLoading(false);
-      }
-    };
-
-    loadScanConfig();
-  }, [eventId, activeSection, toast]);
+  const [subscription, setSubscription] = useState<OrganizerSubscription | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -108,19 +310,29 @@ const EventManagement = () => {
 
       try {
         setLoading(true);
+        setSubscriptionLoading(true);
         setError(null);
 
-        // Fetch event details
-        const eventResponse = await getOrganizerEventById(eventId);
+        // Fetch event details, attendees, and subscription in parallel
+        const [eventResponse, registrationsResponse, subscriptionResponse] = await Promise.all([
+          getOrganizerEventById(eventId),
+          getEventRegistrations(eventId),
+          getSubscription(),
+        ]);
+        
         if (eventResponse.success && eventResponse.data) {
-          const transformedEvent = transformEventData(eventResponse.data.event);
+          // Normalize timezone: convert null to undefined to match BackendEvent type
+          const normalizedEvent = {
+            ...eventResponse.data.event,
+            timezone: eventResponse.data.event.timezone ?? undefined,
+          };
+          const transformedEvent = transformEventData(normalizedEvent);
           setEventData(transformedEvent);
         } else {
           throw new Error(eventResponse.message || 'Failed to fetch event');
         }
 
         // Fetch attendees/registrations
-        const registrationsResponse = await getEventRegistrations(eventId);
         if (registrationsResponse.success && registrationsResponse.data) {
           // Transform registrations to attendees format
           // Backend already filters based on access level
@@ -151,6 +363,10 @@ const EventManagement = () => {
           }));
           setAttendees(transformedAttendees);
         }
+        
+        if (subscriptionResponse.success && subscriptionResponse.data) {
+          setSubscription(subscriptionResponse.data.subscription);
+        }
       } catch (err: unknown) {
         const errorMessage = err && typeof err === 'object' && 'message' in err
           ? (err.message as string)
@@ -158,6 +374,7 @@ const EventManagement = () => {
         setError(errorMessage);
       } finally {
         setLoading(false);
+        setSubscriptionLoading(false);
       }
     };
 
@@ -194,7 +411,12 @@ const EventManagement = () => {
         // Refresh event data
         const eventResponse = await getOrganizerEventById(eventId);
         if (eventResponse.success && eventResponse.data) {
-          const transformedEvent = transformEventData(eventResponse.data.event);
+          // Normalize timezone: convert null to undefined to match BackendEvent type
+          const normalizedEvent = {
+            ...eventResponse.data.event,
+            timezone: eventResponse.data.event.timezone ?? undefined,
+          };
+          const transformedEvent = transformEventData(normalizedEvent);
           setEventData(transformedEvent);
         }
         // Show success message
@@ -267,39 +489,11 @@ const EventManagement = () => {
     sessions?: number;
   }
   
-  // Type definitions for mock data structures
-  interface Exhibitor {
-    id: number;
-    name: string;
-    booth?: string;
-    category?: string;
-    contact?: string;
-    status?: string;
-  }
-  
   interface Sponsor {
     id: string | number;
     name?: string;
     level?: string;
     amount?: number;
-  }
-  
-  interface Session {
-    id: number;
-    title: string;
-    speaker?: string;
-    time?: string;
-    room?: string;
-    attendees?: number;
-  }
-  
-  interface Abstract {
-    id: number;
-    title: string;
-    author?: string;
-    status?: string;
-    submittedDate?: string;
-    category?: string;
   }
   
 
@@ -321,82 +515,43 @@ const EventManagement = () => {
     sponsors: eventData?.sponsors && Array.isArray(eventData.sponsors) ? eventData.sponsors : [],
   };
 
-  // Mock data ONLY for sections that don't have APIs yet (exhibitors, sessions, abstracts, charts)
-  // These will be replaced when APIs are implemented
-  const mockData: {
-    exhibitors: Exhibitor[];
-    sessions: Session[];
-    abstracts: Abstract[];
-    registrationTrends: Array<{ day: string; registrations: number }>;
-    revenueBySource: Array<{ name: string; value: number; amount: number }>;
-    attendeeDemographics: Array<{ age: string; count: number }>;
-    recentActivity: Array<{ id: number; type: string; message: string; time: string; icon: React.ComponentType<{ className?: string }>; color: string }>;
-  } = {
-    exhibitors: [
-      { id: 1, name: "No exhibitors", booth: "N/A", category: "Add exhibitors", contact: "N/A", status: "pending" },
-    ],
-    sessions: [
-      { id: 1, title: "No sessions scheduled", speaker: "Add sessions", time: "TBD", room: "TBD", attendees: 0 },
-    ],
-    abstracts: [
-      { id: 1, title: "No abstracts submitted", author: "N/A", status: "pending", submittedDate: "N/A", category: "N/A" },
-    ],
-    // Mock data for charts and analytics (no APIs yet)
-    registrationTrends: [
-      { day: "Jan 1", registrations: 12 },
-      { day: "Jan 2", registrations: 19 },
-      { day: "Jan 3", registrations: 25 },
-      { day: "Jan 4", registrations: 32 },
-      { day: "Jan 5", registrations: 28 },
-      { day: "Jan 6", registrations: 35 },
-      { day: "Jan 7", registrations: 42 },
-    ],
-    revenueBySource: [
-      { name: "Ticket Sales", value: 70, amount: 101640 },
-      { name: "Sponsorships", value: 20, amount: 29040 },
-      { name: "Merchandise", value: 7, amount: 10164 },
-      { name: "Donations", value: 3, amount: 4356 },
-    ],
-    attendeeDemographics: [
-      { age: "18-25", count: 85 },
-      { age: "26-35", count: 142 },
-      { age: "36-45", count: 98 },
-      { age: "46-55", count: 67 },
-      { age: "56+", count: 43 },
-    ],
-    recentActivity: [
-      { id: 1, type: "registration", message: "Sarah Johnson registered", time: "2 min ago", icon: Users, color: "text-green-600" },
-      { id: 2, type: "payment", message: "Payment of $299 received", time: "5 min ago", icon: DollarSign, color: "text-blue-600" },
-      { id: 3, type: "speaker", message: "New speaker confirmed", time: "12 min ago", icon: Mic, color: "text-purple-600" },
-      { id: 4, type: "exhibitor", message: "Booth assignment completed", time: "18 min ago", icon: Building2, color: "text-orange-600" },
-    ],
-  };
 
   const navigationSections = [
     { key: "overview", label: "Overview", icon: BarChart3 },
     { key: "attendees", label: "Attendees", icon: Users },
+    { key: "communication", label: "Communication", icon: MessageSquare },
     { key: "speakers", label: "Speakers", icon: Mic },
-    { key: "exhibitors", label: "Exhibitors", icon: Building2 },
     { key: "sponsors", label: "Sponsors", icon: Star },
     { key: "revenue", label: "Revenue", icon: DollarSign },
-    { key: "agenda", label: "Sessions", icon: Calendar },
-    { key: "abstracts", label: "Abstracts", icon: FileText },
     { key: "staff", label: "Assigned Staff", icon: UserPlus },
-    { key: "scan-settings", label: "Scan Settings", icon: Settings },
   ];
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "pending":
-      case "under_review":
-        return "bg-yellow-100 text-yellow-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
+    switch (status?.toUpperCase()) {
+      case "CONFIRMED":
+      case "APPROVED":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "PENDING":
+      case "UNDER_REVIEW":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "REJECTED":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "CANCELLED":
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getStatusLabel = (status?: string) => {
+    if (!status) return "Unknown";
+    const statusUpper = status.toUpperCase();
+    switch (statusUpper) {
+      case "APPROVED": return "Published";
+      case "PENDING": return "Pending Approval";
+      case "REJECTED": return "Rejected";
+      case "CANCELLED": return "Cancelled";
+      default: return status;
     }
   };
 
@@ -410,8 +565,34 @@ const EventManagement = () => {
         
         return (
           <div className="space-y-6">
+            {/* Tier Indicator Banner */}
+            {!subscriptionLoading && subscription && subscription.tier === 'BASIC' && (
+              <UpgradePrompt
+                message="Upgrade to Standard (free) to access detailed attendee contact information and communication tools."
+                targetTier="STANDARD"
+                variant="banner"
+                dismissible={true}
+              />
+            )}
+
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Attendees Management</h3>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-lg font-semibold">Attendees Management</h3>
+                  {!subscriptionLoading && subscription && (
+                    <SubscriptionTierBadge tier={subscription.tier} size="sm" />
+                  )}
+                </div>
+                {/* Data Access Summary */}
+                {!subscriptionLoading && subscription && (
+                  <p className="text-sm text-muted-foreground">
+                    {subscription.tier === 'BASIC' 
+                      ? `Viewing summary data only. Upgrade to Standard to see attendee details.`
+                      : `Viewing ${apiData.attendees.length} attendee${apiData.attendees.length !== 1 ? 's' : ''} with your ${subscription.tier.charAt(0) + subscription.tier.slice(1).toLowerCase()} subscription.`
+                    }
+                  </p>
+                )}
+              </div>
               <div className="flex gap-2 items-center">
                 <div className="text-sm text-muted-foreground">
                   Showing {attendeesStartIndex + 1}-{Math.min(attendeesEndIndex, apiData.attendees.length)} of {apiData.attendees.length}
@@ -430,7 +611,21 @@ const EventManagement = () => {
                     <SelectItem value="100">100</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={subscription?.tier === 'BASIC'}
+                  onClick={() => {
+                    if (subscription?.tier !== 'BASIC') {
+                      // Export logic here
+                      toast({
+                        title: "Export started",
+                        description: "Your attendee data is being exported.",
+                      });
+                    }
+                  }}
+                >
+                  {subscription?.tier === 'BASIC' && <Lock className="w-4 h-4 mr-2" />}
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>
@@ -631,88 +826,6 @@ const EventManagement = () => {
           </div>
         );
 
-      case "exhibitors":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">Exhibitors Management</h3>
-              <Button size="sm">
-                <Building2 className="w-4 h-4 mr-2" />
-                Add Exhibitor
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Exhibitors</p>
-                      <p className="text-lg font-semibold">{mockData.exhibitors.length}</p>
-                    </div>
-                    <Building2 className="w-8 h-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e) => e.status === 'confirmed').length}</p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-lg font-semibold">{mockData.exhibitors.filter((e) => e.status === 'pending').length}</p>
-                    </div>
-                    <Clock className="w-8 h-8 text-yellow-600" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Exhibitors List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockData.exhibitors.map((exhibitor) => (
-                    <div key={exhibitor.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {exhibitor.name.split(' ').map((n: string) => n[0]).join('')}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{exhibitor.name}</p>
-                          <p className="text-sm text-muted-foreground">Booth: {exhibitor.booth}</p>
-                          <p className="text-xs text-muted-foreground">{exhibitor.category}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{exhibitor.category}</Badge>
-                        <Badge className={getStatusColor(exhibitor.status || 'pending')}>
-                          {exhibitor.status || 'pending'}
-                        </Badge>
-                        <Button variant="outline" size="sm">Manage</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
       case "sponsors":
         return (
           <div className="space-y-6">
@@ -881,358 +994,37 @@ const EventManagement = () => {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Revenue Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">VIP Tickets</p>
-                      <p className="text-sm text-muted-foreground">50 sold × $299</p>
-                    </div>
-                    <p className="font-bold">$14,950</p>
-                  </div>
-                  <div className="flex justify-between items-center p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Standard Tickets</p>
-                      <p className="text-sm text-muted-foreground">400 sold × $199</p>
-                    </div>
-                    <p className="font-bold">$79,600</p>
-                  </div>
-                  <div className="flex justify-between items-center p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Student Tickets</p>
-                      <p className="text-sm text-muted-foreground">35 sold × $99</p>
-                    </div>
-                    <p className="font-bold">$3,465</p>
-                  </div>
-                  <div className="flex justify-between items-center p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Gold Sponsorship</p>
-                      <p className="text-sm text-muted-foreground">1 × $50,000</p>
-                    </div>
-                    <p className="font-bold">$50,000</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      case "agenda":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">Sessions & Agenda</h3>
-              <Button size="sm">
-                <Calendar className="w-4 h-4 mr-2" />
-                Add Session
-              </Button>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Sessions Schedule</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockData.sessions.map((session) => (
-                    <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Clock className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{session.title}</p>
-                          <p className="text-sm text-muted-foreground">{session.speaker}</p>
-                          <p className="text-xs text-muted-foreground">{session.time} • {session.room}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{session.attendees} attendees</Badge>
-                        <Button variant="outline" size="sm">Edit</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      case "abstracts":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">Abstracts Management</h3>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filter
-                </Button>
-                <Button size="sm">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Review All
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Abstracts</p>
-                      <p className="text-lg font-semibold">{mockData.abstracts.length}</p>
-                    </div>
-                    <FileText className="w-8 h-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Approved</p>
-                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a) => a.status === 'approved').length}</p>
-                    </div>
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Under Review</p>
-                      <p className="text-lg font-semibold">{mockData.abstracts.filter((a) => a.status === 'under_review').length}</p>
-                    </div>
-                    <Eye className="w-8 h-8 text-yellow-600" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Abstracts List</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockData.abstracts.map((abstract) => (
-                    <div key={abstract.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {(abstract.author || 'N/A').split(' ').map((n: string) => n[0]).join('')}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{abstract.title}</p>
-                          <p className="text-sm text-muted-foreground">{abstract.author}</p>
-                          <p className="text-xs text-muted-foreground">{abstract.category} • {abstract.submittedDate}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{abstract.category}</Badge>
-                        <Badge className={getStatusColor(abstract.status || 'pending')}>
-                          {(abstract.status || 'pending').replace('_', ' ')}
-                        </Badge>
-                        <Button variant="outline" size="sm">Review</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      case "scan-settings": {
-        const handleSaveScanConfig = async () => {
-          if (!eventId || !scanConfig) return;
-
-          try {
-            setScanConfigSaving(true);
-            const response = await updateEventConfig(eventId, {
-              allowReEntry: scanConfig.allowReEntry,
-              requireCheckOut: scanConfig.requireCheckOut,
-              maxReEntries: scanConfig.maxReEntries,
-              scanSettings: scanConfig.scanSettings,
-            });
-
-            if (response.success) {
-              toast({
-                title: "Success",
-                description: "Scan settings saved successfully",
-              });
-              setScanConfig(response.data.config);
-            } else {
-              throw new Error('Failed to save scan settings');
-            }
-          } catch (error) {
-            console.error('Error saving scan config:', error);
-            toast({
-              title: "Error",
-              description: "Failed to save scan settings",
-              variant: "destructive",
-            });
-          } finally {
-            setScanConfigSaving(false);
-          }
-        };
-
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-semibold">Scan Settings</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Configure how tickets are scanned and validated for this event
-                </p>
-              </div>
-            </div>
-
-            {scanConfigLoading ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Loading scan settings...</p>
-                </CardContent>
-              </Card>
-            ) : scanConfig ? (
+            {hasPaymentDetailsAccess && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Ticket Scanning Configuration</CardTitle>
+                  <CardTitle>Revenue Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Allow Re-entry */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="allowReEntry" className="text-base font-medium">
-                        Allow Re-entry
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Allow attendees to leave and re-enter the event
-                      </p>
-                    </div>
-                    <Switch
-                      id="allowReEntry"
-                      checked={scanConfig.allowReEntry}
-                      onCheckedChange={(checked) =>
-                        setScanConfig({ ...scanConfig, allowReEntry: checked })
-                      }
-                    />
-                  </div>
-
-                  {/* Require Check-out */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="requireCheckOut" className="text-base font-medium">
-                        Require Check-out
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        Require attendees to check out before leaving the event
-                      </p>
-                    </div>
-                    <Switch
-                      id="requireCheckOut"
-                      checked={scanConfig.requireCheckOut}
-                      onCheckedChange={(checked) =>
-                        setScanConfig({ ...scanConfig, requireCheckOut: checked })
-                      }
-                    />
-                  </div>
-
-                  {/* Max Re-entries */}
-                  {scanConfig.allowReEntry && (
-                    <div className="space-y-2">
-                      <Label htmlFor="maxReEntries" className="text-base font-medium">
-                        Maximum Re-entries
-                      </Label>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Maximum number of times an attendee can re-enter. Leave empty for unlimited.
-                      </p>
-                      <Input
-                        id="maxReEntries"
-                        type="number"
-                        min="0"
-                        value={scanConfig.maxReEntries ?? ''}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setScanConfig({
-                            ...scanConfig,
-                            maxReEntries: value === '' ? null : parseInt(value, 10) || 0,
-                          });
-                        }}
-                        placeholder="Unlimited"
-                        className="max-w-xs"
-                      />
-                    </div>
-                  )}
-
-                  {/* Current Configuration Display */}
-                  <div className="pt-4 border-t">
-                    <h4 className="text-sm font-medium mb-3">Current Configuration</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Re-entry allowed:</span>
-                        <Badge variant={scanConfig.allowReEntry ? "default" : "secondary"}>
-                          {scanConfig.allowReEntry ? "Yes" : "No"}
-                        </Badge>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-4 border rounded-lg">
+                      <div>
+                        <p className="font-medium">Total Revenue</p>
+                        <p className="text-sm text-muted-foreground">From all ticket sales</p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Check-out required:</span>
-                        <Badge variant={scanConfig.requireCheckOut ? "default" : "secondary"}>
-                          {scanConfig.requireCheckOut ? "Yes" : "No"}
-                        </Badge>
-                      </div>
-                      {scanConfig.allowReEntry && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Max re-entries:</span>
-                          <span className="font-medium">
-                            {scanConfig.maxReEntries === null ? "Unlimited" : scanConfig.maxReEntries}
-                          </span>
+                      <p className="font-bold text-green-600">${totalRevenue.toLocaleString()}</p>
+                    </div>
+                    {apiData.sponsors.length > 0 && (
+                      <div className="flex justify-between items-center p-4 border rounded-lg">
+                        <div>
+                          <p className="font-medium">Sponsorships</p>
+                          <p className="text-sm text-muted-foreground">{apiData.sponsors.length} sponsor{apiData.sponsors.length !== 1 ? 's' : ''}</p>
                         </div>
-                      )}
-                    </div>
+                        <p className="font-bold">
+                          ${(apiData.sponsors as unknown as Sponsor[]).reduce((sum: number, s) => sum + (s.amount || 0), 0).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Save Button */}
-                  <div className="pt-4 border-t">
-                    <Button
-                      onClick={handleSaveScanConfig}
-                      disabled={scanConfigSaving}
-                      className="w-full sm:w-auto"
-                    >
-                      {scanConfigSaving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Save Settings
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <AlertCircle className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Failed to load scan settings</p>
                 </CardContent>
               </Card>
             )}
           </div>
         );
-      }
 
       case "overview":
       default:
@@ -1255,20 +1047,6 @@ const EventManagement = () => {
                         {eventData.category}
                       </Badge>
                     )}
-                    <div className="flex items-center gap-4 text-white/90 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Heart className="w-4 h-4" />
-                        <span>2.3k</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Share2 className="w-4 h-4" />
-                        <span>156</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MessageSquare className="w-4 h-4" />
-                        <span>89</span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1304,10 +1082,10 @@ const EventManagement = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="border-l-4 border-l-primary">
                     <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Attendees</p>
-                      <p className="text-lg font-semibold text-primary">{apiData.attendees.length}</p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Attendees</p>
+                          <p className="text-lg font-semibold text-primary">{apiData.attendees.length}</p>
                           <p className="text-xs text-muted-foreground">of {eventData.capacity || 0}</p>
                         </div>
                         <Users className="w-8 h-8 text-primary/60" />
@@ -1321,7 +1099,6 @@ const EventManagement = () => {
                         <div>
                           <p className="text-sm text-muted-foreground">Speakers</p>
                           <p className="text-lg font-semibold text-blue-600">{apiData.speakers.length}</p>
-                          <p className="text-xs text-muted-foreground">confirmed</p>
                         </div>
                         <Mic className="w-8 h-8 text-blue-500/60" />
                       </div>
@@ -1333,8 +1110,11 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-lg font-semibold text-green-600">${(apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">total</p>
+                          <p className="text-lg font-semibold text-green-600">
+                            ${hasPaymentDetailsAccess 
+                              ? (apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()
+                              : 'N/A'}
+                          </p>
                         </div>
                         <DollarSign className="w-8 h-8 text-green-500/60" />
                       </div>
@@ -1346,209 +1126,76 @@ const EventManagement = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Conversion</p>
-                          <p className="text-lg font-semibold text-purple-600">{eventData.capacity && eventData.capacity > 0 
-                            ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(1)
-                            : 0}%</p>
-                          <p className="text-xs text-muted-foreground">rate</p>
+                          <p className="text-lg font-semibold text-purple-600">
+                            {eventData.capacity && eventData.capacity > 0 
+                              ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(1)
+                              : 0}%
+                          </p>
                         </div>
                         <Target className="w-8 h-8 text-purple-500/60" />
                       </div>
                     </CardContent>
                   </Card>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
-                  <Button 
-                    size="lg" 
-                    className="flex items-center gap-2"
-                    onClick={() => window.open(`/event/${eventId}`, '_blank')}
-                  >
-                    <Eye className="w-4 h-4" />
-                    Preview Event
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="flex items-center gap-2"
-                    onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}
-                  >
-                    <Settings className="w-4 h-4" />
-                    Edit Event
-                  </Button>
-                  {canCancelEvent() && (
-                    <Button 
-                      variant="destructive" 
-                      size="lg" 
-                      className="flex items-center gap-2"
-                      onClick={() => setShowCancelDialog(true)}
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel Event
-                    </Button>
-                  )}
-                  <Button variant="outline" size="lg" className="flex items-center gap-2">
-                    <Share2 className="w-4 h-4" />
-                    Share Event
-                  </Button>
+                
+                {/* Additional Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Sponsors</p>
+                          <p className="text-lg font-semibold">{apiData.sponsors.length}</p>
+                        </div>
+                        <Star className="w-8 h-8 text-yellow-500/60" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Confirmed</p>
+                          <p className="text-lg font-semibold">{confirmedAttendees}</p>
+                        </div>
+                        <CheckCircle className="w-8 h-8 text-green-500/60" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Pending</p>
+                          <p className="text-lg font-semibold">{pendingAttendees}</p>
+                        </div>
+                        <Clock className="w-8 h-8 text-yellow-500/60" />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
+
               </div>
             </div>
 
-            {/* Analytics Dashboard */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Registration Trends */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary" />
-                    Registration Trends
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomAreaChart
-                    data={mockData.registrationTrends}
-                    xAxisKey="day"
-                    dataKey="registrations"
-                    height={200}
-                    color={CHART_COLORS.primary}
-                  />
-                </CardContent>
-              </Card>
+            {/* Consent Statistics Section */}
+            {!subscriptionLoading && eventId && (
+              <div className="mt-8">
+                <ConsentStatisticsCard 
+                  eventId={eventId} 
+                  subscriptionTier={subscription?.tier}
+                />
+              </div>
+            )}
 
-              {/* Revenue Breakdown */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-green-600" />
-                    Revenue Breakdown
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomPieChart
-                    data={mockData.revenueBySource}
-                    dataKey="value"
-                    nameKey="name"
-                    height={200}
-                    colors={[CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.error]}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Additional Insights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Event Health Score */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-500" />
-                    Event Health Score
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mb-4">
-                      <span className="text-lg font-semibold text-white">92</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">Overall Health</p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span>Registration Rate</span>
-                        <span className="font-medium">85%</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div className="w-4/5 h-full bg-green-500 rounded-full"></div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Attendee Demographics */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-blue-500" />
-                    Attendee Demographics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomBarChart
-                    data={mockData.attendeeDemographics}
-                    xAxisKey="age"
-                    dataKey="count"
-                    height={150}
-                    color={CHART_COLORS.primary}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-purple-500" />
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {mockData.recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start gap-3">
-                        <div className={`w-8 h-8 rounded-full bg-muted flex items-center justify-center`}>
-                          <activity.icon className={`h-4 w-4 ${activity.color}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground">{activity.message}</p>
-                          <p className="text-xs text-muted-foreground">{activity.time}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Quick Stats Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Event Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
-                        <Building2 className="w-6 h-6 text-primary" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">Exhibitors</p>
-                      <p className="text-lg font-semibold">{mockData.exhibitors.length}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
-                        <Star className="w-6 h-6 text-yellow-500" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">Sponsors</p>
-                      <p className="text-lg font-semibold">{apiData.sponsors.length}</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
-                        <Eye className="w-6 h-6 text-blue-500" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">Page Views</p>
-                      <p className="text-lg font-semibold">0</p>
-                    </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mx-auto mb-2">
-                      <TrendingUp className="w-6 h-6 text-green-500" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">Growth Rate</p>
-                    <p className="text-lg font-semibold">+18%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
+        );
+
+      case "communication":
+        return (
+          <EventCommunicationSection eventId={eventId || ""} eventTitle={eventData?.title || ""} />
         );
 
       case "staff":
@@ -1566,141 +1213,234 @@ const EventManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-7xl mx-auto">
-          
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigate('/organizer/dashboard')}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-                <div>
-                  <h1 className="text-lg font-semibold text-foreground">{eventData?.title || 'Event Management'}</h1>
-                  <p className="text-muted-foreground">Event Management</p>
-                </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowPreviewModal(true)}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
-              <Button 
-                variant="default" 
-                size="sm"
-                onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Edit Event
-              </Button>
-              {canCancelEvent() && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => setShowCancelDialog(true)}
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel Event
+    <div className="space-y-6">
+      {/* Hero Header with Event Image and Info */}
+      <div className="relative rounded-2xl overflow-hidden border border-border bg-card shadow-sm">
+        {/* Background Image */}
+        {eventData?.image && (
+          <div className="absolute inset-0">
+            <img 
+              src={eventData.image} 
+              alt={eventData.title}
+              className="w-full h-full object-cover opacity-20"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background" />
+          </div>
+        )}
+        
+        <div className="relative p-6 md:p-8">
+          {/* Top Bar */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/organizer/dashboard')}
+              className="self-start"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <MoreHorizontal className="w-4 h-4" />
+                  Actions
                 </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setShowPreviewModal(true)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview Event
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => window.open(`/event/${eventId}`, '_blank')}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Public Page
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Edit Event Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/organizer/analytics/events?eventId=${eventId}`)}>
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  View Analytics
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
+                    toast({
+                      title: "Copied",
+                      description: "Event link copied to clipboard",
+                    });
+                  } catch {
+                    toast({
+                      title: "Error",
+                      description: "Failed to copy link",
+                      variant: "destructive",
+                    });
+                  }
+                }}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Event Link
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => {
+                  if (!eventId || !eventData) return;
+                  const shared = await shareEvent(eventData.title || 'Event', eventId);
+                  if (shared) {
+                    toast({
+                      title: "Shared",
+                      description: "Event shared successfully",
+                    });
+                  } else {
+                    toast({
+                      title: "Link Copied",
+                      description: "Event link copied to clipboard",
+                    });
+                  }
+                }}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Event
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  if (!eventId || !eventData) return;
+                  try {
+                    exportEventData({
+                      id: eventId,
+                      title: eventData.title || 'Event',
+                      date: eventData.date,
+                      location: (eventData.location || eventData.venue || undefined) ?? undefined,
+                      attendees: typeof eventData.attendees === 'number' ? eventData.attendees : attendees.length,
+                      revenue: 0,
+                      views: 0,
+                      status: eventData.status || undefined,
+                      category: (eventData.category || undefined) ?? undefined,
+                    });
+                    toast({
+                      title: "Exported",
+                      description: "Event data exported successfully",
+                    });
+                  } catch {
+                    toast({
+                      title: "Error",
+                      description: "Failed to export event data",
+                      variant: "destructive",
+                    });
+                  }
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Event Data
+                </DropdownMenuItem>
+                {canCancelEvent() && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={() => setShowCancelDialog(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel Event
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Event Title and Status */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                  {eventData?.title || 'Event Management'}
+                </h1>
+                {eventData?.status && (
+                  <Badge className={`${getStatusColor(eventData.status)} border font-medium`}>
+                    {getStatusLabel(eventData.status)}
+                  </Badge>
+                )}
+              </div>
+              {eventData?.category && (
+                <Badge variant="secondary" className="mb-3">
+                  {eventData.category}
+                </Badge>
               )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => window.open(`/event/${eventId}`, '_blank')}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Public Page
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate(`/organizer/analytics/events?eventId=${eventId}`)}>
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    View Analytics
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
-                      toast({
-                        title: "Copied",
-                        description: "Event link copied to clipboard",
-                      });
-                    } catch {
-                      toast({
-                        title: "Error",
-                        description: "Failed to copy link",
-                        variant: "destructive",
-                      });
-                    }
-                  }}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Event Link
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={async () => {
-                    if (!eventId || !eventData) return;
-                    const shared = await shareEvent(eventData.title || 'Event', eventId);
-                    if (shared) {
-                      toast({
-                        title: "Shared",
-                        description: "Event shared successfully",
-                      });
-                    } else {
-                      toast({
-                        title: "Link Copied",
-                        description: "Event link copied to clipboard",
-                      });
-                    }
-                  }}>
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share Event
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {
-                    if (!eventId || !eventData) return;
-                    try {
-                      exportEventData({
-                        id: eventId,
-                        title: eventData.title || 'Event',
-                        date: eventData.date,
-                        location: (eventData.location || eventData.venue || undefined) ?? undefined,
-                        attendees: typeof eventData.attendees === 'number' ? eventData.attendees : attendees.length,
-                        revenue: 0, // Not available in EventData
-                        views: 0, // Not available in EventData
-                        status: eventData.status || undefined,
-                        category: (eventData.category || undefined) ?? undefined,
-                      });
-                      toast({
-                        title: "Exported",
-                        description: "Event data exported successfully",
-                      });
-                    } catch {
-                      toast({
-                        title: "Error",
-                        description: "Failed to export event data",
-                        variant: "destructive",
-                      });
-                    }
-                  }}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export Data
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {eventData?.description && (
+                <p className="text-muted-foreground line-clamp-2 mt-2">
+                  {eventData.description}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Navigation */}
-          <div className="mb-8">
+          {/* Event Details Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {eventData?.date && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Calendar className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="text-sm font-medium">{eventData.date}</p>
+                  {eventData.time && (
+                    <p className="text-xs text-muted-foreground">{eventData.time}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            {(eventData?.venue || eventData?.location) && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <MapPin className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Location</p>
+                  <p className="text-sm font-medium line-clamp-1">
+                    {eventData.venue || eventData.location}
+                  </p>
+                  {eventData.venue && eventData.location && eventData.venue !== eventData.location && (
+                    <p className="text-xs text-muted-foreground line-clamp-1">{eventData.location}</p>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Attendees</p>
+                <p className="text-sm font-medium">
+                  {apiData.attendees.length} / {eventData?.capacity || '∞'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {eventData?.capacity && eventData.capacity > 0 
+                    ? `${((apiData.attendees.length / eventData.capacity) * 100).toFixed(0)}% full`
+                    : 'Unlimited'}
+                </p>
+              </div>
+            </div>
+            {hasPaymentDetailsAccess && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <DollarSign className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Revenue</p>
+                  <p className="text-sm font-medium">
+                    ${(apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div>
             <div className="flex flex-wrap gap-2">
               {navigationSections.map((section) => {
                 const Icon = section.icon;
@@ -1725,10 +1465,8 @@ const EventManagement = () => {
             </div>
           </div>
 
-          {/* Content */}
-          {renderSection()}
-        </div>
-      </div>
+      {/* Content */}
+      {renderSection()}
 
       {/* Event Preview Dialog */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>

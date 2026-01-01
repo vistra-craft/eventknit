@@ -4,21 +4,21 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Users,
-  DollarSign,
   Plus,
   BarChart3,
   ArrowUpRight,
-  ArrowDownRight,
-  Mic,
-  Building2,
   CheckCircle2,
   Shield,
   X,
+  Lock,
+  AlertCircle,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
-import { getOrganizerDashboardStats, getOrganizerDashboardEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
+import { getOrganizerDashboardStats, getOrganizerDashboardEvents, getSubscription, type OrganizerDashboardEvent, type OrganizerSubscription } from "../../lib/organizer-api";
+import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
+import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
 
 const EnhancedDashboard = () => {
   const location = useLocation();
@@ -27,64 +27,41 @@ const EnhancedDashboard = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [verificationReminder, setVerificationReminder] = useState<string | null>(null);
   const [showVerificationReminder, setShowVerificationReminder] = useState(false);
-  const [stats, setStats] = useState([
-    {
-      title: "Total Events",
-      value: "0",
-      change: "+0%",
-      changeType: "positive" as const,
-      icon: Calendar,
-      color: "text-accent-electric",
-      bgColor: "bg-accent-electric/10",
-      borderColor: "border-accent-electric/20",
-    },
-    {
-      title: "Speakers",
-      value: "0",
-      change: "+0%",
-      changeType: "positive" as const,
-      icon: Mic,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      borderColor: "border-primary/20",
-    },
-    {
-      title: "Exhibitors",
-      value: "0",
-      change: "+0%",
-      changeType: "positive" as const,
-      icon: Building2,
-      color: "text-accent-coral",
-      bgColor: "bg-accent-coral/10",
-      borderColor: "border-accent-coral/20",
-    },
-    {
-      title: "Active Attendees",
-      value: "0",
-      change: "+0%",
-      changeType: "positive" as const,
-      icon: Users,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      borderColor: "border-primary/20",
-    },
-    {
-      title: "Total Revenue",
-      value: "$0",
-      change: "+0%",
-      changeType: "positive" as const,
-      icon: DollarSign,
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      borderColor: "border-primary/20",
-    },
-  ]);
+  const [totalEvents, setTotalEvents] = useState(0);
   const [recentEvents, setRecentEvents] = useState<OrganizerDashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
+  
+  // Subscription state
+  const [subscription, setSubscription] = useState<OrganizerSubscription | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  
+  // New state for dashboard insights
+  const [performanceInsights, setPerformanceInsights] = useState<{
+    bestPerformingEvent: { id: string; title: string; conversionRate: number } | null;
+    revenueGrowth: { percentage: number; period: string };
+    averageAttendance: { percentage: number; totalEvents: number };
+  } | null>(null);
+  
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState<Array<{
+    type: string;
+    eventId: string;
+    eventTitle: string;
+    deadlineDate: string;
+    daysRemaining: number;
+  }>>([]);
+  
+  const [healthScore, setHealthScore] = useState<{
+    overall: number;
+    components: {
+      registrationRate: number;
+      speakerConfirmation: number;
+      sponsorEngagement: number;
+    };
+  } | null>(null);
 
   const fetchDashboardEvents = async (pageNum: number = 1, append: boolean = false) => {
     try {
@@ -136,65 +113,31 @@ const EnhancedDashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [statsResponse, eventsResponse] = await Promise.all([
+        setSubscriptionLoading(true);
+        const [statsResponse, eventsResponse, subscriptionResponse] = await Promise.all([
           getOrganizerDashboardStats(),
           getOrganizerDashboardEvents({ page: 1, limit: 12 }),
+          getSubscription(),
         ]);
 
         if (statsResponse.success && statsResponse.data.stats) {
           const dashboardStats = statsResponse.data.stats;
-          setStats([
-            {
-              title: "Total Events",
-              value: dashboardStats.totalEvents.toString(),
-              change: "+0%", // TODO: Calculate change from previous period
-              changeType: "positive",
-              icon: Calendar,
-              color: "text-accent-electric",
-              bgColor: "bg-accent-electric/10",
-              borderColor: "border-accent-electric/20",
-            },
-            {
-              title: "Speakers",
-              value: dashboardStats.totalSpeakers.toString(),
-              change: "+0%",
-              changeType: "positive",
-              icon: Mic,
-              color: "text-accent-neon",
-              bgColor: "bg-accent-neon/10",
-              borderColor: "border-accent-neon/20",
-            },
-            {
-              title: "Exhibitors",
-              value: dashboardStats.totalExhibitors.toString(),
-              change: "+0%",
-              changeType: "positive",
-              icon: Building2,
-              color: "text-accent-coral",
-              bgColor: "bg-accent-coral/10",
-              borderColor: "border-accent-coral/20",
-            },
-            {
-              title: "Active Attendees",
-              value: dashboardStats.totalAttendees.toLocaleString(),
-              change: "+0%",
-              changeType: "positive",
-              icon: Users,
-              color: "text-primary",
-              bgColor: "bg-primary/10",
-              borderColor: "border-primary/20",
-            },
-            {
-              title: "Total Revenue",
-              value: `$${dashboardStats.totalRevenue.toLocaleString()}`,
-              change: "+0%",
-              changeType: "positive",
-              icon: DollarSign,
-              color: "text-primary",
-              bgColor: "bg-primary/10",
-              borderColor: "border-primary/20",
-            },
-          ]);
+          setTotalEvents(dashboardStats.totalEvents);
+          
+          // Set performance insights
+          if (dashboardStats.performanceInsights) {
+            setPerformanceInsights(dashboardStats.performanceInsights);
+          }
+          
+          // Set upcoming deadlines
+          if (dashboardStats.upcomingDeadlines) {
+            setUpcomingDeadlines(dashboardStats.upcomingDeadlines);
+          }
+          
+          // Set health score
+          if (dashboardStats.healthScore) {
+            setHealthScore(dashboardStats.healthScore);
+          }
         }
 
         if (eventsResponse.success && eventsResponse.data) {
@@ -202,10 +145,15 @@ const EnhancedDashboard = () => {
           setHasMore(eventsResponse.data.hasMore || false);
           setPage(1);
         }
+        
+        if (subscriptionResponse.success && subscriptionResponse.data) {
+          setSubscription(subscriptionResponse.data.subscription);
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
+        setSubscriptionLoading(false);
       }
     };
 
@@ -284,7 +232,12 @@ const EnhancedDashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Dashboard Overview</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-lg sm:text-xl font-semibold text-foreground">Dashboard Overview</h1>
+              {!subscriptionLoading && subscription && (
+                <SubscriptionTierBadge tier={subscription.tier} size="sm" />
+              )}
+            </div>
             <p className="text-sm sm:text-base text-muted-foreground">
               Welcome back! Here's what's happening with your events.
             </p>
@@ -310,43 +263,47 @@ const EnhancedDashboard = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className={`border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all ${stat.borderColor} p-4`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    {stat.title}
-                  </p>
-                  <p className="text-lg font-semibold text-foreground mb-1">
-                    {stat.value}
-                  </p>
-                  <div className="flex items-center">
-                    {stat.changeType === "positive" ? (
-                      <ArrowUpRight className="h-3 w-3 text-primary mr-1" />
-                    ) : (
-                      <ArrowDownRight className="h-3 w-3 text-accent-coral mr-1" />
-                    )}
-                    <span
-                      className={`text-xs font-medium ${stat.changeType === "positive" ? "text-primary" : "text-accent-coral"}`}
-                    >
-                      {stat.change}
+        {/* Upgrade Prompt for BASIC tier */}
+        {!subscriptionLoading && subscription?.tier === 'BASIC' && (
+          <div className="mb-6">
+            <UpgradePrompt
+              message="Upgrade to Standard (free) to access attendee contact information and manage your event communications."
+              targetTier="STANDARD"
+              variant="banner"
+              dismissible={true}
+            />
+          </div>
+        )}
+
+        {/* Subscription Expiry Warning for Premium */}
+        {!subscriptionLoading && subscription?.tier === 'PREMIUM' && subscription?.expiresAt && (
+          (() => {
+            const expiryDate = new Date(subscription.expiresAt);
+            const daysUntilExpiry = Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            if (daysUntilExpiry <= 7 && daysUntilExpiry > 0) {
+              return (
+                <Alert className="mb-6 border-orange-200 bg-orange-50">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-orange-900 flex-1">
+                      <strong>Premium Subscription Expiring:</strong> Your Premium subscription expires in {daysUntilExpiry} {daysUntilExpiry === 1 ? 'day' : 'days'} on {expiryDate.toLocaleDateString()}.
                     </span>
-                  </div>
-                </div>
-                <div
-                  className={`w-8 h-8 rounded-lg ${stat.bgColor} flex items-center justify-center`}
-                >
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/organizer/subscription')}
+                      className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                    >
+                      Manage Subscription
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              );
+            }
+            return null;
+          })()
+        )}
+
 
         {/* Main Content */}
         <div className="space-y-8">
@@ -356,18 +313,15 @@ const EnhancedDashboard = () => {
               Quick Actions
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link
-                to="/organizer/events/create"
-                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <Plus className="h-5 w-5 text-primary" />
+              <div className="flex items-center p-4 border border-primary rounded-lg bg-card-surface">
+                <div className="w-10 h-10 bg-accent-electric/10 rounded-lg flex items-center justify-center mr-3">
+                  <Calendar className="h-5 w-5 text-accent-electric" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Create Event</p>
-                  <p className="text-sm text-muted-foreground">Start a new event</p>
+                  <p className="font-medium text-foreground">Total Events</p>
+                  <p className="text-sm text-muted-foreground">{totalEvents} {totalEvents === 1 ? 'event' : 'events'}</p>
                 </div>
-              </Link>
+              </div>
 
               <Link
                 to="/organizer/analytics"
@@ -384,14 +338,21 @@ const EnhancedDashboard = () => {
 
               <Link
                 to="/organizer/attendees"
-                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
+                className={`flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200 ${subscription?.tier === 'BASIC' ? 'relative' : ''}`}
               >
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Manage Attendees</p>
-                  <p className="text-sm text-muted-foreground">View and manage</p>
+                  <p className="font-medium text-foreground flex items-center gap-2">
+                    Manage Attendees
+                    {subscription?.tier === 'BASIC' && (
+                      <Lock className="h-3 w-3 text-muted-foreground" />
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {subscription?.tier === 'BASIC' ? 'Upgrade to view' : 'View and manage'}
+                  </p>
                 </div>
               </Link>
 
@@ -423,10 +384,14 @@ const EnhancedDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-foreground">Best Performing Event</p>
-                    <p className="text-xs text-muted-foreground">Tech Innovation Summit</p>
+                    <p className="text-xs text-muted-foreground">
+                      {performanceInsights?.bestPerformingEvent?.title || 'N/A'}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-primary">21.4%</p>
+                    <p className="text-sm font-bold text-primary">
+                      {performanceInsights?.bestPerformingEvent?.conversionRate.toFixed(1) || '0'}%
+                    </p>
                     <p className="text-xs text-muted-foreground">conversion</p>
                   </div>
                 </div>
@@ -437,7 +402,10 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">Last 30 days</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-primary">+24%</p>
+                    <p className={`text-sm font-bold ${(performanceInsights?.revenueGrowth.percentage || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                      {(performanceInsights?.revenueGrowth.percentage || 0) >= 0 ? '+' : ''}
+                      {performanceInsights?.revenueGrowth.percentage.toFixed(0) || '0'}%
+                    </p>
                     <p className="text-xs text-muted-foreground">vs last month</p>
                   </div>
                 </div>
@@ -445,10 +413,14 @@ const EnhancedDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-foreground">Average Attendance</p>
-                    <p className="text-xs text-muted-foreground">All events</p>
+                    <p className="text-xs text-muted-foreground">
+                      {performanceInsights?.averageAttendance.totalEvents || 0} events
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-primary">87%</p>
+                    <p className="text-sm font-bold text-primary">
+                      {performanceInsights?.averageAttendance.percentage.toFixed(1) || '0'}%
+                    </p>
                     <p className="text-xs text-muted-foreground">capacity</p>
                   </div>
                 </div>
@@ -463,38 +435,59 @@ const EnhancedDashboard = () => {
                 </h3>
               </div>
               <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Speaker Confirmations</p>
-                    <p className="text-xs text-muted-foreground">Business Workshop</p>
+                {upcomingDeadlines.length > 0 ? (
+                  upcomingDeadlines.slice(0, 3).map((deadline, index) => {
+                    const formatDeadlineType = (type: string) => {
+                      switch (type) {
+                        case 'registration_deadline':
+                          return 'Registration Deadline';
+                        case 'early_bird_pricing':
+                          return 'Early Bird Pricing';
+                        case 'speaker_confirmation':
+                          return 'Speaker Confirmations';
+                        case 'abstract_submission':
+                          return 'Abstract Submissions';
+                        default:
+                          return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                      }
+                    };
+
+                    const formatDaysRemaining = (days: number) => {
+                      if (days < 7) {
+                        return `${days} ${days === 1 ? 'day' : 'days'}`;
+                      } else if (days < 30) {
+                        const weeks = Math.floor(days / 7);
+                        return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+                      } else {
+                        const months = Math.floor(days / 30);
+                        return `${months} ${months === 1 ? 'month' : 'months'}`;
+                      }
+                    };
+
+                    const isUrgent = deadline.daysRemaining <= 7;
+
+                    return (
+                      <div key={index} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {formatDeadlineType(deadline.type)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{deadline.eventTitle}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-bold ${isUrgent ? 'text-accent-coral' : 'text-primary'}`}>
+                            {formatDaysRemaining(deadline.daysRemaining)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">left</p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">No upcoming deadlines</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-accent-coral">3 days</p>
-                    <p className="text-xs text-muted-foreground">left</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Abstract Submissions</p>
-                    <p className="text-xs text-muted-foreground">Tech Summit</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-accent-coral">1 week</p>
-                    <p className="text-xs text-muted-foreground">left</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Early Bird Pricing</p>
-                    <p className="text-xs text-muted-foreground">Startup Competition</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-primary">2 weeks</p>
-                    <p className="text-xs text-muted-foreground">left</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -508,7 +501,9 @@ const EnhancedDashboard = () => {
               <div className="p-6">
                 <div className="text-center mb-4">
                   <div className="w-20 h-20 mx-auto bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center mb-2">
-                    <span className="text-xl font-bold text-white">92</span>
+                    <span className="text-xl font-bold text-white">
+                      {healthScore?.overall || 0}
+                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground">Overall Health</p>
                 </div>
@@ -518,9 +513,14 @@ const EnhancedDashboard = () => {
                     <span className="text-sm text-muted-foreground">Registration Rate</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-4/5 h-full bg-primary rounded-full"></div>
+                        <div 
+                          className="h-full bg-primary rounded-full" 
+                          style={{ width: `${Math.min(healthScore?.components.registrationRate || 0, 100)}%` }}
+                        ></div>
                       </div>
-                      <span className="text-sm font-medium">85%</span>
+                      <span className="text-sm font-medium">
+                        {healthScore?.components.registrationRate.toFixed(0) || 0}%
+                      </span>
                     </div>
                   </div>
                   
@@ -528,9 +528,14 @@ const EnhancedDashboard = () => {
                     <span className="text-sm text-muted-foreground">Speaker Confirmation</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-3/4 h-full bg-primary rounded-full"></div>
+                        <div 
+                          className="h-full bg-primary rounded-full" 
+                          style={{ width: `${Math.min(healthScore?.components.speakerConfirmation || 0, 100)}%` }}
+                        ></div>
                       </div>
-                      <span className="text-sm font-medium">75%</span>
+                      <span className="text-sm font-medium">
+                        {healthScore?.components.speakerConfirmation.toFixed(0) || 0}%
+                      </span>
                     </div>
                   </div>
                   
@@ -538,9 +543,14 @@ const EnhancedDashboard = () => {
                     <span className="text-sm text-muted-foreground">Sponsor Engagement</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full">
-                        <div className="w-full h-full bg-accent-coral rounded-full"></div>
+                        <div 
+                          className={`h-full rounded-full ${(healthScore?.components.sponsorEngagement || 0) >= 90 ? 'bg-accent-coral' : 'bg-primary'}`}
+                          style={{ width: `${Math.min(healthScore?.components.sponsorEngagement || 0, 100)}%` }}
+                        ></div>
                       </div>
-                      <span className="text-sm font-medium">95%</span>
+                      <span className="text-sm font-medium">
+                        {healthScore?.components.sponsorEngagement.toFixed(0) || 0}%
+                      </span>
                     </div>
                   </div>
                 </div>

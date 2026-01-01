@@ -56,20 +56,10 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "All Events", href: "/organizer/events" },
         { name: "Upcoming", href: "/organizer/events/upcoming" },
         { name: "Past Events", href: "/organizer/events/past" },
+        { name: "Cancelled Events", href: "/organizer/events/cancelled" },
         { name: "Create New", href: "/organizer/events/create" },
         { name: "Event Templates", href: "/organizer/events/templates-management" },
         { name: "Event Drafts", href: "/organizer/events/drafts" },
-      ]
-    },
-    { 
-      id: "attendees", 
-      label: "Attendees", 
-      icon: Users,
-      group: "main",
-      children: [
-        { name: "Segmentation", href: "/organizer/attendees/segmentation" },
-        { name: "Tags", href: "/organizer/attendees/tags" },
-        { name: "Communication", href: "/organizer/attendees/communication" },
       ]
     },
     { 
@@ -82,7 +72,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Event Performance", href: "/organizer/analytics/events" },
         { name: "Attendee Insights", href: "/organizer/analytics/attendees" },
         { name: "Revenue Reports", href: "/organizer/analytics/revenue" },
-        { name: "Marketing Analytics", href: "/organizer/analytics/marketing" },
       ]
     },
     { 
@@ -94,7 +83,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Staff Management", href: "/organizer/team/staff" },
         { name: "Roles & Permissions", href: "/organizer/team/roles" },
         { name: "Team Calendar", href: "/organizer/team/calendar" },
-        { name: "Performance", href: "/organizer/team/performance" },
       ]
     },
     { 
@@ -108,6 +96,13 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Security", href: "/organizer/settings/security" },
         { name: "Appearance", href: "/organizer/settings/appearance" },
       ]
+    },
+    { 
+      id: "subscription", 
+      label: "Subscription", 
+      href: "/organizer/subscription", 
+      icon: Crown,
+      group: "management"
     },
   ];
 

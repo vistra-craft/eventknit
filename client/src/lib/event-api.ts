@@ -132,6 +132,13 @@ export interface RegisterForEventData {
   registrationData?: Record<string, unknown>;
   invitationId?: string;
   promoCode?: string;
+  // Consent data
+  consent?: {
+    operationalConsent?: boolean; // Default: true (required)
+    marketingConsent?: boolean;
+    demographicsConsent?: boolean;
+    analyticsConsent?: boolean;
+  };
 }
 
 /**
@@ -428,6 +435,13 @@ export interface RegisterAsGuestData {
   ticketType?: string;
   quantity?: number;
   registrationData?: Record<string, unknown>;
+  // Consent data
+  consent?: {
+    operationalConsent?: boolean; // Default: true (required)
+    marketingConsent?: boolean;
+    demographicsConsent?: boolean;
+    analyticsConsent?: boolean;
+  };
 }
 
 export interface RegisterAsGuestResponse {

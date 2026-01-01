@@ -700,6 +700,8 @@ export const organizerDashboardValidations = {
   createRoleTemplate: Joi.object({
     name: Joi.string().trim().min(1).max(200).required(),
     description: Joi.string().trim().max(1000).optional().allow('', null),
+    permissionKeys: Joi.array().items(Joi.string().trim()).optional(), // New granular permissions
+    // Legacy permissions (kept for backward compatibility)
     canEdit: Joi.boolean().optional().default(false),
     canManageAttendees: Joi.boolean().optional().default(false),
     canManageTickets: Joi.boolean().optional().default(false),
@@ -707,6 +709,17 @@ export const organizerDashboardValidations = {
     canManageStaff: Joi.boolean().optional().default(false),
     canPublish: Joi.boolean().optional().default(false),
     canManageCollaborators: Joi.boolean().optional().default(false),
+  }),
+
+  updateRoleTemplate: Joi.object({
+    name: Joi.string().trim().min(1).max(200).optional(),
+    description: Joi.string().trim().max(1000).optional().allow('', null),
+    permissionKeys: Joi.array().items(Joi.string().trim()).optional(),
+    isActive: Joi.boolean().optional(),
+  }),
+
+  duplicateRoleTemplate: Joi.object({
+    name: Joi.string().trim().min(1).max(200).optional(),
   }),
 
   roleTemplatesQuery: Joi.object({
@@ -724,5 +737,46 @@ export const organizerDashboardValidations = {
     userId: Joi.string().uuid().optional(),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().optional(),
+  }),
+
+  // Subscription Management
+  upgradeSubscription: Joi.object({
+    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
+    billingEmail: Joi.string().email().when('tier', {
+      is: 'PREMIUM',
+      then: Joi.required(),
+      otherwise: Joi.optional().allow(null, ''),
+    }),
+  }),
+
+  downgradeSubscription: Joi.object({
+    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
+  }),
+};
+
+    eventId: Joi.string().uuid().optional(),
+    userId: Joi.string().uuid().optional(),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  }),
+
+  teamMetricsQuery: Joi.object({
+    userId: Joi.string().uuid().optional(),
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().optional(),
+  }),
+
+  // Subscription Management
+  upgradeSubscription: Joi.object({
+    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
+    billingEmail: Joi.string().email().when('tier', {
+      is: 'PREMIUM',
+      then: Joi.required(),
+      otherwise: Joi.optional().allow(null, ''),
+    }),
+  }),
+
+  downgradeSubscription: Joi.object({
+    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
   }),
 };

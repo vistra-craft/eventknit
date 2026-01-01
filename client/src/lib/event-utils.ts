@@ -44,7 +44,7 @@ export const formatEventDateRange = (
 /**
  * Backend event structure (from API response)
  */
-interface BackendEvent {
+export interface BackendEvent {
   id: string;
   title: string;
   description: string;
@@ -227,4 +227,6 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
 export const transformEventsData = (backendEvents: BackendEvent[]): EventData[] => {
   return backendEvents.map((event) => transformEventData(event));
 };
+
+
 

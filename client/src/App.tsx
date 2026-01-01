@@ -27,15 +27,18 @@ import NotificationPreferencesPage from "./pages/user/NotificationPreferencesPag
 import TicketViewPage from "./pages/user/TicketViewPage";
 // Organizer Dashboard imports
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard";
-import EventManagement from "./pages/organizer/EventManagement";
+import EventManagementPage from "./pages/organizer/EventManagementPage";
 import AllEventsPage from "./pages/organizer/AllEventsPage";
 import UpcomingEventsPage from "./pages/organizer/UpcomingEventsPage";
 import PastEventsPage from "./pages/organizer/PastEventsPage";
+import CancelledEventsPage from "./pages/organizer/CancelledEventsPage";
 import VerificationPage from "./pages/organizer/VerificationPage";
+import KYCVerificationPage from "./pages/organizer/KYCVerificationPage";
 import CreateEventPage from "./pages/organizer/CreateEventPage";
 import StandaloneCreateEventPage from "./pages/organizer/StandaloneCreateEventPage";
 import OnboardingWizard from "./pages/organizer/OnboardingWizard";
 import OrganizerSettingsPage from "./pages/organizer/OrganizerSettingsPage";
+import SubscriptionManagement from "./pages/organizer/SubscriptionManagement";
 import WhiteLabelBranding from "./pages/organizer/WhiteLabelBranding";
 import CustomDomains from "./pages/organizer/CustomDomains";
 import VenueManagement from "./pages/organizer/VenueManagement";
@@ -52,7 +55,6 @@ import {
   StaffManagementPage,
   RolesPermissionsPage,
   TeamCalendarPage,
-  TeamPerformancePage
 } from "./pages/organizer/team";
 // Event Templates import
 import EventTemplates from "./pages/organizer/EventTemplates";
@@ -214,10 +216,11 @@ const App = () => (
       <Route path="/organizer/onboarding" element={<OnboardingWizard />} />
       <Route path="/organizer/events/upcoming" element={<UpcomingEventsPage />} />
       <Route path="/organizer/events/past" element={<PastEventsPage />} />
+      <Route path="/organizer/events/cancelled" element={<CancelledEventsPage />} />
       <Route path="/organizer/events" element={<AllEventsPage />} />
       <Route path="/organizer/events/create" element={<CreateEventPage />} />
       <Route path="/organizer/events/create-standalone" element={<StandaloneCreateEventPage />} />
-      <Route path="/organizer/event/:eventId" element={<EventManagement />} />
+      <Route path="/organizer/event/:eventId" element={<EventManagementPage />} />
       {/* Analytics Routes */}
       <Route path="/organizer/analytics" element={<AnalyticsOverview />} />
       <Route path="/organizer/analytics/events" element={<EventPerformance />} />
@@ -228,7 +231,6 @@ const App = () => (
       <Route path="/organizer/team/staff" element={<StaffManagementPage />} />
       <Route path="/organizer/team/roles" element={<RolesPermissionsPage />} />
       <Route path="/organizer/team/calendar" element={<TeamCalendarPage />} />
-      <Route path="/organizer/team/performance" element={<TeamPerformancePage />} />
       {/* Settings Routes */}
       <Route path="/organizer/settings" element={<OrganizerSettingsPage />} />
       <Route path="/organizer/settings/profile" element={<OrganizerSettingsPage />} />
@@ -236,6 +238,8 @@ const App = () => (
       <Route path="/organizer/settings/security" element={<OrganizerSettingsPage />} />
       <Route path="/organizer/settings/appearance" element={<OrganizerSettingsPage />} />
       <Route path="/organizer/verification" element={<VerificationPage />} />
+      <Route path="/organizer/kyc" element={<KYCVerificationPage />} />
+      <Route path="/organizer/subscription" element={<SubscriptionManagement />} />
       {/* White-Label Routes */}
       <Route path="/organizer/branding" element={<WhiteLabelBranding />} />
       <Route path="/organizer/custom-domains" element={<CustomDomains />} />
@@ -373,5 +377,7 @@ const App = () => (
     </AuthProvider>
   </ThemeProvider>
 );
+
+export default App;
 
 export default App;

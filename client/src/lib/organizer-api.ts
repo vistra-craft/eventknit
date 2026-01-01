@@ -18,6 +18,36 @@ export interface OrganizerDashboardStatsResponse {
       totalExhibitors: number;
       totalAttendees: number;
       totalRevenue: number;
+      performanceInsights?: {
+        bestPerformingEvent: {
+          id: string;
+          title: string;
+          conversionRate: number;
+        } | null;
+        revenueGrowth: {
+          percentage: number;
+          period: '30d' | '90d' | '1y';
+        };
+        averageAttendance: {
+          percentage: number;
+          totalEvents: number;
+        };
+      };
+      upcomingDeadlines?: Array<{
+        type: string;
+        eventId: string;
+        eventTitle: string;
+        deadlineDate: string;
+        daysRemaining: number;
+      }>;
+      healthScore?: {
+        overall: number;
+        components: {
+          registrationRate: number;
+          speakerConfirmation: number;
+          sponsorEngagement: number;
+        };
+      };
     };
   };
 }
@@ -348,6 +378,12 @@ export interface OrganizerStaff {
   lastName: string;
   phoneNumber?: string;
   role: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  customRoleId?: string;
+  customRole?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
   status: 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
   isEmailVerified: boolean;
   createdAt: string;
@@ -362,10 +398,69 @@ export interface GetOrganizerStaffResponse {
 }
 
 /**
+ * Create staff member data
+ */
+export interface CreateOrganizerStaffData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+  role: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+}
+
+/**
+ * Update staff member data
+ */
+export interface UpdateOrganizerStaffData {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  customRoleId?: string | null; // Assign or remove custom role
+}
+
+/**
  * Get organizer staff
  */
 export const getOrganizerStaff = async (): Promise<GetOrganizerStaffResponse> => {
   return apiGet<GetOrganizerStaffResponse>('/organizer/staff');
+};
+
+/**
+ * Create organizer staff member
+ */
+export const createOrganizerStaff = async (
+  data: CreateOrganizerStaffData
+): Promise<{ success: boolean; message: string; data: { staff: OrganizerStaff } }> => {
+  return apiPost('/organizer/staff', data);
+};
+
+/**
+ * Update organizer staff member
+ */
+export const updateOrganizerStaff = async (
+  staffId: string,
+  data: UpdateOrganizerStaffData
+): Promise<{ success: boolean; message: string; data: { staff: OrganizerStaff } }> => {
+  return apiPut(`/organizer/staff/${staffId}`, data);
+};
+
+/**
+ * Delete organizer staff member
+ */
+export const deleteOrganizerStaff = async (
+  staffId: string
+): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer/staff/${staffId}`);
+};
+
+/**
+ * Deactivate organizer staff member
+ */
+export const deactivateOrganizerStaff = async (
+  staffId: string
+): Promise<{ success: boolean; message: string; data: { staff: OrganizerStaff } }> => {
+  return apiPost(`/organizer/staff/${staffId}/deactivate`, {});
 };
 
 /**
@@ -689,5 +784,1064 @@ export const getStaffAvailability = async (
   period: PerformancePeriod = 'month',
 ): Promise<{ success: boolean; data: StaffAvailability }> => {
   return apiGet(`/organizer/staff-performance/availability?period=${period}`);
+};
+
+/**
+ * Role & Permission Management Types
+ */
+export interface Permission {
+  id: string;
+  key: string;
+  name: string;
+  description?: string;
+  category: 'events' | 'attendees' | 'tickets' | 'analytics' | 'financial' | 'team' | 'communication' | 'settings';
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RolePermission {
+  id: string;
+  roleId: string;
+  permissionId: string;
+  permission: Permission;
+  createdAt: string;
+}
+
+export interface TeamRoleTemplate {
+  id: string;
+  organizerId: string;
+  name: string;
+  description?: string;
+  permissions?: RolePermission[];
+  usageCount: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    staffWithCustomRole?: number;
+  };
+}
+
+export interface CreateRoleTemplateData {
+  name: string;
+  description?: string;
+  permissionKeys?: string[];
+  // Legacy permissions (backward compatibility)
+  canEdit?: boolean;
+  canManageAttendees?: boolean;
+  canManageTickets?: boolean;
+  canViewAnalytics?: boolean;
+  canManageStaff?: boolean;
+  canPublish?: boolean;
+  canManageCollaborators?: boolean;
+}
+
+export interface UpdateRoleTemplateData {
+  name?: string;
+  description?: string;
+  permissionKeys?: string[];
+  isActive?: boolean;
+}
+
+export interface DuplicateRoleTemplateData {
+  name?: string;
+}
+
+/**
+ * Get all permissions
+ */
+export const getPermissions = async (category?: string): Promise<{ success: boolean; data: { permissions: Permission[] } }> => {
+  const queryParams = new URLSearchParams();
+  if (category) queryParams.append('category', category);
+  const endpoint = queryParams.toString() ? `/organizer-dashboard/team/permissions?${queryParams.toString()}` : '/organizer-dashboard/team/permissions';
+  return apiGet(endpoint);
+};
+
+/**
+ * Get permissions grouped by category
+ */
+export const getPermissionsByCategory = async (): Promise<{ success: boolean; data: { permissions: Record<string, Permission[]> } }> => {
+  return apiGet('/organizer-dashboard/team/permissions/by-category');
+};
+
+/**
+ * Get all role templates
+ */
+export const getRoleTemplates = async (isActive?: boolean): Promise<{ success: boolean; data: { templates: TeamRoleTemplate[] } }> => {
+  const queryParams = new URLSearchParams();
+  if (isActive !== undefined) queryParams.append('isActive', isActive.toString());
+  const endpoint = queryParams.toString() ? `/organizer-dashboard/team/role-templates?${queryParams.toString()}` : '/organizer-dashboard/team/role-templates';
+  return apiGet(endpoint);
+};
+
+/**
+ * Get role template by ID
+ */
+export const getRoleTemplateById = async (id: string): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiGet(`/organizer-dashboard/team/role-templates/${id}`);
+};
+
+/**
+ * Create role template
+ */
+export const createRoleTemplate = async (data: CreateRoleTemplateData): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiPost('/organizer-dashboard/team/role-templates', data);
+};
+
+/**
+ * Update role template
+ */
+export const updateRoleTemplate = async (id: string, data: UpdateRoleTemplateData): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiPut(`/organizer-dashboard/team/role-templates/${id}`, data);
+};
+
+/**
+ * Delete role template
+ */
+export const deleteRoleTemplate = async (id: string): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer-dashboard/team/role-templates/${id}`);
+};
+
+/**
+ * Duplicate role template
+ */
+export const duplicateRoleTemplate = async (id: string, data?: DuplicateRoleTemplateData): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiPost(`/organizer-dashboard/team/role-templates/${id}/duplicate`, data || {});
+};
+
+// ========== KYC / Entity Type Verification ==========
+
+/**
+ * Organizer Entity Types
+ */
+export enum OrganizerEntityType {
+  INDIVIDUAL = 'INDIVIDUAL',
+  SOLE_PROPRIETOR = 'SOLE_PROPRIETOR',
+  PARTNERSHIP = 'PARTNERSHIP',
+  LIMITED_LIABILITY_COMPANY = 'LIMITED_LIABILITY_COMPANY',
+  LIMITED_LIABILITY_PARTNERSHIP = 'LIMITED_LIABILITY_PARTNERSHIP',
+  EMPLOYMENT_AGENCY_LLC = 'EMPLOYMENT_AGENCY_LLC',
+  FOREIGN_COMPANY_COMPLIANCE = 'FOREIGN_COMPANY_COMPLIANCE',
+  PRIVATE_HOSPITAL_SOLE_PROPRIETOR = 'PRIVATE_HOSPITAL_SOLE_PROPRIETOR',
+  PRIVATE_HOSPITAL_LLC = 'PRIVATE_HOSPITAL_LLC',
+  PUBLIC_HOSPITAL = 'PUBLIC_HOSPITAL',
+  PRIVATE_EDUCATION_SOLE_PROPRIETOR = 'PRIVATE_EDUCATION_SOLE_PROPRIETOR',
+  PRIVATE_EDUCATION_LLC = 'PRIVATE_EDUCATION_LLC',
+  INTERNATIONAL_EDUCATION_LLC = 'INTERNATIONAL_EDUCATION_LLC',
+  PUBLIC_EDUCATION = 'PUBLIC_EDUCATION',
+  COOPERATIVE_SOCIETY = 'COOPERATIVE_SOCIETY',
+  INSURANCE_REINSURANCE = 'INSURANCE_REINSURANCE',
+  NGO = 'NGO',
+  EMBASSY_UN_WORLD_BANK = 'EMBASSY_UN_WORLD_BANK',
+  DENOMINATIONAL_CHURCH = 'DENOMINATIONAL_CHURCH',
+  PARTNERSHIP_PROFESSIONAL = 'PARTNERSHIP_PROFESSIONAL',
+  TRUST = 'TRUST',
+}
+
+/**
+ * KYC Document Types
+ */
+export enum KYCDocumentType {
+  PP_NEW_CONTRACT = 'PP_NEW_CONTRACT',
+  NATIONAL_ID = 'NATIONAL_ID',
+  PASSPORT = 'PASSPORT',
+  ALIEN_ID = 'ALIEN_ID',
+  MILITARY_ID = 'MILITARY_ID',
+  KRA_PIN = 'KRA_PIN',
+  CERTIFICATE_OF_REGISTRATION = 'CERTIFICATE_OF_REGISTRATION',
+  CERTIFICATE_OF_INCORPORATION = 'CERTIFICATE_OF_INCORPORATION',
+  COMPANY_KRA_PIN = 'COMPANY_KRA_PIN',
+  BANK_STATEMENT = 'BANK_STATEMENT',
+  CANCELLED_CHEQUE = 'CANCELLED_CHEQUE',
+  BANK_LETTER = 'BANK_LETTER',
+  LETTER_AUTHORIZING_ENTRY = 'LETTER_AUTHORIZING_ENTRY',
+  CR12 = 'CR12',
+  CR13 = 'CR13',
+  PARTNERSHIP_DEED = 'PARTNERSHIP_DEED',
+  AFFIDAVIT = 'AFFIDAVIT',
+  MINISTRY_OF_HEALTH_LICENSE = 'MINISTRY_OF_HEALTH_LICENSE',
+  KMPDB_LICENSE = 'KMPDB_LICENSE',
+  MINISTRY_OF_EDUCATION_LICENSE = 'MINISTRY_OF_EDUCATION_LICENSE',
+  EPRA_LICENSE = 'EPRA_LICENSE',
+  IRA_LICENSE = 'IRA_LICENSE',
+  TRA_MEMBERSHIP = 'TRA_MEMBERSHIP',
+  KATO_MEMBERSHIP = 'KATO_MEMBERSHIP',
+  KATA_MEMBERSHIP = 'KATA_MEMBERSHIP',
+  KCAA_REGISTRATION = 'KCAA_REGISTRATION',
+  TOUR_OPERATOR_LICENSE = 'TOUR_OPERATOR_LICENSE',
+  ORGANIZATION_CONSTITUTION = 'ORGANIZATION_CONSTITUTION',
+  BOARD_ELECTION_MINUTES = 'BOARD_ELECTION_MINUTES',
+  TRUST_DEED = 'TRUST_DEED',
+  ACCREDITATION_LETTER = 'ACCREDITATION_LETTER',
+  AGREEMENT_LETTER = 'AGREEMENT_LETTER',
+  LETTER_OF_INTRODUCTION = 'LETTER_OF_INTRODUCTION',
+  COUNTY_CONTRACT_FORM = 'COUNTY_CONTRACT_FORM',
+  COMPANY_PROFILE = 'COMPANY_PROFILE',
+  ONLINE_LINK = 'ONLINE_LINK',
+  TRADE_NAME_CERTIFICATE = 'TRADE_NAME_CERTIFICATE',
+  GRANT_PROBATE = 'GRANT_PROBATE',
+  AUTHORIZED_SIGNATORY_LETTER = 'AUTHORIZED_SIGNATORY_LETTER',
+}
+
+/**
+ * KYC Status
+ */
+export enum KYCStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+/**
+ * Document Requirement
+ */
+export interface DocumentRequirement {
+  documentType: KYCDocumentType;
+  category: string;
+  minQuantity: number;
+  maxQuantity?: number;
+  validityPeriodDays?: number;
+  isRequired: boolean;
+  isConditional: boolean;
+  description: string;
+  helpText?: string;
+  uploadedCount?: number;
+  approvedCount?: number;
+  pendingCount?: number;
+  isComplete?: boolean;
+  hasMinimum?: boolean;
+}
+
+/**
+ * Entity Type Requirements
+ */
+export interface EntityTypeRequirements {
+  entityType: OrganizerEntityType;
+  displayName: string;
+  category: string;
+  requiresDirectors: boolean;
+  requiresShareholders: boolean;
+  minDirectors?: number;
+  maxDirectorsToCollect?: number;
+  documents: DocumentRequirement[];
+}
+
+/**
+ * KYC Requirements Response
+ */
+export interface KYCRequirementsResponse {
+  entityType: OrganizerEntityType | null;
+  requirements: EntityTypeRequirements | null;
+  documents: DocumentRequirement[];
+  requiresDirectors: boolean;
+  requiresShareholders: boolean;
+  minDirectors?: number;
+  maxDirectorsToCollect?: number;
+}
+
+/**
+ * KYC Document
+ */
+export interface KYCDocument {
+  id: string;
+  userId: string;
+  documentType: KYCDocumentType;
+  documentNumber?: string | null;
+  documentUrl?: string | null;
+  documentCategory?: string | null;
+  status: KYCStatus;
+  rejectionReason?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  issueDate?: string | null;
+  expiryDate?: string | null;
+  isRequired: boolean;
+  isConditional: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * KYC Documents Response
+ */
+export interface KYCDocumentsResponse {
+  documents: KYCDocument[];
+  requirementsStatus: DocumentRequirement[];
+  isComplete: boolean;
+}
+
+/**
+ * Director/Shareholder
+ */
+export interface OrganizerDirector {
+  id: string;
+  userId: string;
+  fullName: string;
+  nationality: string;
+  dateOfBirth: string;
+  documentType: string;
+  documentNumber: string;
+  kraPin?: string | null;
+  sharePercentage?: number | null;
+  isTopFive: boolean;
+  position?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Set Entity Type Data
+ */
+export interface SetEntityTypeData {
+  entityType: OrganizerEntityType;
+  industry?: string;
+  businessName?: string;
+  registrationNumber?: string;
+}
+
+/**
+ * Create Document Data
+ */
+export interface CreateKYCDocumentData {
+  documentType: KYCDocumentType;
+  documentNumber?: string;
+  documentUrl?: string;
+  issueDate?: string;
+  expiryDate?: string;
+}
+
+/**
+ * Create Director Data
+ */
+export interface CreateDirectorData {
+  fullName: string;
+  nationality: string;
+  dateOfBirth: string;
+  documentType: string;
+  documentNumber: string;
+  kraPin?: string;
+  sharePercentage?: number;
+  position?: string;
+}
+
+/**
+ * Set organizer entity type
+ */
+export const setEntityType = async (data: SetEntityTypeData): Promise<{ success: boolean; data: { entityType: OrganizerEntityType; requiresReVerification: boolean } }> => {
+  return apiPost('/organizer-dashboard/kyc/entity-type', data);
+};
+
+/**
+ * Get KYC requirements for current user
+ */
+export const getKYCRequirements = async (): Promise<{ success: boolean; data: KYCRequirementsResponse }> => {
+  return apiGet('/organizer-dashboard/kyc/requirements');
+};
+
+/**
+ * Get all KYC documents with requirements status
+ */
+export const getKYCDocuments = async (): Promise<{ success: boolean; data: KYCDocumentsResponse }> => {
+  return apiGet('/organizer-dashboard/kyc/documents');
+};
+
+/**
+ * Create/upload a KYC document
+ */
+export const createKYCDocument = async (data: CreateKYCDocumentData): Promise<{ success: boolean; data: { document: KYCDocument } }> => {
+  return apiPost('/organizer-dashboard/kyc/documents', data);
+};
+
+/**
+ * Update a KYC document
+ */
+export const updateKYCDocument = async (documentId: string, data: Partial<CreateKYCDocumentData>): Promise<{ success: boolean; data: { document: KYCDocument } }> => {
+  return apiPut(`/organizer-dashboard/kyc/documents/${documentId}`, data);
+};
+
+/**
+ * Delete a KYC document
+ */
+export const deleteKYCDocument = async (documentId: string): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer-dashboard/kyc/documents/${documentId}`);
+};
+
+/**
+ * Submit KYC for review
+ */
+export const submitKYCForReview = async (): Promise<{ success: boolean; message: string; data: { message: string; documentsCount: number } }> => {
+  return apiPost('/organizer-dashboard/kyc/submit', {});
+};
+
+/**
+ * Get directors/shareholders
+ */
+export const getDirectors = async (): Promise<{ success: boolean; data: { directors: OrganizerDirector[] } }> => {
+  return apiGet('/organizer-dashboard/kyc/directors');
+};
+
+/**
+ * Create/add a director/shareholder
+ */
+export const createDirector = async (data: CreateDirectorData): Promise<{ success: boolean; data: { director: OrganizerDirector } }> => {
+  return apiPost('/organizer-dashboard/kyc/directors', data);
+};
+
+/**
+ * Delete a director/shareholder
+ */
+export const deleteDirector = async (directorId: string): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer-dashboard/kyc/directors/${directorId}`);
+};
+
+
+
+export interface StaffPerformanceMetrics {
+  staffId: string;
+  staffName: string;
+  staffEmail: string;
+  role: string;
+  eventsAssigned: number;
+  eventsCompleted: number;
+  eventsActive: number;
+  totalScans: number;
+  successfulScans: number;
+  failedScans: number;
+  averageScansPerEvent: number;
+  reEntryScans: number;
+  totalShifts: number;
+  completedShifts: number;
+  attendanceRate: number;
+  totalHoursWorked: number;
+  averageHoursPerEvent: number;
+  responseTime?: number;
+  campaignEngagement?: number;
+  lastScanAt?: string;
+  lastEventAt?: string;
+}
+
+export interface TeamPerformanceSummary {
+  totalStaff: number;
+  activeStaff: number;
+  totalEvents: number;
+  totalScans: number;
+  averageScansPerStaff: number;
+  averageAttendanceRate: number;
+  topPerformers: StaffPerformanceMetrics[];
+}
+
+export interface PerformanceTrend {
+  date: string;
+  scans: number;
+  events: number;
+}
+
+export interface StaffUtilization {
+  totalStaff: number;
+  activeStaff: number;
+  utilizationRate: number;
+  averageEventsPerStaff: number;
+  averageHoursPerStaff: number;
+  underutilizedStaff: StaffPerformanceMetrics[];
+  overutilizedStaff: StaffPerformanceMetrics[];
+}
+
+export interface EventCoverage {
+  totalEvents: number;
+  eventsWithStaff: number;
+  eventsWithoutStaff: number;
+  averageStaffPerEvent: number;
+  eventsByCoverage: {
+    eventId: string;
+    eventTitle: string;
+    staffCount: number;
+    totalScans: number;
+    coverageStatus: 'adequate' | 'understaffed' | 'overstaffed';
+  }[];
+}
+
+export interface StaffAvailability {
+  staffAvailability: {
+    staffId: string;
+    staffName: string;
+    totalShifts: number;
+    completedShifts: number;
+    availabilityRate: number;
+    averageShiftDuration: number;
+    preferredDays: string[];
+    preferredTimes: string[];
+  }[];
+  overallAvailability: {
+    totalShifts: number;
+    completedShifts: number;
+    averageAvailabilityRate: number;
+    peakDays: string[];
+  };
+}
+
+/**
+ * Get staff performance metrics (organizer)
+ */
+export const getOrganizerStaffPerformance = async (
+  staffId: string,
+  period: PerformancePeriod = 'all',
+): Promise<{ success: boolean; data: StaffPerformanceMetrics }> => {
+  return apiGet(`/organizer/staff-performance/${staffId}?period=${period}`);
+};
+
+/**
+ * Get team performance metrics (organizer)
+ */
+export const getOrganizerTeamPerformance = async (
+  period: PerformancePeriod = 'all',
+  limit?: number,
+): Promise<{ success: boolean; data: { performances: StaffPerformanceMetrics[]; count: number } }> => {
+  const params = new URLSearchParams();
+  params.append('period', period);
+  if (limit) params.append('limit', limit.toString());
+  return apiGet(`/organizer/staff-performance/team?${params.toString()}`);
+};
+
+/**
+ * Get team performance summary (organizer)
+ */
+export const getOrganizerTeamSummary = async (
+  period: PerformancePeriod = 'all',
+): Promise<{ success: boolean; data: TeamPerformanceSummary }> => {
+  return apiGet(`/organizer/staff-performance/team/summary?period=${period}`);
+};
+
+/**
+ * Get performance trends for a staff member (organizer)
+ */
+export const getOrganizerPerformanceTrends = async (
+  staffId: string,
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: PerformanceTrend[] }> => {
+  return apiGet(`/organizer/staff-performance/${staffId}/trends?period=${period}`);
+};
+
+/**
+ * Get organizer staff utilization metrics
+ */
+export const getOrganizerStaffUtilization = async (
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: StaffUtilization }> => {
+  return apiGet(`/organizer/staff-performance/utilization?period=${period}`);
+};
+
+/**
+ * Get event coverage analysis
+ */
+export const getEventCoverageAnalysis = async (
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: EventCoverage }> => {
+  return apiGet(`/organizer/staff-performance/coverage?period=${period}`);
+};
+
+/**
+ * Get staff availability tracking
+ */
+export const getStaffAvailability = async (
+  period: PerformancePeriod = 'month',
+): Promise<{ success: boolean; data: StaffAvailability }> => {
+  return apiGet(`/organizer/staff-performance/availability?period=${period}`);
+};
+
+/**
+ * Role & Permission Management Types
+ */
+export interface Permission {
+  id: string;
+  key: string;
+  name: string;
+  description?: string;
+  category: 'events' | 'attendees' | 'tickets' | 'analytics' | 'financial' | 'team' | 'communication' | 'settings';
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RolePermission {
+  id: string;
+  roleId: string;
+  permissionId: string;
+  permission: Permission;
+  createdAt: string;
+}
+
+export interface TeamRoleTemplate {
+  id: string;
+  organizerId: string;
+  name: string;
+  description?: string;
+  permissions?: RolePermission[];
+  usageCount: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    staffWithCustomRole?: number;
+  };
+}
+
+export interface CreateRoleTemplateData {
+  name: string;
+  description?: string;
+  permissionKeys?: string[];
+  // Legacy permissions (backward compatibility)
+  canEdit?: boolean;
+  canManageAttendees?: boolean;
+  canManageTickets?: boolean;
+  canViewAnalytics?: boolean;
+  canManageStaff?: boolean;
+  canPublish?: boolean;
+  canManageCollaborators?: boolean;
+}
+
+export interface UpdateRoleTemplateData {
+  name?: string;
+  description?: string;
+  permissionKeys?: string[];
+  isActive?: boolean;
+}
+
+export interface DuplicateRoleTemplateData {
+  name?: string;
+}
+
+/**
+ * Get all permissions
+ */
+export const getPermissions = async (category?: string): Promise<{ success: boolean; data: { permissions: Permission[] } }> => {
+  const queryParams = new URLSearchParams();
+  if (category) queryParams.append('category', category);
+  const endpoint = queryParams.toString() ? `/organizer-dashboard/team/permissions?${queryParams.toString()}` : '/organizer-dashboard/team/permissions';
+  return apiGet(endpoint);
+};
+
+/**
+ * Get permissions grouped by category
+ */
+export const getPermissionsByCategory = async (): Promise<{ success: boolean; data: { permissions: Record<string, Permission[]> } }> => {
+  return apiGet('/organizer-dashboard/team/permissions/by-category');
+};
+
+/**
+ * Get all role templates
+ */
+export const getRoleTemplates = async (isActive?: boolean): Promise<{ success: boolean; data: { templates: TeamRoleTemplate[] } }> => {
+  const queryParams = new URLSearchParams();
+  if (isActive !== undefined) queryParams.append('isActive', isActive.toString());
+  const endpoint = queryParams.toString() ? `/organizer-dashboard/team/role-templates?${queryParams.toString()}` : '/organizer-dashboard/team/role-templates';
+  return apiGet(endpoint);
+};
+
+/**
+ * Get role template by ID
+ */
+export const getRoleTemplateById = async (id: string): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiGet(`/organizer-dashboard/team/role-templates/${id}`);
+};
+
+/**
+ * Create role template
+ */
+export const createRoleTemplate = async (data: CreateRoleTemplateData): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiPost('/organizer-dashboard/team/role-templates', data);
+};
+
+/**
+ * Update role template
+ */
+export const updateRoleTemplate = async (id: string, data: UpdateRoleTemplateData): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiPut(`/organizer-dashboard/team/role-templates/${id}`, data);
+};
+
+/**
+ * Delete role template
+ */
+export const deleteRoleTemplate = async (id: string): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer-dashboard/team/role-templates/${id}`);
+};
+
+/**
+ * Duplicate role template
+ */
+export const duplicateRoleTemplate = async (id: string, data?: DuplicateRoleTemplateData): Promise<{ success: boolean; data: { template: TeamRoleTemplate } }> => {
+  return apiPost(`/organizer-dashboard/team/role-templates/${id}/duplicate`, data || {});
+};
+
+// ========== KYC / Entity Type Verification ==========
+
+/**
+ * Organizer Entity Types
+ */
+export enum OrganizerEntityType {
+  INDIVIDUAL = 'INDIVIDUAL',
+  SOLE_PROPRIETOR = 'SOLE_PROPRIETOR',
+  PARTNERSHIP = 'PARTNERSHIP',
+  LIMITED_LIABILITY_COMPANY = 'LIMITED_LIABILITY_COMPANY',
+  LIMITED_LIABILITY_PARTNERSHIP = 'LIMITED_LIABILITY_PARTNERSHIP',
+  EMPLOYMENT_AGENCY_LLC = 'EMPLOYMENT_AGENCY_LLC',
+  FOREIGN_COMPANY_COMPLIANCE = 'FOREIGN_COMPANY_COMPLIANCE',
+  PRIVATE_HOSPITAL_SOLE_PROPRIETOR = 'PRIVATE_HOSPITAL_SOLE_PROPRIETOR',
+  PRIVATE_HOSPITAL_LLC = 'PRIVATE_HOSPITAL_LLC',
+  PUBLIC_HOSPITAL = 'PUBLIC_HOSPITAL',
+  PRIVATE_EDUCATION_SOLE_PROPRIETOR = 'PRIVATE_EDUCATION_SOLE_PROPRIETOR',
+  PRIVATE_EDUCATION_LLC = 'PRIVATE_EDUCATION_LLC',
+  INTERNATIONAL_EDUCATION_LLC = 'INTERNATIONAL_EDUCATION_LLC',
+  PUBLIC_EDUCATION = 'PUBLIC_EDUCATION',
+  COOPERATIVE_SOCIETY = 'COOPERATIVE_SOCIETY',
+  INSURANCE_REINSURANCE = 'INSURANCE_REINSURANCE',
+  NGO = 'NGO',
+  EMBASSY_UN_WORLD_BANK = 'EMBASSY_UN_WORLD_BANK',
+  DENOMINATIONAL_CHURCH = 'DENOMINATIONAL_CHURCH',
+  PARTNERSHIP_PROFESSIONAL = 'PARTNERSHIP_PROFESSIONAL',
+  TRUST = 'TRUST',
+}
+
+/**
+ * KYC Document Types
+ */
+export enum KYCDocumentType {
+  PP_NEW_CONTRACT = 'PP_NEW_CONTRACT',
+  NATIONAL_ID = 'NATIONAL_ID',
+  PASSPORT = 'PASSPORT',
+  ALIEN_ID = 'ALIEN_ID',
+  MILITARY_ID = 'MILITARY_ID',
+  KRA_PIN = 'KRA_PIN',
+  CERTIFICATE_OF_REGISTRATION = 'CERTIFICATE_OF_REGISTRATION',
+  CERTIFICATE_OF_INCORPORATION = 'CERTIFICATE_OF_INCORPORATION',
+  COMPANY_KRA_PIN = 'COMPANY_KRA_PIN',
+  BANK_STATEMENT = 'BANK_STATEMENT',
+  CANCELLED_CHEQUE = 'CANCELLED_CHEQUE',
+  BANK_LETTER = 'BANK_LETTER',
+  LETTER_AUTHORIZING_ENTRY = 'LETTER_AUTHORIZING_ENTRY',
+  CR12 = 'CR12',
+  CR13 = 'CR13',
+  PARTNERSHIP_DEED = 'PARTNERSHIP_DEED',
+  AFFIDAVIT = 'AFFIDAVIT',
+  MINISTRY_OF_HEALTH_LICENSE = 'MINISTRY_OF_HEALTH_LICENSE',
+  KMPDB_LICENSE = 'KMPDB_LICENSE',
+  MINISTRY_OF_EDUCATION_LICENSE = 'MINISTRY_OF_EDUCATION_LICENSE',
+  EPRA_LICENSE = 'EPRA_LICENSE',
+  IRA_LICENSE = 'IRA_LICENSE',
+  TRA_MEMBERSHIP = 'TRA_MEMBERSHIP',
+  KATO_MEMBERSHIP = 'KATO_MEMBERSHIP',
+  KATA_MEMBERSHIP = 'KATA_MEMBERSHIP',
+  KCAA_REGISTRATION = 'KCAA_REGISTRATION',
+  TOUR_OPERATOR_LICENSE = 'TOUR_OPERATOR_LICENSE',
+  ORGANIZATION_CONSTITUTION = 'ORGANIZATION_CONSTITUTION',
+  BOARD_ELECTION_MINUTES = 'BOARD_ELECTION_MINUTES',
+  TRUST_DEED = 'TRUST_DEED',
+  ACCREDITATION_LETTER = 'ACCREDITATION_LETTER',
+  AGREEMENT_LETTER = 'AGREEMENT_LETTER',
+  LETTER_OF_INTRODUCTION = 'LETTER_OF_INTRODUCTION',
+  COUNTY_CONTRACT_FORM = 'COUNTY_CONTRACT_FORM',
+  COMPANY_PROFILE = 'COMPANY_PROFILE',
+  ONLINE_LINK = 'ONLINE_LINK',
+  TRADE_NAME_CERTIFICATE = 'TRADE_NAME_CERTIFICATE',
+  GRANT_PROBATE = 'GRANT_PROBATE',
+  AUTHORIZED_SIGNATORY_LETTER = 'AUTHORIZED_SIGNATORY_LETTER',
+}
+
+/**
+ * KYC Status
+ */
+export enum KYCStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+/**
+ * Document Requirement
+ */
+export interface DocumentRequirement {
+  documentType: KYCDocumentType;
+  category: string;
+  minQuantity: number;
+  maxQuantity?: number;
+  validityPeriodDays?: number;
+  isRequired: boolean;
+  isConditional: boolean;
+  description: string;
+  helpText?: string;
+  uploadedCount?: number;
+  approvedCount?: number;
+  pendingCount?: number;
+  isComplete?: boolean;
+  hasMinimum?: boolean;
+}
+
+/**
+ * Entity Type Requirements
+ */
+export interface EntityTypeRequirements {
+  entityType: OrganizerEntityType;
+  displayName: string;
+  category: string;
+  requiresDirectors: boolean;
+  requiresShareholders: boolean;
+  minDirectors?: number;
+  maxDirectorsToCollect?: number;
+  documents: DocumentRequirement[];
+}
+
+/**
+ * KYC Requirements Response
+ */
+export interface KYCRequirementsResponse {
+  entityType: OrganizerEntityType | null;
+  requirements: EntityTypeRequirements | null;
+  documents: DocumentRequirement[];
+  requiresDirectors: boolean;
+  requiresShareholders: boolean;
+  minDirectors?: number;
+  maxDirectorsToCollect?: number;
+}
+
+/**
+ * KYC Document
+ */
+export interface KYCDocument {
+  id: string;
+  userId: string;
+  documentType: KYCDocumentType;
+  documentNumber?: string | null;
+  documentUrl?: string | null;
+  documentCategory?: string | null;
+  status: KYCStatus;
+  rejectionReason?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  issueDate?: string | null;
+  expiryDate?: string | null;
+  isRequired: boolean;
+  isConditional: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * KYC Documents Response
+ */
+export interface KYCDocumentsResponse {
+  documents: KYCDocument[];
+  requirementsStatus: DocumentRequirement[];
+  isComplete: boolean;
+}
+
+/**
+ * Director/Shareholder
+ */
+export interface OrganizerDirector {
+  id: string;
+  userId: string;
+  fullName: string;
+  nationality: string;
+  dateOfBirth: string;
+  documentType: string;
+  documentNumber: string;
+  kraPin?: string | null;
+  sharePercentage?: number | null;
+  isTopFive: boolean;
+  position?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Set Entity Type Data
+ */
+export interface SetEntityTypeData {
+  entityType: OrganizerEntityType;
+  industry?: string;
+  businessName?: string;
+  registrationNumber?: string;
+}
+
+/**
+ * Create Document Data
+ */
+export interface CreateKYCDocumentData {
+  documentType: KYCDocumentType;
+  documentNumber?: string;
+  documentUrl?: string;
+  issueDate?: string;
+  expiryDate?: string;
+}
+
+/**
+ * Create Director Data
+ */
+export interface CreateDirectorData {
+  fullName: string;
+  nationality: string;
+  dateOfBirth: string;
+  documentType: string;
+  documentNumber: string;
+  kraPin?: string;
+  sharePercentage?: number;
+  position?: string;
+}
+
+/**
+ * Set organizer entity type
+ */
+export const setEntityType = async (data: SetEntityTypeData): Promise<{ success: boolean; data: { entityType: OrganizerEntityType; requiresReVerification: boolean } }> => {
+  return apiPost('/organizer-dashboard/kyc/entity-type', data);
+};
+
+/**
+ * Get KYC requirements for current user
+ */
+export const getKYCRequirements = async (): Promise<{ success: boolean; data: KYCRequirementsResponse }> => {
+  return apiGet('/organizer-dashboard/kyc/requirements');
+};
+
+/**
+ * Get all KYC documents with requirements status
+ */
+export const getKYCDocuments = async (): Promise<{ success: boolean; data: KYCDocumentsResponse }> => {
+  return apiGet('/organizer-dashboard/kyc/documents');
+};
+
+/**
+ * Create/upload a KYC document
+ */
+export const createKYCDocument = async (data: CreateKYCDocumentData): Promise<{ success: boolean; data: { document: KYCDocument } }> => {
+  return apiPost('/organizer-dashboard/kyc/documents', data);
+};
+
+/**
+ * Update a KYC document
+ */
+export const updateKYCDocument = async (documentId: string, data: Partial<CreateKYCDocumentData>): Promise<{ success: boolean; data: { document: KYCDocument } }> => {
+  return apiPut(`/organizer-dashboard/kyc/documents/${documentId}`, data);
+};
+
+/**
+ * Delete a KYC document
+ */
+export const deleteKYCDocument = async (documentId: string): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer-dashboard/kyc/documents/${documentId}`);
+};
+
+/**
+ * Submit KYC for review
+ */
+export const submitKYCForReview = async (): Promise<{ success: boolean; message: string; data: { message: string; documentsCount: number } }> => {
+  return apiPost('/organizer-dashboard/kyc/submit', {});
+};
+
+/**
+ * Get directors/shareholders
+ */
+export const getDirectors = async (): Promise<{ success: boolean; data: { directors: OrganizerDirector[] } }> => {
+  return apiGet('/organizer-dashboard/kyc/directors');
+};
+
+/**
+ * Create/add a director/shareholder
+ */
+export const createDirector = async (data: CreateDirectorData): Promise<{ success: boolean; data: { director: OrganizerDirector } }> => {
+  return apiPost('/organizer-dashboard/kyc/directors', data);
+};
+
+/**
+ * Delete a director/shareholder
+ */
+export const deleteDirector = async (directorId: string): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/organizer-dashboard/kyc/directors/${directorId}`);
+};
+
+
+// ========== Subscription Management ==========
+
+/**
+ * Subscription Tier
+ */
+export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
+
+/**
+ * Organizer Subscription
+ */
+export interface OrganizerSubscription {
+  id: string;
+  organizerId: string;
+  tier: SubscriptionTier;
+  startedAt: string;
+  expiresAt?: string | null;
+  isActive: boolean;
+  canceledAt?: string | null;
+  billingEmail?: string | null;
+  nextBillingDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Get organizer subscription
+ */
+export const getSubscription = async (): Promise<{ success: boolean; data: { subscription: OrganizerSubscription } }> => {
+  return apiGet('/organizer-dashboard/subscription');
+};
+
+/**
+ * Upgrade subscription tier data
+ */
+export interface UpgradeSubscriptionData {
+  tier: SubscriptionTier;
+  billingEmail?: string; // Required for PREMIUM tier
+}
+
+/**
+ * Upgrade subscription tier
+ */
+export const upgradeSubscription = async (data: UpgradeSubscriptionData): Promise<{ success: boolean; data: { subscription: OrganizerSubscription } }> => {
+  return apiPost('/organizer-dashboard/subscription/upgrade', data);
+};
+
+/**
+ * Cancel Premium subscription
+ */
+export const cancelSubscription = async (): Promise<{ success: boolean; message: string; data: { subscription: OrganizerSubscription } }> => {
+  return apiPost('/organizer-dashboard/subscription/cancel', {});
+};
+
+// ========== Consent Management ==========
+
+/**
+ * Consent Statistics
+ */
+export interface ConsentStatistics {
+  totalRegistrations: number;
+  totalConsents: number;
+  operational: {
+    count: number;
+    percentage: number;
+  };
+  marketing: {
+    count: number;
+    percentage: number;
+  };
+  demographics: {
+    count: number;
+    percentage: number;
+  };
+  analytics: {
+    count: number;
+    percentage: number;
+  };
+}
+
+/**
+ * Get consent statistics for an event
+ */
+export const getEventConsentStats = async (eventId: string): Promise<{ success: boolean; data: ConsentStatistics }> => {
+  return apiGet(/organizer-dashboard/events/${eventId}/consent-stats);
 };
 

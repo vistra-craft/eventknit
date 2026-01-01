@@ -48,6 +48,10 @@ const EventRegistration = () => {
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
+  // Consent state (operational consent is always true, so we don't need state for it)
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [demographicsConsent, setDemographicsConsent] = useState(false);
+  const [analyticsConsent, setAnalyticsConsent] = useState(false);
 
   // Fetch event data
   useEffect(() => {
@@ -292,6 +296,12 @@ const EventRegistration = () => {
           ticketType, // Backward compatibility
           quantity, // Backward compatibility
           registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
+          consent: {
+            operationalConsent: true, // Always true - required for ticket delivery
+            marketingConsent: marketingConsent,
+            demographicsConsent: demographicsConsent,
+            analyticsConsent: analyticsConsent,
+          },
         });
 
         if (response.success && response.data) {
@@ -367,6 +377,12 @@ const EventRegistration = () => {
         quantity, // Backward compatibility
         registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
         promoCode: appliedDiscount ? promoCode : undefined,
+        consent: {
+          operationalConsent: true, // Always true - required for ticket delivery
+          marketingConsent: marketingConsent,
+          demographicsConsent: demographicsConsent,
+          analyticsConsent: analyticsConsent,
+        },
       });
 
       if (response.success && response.data) {
@@ -1098,6 +1114,74 @@ const EventRegistration = () => {
                           </div>
                         );
                       })}
+                    </div>
+
+                    {/* Data Sharing Consent */}
+                    <div className="pt-6 border-t space-y-4">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-semibold text-foreground">Data Sharing Preferences</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Choose how you'd like to share your data with the event organizer. Your basic contact information is required for event participation.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            id="marketingConsent"
+                            checked={marketingConsent}
+                            onChange={(e) => setMarketingConsent(e.target.checked)}
+                            className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <label htmlFor="marketingConsent" className="text-sm text-foreground cursor-pointer flex-1">
+                            <span className="font-medium">Marketing Communications</span>
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              Allow the organizer to send me marketing emails and updates about future events
+                            </span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            id="demographicsConsent"
+                            checked={demographicsConsent}
+                            onChange={(e) => setDemographicsConsent(e.target.checked)}
+                            className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <label htmlFor="demographicsConsent" className="text-sm text-foreground cursor-pointer flex-1">
+                            <span className="font-medium">Demographic Data (Premium Feature)</span>
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              Share demographic information (location, age, etc.) to help organizers improve their events
+                            </span>
+                          </label>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <input
+                            type="checkbox"
+                            id="analyticsConsent"
+                            checked={analyticsConsent}
+                            onChange={(e) => setAnalyticsConsent(e.target.checked)}
+                            className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <label htmlFor="analyticsConsent" className="text-sm text-foreground cursor-pointer flex-1">
+                            <span className="font-medium">Engagement Analytics (Premium Feature)</span>
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              Allow tracking of engagement metrics (email opens, session views, etc.) for event improvement
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground pt-2 border-t">
+                        You can change these preferences anytime after registration. Learn more in our{" "}
+                        <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">
+                          Privacy Policy
+                        </a>
+                        .
+                      </p>
                     </div>
                     
                     {/* Terms & Conditions */}

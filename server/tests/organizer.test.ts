@@ -8,6 +8,7 @@ import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
 import { cleanupTestData } from './test-helpers';
+import { PermissionService } from '../src/services/permission.service';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -53,6 +54,14 @@ describe('Organizer Staff Management', () => {
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);
+    }
+
+    // Seed permissions for custom role tests
+    try {
+      await PermissionService.seedPermissions();
+    } catch (error) {
+      // Permissions may already be seeded, ignore error
+      logger.warn('Permission seeding warning:', error);
     }
 
     // Create organizer (use upsert to handle existing users)
@@ -813,6 +822,102 @@ describe('Organizer Staff Management', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.staff.phoneNumber).toBeNull();
+    });
+
+    it('should assign custom role to staff member', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a custom role
+      const permission = await prisma.permission.findFirst({
+        where: { key: 'events.view' },
+      });
+      if (!permission) {
+        logger.info('⏭️  Skipping test - permissions not seeded');
+        return;
+      }
+
+      const roleTemplate = await prisma.teamRoleTemplate.create({
+        data: {
+          organizerId: _organizerId,
+          name: 'Event Viewer',
+          description: 'Can view events',
+          permissions: {
+            create: {
+              permissionId: permission.id,
+            },
+          },
+        },
+      });
+
+      // Assign custom role to staff
+      const response = await request(app)
+        .put(`/api/v1/organizer/staff/${staffId}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          customRoleId: roleTemplate.id,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.staff.customRoleId).toBe(roleTemplate.id);
+      expect(response.body.data.staff.customRole).toBeDefined();
+      expect(response.body.data.staff.customRole.name).toBe('Event Viewer');
+
+      // Verify in database
+      const staff = await prisma.user.findUnique({
+        where: { id: staffId },
+        include: { customRole: true },
+      });
+      expect(staff?.customRoleId).toBe(roleTemplate.id);
+    });
+
+    it('should remove custom role from staff member', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // First assign a role
+      const permission = await prisma.permission.findFirst({
+        where: { key: 'events.view' },
+      });
+      if (!permission) {
+        logger.info('⏭️  Skipping test - permissions not seeded');
+        return;
+      }
+
+      const roleTemplate = await prisma.teamRoleTemplate.create({
+        data: {
+          organizerId: _organizerId,
+          name: 'Temporary Role',
+          permissions: {
+            create: {
+              permissionId: permission.id,
+            },
+          },
+        },
+      });
+
+      await prisma.user.update({
+        where: { id: staffId },
+        data: { customRoleId: roleTemplate.id },
+      });
+
+      // Remove custom role
+      const response = await request(app)
+        .put(`/api/v1/organizer/staff/${staffId}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          customRoleId: null,
+        })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.staff.customRoleId).toBeNull();
+      expect(response.body.data.staff.customRole).toBeNull();
     });
   });
 
@@ -1666,6 +1771,111 @@ describe('Organizer Staff Management', () => {
           password: 'NewOrg123!@$',
         })
         .then((res) => res.body.data.accessToken);
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .set('Authorization', `Bearer ${newOrganizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.hasAccess).toBe(false);
+      expect(response.body.data.message).toContain('Create your first event');
+
+      // Cleanup
+      await prisma.user.deleteMany({
+        where: { email: 'neworganizer@test.com' },
+      });
+    });
+
+    it('should return true for organizer with any event', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a pending event for the organizer (any status should work)
+      const event = await prisma.event.create({
+        data: {
+          title: 'Test Event',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 86400000), // Tomorrow
+          endDate: new Date(Date.now() + 172800000), // Day after tomorrow
+          location: 'Test Location',
+          organizerId: _organizerId,
+          status: EventStatus.PENDING,
+          type: 'PUBLIC',
+          isFree: true,
+          capacity: 100,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.hasAccess).toBe(true);
+      expect(response.body.data.message).toContain('You have access');
+
+      // Cleanup
+      await prisma.event.deleteMany({
+        where: { id: event.id },
+      });
+    });
+
+    it('should return true for organizer with pending events', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a pending event
+      const pendingEvent = await prisma.event.create({
+        data: {
+          title: 'Test Pending Event',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 86400000),
+          endDate: new Date(Date.now() + 172800000),
+          location: 'Test Location',
+          organizerId: _organizerId,
+          status: EventStatus.PENDING,
+          type: 'PUBLIC',
+          isFree: true,
+          capacity: 100,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      // Should return true for any event (including pending)
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.hasAccess).toBe(true);
+      expect(response.body.data.message).toContain('You have access');
+
+      // Cleanup
+      await prisma.event.deleteMany({
+        where: { id: pendingEvent.id },
+      });
+    });
+
+    it('should fail without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/dashboard-access')
+        .expect(401);
+    });
+  });
+});
+
+
 
       const response = await request(app)
         .get('/api/v1/organizer/dashboard-access')
