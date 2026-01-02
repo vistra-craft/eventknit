@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { RegistrationStatus, TicketStatus } from '@prisma/client';
 import { TicketService } from './ticket.service.js';
 import { DigitalWalletService } from './digital-wallet.service.js';
+import { emailService } from './email.service.js';
 
 export class TicketTransferService {
   /**
@@ -30,6 +31,8 @@ export class TicketTransferService {
               title: true,
               startDate: true,
               allowTransfers: true,
+              venue: true,
+              location: true,
             },
           },
         },
@@ -88,6 +91,8 @@ export class TicketTransferService {
         throw new ValidationError('A transfer for this ticket is already pending');
       }
 
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
       // Create transfer
       const transfer = await prisma.ticketTransfer.create({
         data: {
@@ -97,7 +102,7 @@ export class TicketTransferService {
           toEmail: toUserId ? undefined : data.toEmail,
           transferToken,
           message: data.message,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          expiresAt,
         },
         include: {
           registration: {
@@ -107,6 +112,8 @@ export class TicketTransferService {
                   id: true,
                   title: true,
                   startDate: true,
+                  venue: true,
+                  location: true,
                 },
               },
             },
@@ -130,7 +137,46 @@ export class TicketTransferService {
         },
       });
 
-      // TODO: Send notification email to recipient
+      // Send notification email to recipient
+      const recipientEmail = transfer.toUser?.email || transfer.toEmail;
+      if (recipientEmail) {
+        const senderName = `${transfer.fromUser.firstName} ${transfer.fromUser.lastName}`.trim();
+        const recipientName = transfer.toUser
+          ? `${transfer.toUser.firstName} ${transfer.toUser.lastName}`.trim()
+          : undefined;
+        const eventDate = transfer.registration.event.startDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const eventLocation = transfer.registration.event.venue || transfer.registration.event.location || 'TBA';
+
+        // Send email asynchronously (don't block the response)
+        emailService.sendTicketTransferOfferEmail(recipientEmail, {
+          recipientName,
+          senderName,
+          senderEmail: transfer.fromUser.email,
+          eventTitle: transfer.registration.event.title,
+          eventDate,
+          eventLocation,
+          ticketType: transfer.registration.ticketType || undefined,
+          quantity: transfer.registration.quantity,
+          transferToken: transfer.transferToken,
+          message: data.message,
+          expiresAt,
+        }).then((result) => {
+          if (result.success) {
+            logger.info(`Transfer offer email sent to ${recipientEmail} for transfer ${transfer.id}`);
+          } else {
+            logger.error(`Failed to send transfer offer email to ${recipientEmail}:`, result.error);
+          }
+        }).catch((err) => {
+          logger.error(`Error sending transfer offer email to ${recipientEmail}:`, err);
+        });
+      }
 
       return transfer;
     } catch (error) {
@@ -149,8 +195,25 @@ export class TicketTransferService {
         include: {
           registration: {
             include: {
-              event: true,
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                  startDate: true,
+                  venue: true,
+                  location: true,
+                  organizerId: true,
+                },
+              },
               ticketLineItems: true,
+            },
+          },
+          fromUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
         },
@@ -244,6 +307,49 @@ export class TicketTransferService {
         logger.warn('Failed to auto-add transferred ticket to wallet:', walletError);
       }
 
+      // Send notification email to the original sender
+      if (transfer.fromUser?.email) {
+        // Get recipient details
+        const recipient = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        });
+
+        if (recipient) {
+          const senderName = `${transfer.fromUser.firstName} ${transfer.fromUser.lastName}`.trim();
+          const recipientName = `${recipient.firstName} ${recipient.lastName}`.trim();
+          const eventDate = transfer.registration.event.startDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+
+          // Send email asynchronously
+          emailService.sendTicketTransferAcceptedEmail(transfer.fromUser.email, {
+            senderName,
+            recipientName,
+            recipientEmail: recipient.email,
+            eventTitle: transfer.registration.event.title,
+            eventDate,
+            ticketType: transfer.registration.ticketType || undefined,
+            quantity: transfer.registration.quantity,
+          }).then((emailResult) => {
+            if (emailResult.success) {
+              logger.info(`Transfer accepted email sent to ${transfer.fromUser.email} for transfer ${transfer.id}`);
+            } else {
+              logger.error(`Failed to send transfer accepted email to ${transfer.fromUser.email}:`, emailResult.error);
+            }
+          }).catch((err) => {
+            logger.error(`Error sending transfer accepted email to ${transfer.fromUser.email}:`, err);
+          });
+        }
+      }
+
       return { success: true, message: 'Transfer accepted successfully', registrationId: result.id };
     } catch (error) {
       logger.error('Error accepting transfer:', error);
@@ -259,6 +365,35 @@ export class TicketTransferService {
     try {
       const transfer = await prisma.ticketTransfer.findUnique({
         where: { id: transferId },
+        include: {
+          registration: {
+            include: {
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                  startDate: true,
+                },
+              },
+            },
+          },
+          fromUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          toUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
       });
 
       if (!transfer) {
@@ -281,6 +416,51 @@ export class TicketTransferService {
           cancelledAt: new Date(),
         },
       });
+
+      // Determine who cancelled and who should be notified
+      const cancelledBySender = transfer.fromUserId === userId;
+      const cancelledByName = cancelledBySender
+        ? `${transfer.fromUser.firstName} ${transfer.fromUser.lastName}`.trim()
+        : transfer.toUser
+          ? `${transfer.toUser.firstName} ${transfer.toUser.lastName}`.trim()
+          : 'The recipient';
+
+      // Get the email of the other party (the one who didn't cancel)
+      const notifyEmail = cancelledBySender
+        ? (transfer.toUser?.email || transfer.toEmail)
+        : transfer.fromUser.email;
+
+      const notifyName = cancelledBySender
+        ? (transfer.toUser ? `${transfer.toUser.firstName} ${transfer.toUser.lastName}`.trim() : undefined)
+        : `${transfer.fromUser.firstName} ${transfer.fromUser.lastName}`.trim();
+
+      if (notifyEmail) {
+        const eventDate = transfer.registration.event.startDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+
+        // Send email asynchronously
+        emailService.sendTicketTransferCancelledEmail(notifyEmail, {
+          recipientName: notifyName,
+          cancelledByName,
+          cancelledBySender,
+          eventTitle: transfer.registration.event.title,
+          eventDate,
+          ticketType: transfer.registration.ticketType || undefined,
+          quantity: transfer.registration.quantity,
+        }).then((emailResult) => {
+          if (emailResult.success) {
+            logger.info(`Transfer cancelled email sent to ${notifyEmail} for transfer ${transfer.id}`);
+          } else {
+            logger.error(`Failed to send transfer cancelled email to ${notifyEmail}:`, emailResult.error);
+          }
+        }).catch((err) => {
+          logger.error(`Error sending transfer cancelled email to ${notifyEmail}:`, err);
+        });
+      }
 
       return updated;
     } catch (error) {

@@ -403,6 +403,251 @@ class EmailService {
       );
     }
   }
+
+  /**
+   * Send notification email when a ticket transfer is offered
+   */
+  async sendTicketTransferOfferEmail(
+    recipientEmail: string,
+    data: {
+      recipientName?: string;
+      senderName: string;
+      senderEmail: string;
+      eventTitle: string;
+      eventDate: string;
+      eventLocation: string;
+      ticketType?: string;
+      quantity: number;
+      transferToken: string;
+      message?: string;
+      expiresAt: Date;
+    },
+  ): Promise<EmailResult> {
+    const acceptUrl = `${config.frontend.url}/tickets/transfer/accept?token=${data.transferToken}`;
+    const expiresFormatted = data.expiresAt.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const greeting = data.recipientName ? `Hello ${data.recipientName}` : 'Hello';
+    const ticketText = data.quantity > 1 ? `${data.quantity} tickets` : 'a ticket';
+    const ticketTypeText = data.ticketType ? ` (${data.ticketType})` : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Ticket Transfer Offer</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #4a6cf7 0%, #7c3aed 100%); border-radius: 12px 12px 0 0; padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">🎫 Ticket Transfer Offer</h1>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <p style="font-size: 16px;">${greeting},</p>
+
+              <p><strong>${data.senderName}</strong> (${data.senderEmail}) wants to transfer ${ticketText}${ticketTypeText} to you for:</p>
+
+              <div style="background-color: #f8f9fa; border-left: 4px solid #4a6cf7; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <h2 style="margin: 0 0 10px 0; color: #4a6cf7; font-size: 20px;">${data.eventTitle}</h2>
+                <p style="margin: 5px 0; color: #666;">📅 ${data.eventDate}</p>
+                <p style="margin: 5px 0; color: #666;">📍 ${data.eventLocation}</p>
+                ${data.ticketType ? `<p style="margin: 5px 0; color: #666;">🎟️ ${data.ticketType} × ${data.quantity}</p>` : ''}
+              </div>
+
+              ${data.message ? `
+              <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; font-style: italic;">"${data.message}"</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">— Message from ${data.senderName}</p>
+              </div>
+              ` : ''}
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${acceptUrl}" style="background-color: #4a6cf7; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">Accept Transfer</a>
+              </div>
+
+              <p style="text-align: center; color: #666; font-size: 14px;">Or copy and paste this link into your browser:</p>
+              <p style="word-break: break-all; color: #4a6cf7; text-align: center; font-size: 12px;">${acceptUrl}</p>
+
+              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; font-size: 14px;">⏰ <strong>This offer expires on ${expiresFormatted}</strong></p>
+                <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">If you don't accept before then, the transfer will be automatically cancelled.</p>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+              <p style="font-size: 12px; color: #666; text-align: center;">
+                If you don't know ${data.senderName} or weren't expecting this transfer, you can safely ignore this email.
+              </p>
+            </div>
+
+            <p style="font-size: 11px; color: #999; text-align: center; margin-top: 20px;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `🎫 ${data.senderName} wants to transfer a ticket to you for ${data.eventTitle}`,
+      html,
+      isCritical: true,
+    });
+  }
+
+  /**
+   * Send notification email when a ticket transfer is accepted
+   */
+  async sendTicketTransferAcceptedEmail(
+    senderEmail: string,
+    data: {
+      senderName: string;
+      recipientName: string;
+      recipientEmail: string;
+      eventTitle: string;
+      eventDate: string;
+      ticketType?: string;
+      quantity: number;
+    },
+  ): Promise<EmailResult> {
+    const ticketText = data.quantity > 1 ? `${data.quantity} tickets` : 'your ticket';
+    const ticketTypeText = data.ticketType ? ` (${data.ticketType})` : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Ticket Transfer Accepted</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px 12px 0 0; padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">✅ Transfer Accepted!</h1>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <p style="font-size: 16px;">Hello ${data.senderName},</p>
+
+              <p>Great news! <strong>${data.recipientName}</strong> (${data.recipientEmail}) has accepted ${ticketText}${ticketTypeText} for:</p>
+
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <h2 style="margin: 0 0 10px 0; color: #059669; font-size: 20px;">${data.eventTitle}</h2>
+                <p style="margin: 5px 0; color: #666;">📅 ${data.eventDate}</p>
+                ${data.ticketType ? `<p style="margin: 5px 0; color: #666;">🎟️ ${data.ticketType} × ${data.quantity}</p>` : ''}
+              </div>
+
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                <p style="margin: 0; font-size: 14px; color: #666;">
+                  The ticket has been successfully transferred. Your original ticket is no longer valid.
+                </p>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+              <p style="font-size: 12px; color: #666; text-align: center;">
+                Thank you for using EventKnit for your event ticketing needs.
+              </p>
+            </div>
+
+            <p style="font-size: 11px; color: #999; text-align: center; margin-top: 20px;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: senderEmail,
+      subject: `✅ ${data.recipientName} accepted your ticket transfer for ${data.eventTitle}`,
+      html,
+    });
+  }
+
+  /**
+   * Send notification email when a ticket transfer is cancelled
+   */
+  async sendTicketTransferCancelledEmail(
+    recipientEmail: string,
+    data: {
+      recipientName?: string;
+      cancelledByName: string;
+      cancelledBySender: boolean;
+      eventTitle: string;
+      eventDate: string;
+      ticketType?: string;
+      quantity: number;
+    },
+  ): Promise<EmailResult> {
+    const greeting = data.recipientName ? `Hello ${data.recipientName}` : 'Hello';
+    const ticketInfo = data.quantity > 1
+      ? `${data.quantity} tickets${data.ticketType ? ` (${data.ticketType})` : ''}`
+      : `the ticket${data.ticketType ? ` (${data.ticketType})` : ''}`;
+    const cancelMessage = data.cancelledBySender
+      ? `${data.cancelledByName} has cancelled the transfer of ${ticketInfo}.`
+      : 'The ticket transfer has been cancelled.';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Ticket Transfer Cancelled</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); border-radius: 12px 12px 0 0; padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">❌ Transfer Cancelled</h1>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <p style="font-size: 16px;">${greeting},</p>
+
+              <p>${cancelMessage}</p>
+
+              <div style="background-color: #f3f4f6; border-left: 4px solid #6b7280; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <h2 style="margin: 0 0 10px 0; color: #4b5563; font-size: 20px;">${data.eventTitle}</h2>
+                <p style="margin: 5px 0; color: #666;">📅 ${data.eventDate}</p>
+                ${data.ticketType ? `<p style="margin: 5px 0; color: #666;">🎟️ ${data.ticketType} × ${data.quantity}</p>` : ''}
+              </div>
+
+              <p style="color: #666; font-size: 14px;">
+                ${data.cancelledBySender
+    ? 'The original ticket holder has retained their ticket.'
+    : 'Your ticket remains valid and can be used for the event.'}
+              </p>
+
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+              <p style="font-size: 12px; color: #666; text-align: center;">
+                If you have any questions, please contact the event organizer.
+              </p>
+            </div>
+
+            <p style="font-size: 11px; color: #999; text-align: center; margin-top: 20px;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `❌ Ticket transfer cancelled for ${data.eventTitle}`,
+      html,
+    });
+  }
 }
 
 export const emailService = new EmailService();
