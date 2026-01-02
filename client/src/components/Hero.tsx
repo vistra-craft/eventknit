@@ -38,39 +38,27 @@ export const Hero = () => {
       setCurrentEventIndex((prevIndex) =>
         prevIndex === featuredEvents.length - 1 ? 0 : prevIndex + 1
       );
-    }, 5000); // Change every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [isAutoPlaying, featuredEvents.length]);
 
-  // If there are no active featured events, show a clean placeholder hero
+  // Placeholder hero when no featured events
   if (featuredEvents.length === 0) {
     return (
-      <div className="container mx-auto max-w-7xl px-6 py-8">
-        <div className="relative rounded-2xl overflow-hidden h-[450px] bg-gradient-to-br from-primary/30 via-accent-coral/20 to-accent-coral/20">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/20 to-accent-coral/30" />
-
+      <div className="container mx-auto px-6 py-6">
+        <div className="relative rounded-2xl overflow-hidden h-[400px] lg:h-[450px] bg-gradient-to-br from-primary/20 via-primary/10 to-background">
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-6 max-w-2xl px-6">
-              <Badge variant="secondary" className="bg-primary text-white">
+            <div className="text-center space-y-4 max-w-2xl px-6">
+              <Badge className="bg-primary text-white">
                 Discover Amazing Events
               </Badge>
-              <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-foreground">
+              <h1 className="text-3xl lg:text-4xl font-bold text-foreground">
                 Find Your Next Unforgettable Experience
               </h1>
-              <p className="text-lg text-muted-foreground">
-                Explore concerts, conferences, workshops, and more. Book tickets instantly.
+              <p className="text-muted-foreground">
+                Explore concerts, conferences, workshops, and more.
               </p>
-              <div className="flex flex-wrap justify-center gap-4 pt-2">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="w-5 h-5" />
-                  <span>Upcoming Events</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="w-5 h-5" />
-                  <span>Multiple Locations</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -80,7 +68,6 @@ export const Hero = () => {
 
   const currentEvent = featuredEvents[currentEventIndex];
 
-  // Format date for display
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -123,12 +110,12 @@ export const Hero = () => {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl px-6 py-8">
-      {/* Hero Container with rounded corners */}
-      <div className="relative rounded-2xl overflow-hidden h-[450px] lg:h-[500px]">
+    <div className="container mx-auto px-6 py-6">
+      {/* Hero Container */}
+      <div className="relative rounded-2xl overflow-hidden h-[400px] lg:h-[450px]">
         {/* Background Image */}
         <div
-          className="absolute inset-0 bg-muted transition-all duration-500"
+          className="absolute inset-0 bg-muted transition-all duration-700"
           style={{
             backgroundImage: currentEvent.image ? `url(${currentEvent.image})` : undefined,
             backgroundSize: 'cover',
@@ -136,162 +123,142 @@ export const Hero = () => {
           }}
         />
 
-        {/* Subtle gradient overlay for readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+        {/* Gradient overlay - bottom fade for content */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        {/* Floating Card - Left Side */}
-        <div className="absolute inset-y-0 left-0 flex items-center p-6 lg:p-10">
-          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl shadow-2xl p-6 lg:p-8 max-w-md w-full">
-            {/* Badge */}
-            <div className="flex items-center gap-2 mb-4">
-              {currentEvent.category && (
-                <Badge className="bg-primary text-white">
-                  {currentEvent.category}
-                </Badge>
-              )}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Eye className="w-3 h-3" />
-                <span>{currentEvent.type === 'EVENT' ? 'Featured' : 'Spotlight'}</span>
+        {/* Navigation Arrows - Left */}
+        {featuredEvents.length > 1 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goToPrevious}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white border-0"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </Button>
+        )}
+
+        {/* Navigation Arrows - Right */}
+        {featuredEvents.length > 1 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goToNext}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white border-0"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </Button>
+        )}
+
+        {/* Content - Bottom aligned */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8 z-10">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            {/* Left side - Event info */}
+            <div className="flex-1 max-w-2xl space-y-4">
+              {/* Badges */}
+              <div className="flex items-center gap-2">
+                {currentEvent.category && (
+                  <Badge className="bg-primary text-white text-xs">
+                    {currentEvent.category}
+                  </Badge>
+                )}
+                <div className="flex items-center gap-1.5 text-white/80 text-sm">
+                  <Eye className="w-4 h-4" />
+                  <span>{currentEvent.type === 'EVENT' ? 'Featured' : 'Spotlight'}</span>
+                </div>
               </div>
-            </div>
 
-            {/* Title */}
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground leading-tight mb-4">
-              {currentEvent.title}
-            </h1>
+              {/* Title */}
+              <h1 className="text-2xl lg:text-4xl font-bold text-white leading-tight">
+                {currentEvent.title}
+              </h1>
 
-            {currentEvent.type === 'EVENT' ? (
-              <>
-                {/* Event Details */}
-                <div className="space-y-3 mb-6">
+              {currentEvent.type === 'EVENT' ? (
+                /* Event details row */
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-white/90">
                   {currentEvent.date && (
-                    <div className="flex items-center gap-3 text-foreground">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-semibold">{formatDate(currentEvent.date)}</div>
-                        {currentEvent.time && (
-                          <div className="text-sm text-muted-foreground">{currentEvent.time}</div>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-sm font-medium">{formatDate(currentEvent.date)}</span>
+                      {currentEvent.time && (
+                        <span className="text-sm text-white/70">• {currentEvent.time}</span>
+                      )}
                     </div>
                   )}
-
                   {(currentEvent.venue || currentEvent.location) && (
-                    <div className="flex items-center gap-3 text-foreground">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        {currentEvent.venue && (
-                          <div className="font-semibold">{currentEvent.venue}</div>
-                        )}
-                        {currentEvent.location && (
-                          <div className="text-sm text-muted-foreground">{currentEvent.location}</div>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        {currentEvent.venue}{currentEvent.venue && currentEvent.location && ', '}{currentEvent.location}
+                      </span>
                     </div>
                   )}
-
                   {currentEvent.price && (
-                    <div className="text-lg font-bold text-primary">
+                    <span className="text-sm font-semibold text-primary">
                       {currentEvent.price}
-                    </div>
+                    </span>
                   )}
                 </div>
+              ) : (
+                currentEvent.description && (
+                  <p className="text-white/80 text-sm lg:text-base max-w-xl">
+                    {currentEvent.description}
+                  </p>
+                )
+              )}
+            </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
+            {/* Right side - Actions */}
+            <div className="flex items-center gap-3">
+              <Button
+                size="lg"
+                onClick={handleViewEvent}
+                className="bg-primary hover:bg-primary/90 text-white shadow-lg"
+              >
+                {currentEvent.type === 'EVENT' ? 'Get Tickets' : (currentEvent.linkText || 'Learn More')}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              {currentEvent.type === 'EVENT' && (
+                <>
                   <Button
-                    size="lg"
-                    onClick={handleViewEvent}
-                    className="bg-primary hover:bg-primary/90 text-white flex-1"
-                  >
-                    Get Tickets
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                  <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={() => setIsFavorited(!isFavorited)}
-                    className={`border-border ${isFavorited ? 'text-red-500 border-red-200' : 'text-muted-foreground'}`}
+                    className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 border-0 ${
+                      isFavorited ? 'text-red-400' : 'text-white'
+                    }`}
                   >
                     <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="border-border text-muted-foreground"
+                    className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white border-0"
                   >
                     <Share2 className="w-5 h-5" />
                   </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Image Type Content */}
-                {currentEvent.description && (
-                  <p className="text-muted-foreground mb-6">
-                    {currentEvent.description}
-                  </p>
-                )}
-                {currentEvent.linkUrl && currentEvent.linkText && (
-                  <Button
-                    size="lg"
-                    onClick={handleViewEvent}
-                    className="bg-primary hover:bg-primary/90 text-white w-full"
-                  >
-                    {currentEvent.linkText}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                )}
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
+
+          {/* Dot indicators */}
+          {featuredEvents.length > 1 && (
+            <div className="flex justify-center lg:justify-start gap-2 mt-6">
+              {featuredEvents.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToEvent(index)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentEventIndex
+                      ? 'bg-primary w-8'
+                      : 'bg-white/40 w-1.5 hover:bg-white/60'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Navigation Controls */}
-        {featuredEvents.length > 1 && (
-          <>
-            {/* Prev/Next Buttons */}
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={goToPrevious}
-                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-900 text-foreground shadow-lg"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="icon"
-                onClick={goToNext}
-                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-900 text-foreground shadow-lg"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            </div>
-
-            {/* Event Indicators */}
-            <div className="absolute bottom-6 right-6 z-20">
-              <div className="flex gap-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full px-3 py-2 shadow-lg">
-                {featuredEvents.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToEvent(index)}
-                    className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                      index === currentEventIndex
-                        ? 'bg-primary w-6'
-                        : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );
