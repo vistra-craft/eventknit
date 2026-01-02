@@ -51,21 +51,21 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         surface: "hsl(var(--surface))",
-        // Custom EventKnit Colors
+        // Custom EventKnit Colors (X/Twitter Inspired)
         "eventknit": {
           DEFAULT: "hsl(var(--eventknit-brand))",
           foreground: "hsl(var(--eventknit-brand-foreground))",
-          "bg": "#f2f4f6",
-          "card": "#fefeff", 
-          "text": "#0f172a",
-          "accent": "#cfe7ee",
-          "primary": "#0f172a",
-          "primary-light": "#cfe7ee"
+          "bg": "#F9FAFB",
+          "card": "#FFFFFF",
+          "text": "#0F1419",
+          "accent": "#1D9BF0",
+          "primary": "#1D9BF0",
+          "primary-light": "#E8F5FD"
         },
         // Navigation Hover Color
         "nav-hover": "hsl(var(--nav-hover))",
         "essential-cookie": "hsl(var(--primary) / 0.05)", // Light primary background for essential cookies
-        "functional-cookie": "#eff6ff", // Light blue background for functional cookies
+        "functional-cookie": "#E8F5FD", // Light blue background for functional cookies (X/Twitter blue tint)
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -113,6 +113,13 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        footer: {
+          DEFAULT: "hsl(var(--footer-background))",
+          foreground: "hsl(var(--footer-foreground))",
+          muted: "hsl(var(--footer-foreground-muted))",
+          border: "hsl(var(--footer-border))",
+          hover: "hsl(var(--footer-link-hover))",
         },
       },
       backgroundImage: {

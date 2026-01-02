@@ -12,121 +12,129 @@
 @layer base {
   :root {
     /* ========================================================================
-       BASE COLOR TOKENS - Single source of truth
+       BASE COLOR TOKENS - Single source of truth (X/Twitter Inspired)
        Change these values to update colors everywhere
        ======================================================================== */
-    
-    /* TEAL - Primary Brand Color */
-    --color-teal: 174 77% 41%;        /* #14B8A6 - Main brand color */
-    --color-teal-glow: 174 77% 51%;   /* Brighter for glows */
-    --color-teal-dark: 174 77% 31%;   /* Darker variant */
-    --color-teal-tint: 174 77% 95%;   /* Light tint for backgrounds */
 
-    /* CORAL - CTA & Accent Color */
-    --color-coral: 351 91% 72%;       /* #FB7185 - CTA color */
+    /* BLUE - Primary Brand Color (X/Twitter Blue) */
+    --color-blue: 204 88% 53%;        /* #1D9BF0 - Main brand color */
+    --color-blue-hover: 204 88% 48%;  /* Darker on hover */
+    --color-blue-glow: 204 88% 63%;   /* Brighter for glows */
+    --color-blue-dark: 204 88% 43%;   /* Darker variant */
+    --color-blue-light: 204 88% 95%;  /* Light tint for backgrounds */
 
-    /* GREY - Text & Borders */
-    --color-grey-dark: 220 15% 20%;   /* Dark grey for text */
-    --color-grey-medium: 220 10% 45%; /* Medium grey for muted text */
-    --color-grey-border: 0 0% 92%;    /* Light grey for borders */
-
-    /* OFF-WHITE - Backgrounds & Surfaces */
-    --color-offwhite: 30 8% 98%;      /* Warm off-white background */
-    --color-offwhite-card: 30 8% 95%;  /* Card surface - slightly darker for separation */
-    --color-offwhite-muted: 30 5% 95%; /* Muted background */
+    /* GRAY SCALE - Neutral grays (X/Twitter style) */
+    --color-gray-50: 210 20% 98%;     /* #F9FAFB - Lightest background */
+    --color-gray-100: 210 17% 95%;    /* #EFF3F4 - Borders, dividers (light) */
+    --color-gray-200: 210 14% 89%;    /* #E1E8ED - Subtle borders */
+    --color-gray-300: 210 12% 80%;    /* #CFD9DE - Disabled states */
+    --color-gray-400: 210 10% 60%;    /* #8899A6 - Placeholder text */
+    --color-gray-500: 210 10% 40%;    /* #536471 - Secondary text (light mode) */
+    --color-gray-600: 210 8% 45%;     /* #71767B - Secondary text (dark mode) */
+    --color-gray-700: 210 8% 25%;     /* #3D4144 - Stronger text */
+    --color-gray-800: 210 8% 18%;     /* #2F3336 - Borders (dark mode) */
+    --color-gray-900: 210 15% 8%;     /* #0F1419 - Near black text */
 
     /* BLACK & WHITE */
-    --color-black: 0 0% 0%;
-    --color-white: 0 0% 100%;
+    --color-black: 0 0% 0%;           /* #000000 - Pure black */
+    --color-white: 0 0% 100%;         /* #FFFFFF - Pure white */
 
-    /* ADDITIONAL COLORS */
-    --color-destructive: 0 84.2% 60.2%;
+    /* DESTRUCTIVE - Red for errors/warnings */
+    --color-destructive: 0 84% 60%;   /* #EF4444 */
 
     /* ========================================================================
        SEMANTIC COLOR VARIABLES - Built from base tokens
        ======================================================================== */
 
     /* Backgrounds */
-    --background: var(--color-offwhite);
-    --foreground: var(--color-grey-dark);
-    --surface: var(--color-offwhite);
+    --background: var(--color-gray-50);
+    --foreground: var(--color-gray-900);
+    --surface: var(--color-gray-50);
 
-    /* Primary (Teal) */
-    --primary: var(--color-teal);
+    /* Primary (X/Twitter Blue) */
+    --primary: var(--color-blue);
     --primary-foreground: var(--color-white);
-    --primary-glow: var(--color-teal-glow);
-    --primary-dark: var(--color-teal-dark);
+    --primary-glow: var(--color-blue-glow);
+    --primary-dark: var(--color-blue-dark);
+    --primary-hover: var(--color-blue-hover);
 
-    /* Accent (Coral) - For accents and highlights */
-    --accent: var(--color-coral);
+    /* Accent (Also Blue for X/Twitter style) */
+    --accent: var(--color-blue);
     --accent-foreground: var(--color-white);
-    --accent-electric: var(--color-coral);
-    --accent-neon: var(--color-coral);
-    --accent-coral: var(--color-coral);
+    --accent-electric: var(--color-blue);
+    --accent-neon: var(--color-blue-glow);
+    --accent-coral: var(--color-blue);
 
     /* Navigation */
-    --nav-hover: var(--color-coral);
+    --nav-hover: var(--color-blue);
 
     /* EventKnit Brand */
-    --eventknit-brand: var(--color-teal);
+    --eventknit-brand: var(--color-blue);
     --eventknit-brand-foreground: var(--color-white);
 
     /* Cards */
-    --card-surface: var(--color-offwhite-card);
-    --card-border: 0 0% 90%; /* slightly darker border for better separation */
-    --card-hover: var(--color-teal);
+    --card-surface: var(--color-white);
+    --card-border: var(--color-gray-100);
+    --card-hover: var(--color-blue);
 
     /* Secondary */
-    --secondary: var(--color-teal-tint);
-    --secondary-foreground: var(--color-grey-dark);
+    --secondary: var(--color-blue-light);
+    --secondary-foreground: var(--color-gray-900);
 
     /* Muted */
-    --muted: var(--color-offwhite-muted);
-    --muted-foreground: var(--color-grey-medium);
+    --muted: var(--color-gray-100);
+    --muted-foreground: var(--color-gray-500);
 
     /* Destructive */
     --destructive: var(--color-destructive);
     --destructive-foreground: var(--color-white);
 
     /* Borders & Inputs */
-    --border: var(--color-grey-border);
+    --border: var(--color-gray-100);
     --input: var(--color-white);
-    --ring: var(--color-teal);
+    --ring: var(--color-blue);
 
     /* Sidebar */
-    --sidebar-background: var(--color-offwhite-card);
-    --sidebar-foreground: var(--color-grey-dark);
-    --sidebar-primary: var(--color-teal);
+    --sidebar-background: var(--color-white);
+    --sidebar-foreground: var(--color-gray-900);
+    --sidebar-primary: var(--color-blue);
     --sidebar-primary-foreground: var(--color-white);
-    --sidebar-accent: var(--color-offwhite);
-    --sidebar-accent-foreground: var(--color-grey-dark);
-    --sidebar-border: var(--color-grey-border);
-    --sidebar-ring: var(--color-teal);
+    --sidebar-accent: var(--color-gray-50);
+    --sidebar-accent-foreground: var(--color-gray-900);
+    --sidebar-border: var(--color-gray-100);
+    --sidebar-ring: var(--color-blue);
+
+    /* Footer - Dark footer (always dark regardless of theme) */
+    --footer-background: 220 13% 18%;       /* #1E2328 - Dark charcoal (Eventbrite-style) */
+    --footer-foreground: 210 17% 91%;       /* #E7E9EA - Light text */
+    --footer-foreground-muted: 210 8% 55%;  /* #8899A6 - Secondary text */
+    --footer-border: 220 10% 25%;           /* #363D44 - Subtle dividers */
+    --footer-link-hover: var(--color-blue);
 
     /* ========================================================================
        GRADIENTS - Built from base color tokens
        ======================================================================== */
 
     /* Primary Brand Gradient - Used in buttons and cards */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--color-teal)) 0%, hsl(var(--color-coral)) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--color-blue)) 0%, hsl(var(--color-blue-dark)) 100%);
 
     /* Card Gradient - Used in card components */
-    --gradient-card: linear-gradient(145deg, hsl(var(--color-offwhite-card)) 0%, hsl(0 0% 96%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--color-white)) 0%, hsl(var(--color-gray-50)) 100%);
 
     /* ========================================================================
        GLASS EFFECTS - Light Theme
        ======================================================================== */
-    --glass-bg: hsl(var(--color-offwhite-card) / 0.95);
-    --glass-border: hsl(var(--color-teal) / 0.3);
+    --glass-bg: hsl(var(--color-white) / 0.95);
+    --glass-border: hsl(var(--color-gray-200) / 0.5);
 
     /* ========================================================================
        SHADOWS & GLOWS - Light Theme
        ======================================================================== */
-    --shadow-primary: 0 20px 40px -12px hsl(var(--color-teal) / 0.3);
-    --shadow-card: 0 6px 18px -6px hsl(var(--color-grey-dark) / 0.06);
-    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-teal) / 0.25);
-    --shadow-glow: 0 0 40px hsl(var(--color-teal-glow) / 0.4);
-    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-coral) / 0.2);
+    --shadow-primary: 0 20px 40px -12px hsl(var(--color-blue) / 0.3);
+    --shadow-card: 0 1px 3px 0 hsl(var(--color-gray-900) / 0.1), 0 1px 2px -1px hsl(var(--color-gray-900) / 0.1);
+    --shadow-card-hover: 0 10px 15px -3px hsl(var(--color-gray-900) / 0.1), 0 4px 6px -4px hsl(var(--color-gray-900) / 0.1);
+    --shadow-glow: 0 0 40px hsl(var(--color-blue-glow) / 0.4);
+    --shadow-elevated: 0 20px 25px -5px hsl(var(--color-gray-900) / 0.1), 0 8px 10px -6px hsl(var(--color-gray-900) / 0.1);
 
     /* ========================================================================
        TRANSITIONS
@@ -143,84 +151,98 @@
     --popover: var(--surface);
     --popover-foreground: var(--foreground);
 
-    --secondary: 174 77% 95%;        /* Light teal tint */
-    --secondary-foreground: 220 15% 20%;
+    --secondary: var(--color-blue-light);
+    --secondary-foreground: var(--color-gray-900);
 
-    --muted: 30 5% 95%;             /* Subtle warm gray */
-    --muted-foreground: 220 10% 45%;
+    --muted: var(--color-gray-100);
+    --muted-foreground: var(--color-gray-500);
 
-    --accent: 351 91% 72%;          /* Coral for CTAs */
-    --accent-foreground: 0 0% 100%;
+    --accent: var(--color-blue);
+    --accent-foreground: var(--color-white);
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-white);
 
-    --border: 0 0% 92%;
-    --input: 0 0% 100%;
+    --border: var(--color-gray-100);
+    --input: var(--color-white);
     --ring: var(--primary);
 
     --radius: 0.5rem;
   }
 
   /* ========================================================================
-     DARK MODE - Override base tokens for dark theme
+     DARK MODE - Override base tokens for dark theme (X/Twitter Inspired)
      ======================================================================== */
   .dark {
     /* ========================================================================
-       CURSOR-STYLE DARK MODE - Deep neutral dark background
+       X/TWITTER DARK MODE - Deep neutral dark background
        ======================================================================== */
-    
+
     /* Base Color Overrides for Dark Mode - Enhanced for visibility */
-    --color-teal: 174 77% 58%;        /* Brighter teal for better visibility on dark */
-    --color-teal-glow: 174 77% 68%;   /* Even brighter for glows */
-    --color-teal-dark: 174 77% 45%;   /* Darker variant */
-    --color-coral: 351 100% 70%;       /* Maximum saturation, optimal lightness for vibrant contrast on dark */
+    --color-blue: 204 88% 58%;        /* Brighter blue for better visibility on dark */
+    --color-blue-hover: 204 88% 53%;  /* Hover state */
+    --color-blue-glow: 204 88% 68%;   /* Even brighter for glows */
+    --color-blue-dark: 204 88% 48%;   /* Darker variant */
+    --color-blue-light: 204 50% 20%;  /* Dark tint for backgrounds */
     --color-destructive: 0 72% 58%;   /* More visible red for errors */
 
-    /* Backgrounds - Cursor-style deep dark */
-    --background: 0 0% 10%;           /* #1a1a1a - Deep neutral dark like Cursor */
+    /* Dark mode grays */
+    --color-gray-50: 0 0% 10%;        /* #1a1a1a - Main background */
+    --color-gray-100: 0 0% 13%;       /* #212121 - Elevated surfaces */
+    --color-gray-200: 0 0% 18%;       /* #2e2e2e - Borders, dividers */
+    --color-gray-300: 0 0% 25%;       /* #404040 - Stronger borders */
+    --color-gray-400: 0 0% 40%;       /* #666666 - Disabled text */
+    --color-gray-500: 0 0% 55%;       /* #8c8c8c - Placeholder text */
+    --color-gray-600: 0 0% 65%;       /* #a6a6a6 - Secondary text */
+    --color-gray-700: 0 0% 80%;       /* #cccccc - Primary text */
+    --color-gray-800: 0 0% 90%;       /* #e6e6e6 - High emphasis text */
+    --color-gray-900: 0 0% 95%;       /* #f2f2f2 - Maximum contrast text */
+
+    /* Backgrounds - Deep dark */
+    --background: 0 0% 10%;           /* #1a1a1a - Deep neutral dark */
     --foreground: 0 0% 95%;           /* High contrast text */
     --surface: 0 0% 13%;              /* Slightly lighter for surfaces */
 
-    /* Primary (Teal) - Enhanced */
-    --primary: var(--color-teal);
-    --primary-foreground: 0 0% 10%;   /* Dark text on teal buttons */
-    --primary-glow: var(--color-teal-glow);
-    --primary-dark: var(--color-teal-dark);
+    /* Primary (X/Twitter Blue) - Enhanced */
+    --primary: var(--color-blue);
+    --primary-foreground: var(--color-white);
+    --primary-glow: var(--color-blue-glow);
+    --primary-dark: var(--color-blue-dark);
+    --primary-hover: var(--color-blue-hover);
 
-    /* Accent (Coral) - Enhanced */
-    --accent: var(--color-coral);
+    /* Accent (Blue) - Enhanced */
+    --accent: var(--color-blue);
     --accent-foreground: var(--color-white);
-    --accent-electric: var(--color-coral);
-    --accent-neon: var(--color-coral);
-    --accent-coral: var(--color-coral);
+    --accent-electric: var(--color-blue);
+    --accent-neon: var(--color-blue-glow);
+    --accent-coral: var(--color-blue);
 
     /* Navigation */
-    --nav-hover: var(--color-coral);
+    --nav-hover: var(--color-blue);
 
     /* EventKnit Brand */
-    --eventknit-brand: var(--color-teal);
-    --eventknit-brand-foreground: 0 0% 10%;
+    --eventknit-brand: var(--color-blue);
+    --eventknit-brand-foreground: var(--color-white);
 
     /* Cards - Subtle elevation on dark background */
     --card-surface: 0 0% 13%;         /* Slightly lighter than background */
     --card-border: 0 0% 20%;          /* Subtle borders */
-    --card-hover: 0 0% 16%;          /* Hover state - more visible */
+    --card-hover: var(--color-blue);
 
     /* Gradients - Dark Theme */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--color-teal)) 0%, hsl(var(--color-coral)) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(var(--color-blue)) 0%, hsl(var(--color-blue-dark)) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 13%) 0%, hsl(0 0% 10%) 100%);
 
     /* Glass Effects - Dark Theme */
     --glass-bg: hsl(0 0% 10% / 0.9);
-    --glass-border: hsl(var(--color-teal) / 0.3);
+    --glass-border: hsl(var(--color-blue) / 0.3);
 
     /* Shadows & Glows - Dark Theme */
-    --shadow-primary: 0 20px 40px -12px hsl(var(--color-teal) / 0.4);
+    --shadow-primary: 0 20px 40px -12px hsl(var(--color-blue) / 0.4);
     --shadow-card: 0 4px 16px -4px hsl(var(--color-black) / 0.5);
-    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-teal) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--color-teal-glow) / 0.5);
-    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-coral) / 0.3);
+    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-blue) / 0.3);
+    --shadow-glow: 0 0 40px hsl(var(--color-blue-glow) / 0.5);
+    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-blue) / 0.3);
 
     /* ShadCN Component Colors - Dark Theme */
     --card: 0 0% 13%;
@@ -235,8 +257,8 @@
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 65%;     /* Secondary text - good contrast */
 
-    --accent: 351 91% 82%;
-    --accent-foreground: 0 0% 100%;
+    --accent: var(--color-blue);
+    --accent-foreground: var(--color-white);
 
     /* Destructive */
     --destructive: var(--color-destructive);
@@ -245,17 +267,24 @@
     /* Borders & Inputs */
     --border: 0 0% 20%;               /* Subtle borders */
     --input: 0 0% 13%;                /* Input backgrounds */
-    --ring: var(--color-teal);
+    --ring: var(--color-blue);
 
     /* Sidebar */
     --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: var(--color-teal);
-    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-primary: var(--color-blue);
+    --sidebar-primary-foreground: var(--color-white);
     --sidebar-accent: 0 0% 18%;
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 20%;
-    --sidebar-ring: var(--color-teal);
+    --sidebar-ring: var(--color-blue);
+
+    /* Footer - Keep same dark style in dark mode for consistency */
+    --footer-background: 220 13% 18%;       /* #1E2328 - Same as light mode */
+    --footer-foreground: 210 17% 91%;       /* #E7E9EA */
+    --footer-foreground-muted: 210 8% 55%;  /* #8899A6 */
+    --footer-border: 220 10% 25%;           /* #363D44 */
+    --footer-link-hover: var(--color-blue);
   }
 }
 
