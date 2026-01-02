@@ -123,8 +123,8 @@ export const Hero = () => {
           }}
         />
 
-        {/* Gradient overlay - bottom fade for content */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        {/* Gradient overlay - stronger for readability on any image */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
 
         {/* Navigation Arrows - Left */}
         {featuredEvents.length > 1 && (
