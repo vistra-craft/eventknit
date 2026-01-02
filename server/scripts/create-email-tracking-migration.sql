@@ -25,3 +25,5 @@ SELECT
 FROM information_schema.columns
 WHERE table_name = 'EventRegistration'
   AND column_name IN ('ticketEmailSentAt', 'ticketEmailStatus', 'ticketEmailError');
+
+

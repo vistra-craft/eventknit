@@ -34,6 +34,17 @@ const Navbar: React.FC<NavbarProps> = () => {
     }
   }, [isAuthenticated, user]);
 
+  // Ensure auth state is initialized from token if available when component mounts
+  // This handles cases where user navigates from dashboard to homepage
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token && !isAuthenticated && !isLoading && !user) {
+      // Token exists but user not loaded - trigger refresh
+      refreshProfile().catch(() => {
+        // Silently fail - token might be invalid, will be handled by useAuth
+      });
+    }
+  }, [isAuthenticated, isLoading, refreshProfile, user]);
 
   useEffect(() => {
     const handleScroll = () => {

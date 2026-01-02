@@ -16,3 +16,5 @@ ON "EventRegistration"("qrCodeGeneratedAt");
 -- Note: Existing registrations will have NULL values
 -- QR codes will be generated on-the-fly when needed (backward compatible)
 -- New registrations will have QR codes generated and stored immediately
+
+
