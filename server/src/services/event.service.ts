@@ -2849,6 +2849,26 @@ export class EventService {
     // Recalculate userHasPassword after potential user creation/update
     const finalUserHasPassword = user.password !== null && user.password !== undefined;
 
+    // Generate account invitation token early (only for new users or existing users without passwords)
+    // This allows us to include the account setup link in the first (and only) registration email
+    let accountInvitationToken: string | undefined;
+    if (finalIsNewUser || !finalUserHasPassword) {
+      accountInvitationToken = crypto.randomBytes(32).toString('hex');
+      const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      // Store account invitation token in EmailVerification table
+      await prisma.emailVerification.create({
+        data: {
+          userId: user.id,
+          email: user.email,
+          token: accountInvitationToken,
+          expiresAt: accountInvitationExpiresAt,
+          verified: false,
+        },
+      });
+      logger.debug(`[registerAsGuest] Account invitation token generated and stored for user ${user.id}`);
+    }
+
     // Check if already registered
     const existingRegistration = await prisma.eventRegistration.findUnique({
       where: {
@@ -3289,6 +3309,7 @@ export class EventService {
           backupCode: registration.backupCode,
           registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
           ticketLineItems,
+          accountInvitationToken, // Consolidated: Send setup link in ticket email
           event: registration.event,
           attendee: registration.attendee,
         }).catch((emailError) => {
@@ -3340,6 +3361,7 @@ export class EventService {
             createdAt: registration.createdAt,
             backupCode: registration.backupCode,
             registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+            accountInvitationToken, // Consolidated: Include setup link in payment pending if available
             event: registration.event,
             attendee: registration.attendee,
           });
@@ -3378,106 +3400,7 @@ export class EventService {
 
     logger.debug(`[registerForEvent] Email sending process completed for registration ${registration.id}`);
 
-    // Generate account invitation token (only for new users or existing users without passwords)
-    // Skip account invitation for existing users who already have passwords
-    let accountInvitationToken: string | undefined;
-    if (finalIsNewUser || !finalUserHasPassword) {
-      accountInvitationToken = crypto.randomBytes(32).toString('hex');
-      const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-      // Store account invitation token in EmailVerification table
-      await prisma.emailVerification.create({
-        data: {
-          userId: user.id,
-          email: user.email,
-          token: accountInvitationToken,
-          expiresAt: accountInvitationExpiresAt,
-          verified: false,
-        },
-      });
-
-      // Send account invitation email (Email 2: Account Setup)
-      try {
-        const { config } = await import('../config/index.js');
-        const accountCreationUrl = `${config.frontend.url}/auth/create-account?token=${accountInvitationToken}`;
-
-        const html = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Create Your EventKnit Account</title>
-          </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-              <!-- Header -->
-              <div style="background: linear-gradient(135deg, #4a6cf7 0%, #5b7cfa 100%); padding: 40px 20px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Welcome to EventKnit!</h1>
-                <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">You're registered for ${event.title}</p>
-              </div>
-
-              <!-- Content -->
-              <div style="padding: 40px 30px;">
-                <h2 style="margin: 0 0 20px 0; font-size: 22px; color: #333;">Create Your Account</h2>
-                <p style="margin: 0 0 20px 0; color: #666; font-size: 16px; line-height: 1.6;">
-                  You've successfully registered for <strong>${event.title}</strong>. Your ticket has been sent to this email.
-                </p>
-                <p style="margin: 0 0 30px 0; color: #666; font-size: 16px; line-height: 1.6;">
-                  Create your EventKnit account to easily manage your tickets, view your event history, and register for future events.
-                </p>
-
-                <!-- CTA Button -->
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${accountCreationUrl}" style="background-color: #4a6cf7; color: white; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px rgba(74, 108, 247, 0.3);">
-                    Create Account
-                  </a>
-                </div>
-
-                <p style="margin: 20px 0 0 0; color: #999; font-size: 14px; text-align: center;">
-                  This link will expire in 7 days. You can still access your tickets via the email link.
-                </p>
-              </div>
-
-              <!-- Footer -->
-              <div style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e5e5;">
-                <p style="margin: 0 0 10px 0; font-size: 12px; color: #999; text-align: center;">
-                  Need help? Contact us at <a href="mailto:support@eventknit.com" style="color: #4a6cf7; text-decoration: none;">support@eventknit.com</a>
-                </p>
-                <p style="margin: 0; font-size: 11px; color: #bbb; text-align: center;">
-                  This is an automated message. Please do not reply.
-                </p>
-              </div>
-            </div>
-          </body>
-        </html>
-        `;
-
-        // Account invitation emails are important but not critical
-        // User can still access their account via ticket email or request a new invitation
-        const emailResult = await emailService.sendEmail({
-          to: user.email,
-          subject: `Create Your EventKnit Account - ${event.title}`,
-          html,
-          isCritical: false, // Not critical - user can request new invitation
-        });
-
-        if (emailResult.success) {
-          if (emailResult.attempts > 1) {
-            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId} after ${emailResult.attempts} attempts`);
-          } else {
-            logger.info(`Account invitation email sent to: ${user.email} for event: ${eventId}`);
-          }
-        } else {
-          logger.warn(`Failed to send account invitation email to ${user.email} after ${emailResult.attempts} attempts:`, emailResult.error);
-          // Don't throw - account invitation email failure is not critical
-          // User can still access their account and request a new invitation
-        }
-      } catch (error) {
-        logger.error('Failed to send account invitation email:', error);
-        // Don't throw error - registration is complete, email is optional
-      }
-    }
+    // Account invitation email logic removed - consolidated into Ticket Confirmation email above
 
     // Audit log
     await createAuditLog({

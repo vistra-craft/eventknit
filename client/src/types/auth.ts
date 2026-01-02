@@ -38,6 +38,7 @@ export interface User {
   kycStatus?: string | null;
   lastLoginAt?: string | null;
   onboardingCompleted?: boolean; // For organizers - tracks if onboarding is complete
+  hasPassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }

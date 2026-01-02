@@ -22,6 +22,7 @@ interface TicketEmailData {
       unitPrice: number;
       totalPrice: number;
     }>;
+    accountInvitationToken?: string | null;
     event: {
       id: string;
       title: string;
@@ -85,10 +86,10 @@ export class TicketService {
     // Format: registrationId|eventId|email|timestamp
     const timestamp = Date.now();
     const payload = `${registrationId}|${eventId}|${attendeeEmail}|${timestamp}`;
-    
+
     // Generate signature using TicketSecurityService
     const signature = TicketSecurityService.generateSignature(payload);
-    
+
     // Return signed ticket data
     return `${payload}|${signature}`;
   }
@@ -214,7 +215,7 @@ export class TicketService {
         logger.debug(`Generating QR code on-the-fly for registration ${registration.id} (no stored QR code found)`);
         const ticketData = this.generateTicketData(registration.id, event.id, attendee.email);
         qrCodeDataUrl = await this.generateQRCode(ticketData);
-        
+
         // Store generated QR code for future use
         try {
           await prisma.eventRegistration.update({
@@ -471,6 +472,24 @@ export class TicketService {
                     </td>
                   </tr>
 
+                  <!-- Account Setup (Consolidated Flow) -->
+                  ${registration.accountInvitationToken ? `
+                  <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                      <div style="background-color: #fff7ed; border-radius: 12px; padding: 25px; border: 1px solid #ffedd5; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; color: #9a3412; font-size: 18px; font-weight: 700;">Complete Your Account Setup</h3>
+                        <p style="margin: 0 0 20px 0; color: #c2410c; font-size: 14px; line-height: 1.5;">
+                          Set up your password to easily manage your tickets, view event history, and register for future events with one click.
+                        </p>
+                        <a href="${config.frontend.url}/auth/create-account?token=${registration.accountInvitationToken}" style="display: inline-block; background-color: #ea580c; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 6px rgba(234, 88, 12, 0.2);">
+                          Set Up Password
+                        </a>
+                        <p style="margin: 15px 0 0 0; color: #9a3412; font-size: 12px; font-style: italic;">Note: This link is valid for 7 days.</p>
+                      </div>
+                    </td>
+                  </tr>
+                  ` : ''}
+
                   <!-- Footer -->
                   <tr>
                     <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e9ecef;">
@@ -501,26 +520,27 @@ export class TicketService {
         contentType?: string;
         encoding?: string;
       }> = [
-        {
-          filename: 'event.ics',
-          content: Buffer.from(icsContent),
-          contentType: 'text/calendar',
-        },
-        // QR code PNG attachment (always available)
-        {
-          filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-qr-code.png`,
-          content: qrCodeDataUrl.split(';base64,')[1] || qrCodeDataUrl,
-          encoding: 'base64',
-          contentType: 'image/png',
-        },
-      ];
+          {
+            filename: 'event.ics',
+            content: Buffer.from(icsContent),
+            contentType: 'text/calendar',
+          },
+          // QR code PNG attachment (always available)
+          {
+            filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-qr-code.png`,
+            content: qrCodeDataUrl.split(';base64,')[1] || qrCodeDataUrl,
+            encoding: 'base64',
+            contentType: 'image/png',
+          },
+        ];
 
       // Try to generate PDF ticket (always attempt, fallback to HTML if puppeteer unavailable)
       try {
         const pdfBuffer = await this.generateTicketPDF(registration.id);
         // Check if it's PDF (Buffer with PDF header) or HTML (fallback)
-        const isPDF = pdfBuffer.length > 4 && pdfBuffer[0] === 0x25 && pdfBuffer[1] === 0x50 && pdfBuffer[2] === 0x44 && pdfBuffer[3] === 0x46; // %PDF
-        
+        const isHTMLFallback = pdfBuffer.toString('utf-8').trim().startsWith('<!-- FALLBACK_HTML -->');
+        const isPDF = !isHTMLFallback && pdfBuffer.length > 4 && pdfBuffer[0] === 0x25 && pdfBuffer[1] === 0x50 && pdfBuffer[2] === 0x44 && pdfBuffer[3] === 0x46; // %PDF
+
         if (isPDF) {
           attachments.push({
             filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-ticket.pdf`,
@@ -561,7 +581,7 @@ export class TicketService {
             ticketEmailError: null,
           },
         });
-        
+
         if (emailResult.attempts > 1) {
           logger.info(`Ticket email sent to ${attendee.email} for event: ${event.id} after ${emailResult.attempts} attempts`);
         } else {
@@ -576,7 +596,7 @@ export class TicketService {
             ticketEmailError: errorMessage.substring(0, 500), // Limit error message length
           },
         });
-        
+
         logger.error(`Failed to send ticket email to ${attendee.email} after ${emailResult.attempts} attempts:`, emailResult.error);
         throw new Error(`Failed to send ticket email after ${emailResult.attempts} attempts: ${errorMessage}`);
       }
@@ -594,7 +614,7 @@ export class TicketService {
       } catch (updateError) {
         logger.error('Failed to update email status in database:', updateError);
       }
-      
+
       logger.error('Failed to send ticket email:', error);
       throw error;
     }
@@ -713,6 +733,24 @@ export class TicketService {
                     </td>
                   </tr>
 
+                  <!-- Account Setup (Consolidated Flow) -->
+                  ${registration.accountInvitationToken ? `
+                  <tr>
+                    <td style="padding: 0 30px 30px 30px;">
+                      <div style="background-color: #f0f9ff; border-radius: 12px; padding: 25px; border: 1px solid #bae6fd; text-align: center;">
+                        <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 18px; font-weight: 700;">Complete Your Account Setup</h3>
+                        <p style="margin: 0 0 20px 0; color: #1e40af; font-size: 14px; line-height: 1.5;">
+                          Set up your password now to easily manage your registrations and view your payment history.
+                        </p>
+                        <a href="${config.frontend.url}/auth/create-account?token=${registration.accountInvitationToken}" style="display: inline-block; background-color: #667eea; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.2);">
+                          Set Up Password
+                        </a>
+                        <p style="margin: 15px 0 0 0; color: #1e40af; font-size: 12px; font-style: italic;">Note: This link is valid for 7 days.</p>
+                      </div>
+                    </td>
+                  </tr>
+                  ` : ''}
+
                   <!-- Footer -->
                   <tr>
                     <td style="padding: 30px; background-color: #f9fafb; border-top: 1px solid #e5e5e5;">
@@ -806,7 +844,7 @@ export class TicketService {
       const ticketData = this.generateTicketData(registration.id, registration.eventId, registration.attendee.email);
       ticketDataForResponse = ticketData;
       qrCodeDataUrl = await this.generateQRCode(ticketData);
-      
+
       // Store generated QR code for future use
       try {
         await prisma.eventRegistration.update({
@@ -865,7 +903,7 @@ export class TicketService {
           : null,
       };
       const htmlContent = this.generateTicketHTML(registrationForHTML, event, attendee, eventDate, qrCode);
-      
+
       // Try to use puppeteer for PDF generation (if available)
       // Check if puppeteer module exists using dynamic import
       try {
@@ -873,15 +911,15 @@ export class TicketService {
         // @ts-expect-error - puppeteer is optional dependency
         const puppeteerModule = await import('puppeteer');
         const puppeteer = puppeteerModule.default || puppeteerModule;
-        
+
         const browser = await puppeteer.launch({
           headless: true,
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         });
-        
+
         const page = await browser.newPage();
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-        
+
         // Generate PDF
         const pdfBuffer = await page.pdf({
           format: 'A4',
@@ -893,15 +931,15 @@ export class TicketService {
             left: '20px',
           },
         });
-        
+
         await browser.close();
         return Buffer.from(pdfBuffer);
       } catch {
-        // If puppeteer is not available, return HTML
+        // If puppeteer is not available, return HTML with a clear marker
         // Frontend can use browser's print-to-PDF or a client-side library
         logger.warn('Puppeteer not available, returning HTML for client-side PDF conversion');
-        const htmlBuffer = Buffer.from(htmlContent, 'utf-8');
-        return htmlBuffer;
+        const fallbackHtml = `<!-- FALLBACK_HTML -->\n${htmlContent}`;
+        return Buffer.from(fallbackHtml, 'utf-8');
       }
     } catch (error) {
       logger.error('Failed to generate ticket PDF:', error);

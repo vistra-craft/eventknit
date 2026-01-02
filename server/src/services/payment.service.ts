@@ -10,6 +10,7 @@ import { PlatformFeeService } from './platform-fee.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { getPaymentGatewayManager, GatewayType } from './payment-gateway-manager.js';
+import { DigitalWalletService } from './digital-wallet.service.js';
 
 export interface InitializePaymentData {
   registrationId: string;
@@ -151,7 +152,7 @@ export class PaymentService {
       };
     } catch (error: unknown) {
       logger.error('Failed to initialize payment:', error);
-      
+
       // Rollback: Cancel registration and restore capacity if payment initialization fails
       // This prevents orphaned registrations when payment fails
       try {
@@ -161,7 +162,7 @@ export class PaymentService {
         logger.error(`Failed to rollback registration ${data.registrationId}:`, rollbackError);
         // Continue to throw original error even if rollback fails
       }
-      
+
       throw new ValidationError(`Failed to initialize payment with ${gatewayType}. Please try again.`);
     }
   }
@@ -424,7 +425,7 @@ export class PaymentService {
 
           // Get gateway transaction ID from verification
           const gatewayVerification = await gateway.verifyPayment({ reference });
-          
+
           // Create payment transaction record
           const paymentTransaction = await tx.eventPaymentTransaction.create({
             data: {
@@ -506,7 +507,7 @@ export class PaymentService {
           // Ensure required fields are present before sending email
           if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
             logger.debug('[PaymentService.handleWebhook] Organizer info present, preparing ticket email data');
-            
+
             // Transform registration data to match TicketEmailData interface
             // Convert Decimal types to numbers for ticketLineItems
             // Type assertion needed because Prisma types may not fully include ticketLineItems relation
@@ -519,7 +520,7 @@ export class PaymentService {
                 totalPrice: any; // Decimal from Prisma
               }>;
             };
-            
+
             // Safely extract ticketLineItems if they exist
             let ticketLineItems: Array<{
               ticketType: string;
@@ -527,13 +528,13 @@ export class PaymentService {
               unitPrice: number;
               totalPrice: number;
             }> | undefined;
-            
+
             try {
               logger.debug('[PaymentService.handleWebhook] Extracting ticketLineItems from registration');
               // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
               const lineItems = (registrationWithLineItems as any).ticketLineItems;
               logger.debug('[PaymentService.handleWebhook] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
-              
+
               if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
                 ticketLineItems = lineItems.map((item: {
                   ticketType: string;
@@ -558,7 +559,25 @@ export class PaymentService {
               });
               ticketLineItems = undefined;
             }
-            
+            // Fetch account invitation token if available (for guest users set account up)
+            let accountInvitationToken: string | null | undefined;
+            try {
+              const emailVerification = await prisma.emailVerification.findFirst({
+                where: {
+                  userId: registration.attendee.id,
+                  verified: false,
+                  expiresAt: { gt: new Date() },
+                },
+                orderBy: { createdAt: 'desc' },
+              });
+              accountInvitationToken = emailVerification?.token;
+              if (accountInvitationToken) {
+                logger.debug(`[PaymentService.handleWebhook] Found account invitation token for user ${registration.attendee.id}`);
+              }
+            } catch (tokenError) {
+              logger.warn(`[PaymentService.handleWebhook] Failed to fetch account invitation token: ${tokenError}`);
+            }
+
             // Send email asynchronously (non-blocking) - webhook response is immediate
             logger.debug(`[PaymentService.handleWebhook] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
             TicketService.sendTicketEmail({
@@ -570,6 +589,7 @@ export class PaymentService {
               backupCode: registration.backupCode,
               registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
               ticketLineItems,
+              accountInvitationToken, // Consolidated: Send setup link in ticket email
               event: registration.event,
               attendee: registration.attendee,
             }).catch((emailError) => {
@@ -583,6 +603,17 @@ export class PaymentService {
             });
             // Email status will be updated in database by sendTicketEmail
             logger.debug(`[PaymentService.handleWebhook] Ticket email sending started (async) for registration ${registration.id}`);
+
+            // Automatically add to digital wallet if enabled
+            const wallet = await prisma.digitalWallet.findUnique({
+              where: { userId: registration.attendeeId },
+            });
+
+            if (wallet?.autoAddTickets !== false) {
+              DigitalWalletService.addTicketToWallet(registration.attendeeId, registration.id).catch((walletError) => {
+                logger.warn(`Failed to auto-add ticket to wallet for registration ${registration.id}:`, walletError);
+              });
+            }
           } else {
             logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
           }
@@ -741,7 +772,7 @@ export class PaymentService {
   verifyWebhookSignature(payload: string, signature: string, gatewayType: GatewayType = 'PAYSTACK'): boolean {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const crypto = require('crypto');
-    
+
     // Use gateway manager to get the correct gateway
     // Get secret key from gateway configuration
     // For Paystack, we need the secret key for HMAC verification
@@ -756,7 +787,7 @@ export class PaymentService {
         .digest('hex');
       return hash === signature;
     }
-    
+
     // For other gateways, use their verification methods
     // This is a placeholder - implement gateway-specific verification as needed
     logger.warn(`Webhook signature verification not implemented for gateway: ${gatewayType}`);
@@ -789,7 +820,7 @@ export class PaymentService {
   }> {
     // Use gateway manager instead of direct config access
     const _paystackGateway = this.gatewayManager.getGateway('PAYSTACK');
-    
+
     if (!config.paystack?.secretKey) {
       throw new ValidationError('Paystack payment service is not configured');
     }
@@ -830,16 +861,16 @@ export class PaymentService {
         if (!config.paystack?.secretKey) {
           throw new ValidationError('Paystack secret key is required for syncing transactions');
         }
-        
+
         const paystackInstance = Paystack(config.paystack.secretKey);
         const response = await paystackInstance.transaction.list(params);
-        
+
         // Type-safe response handling
         if (!response || !response.data || !Array.isArray(response.data)) {
           hasMore = false;
           break;
         }
-        
+
         const transactions = response.data as Array<{
           id: number;
           reference: string;

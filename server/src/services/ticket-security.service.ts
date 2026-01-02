@@ -17,7 +17,7 @@ export class TicketSecurityService {
    * @throws Error if secret key is not set
    */
   private static getSecretKey(): string {
-    const secretKey = process.env[this.SECRET_KEY_ENV];
+    const secretKey = process.env[this.SECRET_KEY_ENV] || (process.env.NODE_ENV === 'production' ? null : 'dev-ticket-secret-key-change-in-production-min-32-chars');
     if (!secretKey) {
       throw new Error(`Environment variable ${this.SECRET_KEY_ENV} is not set`);
     }
@@ -55,12 +55,12 @@ export class TicketSecurityService {
   static verifySignature(payload: string, providedSignature: string): boolean {
     try {
       const expectedSignature = this.generateSignature(payload);
-      
+
       // Use timing-safe comparison to prevent timing attacks
       if (expectedSignature.length !== providedSignature.length) {
         return false;
       }
-      
+
       return crypto.timingSafeEqual(
         Buffer.from(expectedSignature),
         Buffer.from(providedSignature),
@@ -88,7 +88,7 @@ export class TicketSecurityService {
   } {
     try {
       const parts = ticketData.split('|');
-      
+
       // Check if it's the new format (5 parts) or old format (4 parts)
       if (parts.length === 4) {
         // Old format without signature - backward compatibility
@@ -100,7 +100,7 @@ export class TicketSecurityService {
           timestamp: parseInt(parts[3], 10),
         };
       }
-      
+
       if (parts.length !== 5) {
         return {
           isValid: false,
@@ -120,7 +120,7 @@ export class TicketSecurityService {
 
       // Reconstruct payload (without signature)
       const payload = `${registrationId}|${eventId}|${email}|${timestampStr}`;
-      
+
       // Verify signature
       const isValid = this.verifySignature(payload, signature);
 
@@ -174,11 +174,11 @@ export class TicketSecurityService {
   static verifyBackupCodeSignature(code: string, registrationId: string, providedSignature: string): boolean {
     try {
       const expectedSignature = this.generateBackupCodeSignature(code, registrationId);
-      
+
       if (expectedSignature.length !== providedSignature.length) {
         return false;
       }
-      
+
       return crypto.timingSafeEqual(
         Buffer.from(expectedSignature),
         Buffer.from(providedSignature),

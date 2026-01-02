@@ -25,7 +25,7 @@ export async function cleanupTestData(tx?: any) {
       // Generate a unique savepoint name
       const savepointId = Math.random().toString(36).substring(7);
       const savepointName = `sp_${operationName}_${savepointId}`;
-      
+
       try {
         // Create a savepoint before the operation using Prisma's $executeRaw
         // Note: We need to use Prisma.sql for dynamic identifiers
@@ -47,9 +47,9 @@ export async function cleanupTestData(tx?: any) {
         // Log non-critical errors for debugging
         if (error instanceof Error) {
           const errorMessage = error.message.toLowerCase();
-          if (!errorMessage.includes('does not exist') && 
-              !errorMessage.includes('relation') &&
-              !errorMessage.includes('table')) {
+          if (!errorMessage.includes('does not exist') &&
+            !errorMessage.includes('relation') &&
+            !errorMessage.includes('table')) {
             console.warn(`[cleanupTestData] Non-critical cleanup error for ${operationName}:`, error.message);
           }
         }
@@ -64,9 +64,9 @@ export async function cleanupTestData(tx?: any) {
         if (error instanceof Error) {
           // Only ignore "does not exist" or "relation does not exist" errors
           const errorMessage = error.message.toLowerCase();
-          if (errorMessage.includes('does not exist') || 
-              errorMessage.includes('relation') ||
-              errorMessage.includes('table')) {
+          if (errorMessage.includes('does not exist') ||
+            errorMessage.includes('relation') ||
+            errorMessage.includes('table')) {
             // Expected - table doesn't exist in this schema, skip silently
             return;
           }
@@ -110,18 +110,6 @@ export async function cleanupTestData(tx?: any) {
   await safeDelete(() => client.teamRolePermission.deleteMany(), 'teamRolePermission');
   await safeDelete(() => client.teamRoleTemplate.deleteMany(), 'teamRoleTemplate');
   await safeDelete(() => client.permission.deleteMany(), 'permission');
-  
-  await safeDelete(() => client.auditLog.deleteMany(), 'auditLog');
-  await safeDelete(() => client.refreshToken.deleteMany(), 'refreshToken');
-  await safeDelete(() => client.magicLinkToken.deleteMany(), 'magicLinkToken');
-  await safeDelete(() => client.passwordReset.deleteMany(), 'passwordReset');
-  await safeDelete(() => client.emailVerification.deleteMany(), 'emailVerification');
-  await safeDelete(() => client.user.deleteMany(), 'user');
-}
-
-
-
-
 
   await safeDelete(() => client.auditLog.deleteMany(), 'auditLog');
   await safeDelete(() => client.refreshToken.deleteMany(), 'refreshToken');

@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { TicketService } from './ticket.service.js';
 
 export class DigitalWalletService {
   /**
@@ -247,9 +248,21 @@ export class DigitalWalletService {
           ],
           secondaryFields: [
             {
+              key: 'attendee',
+              label: 'Attendee',
+              value: `${(walletTicket.registration as any).attendee?.firstName || ''} ${(walletTicket.registration as any).attendee?.lastName || ''}`.trim(),
+            },
+            {
               key: 'date',
               label: 'Date',
               value: new Date(walletTicket.registration.event.startDate).toLocaleDateString(),
+            },
+          ],
+          auxiliaryFields: [
+            {
+              key: 'ticketType',
+              label: 'Ticket',
+              value: walletTicket.registration.ticketType || 'General Admission',
             },
             {
               key: 'location',
@@ -259,7 +272,11 @@ export class DigitalWalletService {
           ],
         },
         barcode: {
-          message: walletTicket.backupCode || registrationId,
+          message: TicketService.generateTicketData(
+            registrationId,
+            walletTicket.registration.eventId,
+            (walletTicket.registration as any).attendee?.email || ''
+          ),
           format: 'PKBarcodeFormatQR',
           messageEncoding: 'iso-8859-1',
         },

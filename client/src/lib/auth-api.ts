@@ -22,6 +22,7 @@ export interface User {
   avatar?: string | null;
   kycStatus?: string | null;
   lastLoginAt?: string | null;
+  hasPassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }

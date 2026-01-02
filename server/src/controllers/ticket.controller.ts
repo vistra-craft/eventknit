@@ -166,8 +166,8 @@ export class TicketController {
       const pdfBuffer = await TicketService.generateTicketPDF(registrationId);
 
       // Check if it's HTML (fallback when puppeteer not available) or PDF
-      const isHTML = pdfBuffer.toString('utf-8').trim().startsWith('<!DOCTYPE html>');
-      
+      const isHTML = pdfBuffer.toString('utf-8').trim().startsWith('<!-- FALLBACK_HTML -->');
+
       if (isHTML) {
         // Return HTML with instructions for frontend to convert to PDF
         res.setHeader('Content-Type', 'text/html');

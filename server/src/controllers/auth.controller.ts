@@ -261,6 +261,7 @@ export class AuthController {
           lastLoginAt: true,
           createdAt: true,
           updatedAt: true,
+          password: true,
         },
       });
 
@@ -272,9 +273,20 @@ export class AuthController {
         return;
       }
 
+      // Check if user has a password set (for guest users)
+      const hasPassword = user.password !== null && user.password !== undefined;
+
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+
       res.status(200).json({
         success: true,
-        data: { user },
+        data: {
+          user: {
+            ...userWithoutPassword,
+            hasPassword,
+          }
+        },
       });
     } catch (error) {
       next(error);
@@ -648,7 +660,7 @@ export class AuthController {
   static async verifyMagicLink(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const token = req.query.token as string || req.body.token;
-      
+
       if (!token) {
         res.status(400).json({
           success: false,

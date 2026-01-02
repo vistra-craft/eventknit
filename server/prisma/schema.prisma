@@ -569,6 +569,10 @@ model Event {
   // Ticket transfer configuration
   allowTransfers Boolean @default(true)
 
+  // Refund configuration
+  refundSLA          Int?      @default(0) // Number of days before event within which refunds are allowed (0 = no refunds)
+  autoRefundEnabled Boolean   @default(false)
+
   // Scan configuration
   allowReEntry    Boolean @default(false) // Allow attendees to re-enter after check-out
   requireCheckOut Boolean @default(false) // Require check-out before re-entry
@@ -663,6 +667,7 @@ model EventRegistration {
   // QR Code (generated at registration time, like Eventbrite/vf-ticket)
   qrCodeDataUrl     String?   @db.Text // Base64 data URL of QR code image (stored for fast access)
   qrCodeGeneratedAt DateTime? // When QR code was generated
+  qrSecret          String?   @default(uuid()) // Secret key for QR validation and easier voiding
 
   // Status
   status RegistrationStatus @default(PENDING)
@@ -2390,6 +2395,11 @@ model TicketTransfer {
   acceptedAt  DateTime?
   rejectedAt  DateTime?
   cancelledAt DateTime?
+
+  // Transfer chain
+  parentTransferId String?
+  parentTransfer   TicketTransfer? @relation("TransferChain", fields: [parentTransferId], references: [id], onDelete: SetNull)
+  childTransfers   TicketTransfer[] @relation("TransferChain")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

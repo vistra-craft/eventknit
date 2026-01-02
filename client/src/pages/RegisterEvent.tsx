@@ -60,6 +60,20 @@ const EventRegistration = () => {
     }
   }, [eventId, fetchEvent]);
 
+  // Auto-populate form data for authenticated users
+  useEffect(() => {
+    if (isAuthenticated && authUser && Object.keys(formData).length === 0) {
+      setFormData({
+        'guest-firstName': authUser.firstName || '',
+        'guest-lastName': authUser.lastName || '',
+        'guest-email': authUser.email || '',
+        firstName: authUser.firstName || '',
+        lastName: authUser.lastName || '',
+        email: authUser.email || '',
+      });
+    }
+  }, [isAuthenticated, authUser, formData]);
+
 
   // Note: Guest checkout is now allowed - no authentication redirect
 

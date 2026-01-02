@@ -34,37 +34,6 @@ const Navbar: React.FC<NavbarProps> = () => {
     }
   }, [isAuthenticated, user]);
 
-  // Ensure auth state is initialized from token if available when component mounts
-  // This handles cases where user navigates from dashboard to homepage
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    
-    // Debug logging for auth state
-    // console.log('[Navbar] Auth State Check:', { isAuthenticated, hasUser: !!user, hasToken: !!token });
-
-    if (token && (!isAuthenticated || !user)) {
-      // Retry strategy: rapid check then backoff
-      // This helps when navigating from different layouts where context might have re-initialized
-      const checkAuth = async (retries = 3, delay = 100) => {
-        if (!token) return; // Token removed, stop checking
-        
-        try {
-          if (!isAuthenticated || !user) {
-            await refreshProfile();
-          }
-        } catch (err) {
-          console.error('[Navbar] Auth refresh failed:', err);
-          if (retries > 0) {
-            setTimeout(() => checkAuth(retries - 1, delay * 2), delay);
-          }
-        }
-      };
-
-      // Start check with small delay
-      const timer = setTimeout(() => checkAuth(), 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated, user, refreshProfile, isLoading]);
 
   useEffect(() => {
     const handleScroll = () => {

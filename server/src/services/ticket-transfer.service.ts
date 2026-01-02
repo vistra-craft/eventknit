@@ -1,9 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
+import { RegistrationStatus, TicketStatus } from '@prisma/client';
+import { TicketService } from './ticket.service.js';
+import { DigitalWalletService } from './digital-wallet.service.js';
 
 export class TicketTransferService {
   /**
@@ -28,7 +29,7 @@ export class TicketTransferService {
               id: true,
               title: true,
               startDate: true,
-              allowTransfers: true, // Add this field to Event model if needed
+              allowTransfers: true,
             },
           },
         },
@@ -42,12 +43,14 @@ export class TicketTransferService {
         throw new ValidationError('You can only transfer your own tickets');
       }
 
-      if (registration.status !== 'CONFIRMED') {
+      if (registration.status !== RegistrationStatus.CONFIRMED) {
         throw new ValidationError('Only confirmed registrations can be transferred');
       }
 
       // Check if event allows transfers
-      // For now, allow all transfers. Can add event.allowTransfers check later
+      if (registration.event.allowTransfers === false) {
+        throw new ValidationError('Transfers are disabled for this event');
+      }
 
       // Check if event has started
       if (registration.event.startDate < new Date()) {
@@ -77,14 +80,12 @@ export class TicketTransferService {
       const existingTransfer = await prisma.ticketTransfer.findFirst({
         where: {
           registrationId,
-          status: {
-            in: ['PENDING', 'ACCEPTED'],
-          },
+          status: 'PENDING',
         },
       });
 
       if (existingTransfer) {
-        throw new ValidationError('A transfer for this ticket is already pending or accepted');
+        throw new ValidationError('A transfer for this ticket is already pending');
       }
 
       // Create transfer
@@ -149,6 +150,7 @@ export class TicketTransferService {
           registration: {
             include: {
               event: true,
+              ticketLineItems: true,
             },
           },
         },
@@ -171,33 +173,84 @@ export class TicketTransferService {
         throw new ValidationError('You are not the recipient of this transfer');
       }
 
-      // Update registration to new owner
-      await prisma.$transaction(async (tx) => {
-        // Update transfer status
+      // Void old and Generate new registration
+      const result = await prisma.$transaction(async (tx) => {
+        const oldRegistration = transfer.registration;
+
+        // 1. Create NEW registration for the recipient
+        const newRegistration = await tx.eventRegistration.create({
+          data: {
+            eventId: oldRegistration.eventId,
+            attendeeId: userId,
+            quantity: oldRegistration.quantity,
+            totalAmount: oldRegistration.totalAmount,
+            status: RegistrationStatus.CONFIRMED,
+            paymentStatus: oldRegistration.paymentStatus,
+            ticketType: oldRegistration.ticketType,
+            registrationData: (oldRegistration.registrationData as any) || undefined,
+            backupCode: TicketService.generateBackupTicketCode(),
+            qrSecret: crypto.randomUUID(),
+          },
+        });
+
+        // 2. Copy TicketLineItems
+        if (oldRegistration.ticketLineItems.length > 0) {
+          await tx.ticketLineItem.createMany({
+            data: oldRegistration.ticketLineItems.map((item) => ({
+              registrationId: newRegistration.id,
+              ticketType: item.ticketType,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice,
+            })),
+          });
+        }
+
+        // 3. Void OLD registration
+        await tx.eventRegistration.update({
+          where: { id: oldRegistration.id },
+          data: {
+            status: RegistrationStatus.CANCELLED,
+            ticketStatus: TicketStatus.CANCELLED,
+            qrCodeDataUrl: null, // Effectively voids physical printout
+          },
+        });
+
+        // 4. Update transfer status and link to the NEW registration ID
         await tx.ticketTransfer.update({
           where: { id: transfer.id },
           data: {
             status: 'ACCEPTED',
             acceptedAt: new Date(),
-            toUserId: userId, // Set if it was email-based
+            toUserId: userId,
+            registrationId: newRegistration.id,
+            // parentTransferId would be set if there was a previous transfer
           },
         });
 
-        // Update registration owner
-        await tx.eventRegistration.update({
-          where: { id: transfer.registrationId },
-          data: {
-            attendeeId: userId,
-          },
-        });
+        return newRegistration;
       });
 
-      return { success: true, message: 'Transfer accepted successfully' };
+      // Automatically add to digital wallet for recipient if enabled
+      try {
+        const wallet = await prisma.digitalWallet.findUnique({
+          where: { userId },
+        });
+
+        if (wallet?.autoAddTickets !== false) {
+          await DigitalWalletService.addTicketToWallet(userId, result.id);
+        }
+      } catch (walletError) {
+        logger.warn('Failed to auto-add transferred ticket to wallet:', walletError);
+      }
+
+      return { success: true, message: 'Transfer accepted successfully', registrationId: result.id };
     } catch (error) {
       logger.error('Error accepting transfer:', error);
       throw error;
     }
   }
+
 
   /**
    * Reject or cancel a transfer

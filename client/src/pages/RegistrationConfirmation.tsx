@@ -22,6 +22,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
+import { setupPassword } from "@/lib/auth-api";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/use-toast";
 import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
@@ -245,19 +246,25 @@ const RegistrationConfirmation: React.FC = () => {
 
     setSettingPassword(true);
     try {
-      // TODO: Implement password setup API call
-      // await setupPassword(userEmail, passwordData.password);
+      const response = await setupPassword(passwordData.password);
       
-      toast({
-        title: "Password set successfully!",
-        description: "You can now log in with your email and password.",
-      });
+      if (response.success) {
+        toast({
+          title: "Password set successfully!",
+          description: "You can now log in with your email and password.",
+        });
 
-      // Clear password form
-      setPasswordData({ password: "", confirmPassword: "" });
-      setPasswordSetSuccess(true);
-    } catch {
-      setPasswordError("Failed to set password. Please try again.");
+        // Clear password form
+        setPasswordData({ password: "", confirmPassword: "" });
+        setPasswordSetSuccess(true);
+        
+        // Refresh profile to update hasPassword state
+        await refreshProfile();
+      } else {
+        throw new Error(response.message || "Failed to set password");
+      }
+    } catch (err: any) {
+      setPasswordError(err.message || "Failed to set password. Please try again.");
     } finally {
       setSettingPassword(false);
     }
@@ -427,7 +434,7 @@ END:VCALENDAR`;
         </div>
 
         {/* Account Setup Prompt (Guest Users Only) */}
-        {isGuestUser && !isAuthenticated && (
+        {isGuestUser && (!isAuthenticated || (user && !user.hasPassword)) && !passwordSetSuccess && (
           <Card className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">

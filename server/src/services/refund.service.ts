@@ -417,6 +417,97 @@ export class RefundService {
   }
 
   /**
+   * Request a refund as an attendee
+   */
+  static async requestRefundAttendee(
+    registrationId: string,
+    userId: string,
+    data: { refundReason: string },
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // 1. Get registration and event details
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            refundSLA: true,
+            autoRefundEnabled: true,
+            organizerId: true,
+          },
+        },
+        paymentTransaction: {
+          select: {
+            id: true,
+            amount: true,
+            currency: true,
+          },
+        },
+      },
+    });
+
+    if (!registration) {
+      throw new NotFoundError('Registration not found');
+    }
+
+    if (registration.attendeeId !== userId) {
+      throw new AuthorizationError('You can only request refunds for your own registrations');
+    }
+
+    if (!registration.paymentTransaction) {
+      throw new ValidationError('No payment transaction found for this registration');
+    }
+
+    const event = registration.event;
+    const now = new Date();
+
+    // 2. Validate refund policy (SLA)
+    const refundSLA = event.refundSLA || 0;
+    if (refundSLA === 0) {
+      throw new ValidationError('Refunds are not allowed for this event');
+    }
+
+    const eventStartDate = new Date(event.startDate);
+    const deadline = new Date(eventStartDate.getTime() - refundSLA * 24 * 60 * 60 * 1000);
+
+    if (now > deadline) {
+      throw new ValidationError(
+        `Refund request deadline has passed. Refunds are only allowed up to ${refundSLA} days before the event.`,
+      );
+    }
+
+    // 3. Create refund request
+    const refund = await this.createRefund(
+      {
+        transactionId: registration.paymentTransaction.id,
+        refundReason: data.refundReason,
+        refundType: 'full',
+      },
+      userId,
+      ipAddress,
+      userAgent,
+    );
+
+    // 4. Handle Auto-Refund
+    if (event.autoRefundEnabled) {
+      logger.info(`Auto-refund triggered for refund ${refund.id} (registration: ${registrationId})`);
+      try {
+        // Auto-process refund (marks it as processing and calls Paystack)
+        await this.processRefund(refund.id, {}, 'SYSTEM', ipAddress, userAgent);
+      } catch (error) {
+        logger.error(`Auto-refund failed for refund ${refund.id}:`, error);
+        // We still created the refund request, it will just need manual intervention from organizer/admin
+      }
+    }
+
+    return refund;
+  }
+
+  /**
    * Get refund by ID
    */
   static async getRefund(refundId: string, userId?: string) {
