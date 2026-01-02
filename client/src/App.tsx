@@ -21,6 +21,7 @@ import EventDetails from "./pages/EventDetails";
 import PublicEventForm from "./pages/PublicEventForm";
 // User Dashboard imports
 import UserDashboard from "./pages/user/UserDashboard";
+import DashboardMyEvent from "./pages/user/DashboardMyEvent";
 import ExhibitorDetails from "./pages/user/ExhibitorDetails";
 import UserProfilePage from "./pages/user/UserProfilePage";
 import NotificationPreferencesPage from "./pages/user/NotificationPreferencesPage";
@@ -200,6 +201,7 @@ const App = () => (
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
       {/* User Dashboard Routes */}
       <Route path="/user/dashboard" element={<UserDashboard />} />
+      <Route path="/user/event/:id" element={<DashboardMyEvent />} />
       <Route path="/user/tickets/:registrationId" element={<TicketViewPage />} />
       <Route path="/user/profile" element={<UserProfilePage />} />
       <Route path="/user/notification-preferences" element={<NotificationPreferencesPage />} />

@@ -65,4 +65,25 @@ router.get('/me/preferences/defaults', UserPreferencesController.getDefaults);
  */
 router.get('/dashboard/stats', UserController.getDashboardStats);
 
+/**
+ * @route   GET /api/v1/user/role-switch/options
+ * @desc    Get available role switch options for current user
+ * @access  Private
+ */
+router.get('/role-switch/options', UserController.getRoleSwitchOptions);
+
+/**
+ * @route   POST /api/v1/user/role-switch/become-organizer
+ * @desc    Switch from ATTENDEE to ORGANIZER role
+ * @access  Private (Attendees only)
+ */
+router.post('/role-switch/become-organizer', UserController.becomeOrganizer);
+
+/**
+ * @route   POST /api/v1/user/role-switch/become-attendee
+ * @desc    Switch from ORGANIZER to ATTENDEE role
+ * @access  Private (Organizers only, no active events)
+ */
+router.post('/role-switch/become-attendee', UserController.becomeAttendee);
+
 export default router;

@@ -608,3 +608,37 @@ export const updateSubscriptionPreferences = async (eventId: string, data: {
   return apiPut(`/user-dashboard/subscriptions/${eventId}/preferences`, data);
 };
 
+// ========== Role Switching ==========
+
+export interface RoleSwitchOptions {
+  currentRole: string;
+  canBecomeOrganizer: boolean;
+  canBecomeAttendee: boolean;
+  hasOrganizerHistory: boolean;
+  blockedReason?: string;
+}
+
+/**
+ * Get available role switch options for the current user
+ */
+export const getRoleSwitchOptions = async (): Promise<ApiResponse<RoleSwitchOptions>> => {
+  return apiGet('/user/role-switch/options');
+};
+
+/**
+ * Switch from ATTENDEE to ORGANIZER role
+ */
+export const becomeOrganizer = async (data: {
+  organizationName: string;
+  businessEmail?: string;
+}): Promise<ApiResponse<{ user: any }>> => {
+  return apiPost('/user/role-switch/become-organizer', data);
+};
+
+/**
+ * Switch from ORGANIZER to ATTENDEE role
+ */
+export const becomeAttendee = async (): Promise<ApiResponse<{ user: any }>> => {
+  return apiPost('/user/role-switch/become-attendee', {});
+};
+

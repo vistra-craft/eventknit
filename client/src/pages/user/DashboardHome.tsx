@@ -208,7 +208,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   };
 
   const handleViewEvent = (event: EventData) => {
-    navigate(`/user/dashboard?section=my-event`, { state: { eventData: event } });
+    navigate(`/user/event/${event.id}`);
   };
 
   const handleCopyLink = async (eventId: string) => {
