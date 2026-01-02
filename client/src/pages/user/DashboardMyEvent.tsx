@@ -1,70 +1,120 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Users, Ticket, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
 import { Alert, AlertDescription } from "../../components/ui/alert";
-import { getUserRegisteredEvents } from "../../lib/event-api";
+import { EventAttendeeView } from "../../components/event-attendee";
+import type { EventData, User } from "../../components/event-attendee";
+import { getEventById, getUserRegisteredEvents } from "../../lib/event-api";
+import { useAuth } from "../../hooks/useAuth";
 
-interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  type: string;
-  image: string;
-  registrationDate: string;
-  venue?: string;
-  description?: string;
-  status?: 'upcoming' | 'ongoing' | 'completed';
-  category?: string;
-}
-
-interface Registration {
-  ticketId?: string;
-  status?: string;
-}
-
-interface User {
-  name: string;
-  email: string;
-  initials: string;
-}
-
-interface DashboardMyEventProps {
-  eventData?: EventData;
-  registration?: Registration;
-  user: User;
-}
-
-const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEventData }) => {
+const DashboardMyEvent: React.FC = () => {
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
-  const [eventData, setEventData] = useState<EventData | null>(propEventData || null);
-  const [loading, setLoading] = useState(!propEventData);
+  const { user: authUser } = useAuth();
+
+  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // If eventId is in URL, fetch that specific event
+  // Transform auth user to the User type expected by EventAttendeeView
+  const fullName = authUser ? `${authUser.firstName} ${authUser.lastName}`.trim() : 'User';
+  const initials = authUser
+    ? `${authUser.firstName?.[0] || ''}${authUser.lastName?.[0] || ''}`.toUpperCase()
+    : 'U';
+
+  const user: User = {
+    name: fullName,
+    email: authUser?.email || '',
+    initials: initials,
+    profileImage: authUser?.avatar || undefined,
+    company: authUser?.companyAffiliation || authUser?.organizationName || undefined,
+    title: undefined,
+  };
+
+  // Transform API event data to the EventData type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const transformEventData = (apiEvent: any, registrationDate?: string): EventData => {
+    return {
+      id: String(apiEvent.id || ''),
+      title: String(apiEvent.title || ''),
+      description: apiEvent.description as string | undefined,
+      fullDescription: apiEvent.fullDescription as string | undefined,
+      date: String(apiEvent.date || apiEvent.startDate || ''),
+      endDate: apiEvent.endDate as string | undefined,
+      time: apiEvent.time as string | undefined,
+      location: String(apiEvent.location || ''),
+      venue: apiEvent.venue as string | undefined,
+      type: String(apiEvent.type || apiEvent.eventType || 'Event'),
+      image: apiEvent.image as string | undefined,
+      category: apiEvent.category as string | undefined,
+      status: apiEvent.status as 'upcoming' | 'ongoing' | 'completed' | undefined,
+      registrationDate: registrationDate,
+      organizer: apiEvent.organizer as string | undefined,
+      organizerDescription: apiEvent.organizerDescription as string | undefined,
+      speakers: Array.isArray(apiEvent.speakers) ? apiEvent.speakers.map((s: Record<string, unknown>) => ({
+        id: s.id as string | undefined,
+        name: String(s.name || ''),
+        title: String(s.title || ''),
+        bio: s.bio as string | undefined,
+        image: s.image as string | undefined,
+        company: s.company as string | undefined,
+      })) : undefined,
+      sponsors: Array.isArray(apiEvent.sponsors) ? apiEvent.sponsors.map((s: Record<string, unknown>) => ({
+        id: s.id as string | undefined,
+        name: String(s.name || ''),
+        level: (s.level || 'associate') as 'platinum' | 'gold' | 'silver' | 'bronze' | 'title' | 'presenting' | 'community' | 'associate',
+        logo: s.logo as string | undefined,
+        website: s.website as string | undefined,
+        description: s.description as string | undefined,
+      })) : undefined,
+      exhibitors: Array.isArray(apiEvent.exhibitors) ? apiEvent.exhibitors.map((e: Record<string, unknown>) => ({
+        id: e.id as string | undefined,
+        name: String(e.name || ''),
+        description: e.description as string | undefined,
+        logo: e.logo as string | undefined,
+        contactEmail: e.contactEmail as string | undefined,
+        booth: e.booth as string | undefined,
+        category: e.category as string | undefined,
+        website: e.website as string | undefined,
+      })) : undefined,
+      agenda: Array.isArray(apiEvent.agenda) ? apiEvent.agenda.map((a: Record<string, unknown>) => ({
+        id: a.id as string | undefined,
+        title: String(a.title || ''),
+        description: a.description as string | undefined,
+        date: a.date as string | undefined,
+        startTime: String(a.startTime || ''),
+        endTime: String(a.endTime || ''),
+        location: a.location as string | undefined,
+        type: a.type as 'keynote' | 'panel' | 'workshop' | 'networking' | 'break' | 'session' | undefined,
+        speakers: Array.isArray(a.speakers) ? a.speakers.map(String) : undefined,
+      })) : undefined,
+      socialLinks: apiEvent.socialLinks as Record<string, string> | undefined,
+      hashtag: apiEvent.hashtag as string | undefined,
+    };
+  };
+
   useEffect(() => {
     const fetchEvent = async () => {
-      if (propEventData) {
-        setEventData(propEventData);
-        return;
-      }
-
       if (!eventId) {
-        // If no eventId and no propEventData, fetch all events and use the first one
+        // If no eventId, fetch user's events and use the first one
         try {
           setLoading(true);
           const response = await getUserRegisteredEvents();
           if (response.success && response.data?.events && response.data.events.length > 0) {
-            setEventData(response.data.events[0]);
+            const event = response.data.events[0];
+            // Fetch full event details
+            const fullEventResponse = await getEventById(event.id);
+            if (fullEventResponse.success && fullEventResponse.data?.event) {
+              setEventData(transformEventData(fullEventResponse.data.event, event.registrationDate));
+            } else {
+              setError('Could not load event details');
+            }
           } else {
-            setError('No events found');
+            setError('No registered events found');
           }
         } catch {
-          setError('Failed to load event');
+          setError('Failed to load events');
         } finally {
           setLoading(false);
         }
@@ -74,14 +124,22 @@ const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEven
       // Fetch specific event by ID
       try {
         setLoading(true);
-        const response = await getUserRegisteredEvents();
-        if (response.success && response.data?.events) {
-          const event = response.data.events.find(e => e.id === eventId);
-          if (event) {
-            setEventData(event);
-          } else {
-            setError('Event not found');
-          }
+
+        // Get registration info
+        const registeredResponse = await getUserRegisteredEvents();
+        const registrationInfo = registeredResponse.data?.events?.find(
+          (e: { id: string }) => e.id === eventId
+        );
+
+        // Get full event details
+        const eventResponse = await getEventById(eventId);
+        if (eventResponse.success && eventResponse.data?.event) {
+          setEventData(transformEventData(
+            eventResponse.data.event,
+            registrationInfo?.registrationDate
+          ));
+        } else {
+          setError('Event not found');
         }
       } catch {
         setError('Failed to load event');
@@ -91,14 +149,14 @@ const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEven
     };
 
     fetchEvent();
-  }, [eventId, propEventData]);
+  }, [eventId]);
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
           <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading event details...</p>
+          <p className="text-muted-foreground">Loading event...</p>
         </div>
       </div>
     );
@@ -106,164 +164,23 @@ const DashboardMyEvent: React.FC<DashboardMyEventProps> = ({ eventData: propEven
 
   if (error || !eventData) {
     return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error || 'Event not found'}</AlertDescription>
-        </Alert>
-        <Button onClick={() => navigate('/user/dashboard')} className="mt-4">
-          Back to Dashboard
-        </Button>
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Alert variant="destructive" className="max-w-md mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error || 'Event not found'}</AlertDescription>
+          </Alert>
+          <div className="text-center mt-6">
+            <Button onClick={() => navigate('/user/dashboard')}>
+              Back to Dashboard
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'ongoing': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <Button variant="outline" onClick={() => navigate('/user/dashboard')}>
-          ← Back to Events
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Event Header */}
-          <Card>
-            <div className="relative h-64 overflow-hidden rounded-t-lg">
-              <img 
-                src={eventData.image} 
-                alt={eventData.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-              <div className="absolute bottom-4 left-4 right-4">
-                <h1 className="text-3xl font-bold text-white mb-2">{eventData.title}</h1>
-                <div className="flex items-center gap-2">
-                  <Badge className={getStatusColor(eventData.status)}>
-                    {eventData.status || 'upcoming'}
-                  </Badge>
-                  {eventData.category && (
-                    <Badge variant="secondary">{eventData.category}</Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="w-5 h-5" />
-                  <span>{eventData.date}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="w-5 h-5" />
-                  <span>{eventData.venue || eventData.location}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Users className="w-5 h-5" />
-                  <span>{eventData.type}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Event Description */}
-          {eventData.description && (
-            <Card>
-              <CardHeader>
-                <CardTitle>About This Event</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed">{eventData.description}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Registration Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Registration Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Registration Date</span>
-                  <span className="font-medium">
-                    {new Date(eventData.registrationDate).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Status</span>
-                  <Badge className={getStatusColor(eventData.status)}>
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    {eventData.status || 'upcoming'}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <Ticket className="w-4 h-4 mr-2" />
-                View Ticket
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Calendar className="w-4 h-4 mr-2" />
-                Add to Calendar
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="w-4 h-4 mr-2" />
-                View Attendees
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Event Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Event Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Event Type</p>
-                <p className="font-medium">{eventData.type}</p>
-              </div>
-              {eventData.category && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Category</p>
-                  <p className="font-medium">{eventData.category}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Location</p>
-                <p className="font-medium">{eventData.location}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
+  return <EventAttendeeView event={eventData} user={user} />;
 };
 
 export default DashboardMyEvent;
-
