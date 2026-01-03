@@ -40,7 +40,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand users section if on users pages
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     // Auto-expand settings section if on settings pages
-    settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/moderation'),
+    settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system'),
     // Auto-expand support section if on support pages
     support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings')
   });
@@ -151,7 +151,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       children: [
         { name: "Configuration", href: "/admin/settings" },
         { name: "System", href: "/admin/system" },
-        { name: "Moderation", href: "/admin/moderation" },
       ]
     },
     {
@@ -190,7 +189,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       marketing: location.pathname.startsWith('/admin/marketing'),
       finance: location.pathname.startsWith('/admin/finance'),
       users: location.pathname.startsWith('/admin/users'),
-      settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/moderation'),
+      settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system'),
       support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings')
     }));
   }, [location.pathname]);
