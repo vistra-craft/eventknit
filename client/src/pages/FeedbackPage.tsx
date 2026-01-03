@@ -86,7 +86,7 @@ const FeedbackPage: React.FC = () => {
         wouldRecommend: wouldRecommend ?? undefined,
       });
       setSubmitted(true);
-    } catch (err) {
+    } catch {
       setError("Failed to submit feedback. Please try again.");
     } finally {
       setSubmitting(false);

@@ -261,16 +261,16 @@ export class FeedbackEmailService {
                 <table role="presentation" style="margin: 0 auto; border-collapse: separate; border-spacing: 4px;">
                   <tr>
                     ${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-                      .map(
-                        (n) => `
+    .map(
+      (n) => `
                       <td>
                         <a href="${data.feedbackUrl}?nps=${n}" style="display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; background-color: ${n <= 6 ? '#fecaca' : n <= 8 ? '#fef08a' : '#bbf7d0'}; color: #374151; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
                           ${n}
                         </a>
                       </td>
                     `,
-                      )
-                      .join('')}
+    )
+    .join('')}
                   </tr>
                 </table>
               </div>

@@ -1196,7 +1196,7 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: "Organization's KRA PIN Certificate",
+        description: 'Organization\'s KRA PIN Certificate',
       },
       {
         documentType: KYCDocumentType.ORGANIZATION_CONSTITUTION,
@@ -1204,7 +1204,7 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: "Organization's Constitution",
+        description: 'Organization\'s Constitution',
       },
       {
         documentType: KYCDocumentType.BOARD_ELECTION_MINUTES,
@@ -1364,7 +1364,7 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: "Organization's KRA PIN Certificate",
+        description: 'Organization\'s KRA PIN Certificate',
       },
       {
         documentType: KYCDocumentType.ORGANIZATION_CONSTITUTION,
@@ -1372,7 +1372,7 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: "Organization's Constitution",
+        description: 'Organization\'s Constitution',
       },
       {
         documentType: KYCDocumentType.LETTER_AUTHORIZING_ENTRY,
@@ -1515,7 +1515,7 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: "Organization's KRA PIN Certificate",
+        description: 'Organization\'s KRA PIN Certificate',
       },
       {
         documentType: KYCDocumentType.ORGANIZATION_CONSTITUTION,
@@ -1523,7 +1523,7 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: "Organization's Constitution",
+        description: 'Organization\'s Constitution',
       },
       {
         documentType: KYCDocumentType.BOARD_ELECTION_MINUTES,
@@ -1691,7 +1691,7 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: "Organization's KRA PIN Certificate",
+        description: 'Organization\'s KRA PIN Certificate',
       },
       {
         documentType: KYCDocumentType.LETTER_AUTHORIZING_ENTRY,
@@ -1725,7 +1725,7 @@ export function getEntityRequirements(entityType: OrganizerEntityType): EntityTy
  */
 export function getRequiredDocuments(
   entityType: OrganizerEntityType,
-  industry?: string
+  industry?: string,
 ): DocumentRequirement[] {
   const requirements = getEntityRequirements(entityType);
   if (!requirements) return [];

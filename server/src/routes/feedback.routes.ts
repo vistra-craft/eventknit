@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { FeedbackController } from '../controllers/feedback.controller.js';
-import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
-import { UserRole } from '@prisma/client';
+import { authenticate } from '../middleware/auth.middleware.js';
 
 const router = Router();
 

@@ -176,7 +176,6 @@ const PlatformFeedbackPage: React.FC = () => {
   };
 
   const renderNpsGauge = (score: number) => {
-    const percentage = (score / 100) * 100 + 50; // NPS ranges from -100 to 100
     const color = score >= 50 ? "text-green-600" : score >= 0 ? "text-yellow-600" : "text-red-600";
 
     return (

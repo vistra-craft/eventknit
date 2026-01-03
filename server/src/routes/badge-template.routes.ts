@@ -23,7 +23,7 @@ router.get('/default', requireMinRole(UserRole.TELLER), BadgeTemplateController.
 router.post(
   '/ensure-defaults',
   requireMinRole(UserRole.ADMIN),
-  BadgeTemplateController.ensureDefaultTemplates
+  BadgeTemplateController.ensureDefaultTemplates,
 );
 
 /**
@@ -69,7 +69,7 @@ router.delete('/:id', requireMinRole(UserRole.ADMIN_STAFF), BadgeTemplateControl
 router.post(
   '/:id/duplicate',
   requireMinRole(UserRole.ADMIN_STAFF),
-  BadgeTemplateController.duplicateTemplate
+  BadgeTemplateController.duplicateTemplate,
 );
 
 /**
@@ -80,7 +80,7 @@ router.post(
 router.post(
   '/:id/set-default',
   requireMinRole(UserRole.ADMIN_STAFF),
-  BadgeTemplateController.setDefaultTemplate
+  BadgeTemplateController.setDefaultTemplate,
 );
 
 export default router;

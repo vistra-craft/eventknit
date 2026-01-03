@@ -741,7 +741,7 @@ export class OrganizerService {
 
     // Overall health score is weighted average
     const overallHealthScore = Math.round(
-      (registrationRate * 0.4 + speakerConfirmation * 0.3 + sponsorEngagement * 0.3)
+      (registrationRate * 0.4 + speakerConfirmation * 0.3 + sponsorEngagement * 0.3),
     );
 
     const healthScore = {
@@ -836,28 +836,28 @@ export class OrganizerService {
       let status = 'upcoming';
       const now = new Date();
       switch (event.status) {
-        case 'CANCELLED':
-          status = 'cancelled';
-          break;
-        case 'REJECTED':
-          status = 'unpublished';
-          break;
-        case 'PENDING':
-          status = 'unpublished';
-          break;
-        case 'COMPLETED':
+      case 'CANCELLED':
+        status = 'cancelled';
+        break;
+      case 'REJECTED':
+        status = 'unpublished';
+        break;
+      case 'PENDING':
+        status = 'unpublished';
+        break;
+      case 'COMPLETED':
+        status = 'completed';
+        break;
+      case 'APPROVED':
+      default:
+        if (event.endDate && new Date(event.endDate) < now) {
           status = 'completed';
-          break;
-        case 'APPROVED':
-        default:
-          if (event.endDate && new Date(event.endDate) < now) {
-            status = 'completed';
-          } else if (event.startDate && new Date(event.startDate) <= now) {
-            status = 'active';
-          } else if (event.status === 'APPROVED') {
-            status = 'active';
-          }
-          break;
+        } else if (event.startDate && new Date(event.startDate) <= now) {
+          status = 'active';
+        } else if (event.status === 'APPROVED') {
+          status = 'active';
+        }
+        break;
       }
 
       return {

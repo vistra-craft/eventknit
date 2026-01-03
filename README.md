@@ -182,6 +182,7 @@ For detailed instructions on each part of the stack, please refer to the specifi
 - KYC verification for organizers
 - Platform-wide analytics
 - Role-based access control
+- Platform feedback collection and NPS analytics
 
 ---
 

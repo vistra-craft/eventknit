@@ -21,8 +21,10 @@ A comprehensive guide to all features and user journeys on the EventKnit platfor
 13. [Digital Wallet](#digital-wallet)
 14. [KYC & Verification](#kyc--verification)
 15. [Notifications & Communications](#notifications--communications)
-16. [Analytics & Reporting](#analytics--reporting)
-17. [API Reference](#api-reference)
+16. [Platform Feedback](#platform-feedback)
+17. [Analytics & Reporting](#analytics--reporting)
+18. [API Reference](#api-reference)
+19. [Platform TODOs](#platform-todos)
 
 ---
 
@@ -1054,6 +1056,84 @@ Users can configure:
 
 ---
 
+## Platform Feedback
+
+The platform includes a comprehensive feedback collection system for continuous improvement.
+
+### Feedback Collection
+
+**Automated Email Triggers:**
+- Post-event feedback emails sent to attendees
+- Post-event feedback emails sent to organizers
+- Token-based submission (no login required)
+- 7-day token expiry
+
+**Platform Submission:**
+- Logged-in users can submit feedback anytime
+- Linked to specific events
+- Tracks user type (Attendee/Organizer)
+
+### NPS (Net Promoter Score)
+
+**Score Categories:**
+| Score | Category | Description |
+|-------|----------|-------------|
+| 9-10 | Promoters | Loyal enthusiasts |
+| 7-8 | Passives | Satisfied but unenthusiastic |
+| 0-6 | Detractors | Unhappy customers |
+
+**NPS Calculation:**
+```
+NPS = % Promoters - % Detractors
+```
+Range: -100 to +100
+
+### Feedback Metrics
+
+**Category Ratings (1-5 scale):**
+- Event Quality
+- Platform Usability
+- Registration Process
+- Communication Quality
+
+**Additional Data:**
+- Would use again (Yes/No)
+- Would recommend (Yes/No)
+- Improvement areas (multiple choice)
+- Free-form comments
+
+### Admin Feedback Dashboard
+
+**Features:**
+- View all feedback with filters
+- NPS analytics and trends
+- Category breakdowns
+- User type distribution
+- Improvement area analysis
+- Export capabilities
+
+**Filters:**
+- By event
+- By user type (Attendee/Organizer)
+- By NPS score range
+- By date range
+
+### Feedback API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /api/v1/feedback | Submit feedback (authenticated) |
+| GET | /api/v1/feedback/token/:token | Validate feedback token |
+| POST | /api/v1/feedback/token/:token | Submit via email token |
+| GET | /api/v1/admin/feedback | List all feedback (admin) |
+| GET | /api/v1/admin/feedback/analytics | Get NPS analytics (admin) |
+| GET | /api/v1/admin/feedback/:id | Get single feedback (admin) |
+| PATCH | /api/v1/admin/feedback/:id/notes | Add admin notes (admin) |
+| POST | /api/v1/admin/feedback/trigger/:eventId | Trigger feedback emails (admin) |
+| GET | /api/v1/admin/feedback/event/:eventId | Get event feedback (admin) |
+
+---
+
 ## Analytics & Reporting
 
 ### Event Analytics
@@ -1242,6 +1322,61 @@ Body: { "refreshToken": "<refresh_token>" }
 | Event Image | 5 MB |
 | KYC Documents | 10 MB |
 | Profile Avatar | 2 MB |
+
+---
+
+---
+
+## Platform TODOs
+
+The following items are marked for future implementation or improvement:
+
+### Core Features
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Direct Messaging | Send notification to recipient when message received | High |
+| Event Details | Check if user is already registered for this event | Medium |
+| Saved Events | Replace mock data with actual API call | Medium |
+| Saved Events | Implement API call to remove from saved events | Medium |
+
+### Authentication & Security
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Social OAuth | Encrypt access tokens stored in database | High |
+| Email Entry | Check if email exists in database before proceeding | Medium |
+
+### Payment & Tickets
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Payment Step | Complete Paystack integration | High |
+| Confirmation Step | Implement ticket download functionality | Medium |
+| Confirmation Step | Implement share functionality | Medium |
+
+### Social Media Integration
+
+| Platform | Description | Priority |
+|----------|-------------|----------|
+| Instagram | Replace placeholders with actual Graph API calls | Medium |
+| LinkedIn | Replace placeholders with actual API calls | Medium |
+| Facebook | Replace placeholders with actual Graph API calls | Medium |
+| Twitter | Replace placeholders with actual API v2 calls | Medium |
+
+### User Experience
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Print Preview | Install react-to-pdf package for PDF export | Low |
+| Direct Messaging | Implement reply functionality | Medium |
+| Organizer Event Grid | Add date filter when backend supports it | Low |
+
+### Event Management
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Event Service | Send welcome email with password reset link | Medium |
 
 ---
 

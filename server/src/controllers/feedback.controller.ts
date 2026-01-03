@@ -135,7 +135,7 @@ export class FeedbackController {
   static async validateFeedbackToken(
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> {
     try {
       const { token } = req.params;
@@ -158,7 +158,7 @@ export class FeedbackController {
           valid: true,
         },
       });
-    } catch (error) {
+    } catch (_error) {
       // Token is invalid or expired
       res.status(400).json({
         success: false,
@@ -198,12 +198,12 @@ export class FeedbackController {
       } = req.query;
 
       const result = await FeedbackService.getAllFeedback({
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        page: page ? parseInt(page as string, 10) : undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
         userType: userType as 'ATTENDEE' | 'ORGANIZER' | undefined,
         eventId: eventId as string | undefined,
-        minNps: minNps ? parseInt(minNps as string) : undefined,
-        maxNps: maxNps ? parseInt(maxNps as string) : undefined,
+        minNps: minNps ? parseInt(minNps as string, 10) : undefined,
+        maxNps: maxNps ? parseInt(maxNps as string, 10) : undefined,
         startDate: startDate ? new Date(startDate as string) : undefined,
         endDate: endDate ? new Date(endDate as string) : undefined,
       });
@@ -384,8 +384,8 @@ export class FeedbackController {
       const { page, limit } = req.query;
 
       const result = await FeedbackService.getEventFeedback(eventId, {
-        page: page ? parseInt(page as string) : undefined,
-        limit: limit ? parseInt(limit as string) : undefined,
+        page: page ? parseInt(page as string, 10) : undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
       });
 
       res.status(200).json({

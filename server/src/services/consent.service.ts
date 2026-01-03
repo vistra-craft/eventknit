@@ -182,14 +182,14 @@ export class ConsentService {
     if (!consent) return false;
 
     switch (consentType) {
-      case 'operational':
-        return consent.operationalConsent;
-      case 'marketing':
-        return consent.marketingConsent;
-      case 'demographics':
-        return consent.demographicsConsent;
-      case 'analytics':
-        return consent.analyticsConsent;
+    case 'operational':
+      return consent.operationalConsent;
+    case 'marketing':
+      return consent.marketingConsent;
+    case 'demographics':
+      return consent.demographicsConsent;
+    case 'analytics':
+      return consent.analyticsConsent;
     }
   }
 

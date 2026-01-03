@@ -73,7 +73,7 @@ export class BadgeTemplateService {
    */
   static async createTemplate(
     data: CreateBadgeTemplateInput,
-    createdBy?: string
+    createdBy?: string,
   ) {
     try {
       // If setting as default, unset other defaults

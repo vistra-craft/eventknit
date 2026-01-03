@@ -219,24 +219,24 @@ export class SubscriptionService {
     const subscription = await this.getSubscription(organizerId);
 
     switch (feature) {
-      case 'attendee_list':
-        // STANDARD and PREMIUM have access
-        return subscription.tier === SubscriptionTier.STANDARD || 
+    case 'attendee_list':
+      // STANDARD and PREMIUM have access
+      return subscription.tier === SubscriptionTier.STANDARD || 
                subscription.tier === SubscriptionTier.PREMIUM;
 
-      case 'export':
-        // STANDARD and PREMIUM have access
-        return subscription.tier === SubscriptionTier.STANDARD || 
+    case 'export':
+      // STANDARD and PREMIUM have access
+      return subscription.tier === SubscriptionTier.STANDARD || 
                subscription.tier === SubscriptionTier.PREMIUM;
 
-      case 'demographics':
-      case 'analytics':
-      case 'advanced_export':
-        // Only PREMIUM has access
-        return subscription.tier === SubscriptionTier.PREMIUM;
+    case 'demographics':
+    case 'analytics':
+    case 'advanced_export':
+      // Only PREMIUM has access
+      return subscription.tier === SubscriptionTier.PREMIUM;
 
-      default:
-        return false;
+    default:
+      return false;
     }
   }
 

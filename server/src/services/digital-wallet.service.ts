@@ -275,7 +275,7 @@ export class DigitalWalletService {
           message: TicketService.generateTicketData(
             registrationId,
             walletTicket.registration.eventId,
-            (walletTicket.registration as any).attendee?.email || ''
+            (walletTicket.registration as any).attendee?.email || '',
           ),
           format: 'PKBarcodeFormatQR',
           messageEncoding: 'iso-8859-1',

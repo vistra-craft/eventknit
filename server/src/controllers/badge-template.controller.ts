@@ -11,7 +11,7 @@ export class BadgeTemplateController {
   static async createTemplate(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -54,7 +54,7 @@ export class BadgeTemplateController {
           organizerId,
           eventId,
         },
-        req.user.id
+        req.user.id,
       );
 
       res.status(201).json({
@@ -73,7 +73,7 @@ export class BadgeTemplateController {
   static async getTemplateById(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -108,7 +108,7 @@ export class BadgeTemplateController {
   static async getTemplates(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -155,7 +155,7 @@ export class BadgeTemplateController {
   static async updateTemplate(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -213,7 +213,7 @@ export class BadgeTemplateController {
   static async deleteTemplate(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -248,7 +248,7 @@ export class BadgeTemplateController {
   static async duplicateTemplate(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -284,7 +284,7 @@ export class BadgeTemplateController {
   static async setDefaultTemplate(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -319,7 +319,7 @@ export class BadgeTemplateController {
   static async getDefaultTemplate(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {
@@ -334,7 +334,7 @@ export class BadgeTemplateController {
 
       const template = await BadgeTemplateService.getDefaultTemplate(
         organizerId as string | undefined,
-        eventId as string | undefined
+        eventId as string | undefined,
       );
 
       res.status(200).json({
@@ -353,7 +353,7 @@ export class BadgeTemplateController {
   static async ensureDefaultTemplates(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       if (!req.user) {

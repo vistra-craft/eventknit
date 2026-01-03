@@ -520,19 +520,19 @@ export class TicketService {
         contentType?: string;
         encoding?: string;
       }> = [
-          {
-            filename: 'event.ics',
-            content: Buffer.from(icsContent),
-            contentType: 'text/calendar',
-          },
-          // QR code PNG attachment (always available)
-          {
-            filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-qr-code.png`,
-            content: qrCodeDataUrl.split(';base64,')[1] || qrCodeDataUrl,
-            encoding: 'base64',
-            contentType: 'image/png',
-          },
-        ];
+        {
+          filename: 'event.ics',
+          content: Buffer.from(icsContent),
+          contentType: 'text/calendar',
+        },
+        // QR code PNG attachment (always available)
+        {
+          filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-qr-code.png`,
+          content: qrCodeDataUrl.split(';base64,')[1] || qrCodeDataUrl,
+          encoding: 'base64',
+          contentType: 'image/png',
+        },
+      ];
 
       // Try to generate PDF ticket (always attempt, fallback to HTML if puppeteer unavailable)
       try {

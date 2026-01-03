@@ -525,6 +525,19 @@ The API follows RESTful conventions with base path `/api/v1/`.
 - `PUT /api/v1/user/me` - Update profile
 - `GET /api/v1/user/dashboard/stats` - Get dashboard stats
 
+### Platform Feedback
+- `POST /api/v1/feedback` - Submit feedback (authenticated)
+- `GET /api/v1/feedback/token/:token` - Validate feedback token
+- `POST /api/v1/feedback/token/:token` - Submit feedback via email token
+
+### Admin Feedback
+- `GET /api/v1/admin/feedback` - List all feedback
+- `GET /api/v1/admin/feedback/analytics` - Get NPS analytics
+- `GET /api/v1/admin/feedback/:id` - Get single feedback
+- `PATCH /api/v1/admin/feedback/:id/notes` - Add admin notes
+- `POST /api/v1/admin/feedback/trigger/:eventId` - Trigger feedback emails
+- `GET /api/v1/admin/feedback/event/:eventId` - Get event feedback
+
 For detailed API documentation, see the route files in `src/routes/`.
 
 ---
