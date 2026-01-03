@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Printer,
   ArrowLeft,
   Settings,
   Eye,
-  RefreshCw,
   Layout,
   Grid,
   List,
@@ -24,19 +21,16 @@ import {
   FileText,
   QrCode,
   X,
-  ChevronRight,
   Loader2,
-  UserPlus,
-  Filter
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import { useToast } from "@/hooks/use-toast";
 import {
   getEventAttendees,
   getEventConfig,
-  searchAttendees,
   type EventAttendee,
   type EventStatistics,
+  TicketStatus,
 } from "@/lib/workstation-api";
 import {
   getBadgeTemplates,
@@ -199,7 +193,7 @@ const WorkstationPrint: React.FC = () => {
         email: "sarah@techcorp.com",
         phoneNumber: "+254 700 123 456",
         ticketType: "VIP",
-        ticketStatus: "ACTIVE" as any,
+        ticketStatus: TicketStatus.ACTIVE,
         checkedInAt: null,
         checkedOutAt: null,
         isCurrentlyInside: false,
@@ -212,7 +206,7 @@ const WorkstationPrint: React.FC = () => {
         email: "michael@innovatelab.io",
         phoneNumber: "+254 700 234 567",
         ticketType: "Standard",
-        ticketStatus: "ACTIVE" as any,
+        ticketStatus: TicketStatus.ACTIVE,
         checkedInAt: new Date(),
         checkedOutAt: null,
         isCurrentlyInside: true,
@@ -225,7 +219,7 @@ const WorkstationPrint: React.FC = () => {
         email: "emma@university.edu",
         phoneNumber: "+254 700 345 678",
         ticketType: "Student",
-        ticketStatus: "ACTIVE" as any,
+        ticketStatus: TicketStatus.ACTIVE,
         checkedInAt: null,
         checkedOutAt: null,
         isCurrentlyInside: false,
@@ -238,7 +232,7 @@ const WorkstationPrint: React.FC = () => {
         email: "david@startuphub.co",
         phoneNumber: "+254 700 456 789",
         ticketType: "VIP",
-        ticketStatus: "ACTIVE" as any,
+        ticketStatus: TicketStatus.ACTIVE,
         checkedInAt: null,
         checkedOutAt: null,
         isCurrentlyInside: false,
@@ -806,7 +800,7 @@ const WorkstationPrint: React.FC = () => {
                   <div className="flex gap-2 flex-wrap">
                     <select
                       value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value as any)}
+                      onChange={(e) => setFilterStatus(e.target.value as 'all' | 'not_printed' | 'printed')}
                       className="h-9 px-3 border border-border rounded-md text-sm bg-background"
                     >
                       <option value="all">All Attendees</option>

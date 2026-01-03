@@ -1,18 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
-  Loader2, 
-  AlertCircle, 
+  Loader2,
+  AlertCircle,
   Crown,
   Zap,
   Shield,
   ArrowUpRight,
-  Mail,
-  Calendar,
   XCircle,
   Check,
-  Sparkles,
 } from 'lucide-react';
 import OrganizerLayout from './OrganizerLayout';
 import { Button } from '@/components/ui/button';
@@ -72,7 +68,6 @@ const TIER_INFO = {
 };
 
 const SubscriptionManagement = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<OrganizerSubscription | null>(null);
@@ -96,10 +91,10 @@ const SubscriptionManagement = () => {
         setSubscription(response.data.subscription);
         setBillingEmail(response.data.subscription.billingEmail || '');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Failed to load subscription',
-        description: error?.message || 'An error occurred',
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -145,10 +140,10 @@ const SubscriptionManagement = () => {
           variant: 'default',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Upgrade failed',
-        description: error?.message || 'An error occurred while upgrading',
+        description: error instanceof Error ? error.message : 'An error occurred while upgrading',
         variant: 'destructive',
       });
     } finally {
@@ -172,10 +167,10 @@ const SubscriptionManagement = () => {
           variant: 'default',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Cancel failed',
-        description: error?.message || 'An error occurred while canceling',
+        description: error instanceof Error ? error.message : 'An error occurred while canceling',
         variant: 'destructive',
       });
     } finally {

@@ -48,7 +48,7 @@ interface EventDetailViewProps {
 }
 
 const EventDetailView: React.FC<EventDetailViewProps> = ({ eventData: propEventData, registration: propRegistration }) => {
-  const { eventId } = useParams<{ eventId: string }>();
+  useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user: authUser } = useAuth();

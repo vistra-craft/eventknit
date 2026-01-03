@@ -263,8 +263,8 @@ const RegistrationConfirmation: React.FC = () => {
       } else {
         throw new Error(response.message || "Failed to set password");
       }
-    } catch (err: any) {
-      setPasswordError(err.message || "Failed to set password. Please try again.");
+    } catch (err: unknown) {
+      setPasswordError(err instanceof Error ? err.message : "Failed to set password. Please try again.");
     } finally {
       setSettingPassword(false);
     }

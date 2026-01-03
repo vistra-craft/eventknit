@@ -89,10 +89,10 @@ const KYCVerificationPage = () => {
 
       setDocuments(documentsRes.data.documents);
       setDirectors(directorsRes.data.directors);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Failed to load KYC data',
-        description: error?.message ?? 'An error occurred',
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -113,10 +113,10 @@ const KYCVerificationPage = () => {
         setMinDirectors(res.data.minDirectors);
         setCurrentStep(res.data.requiresDirectors ? 'directors' : 'documents');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Failed to set entity type',
-        description: error?.message ?? 'An error occurred',
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     }
@@ -134,10 +134,10 @@ const KYCVerificationPage = () => {
         });
         navigate('/organizer/dashboard');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Submission failed',
-        description: error?.message ?? 'An error occurred',
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -145,7 +145,7 @@ const KYCVerificationPage = () => {
     }
   };
 
-  const handleDocumentUpload = async (data: any) => {
+  const handleDocumentUpload = async (data: { file: File; documentType: string; description?: string }) => {
     const result = await createKYCDocument(data);
     if (result.success) {
       await loadKYCData();
@@ -159,7 +159,7 @@ const KYCVerificationPage = () => {
     }
   };
 
-  const handleDirectorAdd = async (data: any) => {
+  const handleDirectorAdd = async (data: { name: string; position: string; shareholdingPercentage?: number; idNumber?: string; nationality?: string }) => {
     const result = await createDirector(data);
     if (result.success) {
       await loadKYCData();

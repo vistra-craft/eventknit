@@ -91,7 +91,7 @@ const SavedEvents: React.FC = () => {
         title: "Removed",
         description: "Event removed from saved list",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to remove event",

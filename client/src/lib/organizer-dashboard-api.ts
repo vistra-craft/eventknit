@@ -140,7 +140,7 @@ export const shareTemplate = async (templateId: string): Promise<ApiResponse<{ s
   return apiPost(`/organizer-dashboard/templates/${templateId}/share`);
 };
 
-export const useTemplate = async (
+export const applyTemplate = async (
   templateId: string,
 ): Promise<ApiResponse<{ eventData: Record<string, unknown> }>> => {
   return apiPost(`/organizer-dashboard/templates/${templateId}/use`);

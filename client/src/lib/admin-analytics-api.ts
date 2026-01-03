@@ -327,7 +327,7 @@ export const getSessionsAnalytics = async (
  */
 export const getDateRangeFromPreset = (preset: string): { startDate: string; endDate: string } => {
   const endDate = new Date();
-  let startDate = new Date();
+  const startDate = new Date();
 
   switch (preset) {
     case '7d':

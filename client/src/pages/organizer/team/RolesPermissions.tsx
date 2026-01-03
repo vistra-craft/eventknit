@@ -222,10 +222,11 @@ const RolesPermissions = () => {
         setFormData({ name: '', description: '', permissionKeys: [] });
         fetchCustomRoles();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create role";
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to create role",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -260,10 +261,11 @@ const RolesPermissions = () => {
           setSelectedRoleType(null);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update role";
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to update role",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -290,10 +292,11 @@ const RolesPermissions = () => {
           setSelectedRoleType(null);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to delete role";
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to delete role",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -312,10 +315,11 @@ const RolesPermissions = () => {
         });
         fetchCustomRoles();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to duplicate role";
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to duplicate role",
+        description: message,
         variant: "destructive",
       });
     } finally {

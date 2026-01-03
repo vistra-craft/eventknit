@@ -29,7 +29,6 @@ import {
   createEmailTemplate,
   updateEmailTemplate,
   deleteEmailTemplate,
-  type EmailTemplate as ApiEmailTemplate,
 } from "@/lib/email-template-api";
 
 interface Announcement {

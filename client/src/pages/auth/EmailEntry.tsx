@@ -40,7 +40,7 @@ const EmailEntry = () => {
           try {
             const result = await googleAuth(response.credential, 'id_token', selectedRole);
             window.location.href = result.data.user.role === 'ORGANIZER' ? '/organizer/dashboard' : '/dashboard';
-          } catch (err: unknown) {
+          } catch {
             setError('Google sign up failed. Please try again.');
             setIsLoading(false);
           }

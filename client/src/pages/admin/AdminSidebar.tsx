@@ -14,7 +14,6 @@ import {
   HeadphonesIcon,
   Monitor,
   LogOut,
-  Ticket,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -38,8 +37,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     marketing: location.pathname.startsWith('/admin/marketing'),
     // Auto-expand finance section if on finance pages
     finance: location.pathname.startsWith('/admin/finance'),
-    // Auto-expand tickets section if on tickets pages
-    tickets: location.pathname.startsWith('/admin/tickets'),
     // Auto-expand users section if on users pages
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     // Auto-expand settings section if on settings pages
@@ -98,17 +95,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "System Metrics", href: "/admin/analytics/system" },
       ]
     },
-    { 
-      id: "financial", 
-      label: "Financial", 
+    {
+      id: "finance",
+      label: "Finance",
       icon: DollarSign,
       group: "main",
       children: [
-        { name: "Financial Management", href: "/admin/financial" },
-        { name: "Expenses", href: "/admin/financial" },
-        { name: "Profit & Loss", href: "/admin/financial" },
-        { name: "Goals", href: "/admin/financial" },
-        { name: "Payouts", href: "/admin/financial/payouts" },
+        { name: "Overview", href: "/admin/finance" },
+        { name: "Event Finance", href: "/admin/finance/events" },
+        { name: "Payment Transactions", href: "/admin/finance/payments" },
+        { name: "Disbursements", href: "/admin/finance/disbursements" },
+        { name: "Refunds", href: "/admin/finance/refunds" },
+        { name: "Reconciliation", href: "/admin/finance/reconciliation" },
+        { name: "Expenses", href: "/admin/finance/expenses" },
+        { name: "Income", href: "/admin/finance/income" },
+        { name: "Salaries", href: "/admin/finance/wages" },
+        { name: "Income Statement", href: "/admin/finance/income-statement" },
       ]
     },
     { 
@@ -125,16 +127,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Promo Codes", href: "/admin/marketing/promo-codes" },
         { name: "Affiliate Program", href: "/admin/marketing/affiliate" },
         { name: "Partnerships", href: "/admin/marketing/partnerships" },
-      ]
-    },
-    { 
-      id: "tickets", 
-      label: "Tickets", 
-      icon: Ticket,
-      group: "main",
-      children: [
-        { name: "Advanced Types", href: "/admin/tickets/advanced" },
-        { name: "Dynamic Pricing", href: "/admin/tickets/pricing" },
       ]
     },
     { 
@@ -174,25 +166,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Notification Settings", href: "/admin/notification-settings" },
       ]
     },
-    { 
-      id: "finance", 
-      label: "Finance", 
-      icon: DollarSign,
-      group: "management",
-      children: [
-        { name: "Event Finance", href: "/admin/finance/events" },
-        { name: "Payment Transactions", href: "/admin/finance/payments" },
-        { name: "Disbursements", href: "/admin/finance/disbursements" },
-        { name: "Refunds", href: "/admin/finance/refunds" },
-        { name: "Reconciliation", href: "/admin/finance/reconciliation" },
-        { name: "Dashboard (Legacy)", href: "/admin/finance" },
-        { name: "Expenses", href: "/admin/finance/expenses" },
-        { name: "Income", href: "/admin/finance/income" },
-        { name: "Wages", href: "/admin/finance/wages" },
-        { name: "Transactions", href: "/admin/finance/transactions" },
-        { name: "Income Statement", href: "/admin/finance/income-statement" },
-      ]
-    },
   ];
 
   const toggleExpanded = (itemId: string) => {
@@ -216,7 +189,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       events: location.pathname.startsWith('/admin/events'),
       marketing: location.pathname.startsWith('/admin/marketing'),
       finance: location.pathname.startsWith('/admin/finance'),
-      tickets: location.pathname.startsWith('/admin/tickets'),
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings') || location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/moderation'),
       support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings')

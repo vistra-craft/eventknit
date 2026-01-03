@@ -44,6 +44,11 @@ import {
   addMessageResponse,
   type SocialMessage,
 } from "@/lib/social-media-api";
+import {
+  getSupportInbox,
+  getSupportStatistics,
+  type SupportQuery as ApiSupportQuery,
+} from "@/lib/support-api";
 import type {
   SupportQuery,
   SupportResponse,
@@ -54,299 +59,39 @@ import type {
   SupportAgent,
   SupportMetrics
 } from "@/types/support";
-
-// Mock data
-const mockSupportQueries: SupportQuery[] = [
-  {
-    id: "1",
-    platform: "whatsapp",
-    senderName: "Sarah Johnson",
-    senderHandle: "+1-555-0123",
-    senderId: "wa_001",
-    message: "Hi! I'm having trouble creating an event. The form keeps showing an error when I try to upload images.",
-    status: "new",
-    priority: "medium",
-    category: "technical_support",
-    createdAt: "2024-01-28 14:30:00",
-    updatedAt: "2024-01-28 14:30:00",
-    tags: ["image-upload", "form-error"],
-    responses: [],
-    metadata: {
-      originalMessageId: "wa_msg_001",
-      threadId: "wa_thread_001"
-    }
-  },
-  {
-    id: "2",
-    platform: "facebook",
-    senderName: "Mike Chen",
-    senderHandle: "@mikechen_events",
-    senderId: "fb_002",
-    message: "When will the new analytics features be available? I saw it mentioned in your recent post.",
-    status: "in_progress",
-    priority: "low",
-    category: "feature_request",
-    assignedTo: "agent_001",
-    assignedAt: "2024-01-28 13:15:00",
-    createdAt: "2024-01-28 12:45:00",
-    updatedAt: "2024-01-28 13:15:00",
-    tags: ["analytics", "feature-request"],
-    responses: [
-      {
-        id: "resp_001",
-        queryId: "2",
-        responderId: "agent_001",
-        responderName: "Alex Smith",
-        message: "Hi Mike! Thanks for your interest in our analytics features. The new analytics dashboard is currently in beta testing and should be available to all users by the end of February. I'll add you to our early access list!",
-        createdAt: "2024-01-28 13:20:00",
-        isInternal: false,
-        platform: "facebook"
-      }
-    ],
-    metadata: {
-      originalMessageId: "fb_msg_002",
-      threadId: "fb_thread_002"
-    }
-  },
-  {
-    id: "3",
-    platform: "instagram",
-    senderName: "Emma Rodriguez",
-    senderHandle: "@emma_events_co",
-    senderId: "ig_003",
-    message: "URGENT: My event is tomorrow and I can't access my attendee list! This is a disaster!",
-    status: "new",
-    priority: "urgent",
-    category: "account_issues",
-    createdAt: "2024-01-28 15:45:00",
-    updatedAt: "2024-01-28 15:45:00",
-    tags: ["urgent", "attendee-list", "access-issue"],
-    responses: [],
-    metadata: {
-      originalMessageId: "ig_msg_003",
-      threadId: "ig_thread_003"
-    }
-  },
-  {
-    id: "4",
-    platform: "twitter",
-    senderName: "David Park",
-    senderHandle: "@davidpark_events",
-    senderId: "tw_004",
-    message: "Love the platform! Quick question - can I integrate EventKnit with my existing CRM system?",
-    status: "resolved",
-    priority: "low",
-    category: "general_inquiry",
-    assignedTo: "agent_002",
-    assignedAt: "2024-01-28 10:30:00",
-    resolvedAt: "2024-01-28 11:15:00",
-    createdAt: "2024-01-28 10:15:00",
-    updatedAt: "2024-01-28 11:15:00",
-    tags: ["crm-integration", "positive-feedback"],
-    responses: [
-      {
-        id: "resp_002",
-        queryId: "4",
-        responderId: "agent_002",
-        responderName: "Jessica Lee",
-        message: "Hi David! Great to hear you're loving EventKnit! Yes, we do support CRM integrations. We have native integrations with Salesforce, HubSpot, and Pipedrive, plus a robust API for custom integrations. I'll send you our integration guide!",
-        createdAt: "2024-01-28 10:45:00",
-        isInternal: false,
-        platform: "twitter"
-      }
-    ],
-    metadata: {
-      originalMessageId: "tw_msg_004",
-      threadId: "tw_thread_004"
-    }
-  },
-  {
-    id: "5",
-    platform: "linkedin",
-    senderName: "Lisa Thompson",
-    senderHandle: "Lisa Thompson",
-    senderId: "li_005",
-    message: "I'm interested in partnering with EventKnit for our corporate events. Could we schedule a call to discuss partnership opportunities?",
-    status: "waiting_for_customer",
-    priority: "medium",
-    category: "partnership",
-    assignedTo: "agent_003",
-    assignedAt: "2024-01-28 09:00:00",
-    createdAt: "2024-01-28 08:45:00",
-    updatedAt: "2024-01-28 14:20:00",
-    tags: ["partnership", "corporate-events"],
-    responses: [
-      {
-        id: "resp_003",
-        queryId: "5",
-        responderId: "agent_003",
-        responderName: "Michael Brown",
-        message: "Hi Lisa! I'd love to discuss partnership opportunities with you. I've sent you a calendar link with available times for next week. Looking forward to our conversation!",
-        createdAt: "2024-01-28 14:20:00",
-        isInternal: false,
-        platform: "linkedin"
-      }
-    ],
-    metadata: {
-      originalMessageId: "li_msg_005",
-      threadId: "li_thread_005"
-    }
-  }
-];
-
-// Website queries mock data
-const mockWebsiteQueries: SupportQuery[] = [
-  {
-    id: "web_1",
-    platform: "website",
-    senderName: "Jennifer Martinez",
-    senderHandle: "jennifer.martinez@email.com",
-    senderId: "web_001",
-    message: "I'm having trouble with the event registration process. The payment keeps failing and I'm not sure what's wrong.",
-    status: "new",
-    priority: "high",
-    category: "technical_support",
-    createdAt: "2024-01-28 16:15:00",
-    updatedAt: "2024-01-28 16:15:00",
-    tags: ["payment", "registration", "technical-issue"],
-    responses: [],
-    metadata: {
-      originalMessageId: "web_msg_001",
-      threadId: "web_thread_001"
-    }
-  },
-  {
-    id: "web_2",
-    platform: "website",
-    senderName: "Robert Kim",
-    senderHandle: "robert.kim@company.com",
-    senderId: "web_002",
-    message: "Can you help me understand how to set up recurring events? I need to create monthly workshops.",
-    status: "in_progress",
-    priority: "medium",
-    category: "general_inquiry",
-    assignedTo: "agent_001",
-    assignedAt: "2024-01-28 15:30:00",
-    createdAt: "2024-01-28 15:20:00",
-    updatedAt: "2024-01-28 15:30:00",
-    tags: ["recurring-events", "workshops", "setup"],
-    responses: [
-      {
-        id: "resp_web_001",
-        queryId: "web_2",
-        responderId: "agent_001",
-        responderName: "Alex Smith",
-        message: "Hi Robert! I'd be happy to help you set up recurring events. You can use our recurring event feature in the event creation form. Let me walk you through the process.",
-        createdAt: "2024-01-28 15:35:00",
-        isInternal: false,
-        platform: "website"
-      }
-    ],
-    metadata: {
-      originalMessageId: "web_msg_002",
-      threadId: "web_thread_002"
-    }
-  },
-  {
-    id: "web_3",
-    platform: "website",
-    senderName: "Amanda Foster",
-    senderHandle: "amanda.foster@events.com",
-    senderId: "web_003",
-    message: "I love the new dashboard design! However, I noticed that the analytics section is not showing my recent events. Is this a known issue?",
-    status: "resolved",
-    priority: "low",
-    category: "feature_request",
-    assignedTo: "agent_002",
-    assignedAt: "2024-01-28 14:00:00",
-    resolvedAt: "2024-01-28 14:45:00",
-    createdAt: "2024-01-28 13:45:00",
-    updatedAt: "2024-01-28 14:45:00",
-    tags: ["analytics", "dashboard", "positive-feedback"],
-    responses: [
-      {
-        id: "resp_web_002",
-        queryId: "web_3",
-        responderId: "agent_002",
-        responderName: "Jessica Lee",
-        message: "Hi Amanda! Thank you for the positive feedback about the new dashboard. The analytics issue you mentioned has been resolved - it was a caching problem that has now been fixed. You should see your recent events in the analytics section now.",
-        createdAt: "2024-01-28 14:45:00",
-        isInternal: false,
-        platform: "website"
-      }
-    ],
-    metadata: {
-      originalMessageId: "web_msg_003",
-      threadId: "web_thread_003"
-    }
-  }
-];
-
-const mockAgents: SupportAgent[] = [
-  {
-    id: "agent_001",
-    name: "Alex Smith",
-    email: "alex.smith@eventknit.com",
-    status: "online",
-    assignedQueries: 3,
-    resolvedToday: 8,
-    averageResponseTime: 15,
-    specialties: ["technical_support", "feature_request"]
-  },
-  {
-    id: "agent_002",
-    name: "Jessica Lee",
-    email: "jessica.lee@eventknit.com",
-    status: "online",
-    assignedQueries: 2,
-    resolvedToday: 12,
-    averageResponseTime: 12,
-    specialties: ["general_inquiry", "billing", "partnership"]
-  },
-  {
-    id: "agent_003",
-    name: "Michael Brown",
-    email: "michael.brown@eventknit.com",
-    status: "away",
-    assignedQueries: 1,
-    resolvedToday: 5,
-    averageResponseTime: 20,
-    specialties: ["partnership", "account_issues"]
-  }
-];
-
-const mockMetrics: SupportMetrics = {
-  totalQueries: 1247,
-  newQueries: 23,
-  inProgressQueries: 8,
-  resolvedToday: 45,
-  averageResponseTime: 18,
-  customerSatisfaction: 4.7,
+// Default metrics values
+const defaultMetrics: SupportMetrics = {
+  totalQueries: 0,
+  newQueries: 0,
+  inProgressQueries: 0,
+  resolvedToday: 0,
+  averageResponseTime: 0,
+  customerSatisfaction: 0,
   platformBreakdown: {
-    whatsapp: 45,
-    facebook: 32,
-    instagram: 28,
-    twitter: 25,
-    linkedin: 18,
-    email: 67,
-    website: 89
+    website: 0,
+    whatsapp: 0,
+    facebook: 0,
+    instagram: 0,
+    twitter: 0,
+    linkedin: 0,
+    email: 0
   },
   categoryBreakdown: {
-    general_inquiry: 35,
-    technical_support: 28,
-    billing: 15,
-    event_management: 12,
-    account_issues: 8,
-    feature_request: 6,
-    complaint: 3,
-    partnership: 2,
-    other: 1
+    technical_support: 0,
+    general_inquiry: 0,
+    billing: 0,
+    event_management: 0,
+    account_issues: 0,
+    feature_request: 0,
+    complaint: 0,
+    partnership: 0,
+    other: 0
   },
   priorityBreakdown: {
-    low: 45,
-    medium: 35,
-    high: 15,
-    urgent: 5
+    low: 0,
+    medium: 0,
+    high: 0,
+    urgent: 0
   }
 };
 
@@ -364,12 +109,85 @@ const SupportPage = () => {
   // API-driven state
   const [socialMessages, setSocialMessages] = useState<SocialMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [, setLoadingQueries] = useState(true);
+  const [, setLoadingStats] = useState(true);
 
-  // Legacy state (will be migrated to API or kept as fallback)
-  const [queries, setQueries] = useState<SupportQuery[]>(mockSupportQueries);
-  const [websiteQueries, setWebsiteQueries] = useState<SupportQuery[]>(mockWebsiteQueries);
-  const [agents] = useState<SupportAgent[]>(mockAgents);
-  const [metrics] = useState<SupportMetrics>(mockMetrics);
+  // Support queries from API
+  const [queries, setQueries] = useState<SupportQuery[]>([]);
+  const [websiteQueries, setWebsiteQueries] = useState<SupportQuery[]>([]);
+  const [agents] = useState<SupportAgent[]>([]);
+  const [metrics, setMetrics] = useState<SupportMetrics>(defaultMetrics);
+
+  // Load support queries from API
+  const loadSupportQueries = async () => {
+    try {
+      setLoadingQueries(true);
+      const response = await getSupportInbox();
+      if (response.success && response.data) {
+        const allQueries = response.data.queries || [];
+        // Map API response to component types
+        const mappedQueries: SupportQuery[] = allQueries.map((q: ApiSupportQuery) => ({
+          id: q.id,
+          platform: (q.platform?.toLowerCase() || q.channel || 'website') as SocialPlatform,
+          senderName: q.senderName,
+          senderHandle: q.senderHandle || q.senderEmail || '',
+          senderId: q.id,
+          message: q.message,
+          status: q.status.toLowerCase().replace('_', '_') as QueryStatus,
+          priority: q.priority.toLowerCase() as QueryPriority,
+          category: (q.category || 'general_inquiry') as QueryCategory,
+          assignedTo: q.assignedTo,
+          createdAt: q.createdAt,
+          updatedAt: q.updatedAt,
+          tags: [],
+          responses: [],
+          metadata: {}
+        }));
+
+        // Split by platform
+        const social = mappedQueries.filter(q => q.platform !== 'website');
+        const website = mappedQueries.filter(q => q.platform === 'website');
+
+        setQueries(social);
+        setWebsiteQueries(website);
+      }
+    } catch (error) {
+      console.error("Failed to load support queries:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load support queries.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingQueries(false);
+    }
+  };
+
+  // Load support statistics from API
+  const loadSupportStats = async () => {
+    try {
+      setLoadingStats(true);
+      const response = await getSupportStatistics();
+      if (response.success && response.data) {
+        const stats = response.data.statistics;
+        setMetrics({
+          ...defaultMetrics,
+          totalQueries: stats.total,
+          newQueries: stats.byStatus.new,
+          inProgressQueries: stats.byStatus.inProgress,
+          resolvedToday: stats.byStatus.resolved,
+          averageResponseTime: Math.round(stats.averageResponseTime / 60000), // Convert ms to minutes
+          customerSatisfaction: stats.resolutionRate / 20, // Convert percentage to 5-star scale
+          platformBreakdown: { ...defaultMetrics.platformBreakdown, ...stats.byPlatform },
+          priorityBreakdown: { ...defaultMetrics.priorityBreakdown, ...stats.byPriority }
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load support statistics:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   // Load social media messages from API
   const loadSocialMessages = async () => {
@@ -381,17 +199,14 @@ const SupportPage = () => {
       }
     } catch (error) {
       console.error("Failed to load social messages:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load social media messages. Using cached data.",
-        variant: "destructive",
-      });
     } finally {
       setLoadingMessages(false);
     }
   };
 
   useEffect(() => {
+    loadSupportQueries();
+    loadSupportStats();
     loadSocialMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

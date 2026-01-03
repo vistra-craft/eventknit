@@ -9,7 +9,7 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, Clock } from "lucide-react";
+import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 // Helper function to format time for display
@@ -36,12 +36,12 @@ const formatTimeForDisplay = (timeStr: string): string => {
 };
 
 // Helper function to generate agenda summary
-const generateAgendaSummary = (agenda: any[] | null | undefined) => {
+const generateAgendaSummary = (agenda: { title?: string; startTime?: string }[] | null | undefined) => {
   if (!agenda || agenda.length === 0) return null;
-  
+
   // Group agenda items by session type
   const sessionGroups = new Map<string, { times: string[], count: number }>();
-  
+
   agenda.forEach((item) => {
     const title = item.title || '';
     const lower = title.toLowerCase();
@@ -396,12 +396,12 @@ const EventDetails = () => {
                 const hasSpeakers = speakersData && Array.isArray(speakersData) && speakersData.length > 0;
                 
                 if (hasSpeakers) {
-                  const safeSpeakers = speakersData as any[];
+                  const safeSpeakers = speakersData as { name?: string; title?: string; image?: string }[];
                   return (
                     <section>
                       <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {safeSpeakers.slice(0, 8).map((speaker: any, index: number) => (
+                        {safeSpeakers.slice(0, 8).map((speaker, index: number) => (
                           <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border-0 bg-card-surface shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
                             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
                               {speaker?.image ? (

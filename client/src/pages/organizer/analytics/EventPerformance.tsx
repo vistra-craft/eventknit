@@ -218,7 +218,6 @@ const EventPerformance = () => {
     event: event.title,
   }));
 
-  const eventsData = eventPerformanceData;
   const metricsData = performanceMetrics;
 
   const getStatusBadge = (status: string) => {

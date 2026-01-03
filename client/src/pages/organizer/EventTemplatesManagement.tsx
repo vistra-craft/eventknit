@@ -25,7 +25,7 @@ import {
   getPublicTemplates,
   deleteTemplate,
   shareTemplate,
-  useTemplate as applyTemplate,
+  applyTemplate,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/use-toast";
 

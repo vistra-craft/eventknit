@@ -39,7 +39,7 @@ import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData, type BackendEvent } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
-import { useTemplate } from '@/lib/organizer-dashboard-api';
+import { applyTemplate } from '@/lib/organizer-dashboard-api';
 import { useToast } from '@/hooks/use-toast';
 import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
 import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
@@ -78,6 +78,97 @@ interface RegistrationField {
   placeholder?: string;
   options?: string[];
 }
+
+interface AgendaItem {
+  title: string;
+  description?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  speakers?: string[];
+}
+
+interface SpeakerItem {
+  id?: string;
+  name: string;
+  title?: string;
+  bio?: string;
+  image?: string;
+}
+
+interface ExhibitorItem {
+  id?: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  booth?: string;
+}
+
+interface SponsorItem {
+  id?: string;
+  name: string;
+  level?: 'gold' | 'silver' | 'bronze' | string;
+  logo?: string;
+}
+
+interface TemplateDataResponse {
+  templateData?: TemplateData;
+  eventData?: TemplateData;
+  templateName?: string;
+}
+
+interface TemplateData {
+  description?: string;
+  fullDescription?: string;
+  organizerDescription?: string;
+  location?: string;
+  venue?: string;
+  address?: string;
+  onlineLink?: string;
+  price?: number | string;
+  capacity?: number;
+  image?: string;
+  requirements?: string[] | string;
+  ageRestriction?: string;
+  isOnline?: boolean;
+  category?: string;
+  timezone?: string;
+  currency?: string;
+  ticketTypes?: TicketTypeData[];
+  registrationFields?: RegistrationFieldData[];
+  tags?: string[] | string;
+  faqs?: Array<{ question: string; answer: string }>;
+  agenda?: AgendaItem[] | string;
+  speakers?: SpeakerItem[];
+  exhibitors?: ExhibitorItem[];
+  sponsors?: SponsorItem[];
+  socialLinks?: Record<string, string>;
+  isPrivate?: boolean;
+}
+
+interface TicketTypeData {
+  name?: string;
+  price?: number | string;
+  originalPrice?: number | string;
+  discountLabel?: string;
+  quantity?: number | string;
+  isComplementary?: boolean;
+  requiresInvitation?: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+}
+
+interface RegistrationFieldData {
+  id?: string;
+  name?: string;
+  type?: string;
+  label?: string;
+  required?: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
+type FormFieldType = 'text' | 'email' | 'tel' | 'phone' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'date' | 'number';
 
 interface TicketType {
   id: number;
@@ -119,10 +210,10 @@ interface EventData {
   category?: string;
   timezone?: string;
   socialLinks?: Record<string, string>;
-  exhibitors?: any[];
-  sponsors?: any[];
-  agenda?: any[];
-  speakers?: any[];
+  exhibitors?: ExhibitorItem[];
+  sponsors?: SponsorItem[];
+  agenda?: AgendaItem[];
+  speakers?: SpeakerItem[];
 }
 
 type Tag = string;
@@ -189,10 +280,10 @@ export default function CreateEventStepwise() {
 
   // Restored missing state for enhancements
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
-  const [agenda, setAgenda] = useState<any[]>([]);
-  const [speakers, setSpeakers] = useState<any[]>([]);
-  const [exhibitors, setExhibitors] = useState<any[]>([]);
-  const [sponsors, setSponsors] = useState<any[]>([]);
+  const [agenda, setAgenda] = useState<AgendaItem[]>([]);
+  const [speakers, setSpeakers] = useState<SpeakerItem[]>([]);
+  const [exhibitors, setExhibitors] = useState<ExhibitorItem[]>([]);
+  const [sponsors, setSponsors] = useState<SponsorItem[]>([]);
   
   // Verification state
   const [loadingVerification, setLoadingVerification] = useState(false);
@@ -752,21 +843,21 @@ export default function CreateEventStepwise() {
           }
 
           // Set agenda - ensure proper structure and handle JSON strings
-          let agendaData: any = transformedEvent.agenda;
-          
+          let agendaData: AgendaItem[] | string | null = transformedEvent.agenda as AgendaItem[] | string | null;
+
           // If agenda is a string, try to parse it
           if (typeof agendaData === 'string' && agendaData.trim() !== '') {
             try {
-              agendaData = JSON.parse(agendaData);
+              agendaData = JSON.parse(agendaData) as AgendaItem[];
             } catch (e) {
               console.error('Failed to parse agenda JSON:', e);
               agendaData = null;
             }
           }
-          
+
           if (agendaData && Array.isArray(agendaData) && agendaData.length > 0) {
             // Map agenda items to ensure they have the correct structure
-            const mappedAgenda = agendaData.map((item: any) => ({
+            const mappedAgenda = agendaData.map((item: AgendaItem) => ({
               title: item.title || '',
               description: item.description || '',
               date: item.date || '',
@@ -837,13 +928,14 @@ export default function CreateEventStepwise() {
         setIsLoadingTemplate(true);
         setError(null);
         
-        const response = await useTemplate(templateId);
+        const response = await applyTemplate(templateId);
         
         if (response.success && response.data) {
           // The API returns { templateData, templateName }
           // Handle both templateData and eventData for compatibility
-          const templateData = (response.data as any).templateData || (response.data as any).eventData || {};
-          const templateName = (response.data as any).templateName || '';
+          const responseData = response.data as TemplateDataResponse;
+          const templateData: TemplateData = responseData.templateData || responseData.eventData || {};
+          const templateName = responseData.templateName || '';
           
           // Clear any existing draft when loading from template
           localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -853,51 +945,51 @@ export default function CreateEventStepwise() {
             ...prev,
             title: "", // Always clear title - user must enter new one
             organizer: user?.organizationName || "",
-            description: (templateData.description as string) || "",
-            fullDescription: (templateData.fullDescription as string) || "",
-            organizerDescription: (templateData.organizerDescription as string) || "",
+            description: templateData.description || "",
+            fullDescription: templateData.fullDescription || "",
+            organizerDescription: templateData.organizerDescription || "",
             date: "", // Clear dates - user must enter new ones
             time: "",
             endDate: "",
             endTime: "",
             registrationDeadline: "",
-            location: (templateData.location as string) || "",
-            venue: (templateData.venue as string) || "",
-            address: (templateData.address as string) || "",
-            onlineLink: (templateData.onlineLink as string) || "",
+            location: templateData.location || "",
+            venue: templateData.venue || "",
+            address: templateData.address || "",
+            onlineLink: templateData.onlineLink || "",
             price: templateData.price ? String(templateData.price) : "",
-            totalSlots: (templateData.capacity as number) || 0,
-            image: (templateData.image as string) || "",
+            totalSlots: templateData.capacity || 0,
+            image: templateData.image || "",
             requirements: Array.isArray(templateData.requirements)
-              ? (templateData.requirements as string[]).join('\n')
+              ? templateData.requirements.join('\n')
               : (typeof templateData.requirements === 'string' ? templateData.requirements : ""),
-            ageRestriction: (templateData.ageRestriction as string) || "",
-            isOnline: (templateData.isOnline as boolean) || false,
+            ageRestriction: templateData.ageRestriction || "",
+            isOnline: templateData.isOnline || false,
             capacity: templateData.capacity ? String(templateData.capacity) : "",
-            category: (templateData.category as string) || "",
-            timezone: (templateData.timezone as string) || timezone,
-            currency: (templateData.currency as string) || DEFAULT_CURRENCY,
+            category: templateData.category || "",
+            timezone: templateData.timezone || timezone,
+            currency: templateData.currency || DEFAULT_CURRENCY,
           }));
-          
+
           // Set timezone separately
-          if (templateData.timezone && (templateData.timezone as string).trim() !== '') {
-            setTimezone(templateData.timezone as string);
+          if (templateData.timezone && templateData.timezone.trim() !== '') {
+            setTimezone(templateData.timezone);
           }
 
           // Set image preview if image exists
           if (templateData.image) {
-            setImagePreview(templateData.image as string);
+            setImagePreview(templateData.image);
           }
 
           // Set event type based on isOnline
-          setEventType((templateData.isOnline as boolean) ? "online" : "in-person");
+          setEventType(templateData.isOnline ? "online" : "in-person");
 
           // Set ticket types
           if (templateData.ticketTypes && Array.isArray(templateData.ticketTypes) && templateData.ticketTypes.length > 0) {
-            const mappedTicketTypes: TicketType[] = (templateData.ticketTypes as any[]).map((tt, index) => ({
+            const mappedTicketTypes: TicketType[] = templateData.ticketTypes.map((tt: TicketTypeData, index: number) => ({
               id: index + 1,
               name: tt.name || "",
-              type: (tt.price === 0 || tt.isComplementary) ? "free" : "paid",
+              type: (tt.price === 0 || tt.isComplementary) ? "free" as const : "paid" as const,
               price: tt.price ? String(tt.price) : "",
               originalPrice: tt.originalPrice ? String(tt.originalPrice) : undefined,
               discountLabel: tt.discountLabel || undefined,
@@ -912,9 +1004,9 @@ export default function CreateEventStepwise() {
 
           // Set registration fields
           if (templateData.registrationFields && Array.isArray(templateData.registrationFields) && templateData.registrationFields.length > 0) {
-            const mappedFields: RegistrationField[] = (templateData.registrationFields as any[]).map(field => ({
+            const mappedFields: RegistrationField[] = templateData.registrationFields.map((field: RegistrationFieldData) => ({
               id: field.id || `field-${Date.now()}-${Math.random()}`,
-              name: field.name || field.id,
+              name: field.name || field.id || '',
               type: field.type || "text",
               label: field.label || field.name || "",
               required: field.required || false,
@@ -926,13 +1018,13 @@ export default function CreateEventStepwise() {
 
           // Set categories
           if (templateData.category) {
-            setCategories([templateData.category as string]);
+            setCategories([templateData.category]);
           }
 
           // Set tags
           if (templateData.tags) {
             if (Array.isArray(templateData.tags)) {
-              setTags(templateData.tags as string[]);
+              setTags(templateData.tags);
             } else if (typeof templateData.tags === 'string') {
               try {
                 const parsedTags = JSON.parse(templateData.tags);
@@ -945,22 +1037,24 @@ export default function CreateEventStepwise() {
 
           // Set FAQs
           if (templateData.faqs && Array.isArray(templateData.faqs) && templateData.faqs.length > 0) {
-            setFaqs(templateData.faqs as Array<{ question: string; answer: string }>);
+            setFaqs(templateData.faqs);
           }
 
           // Set agenda
-          let agendaData: any = templateData.agenda;
-          if (typeof agendaData === 'string' && agendaData.trim() !== '') {
+          let agendaDataParsed: AgendaItem[] | null = null;
+          if (typeof templateData.agenda === 'string' && templateData.agenda.trim() !== '') {
             try {
-              agendaData = JSON.parse(agendaData);
+              agendaDataParsed = JSON.parse(templateData.agenda) as AgendaItem[];
             } catch (e) {
               console.error('Failed to parse agenda JSON:', e);
-              agendaData = null;
+              agendaDataParsed = null;
             }
+          } else if (Array.isArray(templateData.agenda)) {
+            agendaDataParsed = templateData.agenda;
           }
-          
-          if (agendaData && Array.isArray(agendaData) && agendaData.length > 0) {
-            const mappedAgenda = agendaData.map((item: any) => ({
+
+          if (agendaDataParsed && Array.isArray(agendaDataParsed) && agendaDataParsed.length > 0) {
+            const mappedAgenda = agendaDataParsed.map((item: AgendaItem) => ({
               title: item.title || '',
               description: item.description || '',
               date: item.date || '',
@@ -974,7 +1068,7 @@ export default function CreateEventStepwise() {
 
           // Set speakers
           if (templateData.speakers && Array.isArray(templateData.speakers) && templateData.speakers.length > 0) {
-            const mappedSpeakers = (templateData.speakers as any[]).map((speaker, index) => ({
+            const mappedSpeakers = templateData.speakers.map((speaker: SpeakerItem, index: number) => ({
               id: `speaker-${index}`,
               name: speaker.name || "",
               title: speaker.title || "",
@@ -987,24 +1081,24 @@ export default function CreateEventStepwise() {
 
           // Set exhibitors
           if (templateData.exhibitors && Array.isArray(templateData.exhibitors) && templateData.exhibitors.length > 0) {
-            setExhibitors(templateData.exhibitors as any[]);
+            setExhibitors(templateData.exhibitors);
             setEventData(prev => ({ ...prev, exhibitors: templateData.exhibitors || [] }));
           }
 
           // Set sponsors
           if (templateData.sponsors && Array.isArray(templateData.sponsors) && templateData.sponsors.length > 0) {
-            setSponsors(templateData.sponsors as any[]);
+            setSponsors(templateData.sponsors);
             setEventData(prev => ({ ...prev, sponsors: templateData.sponsors || [] }));
           }
 
           // Set social links
           if (templateData.socialLinks && typeof templateData.socialLinks === 'object') {
-            setSocialLinks(templateData.socialLinks as Record<string, string>);
+            setSocialLinks(templateData.socialLinks);
             setEventData(prev => ({ ...prev, socialLinks: templateData.socialLinks || {} }));
           }
 
           // Set privacy
-          setIsPrivate((templateData.isPrivate as boolean) || false);
+          setIsPrivate(templateData.isPrivate || false);
 
           // Show success message
           toast({
@@ -2056,22 +2150,22 @@ export default function CreateEventStepwise() {
     </div>
   );
 
-  const handleAgendaUpdate = useCallback((field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors', value: any) => {
+  const handleAgendaUpdate = useCallback((field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors', value: AgendaItem[] | SpeakerItem[] | ExhibitorItem[] | SponsorItem[]) => {
     if (field === 'agenda') {
-      setAgenda(value);
-      setEventData(prev => ({ ...prev, agenda: value }));
+      setAgenda(value as AgendaItem[]);
+      setEventData(prev => ({ ...prev, agenda: value as AgendaItem[] }));
     }
     if (field === 'speakers') {
-      setSpeakers(value);
-      setEventData(prev => ({ ...prev, speakers: value }));
+      setSpeakers(value as SpeakerItem[]);
+      setEventData(prev => ({ ...prev, speakers: value as SpeakerItem[] }));
     }
     if (field === 'exhibitors') {
-      setExhibitors(value);
-      setEventData(prev => ({ ...prev, exhibitors: value }));
+      setExhibitors(value as ExhibitorItem[]);
+      setEventData(prev => ({ ...prev, exhibitors: value as ExhibitorItem[] }));
     }
     if (field === 'sponsors') {
-      setSponsors(value);
-      setEventData(prev => ({ ...prev, sponsors: value }));
+      setSponsors(value as SponsorItem[]);
+      setEventData(prev => ({ ...prev, sponsors: value as SponsorItem[] }));
     }
   }, []);
 
@@ -2506,7 +2600,7 @@ export default function CreateEventStepwise() {
           fields={registrationFields.map((field: RegistrationField) => ({
             id: field.id,
             name: field.id,
-            type: field.type as any,
+            type: field.type as FormFieldType,
             label: field.label,
             required: field.required,
             placeholder: field.placeholder,

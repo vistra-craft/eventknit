@@ -192,7 +192,7 @@ const StaffManagement = () => {
   }, [searchTerm, filterRole, filterStatus]);
 
   // Get stats from assignments
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<{ staffId: string; eventId: string }[]>([]);
   useEffect(() => {
     const fetchAssignments = async () => {
       try {
@@ -245,10 +245,10 @@ const StaffManagement = () => {
         });
         fetchStaff();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create staff member",
+        description: error instanceof Error ? error.message : "Failed to create staff member",
         variant: "destructive",
       });
     } finally {
@@ -279,10 +279,10 @@ const StaffManagement = () => {
         setEditingStaff(null);
         fetchStaff();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update staff member",
+        description: error instanceof Error ? error.message : "Failed to update staff member",
         variant: "destructive",
       });
     } finally {
@@ -306,10 +306,10 @@ const StaffManagement = () => {
         setDeletingStaffId(null);
         fetchStaff();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to delete staff member",
+        description: error instanceof Error ? error.message : "Failed to delete staff member",
         variant: "destructive",
       });
     } finally {

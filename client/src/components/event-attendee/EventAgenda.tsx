@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { Clock, MapPin, Mic, Users, Coffee, Utensils, Calendar } from "lucide-react";
+import { Clock, MapPin, Mic, Users, Coffee, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { EventData, User, AgendaItem, Speaker } from "./EventAttendeeView";
+import type { EventData, User, AgendaItem } from "./EventAttendeeView";
 
 interface EventAgendaProps {
   event: EventData;

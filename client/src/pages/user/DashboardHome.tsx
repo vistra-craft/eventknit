@@ -23,7 +23,6 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import EmptyState from "../../components/EmptyState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
-import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { Avatar } from "../../components/ui/avatar";
 import { getUserRegisteredEvents } from "../../lib/event-api";
 import { useAuth } from "../../hooks/useAuth";

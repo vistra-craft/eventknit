@@ -73,9 +73,9 @@ const AdminSocialMediaPage = () => {
   const [apiAccounts, setApiAccounts] = useState<ApiSocialAccount[]>([]);
   const [apiPosts, setApiPosts] = useState<ApiSocialPost[]>([]);
   const [apiMetrics, setApiMetrics] = useState<SocialMetrics | null>(null);
-  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  const [, setLoadingAccounts] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(false);
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [, setLoadingMetrics] = useState(false);
 
   // Load social accounts from API
   const loadAccounts = async () => {

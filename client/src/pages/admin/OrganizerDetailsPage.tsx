@@ -116,7 +116,7 @@ const OrganizerDetailsPage = () => {
             if (profileResponse.success && profileResponse.data?.organizerProfile) {
               setOrganizerProfileData(profileResponse.data.organizerProfile);
             }
-          } catch (profileErr) {
+          } catch {
             console.log("No organizer profile found, using defaults");
           }
 
@@ -125,7 +125,7 @@ const OrganizerDetailsPage = () => {
             if (contactResponse.success && contactResponse.data?.emergencyContact) {
               setEmergencyContactData(contactResponse.data.emergencyContact);
             }
-          } catch (contactErr) {
+          } catch {
             console.log("No emergency contact found");
           }
         } else {

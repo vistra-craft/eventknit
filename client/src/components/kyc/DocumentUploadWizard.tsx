@@ -168,10 +168,10 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
         title: 'Upload successful',
         description: `${req.description} uploaded successfully`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Upload failed',
-        description: error?.message ?? 'Something went wrong',
+        description: error instanceof Error ? error.message : 'Something went wrong',
         variant: 'destructive',
       });
     } finally {
@@ -187,10 +187,10 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
     try {
       await onDelete(documentId);
       toast({ title: 'Document deleted' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Delete failed',
-        description: error?.message ?? 'Something went wrong',
+        description: error instanceof Error ? error.message : 'Something went wrong',
         variant: 'destructive',
       });
     }

@@ -37,7 +37,7 @@ export interface CreateEmailTemplateData {
   isDefault?: boolean;
 }
 
-export interface UpdateEmailTemplateData extends Partial<CreateEmailTemplateData> {}
+export type UpdateEmailTemplateData = Partial<CreateEmailTemplateData>;
 
 export interface EmailTemplatesResponse {
   templates: EmailTemplate[];

@@ -28,7 +28,6 @@ import {
   Plus,
   XCircle,
   Lock,
-  Filter,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -127,7 +126,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: { eventId: string; e
           setMessages(historyResponse.data.messages || []);
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to send message",

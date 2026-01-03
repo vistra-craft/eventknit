@@ -56,7 +56,7 @@ const MyTickets: React.FC = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          const eventsWithTickets = response.data.events.map((event: any) => ({
+          const eventsWithTickets = response.data.events.map((event: { id: string; title: string; date?: string; location?: string; type?: string; image?: string; status?: string; category?: string; ticketId?: string }) => ({
             id: event.id,
             title: event.title,
             date: event.date,

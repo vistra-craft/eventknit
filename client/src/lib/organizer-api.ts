@@ -276,7 +276,7 @@ export const getOrganizerEventById = async (eventId: string): Promise<EventRespo
             speakers: item.speakers || [],
           }))
           : (typeof event.agenda === 'string'
-            ? JSON.parse(event.agenda).map((item: any) => ({
+            ? JSON.parse(event.agenda).map((item: { title?: string; description?: string; date?: string; startTime?: string; endTime?: string; speakers?: string[] }) => ({
               title: item.title || "",
               description: item.description || "",
               date: item.date || undefined,
@@ -296,7 +296,7 @@ export const getOrganizerEventById = async (eventId: string): Promise<EventRespo
             booth: exhibitor.booth || "",
           }))
           : (typeof event.exhibitors === 'string'
-            ? JSON.parse(event.exhibitors).map((exhibitor: any) => ({
+            ? JSON.parse(event.exhibitors).map((exhibitor: { name?: string; description?: string; logo?: string; contactEmail?: string; booth?: string }) => ({
               name: exhibitor.name || "",
               description: exhibitor.description || "",
               logo: exhibitor.logo || "",

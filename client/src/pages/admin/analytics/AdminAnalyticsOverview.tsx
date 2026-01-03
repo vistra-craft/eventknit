@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import AdminLayout from "../AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,6 @@ import {
   Users,
   Calendar,
   DollarSign,
-  Eye,
   ArrowUpRight,
   ArrowDownRight,
   Download,
@@ -17,6 +16,8 @@ import {
   RefreshCw,
   Building2,
   Activity,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import {
   CustomLineChart,
@@ -27,10 +28,58 @@ import {
   CustomComposedChart,
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
+import {
+  getAdminDashboardStats,
+  getAdminDashboardGrowth,
+  getAdminRecentEvents,
+  type AdminDashboardStatsResponse,
+  type AdminDashboardGrowthResponse,
+  type AdminRecentEventsResponse,
+  type AdminDashboardGrowthPeriod,
+} from "@/lib/admin-api";
+
+interface PlatformStat {
+  title: string;
+  value: string;
+  change: string;
+  changeType: "positive" | "negative";
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  description: string;
+}
+
+interface GrowthDataPoint {
+  month: string;
+  events: number;
+  organizers: number;
+  attendees: number;
+  revenue: number;
+}
+
+interface RecentEvent {
+  id: string;
+  title: string;
+  organizer: string;
+  date: string;
+  attendees: number;
+  status: string;
+  revenue: string;
+  category: string;
+}
 
 const AdminAnalyticsOverview = () => {
   const location = useLocation();
-  const [timeRange, setTimeRange] = useState("30d");
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // API data state
+  const [platformStats, setPlatformStats] = useState<PlatformStat[]>([]);
+  const [growthData, setGrowthData] = useState<GrowthDataPoint[]>([]);
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
 
   // Determine current tab based on route
   const getCurrentTab = () => {
@@ -43,86 +92,159 @@ const AdminAnalyticsOverview = () => {
 
   const currentTab = getCurrentTab();
 
-  // Admin-specific analytics data
-  const platformStats = [
-    {
-      title: "Total Events",
-      value: "1,247",
-      change: "+18%",
-      changeType: "positive",
-      icon: Calendar,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      borderColor: "border-blue-200",
-      description: "All events on platform",
+  // Transform API stats to UI format
+  const transformStats = useCallback(
+    (data: AdminDashboardStatsResponse["data"]): PlatformStat[] => {
+      const { stats } = data;
+      return [
+        {
+          title: "Total Events",
+          value: stats.totalEvents.value,
+          change: stats.totalEvents.change,
+          changeType: stats.totalEvents.changeType,
+          icon: Calendar,
+          color: "text-blue-600",
+          bgColor: "bg-blue-100",
+          borderColor: "border-blue-200",
+          description: "All events on platform",
+        },
+        {
+          title: "Active Organizers",
+          value: stats.organizers.value,
+          change: stats.organizers.change,
+          changeType: stats.organizers.changeType,
+          icon: Building2,
+          color: "text-green-600",
+          bgColor: "bg-green-100",
+          borderColor: "border-green-200",
+          description: "Registered organizers",
+        },
+        {
+          title: "Active Staff",
+          value: stats.activeStaff.value,
+          change: stats.activeStaff.change,
+          changeType: stats.activeStaff.changeType,
+          icon: Users,
+          color: "text-purple-600",
+          bgColor: "bg-purple-100",
+          borderColor: "border-purple-200",
+          description: "Platform staff members",
+        },
+        {
+          title: "Platform Revenue",
+          value: stats.platformRevenue.value,
+          change: stats.platformRevenue.change,
+          changeType: stats.platformRevenue.changeType,
+          icon: DollarSign,
+          color: "text-emerald-600",
+          bgColor: "bg-emerald-100",
+          borderColor: "border-emerald-200",
+          description: "Total platform revenue",
+        },
+        {
+          title: "System Health",
+          value: "99.9%",
+          change: "+0.1%",
+          changeType: "positive",
+          icon: Activity,
+          color: "text-orange-600",
+          bgColor: "bg-orange-100",
+          borderColor: "border-orange-200",
+          description: "Platform uptime",
+        },
+      ];
     },
-    {
-      title: "Active Organizers",
-      value: "1,089",
-      change: "+15%",
-      changeType: "positive",
-      icon: Building2,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
-      description: "Registered organizers",
-    },
-    {
-      title: "Total Attendees",
-      value: "45,230",
-      change: "+24%",
-      changeType: "positive",
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
-      borderColor: "border-purple-200",
-      description: "Platform-wide attendees",
-    },
-    {
-      title: "Platform Revenue",
-      value: "$2,847,450",
-      change: "+32%",
-      changeType: "positive",
-      icon: DollarSign,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100",
-      borderColor: "border-emerald-200",
-      description: "Total platform revenue",
-    },
-    {
-      title: "System Health",
-      value: "99.9%",
-      change: "+0.1%",
-      changeType: "positive",
-      icon: Activity,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
-      borderColor: "border-orange-200",
-      description: "Platform uptime",
-    },
-    {
-      title: "Page Views",
-      value: "892,340",
-      change: "+12%",
-      changeType: "positive",
-      icon: Eye,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-100",
-      borderColor: "border-indigo-200",
-      description: "Platform page views",
-    },
-  ];
+    []
+  );
 
-  // Chart data
-  const platformGrowthData = [
-    { month: "Jan", events: 45, organizers: 89, attendees: 3200, revenue: 125000 },
-    { month: "Feb", events: 52, organizers: 95, attendees: 3800, revenue: 145000 },
-    { month: "Mar", events: 68, organizers: 112, attendees: 5200, revenue: 195000 },
-    { month: "Apr", events: 75, organizers: 125, attendees: 6100, revenue: 225000 },
-    { month: "May", events: 82, organizers: 138, attendees: 7200, revenue: 275000 },
-    { month: "Jun", events: 95, organizers: 156, attendees: 8900, revenue: 340000 },
-  ];
+  // Transform growth data to chart format
+  const transformGrowthData = useCallback(
+    (data: AdminDashboardGrowthResponse["data"]): GrowthDataPoint[] => {
+      const { organizers, events, revenue, attendees } = data;
+      // Combine data series by index (they all have the same labels)
+      return events.map((eventPoint, index) => ({
+        month: eventPoint.label,
+        events: eventPoint.value,
+        organizers: organizers[index]?.value || 0,
+        attendees: attendees[index]?.value || 0,
+        revenue: revenue[index]?.value || 0,
+      }));
+    },
+    []
+  );
 
+  // Transform recent events to UI format
+  const transformRecentEvents = useCallback(
+    (data: AdminRecentEventsResponse["data"]): RecentEvent[] => {
+      return data.events.map((event) => ({
+        id: event.id,
+        title: event.title,
+        organizer: event.organizer,
+        date: event.date,
+        attendees: event.attendees,
+        status: event.status,
+        revenue: event.revenue,
+        category: event.category,
+      }));
+    },
+    []
+  );
+
+  // Fetch all analytics data
+  const fetchData = useCallback(async (showRefresh = false) => {
+    try {
+      if (showRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
+
+      // Map time range to growth period
+      const periodMap: Record<string, AdminDashboardGrowthPeriod> = {
+        "7d": "monthly",
+        "30d": "monthly",
+        "90d": "quarterly",
+        "1y": "yearly",
+      };
+
+      const [statsRes, growthRes, eventsRes] = await Promise.all([
+        getAdminDashboardStats(timeRange),
+        getAdminDashboardGrowth(periodMap[timeRange] || "monthly"),
+        getAdminRecentEvents(10),
+      ]);
+
+      if (statsRes.success && statsRes.data) {
+        setPlatformStats(transformStats(statsRes.data));
+      }
+
+      if (growthRes.success && growthRes.data) {
+        setGrowthData(transformGrowthData(growthRes.data));
+      }
+
+      if (eventsRes.success && eventsRes.data) {
+        setRecentEvents(transformRecentEvents(eventsRes.data));
+      }
+    } catch (err) {
+      console.error("Failed to fetch analytics data:", err);
+      setError("Failed to load analytics data. Please try again.");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [timeRange, transformStats, transformGrowthData, transformRecentEvents]);
+
+  // Fetch data on mount and when timeRange changes
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Handle refresh button click
+  const handleRefresh = () => {
+    fetchData(true);
+  };
+
+  // Static chart data (these could be fetched from additional endpoints if available)
   const eventCategoriesData = [
     { category: "Technology", count: 456, percentage: 37 },
     { category: "Business", count: 234, percentage: 19 },
@@ -143,49 +265,6 @@ const AdminAnalyticsOverview = () => {
     { metric: "Database Performance", value: 95, unit: "%", status: "excellent" },
     { metric: "Server Load", value: 68, unit: "%", status: "good" },
     { metric: "Error Rate", value: 0.2, unit: "%", status: "excellent" },
-  ];
-
-  const recentEvents = [
-    {
-      id: 1,
-      title: "Tech Conference 2024",
-      organizer: "Tech Events Co.",
-      date: "2024-03-15",
-      attendees: 1250,
-      status: "active",
-      revenue: "$45,000",
-      category: "Technology",
-    },
-    {
-      id: 2,
-      title: "Business Leadership Workshop",
-      organizer: "Business Academy",
-      date: "2024-03-20",
-      attendees: 450,
-      status: "pending",
-      revenue: "$12,500",
-      category: "Business",
-    },
-    {
-      id: 3,
-      title: "Music Festival 2024",
-      organizer: "Music Events Ltd",
-      date: "2024-04-01",
-      attendees: 5000,
-      status: "active",
-      revenue: "$125,000",
-      category: "Entertainment",
-    },
-    {
-      id: 4,
-      title: "Health & Wellness Expo",
-      organizer: "Wellness Corp",
-      date: "2024-03-25",
-      attendees: 800,
-      status: "approved",
-      revenue: "$28,000",
-      category: "Health",
-    },
   ];
 
   const getStatusBadge = (status: string) => {
@@ -233,15 +312,43 @@ const AdminAnalyticsOverview = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+              <Button
+                variant="outline"
+                size="sm"
+                className="hover:bg-gray-900 hover:text-white transition-colors"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                {isRefreshing ? "Refreshing..." : "Refresh"}
               </Button>
             </div>
           </div>
 
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Loading analytics...</span>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                <p className="text-destructive">{error}</p>
+                <Button variant="outline" size="sm" onClick={handleRefresh} className="mt-4">
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Platform Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {!isLoading && !error && platformStats.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {platformStats.map((stat, index) => (
               <Card key={index} className={`border ${stat.borderColor} hover:shadow-md transition-shadow duration-200`}>
                 <CardContent className="p-4">
@@ -279,8 +386,10 @@ const AdminAnalyticsOverview = () => {
               </Card>
             ))}
           </div>
+          )}
 
           {/* Main Content Tabs */}
+          {!isLoading && !error && (
           <Tabs value={currentTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -299,7 +408,7 @@ const AdminAnalyticsOverview = () => {
                   </CardHeader>
                   <CardContent>
                     <CustomComposedChart
-                      data={platformGrowthData}
+                      data={growthData}
                       xAxisKey="month"
                       bars={[
                         { dataKey: "events", name: "Events", color: CHART_COLORS.primary },
@@ -452,7 +561,7 @@ const AdminAnalyticsOverview = () => {
                   </CardHeader>
                   <CardContent>
                     <CustomLineChart
-                      data={platformGrowthData}
+                      data={growthData}
                       dataKey="organizers"
                       xAxisKey="month"
                       height={300}
@@ -472,7 +581,7 @@ const AdminAnalyticsOverview = () => {
                   </CardHeader>
                   <CardContent>
                     <CustomLineChart
-                      data={platformGrowthData}
+                      data={growthData}
                       dataKey="revenue"
                       xAxisKey="month"
                       height={300}
@@ -581,7 +690,7 @@ const AdminAnalyticsOverview = () => {
                   </CardHeader>
                   <CardContent>
                     <CustomAreaChart
-                      data={platformGrowthData}
+                      data={growthData}
                       dataKey="events"
                       xAxisKey="month"
                       height={300}
@@ -597,7 +706,7 @@ const AdminAnalyticsOverview = () => {
                   </CardHeader>
                   <CardContent>
                     <CustomMultiLineChart
-                      data={platformGrowthData}
+                      data={growthData}
                       xAxisKey="month"
                       lines={[
                         { dataKey: "events", name: "Events", color: CHART_COLORS.primary },
@@ -615,6 +724,7 @@ const AdminAnalyticsOverview = () => {
               </div>
             </TabsContent>
           </Tabs>
+          )}
         </div>
     </AdminLayout>
   );

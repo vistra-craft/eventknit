@@ -81,10 +81,10 @@ export const DirectorsForm: React.FC<DirectorsFormProps> = ({
         title: 'Director added',
         description: 'Director/shareholder has been added successfully',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Failed to add director',
-        description: error?.message || 'An error occurred while adding the director',
+        description: error instanceof Error ? error.message : 'An error occurred while adding the director',
         variant: 'destructive',
       });
     } finally {
@@ -103,10 +103,10 @@ export const DirectorsForm: React.FC<DirectorsFormProps> = ({
         title: 'Director removed',
         description: 'Director/shareholder has been removed successfully',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Failed to remove director',
-        description: error?.message || 'An error occurred while removing the director',
+        description: error instanceof Error ? error.message : 'An error occurred while removing the director',
         variant: 'destructive',
       });
     }
