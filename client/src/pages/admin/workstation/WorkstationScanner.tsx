@@ -813,7 +813,7 @@ const WorkstationScanner: React.FC = () => {
       case 'error':
         return "bg-red-100 text-red-800 border-red-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -831,7 +831,7 @@ const WorkstationScanner: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-600">Loading...</div>
+          <div className="text-muted-foreground">Loading...</div>
         </div>
       </AdminLayout>
     );
@@ -851,8 +851,8 @@ const WorkstationScanner: React.FC = () => {
             Back to Workstation
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-gray-900">Ticket Scanner</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-lg font-semibold text-foreground">Ticket Scanner</h1>
+            <p className="text-muted-foreground mt-2">
               {currentEvent ? `${currentEvent.title} • ${formatDate(currentEvent.startDate)}` : 'Select an event'}
             </p>
           </div>
@@ -879,7 +879,7 @@ const WorkstationScanner: React.FC = () => {
         {!eventId && (
           <Card>
             <CardContent className="p-12 text-center">
-              <p className="text-gray-600">Please select an event to start scanning</p>
+              <p className="text-muted-foreground">Please select an event to start scanning</p>
             </CardContent>
           </Card>
         )}
@@ -949,7 +949,7 @@ const WorkstationScanner: React.FC = () => {
                             style={{ width: `${(syncProgress.synced / syncProgress.total) * 100}%` }}
                           />
                         </div>
-                        <p className="text-xs text-gray-600 mt-1 text-center">
+                        <p className="text-xs text-muted-foreground mt-1 text-center">
                           Syncing {syncProgress.synced} of {syncProgress.total} scans...
                         </p>
                       </div>
@@ -1079,7 +1079,7 @@ const WorkstationScanner: React.FC = () => {
                         <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
                           <div className="text-center p-4">
                             <QrCode className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} text-gray-400 mx-auto mb-4`} />
-                            <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600 mb-2`}>
+                            <p className={`${isMobile ? 'text-sm' : 'text-base'} text-muted-foreground mb-2`}>
                               Camera not active
                             </p>
                             {cameraPermission === 'denied' && (
@@ -1235,7 +1235,7 @@ const WorkstationScanner: React.FC = () => {
                             </div>
                             <div>
                               <p className="font-medium text-sm">{result.attendeeName}</p>
-                              <p className="text-xs text-gray-600">{result.facility || 'Unknown'}</p>
+                              <p className="text-xs text-muted-foreground">{result.facility || 'Unknown'}</p>
                               {result.isReEntry && (
                                 <Badge variant="secondary" className="text-xs mt-1">Re-entry</Badge>
                               )}
@@ -1270,23 +1270,23 @@ const WorkstationScanner: React.FC = () => {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Scans</span>
+                      <span className="text-sm text-muted-foreground">Total Scans</span>
                       <span className="font-semibold">{scanResults.length}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Successful</span>
+                      <span className="text-sm text-muted-foreground">Successful</span>
                       <span className="font-semibold text-green-600">
                         {scanResults.filter(r => r.status === 'success').length}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Errors</span>
+                      <span className="text-sm text-muted-foreground">Errors</span>
                       <span className="font-semibold text-red-600">
                         {scanResults.filter(r => r.status === 'error').length}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Re-entries</span>
+                      <span className="text-sm text-muted-foreground">Re-entries</span>
                       <span className="font-semibold text-blue-600">
                         {scanResults.filter(r => r.isReEntry).length}
                       </span>
@@ -1346,9 +1346,9 @@ const WorkstationScanner: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-medium">{attendee.attendeeName}</p>
-                          <p className="text-xs text-gray-600">{attendee.email}</p>
+                          <p className="text-xs text-muted-foreground">{attendee.email}</p>
                           {attendee.phoneNumber && (
-                            <p className="text-xs text-gray-600">{attendee.phoneNumber}</p>
+                            <p className="text-xs text-muted-foreground">{attendee.phoneNumber}</p>
                           )}
                           <div className="flex gap-2 mt-1">
                             {attendee.isCurrentlyInside && (

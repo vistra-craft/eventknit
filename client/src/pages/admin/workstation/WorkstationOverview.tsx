@@ -142,9 +142,9 @@ const WorkstationOverview: React.FC = () => {
       case 'ongoing':
         return "bg-green-100 text-green-800";
       case 'completed':
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
 
@@ -220,7 +220,7 @@ const WorkstationOverview: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Workstation</h1>
+            <h1 className="text-2xl font-bold text-foreground">Workstation</h1>
             <p className="text-muted-foreground mt-1">Manage event check-ins, badges, and attendee operations</p>
           </div>
           <div className="flex items-center gap-2">
@@ -398,34 +398,34 @@ const WorkstationOverview: React.FC = () => {
                     {ongoingEvents.map((event) => (
                       <Card
                         key={event.id}
-                        className="group cursor-pointer hover:shadow-md transition-all duration-200 bg-white"
+                        className="group cursor-pointer hover:shadow-md transition-all duration-200 bg-card"
                         onClick={() => navigate(`/admin/workstation/event/${event.id}`)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 truncate group-hover:text-primary transition-colors">
+                              <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                                 {event.title}
                               </h3>
                               <p className="text-sm text-muted-foreground truncate">{event.location}</p>
                             </div>
-                            <Badge className="bg-green-100 text-green-800 ml-2">
+                            <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 ml-2">
                               <Activity className="w-3 h-3 mr-1" />
                               Live
                             </Badge>
                           </div>
 
                           <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                            <div className="p-2 bg-gray-50 rounded-lg">
-                              <p className="text-lg font-bold text-gray-900">{event.statistics?.totalAttendees || 0}</p>
+                            <div className="p-2 bg-muted rounded-lg">
+                              <p className="text-lg font-bold text-foreground">{event.statistics?.totalAttendees || 0}</p>
                               <p className="text-xs text-muted-foreground">Registered</p>
                             </div>
-                            <div className="p-2 bg-blue-50 rounded-lg">
-                              <p className="text-lg font-bold text-blue-600">{event.statistics?.checkedIn || 0}</p>
+                            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{event.statistics?.checkedIn || 0}</p>
                               <p className="text-xs text-muted-foreground">Checked In</p>
                             </div>
-                            <div className="p-2 bg-green-50 rounded-lg">
-                              <p className="text-lg font-bold text-green-600">{event.statistics?.currentlyInside || 0}</p>
+                            <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                              <p className="text-lg font-bold text-green-600 dark:text-green-400">{event.statistics?.currentlyInside || 0}</p>
                               <p className="text-xs text-muted-foreground">Inside</p>
                             </div>
                           </div>

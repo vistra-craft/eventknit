@@ -562,7 +562,7 @@ const WorkstationPrint: React.FC = () => {
       case 'printing': return "bg-blue-100 text-blue-800";
       case 'completed': return "bg-green-100 text-green-800";
       case 'failed': return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
 
@@ -604,7 +604,7 @@ const WorkstationPrint: React.FC = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Badge Print Center</h1>
+              <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
               <p className="text-sm text-muted-foreground">{currentEvent.title}</p>
             </div>
           </div>
@@ -980,9 +980,9 @@ const WorkstationPrint: React.FC = () => {
         {/* Preview Modal */}
         {showPreviewModal && previewAttendee && selectedTemplate && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="font-semibold">Badge Preview - {previewAttendee.attendeeName}</h3>
+            <div className="bg-card rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <h3 className="font-semibold text-foreground">Badge Preview - {previewAttendee.attendeeName}</h3>
                 <Button variant="ghost" size="sm" onClick={() => setShowPreviewModal(false)}>
                   <X className="w-4 h-4" />
                 </Button>

@@ -154,9 +154,9 @@ const WorkstationEvents: React.FC = () => {
       case 'ongoing':
         return "bg-green-100 text-green-800 border-green-200";
       case 'completed':
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -182,7 +182,7 @@ const WorkstationEvents: React.FC = () => {
       case 'scanned':
         return "bg-green-100 text-green-800 border-green-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -206,8 +206,8 @@ const WorkstationEvents: React.FC = () => {
               Back to Events
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">{selectedEvent.title}</h1>
-              <p className="text-gray-600 mt-2">{selectedEvent.organizer} • {selectedEvent.date}</p>
+              <h1 className="text-lg font-semibold text-foreground">{selectedEvent.title}</h1>
+              <p className="text-muted-foreground mt-2">{selectedEvent.organizer} • {selectedEvent.date}</p>
             </div>
           </div>
 
@@ -218,7 +218,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
-                    <p className="font-semibold text-gray-900">{selectedEvent.attendees}</p>
+                    <p className="font-semibold text-foreground">{selectedEvent.attendees}</p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -230,7 +230,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Checked In</p>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-foreground">
                       {selectedEvent.attendeesList?.filter(a => a.status === 'checked_in' || a.status === 'scanned').length || 0}
                     </p>
                   </div>
@@ -244,7 +244,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Scanned</p>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-foreground">
                       {selectedEvent.attendeesList?.filter(a => a.status === 'scanned').length || 0}
                     </p>
                   </div>
@@ -258,7 +258,7 @@ const WorkstationEvents: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Capacity</p>
-                    <p className="font-semibold text-gray-900">{selectedEvent.capacity}</p>
+                    <p className="font-semibold text-foreground">{selectedEvent.capacity}</p>
                   </div>
                   <Target className="h-8 w-8 text-orange-600" />
                 </div>
@@ -376,8 +376,8 @@ const WorkstationEvents: React.FC = () => {
                           )}
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">{attendee.name}</h4>
-                          <p className="text-sm text-gray-600">{attendee.email}</p>
+                          <h4 className="font-medium text-foreground">{attendee.name}</h4>
+                          <p className="text-sm text-muted-foreground">{attendee.email}</p>
                           {attendee.phone && (
                             <p className="text-sm text-gray-500">{attendee.phone}</p>
                           )}
@@ -390,7 +390,7 @@ const WorkstationEvents: React.FC = () => {
                         <Badge variant="outline" className="text-xs">
                           {attendee.ticketType}
                         </Badge>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-muted-foreground">
                           {attendee.status === 'scanned' && attendee.scannedAt 
                             ? new Date(attendee.scannedAt).toLocaleTimeString()
                             : attendee.status === 'checked_in' && attendee.checkedInDate
@@ -420,8 +420,8 @@ const WorkstationEvents: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Event Management</h1>
-            <p className="text-gray-600 mt-2">Manage all events and their attendees</p>
+            <h1 className="text-lg font-semibold text-foreground">Event Management</h1>
+            <p className="text-muted-foreground mt-2">Manage all events and their attendees</p>
           </div>
           <div className="flex gap-3">
             <Button 
@@ -494,23 +494,23 @@ const WorkstationEvents: React.FC = () => {
                     <h3 className="font-semibold text-foreground group-hover:text-accent-coral transition-colors">
                       {event.title}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">{event.organizer}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{event.organizer}</p>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="w-4 h-4" />
                       <span>{event.date}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="w-4 h-4" />
                       <span>{event.time}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="w-4 h-4" />
                       <span>{event.location}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Building2 className="w-4 h-4" />
                       <span>{event.venue}</span>
                     </div>
@@ -519,11 +519,11 @@ const WorkstationEvents: React.FC = () => {
                   <div className="flex justify-between items-center pt-4 border-t">
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <p className="text-sm text-gray-600">Attendees</p>
+                        <p className="text-sm text-muted-foreground">Attendees</p>
                         <p className="font-semibold">{event.attendees}/{event.capacity}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-gray-600">Scanned</p>
+                        <p className="text-sm text-muted-foreground">Scanned</p>
                         <p className="font-semibold">{event.scannedTickets}</p>
                       </div>
                     </div>
@@ -535,7 +535,7 @@ const WorkstationEvents: React.FC = () => {
 
                   {event.facilities && event.facilities.length > 0 && (
                     <div className="pt-2">
-                      <p className="text-sm text-gray-600 mb-2">Facilities:</p>
+                      <p className="text-sm text-muted-foreground mb-2">Facilities:</p>
                       <div className="flex flex-wrap gap-1">
                         {event.facilities.slice(0, 3).map((facility, index) => (
                           <Badge key={index} variant="outline" className="text-xs">

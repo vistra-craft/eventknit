@@ -172,9 +172,9 @@ const WorkstationEventDashboard: React.FC = () => {
       case 'ongoing':
         return "bg-green-100 text-green-800 border-green-200";
       case 'completed':
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -198,11 +198,11 @@ const WorkstationEventDashboard: React.FC = () => {
       case TicketStatus.DEACTIVATED:
         return "bg-red-100 text-red-800 border-red-200";
       case TicketStatus.EXPIRED:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       case TicketStatus.CANCELLED:
         return "bg-red-100 text-red-800 border-red-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -263,7 +263,7 @@ const WorkstationEventDashboard: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-600">Loading event data...</div>
+          <div className="text-muted-foreground">Loading event data...</div>
         </div>
       </AdminLayout>
     );
@@ -273,7 +273,7 @@ const WorkstationEventDashboard: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-600">Event not found</div>
+          <div className="text-muted-foreground">Event not found</div>
         </div>
       </AdminLayout>
     );
@@ -298,8 +298,8 @@ const WorkstationEventDashboard: React.FC = () => {
             Back to Events
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-gray-900">{eventData.title}</h1>
-            <p className="text-gray-600 mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
+            <h1 className="text-lg font-semibold text-foreground">{eventData.title}</h1>
+            <p className="text-muted-foreground mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
           </div>
           <div className="flex gap-3">
             <Button 
@@ -344,7 +344,7 @@ const WorkstationEventDashboard: React.FC = () => {
                       <Badge variant="secondary">{eventData.category}</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
                       <span>{formatTimeRange()}</span>
@@ -363,8 +363,8 @@ const WorkstationEventDashboard: React.FC = () => {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Total Attendees</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-sm text-muted-foreground">Total Attendees</p>
+                <p className="font-semibold text-foreground">
                   {statistics?.totalAttendees || 0}
                 </p>
                 <p className="text-sm text-gray-500">
@@ -454,7 +454,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Attendees</p>
-                    <p className="font-semibold text-gray-900">{statistics?.totalAttendees || 0}</p>
+                    <p className="font-semibold text-foreground">{statistics?.totalAttendees || 0}</p>
                   </div>
                   <Users className="h-8 w-8 text-primary" />
                 </div>
@@ -466,7 +466,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Checked In</p>
-                    <p className="font-semibold text-gray-900">{statistics?.checkedIn || 0}</p>
+                    <p className="font-semibold text-foreground">{statistics?.checkedIn || 0}</p>
                   </div>
                   <CheckCircle className="h-8 w-8 text-green-600" />
                 </div>
@@ -478,7 +478,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Currently Inside</p>
-                    <p className="font-semibold text-gray-900">{statistics?.currentlyInside || 0}</p>
+                    <p className="font-semibold text-foreground">{statistics?.currentlyInside || 0}</p>
                   </div>
                   <Activity className="h-8 w-8 text-blue-600" />
                 </div>
@@ -490,7 +490,7 @@ const WorkstationEventDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Scans Today</p>
-                    <p className="font-semibold text-gray-900">{statistics?.scansToday || 0}</p>
+                    <p className="font-semibold text-foreground">{statistics?.scansToday || 0}</p>
                   </div>
                   <QrCode className="h-8 w-8 text-orange-600" />
                 </div>
@@ -518,11 +518,11 @@ const WorkstationEventDashboard: React.FC = () => {
             <CardContent>
               {attendeesLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="text-gray-600">Loading attendees...</div>
+                  <div className="text-muted-foreground">Loading attendees...</div>
                 </div>
               ) : attendees.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="text-gray-600">No attendees found</div>
+                  <div className="text-muted-foreground">No attendees found</div>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -538,8 +538,8 @@ const WorkstationEventDashboard: React.FC = () => {
                           </span>
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">{attendee.attendeeName}</h4>
-                          <p className="text-sm text-gray-600">{attendee.email}</p>
+                          <h4 className="font-medium text-foreground">{attendee.attendeeName}</h4>
+                          <p className="text-sm text-muted-foreground">{attendee.email}</p>
                           {attendee.phoneNumber && (
                             <p className="text-sm text-gray-500">{attendee.phoneNumber}</p>
                           )}
@@ -559,7 +559,7 @@ const WorkstationEventDashboard: React.FC = () => {
                             Inside
                           </Badge>
                         )}
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-muted-foreground">
                           {attendee.checkedInAt 
                             ? new Date(attendee.checkedInAt).toLocaleString()
                             : 'Not checked in'
@@ -575,7 +575,7 @@ const WorkstationEventDashboard: React.FC = () => {
                   {/* Pagination */}
                   {pagination.totalPages > 1 && (
                     <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} attendees
                       </div>
                       <div className="flex gap-2">
@@ -624,7 +624,7 @@ const WorkstationEventDashboard: React.FC = () => {
             <CardContent>
               {facilities.length === 0 ? (
                 <div className="flex items-center justify-center h-32">
-                  <div className="text-gray-600">No facilities data available</div>
+                  <div className="text-muted-foreground">No facilities data available</div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -640,7 +640,7 @@ const WorkstationEventDashboard: React.FC = () => {
                             {facility.currentlyInside} inside
                           </Badge>
                         </div>
-                        <div className="text-sm text-gray-600 mb-2">
+                        <div className="text-sm text-muted-foreground mb-2">
                           <div>Checked In: {facility.checkedIn}</div>
                           <div>Currently Inside: {facility.currentlyInside}</div>
                         </div>

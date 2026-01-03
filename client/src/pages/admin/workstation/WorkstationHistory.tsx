@@ -295,7 +295,7 @@ const WorkstationHistory: React.FC = () => {
       case ScanType.MANUAL_CHECK_OUT:
         return "bg-orange-100 text-orange-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
 
@@ -394,8 +394,8 @@ const WorkstationHistory: React.FC = () => {
             Back to Workstation
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-gray-900">Scan History</h1>
-            <p className="text-gray-600 mt-2">View and analyze all QR code scans</p>
+            <h1 className="text-lg font-semibold text-foreground">Scan History</h1>
+            <p className="text-muted-foreground mt-2">View and analyze all QR code scans</p>
           </div>
         </div>
 
@@ -426,7 +426,7 @@ const WorkstationHistory: React.FC = () => {
         {!selectedEventId && !eventId && (
           <Card>
             <CardContent className="p-12 text-center">
-              <p className="text-gray-600">Please select an event to view scan history</p>
+              <p className="text-muted-foreground">Please select an event to view scan history</p>
             </CardContent>
           </Card>
         )}
@@ -440,7 +440,7 @@ const WorkstationHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Scans</p>
-                      <p className="font-semibold text-gray-900">{stats.totalScans}</p>
+                      <p className="font-semibold text-foreground">{stats.totalScans}</p>
                     </div>
                     <QrCode className="h-8 w-8 text-primary" />
                   </div>
@@ -476,7 +476,7 @@ const WorkstationHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-foreground">
                         {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%
                       </p>
                     </div>
@@ -552,7 +552,7 @@ const WorkstationHistory: React.FC = () => {
             {loading ? (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <div className="text-gray-600">Loading scan history...</div>
+                  <div className="text-muted-foreground">Loading scan history...</div>
                 </CardContent>
               </Card>
             ) : viewMode === 'list' ? (
@@ -578,7 +578,7 @@ const WorkstationHistory: React.FC = () => {
                 <CardContent>
                   {filteredScans.length === 0 ? (
                     <div className="text-center py-12">
-                      <p className="text-gray-600">No scans found</p>
+                      <p className="text-muted-foreground">No scans found</p>
                     </div>
                   ) : (
                     <>
@@ -592,8 +592,8 @@ const WorkstationHistory: React.FC = () => {
                                 </span>
                               </div>
                               <div>
-                                <h4 className="font-medium text-gray-900">{scan.attendeeName}</h4>
-                                <p className="text-sm text-gray-600">Registration: {scan.registrationId}</p>
+                                <h4 className="font-medium text-foreground">{scan.attendeeName}</h4>
+                                <p className="text-sm text-muted-foreground">Registration: {scan.registrationId}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <div className="flex items-center gap-1">
                                     {getFacilityIconFromName(scan.facility || '')}
@@ -622,7 +622,7 @@ const WorkstationHistory: React.FC = () => {
                                   {scan.scanType.replace('_', ' ')}
                                 </Badge>
                                 {scan.ticketType && (
-                                  <p className="text-sm text-gray-600 mt-1">{scan.ticketType}</p>
+                                  <p className="text-sm text-muted-foreground mt-1">{scan.ticketType}</p>
                                 )}
                                 <p className="text-xs text-gray-500 mt-1">
                                   {new Date(scan.scannedAt).toLocaleString()}
@@ -640,7 +640,7 @@ const WorkstationHistory: React.FC = () => {
                       {/* Pagination */}
                       {pagination.totalPages > 1 && (
                         <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-muted-foreground">
                             Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} scans
                           </div>
                           <div className="flex gap-2">
@@ -680,7 +680,7 @@ const WorkstationHistory: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     {Object.keys(stats.scansByFacility).length === 0 ? (
-                      <div className="text-center py-8 text-gray-600">No facility data available</div>
+                      <div className="text-center py-8 text-muted-foreground">No facility data available</div>
                     ) : (
                       <div className="space-y-3">
                         {Object.entries(stats.scansByFacility)
@@ -719,7 +719,7 @@ const WorkstationHistory: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     {Object.keys(stats.scansByHour).length === 0 ? (
-                      <div className="text-center py-8 text-gray-600">No hourly data available</div>
+                      <div className="text-center py-8 text-muted-foreground">No hourly data available</div>
                     ) : (
                       <div className="space-y-2">
                         {Object.entries(stats.scansByHour)
@@ -760,8 +760,8 @@ const WorkstationHistory: React.FC = () => {
                       <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Clock className="w-8 h-8 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{stats.peakScanHour || 'N/A'}</h3>
-                      <p className="text-sm text-gray-600 mt-2">Most active scanning hour</p>
+                      <h3 className="font-semibold text-foreground">{stats.peakScanHour || 'N/A'}</h3>
+                      <p className="text-sm text-muted-foreground mt-2">Most active scanning hour</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -780,10 +780,10 @@ const WorkstationHistory: React.FC = () => {
                         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Zap className="w-8 h-8 text-green-600" />
                         </div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-foreground">
                           {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%
                         </h3>
-                        <p className="text-sm text-gray-600">Success Rate</p>
+                        <p className="text-sm text-muted-foreground">Success Rate</p>
                       </div>
                       <div className="pt-4 border-t space-y-2">
                         <div className="flex justify-between text-sm">

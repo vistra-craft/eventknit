@@ -403,7 +403,7 @@ const WorkstationTemplates: React.FC = () => {
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Badge Template Editor</h1>
+              <h1 className="text-xl font-semibold text-foreground">Badge Template Editor</h1>
               <p className="text-sm text-muted-foreground">Design and customize badge templates for your events</p>
             </div>
           </div>
