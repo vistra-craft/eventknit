@@ -113,8 +113,9 @@ ssl/
 *.key
 *.crt
 
-# Documentation files (except README files)
+# Documentation files (except README and docs folder)
 *.md
 !README.md
 !**/README.md
+!docs/**/*.md
 

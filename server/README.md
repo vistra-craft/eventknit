@@ -4,30 +4,33 @@ The backend API for the EventKnit platform, built with Node.js, Express, TypeScr
 
 ## Tech Stack
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
+- **Runtime**: Node.js (v18+)
+- **Framework**: Express.js 5
 - **Language**: TypeScript
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL 16
 - **ORM**: Prisma
-- **Caching/Queues**: Redis (BullMQ)
+- **Caching/Queues**: Redis 7 + BullMQ
 - **Authentication**: JWT (JSON Web Tokens)
-- **Payment Processing**: Paystack
+- **Payment Processing**: Paystack, Stripe
 - **Email**: Nodemailer
 - **SMS**: Twilio
+- **File Storage**: Cloudinary, MinIO
+- **Real-time**: Socket.IO
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
+
 - **Node.js** (v18 or higher)
 - **npm** (v9 or higher)
-- **PostgreSQL** (v14 or higher)
-- **Redis** (v6 or higher)
+- **Docker** & **Docker Compose** (for PostgreSQL and Redis)
+- **Git**
 
-## Getting Started
+---
 
-### 1. Installation
+## Quick Start
 
-Navigate to the server directory and install dependencies:
+### 1. Clone and Install
 
 ```bash
 cd server
@@ -36,233 +39,498 @@ npm install
 
 ### 2. Environment Configuration
 
-Create a `.env` file in the `server` directory based on the example below. You **must** configure these variables for the server to function correctly.
+Copy the example environment file and configure it:
+
+```bash
+cp .env.example .env.development
+```
+
+Edit `.env.development` with your actual values. Key variables:
 
 ```env
-# Server Configuration
-NODE_ENV=development
-PORT=3000
-HOST=0.0.0.0
+# Database (PostgreSQL via Docker)
+DATABASE_URL="postgresql://eventknit:eventknit123@localhost:5432/eventknit?schema=public"
+POSTGRES_USER=eventknit
+POSTGRES_PASSWORD=eventknit123
+POSTGRES_DB=eventknit
 
-# Database (PostgreSQL)
-# Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=public
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/eventknit?schema=public"
+# JWT (generate with: openssl rand -base64 64)
+JWT_SECRET=your-jwt-secret-key-min-32-characters-long
+JWT_REFRESH_SECRET=your-refresh-secret-key-min-32-characters-long
 
-# JWT Authentication
-JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
-JWT_REFRESH_SECRET="your-super-secret-refresh-key-min-32-chars"
-JWT_EXPIRES_IN="15m"
-JWT_REFRESH_EXPIRES_IN="7d"
+# Frontend URL
+FRONTEND_URL=http://localhost:5173
+CORS_ORIGIN=http://localhost:5173
 
-# CORS Configuration
-# Comma-separated list of allowed origins
-CORS_ORIGIN="http://localhost:5173,http://localhost:3000"
-CORS_CREDENTIALS=true
-
-# Redis (for BullMQ and Caching)
-REDIS_HOST="localhost"
-REDIS_PORT=6379
-REDIS_PASSWORD=""
-
-# Email (SMTP)
-SMTP_HOST="smtp.example.com"
+# Email (Gmail example)
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER="your-email@example.com"
-SMTP_PASSWORD="your-email-password"
-EMAIL_FROM="noreply@eventknit.com"
-
-# Payment (Paystack)
-PAYSTACK_SECRET_KEY="sk_test_..."
-PAYSTACK_PUBLIC_KEY="pk_test_..."
-
-# SMS (Twilio - Optional)
-SMS_ENABLED=false
-TWILIO_ACCOUNT_SID=""
-TWILIO_AUTH_TOKEN=""
-TWILIO_PHONE_NUMBER=""
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-gmail-app-password
+EMAIL_FROM=noreply@eventknit.com
 ```
 
-### 3. Database Setup
+### 3. Start Database (Docker)
 
-We use **Prisma** to manage the database schema.
+**Start PostgreSQL using Docker Compose:**
 
-1.  **Generate Prisma Client**:
-    ```bash
-    npm run prisma:generate
-    ```
-
-2.  **Run Migrations**:
-    This will create the tables in your PostgreSQL database.
-    ```bash
-    npm run prisma:migrate
-    ```
-
-3.  **Seed the Database** (Optional):
-    Populate the database with initial test data (users, roles, etc.).
-    ```bash
-    npm run prisma:seed
-    ```
-
-### 4. Running the Server
-
-**Development Mode**:
-Starts the server with hot-reloading using `tsx`.
-```bash
-npm run dev
-```
-
-**Production Build**:
-Builds the TypeScript code to JavaScript and runs it.
-```bash
-npm run build
-npm start
-```
-
-The server will start at `http://localhost:3000` (or the port specified in `.env`).
-
-### 5. Quality Checks
-
-- **TypeScript**: `npm run type-check`
-- **Lint**: `npm run lint` (auto-fix with `npm run lint:fix`)
-- **Tests**: `npm test`
-
-## Testing
-
-Run the test suite using Jest:
-
-```bash
-npm test
-```
-
-Run tests in watch mode:
-```bash
-npm run test:watch
-```
-
-## Database Management
-
-Common Prisma commands:
-
--   `npx prisma studio`: Open a GUI to view and edit database data.
--   `npx prisma migrate dev`: Create a new migration after changing `schema.prisma`.
--   `npx prisma db push`: Push schema changes to the database without creating a migration (useful for prototyping).
--   `npx prisma generate`: Regenerate the Prisma Client after schema changes.
-
-## Project Structure
-
-```
-server/
-├── prisma/              # Database schema and seeds
-│   ├── schema.prisma    # Data model definition
-│   └── seed.ts          # Seeding script
-├── src/
-│   ├── config/          # Configuration loading
-│   ├── controllers/     # Request handlers
-│   ├── middleware/      # Express middleware (auth, validation, etc.)
-│   ├── models/          # Mongoose models (legacy/if used)
-│   ├── routes/          # API route definitions
-│   ├── services/        # Business logic
-│   ├── utils/           # Helper functions
-│   ├── app.ts           # Express app setup
-│   └── server.ts        # Server entry point
-├── tests/               # Unit and integration tests
-└── package.json
-```
-
-## Key Features
-
--   **Authentication**: Secure user registration and login with JWT.
--   **Role-Based Access Control (RBAC)**: Different permissions for Admins, Organizers, and Attendees.
--   **Event Management**: Create, update, and manage events.
--   **Ticketing**: Generate and validate tickets (QR codes).
--   **Payments**: Integrated with Paystack for secure transactions.
--   **Notifications**: Email and SMS notification system.
-
-## Useful Commands
-
-Here is a collection of useful commands for development and maintenance.
-
-### 🐳 Docker Management
-
-**Start PostgreSQL Database**:
 ```bash
 docker compose --env-file .env.development up -d postgres
 ```
 
-**Check Running Containers**:
+Verify it's running:
+
 ```bash
+docker ps | grep eventknit-postgres
+```
+
+**Start Redis (optional, for caching/queues):**
+
+```bash
+docker compose --env-file .env.development up -d redis
+```
+
+### 4. Database Setup (Prisma)
+
+Generate Prisma client and run migrations:
+
+```bash
+# Generate Prisma Client
+npm run prisma:generate
+
+# Run database migrations
+npm run prisma:migrate
+```
+
+### 5. Seed Database (Optional)
+
+Populate the database with initial test data:
+
+```bash
+# Full seed (users, roles, permissions)
+npm run prisma:seed
+
+# Or seed specific data
+npm run seed:test-users    # Create test users
+npm run seed:events        # Create sample events
+npm run seed:dummy-data    # Create comprehensive test data
+```
+
+### 6. Start Development Server
+
+```bash
+npm run dev
+```
+
+The server will start at `http://localhost:3001`.
+
+---
+
+## 🐳 Docker Commands
+
+### Starting Services
+
+| Command | Description |
+|---------|-------------|
+| `docker compose --env-file .env.development up -d postgres` | Start PostgreSQL only |
+| `docker compose --env-file .env.development up -d redis` | Start Redis only |
+| `docker compose --env-file .env.development up -d postgres redis` | Start PostgreSQL and Redis |
+| `docker compose --env-file .env.development up -d` | Start all services |
+| `docker compose --env-file .env.development --profile dev up -d` | Start all + PgAdmin |
+
+### Managing Services
+
+| Command | Description |
+|---------|-------------|
+| `docker compose --env-file .env.development down` | Stop all services |
+| `docker compose --env-file .env.development restart postgres` | Restart PostgreSQL |
+| `docker compose --env-file .env.development logs postgres -f` | View PostgreSQL logs |
+| `docker compose --env-file .env.development logs redis -f` | View Redis logs |
+
+### Container Management
+
+```bash
+# Check running containers
 docker ps | grep eventknit
-```
 
-**View PostgreSQL Logs**:
-```bash
-docker compose --env-file .env.development logs postgres --tail 20 -f
-```
-
-**Restart PostgreSQL**:
-```bash
-docker compose --env-file .env.development restart postgres
-```
-
-**Stop Specific Containers**:
-```bash
+# Stop specific containers
 docker stop eventknit-postgres
 docker stop eventknit-redis
+
+# Remove containers (keeps data in volumes)
+docker rm eventknit-postgres
+docker rm eventknit-redis
+
+# Remove volumes (⚠️ DELETES ALL DATA)
+docker volume rm eventknit_postgres_data
+docker volume rm eventknit_redis_data
 ```
 
-**Test Database Connection**:
+### Database Connection Testing
+
 ```bash
+# Test PostgreSQL connection
 docker exec -it eventknit-postgres psql -U eventknit -d eventknit -c "SELECT version();"
+
+# Connect to PostgreSQL shell
+docker exec -it eventknit-postgres psql -U eventknit -d eventknit
+
+# Test Redis connection
+docker exec -it eventknit-redis redis-cli -a SecureRedisPassword123! ping
 ```
 
-### 👥 User Management
+### PgAdmin (Optional Database GUI)
 
-**List All Users**:
+```bash
+# Start with dev profile (includes PgAdmin)
+docker compose --env-file .env.development --profile dev up -d
+
+# Access at http://localhost:8080
+# Login: admin@eventknit.com / admin (or your configured credentials)
+```
+
+---
+
+## 📦 Prisma Commands
+
+### Essential Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run prisma:generate` | Generate Prisma Client from schema |
+| `npm run prisma:migrate` | Create and apply new migration |
+| `npm run prisma:studio` | Open Prisma Studio (database GUI at http://localhost:5555) |
+| `npm run prisma:seed` | Seed database with initial data |
+
+### Advanced Prisma Commands
+
+```bash
+# Create a new migration after schema changes
+npx prisma migrate dev --name your_migration_name
+
+# Apply migrations in production
+npx prisma migrate deploy
+
+# Push schema changes without migration (prototyping)
+npx prisma db push
+
+# Reset database (⚠️ DELETES ALL DATA)
+npx prisma migrate reset
+
+# View current migration status
+npx prisma migrate status
+
+# Pull schema from existing database
+npx prisma db pull
+
+# Format schema file
+npx prisma format
+
+# Validate schema
+npx prisma validate
+
+# Release migration lock (if stuck)
+npm run prisma:release-lock
+```
+
+---
+
+## 🧪 Development Commands
+
+### Running the Server
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run dev:watch` | Start with file watching (auto-restart) |
+| `npm run build` | Build for production |
+| `npm start` | Start production server |
+
+### Code Quality
+
+| Command | Description |
+|---------|-------------|
+| `npm run lint` | Run ESLint |
+| `npm run lint:fix` | Auto-fix ESLint issues |
+| `npm run type-check` | Run TypeScript type checking |
+
+### Testing
+
+| Command | Description |
+|---------|-------------|
+| `npm test` | Run all tests |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with coverage report |
+| `npm run test:run` | Run tests once (CI mode) |
+
+---
+
+## 👥 User Management Scripts
+
+### List Users
+
 ```bash
 npm run list-users
 ```
 
-**Delete a User (Soft Delete)**:
-Sets user status to DEACTIVATED.
+### Delete Users
+
 ```bash
-npm run delete-user -- <email>
+# Soft delete (set status to DEACTIVATED)
+npm run delete-user -- user@example.com
+
+# Hard delete (permanently remove from database)
+npm run delete-user -- user@example.com --hard
+
+# Hard delete without confirmation
+npm run delete-user -- user@example.com --hard --force
 ```
 
-**Delete a User (Hard Delete)**:
-Permanently removes user and all related records from the database. Useful for testing.
+### Verify Test Users
+
 ```bash
-npm run delete-user -- <email> --hard
+npm run verify-test-users
 ```
 
-**Delete without Confirmation**:
+### Seed Commands
+
 ```bash
-npm run delete-user -- <email> --hard --force
+npm run seed:test-users    # Create test users for all roles
+npm run seed:events        # Create sample events
+npm run seed:dummy-data    # Create comprehensive test data
 ```
 
-### 🔧 Troubleshooting
+---
 
-**Check for Port Conflicts**:
-Check if ports 3000, 5432, or 6379 are in use.
+## 🔧 Troubleshooting
+
+### Port Conflicts
+
 ```bash
-lsof -i :3000 -i :5432 -i :6379
+# Check if ports are in use
+lsof -i :3001 -i :5432 -i :6379
+
+# Kill process on specific port
+kill -9 $(lsof -ti :3001)
 ```
 
-**Install dotenv-cli**:
-Required for running scripts with specific env files.
+### Database Connection Issues
+
 ```bash
-npm install dotenv-cli --save-dev
+# Check PostgreSQL is running
+docker ps | grep eventknit-postgres
+
+# View PostgreSQL logs
+docker compose --env-file .env.development logs postgres --tail 50
+
+# Restart PostgreSQL
+docker compose --env-file .env.development restart postgres
+
+# Reset Prisma migrations (if corrupted)
+npx prisma migrate reset --force
 ```
 
-### Prisma & Database
+### Prisma Issues
 
-**Open Database GUI**:
 ```bash
-npm run prisma:studio
+# Regenerate Prisma Client
+npm run prisma:generate
+
+# Clear Prisma cache
+rm -rf node_modules/.prisma
+npm run prisma:generate
+
+# Release migration lock
+npm run prisma:release-lock
+
+# Check migration status
+npx prisma migrate status
 ```
 
-**Reset Database (Caution)**:
-Drops the database and re-seeds it.
+### Redis Connection Issues
+
 ```bash
-npx prisma migrate reset
+# Check Redis is running
+docker ps | grep eventknit-redis
+
+# Test Redis connection
+docker exec -it eventknit-redis redis-cli -a SecureRedisPassword123! ping
+
+# View Redis logs
+docker compose --env-file .env.development logs redis --tail 50
 ```
+
+### Common Errors
+
+| Error | Solution |
+|-------|----------|
+| `ECONNREFUSED 127.0.0.1:5432` | Start PostgreSQL: `docker compose --env-file .env.development up -d postgres` |
+| `P1001: Can't reach database server` | Check DATABASE_URL in .env.development |
+| `Migration lock` | Run `npm run prisma:release-lock` |
+| `EADDRINUSE` | Kill process on port or change PORT in .env |
+
+---
+
+## 📁 Project Structure
+
+```
+server/
+├── prisma/
+│   ├── migrations/       # Database migrations
+│   ├── schema.prisma     # Database schema definition
+│   ├── seed.ts           # Main seeding script
+│   └── seed-permissions.ts
+├── scripts/              # Utility scripts
+│   ├── delete-user.js
+│   ├── list-users.js
+│   ├── seed-test-users.js
+│   ├── seed-events.js
+│   └── ...
+├── src/
+│   ├── config/           # Configuration (database, env)
+│   ├── controllers/      # Request handlers
+│   ├── middleware/       # Express middleware (auth, validation)
+│   ├── routes/           # API route definitions
+│   ├── services/         # Business logic
+│   ├── utils/            # Helper functions (logger, errors, audit)
+│   ├── app.ts            # Express app setup
+│   └── server.ts         # Entry point
+├── tests/                # Test files
+├── docker-compose.yml    # Docker services configuration
+├── Dockerfile            # Production Docker image
+├── .env.example          # Environment template
+└── package.json
+```
+
+---
+
+## 🔐 Environment Variables Reference
+
+### Required Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/db` |
+| `JWT_SECRET` | Secret for signing access tokens | 64+ character string |
+| `JWT_REFRESH_SECRET` | Secret for refresh tokens | 64+ character string |
+| `FRONTEND_URL` | Frontend app URL | `http://localhost:5173` |
+| `CORS_ORIGIN` | Allowed CORS origins | `http://localhost:5173` |
+
+### Optional Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3001` |
+| `NODE_ENV` | Environment | `development` |
+| `JWT_EXPIRES_IN` | Access token expiry | `15m` |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry | `7d` |
+| `BCRYPT_ROUNDS` | Password hashing rounds | `12` |
+| `LOG_LEVEL` | Logging level | `debug` |
+
+### Email Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `SMTP_HOST` | SMTP server host |
+| `SMTP_PORT` | SMTP server port |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASSWORD` | SMTP password |
+| `EMAIL_FROM` | Sender email address |
+
+### Payment Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `PAYSTACK_SECRET_KEY` | Paystack secret key |
+| `PAYSTACK_PUBLIC_KEY` | Paystack public key |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+
+### Docker/Database
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `POSTGRES_USER` | PostgreSQL username | `eventknit` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `eventknit123` |
+| `POSTGRES_DB` | PostgreSQL database name | `eventknit` |
+| `POSTGRES_PORT` | PostgreSQL port | `5432` |
+| `REDIS_PASSWORD` | Redis password | `SecureRedisPassword123!` |
+
+---
+
+## 🚀 Production Deployment
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Start Production Server
+
+```bash
+npm start
+```
+
+### Docker Production Build
+
+```bash
+# Build production image
+docker build -t eventknit-server .
+
+# Run with docker-compose
+docker compose --env-file .env.production up -d
+```
+
+---
+
+## 📚 API Endpoints
+
+The API follows RESTful conventions with base path `/api/v1/`.
+
+### Authentication
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/login` - User login
+- `POST /api/v1/auth/refresh` - Refresh access token
+- `POST /api/v1/auth/forgot-password` - Request password reset
+- `POST /api/v1/auth/reset-password` - Reset password
+
+### Events
+- `GET /api/v1/events` - List events
+- `POST /api/v1/events` - Create event
+- `GET /api/v1/events/:id` - Get event details
+- `PUT /api/v1/events/:id` - Update event
+- `DELETE /api/v1/events/:id` - Delete event
+
+### Tickets
+- `GET /api/v1/tickets` - List tickets
+- `POST /api/v1/tickets/:id/transfer` - Transfer ticket
+- `GET /api/v1/tickets/:id/qr` - Get ticket QR code
+
+### Payments
+- `POST /api/v1/payments/initialize` - Initialize payment
+- `POST /api/v1/payments/verify` - Verify payment
+- `POST /api/v1/payments/webhook` - Payment webhook
+
+### Users
+- `GET /api/v1/user/me` - Get current user
+- `PUT /api/v1/user/me` - Update profile
+- `GET /api/v1/user/dashboard/stats` - Get dashboard stats
+
+For detailed API documentation, see the route files in `src/routes/`.
+
+---
+
+## 🤝 Contributing
+
+1. Create a feature branch from `development`
+2. Make your changes
+3. Run tests: `npm test`
+4. Run linting: `npm run lint:fix`
+5. Run type check: `npm run type-check`
+6. Submit a pull request
+
+---
+
+## 📄 License
+
+This project is proprietary and confidential.
