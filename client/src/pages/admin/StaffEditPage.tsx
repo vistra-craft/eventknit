@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Save,
   Shield,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  CheckCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
+import { getUserById, updateUser, type User as ApiUser } from "@/lib/admin-api";
 
 interface StaffDetails {
   id: string;
@@ -57,68 +61,132 @@ const StaffEditPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("personal");
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [userData, setUserData] = useState<ApiUser | null>(null);
 
-  // Mock staff data - in real app, this would be fetched from API
-  const [staffData, setStaffData] = useState<StaffDetails>({
-    id: staffId || "1",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    email: "sarah.johnson@eventknit.com",
-    phone: "+1 (555) 123-4567",
-    role: "event_manager",
-    department: "operations",
-    status: "active",
-    hireDate: "2023-01-15",
-    lastActive: "2024-02-15T10:30:00Z",
-    location: "San Francisco, CA",
-    eventsManaged: 45,
-    totalHours: 320,
-    rating: 4.8,
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-    employeeId: "EMP-001",
-    salary: 75000,
-    hourlyRate: 45,
-    totalEarnings: 125000,
-    pendingDues: 2500,
+  // Staff data built from API response + defaults for extended fields
+  const staffData: StaffDetails = {
+    id: userData?.id || staffId || "",
+    firstName: userData?.firstName || "",
+    lastName: userData?.lastName || "",
+    email: userData?.email || "",
+    phone: userData?.phoneNumber || undefined,
+    role: "event_manager", // Default - extended field not in API
+    department: "operations", // Default - extended field not in API
+    status: userData?.status === "ACTIVE" ? "active" : userData?.status === "SUSPENDED" ? "inactive" : "pending",
+    hireDate: userData?.createdAt || new Date().toISOString(),
+    lastActive: userData?.updatedAt || new Date().toISOString(),
+    location: "N/A", // Default - extended field not in API
+    eventsManaged: 0, // Default - extended field not in API
+    totalHours: 0, // Default - extended field not in API
+    rating: 0, // Default - extended field not in API
+    avatar: undefined, // Extended field not in API
+    employeeId: `EMP-${userData?.id?.slice(0, 6) || "000000"}`,
+    salary: 0, // Default - extended field not in API
+    hourlyRate: 0, // Default - extended field not in API
+    totalEarnings: 0, // Default - extended field not in API
+    pendingDues: 0, // Default - extended field not in API
     permissions: {
-      canManageEvents: true,
-      canAccessAnalytics: true,
+      canManageEvents: false,
+      canAccessAnalytics: false,
       canManageUsers: false,
-      canProcessPayments: true,
-      canViewReports: true,
-      canModerateContent: true,
+      canProcessPayments: false,
+      canViewReports: false,
+      canModerateContent: false,
       canAccessAdminPanel: false
     },
-    emergencyContact: {
-      name: "John Johnson",
-      phone: "+1 (555) 987-6543",
-      relationship: "Spouse"
-    }
+    emergencyContact: undefined
+  };
+
+  // Fetch user data on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!staffId) {
+        setError("Staff ID not provided");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await getUserById(staffId);
+        if (response.success && response.data?.user) {
+          setUserData(response.data.user);
+        } else {
+          setError("Staff member not found");
+        }
+      } catch (err) {
+        console.error("Error fetching staff data:", err);
+        setError("Failed to load staff details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [staffId]);
+
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    role: "event_manager" | "ticket_scanner" | "support_staff" | "admin" | "supervisor";
+    department: "operations" | "customer_service" | "technical" | "management";
+    location: string;
+    employeeId: string;
+    salary: number;
+    hourlyRate: number;
+    emergencyContactName: string;
+    emergencyContactPhone: string;
+    emergencyContactRelationship: string;
+    status: "active" | "inactive" | "pending";
+    canManageEvents: boolean;
+    canAccessAnalytics: boolean;
+    canManageUsers: boolean;
+    canProcessPayments: boolean;
+    canViewReports: boolean;
+    canModerateContent: boolean;
+    canAccessAdminPanel: boolean;
+  }>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    role: "event_manager",
+    department: "operations",
+    location: "",
+    employeeId: "",
+    salary: 0,
+    hourlyRate: 0,
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    emergencyContactRelationship: "",
+    status: "pending",
+    canManageEvents: false,
+    canAccessAnalytics: false,
+    canManageUsers: false,
+    canProcessPayments: false,
+    canViewReports: false,
+    canModerateContent: false,
+    canAccessAdminPanel: false
   });
 
-  const [formData, setFormData] = useState({
-    firstName: staffData.firstName,
-    lastName: staffData.lastName,
-    email: staffData.email,
-    phone: staffData.phone || "",
-    role: staffData.role,
-    department: staffData.department,
-    location: staffData.location,
-    employeeId: staffData.employeeId,
-    salary: staffData.salary,
-    hourlyRate: staffData.hourlyRate,
-    emergencyContactName: staffData.emergencyContact?.name || "",
-    emergencyContactPhone: staffData.emergencyContact?.phone || "",
-    emergencyContactRelationship: staffData.emergencyContact?.relationship || "",
-    status: staffData.status,
-    canManageEvents: staffData.permissions.canManageEvents,
-    canAccessAnalytics: staffData.permissions.canAccessAnalytics,
-    canManageUsers: staffData.permissions.canManageUsers,
-    canProcessPayments: staffData.permissions.canProcessPayments,
-    canViewReports: staffData.permissions.canViewReports,
-    canModerateContent: staffData.permissions.canModerateContent,
-    canAccessAdminPanel: staffData.permissions.canAccessAdminPanel
-  });
+  // Update formData when userData loads
+  useEffect(() => {
+    if (userData) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email || "",
+        phone: userData.phoneNumber || "",
+        status: userData.status === "ACTIVE" ? "active" : userData.status === "SUSPENDED" ? "inactive" : "pending",
+      }));
+    }
+  }, [userData]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -128,36 +196,36 @@ const StaffEditPage = () => {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update the staff data
-      setStaffData(prev => ({
-        ...prev,
-        ...formData,
-        emergencyContact: {
-          name: formData.emergencyContactName,
-          phone: formData.emergencyContactPhone,
-          relationship: formData.emergencyContactRelationship
-        },
-        permissions: {
-          canManageEvents: formData.canManageEvents,
-          canAccessAnalytics: formData.canAccessAnalytics,
-          canManageUsers: formData.canManageUsers,
-          canProcessPayments: formData.canProcessPayments,
-          canViewReports: formData.canViewReports,
-          canModerateContent: formData.canModerateContent,
-          canAccessAdminPanel: formData.canAccessAdminPanel
-        }
-      }));
+    if (!staffId) return;
 
-      console.log("Staff updated:", formData);
-      // TODO: Show success message
-    } catch (error) {
-      console.error("Error updating staff:", error);
-      // TODO: Show error message
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Map form status back to API status
+      const apiStatus = formData.status === "active" ? "ACTIVE" : formData.status === "inactive" ? "SUSPENDED" : "DEACTIVATED";
+
+      const response = await updateUser(staffId, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phone || undefined,
+        status: apiStatus as "ACTIVE" | "SUSPENDED" | "DEACTIVATED",
+      });
+
+      if (response.success) {
+        setSuccess("Staff member updated successfully!");
+        // Update local userData to reflect changes
+        if (response.data?.user) {
+          setUserData(response.data.user);
+        }
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        throw new Error("Failed to update staff member");
+      }
+    } catch (err) {
+      console.error("Error updating staff:", err);
+      setError(err instanceof Error ? err.message : "Failed to update staff member");
     } finally {
       setIsSaving(false);
     }
@@ -187,9 +255,56 @@ const StaffEditPage = () => {
     return variants[role as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <p className="mt-2 text-muted-foreground">Loading staff details...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Error state (only if no userData at all)
+  if (error && !userData) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={handleBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Staff
+          </Button>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Status Messages */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-700 dark:text-green-400">{success}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -206,8 +321,12 @@ const StaffEditPage = () => {
             <Button variant="outline" size="sm" onClick={handleBack}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />
+            <Button size="sm" onClick={handleSave} disabled={isSaving || loading}>
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -536,8 +655,12 @@ const StaffEditPage = () => {
           <Button variant="outline" onClick={handleBack}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            <Save className="h-4 w-4 mr-2" />
+          <Button onClick={handleSave} disabled={isSaving || loading}>
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>

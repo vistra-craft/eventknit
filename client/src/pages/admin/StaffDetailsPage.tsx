@@ -15,15 +15,17 @@ import {
   AlertTriangle,
   CreditCard,
   Award,
-  FileText
+  FileText,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
-import { getAdminStaffEvents, type EventStaffAssignment } from "@/lib/admin-api";
-import { Loader2 } from "lucide-react";
+import { getUserById, getAdminStaffEvents, suspendUser, activateUser, type EventStaffAssignment, type User as ApiUser } from "@/lib/admin-api";
 
 interface StaffDetails {
   id: string;
@@ -106,6 +108,39 @@ const StaffDetailsPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [staffEvents, setStaffEvents] = useState<EventStaffAssignment[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
+  const [userData, setUserData] = useState<ApiUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Fetch user data on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!staffId) {
+        setError("Staff ID not provided");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getUserById(staffId);
+        if (response.success && response.data?.user) {
+          setUserData(response.data.user);
+        } else {
+          setError("Staff member not found");
+        }
+      } catch (err) {
+        console.error("Error fetching user:", err);
+        setError("Failed to load staff details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [staffId]);
 
   // Fetch staff events when events tab is active
   useEffect(() => {
@@ -128,66 +163,47 @@ const StaffDetailsPage = () => {
     fetchStaffEvents();
   }, [staffId, activeTab]);
 
-  // Mock staff data
+  // Build staffData from API response + defaults for extended fields
   const staffData: StaffDetails = {
-    id: staffId || "1",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    email: "sarah.johnson@eventknit.com",
-    phone: "+1 (555) 123-4567",
-    role: "event_manager",
-    department: "operations",
-    status: "active",
-    hireDate: "2023-01-15",
-    lastActive: "2024-02-15T10:30:00Z",
-    location: "San Francisco, CA",
-    eventsManaged: 45,
-    totalHours: 320,
-    rating: 4.8,
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-    employeeId: "EMP-001",
-    salary: 75000,
-    hourlyRate: 45,
-    totalEarnings: 125000,
-    pendingDues: 2500,
+    id: userData?.id || staffId || "",
+    firstName: userData?.firstName || "",
+    lastName: userData?.lastName || "",
+    email: userData?.email || "",
+    phone: userData?.phoneNumber || undefined,
+    role: "event_manager", // Default - API User doesn't have detailed role
+    department: "operations", // Default - not in API
+    status: userData?.status === "ACTIVE" ? "active" : userData?.status === "SUSPENDED" ? "inactive" : "pending",
+    hireDate: userData?.createdAt || new Date().toISOString(),
+    lastActive: userData?.updatedAt || new Date().toISOString(),
+    location: "Not specified",
+    eventsManaged: staffEvents.length,
+    totalHours: 0,
+    rating: 0,
+    avatar: undefined,
+    employeeId: `EMP-${userData?.id?.slice(0, 6).toUpperCase() || "000"}`,
+    salary: 0,
+    hourlyRate: 0,
+    totalEarnings: 0,
+    pendingDues: 0,
     permissions: {
       canManageEvents: true,
-      canAccessAnalytics: true,
+      canAccessAnalytics: false,
       canManageUsers: false,
-      canProcessPayments: true,
+      canProcessPayments: false,
       canViewReports: true,
-      canModerateContent: true,
+      canModerateContent: false,
       canAccessAdminPanel: false
     },
     performance: {
-      eventsCompleted: 45,
-      averageRating: 4.8,
-      onTimeRate: 98,
-      customerSatisfaction: 96,
-      lastPerformanceReview: "2024-01-15",
-      nextReviewDate: "2024-07-15"
+      eventsCompleted: staffEvents.filter(e => !e.isActive).length,
+      averageRating: 0,
+      onTimeRate: 0,
+      customerSatisfaction: 0,
+      lastPerformanceReview: "",
+      nextReviewDate: ""
     },
-    emergencyContact: {
-      name: "John Johnson",
-      phone: "+1 (555) 987-6543",
-      relationship: "Spouse"
-    },
-    documents: [
-      {
-        id: "DOC-001",
-        name: "Employment Contract",
-        type: "contract",
-        uploadDate: "2023-01-15",
-        expiryDate: "2025-01-15"
-      },
-      {
-        id: "DOC-002",
-        name: "Event Management Certification",
-        type: "certification",
-        uploadDate: "2023-02-01",
-        expiryDate: "2025-02-01"
-      }
-    ]
+    emergencyContact: undefined,
+    documents: []
   };
 
   // Mock events data (legacy - not used anymore, using API instead)
@@ -318,15 +334,65 @@ const StaffDetailsPage = () => {
     navigate(`/admin/users/staff/${staffData.id}/edit`);
   };
 
-  const handleSuspend = () => {
-    console.log("Suspend staff member:", staffData.id);
-    // TODO: Suspend staff member
+  const handleSuspend = async () => {
+    if (!staffId) return;
+    try {
+      setActionLoading(true);
+      const response = await suspendUser(staffId);
+      if (response.success) {
+        setUserData(prev => prev ? { ...prev, status: "SUSPENDED" as const } : null);
+      }
+    } catch (err) {
+      console.error("Error suspending user:", err);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleUnsuspend = () => {
-    console.log("Unsuspend staff member:", staffData.id);
-    // TODO: Unsuspend staff member
+  const handleActivate = async () => {
+    if (!staffId) return;
+    try {
+      setActionLoading(true);
+      const response = await activateUser(staffId);
+      if (response.success) {
+        setUserData(prev => prev ? { ...prev, status: "ACTIVE" as const } : null);
+      }
+    } catch (err) {
+      console.error("Error activating user:", err);
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading staff details...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/users/staff")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Staff
+          </Button>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -355,14 +421,14 @@ const StaffDetailsPage = () => {
               Edit Details
             </Button>
             {staffData.status === 'active' && (
-              <Button variant="destructive" size="sm" onClick={handleSuspend}>
-                <XCircle className="h-4 w-4 mr-2" />
+              <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={actionLoading}>
+                {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
                 Suspend
               </Button>
             )}
             {staffData.status === 'inactive' && (
-              <Button size="sm" onClick={handleUnsuspend}>
-                <CheckCircle className="h-4 w-4 mr-2" />
+              <Button size="sm" onClick={handleActivate} disabled={actionLoading}>
+                {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
                 Activate
               </Button>
             )}

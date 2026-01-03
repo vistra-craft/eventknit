@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Save,
   AlertCircle,
-  Shield
+  Shield,
+  Loader2,
+  CheckCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +16,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
+import { getUserById, updateUser, type User as ApiUser } from "@/lib/admin-api";
 
 interface OrganizerDetails {
   id: string;
@@ -57,71 +61,113 @@ const OrganizerEditPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("personal");
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [userData, setUserData] = useState<ApiUser | null>(null);
 
-  // Mock organizer data - in real app, this would be fetched from API
-  const [organizerData, setOrganizerData] = useState<OrganizerDetails>({
-    id: organizerId || "1",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    email: "sarah@techevents.com",
-    phone: "+1 (555) 123-4567",
-    company: "Tech Events Inc.",
-    status: "verified",
-    verificationDate: "2023-01-15",
-    totalEvents: 45,
-    totalRevenue: 125000,
-    rating: 4.8,
-    joinDate: "2022-11-20",
-    lastActive: "2024-02-15T10:30:00Z",
-    location: "San Francisco, CA",
-    website: "https://techevents.com",
-    description: "Leading technology event organizer with 10+ years of experience in hosting conferences, workshops, and networking events.",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-    businessLicense: "BL-2023-001234",
-    taxId: "12-3456789",
-    bankAccount: "****1234",
-    emergencyContact: {
-      name: "John Johnson",
-      phone: "+1 (555) 987-6543",
-      relationship: "Spouse"
-    },
-    supportTickets: [
-      {
-        id: "TICKET-001",
-        subject: "Payment processing issue",
-        status: "resolved",
-        priority: "high",
-        createdAt: "2024-02-10T09:00:00Z",
-        updatedAt: "2024-02-12T14:30:00Z"
-      },
-      {
-        id: "TICKET-002",
-        subject: "Event promotion assistance",
-        status: "in_progress",
-        priority: "medium",
-        createdAt: "2024-02-14T11:15:00Z",
-        updatedAt: "2024-02-15T08:20:00Z"
+  // Organizer data built from API response + defaults for extended fields
+  const organizerData: OrganizerDetails = {
+    id: userData?.id || organizerId || "",
+    firstName: userData?.firstName || "",
+    lastName: userData?.lastName || "",
+    email: userData?.email || "",
+    phone: userData?.phoneNumber || undefined,
+    company: userData?.organizationName || "N/A",
+    status: userData?.status === "ACTIVE" ? "verified" : userData?.status === "SUSPENDED" ? "suspended" : "pending",
+    verificationDate: userData?.isEmailVerified ? userData?.createdAt : undefined,
+    totalEvents: 0, // Extended field not in API
+    totalRevenue: 0, // Extended field not in API
+    rating: 0, // Extended field not in API
+    joinDate: userData?.createdAt || new Date().toISOString(),
+    lastActive: userData?.updatedAt || new Date().toISOString(),
+    location: "N/A", // Extended field not in API
+    website: undefined, // Extended field not in API
+    description: undefined, // Extended field not in API
+    avatar: undefined, // Extended field not in API
+    businessLicense: undefined, // Extended field not in API
+    taxId: undefined, // Extended field not in API
+    bankAccount: undefined, // Extended field not in API
+    emergencyContact: undefined,
+    supportTickets: []
+  };
+
+  // Fetch user data on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!organizerId) {
+        setError("Organizer ID not provided");
+        setLoading(false);
+        return;
       }
-    ]
+
+      try {
+        setLoading(true);
+        const response = await getUserById(organizerId);
+        if (response.success && response.data?.user) {
+          setUserData(response.data.user);
+        } else {
+          setError("Organizer not found");
+        }
+      } catch (err) {
+        console.error("Error fetching organizer data:", err);
+        setError("Failed to load organizer details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [organizerId]);
+
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    company: string;
+    location: string;
+    website: string;
+    description: string;
+    businessLicense: string;
+    taxId: string;
+    bankAccount: string;
+    emergencyContactName: string;
+    emergencyContactPhone: string;
+    emergencyContactRelationship: string;
+    status: "verified" | "pending" | "suspended" | "rejected";
+  }>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    company: "",
+    location: "",
+    website: "",
+    description: "",
+    businessLicense: "",
+    taxId: "",
+    bankAccount: "",
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    emergencyContactRelationship: "",
+    status: "pending"
   });
 
-  const [formData, setFormData] = useState({
-    firstName: organizerData.firstName,
-    lastName: organizerData.lastName,
-    email: organizerData.email,
-    phone: organizerData.phone || "",
-    company: organizerData.company,
-    location: organizerData.location,
-    website: organizerData.website || "",
-    description: organizerData.description || "",
-    businessLicense: organizerData.businessLicense || "",
-    taxId: organizerData.taxId || "",
-    bankAccount: organizerData.bankAccount || "",
-    emergencyContactName: organizerData.emergencyContact?.name || "",
-    emergencyContactPhone: organizerData.emergencyContact?.phone || "",
-    emergencyContactRelationship: organizerData.emergencyContact?.relationship || "",
-    status: organizerData.status
-  });
+  // Update formData when userData loads
+  useEffect(() => {
+    if (userData) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+        email: userData.email || "",
+        phone: userData.phoneNumber || "",
+        company: userData.organizationName || "",
+        status: userData.status === "ACTIVE" ? "verified" : userData.status === "SUSPENDED" ? "suspended" : "pending",
+      }));
+    }
+  }, [userData]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -131,27 +177,37 @@ const OrganizerEditPage = () => {
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update the organizer data
-      setOrganizerData(prev => ({
-        ...prev,
-        ...formData,
-        emergencyContact: {
-          name: formData.emergencyContactName,
-          phone: formData.emergencyContactPhone,
-          relationship: formData.emergencyContactRelationship
-        }
-      }));
+    if (!organizerId) return;
 
-      console.log("Organizer updated:", formData);
-      // TODO: Show success message
-    } catch (error) {
-      console.error("Error updating organizer:", error);
-      // TODO: Show error message
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Map form status back to API status
+      const apiStatus = formData.status === "verified" ? "ACTIVE" : formData.status === "suspended" ? "SUSPENDED" : "DEACTIVATED";
+
+      const response = await updateUser(organizerId, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phone || undefined,
+        organizationName: formData.company || undefined,
+        status: apiStatus as "ACTIVE" | "SUSPENDED" | "DEACTIVATED",
+      });
+
+      if (response.success) {
+        setSuccess("Organizer updated successfully!");
+        // Update local userData to reflect changes
+        if (response.data?.user) {
+          setUserData(response.data.user);
+        }
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        throw new Error("Failed to update organizer");
+      }
+    } catch (err) {
+      console.error("Error updating organizer:", err);
+      setError(err instanceof Error ? err.message : "Failed to update organizer");
     } finally {
       setIsSaving(false);
     }
@@ -171,9 +227,56 @@ const OrganizerEditPage = () => {
     return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <p className="mt-2 text-muted-foreground">Loading organizer details...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Error state (only if no userData at all)
+  if (error && !userData) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={handleBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Organizers
+          </Button>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
+        {/* Status Messages */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-700 dark:text-green-400">{success}</AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -190,8 +293,12 @@ const OrganizerEditPage = () => {
             <Button variant="outline" size="sm" onClick={handleBack}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={isSaving}>
-              <Save className="h-4 w-4 mr-2" />
+            <Button size="sm" onClick={handleSave} disabled={isSaving || loading}>
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -472,8 +579,12 @@ const OrganizerEditPage = () => {
           <Button variant="outline" onClick={handleBack}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            <Save className="h-4 w-4 mr-2" />
+          <Button onClick={handleSave} disabled={isSaving || loading}>
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -12,13 +12,17 @@ import {
   FileText,
   Shield,
   User,
-  Download
+  Download,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
+import { getUserById, suspendUser, activateUser, type User as ApiUser } from "@/lib/admin-api";
 
 interface OrganizerDetails {
   id: string;
@@ -74,52 +78,64 @@ const OrganizerDetailsPage = () => {
   const { organizerId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [userData, setUserData] = useState<ApiUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Mock organizer data
-  const organizerData: OrganizerDetails = {
-    id: organizerId || "1",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    email: "sarah@techevents.com",
-    phone: "+1 (555) 123-4567",
-    company: "Tech Events Inc.",
-    status: "verified",
-    verificationDate: "2023-01-15",
-    totalEvents: 45,
-    totalRevenue: 125000,
-    rating: 4.8,
-    joinDate: "2022-11-20",
-    lastActive: "2024-02-15T10:30:00Z",
-    location: "San Francisco, CA",
-    website: "https://techevents.com",
-    description: "Leading technology event organizer with 10+ years of experience in hosting conferences, workshops, and networking events.",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-    businessLicense: "BL-2023-001234",
-    taxId: "12-3456789",
-    bankAccount: "****1234",
-    emergencyContact: {
-      name: "John Johnson",
-      phone: "+1 (555) 987-6543",
-      relationship: "Spouse"
-    },
-    supportTickets: [
-      {
-        id: "TICKET-001",
-        subject: "Payment processing issue",
-        status: "resolved",
-        priority: "high",
-        createdAt: "2024-02-10T09:00:00Z",
-        updatedAt: "2024-02-12T14:30:00Z"
-      },
-      {
-        id: "TICKET-002",
-        subject: "Event promotion assistance",
-        status: "in_progress",
-        priority: "medium",
-        createdAt: "2024-02-14T11:15:00Z",
-        updatedAt: "2024-02-15T08:20:00Z"
+  // Fetch user data on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!organizerId) {
+        setError("Organizer ID not provided");
+        setLoading(false);
+        return;
       }
-    ]
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getUserById(organizerId);
+        if (response.success && response.data?.user) {
+          setUserData(response.data.user);
+        } else {
+          setError("Organizer not found");
+        }
+      } catch (err) {
+        console.error("Error fetching organizer:", err);
+        setError("Failed to load organizer details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [organizerId]);
+
+  // Build organizerData from API response + defaults for extended fields
+  const organizerData: OrganizerDetails = {
+    id: userData?.id || organizerId || "",
+    firstName: userData?.firstName || "",
+    lastName: userData?.lastName || "",
+    email: userData?.email || "",
+    phone: userData?.phoneNumber || undefined,
+    company: userData?.organizationName || "Not specified",
+    status: userData?.status === "ACTIVE" ? "verified" : userData?.status === "SUSPENDED" ? "suspended" : "pending",
+    verificationDate: userData?.isEmailVerified ? userData.createdAt : undefined,
+    totalEvents: 0,
+    totalRevenue: 0,
+    rating: 0,
+    joinDate: userData?.createdAt || new Date().toISOString(),
+    lastActive: userData?.updatedAt || new Date().toISOString(),
+    location: "Not specified",
+    website: undefined,
+    description: undefined,
+    avatar: undefined,
+    businessLicense: undefined,
+    taxId: undefined,
+    bankAccount: undefined,
+    emergencyContact: undefined,
+    supportTickets: []
   };
 
   // Mock events data
@@ -238,19 +254,68 @@ const OrganizerDetailsPage = () => {
   };
 
   const handleEdit = () => {
-    console.log("Edit organizer:", organizerData.id);
-    // TODO: Navigate to edit page
+    navigate(`/admin/users/organizers/${organizerData.id}/edit`);
   };
 
-  const handleVerify = () => {
-    console.log("Verify organizer:", organizerData.id);
-    // TODO: Verify organizer
+  const handleVerify = async () => {
+    if (!organizerId) return;
+    try {
+      setActionLoading(true);
+      const response = await activateUser(organizerId);
+      if (response.success) {
+        setUserData(prev => prev ? { ...prev, status: "ACTIVE" as const } : null);
+      }
+    } catch (err) {
+      console.error("Error verifying organizer:", err);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleSuspend = () => {
-    console.log("Suspend organizer:", organizerData.id);
-    // TODO: Suspend organizer
+  const handleSuspend = async () => {
+    if (!organizerId) return;
+    try {
+      setActionLoading(true);
+      const response = await suspendUser(organizerId);
+      if (response.success) {
+        setUserData(prev => prev ? { ...prev, status: "SUSPENDED" as const } : null);
+      }
+    } catch (err) {
+      console.error("Error suspending organizer:", err);
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading organizer details...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/users/organizers")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Organizers
+          </Button>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -279,14 +344,14 @@ const OrganizerDetailsPage = () => {
               Edit Details
             </Button>
             {organizerData.status === 'pending' && (
-              <Button size="sm" onClick={handleVerify}>
-                <CheckCircle className="h-4 w-4 mr-2" />
+              <Button size="sm" onClick={handleVerify} disabled={actionLoading}>
+                {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
                 Verify
               </Button>
             )}
             {organizerData.status === 'verified' && (
-              <Button variant="destructive" size="sm" onClick={handleSuspend}>
-                <XCircle className="h-4 w-4 mr-2" />
+              <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={actionLoading}>
+                {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
                 Suspend
               </Button>
             )}
