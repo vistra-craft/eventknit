@@ -1378,6 +1378,38 @@ The following items are marked for future implementation or improvement:
 |------|-------------|----------|
 | Event Service | Send welcome email with password reset link | Medium |
 
+### Digital Wallet Integration
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Apple Wallet | Integrate Apple PassKit with Pass Type ID certificate | High |
+| Apple Wallet | Sign .pkpass files with Apple Developer certificate | High |
+| Apple Wallet | Generate actual downloadable .pkpass files | High |
+| Google Pay | Integrate Google Pay Passes API | High |
+| Google Pay | Obtain Google Pay API for Passes credentials | High |
+| Google Pay | Generate save-to-wallet links for Google Pay | High |
+
+**Requirements for Apple Wallet:**
+- Apple Developer account ($99/year)
+- Pass Type ID certificate from Apple Developer portal
+- Private key for signing passes
+- Server-side pkpass file generation (use `passkit-generator` npm package)
+
+**Requirements for Google Pay:**
+- Google Cloud Platform account
+- Google Pay API for Passes enabled
+- Service account with appropriate permissions
+- Issuer ID from Google Pay console
+
+### Admin Features (Mock Data)
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| System Health | Replace mock system metrics with real monitoring | Medium |
+| System Health | Integrate with actual server health endpoints | Medium |
+| Moderation | Replace mock reported content with real API | Medium |
+| Moderation | Implement content review workflow | Medium |
+
 ---
 
 *Last updated: January 2026*
