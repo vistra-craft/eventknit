@@ -4,6 +4,8 @@ import { RoleViewProvider } from "./contexts/RoleViewContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { UserRole } from "./types/auth";
 import type { ReactNode } from "react";
 import Index from "./pages/index";
 import CreateEvent from "./pages/CreateEvent";
@@ -199,149 +201,151 @@ const App = () => (
       <Route path="/event/:id/registration-confirmation" element={<RegistrationConfirmation />} />
       {/* Public Form Routes */}
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
-      {/* User Dashboard Routes */}
-      <Route path="/user/dashboard" element={<UserDashboard />} />
-      <Route path="/user/event/:id" element={<DashboardMyEvent />} />
-      <Route path="/user/tickets/:registrationId" element={<TicketViewPage />} />
-      <Route path="/user/profile" element={<UserProfilePage />} />
-      <Route path="/user/notification-preferences" element={<NotificationPreferencesPage />} />
+      {/* User Dashboard Routes - Protected, any authenticated user */}
+      <Route path="/user/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+      <Route path="/user/event/:id" element={<ProtectedRoute><DashboardMyEvent /></ProtectedRoute>} />
+      <Route path="/user/tickets/:registrationId" element={<ProtectedRoute><TicketViewPage /></ProtectedRoute>} />
+      <Route path="/user/profile" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+      <Route path="/user/notification-preferences" element={<ProtectedRoute><NotificationPreferencesPage /></ProtectedRoute>} />
       <Route path="/exhibitors/:id" element={<ExhibitorDetails />} />
-      {/* Organizer Dashboard Routes */}
-      <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
-      <Route path="/organizer/onboarding" element={<OnboardingWizard />} />
-      <Route path="/organizer/events/upcoming" element={<UpcomingEventsPage />} />
-      <Route path="/organizer/events/past" element={<PastEventsPage />} />
-      <Route path="/organizer/events/cancelled" element={<CancelledEventsPage />} />
-      <Route path="/organizer/events" element={<AllEventsPage />} />
-      <Route path="/organizer/events/create" element={<CreateEventPage />} />
-      <Route path="/organizer/events/create-standalone" element={<StandaloneCreateEventPage />} />
-      <Route path="/organizer/event/:eventId" element={<EventManagementPage />} />
+      {/* Organizer Dashboard Routes - Protected, organizer roles only */}
+      <Route path="/organizer/dashboard" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><OrganizerDashboard /></ProtectedRoute>} />
+      <Route path="/organizer/onboarding" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER]}><OnboardingWizard /></ProtectedRoute>} />
+      <Route path="/organizer/events/upcoming" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><UpcomingEventsPage /></ProtectedRoute>} />
+      <Route path="/organizer/events/past" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><PastEventsPage /></ProtectedRoute>} />
+      <Route path="/organizer/events/cancelled" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><CancelledEventsPage /></ProtectedRoute>} />
+      <Route path="/organizer/events" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><AllEventsPage /></ProtectedRoute>} />
+      <Route path="/organizer/events/create" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><CreateEventPage /></ProtectedRoute>} />
+      <Route path="/organizer/events/create-standalone" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><StandaloneCreateEventPage /></ProtectedRoute>} />
+      <Route path="/organizer/event/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><EventManagementPage /></ProtectedRoute>} />
       {/* Analytics Routes */}
-      <Route path="/organizer/analytics" element={<AnalyticsOverview />} />
-      <Route path="/organizer/analytics/events" element={<EventPerformance />} />
-      <Route path="/organizer/analytics/attendees" element={<AttendeeInsights />} />
-      <Route path="/organizer/analytics/revenue" element={<RevenueReports />} />
-      <Route path="/organizer/analytics/test" element={<TestAnalytics />} />
+      <Route path="/organizer/analytics" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><AnalyticsOverview /></ProtectedRoute>} />
+      <Route path="/organizer/analytics/events" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><EventPerformance /></ProtectedRoute>} />
+      <Route path="/organizer/analytics/attendees" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><AttendeeInsights /></ProtectedRoute>} />
+      <Route path="/organizer/analytics/revenue" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><RevenueReports /></ProtectedRoute>} />
+      <Route path="/organizer/analytics/test" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><TestAnalytics /></ProtectedRoute>} />
       {/* Team Routes */}
-      <Route path="/organizer/team/staff" element={<StaffManagementPage />} />
-      <Route path="/organizer/team/roles" element={<RolesPermissionsPage />} />
-      <Route path="/organizer/team/calendar" element={<TeamCalendarPage />} />
+      <Route path="/organizer/team/staff" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><StaffManagementPage /></ProtectedRoute>} />
+      <Route path="/organizer/team/roles" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><RolesPermissionsPage /></ProtectedRoute>} />
+      <Route path="/organizer/team/calendar" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><TeamCalendarPage /></ProtectedRoute>} />
       {/* Settings Routes */}
-      <Route path="/organizer/settings" element={<OrganizerSettingsPage />} />
-      <Route path="/organizer/settings/profile" element={<OrganizerSettingsPage />} />
-      <Route path="/organizer/settings/notifications" element={<OrganizerSettingsPage />} />
-      <Route path="/organizer/settings/security" element={<OrganizerSettingsPage />} />
-      <Route path="/organizer/settings/appearance" element={<OrganizerSettingsPage />} />
-      <Route path="/organizer/verification" element={<VerificationPage />} />
-      <Route path="/organizer/kyc" element={<KYCVerificationPage />} />
-      <Route path="/organizer/subscription" element={<SubscriptionManagement />} />
+      <Route path="/organizer/settings" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><OrganizerSettingsPage /></ProtectedRoute>} />
+      <Route path="/organizer/settings/profile" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><OrganizerSettingsPage /></ProtectedRoute>} />
+      <Route path="/organizer/settings/notifications" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><OrganizerSettingsPage /></ProtectedRoute>} />
+      <Route path="/organizer/settings/security" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><OrganizerSettingsPage /></ProtectedRoute>} />
+      <Route path="/organizer/settings/appearance" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><OrganizerSettingsPage /></ProtectedRoute>} />
+      <Route path="/organizer/verification" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><VerificationPage /></ProtectedRoute>} />
+      <Route path="/organizer/kyc" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><KYCVerificationPage /></ProtectedRoute>} />
+      <Route path="/organizer/subscription" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><SubscriptionManagement /></ProtectedRoute>} />
       {/* White-Label Routes */}
-      <Route path="/organizer/branding" element={<WhiteLabelBranding />} />
-      <Route path="/organizer/custom-domains" element={<CustomDomains />} />
+      <Route path="/organizer/branding" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><WhiteLabelBranding /></ProtectedRoute>} />
+      <Route path="/organizer/custom-domains" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><CustomDomains /></ProtectedRoute>} />
       {/* Venue & Seating Routes */}
-      <Route path="/organizer/venues" element={<VenueManagement />} />
+      <Route path="/organizer/venues" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><VenueManagement /></ProtectedRoute>} />
       {/* Legacy Profile Route - redirects to settings */}
-      <Route path="/organizer/profile" element={<OrganizerSettingsPage />} />
+      <Route path="/organizer/profile" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER, UserRole.SUPERADMIN]}><OrganizerSettingsPage /></ProtectedRoute>} />
       {/* Event Templates and Drafts */}
-      <Route path="/organizer/events/templates" element={<EventTemplates />} />
-      <Route path="/organizer/events/templates-management" element={<EventTemplatesManagement />} />
-      <Route path="/organizer/events/drafts" element={<EventDraftsManagement />} />
+      <Route path="/organizer/events/templates" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><EventTemplates /></ProtectedRoute>} />
+      <Route path="/organizer/events/templates-management" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><EventTemplatesManagement /></ProtectedRoute>} />
+      <Route path="/organizer/events/drafts" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><EventDraftsManagement /></ProtectedRoute>} />
       {/* Attendee Management Routes */}
-      <Route path="/organizer/attendees/segmentation" element={<AttendeeSegmentation />} />
-      <Route path="/organizer/attendees/tags" element={<AttendeeTagsManagement />} />
-      <Route path="/organizer/attendees/communication" element={<AttendeeCommunication />} />
+      <Route path="/organizer/attendees/segmentation" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><AttendeeSegmentation /></ProtectedRoute>} />
+      <Route path="/organizer/attendees/tags" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><AttendeeTagsManagement /></ProtectedRoute>} />
+      <Route path="/organizer/attendees/communication" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><AttendeeCommunication /></ProtectedRoute>} />
       {/* Event Collaboration Routes */}
-      <Route path="/organizer/event/:eventId/collaboration" element={<EventCollaboration />} />
-      {/* Admin Dashboard Routes */}
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/organizer/event/:eventId/collaboration" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><EventCollaboration /></ProtectedRoute>} />
+      {/* Admin Dashboard Routes - Protected, admin roles only */}
+      <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER, UserRole.SUPPORT, UserRole.TELLER]}><AdminDashboard /></ProtectedRoute>} />
       {/* Admin Events Routes */}
-      <Route path="/admin/events" element={<AdminAllEventsPage />} />
-      <Route path="/admin/events/pending" element={<AdminPendingApprovalPage />} />
-      <Route path="/admin/events/featured" element={<AdminFeaturedEventsPage />} />
-      <Route path="/admin/events/featured/create" element={<CreateFeaturedEventPage />} />
-      <Route path="/admin/events/featured/:id/edit" element={<EditFeaturedEventPage />} />
-      <Route path="/admin/events/past" element={<AdminPastEventsPage />} />
-      <Route path="/admin/events/upcoming" element={<AdminUpcomingEventsPage />} />
-      <Route path="/admin/events/declined" element={<AdminDeclinedEventsPage />} />
-      <Route path="/admin/events/create" element={<AdminCreateEventPage />} />
-      <Route path="/admin/events/:eventId/preview" element={<EventPreviewPage />} />
-      <Route path="/admin/events/:eventId" element={<EventDetailsPage />} />
+      <Route path="/admin/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminAllEventsPage /></ProtectedRoute>} />
+      <Route path="/admin/events/pending" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminPendingApprovalPage /></ProtectedRoute>} />
+      <Route path="/admin/events/featured" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminFeaturedEventsPage /></ProtectedRoute>} />
+      <Route path="/admin/events/featured/create" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><CreateFeaturedEventPage /></ProtectedRoute>} />
+      <Route path="/admin/events/featured/:id/edit" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><EditFeaturedEventPage /></ProtectedRoute>} />
+      <Route path="/admin/events/past" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPastEventsPage /></ProtectedRoute>} />
+      <Route path="/admin/events/upcoming" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminUpcomingEventsPage /></ProtectedRoute>} />
+      <Route path="/admin/events/declined" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminDeclinedEventsPage /></ProtectedRoute>} />
+      <Route path="/admin/events/create" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminCreateEventPage /></ProtectedRoute>} />
+      <Route path="/admin/events/:eventId/preview" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><EventPreviewPage /></ProtectedRoute>} />
+      <Route path="/admin/events/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><EventDetailsPage /></ProtectedRoute>} />
       {/* Admin Users Routes */}
-      <Route path="/admin/users" element={<UsersManagementPage />} />
+      <Route path="/admin/users" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><UsersManagementPage /></ProtectedRoute>} />
       <Route path="/admin/users/attendees" element={
-        <AdminLayout>
-          <AttendeesPage />
-        </AdminLayout>
+        <ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.SUPPORT]}>
+          <AdminLayout>
+            <AttendeesPage />
+          </AdminLayout>
+        </ProtectedRoute>
       } />
-      <Route path="/admin/users/staff" element={<AdminStaffManagementPage />} />
-      <Route path="/admin/users/staff/:staffId" element={<StaffDetailsPage />} />
-      <Route path="/admin/users/staff/:staffId/edit" element={<StaffEditPage />} />
-      <Route path="/admin/users/organizers" element={<OrganizersPage />} />
-      <Route path="/admin/users/organizers/create" element={<CreateOrganizerPage />} />
-      <Route path="/admin/users/organizers/:organizerId/preview" element={<OrganizerPreviewPage />} />
-      <Route path="/admin/users/organizers/:organizerId" element={<OrganizerDetailsPage />} />
-      <Route path="/admin/users/organizers/:organizerId/edit" element={<OrganizerEditPage />} />
-      <Route path="/admin/users/roles" element={<UserRolesPage />} />
+      <Route path="/admin/users/staff" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><AdminStaffManagementPage /></ProtectedRoute>} />
+      <Route path="/admin/users/staff/:staffId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><StaffDetailsPage /></ProtectedRoute>} />
+      <Route path="/admin/users/staff/:staffId/edit" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><StaffEditPage /></ProtectedRoute>} />
+      <Route path="/admin/users/organizers" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><OrganizersPage /></ProtectedRoute>} />
+      <Route path="/admin/users/organizers/create" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><CreateOrganizerPage /></ProtectedRoute>} />
+      <Route path="/admin/users/organizers/:organizerId/preview" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><OrganizerPreviewPage /></ProtectedRoute>} />
+      <Route path="/admin/users/organizers/:organizerId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><OrganizerDetailsPage /></ProtectedRoute>} />
+      <Route path="/admin/users/organizers/:organizerId/edit" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><OrganizerEditPage /></ProtectedRoute>} />
+      <Route path="/admin/users/roles" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><UserRolesPage /></ProtectedRoute>} />
       {/* Admin Staff Performance Routes */}
-      <Route path="/admin/staff-performance" element={<StaffPerformanceDashboard />} />
-      <Route path="/admin/staff-performance/:staffId" element={<StaffPerformanceDetail />} />
-      <Route path="/admin/settings" element={<AdminSettingsPage />} />
-      <Route path="/admin/profile" element={<AdminProfilePage />} />
+      <Route path="/admin/staff-performance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><StaffPerformanceDashboard /></ProtectedRoute>} />
+      <Route path="/admin/staff-performance/:staffId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><StaffPerformanceDetail /></ProtectedRoute>} />
+      <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><AdminSettingsPage /></ProtectedRoute>} />
+      <Route path="/admin/profile" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER, UserRole.SUPPORT, UserRole.TELLER]}><AdminProfilePage /></ProtectedRoute>} />
       {/* Admin System Routes */}
-      <Route path="/admin/system" element={<SystemHealthPage />} />
-      <Route path="/admin/system/health" element={<SystemHealthPage />} />
-      <Route path="/admin/system/database" element={<DatabasePage />} />
-      <Route path="/admin/system/logs" element={<LogsPage />} />
-      <Route path="/admin/system/backups" element={<BackupsPage />} />
-      <Route path="/admin/system/maintenance" element={<MaintenancePage />} />
+      <Route path="/admin/system" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><SystemHealthPage /></ProtectedRoute>} />
+      <Route path="/admin/system/health" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><SystemHealthPage /></ProtectedRoute>} />
+      <Route path="/admin/system/database" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><DatabasePage /></ProtectedRoute>} />
+      <Route path="/admin/system/logs" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><LogsPage /></ProtectedRoute>} />
+      <Route path="/admin/system/backups" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><BackupsPage /></ProtectedRoute>} />
+      <Route path="/admin/system/maintenance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><MaintenancePage /></ProtectedRoute>} />
       {/* Admin Moderation Route */}
-      <Route path="/admin/moderation" element={<ModerationPage />} />
+      <Route path="/admin/moderation" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><ModerationPage /></ProtectedRoute>} />
       {/* Admin Communications Route */}
-      <Route path="/admin/communications" element={<AdminCommunicationsPage />} />
+      <Route path="/admin/communications" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminCommunicationsPage /></ProtectedRoute>} />
       {/* Admin Notification Settings Route */}
-      <Route path="/admin/notification-settings" element={<AdminNotificationSettingsPage />} />
+      <Route path="/admin/notification-settings" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><AdminNotificationSettingsPage /></ProtectedRoute>} />
       {/* Admin Support Route */}
-      <Route path="/admin/support" element={<SupportPage />} />
+      <Route path="/admin/support" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.SUPPORT]}><SupportPage /></ProtectedRoute>} />
       {/* Admin Finance Routes */}
-      <Route path="/admin/finance" element={<FinanceDashboard />} />
-      <Route path="/admin/finance/events" element={<EventFinanceDashboard />} />
-      <Route path="/admin/finance/payments" element={<PaymentTransactionsPage />} />
-      <Route path="/admin/finance/disbursements" element={<DisbursementsPage />} />
-      <Route path="/admin/finance/refunds" element={<RefundsPage />} />
-      <Route path="/admin/finance/reconciliation" element={<ReconciliationPage />} />
-      <Route path="/admin/finance/expenses" element={<ExpensesPage />} />
-      <Route path="/admin/finance/income" element={<IncomePage />} />
-      <Route path="/admin/finance/wages" element={<WagesPage />} />
-      <Route path="/admin/finance/transactions" element={<TransactionsPage />} />
-      <Route path="/admin/finance/income-statement" element={<IncomeStatementPage />} />
+      <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><FinanceDashboard /></ProtectedRoute>} />
+      <Route path="/admin/finance/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><EventFinanceDashboard /></ProtectedRoute>} />
+      <Route path="/admin/finance/payments" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><PaymentTransactionsPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/disbursements" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><DisbursementsPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/refunds" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><RefundsPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/reconciliation" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><ReconciliationPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/expenses" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><ExpensesPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/income" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><IncomePage /></ProtectedRoute>} />
+      <Route path="/admin/finance/wages" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><WagesPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/transactions" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><TransactionsPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/income-statement" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><IncomeStatementPage /></ProtectedRoute>} />
       {/* Admin Finance Edit Routes */}
-      <Route path="/admin/finance/transactions/edit/:id" element={<EditTransactionPage />} />
-      <Route path="/admin/finance/expenses/edit/:id" element={<EditExpensePage />} />
-      <Route path="/admin/finance/income/edit/:id" element={<EditIncomePage />} />
-      <Route path="/admin/finance/wages/edit/:id" element={<EditWagePage />} />
+      <Route path="/admin/finance/transactions/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><EditTransactionPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/expenses/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><EditExpensePage /></ProtectedRoute>} />
+      <Route path="/admin/finance/income/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><EditIncomePage /></ProtectedRoute>} />
+      <Route path="/admin/finance/wages/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><EditWagePage /></ProtectedRoute>} />
       {/* Admin Marketing Routes */}
-      <Route path="/admin/marketing" element={<AdminMarketingPage />} />
-      <Route path="/admin/marketing/campaigns" element={<AdminCampaignsPage />} />
-      <Route path="/admin/marketing/social" element={<AdminSocialMediaPage />} />
-      <Route path="/admin/marketing/email" element={<AdminEmailMarketingPage />} />
-      <Route path="/admin/marketing/promotions" element={<AdminPromotionsPage />} />
-      <Route path="/admin/marketing/promo-codes" element={<PromoCodeManager />} />
-      <Route path="/admin/marketing/affiliate" element={<AffiliateProgram />} />
-      <Route path="/admin/marketing/partnerships" element={<AdminPartnershipsPage />} />
+      <Route path="/admin/marketing" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminMarketingPage /></ProtectedRoute>} />
+      <Route path="/admin/marketing/campaigns" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminCampaignsPage /></ProtectedRoute>} />
+      <Route path="/admin/marketing/social" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminSocialMediaPage /></ProtectedRoute>} />
+      <Route path="/admin/marketing/email" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminEmailMarketingPage /></ProtectedRoute>} />
+      <Route path="/admin/marketing/promotions" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPromotionsPage /></ProtectedRoute>} />
+      <Route path="/admin/marketing/promo-codes" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><PromoCodeManager /></ProtectedRoute>} />
+      <Route path="/admin/marketing/affiliate" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AffiliateProgram /></ProtectedRoute>} />
+      <Route path="/admin/marketing/partnerships" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPartnershipsPage /></ProtectedRoute>} />
       {/* Admin Tickets Routes */}
-      <Route path="/admin/tickets/advanced" element={<AdminAdvancedTicketTypes />} />
-      <Route path="/admin/event/:eventId/tickets/advanced" element={<AdminAdvancedTicketTypes />} />
-      <Route path="/admin/tickets/pricing" element={<AdminDynamicPricing />} />
-      <Route path="/admin/event/:eventId/tickets/pricing" element={<AdminDynamicPricing />} />
+      <Route path="/admin/tickets/advanced" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminAdvancedTicketTypes /></ProtectedRoute>} />
+      <Route path="/admin/event/:eventId/tickets/advanced" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminAdvancedTicketTypes /></ProtectedRoute>} />
+      <Route path="/admin/tickets/pricing" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminDynamicPricing /></ProtectedRoute>} />
+      <Route path="/admin/event/:eventId/tickets/pricing" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminDynamicPricing /></ProtectedRoute>} />
       {/* Admin Analytics Routes */}
-      <Route path="/admin/analytics" element={<AdminAnalyticsOverview />} />
-      <Route path="/admin/analytics/events" element={<AdminAnalyticsOverview />} />
-      <Route path="/admin/analytics/users" element={<AdminAnalyticsOverview />} />
-      <Route path="/admin/analytics/revenue" element={<AdminAnalyticsOverview />} />
-      <Route path="/admin/analytics/system" element={<AdminAnalyticsOverview />} />
+      <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminAnalyticsOverview /></ProtectedRoute>} />
+      <Route path="/admin/analytics/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminAnalyticsOverview /></ProtectedRoute>} />
+      <Route path="/admin/analytics/users" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminAnalyticsOverview /></ProtectedRoute>} />
+      <Route path="/admin/analytics/revenue" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminAnalyticsOverview /></ProtectedRoute>} />
+      <Route path="/admin/analytics/system" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><AdminAnalyticsOverview /></ProtectedRoute>} />
       {/* Admin Financial Management Route */}
-      <Route path="/admin/financial" element={<FinancialManagement />} />
-      <Route path="/admin/financial/payouts" element={<FinancialManagement />} />
+      <Route path="/admin/financial" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><FinancialManagement /></ProtectedRoute>} />
+      <Route path="/admin/financial/payouts" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><FinancialManagement /></ProtectedRoute>} />
       <Route path="/support" element={<Support />} />
       {/* Auth Routes */}
       <Route path="/auth/signin" element={<SignIn />} />
@@ -358,13 +362,13 @@ const App = () => (
       <Route path="/auth/create-account" element={<CreateAccount />} />
       <Route path="*" element={<NotFound />} />
       {/* Admin Workstation Routes */}
-      <Route path="/admin/workstation" element={<WorkstationOverview />} />
-      <Route path="/admin/workstation/events" element={<WorkstationEvents />} />
-      <Route path="/admin/workstation/event/:eventId" element={<WorkstationEventDashboard />} />
-      <Route path="/admin/workstation/scanner" element={<WorkstationScanner />} />
-      <Route path="/admin/workstation/print" element={<WorkstationPrint />} />
-      <Route path="/admin/workstation/templates" element={<WorkstationTemplates />} />
-      <Route path="/admin/workstation/history" element={<WorkstationHistory />} />
+      <Route path="/admin/workstation" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationOverview /></ProtectedRoute>} />
+      <Route path="/admin/workstation/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationEvents /></ProtectedRoute>} />
+      <Route path="/admin/workstation/event/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationEventDashboard /></ProtectedRoute>} />
+      <Route path="/admin/workstation/scanner" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationScanner /></ProtectedRoute>} />
+      <Route path="/admin/workstation/print" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationPrint /></ProtectedRoute>} />
+      <Route path="/admin/workstation/templates" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><WorkstationTemplates /></ProtectedRoute>} />
+      <Route path="/admin/workstation/history" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationHistory /></ProtectedRoute>} />
         </Routes>
       </RoleViewWrapper>
       <Toaster />
