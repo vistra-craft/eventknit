@@ -3,18 +3,35 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Calendar, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Calendar, Mail, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { forgotPassword } from '@/lib/auth-api';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle forgot password logic here
-    console.log('Forgot password for:', email);
-    setIsSubmitted(true);
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const result = await forgotPassword(email);
+      if (result.success) {
+        setIsSubmitted(true);
+      } else {
+        setError(result.message || 'Failed to send reset link. Please try again.');
+      }
+    } catch {
+      // Don't reveal if email exists or not for security
+      // Show success even if email doesn't exist
+      setIsSubmitted(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBackToSignIn = () => {
@@ -33,7 +50,7 @@ const ForgotPassword = () => {
                 <div className="absolute top-20 left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-20 right-20 w-48 h-48 bg-black/5 rounded-full blur-2xl"></div>
                 <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-primary/10 rounded-full blur-xl"></div>
-                
+
                 <div className="relative z-10 flex flex-col justify-between h-full">
                   {/* Logo */}
                   <div className="flex items-center justify-between gap-3 mb-8">
@@ -77,8 +94,8 @@ const ForgotPassword = () => {
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-primary mb-2">Forgot password?</h1>
             <p className="text-sm text-muted-foreground">
-              {isSubmitted 
-                ? "Check your email for reset instructions" 
+              {isSubmitted
+                ? "Check your email for reset instructions"
                 : "Enter your email address and we'll send you a reset link"
               }
             </p>
@@ -88,6 +105,12 @@ const ForgotPassword = () => {
             <>
               {/* Forgot Password Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -100,12 +123,24 @@ const ForgotPassword = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12 border-border focus-visible:border-primary/40"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium">
-                  Send Reset Link
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Reset Link'
+                  )}
                 </Button>
               </form>
 
@@ -126,7 +161,7 @@ const ForgotPassword = () => {
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle className="w-8 h-8 text-primary" />
                 </div>
-                
+
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold text-foreground">Check your email</h3>
                   <p className="text-muted-foreground">

@@ -93,6 +93,18 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/auth/google
+ * @desc    Google OAuth login/registration
+ * @access  Public
+ */
+router.post(
+  '/google',
+  authRateLimiter,
+  validate(authValidations.googleAuth),
+  AuthController.googleAuth,
+);
+
+/**
  * @route   POST /api/v1/auth/login
  * @desc    Login user
  * @access  Public

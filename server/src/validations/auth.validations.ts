@@ -149,6 +149,26 @@ export const authValidations = {
       }),
   }),
 
+  googleAuth: Joi.object({
+    token: Joi.string().required().messages({
+      'any.required': 'Google token is required',
+    }),
+    tokenType: Joi.string()
+      .valid('id_token', 'access_token')
+      .optional()
+      .default('id_token')
+      .messages({
+        'any.only': 'Token type must be either id_token or access_token',
+      }),
+    role: Joi.string()
+      .valid('ATTENDEE', 'ORGANIZER')
+      .optional()
+      .default('ATTENDEE')
+      .messages({
+        'any.only': 'Role must be either ATTENDEE or ORGANIZER',
+      }),
+  }),
+
   login: Joi.object({
     email: Joi.string().email().required().messages({
       'string.email': 'Please provide a valid email address',

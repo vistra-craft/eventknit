@@ -127,6 +127,17 @@ export const facebookAuth = async (
 };
 
 /**
+ * Google OAuth login/registration
+ */
+export const googleAuth = async (
+  token: string,
+  tokenType: 'id_token' | 'access_token' = 'id_token',
+  role?: 'ATTENDEE' | 'ORGANIZER'
+): Promise<LoginResponse> => {
+  return apiPost<LoginResponse>('/auth/google', { token, tokenType, role });
+};
+
+/**
  * Login user
  */
 export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {

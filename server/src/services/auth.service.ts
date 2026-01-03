@@ -1287,8 +1287,30 @@ export class AuthService {
       throw new ValidationError('Email is already verified');
     }
 
-    // Generate verification token (same as registration)
-    await this.generateEmailVerificationToken(user.id);
+    // Generate 6-digit verification code
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Delete any existing unverified codes for this email
+    await prisma.emailVerification.deleteMany({
+      where: {
+        email: user.email,
+        verified: false,
+      },
+    });
+
+    // Create new verification code
+    await prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        code,
+        expiresAt,
+      },
+    });
+
+    // Send verification code email
+    await emailService.sendVerificationCode(user.email, code);
 
     logger.info(`Email verification code requested for user: ${user.email}`);
   }
@@ -1296,7 +1318,7 @@ export class AuthService {
   /**
    * Verify email with code (alternative to token-based)
    */
-  static async verifyEmailWithCode(email: string, _code: string): Promise<void> {
+  static async verifyEmailWithCode(email: string, code: string): Promise<void> {
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -1305,10 +1327,46 @@ export class AuthService {
       throw new NotFoundError('User not found');
     }
 
-    // For now, we'll use the token-based verification
-    // In a full implementation, we'd store codes similar to phone verification
-    // This is a placeholder that shows the interface
-    throw new ValidationError('Code-based email verification not yet implemented. Use token-based verification.');
+    if (user.isEmailVerified) {
+      throw new ValidationError('Email is already verified');
+    }
+
+    // Find verification record
+    const verification = await prisma.emailVerification.findFirst({
+      where: {
+        email,
+        code,
+        verified: false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!verification) {
+      throw new ValidationError('Invalid verification code');
+    }
+
+    if (verification.expiresAt < new Date()) {
+      throw new ValidationError('Verification code has expired');
+    }
+
+    // Mark verification as complete and update user
+    await prisma.$transaction([
+      prisma.emailVerification.update({
+        where: { id: verification.id },
+        data: {
+          verified: true,
+          verifiedAt: new Date(),
+        },
+      }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: { isEmailVerified: true },
+      }),
+    ]);
+
+    logger.info(`Email verified with code for user: ${user.email}`);
   }
 
   /**

@@ -277,7 +277,7 @@ export class AuthController {
       const hasPassword = user.password !== null && user.password !== undefined;
 
       // Remove password from response
-      const { password, ...userWithoutPassword } = user;
+      const { password: _password, ...userWithoutPassword } = user;
 
       res.status(200).json({
         success: true,
@@ -285,7 +285,7 @@ export class AuthController {
           user: {
             ...userWithoutPassword,
             hasPassword,
-          }
+          },
         },
       });
     } catch (error) {
@@ -500,6 +500,45 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Facebook authentication successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Google OAuth login/registration
+   */
+  static async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const { GoogleAuthService } = await import('../services/google-auth.service.js');
+      const result = await GoogleAuthService.authenticateWithGoogle(
+        req.body.token,
+        req.body.tokenType || 'id_token',
+        req.body.role,
+        ipAddress,
+        userAgent,
+      );
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Google authentication successful',
         data: {
           user: result.user,
           accessToken: result.accessToken,

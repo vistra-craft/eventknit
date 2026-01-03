@@ -81,6 +81,11 @@ export const config = {
     appSecret: process.env.FACEBOOK_APP_SECRET || '',
   },
 
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  },
+
   socialMedia: {
     facebook: {
       clientId: process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID || '',
