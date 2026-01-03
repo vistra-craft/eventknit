@@ -10,21 +10,18 @@ interface AdminHeaderProps {
   onMenuToggle?: () => void;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({ 
+const AdminHeader: React.FC<AdminHeaderProps> = ({
   onMenuToggle
 }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const { resolvedTheme, toggleTheme } = useTheme();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  
-  // Mock admin user data - replace with actual user data
-  const user = {
-    name: "Admin User",
-    email: "admin@eventknit.com",
-    role: "System Administrator",
-    avatar: null
-  };
+
+  // Format user data from auth context
+  const userName = authUser ? `${authUser.firstName} ${authUser.lastName}` : "Admin User";
+  const userEmail = authUser?.email || "";
+  const userRole = authUser?.role?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || "Administrator";
 
   const handleLogout = () => {
     // Use proper logout function from useAuth
@@ -51,7 +48,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                 Admin Dashboard
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Welcome back, {user.name}
+                Welcome back, {userName}
               </p>
             </div>
         </div>
@@ -99,8 +96,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                 <User className="h-4 w-4 text-primary-foreground" />
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-foreground">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.role}</p>
+                <p className="text-sm font-medium text-foreground">{userName}</p>
+                <p className="text-xs text-muted-foreground">{userRole}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
@@ -114,11 +111,11 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                       <User className="h-5 w-5 text-primary-foreground" />
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="font-medium text-foreground">{userName}</p>
+                      <p className="text-sm text-muted-foreground">{userEmail}</p>
                       <p className="text-sm text-muted-foreground flex items-center">
                         <Shield className="h-3 w-3 mr-1" />
-                        {user.role}
+                        {userRole}
                       </p>
                     </div>
                   </div>
