@@ -11,7 +11,7 @@ import { logger } from '../utils/logger.js';
 import { Decimal, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password.js';
 import crypto from 'crypto';
-import { emailService } from './email.service.js';
+import { emailService as _emailService } from './email.service.js';
 import { TicketService } from './ticket.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
@@ -2400,6 +2400,10 @@ export class EventService {
         description: event.description,
         status,
         category: event.category || '',
+        // Include registration data for badge/ticket features
+        registrationId: registration.id,
+        ticketType: registration.ticketType,
+        backupCode: registration.backupCode,
       };
     });
 

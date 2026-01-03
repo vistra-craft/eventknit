@@ -553,6 +553,10 @@ export interface UserRegisteredEventsResponse {
       description?: string;
       status?: 'upcoming' | 'ongoing' | 'completed';
       category?: string;
+      // Registration data for badge/ticket features
+      registrationId?: string;
+      ticketType?: string;
+      backupCode?: string;
     }>;
     total?: number;
     page?: number;

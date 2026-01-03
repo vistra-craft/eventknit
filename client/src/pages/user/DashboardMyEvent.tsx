@@ -34,7 +34,12 @@ const DashboardMyEvent: React.FC = () => {
 
   // Transform API event data to the EventData type
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const transformEventData = (apiEvent: any, registrationDate?: string): EventData => {
+  const transformEventData = (apiEvent: any, registrationInfo?: {
+    registrationDate?: string;
+    registrationId?: string;
+    ticketType?: string;
+    backupCode?: string;
+  }): EventData => {
     return {
       id: String(apiEvent.id || ''),
       title: String(apiEvent.title || ''),
@@ -49,7 +54,7 @@ const DashboardMyEvent: React.FC = () => {
       image: apiEvent.image as string | undefined,
       category: apiEvent.category as string | undefined,
       status: apiEvent.status as 'upcoming' | 'ongoing' | 'completed' | undefined,
-      registrationDate: registrationDate,
+      registrationDate: registrationInfo?.registrationDate,
       organizer: apiEvent.organizer as string | undefined,
       organizerDescription: apiEvent.organizerDescription as string | undefined,
       speakers: Array.isArray(apiEvent.speakers) ? apiEvent.speakers.map((s: Record<string, unknown>) => ({
@@ -91,6 +96,10 @@ const DashboardMyEvent: React.FC = () => {
       })) : undefined,
       socialLinks: apiEvent.socialLinks as Record<string, string> | undefined,
       hashtag: apiEvent.hashtag as string | undefined,
+      // Registration data for badge/ticket features
+      registrationId: registrationInfo?.registrationId,
+      ticketType: registrationInfo?.ticketType,
+      backupCode: registrationInfo?.backupCode,
     };
   };
 
@@ -106,7 +115,12 @@ const DashboardMyEvent: React.FC = () => {
             // Fetch full event details
             const fullEventResponse = await getEventById(event.id);
             if (fullEventResponse.success && fullEventResponse.data?.event) {
-              setEventData(transformEventData(fullEventResponse.data.event, event.registrationDate));
+              setEventData(transformEventData(fullEventResponse.data.event, {
+                registrationDate: event.registrationDate,
+                registrationId: event.registrationId,
+                ticketType: event.ticketType,
+                backupCode: event.backupCode,
+              }));
             } else {
               setError('Could not load event details');
             }
@@ -136,7 +150,12 @@ const DashboardMyEvent: React.FC = () => {
         if (eventResponse.success && eventResponse.data?.event) {
           setEventData(transformEventData(
             eventResponse.data.event,
-            registrationInfo?.registrationDate
+            registrationInfo ? {
+              registrationDate: registrationInfo.registrationDate,
+              registrationId: registrationInfo.registrationId,
+              ticketType: registrationInfo.ticketType,
+              backupCode: registrationInfo.backupCode,
+            } : undefined
           ));
         } else {
           setError('Event not found');

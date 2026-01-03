@@ -87,6 +87,10 @@ export interface EventData {
   agenda?: AgendaItem[];
   socialLinks?: Record<string, string>;
   hashtag?: string;
+  // Registration data for badge/ticket features
+  registrationId?: string;
+  ticketType?: string;
+  backupCode?: string;
 }
 
 export interface User {
