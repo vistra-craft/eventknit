@@ -14,6 +14,7 @@ import {
   HeadphonesIcon,
   Monitor,
   LogOut,
+  Palette,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -143,14 +144,21 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Scan History", href: "/admin/workstation/history" },
       ]
     },
-    { 
-      id: "settings", 
-      label: "Settings", 
+    {
+      id: "settings",
+      label: "Settings",
       icon: Settings,
       group: "management",
       children: [
         { name: "Configuration", href: "/admin/settings" },
       ]
+    },
+    {
+      id: "whitelabel",
+      label: "White-Label",
+      href: "/admin/white-label",
+      icon: Palette,
+      group: "management"
     },
     {
       id: "support",

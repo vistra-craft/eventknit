@@ -11,6 +11,7 @@ import {
   ChevronRight,
   LogOut,
   Crown,
+  Palette,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -35,6 +36,8 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     // Auto-expand events section if on events pages
     events: location.pathname.startsWith('/organizer/events'),
+    // Auto-expand branding section if on branding pages
+    branding: location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/custom-domains'),
     // Auto-expand settings section if on settings pages
     settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
   });
@@ -85,9 +88,19 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Team Calendar", href: "/organizer/team/calendar" },
       ]
     },
-    { 
-      id: "settings", 
-      label: "Settings", 
+    {
+      id: "branding",
+      label: "Branding",
+      icon: Palette,
+      group: "management",
+      children: [
+        { name: "White Label", href: "/organizer/branding" },
+        { name: "Custom Domains", href: "/organizer/custom-domains" },
+      ]
+    },
+    {
+      id: "settings",
+      label: "Settings",
       icon: Settings,
       group: "management",
       children: [
@@ -119,6 +132,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       setExpandedItems(prev => ({
         ...prev,
         events: location.pathname.startsWith('/organizer/events'),
+        branding: location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/custom-domains'),
         settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
       }));
     }

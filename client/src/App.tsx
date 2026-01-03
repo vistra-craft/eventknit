@@ -129,6 +129,8 @@ import { AdminAnalyticsOverview } from "./pages/admin/analytics";
 // Admin Support import
 import SupportPage from "./pages/admin/SupportPage";
 import PlatformFeedbackPage from "./pages/admin/PlatformFeedbackPage";
+// Admin White-Label import
+import WhiteLabelManagementPage from "./pages/admin/WhiteLabelManagementPage";
 // Admin Finance imports
 import { 
   FinanceDashboard,
@@ -311,6 +313,8 @@ const App = () => (
       {/* Admin Support Routes */}
       <Route path="/admin/support" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.SUPPORT]}><SupportPage /></ProtectedRoute>} />
       <Route path="/admin/feedback" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><PlatformFeedbackPage /></ProtectedRoute>} />
+      {/* Admin White-Label Route */}
+      <Route path="/admin/white-label" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><WhiteLabelManagementPage /></ProtectedRoute>} />
       {/* Admin Finance Routes */}
       <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><FinanceDashboard /></ProtectedRoute>} />
       <Route path="/admin/finance/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><EventFinanceDashboard /></ProtectedRoute>} />
