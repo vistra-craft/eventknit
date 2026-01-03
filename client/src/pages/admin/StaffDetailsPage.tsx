@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
-import { getUserById, getAdminStaffEvents, suspendUser, activateUser, type EventStaffAssignment, type User as ApiUser } from "@/lib/admin-api";
+import { getUserById, getAdminStaffEvents, suspendUser, activateUser, getStaffProfile, getEmergencyContact, type EventStaffAssignment, type User as ApiUser, type StaffProfile, type EmergencyContact } from "@/lib/admin-api";
 
 interface StaffDetails {
   id: string;
@@ -109,11 +109,13 @@ const StaffDetailsPage = () => {
   const [staffEvents, setStaffEvents] = useState<EventStaffAssignment[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [userData, setUserData] = useState<ApiUser | null>(null);
+  const [staffProfileData, setStaffProfileData] = useState<StaffProfile | null>(null);
+  const [emergencyContactData, setEmergencyContactData] = useState<EmergencyContact | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Fetch user data on mount
+  // Fetch user data and extended profile on mount
   useEffect(() => {
     const fetchUserData = async () => {
       if (!staffId) {
@@ -125,11 +127,35 @@ const StaffDetailsPage = () => {
       try {
         setLoading(true);
         setError(null);
+
+        // Fetch basic user data
         const response = await getUserById(staffId);
         if (response.success && response.data?.user) {
           setUserData(response.data.user);
         } else {
           setError("Staff member not found");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch extended staff profile
+        try {
+          const profileResponse = await getStaffProfile(staffId);
+          if (profileResponse.success && profileResponse.data?.staffProfile) {
+            setStaffProfileData(profileResponse.data.staffProfile);
+          }
+        } catch {
+          // Staff profile may not exist yet, that's ok
+        }
+
+        // Fetch emergency contact
+        try {
+          const contactResponse = await getEmergencyContact(staffId);
+          if (contactResponse.success && contactResponse.data?.emergencyContact) {
+            setEmergencyContactData(contactResponse.data.emergencyContact);
+          }
+        } catch {
+          // Emergency contact may not exist yet, that's ok
         }
       } catch (err) {
         console.error("Error fetching user:", err);
@@ -163,29 +189,42 @@ const StaffDetailsPage = () => {
     fetchStaffEvents();
   }, [staffId, activeTab]);
 
-  // Build staffData from API response + defaults for extended fields
+  // Map API department to local department type
+  const mapDepartment = (dept?: string): "operations" | "customer_service" | "technical" | "management" => {
+    const deptMap: Record<string, "operations" | "customer_service" | "technical" | "management"> = {
+      'OPERATIONS': 'operations',
+      'CUSTOMER_SERVICE': 'customer_service',
+      'TECHNICAL': 'technical',
+      'MANAGEMENT': 'management',
+      'FINANCE': 'operations',
+      'MARKETING': 'operations',
+    };
+    return deptMap[dept || ''] || 'operations';
+  };
+
+  // Build staffData from API response + extended profile data
   const staffData: StaffDetails = {
     id: userData?.id || staffId || "",
     firstName: userData?.firstName || "",
     lastName: userData?.lastName || "",
     email: userData?.email || "",
     phone: userData?.phoneNumber || undefined,
-    role: "event_manager", // Default - API User doesn't have detailed role
-    department: "operations", // Default - not in API
+    role: "event_manager", // Default - could be extended in future
+    department: mapDepartment(staffProfileData?.department),
     status: userData?.status === "ACTIVE" ? "active" : userData?.status === "SUSPENDED" ? "inactive" : "pending",
-    hireDate: userData?.createdAt || new Date().toISOString(),
+    hireDate: staffProfileData?.hireDate || userData?.createdAt || new Date().toISOString(),
     lastActive: userData?.updatedAt || new Date().toISOString(),
-    location: "Not specified",
+    location: staffProfileData?.location || "Not specified",
     eventsManaged: staffEvents.length,
-    totalHours: 0,
-    rating: 0,
+    totalHours: staffProfileData?.totalHours || 0,
+    rating: staffProfileData?.rating || 0,
     avatar: undefined,
-    employeeId: `EMP-${userData?.id?.slice(0, 6).toUpperCase() || "000"}`,
-    salary: 0,
-    hourlyRate: 0,
-    totalEarnings: 0,
-    pendingDues: 0,
-    permissions: {
+    employeeId: staffProfileData?.employeeId || `EMP-${userData?.id?.slice(0, 6).toUpperCase() || "000"}`,
+    salary: staffProfileData?.salary || 0,
+    hourlyRate: staffProfileData?.hourlyRate || 0,
+    totalEarnings: 0, // Computed field - could be added later
+    pendingDues: 0, // Computed field - could be added later
+    permissions: (staffProfileData?.permissions as StaffDetails['permissions']) || {
       canManageEvents: true,
       canAccessAnalytics: false,
       canManageUsers: false,
@@ -196,13 +235,17 @@ const StaffDetailsPage = () => {
     },
     performance: {
       eventsCompleted: staffEvents.filter(e => !e.isActive).length,
-      averageRating: 0,
+      averageRating: staffProfileData?.rating || 0,
       onTimeRate: 0,
       customerSatisfaction: 0,
       lastPerformanceReview: "",
       nextReviewDate: ""
     },
-    emergencyContact: undefined,
+    emergencyContact: emergencyContactData ? {
+      name: emergencyContactData.name,
+      phone: emergencyContactData.phone,
+      relationship: emergencyContactData.relationship
+    } : undefined,
     documents: []
   };
 

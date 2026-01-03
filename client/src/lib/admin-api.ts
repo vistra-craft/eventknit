@@ -766,3 +766,135 @@ export const getPerformanceTrends = async (
   return apiGet(`/admin/staff-performance/${staffId}/trends?period=${period}`);
 };
 
+// ========== Extended Profile Types ==========
+
+export type StaffDepartment = 'OPERATIONS' | 'CUSTOMER_SERVICE' | 'TECHNICAL' | 'MANAGEMENT' | 'FINANCE' | 'MARKETING';
+
+export interface StaffProfile {
+  id: string;
+  userId: string;
+  employeeId?: string;
+  department: StaffDepartment;
+  location?: string;
+  hireDate: string;
+  salary?: number;
+  hourlyRate?: number;
+  permissions?: Record<string, boolean>;
+  totalHours?: number;
+  rating?: number;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+}
+
+export interface OrganizerProfile {
+  id: string;
+  userId: string;
+  website?: string;
+  description?: string;
+  businessLicense?: string;
+  taxId?: string;
+  bankAccountLast4?: string;
+  location?: string;
+  totalEvents: number;
+  totalRevenue?: number;
+  rating?: number;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+}
+
+export interface EmergencyContact {
+  id: string;
+  userId: string;
+  name: string;
+  phone: string;
+  relationship: string;
+  email?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FullUserProfile extends User {
+  staffProfile?: StaffProfile | null;
+  organizerProfile?: OrganizerProfile | null;
+  emergencyContact?: EmergencyContact | null;
+}
+
+// ========== Extended Profile API Functions ==========
+
+/**
+ * Get full user profile with all extended data
+ */
+export const getFullUserProfile = async (
+  userId: string
+): Promise<{ success: boolean; data: { profile: FullUserProfile } }> => {
+  return apiGet(`/admin/users/${userId}/profile/full`);
+};
+
+/**
+ * Get staff profile for a user
+ */
+export const getStaffProfile = async (
+  userId: string
+): Promise<{ success: boolean; data: { user: User; staffProfile: StaffProfile | null } }> => {
+  return apiGet(`/admin/users/${userId}/staff-profile`);
+};
+
+/**
+ * Update staff profile for a user
+ */
+export const updateStaffProfile = async (
+  userId: string,
+  data: Partial<Omit<StaffProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'user'>>
+): Promise<{ success: boolean; message: string; data: { staffProfile: StaffProfile } }> => {
+  return apiPut(`/admin/users/${userId}/staff-profile`, data);
+};
+
+/**
+ * Get organizer profile for a user
+ */
+export const getOrganizerProfile = async (
+  userId: string
+): Promise<{ success: boolean; data: { user: User; organizerProfile: OrganizerProfile | null } }> => {
+  return apiGet(`/admin/users/${userId}/organizer-profile`);
+};
+
+/**
+ * Update organizer profile for a user
+ */
+export const updateOrganizerProfile = async (
+  userId: string,
+  data: Partial<Omit<OrganizerProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'user'>>
+): Promise<{ success: boolean; message: string; data: { organizerProfile: OrganizerProfile } }> => {
+  return apiPut(`/admin/users/${userId}/organizer-profile`, data);
+};
+
+/**
+ * Get emergency contact for a user
+ */
+export const getEmergencyContact = async (
+  userId: string
+): Promise<{ success: boolean; data: { emergencyContact: EmergencyContact | null } }> => {
+  return apiGet(`/admin/users/${userId}/emergency-contact`);
+};
+
+/**
+ * Update emergency contact for a user
+ */
+export const updateEmergencyContact = async (
+  userId: string,
+  data: Omit<EmergencyContact, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+): Promise<{ success: boolean; message: string; data: { emergencyContact: EmergencyContact } }> => {
+  return apiPut(`/admin/users/${userId}/emergency-contact`, data);
+};
+
+/**
+ * Delete emergency contact for a user
+ */
+export const deleteEmergencyContact = async (
+  userId: string
+): Promise<{ success: boolean; message: string }> => {
+  return apiDelete(`/admin/users/${userId}/emergency-contact`);
+};
+

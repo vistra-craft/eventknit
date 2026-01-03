@@ -6,6 +6,7 @@ import { AdminNotificationSettingsController } from '../controllers/admin-notifi
 import { SystemSettingsController } from '../controllers/system-settings.controller.js';
 import { AdminFinancialController } from '../controllers/admin-financial.controller.js';
 import { InvoiceController } from '../controllers/invoice.controller.js';
+import { ExtendedProfileController } from '../controllers/extended-profile.controller.js';
 import { validate, validateQuery, validateParams } from '../middleware/validation.middleware.js';
 import {
   createExpenseSchema,
@@ -738,6 +739,96 @@ router.put(
   validateParams(Joi.object({ domainId: Joi.string().uuid().required() })),
   validate(verifyCustomDomainSchema),
   WhiteLabelController.verifyCustomDomain,
+);
+
+// ========== Extended Profile Management ==========
+
+/**
+ * @route   GET /api/v1/admin/users/:userId/profile/full
+ * @desc    Get full user profile with all extended data
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/users/:userId/profile/full',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.getFullProfile,
+);
+
+/**
+ * @route   GET /api/v1/admin/users/:userId/staff-profile
+ * @desc    Get staff profile for user
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/users/:userId/staff-profile',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.getStaffProfile,
+);
+
+/**
+ * @route   PUT /api/v1/admin/users/:userId/staff-profile
+ * @desc    Update staff profile for user
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/users/:userId/staff-profile',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.updateStaffProfile,
+);
+
+/**
+ * @route   GET /api/v1/admin/users/:userId/organizer-profile
+ * @desc    Get organizer profile for user
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/users/:userId/organizer-profile',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.getOrganizerProfile,
+);
+
+/**
+ * @route   PUT /api/v1/admin/users/:userId/organizer-profile
+ * @desc    Update organizer profile for user
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/users/:userId/organizer-profile',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.updateOrganizerProfile,
+);
+
+/**
+ * @route   GET /api/v1/admin/users/:userId/emergency-contact
+ * @desc    Get emergency contact for user
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/users/:userId/emergency-contact',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.getEmergencyContact,
+);
+
+/**
+ * @route   PUT /api/v1/admin/users/:userId/emergency-contact
+ * @desc    Update emergency contact for user
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/users/:userId/emergency-contact',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.updateEmergencyContact,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/users/:userId/emergency-contact
+ * @desc    Delete emergency contact for user
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.delete(
+  '/users/:userId/emergency-contact',
+  validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  ExtendedProfileController.deleteEmergencyContact,
 );
 
 export default router;

@@ -335,12 +335,99 @@ model User {
   // Seating & Venues
   venues                            Venue[]                      @relation("OrganizerVenues")
 
+  // Extended Profile Relations
+  staffProfile                      StaffProfile?                @relation("UserStaffProfile")
+  organizerProfile                  OrganizerProfile?            @relation("UserOrganizerProfile")
+  emergencyContact                  EmergencyContact?            @relation("UserEmergencyContact")
+
   @@index([email])
   @@index([role])
   @@index([status])
   @@index([deletedAt])
   @@index([managedBy])
   @@index([organizationName])
+}
+
+// Extended Profile Models for Admin Management
+
+enum StaffDepartment {
+  OPERATIONS
+  CUSTOMER_SERVICE
+  TECHNICAL
+  MANAGEMENT
+  FINANCE
+  MARKETING
+}
+
+model StaffProfile {
+  id            String          @id @default(uuid())
+  userId        String          @unique
+  user          User            @relation("UserStaffProfile", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Employment Info
+  employeeId    String?         @unique
+  department    StaffDepartment @default(OPERATIONS)
+  location      String?
+  hireDate      DateTime        @default(now())
+
+  // Compensation
+  salary        Decimal?        @db.Decimal(12, 2)
+  hourlyRate    Decimal?        @db.Decimal(8, 2)
+
+  // Permissions (JSON object for flexibility)
+  permissions   Json?           @default("{}")
+
+  // Performance tracking
+  totalHours    Decimal?        @db.Decimal(10, 2) @default(0)
+  rating        Decimal?        @db.Decimal(3, 2)
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([department])
+  @@index([employeeId])
+}
+
+model OrganizerProfile {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation("UserOrganizerProfile", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Business Info
+  website           String?
+  description       String?   @db.Text
+  businessLicense   String?
+  taxId             String?
+  bankAccountLast4  String?   // Store only last 4 digits for display
+
+  // Location
+  location          String?
+
+  // Statistics (can be computed or cached)
+  totalEvents       Int       @default(0)
+  totalRevenue      Decimal?  @db.Decimal(14, 2) @default(0)
+  rating            Decimal?  @db.Decimal(3, 2)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model EmergencyContact {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation("UserEmergencyContact", fields: [userId], references: [id], onDelete: Cascade)
+
+  name          String
+  phone         String
+  relationship  String
+  email         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model RefreshToken {

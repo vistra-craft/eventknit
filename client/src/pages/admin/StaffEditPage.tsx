@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
-import { getUserById, updateUser, type User as ApiUser } from "@/lib/admin-api";
+import { getUserById, updateUser, getStaffProfile, updateStaffProfile, getEmergencyContact, updateEmergencyContact, type User as ApiUser, type StaffProfile, type EmergencyContact, type StaffDepartment } from "@/lib/admin-api";
 
 interface StaffDetails {
   id: string;
@@ -65,30 +65,43 @@ const StaffEditPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [userData, setUserData] = useState<ApiUser | null>(null);
+  const [staffProfileData, setStaffProfileData] = useState<StaffProfile | null>(null);
+  const [emergencyContactData, setEmergencyContactData] = useState<EmergencyContact | null>(null);
 
-  // Staff data built from API response + defaults for extended fields
+  // Map API department to local department type
+  const mapDepartment = (dept?: string): "operations" | "customer_service" | "technical" | "management" => {
+    const deptMap: Record<string, "operations" | "customer_service" | "technical" | "management"> = {
+      'OPERATIONS': 'operations',
+      'CUSTOMER_SERVICE': 'customer_service',
+      'TECHNICAL': 'technical',
+      'MANAGEMENT': 'management',
+    };
+    return deptMap[dept || ''] || 'operations';
+  };
+
+  // Staff data built from API response + extended profile data
   const staffData: StaffDetails = {
     id: userData?.id || staffId || "",
     firstName: userData?.firstName || "",
     lastName: userData?.lastName || "",
     email: userData?.email || "",
     phone: userData?.phoneNumber || undefined,
-    role: "event_manager", // Default - extended field not in API
-    department: "operations", // Default - extended field not in API
+    role: "event_manager",
+    department: mapDepartment(staffProfileData?.department),
     status: userData?.status === "ACTIVE" ? "active" : userData?.status === "SUSPENDED" ? "inactive" : "pending",
-    hireDate: userData?.createdAt || new Date().toISOString(),
+    hireDate: staffProfileData?.hireDate || userData?.createdAt || new Date().toISOString(),
     lastActive: userData?.updatedAt || new Date().toISOString(),
-    location: "N/A", // Default - extended field not in API
-    eventsManaged: 0, // Default - extended field not in API
-    totalHours: 0, // Default - extended field not in API
-    rating: 0, // Default - extended field not in API
-    avatar: undefined, // Extended field not in API
-    employeeId: `EMP-${userData?.id?.slice(0, 6) || "000000"}`,
-    salary: 0, // Default - extended field not in API
-    hourlyRate: 0, // Default - extended field not in API
-    totalEarnings: 0, // Default - extended field not in API
-    pendingDues: 0, // Default - extended field not in API
-    permissions: {
+    location: staffProfileData?.location || "N/A",
+    eventsManaged: 0,
+    totalHours: staffProfileData?.totalHours || 0,
+    rating: staffProfileData?.rating || 0,
+    avatar: undefined,
+    employeeId: staffProfileData?.employeeId || `EMP-${userData?.id?.slice(0, 6) || "000000"}`,
+    salary: staffProfileData?.salary || 0,
+    hourlyRate: staffProfileData?.hourlyRate || 0,
+    totalEarnings: 0,
+    pendingDues: 0,
+    permissions: (staffProfileData?.permissions as StaffDetails['permissions']) || {
       canManageEvents: false,
       canAccessAnalytics: false,
       canManageUsers: false,
@@ -97,10 +110,14 @@ const StaffEditPage = () => {
       canModerateContent: false,
       canAccessAdminPanel: false
     },
-    emergencyContact: undefined
+    emergencyContact: emergencyContactData ? {
+      name: emergencyContactData.name,
+      phone: emergencyContactData.phone,
+      relationship: emergencyContactData.relationship
+    } : undefined
   };
 
-  // Fetch user data on mount
+  // Fetch user data and extended profiles on mount
   useEffect(() => {
     const fetchUserData = async () => {
       if (!staffId) {
@@ -111,11 +128,35 @@ const StaffEditPage = () => {
 
       try {
         setLoading(true);
+
+        // Fetch basic user data
         const response = await getUserById(staffId);
         if (response.success && response.data?.user) {
           setUserData(response.data.user);
         } else {
           setError("Staff member not found");
+          setLoading(false);
+          return;
+        }
+
+        // Fetch extended staff profile
+        try {
+          const profileResponse = await getStaffProfile(staffId);
+          if (profileResponse.success && profileResponse.data?.staffProfile) {
+            setStaffProfileData(profileResponse.data.staffProfile);
+          }
+        } catch {
+          // Staff profile may not exist yet
+        }
+
+        // Fetch emergency contact
+        try {
+          const contactResponse = await getEmergencyContact(staffId);
+          if (contactResponse.success && contactResponse.data?.emergencyContact) {
+            setEmergencyContactData(contactResponse.data.emergencyContact);
+          }
+        } catch {
+          // Emergency contact may not exist yet
         }
       } catch (err) {
         console.error("Error fetching staff data:", err);
@@ -195,6 +236,17 @@ const StaffEditPage = () => {
     }));
   };
 
+  // Map local department to API department
+  const mapDepartmentToApi = (dept: string): StaffDepartment => {
+    const deptMap: Record<string, StaffDepartment> = {
+      'operations': 'OPERATIONS',
+      'customer_service': 'CUSTOMER_SERVICE',
+      'technical': 'TECHNICAL',
+      'management': 'MANAGEMENT',
+    };
+    return deptMap[dept] || 'OPERATIONS';
+  };
+
   const handleSave = async () => {
     if (!staffId) return;
 
@@ -206,6 +258,7 @@ const StaffEditPage = () => {
       // Map form status back to API status
       const apiStatus = formData.status === "active" ? "ACTIVE" : formData.status === "inactive" ? "SUSPENDED" : "DEACTIVATED";
 
+      // Update basic user data
       const response = await updateUser(staffId, {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -213,16 +266,62 @@ const StaffEditPage = () => {
         status: apiStatus as "ACTIVE" | "SUSPENDED" | "DEACTIVATED",
       });
 
-      if (response.success) {
-        setSuccess("Staff member updated successfully!");
-        // Update local userData to reflect changes
-        if (response.data?.user) {
-          setUserData(response.data.user);
-        }
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
-        throw new Error("Failed to update staff member");
+      if (!response.success) {
+        throw new Error("Failed to update basic info");
       }
+
+      // Update local userData to reflect changes
+      if (response.data?.user) {
+        setUserData(response.data.user);
+      }
+
+      // Update staff profile (extended data)
+      try {
+        const staffProfileResponse = await updateStaffProfile(staffId, {
+          employeeId: formData.employeeId || undefined,
+          department: mapDepartmentToApi(formData.department),
+          location: formData.location || undefined,
+          salary: formData.salary || undefined,
+          hourlyRate: formData.hourlyRate || undefined,
+          permissions: {
+            canManageEvents: formData.canManageEvents,
+            canAccessAnalytics: formData.canAccessAnalytics,
+            canManageUsers: formData.canManageUsers,
+            canProcessPayments: formData.canProcessPayments,
+            canViewReports: formData.canViewReports,
+            canModerateContent: formData.canModerateContent,
+            canAccessAdminPanel: formData.canAccessAdminPanel,
+          },
+        });
+
+        if (staffProfileResponse.success && staffProfileResponse.data?.staffProfile) {
+          setStaffProfileData(staffProfileResponse.data.staffProfile);
+        }
+      } catch (profileErr) {
+        console.warn("Error updating staff profile:", profileErr);
+        // Continue - basic update succeeded
+      }
+
+      // Update emergency contact if provided
+      if (formData.emergencyContactName && formData.emergencyContactPhone) {
+        try {
+          const contactResponse = await updateEmergencyContact(staffId, {
+            name: formData.emergencyContactName,
+            phone: formData.emergencyContactPhone,
+            relationship: formData.emergencyContactRelationship || 'Other',
+          });
+
+          if (contactResponse.success && contactResponse.data?.emergencyContact) {
+            setEmergencyContactData(contactResponse.data.emergencyContact);
+          }
+        } catch (contactErr) {
+          console.warn("Error updating emergency contact:", contactErr);
+          // Continue - basic update succeeded
+        }
+      }
+
+      setSuccess("Staff member updated successfully!");
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Error updating staff:", err);
       setError(err instanceof Error ? err.message : "Failed to update staff member");
