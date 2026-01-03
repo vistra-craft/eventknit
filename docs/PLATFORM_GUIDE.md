@@ -100,6 +100,21 @@ ATTENDEE (Event attendees - default role)
 5. Enter first and last name
 6. Account created
 
+**Login Options:**
+- Email/password login
+- Google Sign-In (One-tap or popup)
+- Facebook Login
+- Magic link (passwordless email)
+- Email verification code (6-digit OTP)
+
+**Password Reset:**
+1. Click "Forgot password" on login page
+2. Enter email address
+3. Receive password reset email with link
+4. Click link (valid for 1 hour)
+5. Enter new password (8+ chars, 1 letter, 1 number)
+6. Password updated, redirected to login
+
 ### 2. Event Discovery
 
 **Browse Events:**
@@ -1106,10 +1121,22 @@ Body: { "refreshToken": "<refresh_token>" }
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /auth/register | Register new user |
-| POST | /auth/login | Login |
-| POST | /auth/refresh | Refresh token |
+| POST | /auth/register-code/request | Request registration verification code |
+| POST | /auth/register-code/verify | Verify code and complete registration |
+| POST | /auth/login | Login with email/password |
+| POST | /auth/google | Login/register with Google OAuth |
+| POST | /auth/facebook | Login/register with Facebook OAuth |
+| POST | /auth/email-oauth/request | Request passwordless login code |
+| POST | /auth/email-oauth/verify | Verify code and login |
+| POST | /auth/magic-link/request | Request magic link login |
+| GET | /auth/magic-link/verify | Verify magic link |
+| POST | /auth/password/reset-request | Request password reset |
+| POST | /auth/password/reset-confirm | Reset password with token |
+| POST | /auth/password/change | Change password (authenticated) |
+| POST | /auth/refresh | Refresh access token |
 | POST | /auth/logout | Logout |
 | GET | /auth/me | Get current user |
+| PUT | /auth/profile | Update user profile |
 
 #### Events
 | Method | Endpoint | Description |

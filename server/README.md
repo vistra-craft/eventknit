@@ -445,6 +445,15 @@ server/
 | `PAYSTACK_PUBLIC_KEY` | Paystack public key |
 | `STRIPE_SECRET_KEY` | Stripe secret key |
 
+### OAuth Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `FACEBOOK_APP_ID` | Facebook App ID |
+| `FACEBOOK_APP_SECRET` | Facebook App secret |
+
 ### Docker/Database
 
 | Variable | Description | Default |

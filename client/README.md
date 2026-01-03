@@ -52,6 +52,10 @@ VITE_API_BASE_URL=https://api.eventknit.com/api/v1
 
 # Override Frontend URL
 VITE_FRONTEND_URL=http://localhost:5173
+
+# OAuth Configuration (for social login)
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+VITE_FACEBOOK_APP_ID=your-facebook-app-id
 ```
 
 ### 3. Start Development Server
