@@ -281,6 +281,7 @@ model User {
   supportResponses                  SupportResponse[]            @relation("SupportResponses")
   // User Dashboard Features Relations
   eventReviews                      EventReview[]                @relation("UserReviews")
+  eventFeedback                     EventFeedback[]              @relation("UserFeedback")
   ticketTransfersFrom               TicketTransfer[]             @relation("TicketTransfersFrom")
   ticketTransfersTo                 TicketTransfer[]             @relation("TicketTransfersTo")
   eventCollections                  EventCollection[]            @relation("UserCollections")
@@ -407,6 +408,9 @@ model OrganizerProfile {
   totalEvents       Int       @default(0)
   totalRevenue      Decimal?  @db.Decimal(14, 2) @default(0)
   rating            Decimal?  @db.Decimal(3, 2)
+
+  // Badge/Workstation Relations
+  badgeTemplates    BadgeTemplate[]
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -693,6 +697,7 @@ model Event {
   bulkMessages           BulkMessage[]             @relation("EventBulkMessages")
   // User Dashboard Features Relations
   eventReviews           EventReview[]             @relation("EventReviews")
+  eventFeedback          EventFeedback[]           @relation("EventFeedback")
   collectionItems        EventCollectionItem[]     @relation("CollectionEvents")
   eventMessages          DirectMessage[]           @relation("EventMessages")
   eventShares            EventShare[]              @relation("EventShares")
@@ -719,6 +724,12 @@ model Event {
   teamActivities         TeamActivityFeed[]        @relation("EventTeamActivities")
   platformIncome         PlatformIncome[]          @relation("PlatformIncomeEvents")
   seatMap                SeatMap?                  @relation("EventSeatMap")
+  // General Accounting Relations
+  incomeEntries          Income[]
+  expenseEntries         Expense[]
+  // Badge/Workstation Relations
+  badgeTemplates         BadgeTemplate[]           @relation("EventBadgeTemplates")
+  badgePrintJobs         BadgePrintJob[]           @relation("EventBadgePrintJobs")
 
   @@index([organizerId])
   @@index([status])
@@ -809,6 +820,8 @@ model EventRegistration {
   calendarSyncs       EventCalendarSync[]      @relation("CalendarRegistration")
   invoices            Invoice[]                @relation("InvoiceRegistration")
   paymentPlan         PaymentPlan?             @relation("PaymentPlanRegistration")
+  // Badge/Workstation Relations
+  badgePrintJobs      BadgePrintJob[]
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
@@ -2455,6 +2468,59 @@ model EventReview {
   @@index([createdAt])
 }
 
+// Platform Feedback (Internal use for platform improvement)
+model EventFeedback {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation("EventFeedback", fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("UserFeedback", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Feedback type
+  userType  String   // "ATTENDEE" | "ORGANIZER"
+
+  // NPS Score (0-10)
+  npsScore  Int      // 0-10 Net Promoter Score
+
+  // Optional detailed feedback
+  comment   String?  @db.Text
+
+  // Specific feedback categories
+  eventQuality      Int?     // 1-5 rating for event quality
+  platformUsability Int?     // 1-5 rating for platform ease of use
+  registrationProcess Int?   // 1-5 rating for registration experience
+  communicationQuality Int?  // 1-5 rating for event communications
+
+  // What could be improved (multi-select options stored as array)
+  improvementAreas  String[] // e.g., ["registration", "payments", "notifications", "ui"]
+
+  // Would they use the platform again
+  wouldUseAgain     Boolean?
+  wouldRecommend    Boolean?
+
+  // Email tracking
+  emailSentAt       DateTime?
+  feedbackToken     String?  @unique // Token for email-based feedback submission
+  tokenExpiresAt    DateTime?
+  submittedVia      String   @default("PLATFORM") // "EMAIL" | "PLATFORM"
+
+  // Admin review
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  adminNotes        String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, userId]) // One feedback per user per event
+  @@index([eventId])
+  @@index([userId])
+  @@index([userType])
+  @@index([npsScore])
+  @@index([createdAt])
+  @@index([feedbackToken])
+}
+
 // Ticket Transfer
 model TicketTransfer {
   id             String            @id @default(uuid())
@@ -4068,4 +4134,164 @@ model CustomDomain {
   @@index([status])
   @@index([isActive])
   @@index([isPrimary])
+}
+
+// ============================================================================
+// FINANCIAL ACCOUNTING MODELS
+// ============================================================================
+
+enum FinancialEntryStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethodType {
+  CASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  CHECK
+  MOBILE_MONEY
+  MPESA
+  OTHER
+}
+
+// Wage payments to employees/contractors
+model Wage {
+  id           String                 @id @default(cuid())
+  employeeId   String?
+  employeeName String
+  department   String?
+  position     String?
+  amount       Decimal                @db.Decimal(10, 2)
+  currency     String                 @default("KES")
+  payPeriod    String // e.g., "January 2025", "Q1 2025"
+  payDate      DateTime
+  status       FinancialEntryStatus   @default(PENDING)
+  paymentMethod PaymentMethodType     @default(BANK_TRANSFER)
+  reference    String?                // Payment reference/transaction ID
+  notes        String?                @db.Text
+
+  // Audit
+  createdBy    String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([employeeId])
+  @@index([payDate])
+  @@index([status])
+  @@index([department])
+}
+
+// Income entries (revenue sources)
+model Income {
+  id           String                 @id @default(cuid())
+  category     String                 // e.g., "Ticket Sales", "Sponsorship", "Merchandise"
+  description  String
+  source       String?                // Who/where the income came from
+  amount       Decimal                @db.Decimal(10, 2)
+  currency     String                 @default("KES")
+  date         DateTime
+  status       FinancialEntryStatus   @default(COMPLETED)
+  paymentMethod PaymentMethodType?
+  reference    String?                // Invoice/receipt number
+  notes        String?                @db.Text
+
+  // Optional event association
+  eventId      String?
+  event        Event?                 @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  // Audit
+  createdBy    String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([category])
+  @@index([date])
+  @@index([status])
+  @@index([eventId])
+}
+
+// Expense entries (costs/outflows)
+model Expense {
+  id           String                 @id @default(cuid())
+  category     String                 // e.g., "Marketing", "Utilities", "Equipment", "Venue"
+  description  String
+  recipient    String?                // Who was paid
+  amount       Decimal                @db.Decimal(10, 2)
+  currency     String                 @default("KES")
+  date         DateTime
+  status       FinancialEntryStatus   @default(COMPLETED)
+  paymentMethod PaymentMethodType?
+  reference    String?                // Invoice/receipt number
+  notes        String?                @db.Text
+
+  // Optional event association
+  eventId      String?
+  event        Event?                 @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  // Audit
+  createdBy    String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([category])
+  @@index([date])
+  @@index([status])
+  @@index([eventId])
+}
+
+// Badge templates for printing attendee badges
+model BadgeTemplate {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?  @db.Text
+  width          Float    @default(101.6) // mm (4 inches)
+  height         Float    @default(76.2)  // mm (3 inches)
+  sizePreset     String   @default("4x3") // 4x3, 3.5x2.25, 4x6, A6, custom
+  orientation    String   @default("landscape") // landscape, portrait
+  backgroundColor String  @default("#ffffff")
+  elements       Json     // Array of BadgeElement objects
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+
+  // Ownership - can be platform-wide (null) or organizer-specific
+  organizerId    String?
+  organizer      OrganizerProfile? @relation(fields: [organizerId], references: [id], onDelete: SetNull)
+
+  // Optional event-specific template
+  eventId        String?
+  event          Event?   @relation("EventBadgeTemplates", fields: [eventId], references: [id], onDelete: SetNull)
+
+  // Audit
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([isDefault])
+  @@index([isActive])
+}
+
+// Print job history for badges
+model BadgePrintJob {
+  id              String   @id @default(cuid())
+  eventId         String
+  event           Event    @relation("EventBadgePrintJobs", fields: [eventId], references: [id], onDelete: Cascade)
+  templateId      String
+  registrationId  String
+  registration    EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  status          String   @default("pending") // pending, printing, completed, failed
+  error           String?  @db.Text
+  printedAt       DateTime?
+  printedBy       String?
+  printerInfo     Json?    // Device info
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([registrationId])
+  @@index([status])
+  @@index([printedAt])
 }

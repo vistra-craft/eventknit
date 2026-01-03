@@ -19,7 +19,8 @@ import DashboardExhibitors from "./DashboardExhibitors";
 import DashboardSponsors from "./DashboardSponsors";
 import DashboardAgenda from "./DashboardAgenda";
 import DashboardMyBadge from "./DashboardMyBadge";
-import DashboardAbstracts from "./DashboardAbstracts";
+// TODO: Uncomment when abstracts backend is implemented
+// import DashboardAbstracts from "./DashboardAbstracts";
 import DashboardAttendees from "./DashboardAttendees";
 import { shareEvent } from "../../lib/utils/share";
 import { downloadTicket } from "../../lib/utils/ticket";
@@ -286,16 +287,17 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventData: propEventD
                 )}
               </div>
 
+              {/* TODO: Uncomment when abstracts backend is implemented */}
               {/* Quick Submit Abstract Button */}
-              <div className="mt-6 pt-6 border-t border-border">
-                <Button 
-                  variant="outline" 
+              {/* <div className="mt-6 pt-6 border-t border-border">
+                <Button
+                  variant="outline"
                   onClick={() => setActiveTab("abstracts")}
                   className="w-full sm:w-auto"
                 >
                   Submit an Abstract
                 </Button>
-              </div>
+              </div> */}
             </Card>
           </TabsContent>
 

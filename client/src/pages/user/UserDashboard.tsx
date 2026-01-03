@@ -8,14 +8,16 @@ import DashboardSponsors from "./DashboardSponsors";
 import DashboardAgenda from "./DashboardAgenda";
 import DashboardMyEvent from "./DashboardMyEvent";
 import DashboardMyBadge from "./DashboardMyBadge";
-import DashboardAbstracts from "./DashboardAbstracts";
+// TODO: Uncomment when abstracts backend is implemented
+// import DashboardAbstracts from "./DashboardAbstracts";
 import DashboardAttendees from "./DashboardAttendees";
 import AttendeeDiscovery from "./AttendeeDiscovery";
 import NotificationsCenter from "./NotificationsCenter";
 import PersonalAnalytics from "./PersonalAnalytics";
 import PersonalizedRecommendations from "./PersonalizedRecommendations";
 import TicketTransfer from "./TicketTransfer";
-import EventReviews from "./EventReviews";
+// TODO: Uncomment when reviews/feedback system is reimplemented
+// import EventReviews from "./EventReviews";
 import EventCollections from "./EventCollections";
 import InterestManagement from "./InterestManagement";
 import AdvancedSearch from "./AdvancedSearch";
@@ -97,8 +99,9 @@ const UserDashboard = () => {
         return <PersonalizedRecommendations />;
       case "ticket-transfer":
         return <TicketTransfer />;
-      case "reviews":
-        return <EventReviews />;
+      // TODO: Uncomment when reviews/feedback system is reimplemented
+      // case "reviews":
+      //   return <EventReviews />;
       case "collections":
         return <EventCollections />;
       case "interests":
@@ -123,8 +126,9 @@ const UserDashboard = () => {
         return <PaymentPlans />;
       case "invoices":
         return <Invoices />;
-      case "abstracts":
-        return <DashboardAbstracts eventData={eventData} user={user} registration={registration} />;
+      // TODO: Uncomment when abstracts backend is implemented
+      // case "abstracts":
+      //   return <DashboardAbstracts eventData={eventData} user={user} registration={registration} />;
       default:
         return (
           <DashboardHome

@@ -106,6 +106,13 @@ export interface BackendEvent {
   _count?: {
     registrations?: number;
   };
+  // Rejection info
+  rejectedBy?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  // Approval info
+  approvedBy?: string | null;
+  approvedAt?: string | null;
 }
 
 /**

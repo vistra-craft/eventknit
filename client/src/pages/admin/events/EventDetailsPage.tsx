@@ -32,6 +32,7 @@ import { updateOrganizerDataAccess } from "@/lib/admin-api";
 import { useToast } from "@/hooks/use-toast";
 import { exportEventData } from "@/lib/utils/export";
 import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/workstation-api";
+import { getRefunds, getDisbursements, type Refund, type Disbursement } from "@/lib/financial-api";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EventStaffAssignment } from "@/components/EventStaffAssignment";
@@ -139,6 +140,10 @@ const EventDetailsPage = () => {
   const [paymentSearch, setPaymentSearch] = useState("");
   const [updatingAccess, setUpdatingAccess] = useState(false);
   const [canAccessEvent, setCanAccessEvent] = useState(true);
+  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [refundsLoading, setRefundsLoading] = useState(false);
+  const [disbursements, setDisbursements] = useState<Disbursement[]>([]);
+  const [disbursementsLoading, setDisbursementsLoading] = useState(false);
   const { toast } = useToast();
 
   // Load scan config when scan-settings tab is active
@@ -165,6 +170,58 @@ const EventDetailsPage = () => {
     };
 
     loadScanConfig();
+  }, [eventId, activeTab, toast]);
+
+  // Load refunds when refunds tab is active
+  useEffect(() => {
+    const loadRefunds = async () => {
+      if (!eventId || activeTab !== 'refunds') return;
+
+      try {
+        setRefundsLoading(true);
+        const response = await getRefunds({ eventId });
+        if (response.success && response.data) {
+          setRefunds(Array.isArray(response.data) ? response.data : []);
+        }
+      } catch (error) {
+        console.error('Error loading refunds:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load refunds",
+          variant: "destructive",
+        });
+      } finally {
+        setRefundsLoading(false);
+      }
+    };
+
+    loadRefunds();
+  }, [eventId, activeTab, toast]);
+
+  // Load disbursements when remittance tab is active
+  useEffect(() => {
+    const loadDisbursements = async () => {
+      if (!eventId || activeTab !== 'remittance') return;
+
+      try {
+        setDisbursementsLoading(true);
+        const response = await getDisbursements({ eventId });
+        if (response.success && response.data) {
+          setDisbursements(Array.isArray(response.data) ? response.data : []);
+        }
+      } catch (error) {
+        console.error('Error loading disbursements:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load disbursements",
+          variant: "destructive",
+        });
+      } finally {
+        setDisbursementsLoading(false);
+      }
+    };
+
+    loadDisbursements();
   }, [eventId, activeTab, toast]);
 
   // Check event access permission
@@ -306,6 +363,15 @@ const EventDetailsPage = () => {
     const platformFees = totalRevenue * 0.1; // 10% platform fee
     const organizerAmount = totalRevenue - platformFees;
 
+    // Calculate refund metrics from actual data
+    const refundAmount = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
+    const pendingRefundsCount = refunds.filter(r => r.status === 'PENDING').length;
+    const processedRefundsCount = refunds.filter(r => r.status === 'COMPLETED' || r.status === 'PROCESSED').length;
+
+    // Calculate disbursement metrics from actual data
+    const sentDisbursements = disbursements.filter(d => d.status === 'COMPLETED' || d.status === 'PROCESSED');
+    const pendingDisbursements = disbursements.filter(d => d.status === 'PENDING');
+
     return {
       totalRevenue,
       platformFees,
@@ -314,15 +380,15 @@ const EventDetailsPage = () => {
       successfulPayments: paidRegistrations.length,
       failedPayments: failedRegistrations.length,
       pendingPayments: pendingRegistrations.length,
-      totalRefunds: 0, // TODO: Implement refunds
-      pendingRefunds: 0,
-      processedRefunds: 0,
-      remittancesSent: 0, // TODO: Implement remittances
-      remittancesPending: 0,
+      totalRefunds: refundAmount,
+      pendingRefunds: pendingRefundsCount,
+      processedRefunds: processedRefundsCount,
+      remittancesSent: sentDisbursements.length,
+      remittancesPending: pendingDisbursements.length,
       attendanceRate: eventData ? (eventData.attendees / eventData.capacity) * 100 : 0,
-      conversionRate: 0, // TODO: Calculate from views
-      averageTicketPrice: paidRegistrations.length > 0 
-        ? totalRevenue / paidRegistrations.length 
+      conversionRate: 0, // Would need views tracking to calculate
+      averageTicketPrice: paidRegistrations.length > 0
+        ? totalRevenue / paidRegistrations.length
         : 0,
     };
   })();
@@ -1254,62 +1320,70 @@ const EventDetailsPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { id: "REF-001", attendee: "Lisa Anderson", amount: 299, reason: "Event cancelled", status: "approved", requestDate: "2024-02-10T09:00:00Z", processedDate: "2024-02-12T14:30:00Z", method: "Credit Card" },
-                    { id: "REF-002", attendee: "John Smith", amount: 199, reason: "Unable to attend", status: "pending", requestDate: "2024-02-14T16:20:00Z", processedDate: null, method: "PayPal" },
-                    { id: "REF-003", attendee: "Maria Garcia", amount: 99, reason: "Duplicate payment", status: "approved", requestDate: "2024-02-08T11:15:00Z", processedDate: "2024-02-09T10:45:00Z", method: "Stripe" },
-                    { id: "REF-004", attendee: "Robert Wilson", amount: 299, reason: "Technical issues", status: "rejected", requestDate: "2024-02-12T13:30:00Z", processedDate: "2024-02-13T09:20:00Z", method: "Credit Card" },
-                    { id: "REF-005", attendee: "Sarah Johnson", amount: 199, reason: "Change of plans", status: "pending", requestDate: "2024-02-15T08:45:00Z", processedDate: null, method: "PayPal" }
-                  ].map((refund) => (
-                    <div key={refund.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <RefreshCw className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{refund.attendee}</h4>
-                          <p className="text-sm text-gray-600">{refund.reason} • {refund.method}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="font-medium text-gray-900">{formatCurrency(refund.amount)}</div>
-                          <div className="text-sm text-gray-600">
-                            Requested: {formatDateTime(refund.requestDate)}
+                {refundsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground">Loading refunds...</span>
+                  </div>
+                ) : refunds.length > 0 ? (
+                  <div className="space-y-3">
+                    {refunds.map((refund) => (
+                      <div key={refund.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <RefreshCw className="h-5 w-5 text-primary" />
                           </div>
-                          {refund.processedDate && (
-                            <div className="text-sm text-gray-600">
-                              Processed: {formatDateTime(refund.processedDate)}
-                            </div>
-                          )}
+                          <div>
+                            <h4 className="font-medium text-gray-900">{refund.registration?.attendee?.firstName} {refund.registration?.attendee?.lastName}</h4>
+                            <p className="text-sm text-gray-600">{refund.reason || 'No reason provided'}</p>
+                          </div>
                         </div>
-                        <Badge className={`text-xs ${
-                          refund.status === 'approved' ? 'bg-green-100 text-green-800 border-green-200' :
-                          refund.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                          'bg-red-100 text-red-800 border-red-200'
-                        }`}>
-                          {refund.status}
-                        </Badge>
-                        <div className="flex items-center gap-2">
-                          {refund.status === 'pending' && (
-                            <>
-                              <Button variant="outline" size="sm" className="text-primary border-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                              <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-medium text-gray-900">{formatCurrency(refund.amount)}</div>
+                            <div className="text-sm text-gray-600">
+                              Requested: {formatDateTime(refund.createdAt)}
+                            </div>
+                            {refund.processedAt && (
+                              <div className="text-sm text-gray-600">
+                                Processed: {formatDateTime(refund.processedAt)}
+                              </div>
+                            )}
+                          </div>
+                          <Badge className={`text-xs ${
+                            refund.status === 'COMPLETED' || refund.status === 'PROCESSED' ? 'bg-green-100 text-green-800 border-green-200' :
+                            refund.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                            refund.status === 'FAILED' || refund.status === 'REJECTED' ? 'bg-red-100 text-red-800 border-red-200' :
+                            'bg-gray-100 text-gray-800 border-gray-200'
+                          }`}>
+                            {refund.status}
+                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {refund.status === 'PENDING' && (
+                              <>
+                                <Button variant="outline" size="sm" className="text-primary border-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <RefreshCw className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No refunds yet</h3>
+                    <p className="text-sm text-gray-600">No refund requests for this event</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1405,42 +1479,53 @@ const EventDetailsPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { id: "REM-001", amount: 43560, status: "sent", date: "2024-02-01T10:00:00Z", method: "Bank Transfer", reference: "TXN-REM-001", description: "Q1 2024 payment" },
-                    { id: "REM-002", amount: 43560, status: "sent", date: "2024-01-01T10:00:00Z", method: "Bank Transfer", reference: "TXN-REM-002", description: "December 2023 payment" },
-                    { id: "REM-003", amount: 43560, status: "pending", date: "2024-03-01T10:00:00Z", method: "Bank Transfer", reference: "TXN-REM-003", description: "Q2 2024 payment" },
-                    { id: "REM-004", amount: 21780, status: "sent", date: "2023-12-01T10:00:00Z", method: "PayPal", reference: "TXN-REM-004", description: "November 2023 payment" }
-                  ].map((remittance) => (
-                    <div key={remittance.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <DollarSign className="h-5 w-5 text-primary" />
+                {disbursementsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground">Loading disbursements...</span>
+                  </div>
+                ) : disbursements.length > 0 ? (
+                  <div className="space-y-3">
+                    {disbursements.map((disbursement) => (
+                      <div key={disbursement.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <DollarSign className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-gray-900">Disbursement #{disbursement.id.slice(-8)}</h4>
+                            <p className="text-sm text-gray-600">
+                              {disbursement.paymentMethod || 'Bank Transfer'} • {disbursement.transactionReference || 'Pending'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{remittance.description}</h4>
-                          <p className="text-sm text-gray-600">{remittance.method} • {remittance.reference}</p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-medium text-gray-900">{formatCurrency(disbursement.amount)}</div>
+                            <div className="text-sm text-gray-600">{formatDateTime(disbursement.createdAt)}</div>
+                          </div>
+                          <Badge className={`text-xs ${
+                            disbursement.status === 'COMPLETED' || disbursement.status === 'PROCESSED' ? 'bg-green-100 text-green-800 border-green-200' :
+                            disbursement.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                            disbursement.status === 'FAILED' ? 'bg-red-100 text-red-800 border-red-200' :
+                            'bg-gray-100 text-gray-800 border-gray-200'
+                          }`}>
+                            {disbursement.status}
+                          </Badge>
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="font-medium text-gray-900">{formatCurrency(remittance.amount)}</div>
-                          <div className="text-sm text-gray-600">{formatDateTime(remittance.date)}</div>
-                        </div>
-                        <Badge className={`text-xs ${
-                          remittance.status === 'sent' ? 'bg-green-100 text-green-800 border-green-200' :
-                          remittance.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                          'bg-red-100 text-red-800 border-red-200'
-                        }`}>
-                          {remittance.status}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <DollarSign className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No disbursements yet</h3>
+                    <p className="text-sm text-gray-600">No payments have been sent to the organizer yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

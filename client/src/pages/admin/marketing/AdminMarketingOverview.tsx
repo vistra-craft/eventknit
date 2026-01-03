@@ -1,25 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout from "../AdminLayout";
-import { 
-  Megaphone, 
-  Mail, 
-  Share2, 
+import {
+  Megaphone,
+  Mail,
+  Share2,
   Target,
   TrendingUp,
   Users,
   Plus,
-  DollarSign,
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
   Zap,
   Gift,
   Handshake,
-  Building2
+  Building2,
+  Heart,
+  MessageCircle,
+  Eye,
+  MousePointerClick
 } from "lucide-react";
+import {
+  getSocialMetrics,
+  getSocialPosts,
+  type SocialMetrics,
+  type SocialPost,
+} from "@/lib/social-media-api";
 
 interface MarketingMetric {
   title: string;
@@ -42,11 +51,55 @@ interface QuickAction {
 const AdminMarketingOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
 
-  // Mock platform-wide marketing metrics
+  // API-driven state for social media metrics
+  const [socialMetrics, setSocialMetrics] = useState<SocialMetrics | null>(null);
+  const [recentPosts, setRecentPosts] = useState<SocialPost[]>([]);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
+
+  // Load social media metrics from API
+  const loadSocialMetrics = async () => {
+    try {
+      setLoadingMetrics(true);
+      const response = await getSocialMetrics();
+      if (response.success && response.data) {
+        setSocialMetrics(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load social metrics:", error);
+    } finally {
+      setLoadingMetrics(false);
+    }
+  };
+
+  // Load recent posts from API
+  const loadRecentPosts = async () => {
+    try {
+      const response = await getSocialPosts({ status: "PUBLISHED" });
+      if (response.success && response.data) {
+        setRecentPosts(response.data.posts?.slice(0, 5) || []);
+      }
+    } catch (error) {
+      console.error("Failed to load recent posts:", error);
+    }
+  };
+
+  useEffect(() => {
+    loadSocialMetrics();
+    loadRecentPosts();
+  }, []);
+
+  // Format large numbers
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toLocaleString();
+  };
+
+  // Build metrics from API data or use defaults
   const metrics: MarketingMetric[] = [
     {
-      title: "Platform Campaigns",
-      value: "1,247",
+      title: "Total Posts",
+      value: socialMetrics ? formatNumber(socialMetrics.totalPosts) : "0",
       change: 18.2,
       icon: Megaphone,
       color: "text-primary",
@@ -54,26 +107,26 @@ const AdminMarketingOverview = () => {
       borderColor: "border-border"
     },
     {
-      title: "Total Subscribers",
-      value: "2.4M",
+      title: "Total Likes",
+      value: socialMetrics ? formatNumber(socialMetrics.totalLikes) : "0",
       change: 25.5,
-      icon: Mail,
+      icon: Heart,
       color: "text-primary",
       bgColor: "bg-card",
       borderColor: "border-border"
     },
     {
-      title: "Social Reach",
-      value: "15.6M",
+      title: "Total Reach",
+      value: socialMetrics ? formatNumber(socialMetrics.totalReach) : "0",
       change: 32.1,
-      icon: Share2,
+      icon: Eye,
       color: "text-primary",
       bgColor: "bg-card",
       borderColor: "border-border"
     },
     {
-      title: "Platform Conversion",
-      value: "4.8%",
+      title: "Impressions",
+      value: socialMetrics ? formatNumber(socialMetrics.totalImpressions) : "0",
       change: 8.3,
       icon: Target,
       color: "text-primary",
@@ -81,22 +134,47 @@ const AdminMarketingOverview = () => {
       borderColor: "border-border"
     },
     {
-      title: "Marketing Revenue",
-      value: "$2.8M",
+      title: "Comments",
+      value: socialMetrics ? formatNumber(socialMetrics.totalComments) : "0",
       change: 42.7,
-      icon: DollarSign,
+      icon: MessageCircle,
       color: "text-primary",
       bgColor: "bg-card",
       borderColor: "border-border"
     },
     {
-      title: "Platform ROI",
-      value: "580%",
+      title: "Engagement Rate",
+      value: socialMetrics ? `${socialMetrics.engagementRate}%` : "0%",
       change: 15.2,
       icon: TrendingUp,
       color: "text-primary",
       bgColor: "bg-card",
       borderColor: "border-border"
+    }
+  ];
+
+  // Social engagement metrics cards for sharing
+  const engagementMetrics = [
+    {
+      title: "Total Shares",
+      value: socialMetrics ? formatNumber(socialMetrics.totalShares) : "0",
+      icon: Share2,
+      color: "text-green-600",
+      bgColor: "bg-green-50"
+    },
+    {
+      title: "Total Clicks",
+      value: socialMetrics ? formatNumber(socialMetrics.totalClicks) : "0",
+      icon: MousePointerClick,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50"
+    },
+    {
+      title: "Top Platform",
+      value: socialMetrics?.topPlatform || "N/A",
+      icon: Share2,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50"
     }
   ];
 
@@ -280,6 +358,21 @@ const AdminMarketingOverview = () => {
         </div>
 
         {/* Metrics Grid */}
+        {loadingMetrics ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+            {[...Array(6)].map((_, index) => (
+              <Card key={index} className="border-border bg-card">
+                <CardContent className="p-6">
+                  <div className="animate-pulse">
+                    <div className="h-12 w-12 bg-muted rounded-lg mb-4"></div>
+                    <div className="h-6 bg-muted rounded w-16 mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-24"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
           {metrics.map((metric, index) => (
             <Card
@@ -314,6 +407,86 @@ const AdminMarketingOverview = () => {
             </Card>
           ))}
         </div>
+        )}
+
+        {/* Social Media Engagement Summary - Shareable Cards */}
+        <Card className="border-border bg-card mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+              <Share2 className="h-5 w-5 mr-2 text-primary" />
+              Social Media Engagement Summary
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Key metrics to share with clients</p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {engagementMetrics.map((metric, index) => (
+                <div
+                  key={index}
+                  className={`p-6 rounded-xl ${metric.bgColor} border border-border`}
+                >
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className={`p-2 rounded-lg bg-white/80`}>
+                      <metric.icon className={`h-5 w-5 ${metric.color}`} />
+                    </div>
+                    <span className="text-sm font-medium text-gray-600">{metric.title}</span>
+                  </div>
+                  <p className={`text-2xl font-bold ${metric.color}`}>{metric.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Platform Breakdown */}
+            {socialMetrics?.platformBreakdown && Object.keys(socialMetrics.platformBreakdown).length > 0 && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <h4 className="text-sm font-semibold text-gray-900 mb-4">Platform Breakdown</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {Object.entries(socialMetrics.platformBreakdown).map(([platform, stats]) => (
+                    <div key={platform} className="p-4 bg-muted/50 rounded-lg text-center">
+                      <p className="text-xs text-muted-foreground uppercase mb-1">{platform}</p>
+                      <p className="text-lg font-bold text-foreground">{stats.posts}</p>
+                      <p className="text-xs text-muted-foreground">posts</p>
+                      <p className="text-sm font-medium text-primary mt-1">
+                        {formatNumber(stats.engagement)} engagements
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Posts Performance */}
+            {recentPosts.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <h4 className="text-sm font-semibold text-gray-900 mb-4">Recent Posts Performance</h4>
+                <div className="space-y-3">
+                  {recentPosts.map((post) => (
+                    <div key={post.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{post.content.substring(0, 60)}...</p>
+                        <p className="text-xs text-muted-foreground">{post.platform} • {post.postedAt ? new Date(post.postedAt).toLocaleDateString() : 'Scheduled'}</p>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="flex items-center gap-1">
+                          <Heart className="h-3 w-3 text-red-500" />
+                          {post.likes}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3 text-blue-500" />
+                          {post.comments}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Share2 className="h-3 w-3 text-green-500" />
+                          {post.shares}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Quick Actions - 2 columns of 3 cards each */}
         <Card className="border-border bg-card">

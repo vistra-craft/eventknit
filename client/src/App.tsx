@@ -21,6 +21,7 @@ import Confirmation from "./pages/Confirmation";
 import RegistrationConfirmation from "./pages/RegistrationConfirmation";
 import EventDetails from "./pages/EventDetails";
 import PublicEventForm from "./pages/PublicEventForm";
+import FeedbackPage from "./pages/FeedbackPage";
 // User Dashboard imports
 import UserDashboard from "./pages/user/UserDashboard";
 import DashboardMyEvent from "./pages/user/DashboardMyEvent";
@@ -127,6 +128,7 @@ import AdminNotificationSettingsPage from "./pages/admin/AdminNotificationSettin
 import { AdminAnalyticsOverview } from "./pages/admin/analytics";
 // Admin Support import
 import SupportPage from "./pages/admin/SupportPage";
+import PlatformFeedbackPage from "./pages/admin/PlatformFeedbackPage";
 // Admin Finance imports
 import { 
   FinanceDashboard,
@@ -201,6 +203,8 @@ const App = () => (
       <Route path="/event/:id/registration-confirmation" element={<RegistrationConfirmation />} />
       {/* Public Form Routes */}
       <Route path="/forms/:type/:templateId" element={<PublicEventForm />} />
+      {/* Public Feedback Route - accessed via email link */}
+      <Route path="/feedback/:token" element={<FeedbackPage />} />
       {/* User Dashboard Routes - Protected, any authenticated user */}
       <Route path="/user/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
       <Route path="/user/event/:id" element={<ProtectedRoute><DashboardMyEvent /></ProtectedRoute>} />
@@ -304,8 +308,9 @@ const App = () => (
       <Route path="/admin/communications" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminCommunicationsPage /></ProtectedRoute>} />
       {/* Admin Notification Settings Route */}
       <Route path="/admin/notification-settings" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><AdminNotificationSettingsPage /></ProtectedRoute>} />
-      {/* Admin Support Route */}
+      {/* Admin Support Routes */}
       <Route path="/admin/support" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.SUPPORT]}><SupportPage /></ProtectedRoute>} />
+      <Route path="/admin/feedback" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><PlatformFeedbackPage /></ProtectedRoute>} />
       {/* Admin Finance Routes */}
       <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><FinanceDashboard /></ProtectedRoute>} />
       <Route path="/admin/finance/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><EventFinanceDashboard /></ProtectedRoute>} />

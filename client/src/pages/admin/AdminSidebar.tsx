@@ -162,14 +162,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Moderation", href: "/admin/moderation" },
       ]
     },
-    { 
-      id: "support", 
-      label: "Support", 
+    {
+      id: "support",
+      label: "Support",
       icon: HeadphonesIcon,
       group: "management",
       children: [
         { name: "Support Services", href: "/admin/support" },
         { name: "Communications", href: "/admin/communications" },
+        { name: "Platform Feedback", href: "/admin/feedback" },
         { name: "Notification Settings", href: "/admin/notification-settings" },
       ]
     },

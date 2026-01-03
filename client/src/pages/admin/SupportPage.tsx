@@ -1,18 +1,18 @@
-import React, { useState } from "react";
-import { 
-  MessageSquare, 
-  Search, 
-  Plus, 
-  Send, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
-  User, 
-  Eye, 
-  Reply, 
-  Tag, 
-  X, 
-  Paperclip, 
+import React, { useState, useEffect } from "react";
+import {
+  MessageSquare,
+  Search,
+  Plus,
+  Send,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  User,
+  Eye,
+  Reply,
+  Tag,
+  X,
+  Paperclip,
   Smile,
   MessageCircle,
   Facebook,
@@ -35,15 +35,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "./AdminLayout";
-import type { 
-  SupportQuery, 
-  SupportResponse, 
-  SocialPlatform, 
-  QueryStatus, 
-  QueryPriority, 
+import { useToast } from "@/hooks/use-toast";
+import EmptyState from "@/components/EmptyState";
+import {
+  getSocialMessages,
+  assignMessage,
+  updateMessageStatus,
+  addMessageResponse,
+  type SocialMessage,
+} from "@/lib/social-media-api";
+import type {
+  SupportQuery,
+  SupportResponse,
+  SocialPlatform,
+  QueryStatus,
+  QueryPriority,
   QueryCategory,
   SupportAgent,
-  SupportMetrics 
+  SupportMetrics
 } from "@/types/support";
 
 // Mock data
@@ -342,6 +351,7 @@ const mockMetrics: SupportMetrics = {
 };
 
 const SupportPage = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<QueryStatus | "all">("all");
   const [platformFilter, setPlatformFilter] = useState<SocialPlatform | "all">("all");
@@ -350,10 +360,41 @@ const SupportPage = () => {
   const [selectedQuery, setSelectedQuery] = useState<SupportQuery | null>(null);
   const [responseMessage, setResponseMessage] = useState("");
   const [showResponseModal, setShowResponseModal] = useState(false);
+
+  // API-driven state
+  const [socialMessages, setSocialMessages] = useState<SocialMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Legacy state (will be migrated to API or kept as fallback)
   const [queries, setQueries] = useState<SupportQuery[]>(mockSupportQueries);
   const [websiteQueries, setWebsiteQueries] = useState<SupportQuery[]>(mockWebsiteQueries);
   const [agents] = useState<SupportAgent[]>(mockAgents);
   const [metrics] = useState<SupportMetrics>(mockMetrics);
+
+  // Load social media messages from API
+  const loadSocialMessages = async () => {
+    try {
+      setLoadingMessages(true);
+      const response = await getSocialMessages();
+      if (response.success && response.data) {
+        setSocialMessages(response.data.messages || []);
+      }
+    } catch (error) {
+      console.error("Failed to load social messages:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load social media messages. Using cached data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSocialMessages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getPlatformIcon = (platform: SocialPlatform) => {
     switch (platform) {
@@ -457,11 +498,11 @@ const SupportPage = () => {
   };
 
   const handleAssignQuery = (queryId: string, agentId: string) => {
-    setQueries(prev => prev.map(query => 
-      query.id === queryId 
-        ? { 
-            ...query, 
-            assignedTo: agentId, 
+    setQueries(prev => prev.map(query =>
+      query.id === queryId
+        ? {
+            ...query,
+            assignedTo: agentId,
             assignedAt: new Date().toISOString(),
             status: "in_progress" as QueryStatus,
             updatedAt: new Date().toISOString()
@@ -471,16 +512,79 @@ const SupportPage = () => {
   };
 
   const handleUpdateStatus = (queryId: string, status: QueryStatus) => {
-    setQueries(prev => prev.map(query => 
-      query.id === queryId 
-        ? { 
-            ...query, 
+    setQueries(prev => prev.map(query =>
+      query.id === queryId
+        ? {
+            ...query,
             status,
             updatedAt: new Date().toISOString(),
             ...(status === "resolved" && { resolvedAt: new Date().toISOString() })
           }
         : query
     ));
+  };
+
+  // API handlers for social media messages
+  const handleAssignSocialMessage = async (messageId: string, agentId: string) => {
+    try {
+      const response = await assignMessage(messageId, agentId);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Message assigned successfully.",
+        });
+        loadSocialMessages();
+      }
+    } catch (error) {
+      console.error("Failed to assign message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to assign message. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateSocialMessageStatus = async (messageId: string, status: string) => {
+    try {
+      const response = await updateMessageStatus(messageId, status);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Message status updated.",
+        });
+        loadSocialMessages();
+      }
+    } catch (error) {
+      console.error("Failed to update message status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendSocialMessageResponse = async (messageId: string, responseText: string) => {
+    try {
+      const response = await addMessageResponse(messageId, responseText, false);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Response sent successfully.",
+        });
+        loadSocialMessages();
+        setResponseMessage("");
+        setShowResponseModal(false);
+      }
+    } catch (error) {
+      console.error("Failed to send response:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send response. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAssignWebsiteQuery = (queryId: string, agentId: string) => {
@@ -510,8 +614,18 @@ const SupportPage = () => {
     ));
   };
 
-  const handleSendResponse = () => {
+  const handleSendResponse = async () => {
     if (!selectedQuery || !responseMessage.trim()) return;
+
+    // Check if this is a social media message (from API)
+    const isSocialMediaMessage = socialMessages.some(m => m.id === selectedQuery.id);
+
+    if (isSocialMediaMessage) {
+      // Use API to send response
+      await handleSendSocialMessageResponse(selectedQuery.id, responseMessage);
+      setSelectedQuery(null);
+      return;
+    }
 
     const newResponse: SupportResponse = {
       id: `resp_${Date.now()}`,
@@ -526,12 +640,12 @@ const SupportPage = () => {
 
     // Check if it's a website query
     const isWebsiteQuery = selectedQuery.platform === "website";
-    
+
     if (isWebsiteQuery) {
-      setWebsiteQueries(prev => prev.map(query => 
-        query.id === selectedQuery.id 
-          ? { 
-              ...query, 
+      setWebsiteQueries(prev => prev.map(query =>
+        query.id === selectedQuery.id
+          ? {
+              ...query,
               responses: [...query.responses, newResponse],
               status: "waiting_for_customer" as QueryStatus,
               updatedAt: new Date().toISOString()
@@ -539,10 +653,10 @@ const SupportPage = () => {
           : query
       ));
     } else {
-      setQueries(prev => prev.map(query => 
-        query.id === selectedQuery.id 
-          ? { 
-              ...query, 
+      setQueries(prev => prev.map(query =>
+        query.id === selectedQuery.id
+          ? {
+              ...query,
               responses: [...query.responses, newResponse],
               status: "waiting_for_customer" as QueryStatus,
               updatedAt: new Date().toISOString()
@@ -841,6 +955,159 @@ const SupportPage = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Social Media Messages Section (API-driven) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Social Media Messages</h2>
+              <p className="text-sm text-gray-600">Mentions and messages from connected social media platforms</p>
+            </div>
+            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+              {socialMessages.length} messages
+            </Badge>
+          </div>
+
+          {loadingMessages ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">Loading social media messages...</p>
+              </CardContent>
+            </Card>
+          ) : socialMessages.length === 0 ? (
+            <EmptyState
+              icon={MessageSquare}
+              title="No Social Media Messages"
+              description="Connect your social media accounts to receive and manage messages and mentions from your audience."
+              action={{
+                label: "Connect Account",
+                onClick: () => window.location.href = "/admin/social-media",
+                icon: Plus,
+              }}
+            />
+          ) : (
+            <div className="space-y-3">
+              {socialMessages.map((message) => (
+                <Card key={message.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            {getPlatformIcon(message.platform.toLowerCase() as SocialPlatform)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-foreground truncate">{message.senderName || 'Unknown'}</h3>
+                            <p className="text-sm text-gray-600 truncate">@{message.senderHandle || 'unknown'}</p>
+                          </div>
+                          <Badge className={`text-xs ${getPlatformColor(message.platform.toLowerCase() as SocialPlatform)}`}>
+                            {message.platform}
+                          </Badge>
+                          <Badge className={`text-xs ${getStatusBadge(message.status.toLowerCase() as QueryStatus)}`}>
+                            {message.status.replace('_', ' ')}
+                          </Badge>
+                          <Badge className={`text-xs ${getPriorityBadge(message.priority.toLowerCase() as QueryPriority)} flex items-center gap-1`}>
+                            {getPriorityIcon(message.priority.toLowerCase() as QueryPriority)}
+                            {message.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{message.content}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                          <span>{getTimeAgo(message.createdAt)}</span>
+                          <span>•</span>
+                          <span>{message.responses?.length || 0} responses</span>
+                          {message.assignedAgent && (
+                            <>
+                              <span>•</span>
+                              <span>Assigned to: {message.assignedAgent.firstName} {message.assignedAgent.lastName}</span>
+                            </>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          <Tag className="h-3 w-3 mr-1" />
+                          {message.messageType}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Convert to SupportQuery format for the modal
+                            const queryFormat: SupportQuery = {
+                              id: message.id,
+                              platform: message.platform.toLowerCase() as SocialPlatform,
+                              senderName: message.senderName || 'Unknown',
+                              senderHandle: message.senderHandle || 'unknown',
+                              senderId: message.id,
+                              message: message.content,
+                              status: message.status.toLowerCase() as QueryStatus,
+                              priority: message.priority.toLowerCase() as QueryPriority,
+                              category: "general_inquiry" as QueryCategory,
+                              createdAt: message.createdAt,
+                              updatedAt: message.updatedAt,
+                              tags: [message.messageType],
+                              responses: message.responses?.map(r => ({
+                                id: r.id,
+                                queryId: message.id,
+                                responderId: r.respondedBy,
+                                responderName: r.respondedByUser ? `${r.respondedByUser.firstName} ${r.respondedByUser.lastName}` : 'Agent',
+                                message: r.response,
+                                createdAt: r.createdAt,
+                                isInternal: r.isInternal,
+                                platform: message.platform.toLowerCase() as SocialPlatform
+                              })) || [],
+                              metadata: {}
+                            };
+                            setSelectedQuery(queryFormat);
+                            setShowResponseModal(true);
+                          }}
+                        >
+                          <Reply className="h-4 w-4 mr-1" />
+                          Reply
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Select
+                          value={message.assignedTo || ""}
+                          onValueChange={(value) => handleAssignSocialMessage(message.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Assign" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {agents.map((agent) => (
+                              <SelectItem key={agent.id} value={agent.id}>
+                                {agent.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={message.status}
+                          onValueChange={(value) => handleUpdateSocialMessageStatus(message.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="NEW">New</SelectItem>
+                            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                            <SelectItem value="WAITING">Waiting</SelectItem>
+                            <SelectItem value="RESOLVED">Resolved</SelectItem>
+                            <SelectItem value="CLOSED">Closed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Website Queries Section */}

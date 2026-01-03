@@ -113,6 +113,13 @@ export interface EventData {
   registrationCount?: number; // From _count
   attendees?: number; // Number of attendees/registrations
 
+  // Rejection/Approval info
+  rejectedBy?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+
   // Timestamps
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string

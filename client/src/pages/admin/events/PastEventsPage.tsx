@@ -78,22 +78,30 @@ const PastEventsPage = () => {
               }
               return false;
             })
-            .map(event => ({
-              id: event.id,
-              title: event.title,
-              organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
-              date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
-              startDate: event.startDate,
-              startTime: event.startTime || '',
-              location: event.location || event.venue || 'TBD',
-              category: event.category || 'Uncategorized',
-              type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
-              isFree: event.isFree || false,
-              actualAttendees: event.attendees || 0,
-              expectedAttendees: event.capacity || event.attendees || 0,
-              revenue: 0, // TODO: Calculate from registrations
-              rating: 0, // TODO: Get from reviews/ratings
-            }));
+            .map(event => {
+              // Get registration count from transformed data
+              const registrations = event.registrationCount || event.attendees || 0;
+              // Calculate approximate revenue: price * registrations (for paid events)
+              const eventPrice = typeof event.price === 'number' ? event.price : 0;
+              const estimatedRevenue = event.isFree ? 0 : eventPrice * registrations;
+
+              return {
+                id: event.id,
+                title: event.title,
+                organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+                date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
+                startDate: event.startDate,
+                startTime: event.startTime || '',
+                location: event.location || event.venue || 'TBD',
+                category: event.category || 'Uncategorized',
+                type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
+                isFree: event.isFree || false,
+                actualAttendees: registrations,
+                expectedAttendees: event.capacity || registrations || 0,
+                revenue: estimatedRevenue, // Estimated from base price * registrations
+                rating: 0, // TODO V2: Implement rating system
+              };
+            });
           setEvents(pastEvents);
         }
       } catch (err) {

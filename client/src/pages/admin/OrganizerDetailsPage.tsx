@@ -22,7 +22,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
-import { getUserById, suspendUser, activateUser, type User as ApiUser } from "@/lib/admin-api";
+import {
+  getUserById,
+  suspendUser,
+  activateUser,
+  getOrganizerProfile,
+  getEmergencyContact,
+  type User as ApiUser,
+  type OrganizerProfile,
+  type EmergencyContact
+} from "@/lib/admin-api";
 
 interface OrganizerDetails {
   id: string;
@@ -79,6 +88,8 @@ const OrganizerDetailsPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [userData, setUserData] = useState<ApiUser | null>(null);
+  const [organizerProfileData, setOrganizerProfileData] = useState<OrganizerProfile | null>(null);
+  const [emergencyContactData, setEmergencyContactData] = useState<EmergencyContact | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -98,6 +109,25 @@ const OrganizerDetailsPage = () => {
         const response = await getUserById(organizerId);
         if (response.success && response.data?.user) {
           setUserData(response.data.user);
+
+          // Fetch extended profile data
+          try {
+            const profileResponse = await getOrganizerProfile(organizerId);
+            if (profileResponse.success && profileResponse.data?.organizerProfile) {
+              setOrganizerProfileData(profileResponse.data.organizerProfile);
+            }
+          } catch (profileErr) {
+            console.log("No organizer profile found, using defaults");
+          }
+
+          try {
+            const contactResponse = await getEmergencyContact(organizerId);
+            if (contactResponse.success && contactResponse.data?.emergencyContact) {
+              setEmergencyContactData(contactResponse.data.emergencyContact);
+            }
+          } catch (contactErr) {
+            console.log("No emergency contact found");
+          }
         } else {
           setError("Organizer not found");
         }
@@ -112,7 +142,7 @@ const OrganizerDetailsPage = () => {
     fetchUserData();
   }, [organizerId]);
 
-  // Build organizerData from API response + defaults for extended fields
+  // Build organizerData from API response + extended profile data
   const organizerData: OrganizerDetails = {
     id: userData?.id || organizerId || "",
     firstName: userData?.firstName || "",
@@ -122,19 +152,23 @@ const OrganizerDetailsPage = () => {
     company: userData?.organizationName || "Not specified",
     status: userData?.status === "ACTIVE" ? "verified" : userData?.status === "SUSPENDED" ? "suspended" : "pending",
     verificationDate: userData?.isEmailVerified ? userData.createdAt : undefined,
-    totalEvents: 0,
-    totalRevenue: 0,
-    rating: 0,
+    totalEvents: organizerProfileData?.totalEvents || 0,
+    totalRevenue: organizerProfileData?.totalRevenue ? Number(organizerProfileData.totalRevenue) : 0,
+    rating: organizerProfileData?.rating ? Number(organizerProfileData.rating) : 0,
     joinDate: userData?.createdAt || new Date().toISOString(),
     lastActive: userData?.updatedAt || new Date().toISOString(),
-    location: "Not specified",
-    website: undefined,
-    description: undefined,
+    location: organizerProfileData?.location || "Not specified",
+    website: organizerProfileData?.website || undefined,
+    description: organizerProfileData?.description || undefined,
     avatar: undefined,
-    businessLicense: undefined,
-    taxId: undefined,
-    bankAccount: undefined,
-    emergencyContact: undefined,
+    businessLicense: organizerProfileData?.businessLicense || undefined,
+    taxId: organizerProfileData?.taxId || undefined,
+    bankAccount: organizerProfileData?.bankAccountLast4 ? `****${organizerProfileData.bankAccountLast4}` : undefined,
+    emergencyContact: emergencyContactData ? {
+      name: emergencyContactData.name,
+      phone: emergencyContactData.phone,
+      relationship: emergencyContactData.relationship
+    } : undefined,
     supportTickets: []
   };
 

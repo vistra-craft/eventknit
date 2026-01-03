@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout from "../AdminLayout";
-import { 
-  Share2, 
+import { useToast } from "@/hooks/use-toast";
+import EmptyState from "@/components/EmptyState";
+import {
+  Share2,
   Instagram,
   Twitter,
   Facebook,
@@ -21,8 +23,18 @@ import {
   BarChart3,
   Edit,
   MoreHorizontal,
-  Filter
+  Filter,
+  Trash2
 } from "lucide-react";
+import {
+  getSocialAccounts,
+  getSocialPosts,
+  getSocialMetrics,
+  deleteSocialPost,
+  type SocialAccount as ApiSocialAccount,
+  type SocialPost as ApiSocialPost,
+  type SocialMetrics,
+} from "@/lib/social-media-api";
 
 interface SocialPost {
   id: string;
@@ -53,11 +65,101 @@ interface SocialAccount {
 }
 
 const AdminSocialMediaPage = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedPlatform, setSelectedPlatform] = useState("all");
 
-  // Mock social accounts
-  const socialAccounts: SocialAccount[] = [
+  // API-driven state
+  const [apiAccounts, setApiAccounts] = useState<ApiSocialAccount[]>([]);
+  const [apiPosts, setApiPosts] = useState<ApiSocialPost[]>([]);
+  const [apiMetrics, setApiMetrics] = useState<SocialMetrics | null>(null);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
+
+  // Load social accounts from API
+  const loadAccounts = async () => {
+    try {
+      setLoadingAccounts(true);
+      const response = await getSocialAccounts();
+      if (response.success && response.data) {
+        setApiAccounts(response.data.accounts || []);
+      }
+    } catch (error) {
+      console.error("Failed to load social accounts:", error);
+    } finally {
+      setLoadingAccounts(false);
+    }
+  };
+
+  // Load social posts from API
+  const loadPosts = async () => {
+    try {
+      setLoadingPosts(true);
+      const response = await getSocialPosts({
+        platform: selectedPlatform !== "all" ? selectedPlatform : undefined,
+      });
+      if (response.success && response.data) {
+        setApiPosts(response.data.posts || []);
+      }
+    } catch (error) {
+      console.error("Failed to load social posts:", error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  // Load social metrics from API
+  const loadMetrics = async () => {
+    try {
+      setLoadingMetrics(true);
+      const response = await getSocialMetrics();
+      if (response.success && response.data) {
+        setApiMetrics(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load social metrics:", error);
+    } finally {
+      setLoadingMetrics(false);
+    }
+  };
+
+  // Handle post deletion
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
+    try {
+      const response = await deleteSocialPost(postId);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Post deleted successfully.",
+        });
+        loadPosts();
+      }
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadAccounts();
+    loadPosts();
+    loadMetrics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    loadPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform]);
+
+  // Mock social accounts (used as fallback when API returns empty)
+  const mockSocialAccounts: SocialAccount[] = [
     {
       platform: "facebook",
       name: "EventKnit Official",
@@ -105,8 +207,21 @@ const AdminSocialMediaPage = () => {
     }
   ];
 
-  // Mock social posts
-  const socialPosts: SocialPost[] = [
+  // Convert API accounts to display format
+  const socialAccounts: SocialAccount[] = apiAccounts.length > 0
+    ? apiAccounts.map(acc => ({
+        platform: acc.platform.toLowerCase(),
+        name: acc.accountName,
+        followers: acc.followers || 0,
+        engagement: 0, // Calculate from metrics if available
+        status: acc.isActive ? "connected" as const : "disconnected" as const,
+        icon: getPlatformIconComponent(acc.platform.toLowerCase()),
+        color: getPlatformColorClass(acc.platform.toLowerCase()),
+      }))
+    : mockSocialAccounts;
+
+  // Mock social posts (used as fallback)
+  const mockSocialPosts: SocialPost[] = [
     {
       id: "1",
       platform: "facebook",
@@ -168,6 +283,51 @@ const AdminSocialMediaPage = () => {
     }
   ];
 
+  // Convert API posts to display format
+  const socialPosts: SocialPost[] = apiPosts.length > 0
+    ? apiPosts.map(post => ({
+        id: post.id,
+        platform: post.platform.toLowerCase() as SocialPost['platform'],
+        content: post.content,
+        media: post.mediaUrls?.[0],
+        scheduledDate: post.scheduledAt ? new Date(post.scheduledAt).toISOString().split('T')[0] : undefined,
+        status: post.status.toLowerCase() as SocialPost['status'],
+        publishedDate: post.postedAt ? new Date(post.postedAt).toISOString().split('T')[0] : undefined,
+        engagement: {
+          likes: post.likes || 0,
+          comments: post.comments || 0,
+          shares: post.shares || 0,
+          views: post.views,
+        },
+        reach: post.reach || 0,
+        impressions: post.impressions || 0,
+      }))
+    : mockSocialPosts;
+
+  // Helper to get platform icon component
+  function getPlatformIconComponent(platform: string): React.ComponentType<{ className?: string }> {
+    switch (platform) {
+      case 'facebook': return Facebook;
+      case 'twitter': return Twitter;
+      case 'instagram': return Instagram;
+      case 'linkedin': return Linkedin;
+      case 'youtube': return Youtube;
+      default: return Share2;
+    }
+  }
+
+  // Helper to get platform color class
+  function getPlatformColorClass(platform: string): string {
+    switch (platform) {
+      case 'facebook': return "bg-blue-600";
+      case 'twitter': return "bg-sky-500";
+      case 'instagram': return "bg-pink-600";
+      case 'linkedin': return "bg-blue-700";
+      case 'youtube': return "bg-red-600";
+      default: return "bg-gray-600";
+    }
+  }
+
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
       case 'facebook': return <Facebook className="h-4 w-4" />;
@@ -199,10 +359,15 @@ const AdminSocialMediaPage = () => {
     }
   };
 
-  const totalFollowers = socialAccounts.reduce((sum, account) => sum + account.followers, 0);
-  const avgEngagement = socialAccounts.reduce((sum, account) => sum + account.engagement, 0) / socialAccounts.length;
-  const totalReach = socialPosts.reduce((sum, post) => sum + post.reach, 0);
-  const totalImpressions = socialPosts.reduce((sum, post) => sum + post.impressions, 0);
+  // Use API metrics if available, otherwise calculate from local data
+  const totalFollowers = apiMetrics?.totalPosts
+    ? socialAccounts.reduce((sum, account) => sum + account.followers, 0)
+    : socialAccounts.reduce((sum, account) => sum + account.followers, 0);
+  const avgEngagement = apiMetrics?.engagementRate
+    ? apiMetrics.engagementRate
+    : socialAccounts.reduce((sum, account) => sum + account.engagement, 0) / socialAccounts.length;
+  const totalReach = apiMetrics?.totalReach || socialPosts.reduce((sum, post) => sum + post.reach, 0);
+  const totalImpressions = apiMetrics?.totalImpressions || socialPosts.reduce((sum, post) => sum + post.impressions, 0);
 
   return (
     <AdminLayout>
@@ -438,6 +603,22 @@ const AdminSocialMediaPage = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {loadingPosts ? (
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground">Loading posts...</p>
+              </div>
+            ) : socialPosts.length === 0 ? (
+              <EmptyState
+                icon={Share2}
+                title="No Social Posts"
+                description="Create and schedule posts to engage with your audience across all connected platforms."
+                action={{
+                  label: "Create Post",
+                  onClick: () => {},
+                  icon: Plus,
+                }}
+              />
+            ) : (
             <div className="space-y-4">
               {socialPosts.map((post) => (
                 <div key={post.id} className="p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
@@ -480,6 +661,14 @@ const AdminSocialMediaPage = () => {
                       <Button variant="outline" size="sm">
                         <Edit className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeletePost(post.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                       <Button variant="outline" size="sm">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -488,6 +677,7 @@ const AdminSocialMediaPage = () => {
                 </div>
               ))}
             </div>
+            )}
           </CardContent>
         </Card>
       )}

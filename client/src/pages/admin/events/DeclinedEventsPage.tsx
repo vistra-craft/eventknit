@@ -78,9 +78,9 @@ const DeclinedEventsPage = () => {
             category: event.category || 'Uncategorized',
             type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
             isFree: event.isFree || false,
-            declinedDate: event.updatedAt || event.createdAt || new Date().toISOString(),
-            reason: (event as { rejectionReason?: string }).rejectionReason || 'No reason provided',
-            declinedBy: 'Admin', // TODO: Get from audit logs
+            declinedDate: event.rejectedAt || event.updatedAt || event.createdAt || new Date().toISOString(),
+            reason: event.rejectionReason || 'No reason provided',
+            declinedBy: event.rejectedBy ? 'Admin' : 'System', // TODO V2: Fetch admin name from rejectedBy ID
           }));
           setEvents(declinedEvents);
         }

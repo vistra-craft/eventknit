@@ -24,6 +24,13 @@ import {
   type BulkMessageTargetAudience,
   type BulkMessageType,
 } from "@/lib/bulk-message-api";
+import {
+  getEmailTemplates,
+  createEmailTemplate,
+  updateEmailTemplate,
+  deleteEmailTemplate,
+  type EmailTemplate as ApiEmailTemplate,
+} from "@/lib/email-template-api";
 
 interface Announcement {
   id: string;
@@ -57,217 +64,21 @@ interface Notification {
 interface EmailTemplate {
   id: string;
   name: string;
-  subject: string;
-  description: string;
-  content: string;
-  category: "welcome" | "event" | "payment" | "notification" | "marketing" | "reminder" | "promotional";
-  status: "active" | "inactive" | "draft";
-  lastUsed: string;
+  subject?: string;
+  description?: string;
+  htmlContent: string;
+  textContent?: string;
+  category?: string;
+  isActive: boolean;
+  isDefault: boolean;
   usageCount: number;
   createdAt: string;
-  createdBy: string;
+  updatedAt: string;
 }
 
 // Mock data removed - using bulk messages API instead
 // Announcements and notifications are handled via bulk messages API
-
-const mockEmailTemplates: EmailTemplate[] = [
-  {
-    id: "1",
-    name: "Welcome Email",
-    subject: "Welcome to EventKnit!",
-    description: "Welcome new users to the platform",
-    content: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Welcome to EventKnit</title>
-</head>
-<body className="font-sans leading-relaxed text-foreground">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #2563eb;">Welcome to EventKnit!</h1>
-        <p>Hi {{user_name}},</p>
-        <p>We're thrilled to have you join the EventKnit community! You now have access to powerful event management tools that will help you create, manage, and promote amazing events.</p>
-        
-        <h2>Getting Started:</h2>
-        <ul>
-            <li>Create your first event</li>
-            <li>Set up your organizer profile</li>
-            <li>Explore our analytics dashboard</li>
-            <li>Connect with our support team</li>
-        </ul>
-        
-        <p>If you have any questions, don't hesitate to reach out to our support team.</p>
-        <p>Best regards,<br>The EventKnit Team</p>
-    </div>
-</body>
-</html>`,
-    category: "welcome",
-    status: "active",
-    lastUsed: "2024-01-28 14:30:00",
-    usageCount: 1247,
-    createdAt: "2024-01-01 00:00:00",
-    createdBy: "admin_001"
-  },
-  {
-    id: "2",
-    name: "Event Confirmation",
-    subject: "Your event '{{event_title}}' has been created successfully",
-    description: "Confirm event creation to organizers",
-    content: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Event Created Successfully</title>
-</head>
-<body className="font-sans leading-relaxed text-foreground">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #16a34a;">Event Created Successfully!</h1>
-        <p>Hi {{organizer_name}},</p>
-        <p>Congratulations! Your event "<strong>{{event_title}}</strong>" has been successfully created and is now live on EventKnit.</p>
-        
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3>Event Details:</h3>
-            <p><strong>Event:</strong> {{event_title}}</p>
-            <p><strong>Date:</strong> {{event_date}}</p>
-            <p><strong>Location:</strong> {{event_location}}</p>
-            <p><strong>Event URL:</strong> <a href="{{event_url}}">{{event_url}}</a></p>
-        </div>
-        
-        <p>You can now start promoting your event and managing registrations through your organizer dashboard.</p>
-        <p>Best of luck with your event!</p>
-        <p>The EventKnit Team</p>
-    </div>
-</body>
-</html>`,
-    category: "event",
-    status: "active",
-    lastUsed: "2024-01-28 13:15:00",
-    usageCount: 892,
-    createdAt: "2024-01-15 10:00:00",
-    createdBy: "admin_002"
-  },
-  {
-    id: "3",
-    name: "Payment Receipt",
-    subject: "Payment confirmation for {{event_title}}",
-    description: "Send payment receipts to users",
-    content: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Payment Confirmation</title>
-</head>
-<body className="font-sans leading-relaxed text-foreground">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #16a34a;">Payment Confirmed!</h1>
-        <p>Hi {{attendee_name}},</p>
-        <p>Thank you for your purchase! Your payment has been successfully processed.</p>
-        
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3>Order Details:</h3>
-            <p><strong>Event:</strong> {{event_title}}</p>
-            <p><strong>Date:</strong> {{event_date}}</p>
-            <p><strong>Tickets:</strong> {{ticket_quantity}} x {{ticket_type}}</p>
-            <p><strong>Total Amount:</strong> \${{total_amount}}</p>
-            <p><strong>Transaction ID:</strong> {{transaction_id}}</p>
-        </div>
-        
-        <p>Your tickets have been sent to your email. Please bring a valid ID to the event.</p>
-        <p>If you have any questions, please contact our support team.</p>
-        <p>Thank you for choosing EventKnit!</p>
-    </div>
-</body>
-</html>`,
-    category: "payment",
-    status: "active",
-    lastUsed: "2024-01-28 12:45:00",
-    usageCount: 2340,
-    createdAt: "2024-01-10 14:30:00",
-    createdBy: "admin_001"
-  },
-  {
-    id: "4",
-    name: "Event Reminder",
-    subject: "Don't forget! {{event_title}} is tomorrow",
-    description: "Remind attendees about upcoming events",
-    content: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Event Reminder</title>
-</head>
-<body className="font-sans leading-relaxed text-foreground">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #dc2626;">Event Reminder</h1>
-        <p>Hi {{attendee_name}},</p>
-        <p>This is a friendly reminder that <strong>{{event_title}}</strong> is happening tomorrow!</p>
-        
-        <div style="background: #fef2f2; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc2626;">
-            <h3>Event Details:</h3>
-            <p><strong>Event:</strong> {{event_title}}</p>
-            <p><strong>Date:</strong> {{event_date}}</p>
-            <p><strong>Time:</strong> {{event_time}}</p>
-            <p><strong>Location:</strong> {{event_location}}</p>
-        </div>
-        
-        <p>Please arrive 15 minutes early for check-in. Don't forget to bring your ticket and a valid ID.</p>
-        <p>We're excited to see you there!</p>
-        <p>The EventKnit Team</p>
-    </div>
-</body>
-</html>`,
-    category: "reminder",
-    status: "active",
-    lastUsed: "2024-01-28 10:30:00",
-    usageCount: 1567,
-    createdAt: "2024-01-05 09:00:00",
-    createdBy: "admin_001"
-  },
-  {
-    id: "5",
-    name: "Marketing Newsletter",
-    subject: "Monthly EventKnit Newsletter - {{month}} {{year}}",
-    description: "Monthly newsletter for marketing purposes",
-    content: `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>EventKnit Newsletter</title>
-</head>
-<body className="font-sans leading-relaxed text-foreground">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h1 style="color: #2563eb;">EventKnit Newsletter</h1>
-        <p>Hi {{subscriber_name}},</p>
-        <p>Welcome to our monthly newsletter! Here's what's happening in the EventKnit community this month.</p>
-        
-        <h2>Featured Events</h2>
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3>{{featured_event_title}}</h3>
-            <p>{{featured_event_description}}</p>
-            <p><strong>Date:</strong> {{featured_event_date}}</p>
-        </div>
-        
-        <h2>Platform Updates</h2>
-        <ul>
-            <li>New analytics dashboard</li>
-            <li>Enhanced mobile app</li>
-            <li>Improved payment processing</li>
-        </ul>
-        
-        <p>Thank you for being part of the EventKnit community!</p>
-        <p>The EventKnit Team</p>
-    </div>
-</body>
-</html>`,
-    category: "marketing",
-    status: "draft",
-    lastUsed: "2024-01-25 09:00:00",
-    usageCount: 1,
-    createdAt: "2024-01-20 16:00:00",
-    createdBy: "admin_003"
-  }
-];
+// Email templates now use email-template-api.ts
 
 interface ChatMessage {
   id: string;
@@ -320,7 +131,8 @@ const CommunicationsPage = () => {
   const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
   
   // State for email templates
-  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(mockEmailTemplates);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [viewingTemplate, setViewingTemplate] = useState<EmailTemplate | null>(null);
@@ -347,8 +159,9 @@ const CommunicationsPage = () => {
     name: "",
     subject: "",
     description: "",
-    content: "",
-    category: "welcome" as "welcome" | "event" | "payment" | "notification" | "marketing" | "reminder" | "promotional"
+    htmlContent: "",
+    category: "notification" as string,
+    isActive: true,
   });
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -585,53 +398,118 @@ const CommunicationsPage = () => {
   };
 
   // Email template handlers
-  const handleCreateTemplate = () => {
-    const newTemplate: EmailTemplate = {
-      id: Date.now().toString(),
-      name: templateForm.name,
-      subject: templateForm.subject,
-      description: templateForm.description,
-      content: templateForm.content,
-      category: templateForm.category,
-      status: "draft",
-      lastUsed: "",
-      usageCount: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: "current_admin"
-    };
-    setEmailTemplates(prev => [...prev, newTemplate]);
-    resetTemplateForm();
-    setShowTemplateForm(false);
+  const loadEmailTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const response = await getEmailTemplates();
+      if (response.success && response.data) {
+        setEmailTemplates(response.data.templates || []);
+      }
+    } catch (error) {
+      console.error("Failed to load email templates:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load email templates. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const handleCreateTemplate = async () => {
+    try {
+      const response = await createEmailTemplate({
+        name: templateForm.name,
+        subject: templateForm.subject,
+        description: templateForm.description,
+        htmlContent: templateForm.htmlContent,
+        category: templateForm.category,
+        isActive: templateForm.isActive,
+      });
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Email template created successfully.",
+        });
+        resetTemplateForm();
+        setShowTemplateForm(false);
+        loadEmailTemplates();
+      }
+    } catch (error) {
+      console.error("Failed to create email template:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create email template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditTemplate = (template: EmailTemplate) => {
     setEditingTemplate(template);
     setTemplateForm({
       name: template.name,
-      subject: template.subject,
-      description: template.description,
-      content: template.content,
-      category: template.category
+      subject: template.subject || "",
+      description: template.description || "",
+      htmlContent: template.htmlContent,
+      category: template.category || "notification",
+      isActive: template.isActive,
     });
     setShowTemplateForm(true);
   };
 
-  const handleUpdateTemplate = () => {
+  const handleUpdateTemplate = async () => {
     if (!editingTemplate) return;
-    
-    setEmailTemplates(prev => prev.map(template => 
-      template.id === editingTemplate.id 
-        ? { ...template, ...templateForm }
-        : template
-    ));
-    resetTemplateForm();
-    setShowTemplateForm(false);
-    setEditingTemplate(null);
+
+    try {
+      const response = await updateEmailTemplate(editingTemplate.id, {
+        name: templateForm.name,
+        subject: templateForm.subject,
+        description: templateForm.description,
+        htmlContent: templateForm.htmlContent,
+        category: templateForm.category,
+        isActive: templateForm.isActive,
+      });
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Email template updated successfully.",
+        });
+        resetTemplateForm();
+        setShowTemplateForm(false);
+        setEditingTemplate(null);
+        loadEmailTemplates();
+      }
+    } catch (error) {
+      console.error("Failed to update email template:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update email template. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteTemplate = (id: string) => {
+  const handleDeleteTemplate = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this email template? This action cannot be undone.")) {
-      setEmailTemplates(prev => prev.filter(template => template.id !== id));
+      try {
+        const response = await deleteEmailTemplate(id);
+        if (response.success) {
+          toast({
+            title: "Success",
+            description: "Email template deleted successfully.",
+          });
+          loadEmailTemplates();
+        }
+      } catch (error) {
+        console.error("Failed to delete email template:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete email template. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -644,8 +522,9 @@ const CommunicationsPage = () => {
       name: "",
       subject: "",
       description: "",
-      content: "",
-      category: "welcome"
+      htmlContent: "",
+      category: "notification",
+      isActive: true,
     });
   };
 
@@ -671,6 +550,7 @@ const CommunicationsPage = () => {
 
   useEffect(() => {
     loadBulkMessages();
+    loadEmailTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -921,7 +801,7 @@ const CommunicationsPage = () => {
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
-                {emailTemplates.filter(t => t.status === "active").length}
+                {emailTemplates.filter(t => t.isActive).length}
               </div>
               <p className="text-sm text-gray-600">Active Templates</p>
             </CardContent>
@@ -1145,7 +1025,13 @@ const CommunicationsPage = () => {
 
           <TabsContent value="templates" className="space-y-6">
             {/* Email Templates List */}
-            {emailTemplates.length === 0 ? (
+            {loadingTemplates ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">Loading email templates...</p>
+                </CardContent>
+              </Card>
+            ) : emailTemplates.length === 0 ? (
               <EmptyState
                 icon={Mail}
                 title="No Email Templates"
@@ -1168,18 +1054,18 @@ const CommunicationsPage = () => {
                             <Mail className="h-5 w-5 text-primary" />
                           </div>
                           <h3 className="font-semibold text-gray-900">{template.name}</h3>
-                          <Badge className={`text-xs ${getStatusBadge(template.status)}`}>
-                            {template.status}
+                          <Badge className={`text-xs ${template.isActive ? 'bg-primary/10 text-primary border-primary/20' : 'bg-muted text-muted-foreground border-border'}`}>
+                            {template.isActive ? 'Active' : 'Inactive'}
                           </Badge>
-                          <Badge className={`text-xs ${getTypeBadge(template.category)}`}>
-                            {template.category}
+                          <Badge className={`text-xs ${getTypeBadge(template.category || 'notification')}`}>
+                            {template.category || 'Notification'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                        <p className="text-sm font-medium text-foreground mb-3">Subject: {template.subject}</p>
+                        <p className="text-sm text-gray-600 mb-2">{template.description || 'No description'}</p>
+                        <p className="text-sm font-medium text-foreground mb-3">Subject: {template.subject || 'No subject'}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>Usage: {template.usageCount.toLocaleString()}</span>
-                          <span>Last used: {template.lastUsed ? formatDate(template.lastUsed) : 'Never'}</span>
+                          <span>Updated: {formatDate(template.updatedAt)}</span>
                           <span>Created: {formatDate(template.createdAt)}</span>
                         </div>
                       </div>
@@ -1548,8 +1434,8 @@ const CommunicationsPage = () => {
                 <Label htmlFor="template-content">Email Content (HTML)</Label>
                 <Textarea
                   id="template-content"
-                  value={templateForm.content}
-                  onChange={(e) => setTemplateForm(prev => ({ ...prev, content: e.target.value }))}
+                  value={templateForm.htmlContent}
+                  onChange={(e) => setTemplateForm(prev => ({ ...prev, htmlContent: e.target.value }))}
                   placeholder="Enter HTML email content"
                   rows={12}
                   className="font-mono text-sm"
@@ -1557,6 +1443,17 @@ const CommunicationsPage = () => {
                 <p className="text-xs text-gray-500 mt-1">
                   Use variables like {`{{user_name}}`}, {`{{event_title}}`}, etc. for dynamic content
                 </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="template-active">Active Status</Label>
+                  <p className="text-xs text-gray-500">Enable or disable this template</p>
+                </div>
+                <Switch
+                  id="template-active"
+                  checked={templateForm.isActive}
+                  onCheckedChange={(checked) => setTemplateForm(prev => ({ ...prev, isActive: checked }))}
+                />
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowTemplateForm(false)}>
@@ -1654,32 +1551,35 @@ const CommunicationsPage = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div className="flex gap-2">
-                  <Badge className={getStatusBadge(viewingTemplate.status)}>
-                    {viewingTemplate.status}
+                  <Badge className={viewingTemplate.isActive ? 'bg-primary/10 text-primary border-primary/20' : 'bg-muted text-muted-foreground border-border'}>
+                    {viewingTemplate.isActive ? 'Active' : 'Inactive'}
                   </Badge>
-                  <Badge className={getTypeBadge(viewingTemplate.category)}>
-                    {viewingTemplate.category}
+                  <Badge className={getTypeBadge(viewingTemplate.category || 'notification')}>
+                    {viewingTemplate.category || 'Notification'}
                   </Badge>
+                  {viewingTemplate.isDefault && (
+                    <Badge className="bg-primary/10 text-primary border-primary/20">Default</Badge>
+                  )}
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Subject:</h4>
-                  <p className="text-sm bg-gray-50 p-2 rounded">{viewingTemplate.subject}</p>
+                  <p className="text-sm bg-gray-50 p-2 rounded">{viewingTemplate.subject || 'No subject'}</p>
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Description:</h4>
-                  <p className="text-sm">{viewingTemplate.description}</p>
+                  <p className="text-sm">{viewingTemplate.description || 'No description'}</p>
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Email Content Preview:</h4>
-                  <div 
-                    className="border rounded p-4 max-h-96 overflow-y-auto text-sm"
-                    dangerouslySetInnerHTML={{ __html: viewingTemplate.content }}
+                  <div
+                    className="border rounded p-4 max-h-96 overflow-y-auto text-sm bg-white"
+                    dangerouslySetInnerHTML={{ __html: viewingTemplate.htmlContent }}
                   />
                 </div>
                 <div className="text-sm text-gray-500">
                   <p>Created: {formatDate(viewingTemplate.createdAt)}</p>
+                  <p>Last Updated: {formatDate(viewingTemplate.updatedAt)}</p>
                   <p>Usage: {viewingTemplate.usageCount.toLocaleString()} times</p>
-                  <p>Last used: {viewingTemplate.lastUsed ? formatDate(viewingTemplate.lastUsed) : 'Never'}</p>
                 </div>
               </div>
             </DialogContent>

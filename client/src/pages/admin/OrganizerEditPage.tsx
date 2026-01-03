@@ -18,7 +18,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
-import { getUserById, updateUser, type User as ApiUser } from "@/lib/admin-api";
+import {
+  getUserById,
+  updateUser,
+  getOrganizerProfile,
+  updateOrganizerProfile,
+  getEmergencyContact,
+  updateEmergencyContact,
+  type User as ApiUser,
+  type OrganizerProfile,
+  type EmergencyContact
+} from "@/lib/admin-api";
 
 interface OrganizerDetails {
   id: string;
@@ -65,6 +75,8 @@ const OrganizerEditPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [userData, setUserData] = useState<ApiUser | null>(null);
+  const [organizerProfileData, setOrganizerProfileData] = useState<OrganizerProfile | null>(null);
+  const [emergencyContactData, setEmergencyContactData] = useState<EmergencyContact | null>(null);
 
   // Organizer data built from API response + defaults for extended fields
   const organizerData: OrganizerDetails = {
@@ -106,6 +118,25 @@ const OrganizerEditPage = () => {
         const response = await getUserById(organizerId);
         if (response.success && response.data?.user) {
           setUserData(response.data.user);
+
+          // Fetch extended profile data
+          try {
+            const profileResponse = await getOrganizerProfile(organizerId);
+            if (profileResponse.success && profileResponse.data?.organizerProfile) {
+              setOrganizerProfileData(profileResponse.data.organizerProfile);
+            }
+          } catch (profileErr) {
+            console.log("No organizer profile found, using defaults");
+          }
+
+          try {
+            const contactResponse = await getEmergencyContact(organizerId);
+            if (contactResponse.success && contactResponse.data?.emergencyContact) {
+              setEmergencyContactData(contactResponse.data.emergencyContact);
+            }
+          } catch (contactErr) {
+            console.log("No emergency contact found");
+          }
         } else {
           setError("Organizer not found");
         }
@@ -154,7 +185,7 @@ const OrganizerEditPage = () => {
     status: "pending"
   });
 
-  // Update formData when userData loads
+  // Update formData when userData and extended profiles load
   useEffect(() => {
     if (userData) {
       setFormData(prev => ({
@@ -165,9 +196,20 @@ const OrganizerEditPage = () => {
         phone: userData.phoneNumber || "",
         company: userData.organizationName || "",
         status: userData.status === "ACTIVE" ? "verified" : userData.status === "SUSPENDED" ? "suspended" : "pending",
+        // Extended profile fields
+        location: organizerProfileData?.location || "",
+        website: organizerProfileData?.website || "",
+        description: organizerProfileData?.description || "",
+        businessLicense: organizerProfileData?.businessLicense || "",
+        taxId: organizerProfileData?.taxId || "",
+        bankAccount: organizerProfileData?.bankAccountLast4 || "",
+        // Emergency contact fields
+        emergencyContactName: emergencyContactData?.name || "",
+        emergencyContactPhone: emergencyContactData?.phone || "",
+        emergencyContactRelationship: emergencyContactData?.relationship || "",
       }));
     }
-  }, [userData]);
+  }, [userData, organizerProfileData, emergencyContactData]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -187,6 +229,7 @@ const OrganizerEditPage = () => {
       // Map form status back to API status
       const apiStatus = formData.status === "verified" ? "ACTIVE" : formData.status === "suspended" ? "SUSPENDED" : "DEACTIVATED";
 
+      // Update basic user data
       const response = await updateUser(organizerId, {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -195,16 +238,52 @@ const OrganizerEditPage = () => {
         status: apiStatus as "ACTIVE" | "SUSPENDED" | "DEACTIVATED",
       });
 
-      if (response.success) {
-        setSuccess("Organizer updated successfully!");
-        // Update local userData to reflect changes
-        if (response.data?.user) {
-          setUserData(response.data.user);
-        }
-        setTimeout(() => setSuccess(null), 3000);
-      } else {
+      if (!response.success) {
         throw new Error("Failed to update organizer");
       }
+
+      // Update local userData to reflect changes
+      if (response.data?.user) {
+        setUserData(response.data.user);
+      }
+
+      // Update organizer profile (extended data)
+      try {
+        const profileResponse = await updateOrganizerProfile(organizerId, {
+          location: formData.location || undefined,
+          website: formData.website || undefined,
+          description: formData.description || undefined,
+          businessLicense: formData.businessLicense || undefined,
+          taxId: formData.taxId || undefined,
+          bankAccountLast4: formData.bankAccount || undefined,
+        });
+
+        if (profileResponse.success && profileResponse.data?.organizerProfile) {
+          setOrganizerProfileData(profileResponse.data.organizerProfile);
+        }
+      } catch (profileErr) {
+        console.error("Error updating organizer profile:", profileErr);
+      }
+
+      // Update emergency contact if provided
+      if (formData.emergencyContactName && formData.emergencyContactPhone) {
+        try {
+          const contactResponse = await updateEmergencyContact(organizerId, {
+            name: formData.emergencyContactName,
+            phone: formData.emergencyContactPhone,
+            relationship: formData.emergencyContactRelationship || "Other",
+          });
+
+          if (contactResponse.success && contactResponse.data?.emergencyContact) {
+            setEmergencyContactData(contactResponse.data.emergencyContact);
+          }
+        } catch (contactErr) {
+          console.error("Error updating emergency contact:", contactErr);
+        }
+      }
+
+      setSuccess("Organizer updated successfully!");
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Error updating organizer:", err);
       setError(err instanceof Error ? err.message : "Failed to update organizer");

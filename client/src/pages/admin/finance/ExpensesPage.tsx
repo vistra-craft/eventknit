@@ -1,164 +1,112 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingDown, Plus, Search, Eye, Edit, Trash2, Calendar, Receipt, X } from "lucide-react";
+import { TrendingDown, Plus, Search, Eye, Edit, Trash2, Calendar, DollarSign, X, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "../AdminLayout";
-
-interface Expense {
-  id: string;
-  category: string;
-  description: string;
-  amount: number;
-  date: string;
-  recipient: string;
-  status: "completed" | "pending" | "cancelled";
-  paymentMethod: "cash" | "bank_transfer" | "credit_card" | "check";
-  receipt?: string;
-  notes?: string;
-  createdBy: string;
-  createdAt: string;
-}
-
-const mockExpenses: Expense[] = [
-  {
-    id: "1",
-    category: "Marketing",
-    description: "Google Ads campaign for Q1 2024",
-    amount: 2500,
-    date: "2024-01-27",
-    recipient: "Google LLC",
-    status: "completed",
-    paymentMethod: "credit_card",
-    receipt: "receipt_001.pdf",
-    notes: "Campaign targeting tech events and conferences",
-    createdBy: "admin_001",
-    createdAt: "2024-01-27 10:30:00"
-  },
-  {
-    id: "2",
-    category: "Wages",
-    description: "Monthly salary for development team",
-    amount: 12000,
-    date: "2024-01-25",
-    recipient: "Development Team",
-    status: "completed",
-    paymentMethod: "bank_transfer",
-    notes: "Regular monthly payroll",
-    createdBy: "admin_001",
-    createdAt: "2024-01-25 09:00:00"
-  },
-  {
-    id: "3",
-    category: "Office Supplies",
-    description: "Office equipment and supplies",
-    amount: 800,
-    date: "2024-01-23",
-    recipient: "Office Depot",
-    status: "pending",
-    paymentMethod: "credit_card",
-    receipt: "receipt_002.pdf",
-    notes: "New office chairs and stationery",
-    createdBy: "admin_002",
-    createdAt: "2024-01-23 14:15:00"
-  },
-  {
-    id: "4",
-    category: "Utilities",
-    description: "Monthly office rent and utilities",
-    amount: 4500,
-    date: "2024-01-20",
-    recipient: "Property Management",
-    status: "completed",
-    paymentMethod: "bank_transfer",
-    notes: "Monthly office rent payment",
-    createdBy: "admin_001",
-    createdAt: "2024-01-20 08:00:00"
-  },
-  {
-    id: "5",
-    category: "Software",
-    description: "Annual software licenses",
-    amount: 3200,
-    date: "2024-01-18",
-    recipient: "Software Vendor",
-    status: "completed",
-    paymentMethod: "credit_card",
-    receipt: "receipt_003.pdf",
-    notes: "Development tools and productivity software",
-    createdBy: "admin_003",
-    createdAt: "2024-01-18 16:45:00"
-  },
-  {
-    id: "6",
-    category: "Travel",
-    description: "Business travel expenses",
-    amount: 1800,
-    date: "2024-01-15",
-    recipient: "Travel Agency",
-    status: "completed",
-    paymentMethod: "credit_card",
-    receipt: "receipt_004.pdf",
-    notes: "Conference attendance and accommodation",
-    createdBy: "admin_002",
-    createdAt: "2024-01-15 11:20:00"
-  }
-];
+import { getExpenses, deleteExpense, type PlatformExpense } from "@/lib/accounting-api";
+import { useToast } from "@/hooks/use-toast";
 
 const ExpensesPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [expenses, setExpenses] = useState<PlatformExpense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState("all");
   const [showViewModal, setShowViewModal] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<PlatformExpense | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  const filteredExpenses = mockExpenses.filter(expense => {
-    const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         expense.recipient.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || expense.category === categoryFilter;
-    const matchesStatus = statusFilter === "all" || expense.status === statusFilter;
-    const matchesPaymentMethod = paymentMethodFilter === "all" || expense.paymentMethod === paymentMethodFilter;
-    
-    return matchesSearch && matchesCategory && matchesStatus && matchesPaymentMethod;
-  });
+  // Fetch expenses
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await getExpenses({ limit: 200 });
+        if (response.success && response.data) {
+          const expenseList = response.data.expenses || response.data.items || [];
+          setExpenses(expenseList);
+        } else {
+          setError(response.message || 'Failed to fetch expenses');
+        }
+      } catch (err) {
+        console.error('Error fetching expenses:', err);
+        setError('Failed to load expense records');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const totalExpenses = mockExpenses
-    .filter(e => e.status === "completed")
-    .reduce((sum, e) => sum + e.amount, 0);
+    fetchExpenses();
+  }, []);
 
-  const pendingExpenses = mockExpenses
-    .filter(e => e.status === "pending")
-    .reduce((sum, e) => sum + e.amount, 0);
+  // Get unique categories
+  const categories = useMemo(() => {
+    return Array.from(new Set(expenses.map(e => e.category).filter(Boolean)));
+  }, [expenses]);
+
+  // Filter expenses
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter(expense => {
+      const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (expense.recipient && expense.recipient.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesCategory = categoryFilter === "all" || expense.category === categoryFilter;
+      const matchesStatus = statusFilter === "all" || expense.status.toLowerCase() === statusFilter;
+
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  }, [expenses, searchTerm, categoryFilter, statusFilter]);
+
+  // Calculate totals
+  const totalExpenses = useMemo(() => {
+    return expenses
+      .filter(e => e.status.toLowerCase() !== 'cancelled')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+  }, [expenses]);
+
+  const pendingExpenses = useMemo(() => {
+    return expenses
+      .filter(e => e.status.toLowerCase() === 'pending')
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+  }, [expenses]);
 
   const getStatusBadge = (status: string) => {
-    const variants = {
+    const normalizedStatus = status.toLowerCase();
+    const variants: Record<string, string> = {
       completed: "bg-green-100 text-green-800 border-green-200",
       pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
       cancelled: "bg-red-100 text-red-800 border-red-200"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[normalizedStatus] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
-  const getPaymentMethodBadge = (method: string) => {
-    const variants = {
+  const getPaymentMethodBadge = (method?: string) => {
+    if (!method) return "bg-gray-100 text-gray-800 border-gray-200";
+    const normalizedMethod = method.toLowerCase();
+    const variants: Record<string, string> = {
       cash: "bg-gray-100 text-gray-800 border-gray-200",
       bank_transfer: "bg-blue-100 text-blue-800 border-blue-200",
       credit_card: "bg-purple-100 text-purple-800 border-purple-200",
-      check: "bg-orange-100 text-orange-800 border-orange-200"
+      check: "bg-orange-100 text-orange-800 border-orange-200",
+      mpesa: "bg-green-100 text-green-800 border-green-200",
+      mobile_money: "bg-teal-100 text-teal-800 border-teal-200"
     };
-    return variants[method as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[normalizedMethod] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-KE', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'KES'
     }).format(amount);
   };
 
@@ -166,12 +114,16 @@ const ExpensesPage = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const handleAddExpense = () => {
-    console.log("Adding new expense");
-    // TODO: Implement add expense logic
+  const formatPaymentMethod = (method?: string) => {
+    if (!method) return 'N/A';
+    return method.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const handleViewExpense = (expense: Expense) => {
+  const handleAddExpense = () => {
+    navigate('/admin/finance/expenses/new');
+  };
+
+  const handleViewExpense = (expense: PlatformExpense) => {
     setSelectedExpense(expense);
     setShowViewModal(true);
   };
@@ -180,12 +132,56 @@ const ExpensesPage = () => {
     navigate(`/admin/finance/expenses/edit/${id}`);
   };
 
-  const handleDeleteExpense = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
-      console.log("Deleting expense:", id);
-      // TODO: Implement delete expense logic
+  const handleDeleteExpense = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setDeleting(id);
+      const response = await deleteExpense(id);
+      if (response.success) {
+        setExpenses(expenses.filter(e => e.id !== id));
+        toast({
+          title: "Expense Deleted",
+          description: "The expense has been deleted successfully.",
+        });
+      } else {
+        throw new Error(response.message || 'Failed to delete expense');
+      }
+    } catch (err) {
+      console.error('Error deleting expense:', err);
+      toast({
+        title: "Error",
+        description: "Failed to delete expense. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(null);
     }
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading expenses...</span>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -197,9 +193,9 @@ const ExpensesPage = () => {
             <p className="text-gray-600">Track and manage all company expenses</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
-              <Receipt className="h-4 w-4 mr-2" />
-              View Receipts
+            <Button variant="outline" size="sm" onClick={() => navigate('/admin/finance')}>
+              <DollarSign className="h-4 w-4 mr-2" />
+              Finance Dashboard
             </Button>
             <Button size="sm" onClick={handleAddExpense}>
               <Plus className="h-4 w-4 mr-2" />
@@ -229,9 +225,9 @@ const ExpensesPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-gray-600 mb-2">
-                {mockExpenses.length}
+                {expenses.length}
               </div>
-              <p className="text-sm text-gray-600">Total Transactions</p>
+              <p className="text-sm text-gray-600">Total Records</p>
             </CardContent>
           </Card>
         </div>
@@ -239,7 +235,7 @@ const ExpensesPage = () => {
         {/* Filters */}
         <Card className="border-border bg-card">
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="lg:col-span-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -257,12 +253,9 @@ const ExpensesPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="Wages">Wages</SelectItem>
-                  <SelectItem value="Office Supplies">Office Supplies</SelectItem>
-                  <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="Software">Software</SelectItem>
-                  <SelectItem value="Travel">Travel</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -276,100 +269,94 @@ const ExpensesPage = () => {
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={paymentMethodFilter} onValueChange={setPaymentMethodFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Payment Method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Methods</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="credit_card">Credit Card</SelectItem>
-                  <SelectItem value="check">Check</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </CardContent>
         </Card>
 
         {/* Expenses List */}
-        <div className="space-y-3">
-          {filteredExpenses.map((expense) => (
-            <Card key={expense.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="p-2 rounded-lg bg-red-100">
-                        <TrendingDown className="h-5 w-5 text-red-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground truncate">{expense.description}</h3>
-                      <Badge className={`text-xs ${getStatusBadge(expense.status)}`}>
-                        {expense.status}
-                      </Badge>
-                      <Badge className={`text-xs ${getPaymentMethodBadge(expense.paymentMethod)}`}>
-                        {expense.paymentMethod.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">{expense.category}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span>To: {expense.recipient}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(expense.date)}</span>
-                      </div>
-                      {expense.receipt && (
-                        <div className="flex items-center gap-1">
-                          <Receipt className="h-4 w-4" />
-                          <span>Receipt available</span>
-                        </div>
-                      )}
-                    </div>
-                    {expense.notes && (
-                      <p className="text-sm text-gray-600 mb-2">{expense.notes}</p>
-                    )}
-                    <div className="text-xs text-gray-500">
-                      Created by {expense.createdBy} on {formatDate(expense.createdAt)}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <div className="text-right">
-                      <p className="font-semibold text-red-600">
-                        -{formatCurrency(expense.amount)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="outline" size="sm" onClick={() => handleViewExpense(expense)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleEditExpense(expense.id)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteExpense(expense.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {filteredExpenses.length === 0 && (
+        {filteredExpenses.length === 0 ? (
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
               <div className="text-gray-500">
                 <TrendingDown className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <h3 className="text-lg font-medium mb-2">No expenses found</h3>
-                <p>Try adjusting your search or filter criteria</p>
+                <p>Try adjusting your search or filter criteria, or add a new expense</p>
               </div>
             </CardContent>
           </Card>
+        ) : (
+          <div className="space-y-3">
+            {filteredExpenses.map((expense) => (
+              <Card key={expense.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 rounded-lg bg-red-100">
+                          <TrendingDown className="h-5 w-5 text-red-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-foreground truncate">{expense.description}</h3>
+                        <Badge className={`text-xs ${getStatusBadge(expense.status)}`}>
+                          {expense.status}
+                        </Badge>
+                        {expense.paymentMethod && (
+                          <Badge className={`text-xs ${getPaymentMethodBadge(expense.paymentMethod)}`}>
+                            {formatPaymentMethod(expense.paymentMethod)}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">{expense.category}</span>
+                        </div>
+                        {expense.recipient && (
+                          <div className="flex items-center gap-1">
+                            <span>To: {expense.recipient}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span>{formatDate(expense.expenseDate)}</span>
+                        </div>
+                        {expense.reference && (
+                          <div className="flex items-center gap-1">
+                            <span>Ref: {expense.reference}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <div className="text-right">
+                        <p className="font-semibold text-red-600">
+                          -{formatCurrency(Number(expense.amount))}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" onClick={() => handleViewExpense(expense)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleEditExpense(expense.id)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense.id)}
+                          disabled={deleting === expense.id}
+                        >
+                          {deleting === expense.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
 
         {/* View Expense Modal */}
@@ -385,7 +372,7 @@ const ExpensesPage = () => {
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Expense ID</label>
+                    <label className="text-sm font-medium text-gray-600">ID</label>
                     <p className="text-sm text-gray-900">{selectedExpense.id}</p>
                   </div>
                   <div>
@@ -394,7 +381,7 @@ const ExpensesPage = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Amount</label>
-                    <p className="text-sm font-semibold text-red-600">-{formatCurrency(selectedExpense.amount)}</p>
+                    <p className="text-sm font-semibold text-red-600">-{formatCurrency(Number(selectedExpense.amount))}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Status</label>
@@ -404,11 +391,11 @@ const ExpensesPage = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Payment Method</label>
-                    <p className="text-sm text-gray-900 capitalize">{selectedExpense.paymentMethod.replace('_', ' ')}</p>
+                    <p className="text-sm text-gray-900">{formatPaymentMethod(selectedExpense.paymentMethod)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Date</label>
-                    <p className="text-sm text-gray-900">{formatDate(selectedExpense.date)}</p>
+                    <p className="text-sm text-gray-900">{formatDate(selectedExpense.expenseDate)}</p>
                   </div>
                 </div>
 
@@ -417,35 +404,26 @@ const ExpensesPage = () => {
                   <p className="text-sm text-gray-900">{selectedExpense.description}</p>
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Recipient</label>
-                  <p className="text-sm text-gray-900">{selectedExpense.recipient}</p>
-                </div>
+                {selectedExpense.recipient && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Recipient</label>
+                    <p className="text-sm text-gray-900">{selectedExpense.recipient}</p>
+                  </div>
+                )}
 
-                {selectedExpense.receipt && (
+                {selectedExpense.reference && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Reference</label>
+                    <p className="text-sm text-gray-900">{selectedExpense.reference}</p>
+                  </div>
+                )}
+
+                {selectedExpense.receiptUrl && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Receipt</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.receipt}</p>
+                    <p className="text-sm text-gray-900">{selectedExpense.receiptUrl}</p>
                   </div>
                 )}
-
-                {selectedExpense.notes && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Notes</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.notes}</p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Created By</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.createdBy}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Created At</label>
-                    <p className="text-sm text-gray-900">{formatDate(selectedExpense.createdAt)}</p>
-                  </div>
-                </div>
               </div>
               <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
                 <Button variant="outline" onClick={() => setShowViewModal(false)}>
