@@ -114,20 +114,21 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Income Statement", href: "/admin/finance/income-statement" },
       ]
     },
-    { 
-      id: "marketing", 
-      label: "Marketing", 
+    {
+      id: "marketing",
+      label: "Marketing",
       icon: Megaphone,
       group: "main",
       children: [
-        { name: "Overview", href: "/admin/marketing" },
-        { name: "Campaigns", href: "/admin/marketing/campaigns" },
+        // TODO: Re-enable when backend is ready
+        // { name: "Overview", href: "/admin/marketing" },
+        // { name: "Campaigns", href: "/admin/marketing/campaigns" },
         { name: "Social Media", href: "/admin/marketing/social" },
-        { name: "Email Marketing", href: "/admin/marketing/email" },
-        { name: "Promotions", href: "/admin/marketing/promotions" },
+        // { name: "Email Marketing", href: "/admin/marketing/email" },
+        // { name: "Promotions", href: "/admin/marketing/promotions" },
         { name: "Promo Codes", href: "/admin/marketing/promo-codes" },
-        { name: "Affiliate Program", href: "/admin/marketing/affiliate" },
-        { name: "Partnerships", href: "/admin/marketing/partnerships" },
+        // { name: "Affiliate Program", href: "/admin/marketing/affiliate" },
+        // { name: "Partnerships", href: "/admin/marketing/partnerships" },
       ]
     },
     { 

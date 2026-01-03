@@ -12,6 +12,7 @@ import {
   LogOut,
   Crown,
   Palette,
+  Tag,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -36,6 +37,8 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     // Auto-expand events section if on events pages
     events: location.pathname.startsWith('/organizer/events'),
+    // Auto-expand marketing section if on marketing pages
+    marketing: location.pathname.startsWith('/organizer/promo-codes'),
     // Auto-expand branding section if on branding pages
     branding: location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/custom-domains'),
     // Auto-expand settings section if on settings pages
@@ -77,15 +80,24 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Revenue Reports", href: "/organizer/analytics/revenue" },
       ]
     },
-    { 
-      id: "team", 
-      label: "Team", 
+    {
+      id: "team",
+      label: "Team",
       icon: UserPlus,
       group: "management",
       children: [
         { name: "Staff Management", href: "/organizer/team/staff" },
         { name: "Roles & Permissions", href: "/organizer/team/roles" },
         { name: "Team Calendar", href: "/organizer/team/calendar" },
+      ]
+    },
+    {
+      id: "marketing",
+      label: "Marketing",
+      icon: Tag,
+      group: "management",
+      children: [
+        { name: "Promo Codes", href: "/organizer/promo-codes" },
       ]
     },
     {
@@ -132,6 +144,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       setExpandedItems(prev => ({
         ...prev,
         events: location.pathname.startsWith('/organizer/events'),
+        marketing: location.pathname.startsWith('/organizer/promo-codes'),
         branding: location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/custom-domains'),
         settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
       }));

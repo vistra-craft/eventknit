@@ -71,6 +71,7 @@ import FinancialManagement from "./pages/organizer/FinancialManagement";
 import EventCollaboration from "./pages/organizer/EventCollaboration";
 import AffiliateProgram from "./pages/organizer/AffiliateProgram";
 import PromoCodeManager from "./pages/organizer/marketing/PromoCodeManager";
+import OrganizerPromoCodeManager from "./pages/organizer/marketing/OrganizerPromoCodeManager";
 // Admin Dashboard imports
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarketingPage from "./pages/admin/AdminMarketingPage";
@@ -246,6 +247,8 @@ const App = () => (
       {/* White-Label Routes */}
       <Route path="/organizer/branding" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><WhiteLabelBranding /></ProtectedRoute>} />
       <Route path="/organizer/custom-domains" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><CustomDomains /></ProtectedRoute>} />
+      {/* Marketing Routes */}
+      <Route path="/organizer/promo-codes" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><OrganizerPromoCodeManager /></ProtectedRoute>} />
       {/* Venue & Seating Routes */}
       <Route path="/organizer/venues" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><VenueManagement /></ProtectedRoute>} />
       {/* Legacy Profile Route - redirects to settings */}

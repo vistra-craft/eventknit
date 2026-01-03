@@ -1410,6 +1410,26 @@ The following items are marked for future implementation or improvement:
 | Moderation | Replace mock reported content with real API | Medium |
 | Moderation | Implement content review workflow | Medium |
 
+### Marketing (Backend Required)
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Marketing Overview | Build dashboard with campaign stats, ROI metrics | Medium |
+| Campaigns | Create campaign management with targeting, scheduling | Medium |
+| Campaigns | Implement campaign analytics and performance tracking | Medium |
+| Email Marketing | Build email template editor with drag-and-drop | Medium |
+| Email Marketing | Implement email scheduling and automation | Medium |
+| Email Marketing | Add email analytics (opens, clicks, conversions) | Medium |
+| Promotions | Create platform-wide promotions management | Low |
+| Promotions | Implement promotion targeting rules | Low |
+| Affiliate Program | Build affiliate registration and approval workflow | Low |
+| Affiliate Program | Implement affiliate tracking and commission system | Low |
+| Affiliate Program | Create affiliate dashboard with earnings reports | Low |
+| Partnerships | Build partnership management interface | Low |
+| Partnerships | Implement partner revenue sharing configuration | Low |
+
+**Note:** Social Media and Promo Codes are currently active with backend support.
+
 ---
 
 *Last updated: January 2026*
