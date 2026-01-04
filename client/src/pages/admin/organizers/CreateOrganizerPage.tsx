@@ -101,7 +101,7 @@ const CreateOrganizerPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Create New Organizer</h1>
+            <h1 className="text-lg font-semibold text-foreground">Create New Organizer</h1>
             <p className="text-sm text-gray-600">
               Create a new organizer account. The organizer will be able to create and manage events.
             </p>

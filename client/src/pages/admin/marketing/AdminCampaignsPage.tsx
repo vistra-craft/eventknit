@@ -199,7 +199,7 @@ const AdminCampaignsPage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Campaigns</h1>
+          <h1 className="text-lg font-semibold text-foreground">Campaigns</h1>
           <p className="text-gray-600">
             Create, manage, and track your marketing campaigns
           </p>
@@ -223,7 +223,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Campaigns</p>
-                <p className="font-semibold text-gray-900">{campaigns.length}</p>
+                <p className="font-semibold text-foreground">{campaigns.length}</p>
               </div>
               <Megaphone className="h-8 w-8 text-primary" />
             </div>
@@ -235,7 +235,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Recipients</p>
-                <p className="font-semibold text-gray-900">{totalRecipients.toLocaleString()}</p>
+                <p className="font-semibold text-foreground">{totalRecipients.toLocaleString()}</p>
               </div>
               <Users className="h-8 w-8 text-primary" />
             </div>
@@ -247,7 +247,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Revenue Generated</p>
-                <p className="font-semibold text-gray-900">${totalRevenue.toLocaleString()}</p>
+                <p className="font-semibold text-foreground">${totalRevenue.toLocaleString()}</p>
               </div>
               <DollarSign className="h-8 w-8 text-primary" />
             </div>
@@ -259,7 +259,7 @@ const AdminCampaignsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Avg Open Rate</p>
-                <p className="font-semibold text-gray-900">{avgOpenRate.toFixed(1)}%</p>
+                <p className="font-semibold text-foreground">{avgOpenRate.toFixed(1)}%</p>
               </div>
               <Eye className="h-8 w-8 text-primary" />
             </div>

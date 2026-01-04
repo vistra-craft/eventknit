@@ -135,7 +135,7 @@ const TellerDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{assignedEvents.length}</div>
+            <div className="font-semibold text-foreground">{assignedEvents.length}</div>
             <p className="text-xs text-muted-foreground">Total assignments</p>
           </CardContent>
         </Card>
@@ -146,7 +146,7 @@ const TellerDashboard = () => {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{todaysEvents.length}</div>
+            <div className="font-semibold text-foreground">{todaysEvents.length}</div>
             <p className="text-xs text-muted-foreground">Events happening today</p>
           </CardContent>
         </Card>
@@ -157,7 +157,7 @@ const TellerDashboard = () => {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{scanStats.today}</div>
+            <div className="font-semibold text-foreground">{scanStats.today}</div>
             <p className="text-xs text-muted-foreground">Tickets scanned</p>
           </CardContent>
         </Card>
@@ -168,7 +168,7 @@ const TellerDashboard = () => {
             <Monitor className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{scanStats.thisWeek}</div>
+            <div className="font-semibold text-foreground">{scanStats.thisWeek}</div>
             <p className="text-xs text-muted-foreground">Total scans</p>
           </CardContent>
         </Card>

@@ -164,7 +164,7 @@ const StaffPerformanceDetail = () => {
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="font-semibold text-gray-900">{formatNumber(performance.totalScans)}</div>
+              <div className="font-semibold text-foreground">{formatNumber(performance.totalScans)}</div>
               <p className="text-xs text-muted-foreground">
                 {formatNumber(performance.successfulScans)} successful
               </p>
@@ -177,7 +177,7 @@ const StaffPerformanceDetail = () => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="font-semibold text-gray-900">{performance.eventsAssigned}</div>
+              <div className="font-semibold text-foreground">{performance.eventsAssigned}</div>
               <p className="text-xs text-muted-foreground">
                 {performance.eventsCompleted} completed
               </p>
@@ -190,7 +190,7 @@ const StaffPerformanceDetail = () => {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-foreground">
                 {formatPercentage(performance.attendanceRate)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -205,7 +205,7 @@ const StaffPerformanceDetail = () => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-foreground">
                 {formatNumber(performance.totalHoursWorked)}
               </div>
               <p className="text-xs text-muted-foreground">

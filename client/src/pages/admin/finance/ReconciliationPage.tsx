@@ -179,7 +179,7 @@ const ReconciliationPage = () => {
         {/* Create Reconciliation Form */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-gray-900">Create Reconciliation</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Create Reconciliation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -271,7 +271,7 @@ const ReconciliationPage = () => {
         {/* Reconciliations Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-gray-900">Reconciliations</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Reconciliations</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (

@@ -172,7 +172,7 @@ const SystemHealthPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">System Health</h1>
+            <h1 className="text-lg font-semibold text-foreground">System Health</h1>
             <p className="text-gray-600">Monitor system performance and service status</p>
           </div>
           <div className="flex items-center gap-3">
@@ -193,7 +193,7 @@ const SystemHealthPage = () => {
 
         {/* System Metrics */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">System Metrics</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">System Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mockSystemMetrics.map((metric) => (
               <Card key={metric.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
@@ -224,7 +224,7 @@ const SystemHealthPage = () => {
 
         {/* Service Status */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Service Status</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Service Status</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {mockServices.map((service) => (
               <Card key={service.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
@@ -244,11 +244,11 @@ const SystemHealthPage = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-gray-600">Uptime</p>
-                      <p className="font-semibold text-gray-900">{service.uptime}</p>
+                      <p className="font-semibold text-foreground">{service.uptime}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Response Time</p>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-semibold text-foreground">
                         {service.responseTime > 0 ? `${service.responseTime}ms` : 'N/A'}
                       </p>
                     </div>
@@ -267,7 +267,7 @@ const SystemHealthPage = () => {
 
         {/* System Alerts */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Alerts</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Recent Alerts</h2>
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="space-y-4">

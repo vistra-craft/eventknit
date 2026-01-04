@@ -210,7 +210,7 @@ const TransactionsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Transaction Overview</h1>
+            <h1 className="text-lg font-semibold text-foreground">Transaction Overview</h1>
             <p className="text-gray-600">View all financial transactions and their details</p>
           </div>
           <div className="flex items-center gap-3">
@@ -418,7 +418,7 @@ const TransactionsPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-card-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-base font-semibold text-gray-900">Transaction Details</h2>
+                <h2 className="text-base font-semibold text-foreground">Transaction Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>
@@ -427,19 +427,19 @@ const TransactionsPage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">Transaction ID</label>
-                    <p className="text-sm text-gray-900">{selectedTransaction.id}</p>
+                    <p className="text-sm text-foreground">{selectedTransaction.id}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Reference</label>
-                    <p className="text-sm text-gray-900">{selectedTransaction.reference || "N/A"}</p>
+                    <p className="text-sm text-foreground">{selectedTransaction.reference || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Type</label>
-                    <p className="text-sm text-gray-900 capitalize">{selectedTransaction.type}</p>
+                    <p className="text-sm text-foreground capitalize">{selectedTransaction.type}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Category</label>
-                    <p className="text-sm text-gray-900">{selectedTransaction.category}</p>
+                    <p className="text-sm text-foreground">{selectedTransaction.category}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Amount</label>
@@ -455,30 +455,30 @@ const TransactionsPage = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Payment Method</label>
-                    <p className="text-sm text-gray-900">{formatPaymentMethod(selectedTransaction.paymentMethod)}</p>
+                    <p className="text-sm text-foreground">{formatPaymentMethod(selectedTransaction.paymentMethod)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Date</label>
-                    <p className="text-sm text-gray-900">{formatDate(selectedTransaction.date)}</p>
+                    <p className="text-sm text-foreground">{formatDate(selectedTransaction.date)}</p>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-600">Description</label>
-                  <p className="text-sm text-gray-900">{selectedTransaction.description}</p>
+                  <p className="text-sm text-foreground">{selectedTransaction.description}</p>
                 </div>
 
                 {selectedTransaction.source && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Source</label>
-                    <p className="text-sm text-gray-900">{selectedTransaction.source}</p>
+                    <p className="text-sm text-foreground">{selectedTransaction.source}</p>
                   </div>
                 )}
 
                 {selectedTransaction.recipient && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Recipient</label>
-                    <p className="text-sm text-gray-900">{selectedTransaction.recipient}</p>
+                    <p className="text-sm text-foreground">{selectedTransaction.recipient}</p>
                   </div>
                 )}
               </div>

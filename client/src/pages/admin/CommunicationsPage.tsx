@@ -1052,7 +1052,7 @@ const CommunicationsPage = () => {
                           <div className="p-2 rounded-lg bg-primary/10">
                             <Mail className="h-5 w-5 text-primary" />
                           </div>
-                          <h3 className="font-semibold text-gray-900">{template.name}</h3>
+                          <h3 className="font-semibold text-foreground">{template.name}</h3>
                           <Badge className={`text-xs ${template.isActive ? 'bg-primary/10 text-primary border-primary/20' : 'bg-muted text-muted-foreground border-border'}`}>
                             {template.isActive ? 'Active' : 'Inactive'}
                           </Badge>

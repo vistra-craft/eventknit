@@ -181,7 +181,7 @@ const PaymentTransactionsPage = () => {
         {/* Transactions Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-gray-900">Payment Transactions</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Payment Transactions</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (

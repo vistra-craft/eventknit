@@ -170,7 +170,7 @@ const MaintenancePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">System Maintenance</h1>
+            <h1 className="text-lg font-semibold text-foreground">System Maintenance</h1>
             <p className="text-gray-600">Manage system maintenance tasks and maintenance mode</p>
           </div>
         </div>
@@ -232,7 +232,7 @@ const MaintenancePage = () => {
         {/* Maintenance Tasks */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Maintenance Tasks</h2>
+            <h2 className="text-lg font-semibold text-foreground">Maintenance Tasks</h2>
             <div className="flex items-center gap-3">
               <Select value={selectedTask} onValueChange={setSelectedTask}>
                 <SelectTrigger className="w-48">
@@ -261,7 +261,7 @@ const MaintenancePage = () => {
                         {getTypeIcon(task.type)}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">{task.name}</h3>
+                        <h3 className="font-semibold text-foreground">{task.name}</h3>
                         <p className="text-sm text-gray-600">{task.description}</p>
                       </div>
                     </div>
@@ -333,14 +333,14 @@ const MaintenancePage = () => {
 
         {/* Quick Actions */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardContent className="p-6 text-center">
                 <div className="p-3 rounded-lg bg-blue-100 mx-auto mb-4 w-fit">
                   <Database className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Database Cleanup</h3>
+                <h3 className="font-semibold text-foreground mb-2">Database Cleanup</h3>
                 <p className="text-sm text-gray-600 mb-4">Clean up old data and optimize tables</p>
                 <Button size="sm" className="w-full">
                   Run Cleanup
@@ -353,7 +353,7 @@ const MaintenancePage = () => {
                 <div className="p-3 rounded-lg bg-green-100 mx-auto mb-4 w-fit">
                   <Server className="h-6 w-6 text-green-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Cache Clear</h3>
+                <h3 className="font-semibold text-foreground mb-2">Cache Clear</h3>
                 <p className="text-sm text-gray-600 mb-4">Clear all application caches</p>
                 <Button size="sm" variant="outline" className="w-full">
                   Clear Cache
@@ -366,7 +366,7 @@ const MaintenancePage = () => {
                 <div className="p-3 rounded-lg bg-purple-100 mx-auto mb-4 w-fit">
                   <Shield className="h-6 w-6 text-purple-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Security Scan</h3>
+                <h3 className="font-semibold text-foreground mb-2">Security Scan</h3>
                 <p className="text-sm text-gray-600 mb-4">Run security vulnerability scan</p>
                 <Button size="sm" variant="outline" className="w-full">
                   Start Scan
@@ -379,7 +379,7 @@ const MaintenancePage = () => {
                 <div className="p-3 rounded-lg bg-orange-100 mx-auto mb-4 w-fit">
                   <Settings className="h-6 w-6 text-orange-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">System Restart</h3>
+                <h3 className="font-semibold text-foreground mb-2">System Restart</h3>
                 <p className="text-sm text-gray-600 mb-4">Restart system services</p>
                 <Button size="sm" variant="destructive" className="w-full">
                   Restart

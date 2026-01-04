@@ -78,7 +78,7 @@ const EditWagePage = () => {
           {/* Employee Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-gray-900">Employee Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Employee Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -137,7 +137,7 @@ const EditWagePage = () => {
           {/* Payment Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-gray-900">Payment Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Payment Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -206,7 +206,7 @@ const EditWagePage = () => {
           {/* Work Details */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-gray-900">Work Details</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Work Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -248,7 +248,7 @@ const EditWagePage = () => {
           {/* Adjustments */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-gray-900">Adjustments</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Adjustments</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">

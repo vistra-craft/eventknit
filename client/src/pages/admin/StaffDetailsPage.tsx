@@ -497,7 +497,7 @@ const StaffDetailsPage = () => {
                 <Calendar className="h-5 w-5 text-green-600" />
                 <span className="text-sm font-medium">Events</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{staffData.eventsManaged}</p>
+              <p className="text-lg font-bold text-foreground">{staffData.eventsManaged}</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
@@ -506,7 +506,7 @@ const StaffDetailsPage = () => {
                 <DollarSign className="h-5 w-5 text-green-600" />
                 <span className="text-sm font-medium">Total Earnings</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(staffData.totalEarnings)}</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(staffData.totalEarnings)}</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
@@ -515,7 +515,7 @@ const StaffDetailsPage = () => {
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
                 <span className="text-sm font-medium">Pending Dues</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(staffData.pendingDues)}</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(staffData.pendingDues)}</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
@@ -524,7 +524,7 @@ const StaffDetailsPage = () => {
                 <Star className="h-5 w-5 text-yellow-600" />
                 <span className="text-sm font-medium">Rating</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{staffData.rating}</p>
+              <p className="text-lg font-bold text-foreground">{staffData.rating}</p>
             </CardContent>
           </Card>
         </div>
@@ -580,27 +580,27 @@ const StaffDetailsPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Email</label>
-                        <p className="text-sm text-gray-900">{staffData.email}</p>
+                        <p className="text-sm text-foreground">{staffData.email}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Phone</label>
-                        <p className="text-sm text-gray-900">{staffData.phone || "Not provided"}</p>
+                        <p className="text-sm text-foreground">{staffData.phone || "Not provided"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Location</label>
-                        <p className="text-sm text-gray-900">{staffData.location}</p>
+                        <p className="text-sm text-foreground">{staffData.location}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Department</label>
-                        <p className="text-sm text-gray-900">{staffData.department.replace('_', ' ')}</p>
+                        <p className="text-sm text-foreground">{staffData.department.replace('_', ' ')}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Hire Date</label>
-                        <p className="text-sm text-gray-900">{formatDate(staffData.hireDate)}</p>
+                        <p className="text-sm text-foreground">{formatDate(staffData.hireDate)}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Last Active</label>
-                        <p className="text-sm text-gray-900">{formatDateTime(staffData.lastActive)}</p>
+                        <p className="text-sm text-foreground">{formatDateTime(staffData.lastActive)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -615,30 +615,30 @@ const StaffDetailsPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Events Completed</label>
-                        <p className="text-sm text-gray-900">{staffData.performance.eventsCompleted}</p>
+                        <p className="text-sm text-foreground">{staffData.performance.eventsCompleted}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Average Rating</label>
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          <span className="text-sm text-gray-900">{staffData.performance.averageRating}</span>
+                          <span className="text-sm text-foreground">{staffData.performance.averageRating}</span>
                         </div>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">On-Time Rate</label>
-                        <p className="text-sm text-gray-900">{staffData.performance.onTimeRate}%</p>
+                        <p className="text-sm text-foreground">{staffData.performance.onTimeRate}%</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Customer Satisfaction</label>
-                        <p className="text-sm text-gray-900">{staffData.performance.customerSatisfaction}%</p>
+                        <p className="text-sm text-foreground">{staffData.performance.customerSatisfaction}%</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Last Review</label>
-                        <p className="text-sm text-gray-900">{formatDate(staffData.performance.lastPerformanceReview)}</p>
+                        <p className="text-sm text-foreground">{formatDate(staffData.performance.lastPerformanceReview)}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Next Review</label>
-                        <p className="text-sm text-gray-900">{formatDate(staffData.performance.nextReviewDate)}</p>
+                        <p className="text-sm text-foreground">{formatDate(staffData.performance.nextReviewDate)}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -654,15 +654,15 @@ const StaffDetailsPage = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm font-medium text-gray-600">Name</label>
-                          <p className="text-sm text-gray-900">{staffData.emergencyContact.name}</p>
+                          <p className="text-sm text-foreground">{staffData.emergencyContact.name}</p>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-gray-600">Phone</label>
-                          <p className="text-sm text-gray-900">{staffData.emergencyContact.phone}</p>
+                          <p className="text-sm text-foreground">{staffData.emergencyContact.phone}</p>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-gray-600">Relationship</label>
-                          <p className="text-sm text-gray-900">{staffData.emergencyContact.relationship}</p>
+                          <p className="text-sm text-foreground">{staffData.emergencyContact.relationship}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -679,15 +679,15 @@ const StaffDetailsPage = () => {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Annual Salary</span>
-                      <span className="text-sm font-medium text-gray-900">{formatCurrency(staffData.salary)}</span>
+                      <span className="text-sm font-medium text-foreground">{formatCurrency(staffData.salary)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Hourly Rate</span>
-                      <span className="text-sm font-medium text-gray-900">{formatCurrency(staffData.hourlyRate)}</span>
+                      <span className="text-sm font-medium text-foreground">{formatCurrency(staffData.hourlyRate)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Total Earnings</span>
-                      <span className="text-sm font-medium text-gray-900">{formatCurrency(staffData.totalEarnings)}</span>
+                      <span className="text-sm font-medium text-foreground">{formatCurrency(staffData.totalEarnings)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Pending Dues</span>
@@ -695,7 +695,7 @@ const StaffDetailsPage = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Total Hours</span>
-                      <span className="text-sm font-medium text-gray-900">{staffData.totalHours}h</span>
+                      <span className="text-sm font-medium text-foreground">{staffData.totalHours}h</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -735,7 +735,7 @@ const StaffDetailsPage = () => {
                     <div key={permission} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-foreground">
                           {permission.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                         </span>
                       </div>
@@ -764,7 +764,7 @@ const StaffDetailsPage = () => {
                           <DollarSign className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">{earning.description}</h4>
+                          <h4 className="font-medium text-foreground">{earning.description}</h4>
                           <p className="text-sm text-gray-600">{formatDate(earning.date)} • {earning.type}</p>
                           <Badge className={`text-xs ${getEarningsStatusBadge(earning.status)}`}>
                             {earning.status}
@@ -772,7 +772,7 @@ const StaffDetailsPage = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-foreground">
                           {formatCurrency(earning.amount)}
                         </div>
                       </div>
@@ -808,7 +808,7 @@ const StaffDetailsPage = () => {
                             <Calendar className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900">
+                            <h4 className="font-medium text-foreground">
                               {assignment.event?.title || "Event"}
                             </h4>
                             {assignment.event?.startDate && (
@@ -877,7 +877,7 @@ const StaffDetailsPage = () => {
                           <FileText className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">{doc.name}</h4>
+                          <h4 className="font-medium text-foreground">{doc.name}</h4>
                           <p className="text-sm text-gray-600">Uploaded: {formatDate(doc.uploadDate)}</p>
                           {doc.expiryDate && (
                             <p className="text-sm text-gray-600">Expires: {formatDate(doc.expiryDate)}</p>

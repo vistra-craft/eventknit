@@ -258,7 +258,7 @@ Generated on: ${new Date().toLocaleDateString()}
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-base font-semibold text-gray-900 mb-2">Partnership Not Found</h2>
+            <h2 className="text-base font-semibold text-foreground mb-2">Partnership Not Found</h2>
             <p className="text-muted-foreground mb-4">The partnership you're looking for doesn't exist.</p>
             <Button onClick={() => navigate('/admin/marketing/partnerships')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -285,7 +285,7 @@ Generated on: ${new Date().toLocaleDateString()}
               Back to Partnerships
             </Button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">Partnership Details</h1>
+              <h1 className="text-lg font-semibold text-foreground">Partnership Details</h1>
               <p className="text-gray-600">View and manage partnership information</p>
             </div>
           </div>
@@ -315,7 +315,7 @@ Generated on: ${new Date().toLocaleDateString()}
               EK
             </div>
           </div>
-          <h1 className="text-lg font-semibold text-gray-900 mb-2"><span className="text-eventknit">EventKnit</span></h1>
+          <h1 className="text-lg font-semibold text-foreground mb-2"><span className="text-eventknit">EventKnit</span></h1>
           <p className="text-gray-600 text-lg mb-4">Connecting Events, Creating Opportunities</p>
           <div className="flex items-center justify-center space-x-4">
             <Badge className={`text-lg px-4 py-2 ${getTypeColor(partnership.type)}`}>
@@ -343,11 +343,11 @@ Generated on: ${new Date().toLocaleDateString()}
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Partnership Name</label>
-                  <p className="text-lg font-semibold text-gray-900">{partnership.name}</p>
+                  <p className="text-lg font-semibold text-foreground">{partnership.name}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Organizer</label>
-                  <p className="text-lg font-semibold text-gray-900">{partnership.organizer}</p>
+                  <p className="text-lg font-semibold text-foreground">{partnership.organizer}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Partnership Type</label>
@@ -367,7 +367,7 @@ Generated on: ${new Date().toLocaleDateString()}
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700">Contact Person</label>
-                  <p className="text-lg font-semibold text-gray-900">{partnership.contactPerson}</p>
+                  <p className="text-lg font-semibold text-foreground">{partnership.contactPerson}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Email Address</label>
@@ -376,13 +376,13 @@ Generated on: ${new Date().toLocaleDateString()}
                 {partnership.phone && (
                   <div>
                     <label className="text-sm font-medium text-gray-700">Phone Number</label>
-                    <p className="text-lg font-semibold text-gray-900">{partnership.phone}</p>
+                    <p className="text-lg font-semibold text-foreground">{partnership.phone}</p>
                   </div>
                 )}
                 {partnership.location && (
                   <div>
                     <label className="text-sm font-medium text-gray-700">Location</label>
-                    <p className="text-lg font-semibold text-gray-900">{partnership.location}</p>
+                    <p className="text-lg font-semibold text-foreground">{partnership.location}</p>
                   </div>
                 )}
                 {partnership.website && (
@@ -408,12 +408,12 @@ Generated on: ${new Date().toLocaleDateString()}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">Start Date</label>
-                <p className="text-lg font-semibold text-gray-900">{new Date(partnership.startDate).toLocaleDateString()}</p>
+                <p className="text-lg font-semibold text-foreground">{new Date(partnership.startDate).toLocaleDateString()}</p>
               </div>
               {partnership.endDate && (
                 <div>
                   <label className="text-sm font-medium text-gray-700">End Date</label>
-                  <p className="text-lg font-semibold text-gray-900">{new Date(partnership.endDate).toLocaleDateString()}</p>
+                  <p className="text-lg font-semibold text-foreground">{new Date(partnership.endDate).toLocaleDateString()}</p>
                 </div>
               )}
               {partnership.rating && (

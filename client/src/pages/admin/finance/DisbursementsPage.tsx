@@ -205,7 +205,7 @@ const DisbursementsPage = () => {
         {/* Disbursements Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-gray-900">Disbursements</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Disbursements</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (

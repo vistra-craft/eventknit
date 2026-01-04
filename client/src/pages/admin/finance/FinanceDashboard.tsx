@@ -153,7 +153,7 @@ const FinanceDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Finance Dashboard</h1>
+            <h1 className="text-lg font-semibold text-foreground">Finance Dashboard</h1>
             <p className="text-gray-600">Track income, expenses, and financial performance</p>
           </div>
           <div className="flex items-center gap-3">

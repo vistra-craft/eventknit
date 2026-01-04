@@ -329,7 +329,7 @@ const AdminMarketingOverview = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-lg font-semibold text-foreground">
               Platform Marketing
             </h1>
             <p className="text-gray-600">
@@ -400,7 +400,7 @@ const AdminMarketingOverview = () => {
                   </div>
                 </div>
                 <div>
-                  <p className="text-base font-semibold text-gray-900 mb-1">{metric.value}</p>
+                  <p className="text-base font-semibold text-foreground mb-1">{metric.value}</p>
                   <p className="text-sm text-gray-600">{metric.title}</p>
                 </div>
               </CardContent>
@@ -412,7 +412,7 @@ const AdminMarketingOverview = () => {
         {/* Social Media Engagement Summary - Shareable Cards */}
         <Card className="border-border bg-card mb-8">
           <CardHeader>
-            <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+            <CardTitle className="flex items-center text-base font-semibold text-foreground">
               <Share2 className="h-5 w-5 mr-2 text-primary" />
               Social Media Engagement Summary
             </CardTitle>
@@ -439,7 +439,7 @@ const AdminMarketingOverview = () => {
             {/* Platform Breakdown */}
             {socialMetrics?.platformBreakdown && Object.keys(socialMetrics.platformBreakdown).length > 0 && (
               <div className="mt-6 pt-6 border-t border-border">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4">Platform Breakdown</h4>
+                <h4 className="text-sm font-semibold text-foreground mb-4">Platform Breakdown</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {Object.entries(socialMetrics.platformBreakdown).map(([platform, stats]) => (
                     <div key={platform} className="p-4 bg-muted/50 rounded-lg text-center">
@@ -458,7 +458,7 @@ const AdminMarketingOverview = () => {
             {/* Recent Posts Performance */}
             {recentPosts.length > 0 && (
               <div className="mt-6 pt-6 border-t border-border">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4">Recent Posts Performance</h4>
+                <h4 className="text-sm font-semibold text-foreground mb-4">Recent Posts Performance</h4>
                 <div className="space-y-3">
                   {recentPosts.map((post) => (
                     <div key={post.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -491,7 +491,7 @@ const AdminMarketingOverview = () => {
         {/* Quick Actions - 2 columns of 3 cards each */}
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+            <CardTitle className="flex items-center text-base font-semibold text-foreground">
               <Zap className="h-5 w-5 mr-2 text-primary" />
               Quick Actions
             </CardTitle>
@@ -527,7 +527,7 @@ const AdminMarketingOverview = () => {
         {/* Top Performing Organizers */}
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+            <CardTitle className="flex items-center text-base font-semibold text-foreground">
               <Building2 className="h-5 w-5 mr-2 text-primary" />
               Top Performing Organizers
             </CardTitle>
@@ -576,7 +576,7 @@ const AdminMarketingOverview = () => {
         <Card className="border-border bg-card">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center text-base font-semibold text-gray-900">
+              <CardTitle className="flex items-center text-base font-semibold text-foreground">
                 <TrendingUp className="h-5 w-5 mr-2 text-primary" />
                 Top Performing Campaigns
               </CardTitle>

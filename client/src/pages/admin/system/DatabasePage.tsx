@@ -156,7 +156,7 @@ const DatabasePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Database Management</h1>
+            <h1 className="text-lg font-semibold text-foreground">Database Management</h1>
             <p className="text-gray-600">Monitor and manage database performance and storage</p>
           </div>
           <div className="flex items-center gap-3">
@@ -178,7 +178,7 @@ const DatabasePage = () => {
 
         {/* Database Metrics */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Database Overview</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Database Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {mockMetrics.map((metric) => (
               <Card key={metric.id} className="border-border bg-card hover:shadow-md transition-all duration-200">
@@ -192,7 +192,7 @@ const DatabasePage = () => {
                     </span>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-gray-900">{metric.name}</h3>
+                    <h3 className="font-semibold text-foreground">{metric.name}</h3>
                     <p className="font-semibold text-primary">{metric.value}</p>
                     <p className="text-sm text-gray-600">{metric.description}</p>
                   </div>
@@ -205,7 +205,7 @@ const DatabasePage = () => {
         {/* Database Tables */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Database Tables</h2>
+            <h2 className="text-lg font-semibold text-foreground">Database Tables</h2>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Input
@@ -238,7 +238,7 @@ const DatabasePage = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Table className="h-5 w-5 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{table.name}</h3>
+                      <h3 className="font-semibold text-foreground">{table.name}</h3>
                     </div>
                     <Badge className={`text-xs ${getStatusBadge(table.status)}`}>
                       {table.status}
@@ -247,11 +247,11 @@ const DatabasePage = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                     <div>
                       <p className="text-gray-600">Rows</p>
-                      <p className="font-semibold text-gray-900">{table.rows.toLocaleString()}</p>
+                      <p className="font-semibold text-foreground">{table.rows.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Size</p>
-                      <p className="font-semibold text-gray-900">{table.size}</p>
+                      <p className="font-semibold text-foreground">{table.size}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
@@ -278,7 +278,7 @@ const DatabasePage = () => {
 
         {/* Database Operations */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Database Operations</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Database Operations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardHeader>

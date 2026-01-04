@@ -148,7 +148,7 @@ const LogsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">System Logs</h1>
+            <h1 className="text-lg font-semibold text-foreground">System Logs</h1>
             <p className="text-gray-600">Monitor system events and troubleshoot issues</p>
           </div>
           <div className="flex items-center gap-3">
@@ -234,7 +234,7 @@ const LogsPage = () => {
                       </Badge>
                       <span className="text-sm text-gray-500">{log.timestamp}</span>
                     </div>
-                    <p className="font-medium text-gray-900 mb-2">{log.message}</p>
+                    <p className="font-medium text-foreground mb-2">{log.message}</p>
                     {log.details && (
                       <p className="text-sm text-gray-600 mb-2">{log.details}</p>
                     )}

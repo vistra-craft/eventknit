@@ -198,7 +198,7 @@ const RefundsPage = () => {
         {/* Refunds Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-gray-900">Refunds</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Refunds</CardTitle>
           </CardHeader>
           <CardContent>
             {!filters.eventId ? (

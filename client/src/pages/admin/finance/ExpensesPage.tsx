@@ -364,7 +364,7 @@ const ExpensesPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-card-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-base font-semibold text-gray-900">Expense Details</h2>
+                <h2 className="text-base font-semibold text-foreground">Expense Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>
@@ -373,11 +373,11 @@ const ExpensesPage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">ID</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.id}</p>
+                    <p className="text-sm text-foreground">{selectedExpense.id}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Category</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.category}</p>
+                    <p className="text-sm text-foreground">{selectedExpense.category}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Amount</label>
@@ -391,37 +391,37 @@ const ExpensesPage = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Payment Method</label>
-                    <p className="text-sm text-gray-900">{formatPaymentMethod(selectedExpense.paymentMethod)}</p>
+                    <p className="text-sm text-foreground">{formatPaymentMethod(selectedExpense.paymentMethod)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Date</label>
-                    <p className="text-sm text-gray-900">{formatDate(selectedExpense.expenseDate)}</p>
+                    <p className="text-sm text-foreground">{formatDate(selectedExpense.expenseDate)}</p>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-600">Description</label>
-                  <p className="text-sm text-gray-900">{selectedExpense.description}</p>
+                  <p className="text-sm text-foreground">{selectedExpense.description}</p>
                 </div>
 
                 {selectedExpense.recipient && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Recipient</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.recipient}</p>
+                    <p className="text-sm text-foreground">{selectedExpense.recipient}</p>
                   </div>
                 )}
 
                 {selectedExpense.reference && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Reference</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.reference}</p>
+                    <p className="text-sm text-foreground">{selectedExpense.reference}</p>
                   </div>
                 )}
 
                 {selectedExpense.receiptUrl && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Receipt</label>
-                    <p className="text-sm text-gray-900">{selectedExpense.receiptUrl}</p>
+                    <p className="text-sm text-foreground">{selectedExpense.receiptUrl}</p>
                   </div>
                 )}
               </div>

@@ -365,7 +365,7 @@ const OrganizerDetailsPage = () => {
               <h1 className="text-lg font-semibold text-foreground">
                 {organizerData.firstName} {organizerData.lastName}
               </h1>
-              <p className="text-gray-600">{organizerData.company}</p>
+              <p className="text-muted-foreground">{organizerData.company}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -420,7 +420,7 @@ const OrganizerDetailsPage = () => {
                 <DollarSign className="h-5 w-5 text-green-600" />
                 <span className="text-sm font-medium">Revenue</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(organizerData.totalRevenue)}</p>
+              <p className="text-lg font-bold text-foreground">{formatCurrency(organizerData.totalRevenue)}</p>
             </CardContent>
           </Card>
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -468,7 +468,7 @@ const OrganizerDetailsPage = () => {
                         <h3 className="text-lg font-semibold text-foreground">
                           {organizerData.firstName} {organizerData.lastName}
                         </h3>
-                        <p className="text-gray-600">{organizerData.company}</p>
+                        <p className="text-muted-foreground">{organizerData.company}</p>
                         <Badge className={`text-xs ${getStatusBadge(organizerData.status)}`}>
                           {organizerData.status}
                         </Badge>
@@ -477,20 +477,20 @@ const OrganizerDetailsPage = () => {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Email</label>
+                        <label className="text-sm font-medium text-muted-foreground">Email</label>
                         <p className="text-sm text-foreground">{organizerData.email}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Phone</label>
+                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
                         <p className="text-sm text-foreground">{organizerData.phone || "Not provided"}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Location</label>
+                        <label className="text-sm font-medium text-muted-foreground">Location</label>
                         <p className="text-sm text-foreground">{organizerData.location}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Website</label>
-                        <p className="text-sm text-gray-900">
+                        <label className="text-sm font-medium text-muted-foreground">Website</label>
+                        <p className="text-sm text-foreground">
                           {organizerData.website ? (
                             <a href={organizerData.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                               {organizerData.website}
@@ -502,8 +502,8 @@ const OrganizerDetailsPage = () => {
 
                     {organizerData.description && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Description</label>
-                        <p className="text-sm text-gray-900 mt-1">{organizerData.description}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Description</label>
+                        <p className="text-sm text-foreground mt-1">{organizerData.description}</p>
                       </div>
                     )}
                   </CardContent>
@@ -517,27 +517,27 @@ const OrganizerDetailsPage = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Business License</label>
-                        <p className="text-sm text-gray-900">{organizerData.businessLicense || "Not provided"}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Business License</label>
+                        <p className="text-sm text-foreground">{organizerData.businessLicense || "Not provided"}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Tax ID</label>
-                        <p className="text-sm text-gray-900">{organizerData.taxId || "Not provided"}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Tax ID</label>
+                        <p className="text-sm text-foreground">{organizerData.taxId || "Not provided"}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Bank Account</label>
-                        <p className="text-sm text-gray-900">{organizerData.bankAccount || "Not provided"}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Bank Account</label>
+                        <p className="text-sm text-foreground">{organizerData.bankAccount || "Not provided"}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Join Date</label>
-                        <p className="text-sm text-gray-900">{formatDate(organizerData.joinDate)}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Join Date</label>
+                        <p className="text-sm text-foreground">{formatDate(organizerData.joinDate)}</p>
                       </div>
                     </div>
 
                     {organizerData.verificationDate && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Verification Date</label>
-                        <p className="text-sm text-gray-900">{formatDate(organizerData.verificationDate)}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Verification Date</label>
+                        <p className="text-sm text-foreground">{formatDate(organizerData.verificationDate)}</p>
                       </div>
                     )}
                   </CardContent>
@@ -552,16 +552,16 @@ const OrganizerDetailsPage = () => {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Name</label>
-                          <p className="text-sm text-gray-900">{organizerData.emergencyContact.name}</p>
+                          <label className="text-sm font-medium text-muted-foreground">Name</label>
+                          <p className="text-sm text-foreground">{organizerData.emergencyContact.name}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Phone</label>
-                          <p className="text-sm text-gray-900">{organizerData.emergencyContact.phone}</p>
+                          <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                          <p className="text-sm text-foreground">{organizerData.emergencyContact.phone}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Relationship</label>
-                          <p className="text-sm text-gray-900">{organizerData.emergencyContact.relationship}</p>
+                          <label className="text-sm font-medium text-muted-foreground">Relationship</label>
+                          <p className="text-sm text-foreground">{organizerData.emergencyContact.relationship}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -577,23 +577,23 @@ const OrganizerDetailsPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Total Events</span>
-                      <span className="text-sm font-medium text-gray-900">{organizerData.totalEvents}</span>
+                      <span className="text-sm text-muted-foreground">Total Events</span>
+                      <span className="text-sm font-medium text-foreground">{organizerData.totalEvents}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Total Revenue</span>
-                      <span className="text-sm font-medium text-gray-900">{formatCurrency(organizerData.totalRevenue)}</span>
+                      <span className="text-sm text-muted-foreground">Total Revenue</span>
+                      <span className="text-sm font-medium text-foreground">{formatCurrency(organizerData.totalRevenue)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Average Rating</span>
+                      <span className="text-sm text-muted-foreground">Average Rating</span>
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                        <span className="text-sm font-medium text-gray-900">{organizerData.rating}</span>
+                        <span className="text-sm font-medium text-foreground">{organizerData.rating}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Last Active</span>
-                      <span className="text-sm font-medium text-gray-900">{formatDateTime(organizerData.lastActive)}</span>
+                      <span className="text-sm text-muted-foreground">Last Active</span>
+                      <span className="text-sm font-medium text-foreground">{formatDateTime(organizerData.lastActive)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -606,22 +606,22 @@ const OrganizerDetailsPage = () => {
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
                       <div>
-                        <p className="text-sm text-gray-900">Event "Tech Innovation Summit" published</p>
-                        <p className="text-xs text-gray-600">2 hours ago</p>
+                        <p className="text-sm text-foreground">Event "Tech Innovation Summit" published</p>
+                        <p className="text-xs text-muted-foreground">2 hours ago</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                       <div>
-                        <p className="text-sm text-gray-900">Payment received: $45,000</p>
-                        <p className="text-xs text-gray-600">1 day ago</p>
+                        <p className="text-sm text-foreground">Payment received: $45,000</p>
+                        <p className="text-xs text-muted-foreground">1 day ago</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
                       <div>
-                        <p className="text-sm text-gray-900">Support ticket resolved</p>
-                        <p className="text-xs text-gray-600">3 days ago</p>
+                        <p className="text-sm text-foreground">Support ticket resolved</p>
+                        <p className="text-xs text-muted-foreground">3 days ago</p>
                       </div>
                     </div>
                   </CardContent>
@@ -645,25 +645,25 @@ const OrganizerDetailsPage = () => {
                           <Calendar className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">{event.title}</h4>
-                          <p className="text-sm text-gray-600">{event.date} • {event.location}</p>
+                          <h4 className="font-medium text-foreground">{event.title}</h4>
+                          <p className="text-sm text-muted-foreground">{event.date} • {event.location}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge className={`text-xs ${getEventStatusBadge(event.status)}`}>
                               {event.status}
                             </Badge>
-                            <span className="text-xs text-gray-600">{event.category}</span>
+                            <span className="text-xs text-muted-foreground">{event.category}</span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-foreground">
                             {event.attendees} attendees
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-muted-foreground">
                             {formatCurrency(event.revenue)}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-muted-foreground">
                             {event.soldTickets}/{event.totalTickets} tickets
                           </div>
                         </div>
@@ -693,8 +693,8 @@ const OrganizerDetailsPage = () => {
                           <FileText className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">{ticket.subject}</h4>
-                          <p className="text-sm text-gray-600">Ticket #{ticket.id}</p>
+                          <h4 className="font-medium text-foreground">{ticket.subject}</h4>
+                          <p className="text-sm text-muted-foreground">Ticket #{ticket.id}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge className={`text-xs ${getTicketStatusBadge(ticket.status)}`}>
                               {ticket.status}
@@ -707,10 +707,10 @@ const OrganizerDetailsPage = () => {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-muted-foreground">
                             Created: {formatDateTime(ticket.createdAt)}
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-sm text-muted-foreground">
                             Updated: {formatDateTime(ticket.updatedAt)}
                           </div>
                         </div>

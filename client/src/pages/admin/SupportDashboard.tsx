@@ -109,7 +109,7 @@ const SupportDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{assignedEvents.length}</div>
+            <div className="font-semibold text-foreground">{assignedEvents.length}</div>
             <p className="text-xs text-muted-foreground">Total assignments</p>
           </CardContent>
         </Card>
@@ -120,7 +120,7 @@ const SupportDashboard = () => {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">{todaysEvents.length}</div>
+            <div className="font-semibold text-foreground">{todaysEvents.length}</div>
             <p className="text-xs text-muted-foreground">Events happening today</p>
           </CardContent>
         </Card>
@@ -131,7 +131,7 @@ const SupportDashboard = () => {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">0</div>
+            <div className="font-semibold text-foreground">0</div>
             <p className="text-xs text-muted-foreground">Pending support</p>
           </CardContent>
         </Card>
@@ -142,7 +142,7 @@ const SupportDashboard = () => {
             <HeadphonesIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-semibold text-gray-900">--</div>
+            <div className="font-semibold text-foreground">--</div>
             <p className="text-xs text-muted-foreground">Avg. response</p>
           </CardContent>
         </Card>

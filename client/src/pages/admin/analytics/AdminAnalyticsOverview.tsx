@@ -357,7 +357,7 @@ const AdminAnalyticsOverview = () => {
                       <p className="text-xs font-medium text-muted-foreground mb-1">
                         {stat.title}
                       </p>
-                      <p className="font-semibold text-gray-900 mb-1">
+                      <p className="font-semibold text-foreground mb-1">
                         {stat.value}
                       </p>
                       <div className="flex items-center">

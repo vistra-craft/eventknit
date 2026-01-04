@@ -147,7 +147,7 @@ const StaffPerformanceDashboard = () => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="font-semibold text-gray-900">{summary.totalStaff}</div>
+                  <div className="font-semibold text-foreground">{summary.totalStaff}</div>
                   <p className="text-xs text-muted-foreground">
                     {summary.activeStaff} active
                   </p>
@@ -160,7 +160,7 @@ const StaffPerformanceDashboard = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="font-semibold text-gray-900">{formatNumber(summary.totalEvents)}</div>
+                  <div className="font-semibold text-foreground">{formatNumber(summary.totalEvents)}</div>
                   <p className="text-xs text-muted-foreground">Events assigned</p>
                 </CardContent>
               </Card>
@@ -171,7 +171,7 @@ const StaffPerformanceDashboard = () => {
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="font-semibold text-gray-900">{formatNumber(summary.totalScans)}</div>
+                  <div className="font-semibold text-foreground">{formatNumber(summary.totalScans)}</div>
                   <p className="text-xs text-muted-foreground">
                     {formatNumber(summary.averageScansPerStaff)} avg per staff
                   </p>
@@ -184,7 +184,7 @@ const StaffPerformanceDashboard = () => {
                   <Target className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="font-semibold text-gray-900">
+                  <div className="font-semibold text-foreground">
                     {formatPercentage(summary.averageAttendanceRate)}
                   </div>
                   <p className="text-xs text-muted-foreground">Average attendance</p>

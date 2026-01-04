@@ -364,7 +364,7 @@ const OrganizersContent = () => {
                       size="lg"
                     />
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">
+                      <h4 className="text-sm font-medium text-foreground">
                         {organizer.firstName} {organizer.lastName}
                       </h4>
                       <p className="text-xs text-gray-600">

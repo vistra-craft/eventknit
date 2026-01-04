@@ -233,7 +233,7 @@ const IncomeStatementPage: React.FC = () => {
             {/* Income Statement Table */}
             <Card className="border-border bg-card">
               <CardHeader className="bg-muted/30 border-b">
-                <CardTitle className="text-base font-semibold text-gray-900 flex items-center">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center">
                   <Calendar className="h-5 w-5 mr-2 text-primary" />
                   Income Statement - {incomeStatementData.period}
                 </CardTitle>
@@ -413,7 +413,7 @@ const IncomeStatementPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-base font-semibold text-gray-900 flex items-center">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center">
                     <PieChart className="h-5 w-5 mr-2 text-primary" />
                     Revenue Breakdown
                   </CardTitle>
@@ -464,7 +464,7 @@ const IncomeStatementPage: React.FC = () => {
 
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-base font-semibold text-gray-900 flex items-center">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center">
                     <BarChart3 className="h-5 w-5 mr-2 text-primary" />
                     Key Insights
                   </CardTitle>

@@ -72,7 +72,7 @@ const EditIncomePage = () => {
           {/* Basic Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-gray-900">Basic Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -173,7 +173,7 @@ const EditIncomePage = () => {
           {/* Additional Information */}
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-gray-900">Additional Information</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Additional Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>

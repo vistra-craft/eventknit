@@ -435,7 +435,7 @@ const EventFinanceDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">Disbursements</h3>
+                  <h3 className="font-semibold text-foreground">Disbursements</h3>
                   <p className="text-sm text-gray-600">Manage payouts</p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-gray-400" />
@@ -450,7 +450,7 @@ const EventFinanceDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">Refunds</h3>
+                  <h3 className="font-semibold text-foreground">Refunds</h3>
                   <p className="text-sm text-gray-600">Process refunds</p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-gray-400" />
@@ -465,7 +465,7 @@ const EventFinanceDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-900">Reconciliation</h3>
+                  <h3 className="font-semibold text-foreground">Reconciliation</h3>
                   <p className="text-sm text-gray-600">Sync with Paystack</p>
                 </div>
                 <ArrowRight className="h-5 w-5 text-gray-400" />
@@ -496,7 +496,7 @@ const EventFinanceDashboard = () => {
                     onClick={() => navigate(`/admin/finance/payments/${tx.id}`)}
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-foreground">
                         {tx.event?.title || "Unknown Event"}
                       </div>
                       <div className="text-sm text-gray-500">

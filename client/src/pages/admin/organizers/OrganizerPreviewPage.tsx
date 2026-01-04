@@ -105,7 +105,7 @@ const OrganizerPreviewPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-gray-900">Organizer Preview</h1>
+            <h1 className="text-lg font-semibold text-foreground">Organizer Preview</h1>
             <p className="text-sm text-gray-600">View organizer details</p>
           </div>
           <Button
@@ -132,7 +132,7 @@ const OrganizerPreviewPage = () => {
                   size="xl"
                 />
                 <div className="flex-1">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h2 className="text-lg font-semibold text-foreground mb-2">
                     {organizer.firstName} {organizer.lastName}
                   </h2>
                   <Badge className={getStatusBadge(organizer.status)}>

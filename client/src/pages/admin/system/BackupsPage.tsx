@@ -157,7 +157,7 @@ const BackupsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Backup Management</h1>
+            <h1 className="text-lg font-semibold text-foreground">Backup Management</h1>
             <p className="text-gray-600">Manage database backups and restore operations</p>
           </div>
           <div className="flex items-center gap-3">
@@ -261,7 +261,7 @@ const BackupsPage = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-gray-900 truncate">{backup.name}</h3>
+                      <h3 className="font-semibold text-foreground truncate">{backup.name}</h3>
                       <Badge className={`text-xs ${getStatusBadge(backup.status)}`}>
                         {getStatusIcon(backup.status)}
                         <span className="ml-1 capitalize">{backup.status.replace('_', ' ')}</span>
@@ -341,7 +341,7 @@ const BackupsPage = () => {
 
         {/* Backup Operations */}
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Backup Operations</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Backup Operations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardHeader>

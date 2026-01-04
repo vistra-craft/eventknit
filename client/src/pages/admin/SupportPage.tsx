@@ -576,7 +576,7 @@ const SupportPage = () => {
         {/* Platform Breakdown */}
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
               <TrendingUp className="h-5 w-5" />
               Platform Breakdown
             </CardTitle>
@@ -588,7 +588,7 @@ const SupportPage = () => {
                   <div className="p-3 rounded-lg bg-gray-50 mb-2">
                     {getPlatformIcon(platform as SocialPlatform)}
                   </div>
-                  <p className="text-sm font-medium text-gray-900">{count}</p>
+                  <p className="text-sm font-medium text-foreground">{count}</p>
                   <p className="text-xs text-gray-600 capitalize">{platform}</p>
                 </div>
               ))}
@@ -1048,7 +1048,7 @@ const SupportPage = () => {
                     {getPlatformIcon(selectedQuery.platform)}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">Respond to {selectedQuery.senderName}</h3>
+                    <h3 className="font-semibold text-foreground">Respond to {selectedQuery.senderName}</h3>
                     <p className="text-sm text-gray-600">via {selectedQuery.platform}</p>
                   </div>
                 </div>
@@ -1073,7 +1073,7 @@ const SupportPage = () => {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900">{selectedQuery.senderName}</span>
+                      <span className="font-medium text-foreground">{selectedQuery.senderName}</span>
                       <Badge className={`text-xs ${getPlatformColor(selectedQuery.platform)}`}>
                         {selectedQuery.platform}
                       </Badge>
@@ -1087,7 +1087,7 @@ const SupportPage = () => {
               {/* Response History */}
               {selectedQuery.responses.length > 0 && (
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  <h4 className="font-medium text-gray-900">Response History</h4>
+                  <h4 className="font-medium text-foreground">Response History</h4>
                   {selectedQuery.responses.map((response) => (
                     <div key={response.id} className="flex items-start gap-3">
                       <div className="p-2 rounded-lg bg-primary/10">
@@ -1095,7 +1095,7 @@ const SupportPage = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-gray-900">{response.responderName}</span>
+                          <span className="font-medium text-foreground">{response.responderName}</span>
                           <span className="text-xs text-gray-500">{getTimeAgo(response.createdAt)}</span>
                         </div>
                         <p className="text-sm text-gray-700">{response.message}</p>

@@ -180,7 +180,7 @@ const WagesPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Wage Management</h1>
+            <h1 className="text-lg font-semibold text-foreground">Wage Management</h1>
             <p className="text-gray-600">Track and manage employee wages and payroll</p>
           </div>
           <div className="flex items-center gap-3">
@@ -339,7 +339,7 @@ const WagesPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-card-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-base font-semibold text-gray-900">Wage Details</h2>
+                <h2 className="text-base font-semibold text-foreground">Wage Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
                   <X className="h-4 w-4" />
                 </Button>
@@ -348,15 +348,15 @@ const WagesPage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-600">ID</label>
-                    <p className="text-sm text-gray-900">{selectedWage.id}</p>
+                    <p className="text-sm text-foreground">{selectedWage.id}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Reference</label>
-                    <p className="text-sm text-gray-900">{selectedWage.reference || 'N/A'}</p>
+                    <p className="text-sm text-foreground">{selectedWage.reference || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Recipient</label>
-                    <p className="text-sm text-gray-900">{selectedWage.recipient || 'N/A'}</p>
+                    <p className="text-sm text-foreground">{selectedWage.recipient || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Amount</label>
@@ -370,21 +370,21 @@ const WagesPage = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Payment Method</label>
-                    <p className="text-sm text-gray-900">{formatPaymentMethod(selectedWage.paymentMethod)}</p>
+                    <p className="text-sm text-foreground">{formatPaymentMethod(selectedWage.paymentMethod)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Date</label>
-                    <p className="text-sm text-gray-900">{formatDate(selectedWage.expenseDate)}</p>
+                    <p className="text-sm text-foreground">{formatDate(selectedWage.expenseDate)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">Currency</label>
-                    <p className="text-sm text-gray-900">{selectedWage.currency}</p>
+                    <p className="text-sm text-foreground">{selectedWage.currency}</p>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-600">Description</label>
-                  <p className="text-sm text-gray-900">{selectedWage.description}</p>
+                  <p className="text-sm text-foreground">{selectedWage.description}</p>
                 </div>
               </div>
               <div className="flex items-center justify-end gap-3 p-6 border-t border-border">

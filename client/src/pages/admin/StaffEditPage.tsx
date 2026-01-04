@@ -664,7 +664,7 @@ const StaffEditPage = () => {
                     <div key={permission} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex items-center gap-3">
                         <Shield className="h-4 w-4 text-gray-600" />
-                        <span className="text-sm font-medium text-gray-900">{label}</span>
+                        <span className="text-sm font-medium text-foreground">{label}</span>
                       </div>
                       <Select
                         value={formData[permission as keyof typeof formData] ? "true" : "false"}

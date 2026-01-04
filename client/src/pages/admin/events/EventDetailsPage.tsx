@@ -665,47 +665,47 @@ const EventDetailsPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Event Title</label>
-                        <p className="text-sm text-gray-900">{eventData.title}</p>
+                        <p className="text-sm text-foreground">{eventData.title}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Category</label>
-                        <p className="text-sm text-gray-900">{eventData.category}</p>
+                        <p className="text-sm text-foreground">{eventData.category}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Date & Time</label>
-                        <p className="text-sm text-gray-900">
+                        <p className="text-sm text-foreground">
                           {eventData.date} at {eventData.time}
                           {eventData.endTime && ` - ${eventData.endTime}`}
                         </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Location</label>
-                        <p className="text-sm text-gray-900">{eventData.location}</p>
+                        <p className="text-sm text-foreground">{eventData.location}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Venue</label>
-                        <p className="text-sm text-gray-900">{eventData.venue}</p>
+                        <p className="text-sm text-foreground">{eventData.venue}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Capacity</label>
-                        <p className="text-sm text-gray-900">{eventData.capacity} attendees</p>
+                        <p className="text-sm text-foreground">{eventData.capacity} attendees</p>
                       </div>
                     </div>
                     
                     <div>
                       <label className="text-sm font-medium text-gray-600">Description</label>
-                      <p className="text-sm text-gray-900 mt-1">{eventData.description}</p>
+                      <p className="text-sm text-foreground mt-1">{eventData.description}</p>
                     </div>
 
                     <div>
                       <label className="text-sm font-medium text-gray-600">Full Description</label>
-                      <p className="text-sm text-gray-900 mt-1">{eventData.fullDescription}</p>
+                      <p className="text-sm text-foreground mt-1">{eventData.fullDescription}</p>
                     </div>
 
                     {eventData.requirements && eventData.requirements.length > 0 && (
                       <div>
                         <label className="text-sm font-medium text-gray-600">Requirements</label>
-                        <ul className="text-sm text-gray-900 mt-1 list-disc list-inside">
+                        <ul className="text-sm text-foreground mt-1 list-disc list-inside">
                           {eventData.requirements.map((requirement, index) => (
                             <li key={index}>{requirement}</li>
                           ))}
@@ -724,20 +724,20 @@ const EventDetailsPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Organizer Name</label>
-                        <p className="text-sm text-gray-900">{eventData.organizer.name}</p>
+                        <p className="text-sm text-foreground">{eventData.organizer.name}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Organizer ID</label>
-                        <p className="text-sm text-gray-900">{eventData.organizer.id}</p>
+                        <p className="text-sm text-foreground">{eventData.organizer.id}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Email</label>
-                        <p className="text-sm text-gray-900">{eventData.organizer.email}</p>
+                        <p className="text-sm text-foreground">{eventData.organizer.email}</p>
                       </div>
                       {eventData.organizer.phone && (
                         <div>
                           <label className="text-sm font-medium text-gray-600">Phone</label>
-                          <p className="text-sm text-gray-900">{eventData.organizer.phone}</p>
+                          <p className="text-sm text-foreground">{eventData.organizer.phone}</p>
                         </div>
                       )}
                     </div>
@@ -847,26 +847,26 @@ const EventDetailsPage = () => {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Views</span>
-                      <span className="text-sm font-medium text-gray-900">{eventData.views.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-foreground">{eventData.views.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Conversion Rate</span>
-                      <span className="text-sm font-medium text-gray-900">{eventData.conversion}%</span>
+                      <span className="text-sm font-medium text-foreground">{eventData.conversion}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Rating</span>
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-accent-coral fill-current" />
-                        <span className="text-sm font-medium text-gray-900">{eventData.rating}</span>
+                        <span className="text-sm font-medium text-foreground">{eventData.rating}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Attendance Rate</span>
-                      <span className="text-sm font-medium text-gray-900">{metrics.attendanceRate}%</span>
+                      <span className="text-sm font-medium text-foreground">{metrics.attendanceRate}%</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Average Ticket Price</span>
-                      <span className="text-sm font-medium text-gray-900">{formatCurrency(metrics.averageTicketPrice)}</span>
+                      <span className="text-sm font-medium text-foreground">{formatCurrency(metrics.averageTicketPrice)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -891,22 +891,22 @@ const EventDetailsPage = () => {
                     {eventData.ticketPrice && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Ticket Price</span>
-                        <span className="text-sm font-medium text-gray-900">{formatCurrency(eventData.ticketPrice)}</span>
+                        <span className="text-sm font-medium text-foreground">{formatCurrency(eventData.ticketPrice)}</span>
                       </div>
                     )}
                     {eventData.registrationDeadline && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Registration Deadline</span>
-                        <span className="text-sm font-medium text-gray-900">{formatDate(eventData.registrationDeadline)}</span>
+                        <span className="text-sm font-medium text-foreground">{formatDate(eventData.registrationDeadline)}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Created</span>
-                      <span className="text-sm font-medium text-gray-900">{formatDateTime(eventData.createdAt)}</span>
+                      <span className="text-sm font-medium text-foreground">{formatDateTime(eventData.createdAt)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Last Updated</span>
-                      <span className="text-sm font-medium text-gray-900">{formatDateTime(eventData.updatedAt)}</span>
+                      <span className="text-sm font-medium text-foreground">{formatDateTime(eventData.updatedAt)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -930,7 +930,7 @@ const EventDetailsPage = () => {
                             className="w-12 h-12 rounded-full object-cover"
                           />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{speaker.name}</p>
+                            <p className="text-sm font-medium text-foreground">{speaker.name}</p>
                             <p className="text-xs text-muted-foreground">{speaker.title}</p>
                           </div>
                         </div>
@@ -953,7 +953,7 @@ const EventDetailsPage = () => {
                             className="w-12 h-12 rounded object-cover"
                           />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{sponsor.name}</p>
+                            <p className="text-sm font-medium text-foreground">{sponsor.name}</p>
                             <Badge className={`text-xs ${
                               sponsor.level === 'gold' ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20' :
                               sponsor.level === 'silver' ? 'bg-gray-100 text-gray-800 border-gray-200' :
@@ -1071,7 +1071,7 @@ const EventDetailsPage = () => {
                               <User className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900">{attendeeName}</h4>
+                              <h4 className="font-medium text-foreground">{attendeeName}</h4>
                               <p className="text-sm text-gray-600">{reg.attendee.email}</p>
                               {reg.attendee.phoneNumber && (
                                 <p className="text-xs text-gray-500">{reg.attendee.phoneNumber}</p>
@@ -1218,7 +1218,7 @@ const EventDetailsPage = () => {
                               <CreditCard className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900">{attendeeName}</h4>
+                              <h4 className="font-medium text-foreground">{attendeeName}</h4>
                               <p className="text-sm text-gray-600">
                                 {reg.attendee.email}
                                 {reg.paymentTransactionId && ` • ${reg.paymentTransactionId}`}
@@ -1230,7 +1230,7 @@ const EventDetailsPage = () => {
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-right">
-                              <div className="font-medium text-gray-900">{formatCurrency(amount || 0)}</div>
+                              <div className="font-medium text-foreground">{formatCurrency(amount || 0)}</div>
                               <div className="text-sm text-gray-600">{formatDateTime(reg.createdAt)}</div>
                             </div>
                             <Badge className={`text-xs ${
@@ -1334,13 +1334,13 @@ const EventDetailsPage = () => {
                             <RefreshCw className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900">{refund.registration?.attendee?.firstName} {refund.registration?.attendee?.lastName}</h4>
+                            <h4 className="font-medium text-foreground">{refund.registration?.attendee?.firstName} {refund.registration?.attendee?.lastName}</h4>
                             <p className="text-sm text-gray-600">{refund.reason || 'No reason provided'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <div className="font-medium text-gray-900">{formatCurrency(refund.amount)}</div>
+                            <div className="font-medium text-foreground">{formatCurrency(refund.amount)}</div>
                             <div className="text-sm text-gray-600">
                               Requested: {formatDateTime(refund.createdAt)}
                             </div>
@@ -1429,7 +1429,7 @@ const EventDetailsPage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
-                      <h4 className="font-medium text-gray-900">Total Event Revenue</h4>
+                      <h4 className="font-medium text-foreground">Total Event Revenue</h4>
                       <p className="text-sm text-gray-600">From all ticket sales</p>
                     </div>
                     <div className="text-right">
@@ -1493,7 +1493,7 @@ const EventDetailsPage = () => {
                             <DollarSign className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-gray-900">Disbursement #{disbursement.id.slice(-8)}</h4>
+                            <h4 className="font-medium text-foreground">Disbursement #{disbursement.id.slice(-8)}</h4>
                             <p className="text-sm text-gray-600">
                               {disbursement.paymentMethod || 'Bank Transfer'} • {disbursement.transactionReference || 'Pending'}
                             </p>
@@ -1501,7 +1501,7 @@ const EventDetailsPage = () => {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <div className="font-medium text-gray-900">{formatCurrency(disbursement.amount)}</div>
+                            <div className="font-medium text-foreground">{formatCurrency(disbursement.amount)}</div>
                             <div className="text-sm text-gray-600">{formatDateTime(disbursement.createdAt)}</div>
                           </div>
                           <Badge className={`text-xs ${
@@ -1537,44 +1537,44 @@ const EventDetailsPage = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Bank Details</h4>
+                    <h4 className="font-medium text-foreground mb-3">Bank Details</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Account Name:</span>
-                        <span className="text-gray-900">Tech Events Inc.</span>
+                        <span className="text-foreground">Tech Events Inc.</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Account Number:</span>
-                        <span className="text-gray-900">****1234</span>
+                        <span className="text-foreground">****1234</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Bank:</span>
-                        <span className="text-gray-900">Chase Bank</span>
+                        <span className="text-foreground">Chase Bank</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Routing:</span>
-                        <span className="text-gray-900">****5678</span>
+                        <span className="text-foreground">****5678</span>
                       </div>
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Payment Schedule</h4>
+                    <h4 className="font-medium text-foreground mb-3">Payment Schedule</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Frequency:</span>
-                        <span className="text-gray-900">Monthly</span>
+                        <span className="text-foreground">Monthly</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Next Payment:</span>
-                        <span className="text-gray-900">March 1, 2024</span>
+                        <span className="text-foreground">March 1, 2024</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Minimum Threshold:</span>
-                        <span className="text-gray-900">{formatCurrency(100)}</span>
+                        <span className="text-foreground">{formatCurrency(100)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Payment Method:</span>
-                        <span className="text-gray-900">Bank Transfer</span>
+                        <span className="text-foreground">Bank Transfer</span>
                       </div>
                     </div>
                   </div>
