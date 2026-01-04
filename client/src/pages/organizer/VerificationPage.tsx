@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -58,14 +59,7 @@ const VerificationPage = () => {
     <OrganizerLayout>
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
+          <BackButton label="Back" className="mb-4" />
           <h1 className="text-3xl font-bold">Identity Verification</h1>
           <p className="text-muted-foreground mt-2">
             Complete verification to receive payouts from ticket sales

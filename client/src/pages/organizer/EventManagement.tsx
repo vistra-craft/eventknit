@@ -8,7 +8,6 @@ import {
   Star,
   Clock,
   MapPin,
-  ArrowLeft,
   Settings,
   BarChart3,
   UserPlus,
@@ -52,6 +51,7 @@ import { Label } from "../../components/ui/label";
 import { ConsentStatisticsCard } from "../../components/organizer/ConsentStatisticsCard";
 import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
+import BackButton from "@/components/BackButton";
 
 interface CommunicationMessage {
   id: string;
@@ -1230,15 +1230,7 @@ const EventManagement = () => {
         <div className="relative p-6 md:p-8">
           {/* Top Bar */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/organizer/dashboard')}
-              className="self-start"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
+            <BackButton to="/organizer/dashboard" label="Back to Dashboard" />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -9,7 +9,6 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
-  ArrowLeft,
   Shield,
   Mail,
   Clock,
@@ -26,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
 import DashboardNavbar from "./DashboardNavbar";
 import RoleSwitcher from "@/components/RoleSwitcher";
+import BackButton from "@/components/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
 
@@ -252,10 +252,7 @@ const UserProfilePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton label="Back" />
             <div>
               <h1 className="text-3xl font-bold text-foreground">Profile</h1>
               <p className="text-muted-foreground mt-1">Manage your personal information</p>

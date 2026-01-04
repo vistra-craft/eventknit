@@ -272,6 +272,7 @@ model User {
   // Notification Relations
   notifications                     Notification[]               @relation("UserNotifications")
   notificationPreference            NotificationPreference?      @relation("UserNotificationPreference")
+  pushSubscriptions                 PushSubscription[]           @relation("UserPushSubscriptions")
   systemNotificationSettingsUpdated SystemNotificationSettings[] @relation("SystemNotificationSettingsUpdatedBy")
   bulkMessagesCreated               BulkMessage[]                @relation("BulkMessageCreator")
   preferences                       UserPreferences?             @relation("UserPreferences")
@@ -299,6 +300,7 @@ model User {
   userFollowing                     UserFollow[]                 @relation("UserFollowing")
   eventShares                       EventShare[]                 @relation("UserShares")
   savedSearches                     SavedSearch[]                @relation("SavedSearches")
+  savedEvents                       SavedEvent[]                 @relation("UserSavedEvents")
   activityHistory                   ActivityHistory[]            @relation("UserActivityHistory")
   // Organizer Dashboard Features
   eventTemplates                    EventTemplate[]              @relation("OrganizerTemplates")
@@ -701,6 +703,7 @@ model Event {
   collectionItems        EventCollectionItem[]     @relation("CollectionEvents")
   eventMessages          DirectMessage[]           @relation("EventMessages")
   eventShares            EventShare[]              @relation("EventShares")
+  savedByUsers           SavedEvent[]              @relation("EventSaves")
   activityHistory        ActivityHistory[]         @relation("EventActivityHistory")
   feedItems              FeedItem[]                @relation("FeedEvents")
   updateSubscriptions    EventUpdateSubscription[] @relation("EventUpdateSubscriptions")
@@ -2014,6 +2017,35 @@ model NotificationPreference {
   @@index([userId])
 }
 
+// Push Notification Subscriptions for Web Push API
+model PushSubscription {
+  id       String @id @default(cuid())
+  userId   String
+  endpoint String @unique // Push service endpoint URL
+
+  // Push subscription keys
+  p256dh String // Public key for push encryption
+  auth   String // Authentication secret
+
+  // Device/browser info
+  userAgent String?
+  deviceId  String? // Optional device identifier
+
+  // Status
+  isActive  Boolean  @default(true)
+  lastUsed  DateTime @default(now())
+  failCount Int      @default(0) // Track failed deliveries
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserPushSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([endpoint])
+}
+
 model SystemNotificationSettings {
   id          String   @id @default(cuid())
   key         String   @unique // e.g., "default.emailEnabled", "system.smsEnabled"
@@ -2213,10 +2245,23 @@ model SMSSession {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Payment tracking fields
+  paymentRequired      Boolean  @default(false)
+  paymentAmount        Decimal? @db.Decimal(10, 2)
+  paymentCurrency      String?  @default("KES")
+  paymentStatus        String?  @default("pending") // pending, initiated, completed, failed, cancelled
+  paymentGateway       String? // MPESA, PAYSTACK, etc.
+  paymentReference     String? // Gateway transaction reference (e.g., CheckoutRequestID)
+  paymentReceiptNumber String? // M-Pesa receipt or gateway confirmation
+  paymentInitiatedAt   DateTime?
+  paymentCompletedAt   DateTime?
+
   @@index([phoneNumber, sessionType])
   @@index([eventCode])
   @@index([expiresAt])
   @@index([completed])
+  @@index([paymentReference])
+  @@index([paymentStatus])
 }
 
 // ============================================
@@ -2937,6 +2982,23 @@ model SavedSearch {
 
   @@index([userId])
   @@index([notifyOnNewEvents])
+}
+
+// Saved Events (Bookmarks)
+model SavedEvent {
+  id      String @id @default(uuid())
+  userId  String
+  user    User   @relation("UserSavedEvents", fields: [userId], references: [id], onDelete: Cascade)
+  eventId String
+  event   Event  @relation("EventSaves", fields: [eventId], references: [id], onDelete: Cascade)
+
+  savedAt DateTime @default(now())
+  notes   String?  @db.Text // Optional personal notes
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([savedAt])
 }
 
 // Activity History

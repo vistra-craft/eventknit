@@ -1,16 +1,23 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, X } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Save, X, Info } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "../AdminLayout";
 
 const EditTransactionPage = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const isEditing = !!id;
+
   const [formData, setFormData] = useState({
     type: "income",
     category: "",
@@ -43,8 +50,12 @@ const EditTransactionPage = () => {
   };
 
   const handleSave = () => {
-    console.log("Saving transaction:", formData);
-    // TODO: Implement save logic
+    // Transactions are typically read-only payment records
+    // For manual income/expense entries, use the dedicated Income or Expense pages
+    toast({
+      title: "Information",
+      description: "Payment transactions are read-only records. To add income or expenses, use the dedicated pages.",
+    });
     navigate("/admin/finance/transactions");
   };
 
@@ -58,10 +69,7 @@ const EditTransactionPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/admin/finance/transactions" label="Back" />
             <div>
               <h1 className="text-base font-semibold text-foreground">Edit Transaction</h1>
               <p className="text-gray-600">Update transaction details</p>
@@ -78,6 +86,15 @@ const EditTransactionPage = () => {
             </Button>
           </div>
         </div>
+
+        {/* Info Alert */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Payment transactions are automatically recorded from the payment system.
+            For manual entries, use the <a href="/admin/finance/income" className="underline font-medium">Income</a> or <a href="/admin/finance/expenses" className="underline font-medium">Expenses</a> pages.
+          </AlertDescription>
+        </Alert>
 
         {/* Form */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

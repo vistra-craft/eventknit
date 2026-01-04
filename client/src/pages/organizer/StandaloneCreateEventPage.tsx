@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
@@ -42,15 +42,7 @@ const StandaloneCreateEventPage: React.FC = () => {
               Fill out the details below to create your event. Once submitted, it will be reviewed and approved.
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/organizer/onboarding')}
-            className="text-primary hover:bg-accent-coral hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Onboarding
-          </Button>
+          <BackButton to="/organizer/onboarding" label="Back to Onboarding" />
         </div>
         <CreateEventStepwise />
       </main>

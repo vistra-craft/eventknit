@@ -122,6 +122,15 @@ export const config = {
     environment: (process.env.STRIPE_ENVIRONMENT as 'test' | 'live') || 'test',
   },
 
+  mpesa: {
+    consumerKey: process.env.MPESA_CONSUMER_KEY || '',
+    consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
+    passkey: process.env.MPESA_PASSKEY || '',
+    shortcode: process.env.MPESA_SHORTCODE || '',
+    environment: (process.env.MPESA_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
+    callbackUrl: process.env.MPESA_CALLBACK_URL || '',
+  },
+
   sms: {
     enabled: process.env.SMS_ENABLED === 'true',
     provider: process.env.SMS_PROVIDER || 'twilio',

@@ -767,15 +767,13 @@ export class PaymentService {
   }
 
   /**
-   * Verify Paystack webhook signature
+   * Verify webhook signature for payment gateways
    */
   verifyWebhookSignature(payload: string, signature: string, gatewayType: GatewayType = 'PAYSTACK'): boolean {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const crypto = require('crypto');
 
-    // Use gateway manager to get the correct gateway
-    // Get secret key from gateway configuration
-    // For Paystack, we need the secret key for HMAC verification
+    // Paystack webhook verification using HMAC-SHA512
     if (gatewayType === 'PAYSTACK') {
       if (!config.paystack?.secretKey) {
         logger.error('Paystack secret key not configured');
@@ -788,10 +786,70 @@ export class PaymentService {
       return hash === signature;
     }
 
-    // For other gateways, use their verification methods
-    // This is a placeholder - implement gateway-specific verification as needed
-    logger.warn(`Webhook signature verification not implemented for gateway: ${gatewayType}`);
-    return true; // Default to true for non-Paystack gateways (implement proper verification)
+    // Stripe webhook verification using their SDK
+    // Note: Stripe uses a different signature format (t=timestamp,v1=signature)
+    if (gatewayType === 'STRIPE') {
+      if (!config.stripe?.webhookSecret) {
+        logger.error('Stripe webhook secret not configured');
+        return false;
+      }
+      try {
+        // Stripe signature header format: t=timestamp,v1=signature
+        // Extract the timestamp and signature from the header
+        const elements = signature.split(',');
+        const signatureElements: Record<string, string> = {};
+
+        for (const element of elements) {
+          const [key, value] = element.split('=');
+          if (key && value) {
+            signatureElements[key] = value;
+          }
+        }
+
+        const timestamp = signatureElements['t'];
+        const v1Signature = signatureElements['v1'];
+
+        if (!timestamp || !v1Signature) {
+          logger.error('Stripe webhook: Invalid signature format');
+          return false;
+        }
+
+        // Verify timestamp is within tolerance (5 minutes)
+        const timestampNum = parseInt(timestamp, 10);
+        const currentTime = Math.floor(Date.now() / 1000);
+        const tolerance = 300; // 5 minutes
+
+        if (Math.abs(currentTime - timestampNum) > tolerance) {
+          logger.error('Stripe webhook: Timestamp outside tolerance window');
+          return false;
+        }
+
+        // Compute expected signature
+        const signedPayload = `${timestamp}.${payload}`;
+        const expectedSignature = crypto
+          .createHmac('sha256', config.stripe.webhookSecret)
+          .update(signedPayload)
+          .digest('hex');
+
+        // Compare signatures using timing-safe comparison
+        return crypto.timingSafeEqual(
+          Buffer.from(v1Signature, 'hex'),
+          Buffer.from(expectedSignature, 'hex')
+        );
+      } catch (error) {
+        logger.error('Stripe webhook signature verification error:', error);
+        return false;
+      }
+    }
+
+    // PayPal webhook verification (for future implementation)
+    if (gatewayType === 'PAYPAL') {
+      logger.warn('PayPal webhook verification not yet implemented');
+      return false; // Reject unverifiable webhooks
+    }
+
+    logger.error(`Unknown gateway type for webhook verification: ${gatewayType}`);
+    return false;
   }
 
   /**

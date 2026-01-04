@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +12,6 @@ import {
   Layout,
   Save,
   Eye,
-  ArrowLeft,
   Settings,
   Square,
   Image,
@@ -37,6 +35,7 @@ import {
   X
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/use-toast";
 import {
   getBadgeTemplates,
@@ -93,7 +92,6 @@ const COLOR_PALETTE = [
 ];
 
 const WorkstationTemplates: React.FC = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   // Templates state
@@ -394,14 +392,7 @@ const WorkstationTemplates: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/admin/workstation')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/admin/workstation" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Template Editor</h1>
               <p className="text-sm text-muted-foreground">Design and customize badge templates for your events</p>

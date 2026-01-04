@@ -9,6 +9,7 @@ import { NotFoundError, ValidationError, AuthorizationError } from '../utils/err
 import { logger } from '../utils/logger.js';
 import { emailService } from './email.service.js';
 import { smsService } from './sms.service.js';
+import { pushNotificationService } from './push-notification.service.js';
 import { NotificationPreferenceService, NotificationChannels } from './notification-preference.service.js';
 import { websocketService } from './websocket.service.js';
 
@@ -415,11 +416,26 @@ export class NotificationService {
         }
       }
 
-      // Deliver via push (placeholder - implement when push service is available)
+      // Deliver via push notification service
       if (shouldSendPush) {
         try {
-          // TODO: Implement push notification delivery
-          // await this.deliverPush(notification);
+          const pushResult = await pushNotificationService.sendToUser(notification.userId, {
+            title: notification.title,
+            body: notification.message,
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/badge-72x72.png',
+            tag: notification.type,
+            data: {
+              notificationId: notification.id,
+              type: notification.type,
+              eventId: notification.eventId || undefined,
+              registrationId: notification.registrationId || undefined,
+              url: notification.data && typeof notification.data === 'object' && 'url' in notification.data
+                ? (notification.data as { url?: string }).url
+                : '/',
+            },
+          });
+
           // Check if notification still exists before updating
           const existingNotification = await prisma.notification.findUnique({
             where: { id: notificationId },
@@ -427,7 +443,9 @@ export class NotificationService {
           if (existingNotification) {
             await prisma.notification.update({
               where: { id: notificationId },
-              data: { pushStatus: DeliveryStatus.SENT },
+              data: {
+                pushStatus: pushResult.sent > 0 ? DeliveryStatus.SENT : DeliveryStatus.FAILED,
+              },
             });
           }
         } catch (error) {

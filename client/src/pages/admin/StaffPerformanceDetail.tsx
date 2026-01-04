@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   Calendar,
   CheckCircle,
   Clock,
@@ -9,6 +8,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import BackButton from "@/components/BackButton";
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   getStaffPerformance,
@@ -124,14 +124,7 @@ const StaffPerformanceDetail = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/admin/staff-performance')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/admin/staff-performance" label="Back" />
             <div>
               <h1 className="text-base font-semibold text-foreground">
                 {performance.staffName}

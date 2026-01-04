@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Avatar } from '../../components/ui/avatar';
-import { ArrowLeft, Building2, MapPin, Phone, Mail, Globe, MessageCircle, Send } from 'lucide-react';
+import { Building2, MapPin, Phone, Mail, Globe, MessageCircle, Send } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 
 interface Exhibitor {
   id: number;
@@ -101,14 +102,7 @@ const ExhibitorDetails: React.FC = () => {
           
         {/* Back Button */}
         <div className="mb-6">
-            <Button
-              variant="ghost"
-              onClick={() => window.history.back()}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Exhibitors
-            </Button>
+            <BackButton label="Back to Exhibitors" />
         </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -9,7 +9,6 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
-  ArrowLeft,
   Shield,
   Mail,
   Calendar,
@@ -17,6 +16,7 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -274,10 +274,7 @@ const AdminProfilePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton label="Back" />
             <div>
               <h1 className="text-base font-semibold text-foreground">Profile</h1>
               <p className="text-muted-foreground mt-1">Manage your personal information and account settings</p>

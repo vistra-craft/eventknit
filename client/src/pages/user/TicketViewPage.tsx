@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, Calendar, MapPin, Ticket as TicketIcon, CheckCircle2 } from "lucide-react";
+import { Download, Calendar, MapPin, Ticket as TicketIcon, CheckCircle2 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -199,10 +200,7 @@ const TicketViewPage: React.FC = () => {
             <AlertTitle>Ticket issue</AlertTitle>
             <AlertDescription>{error || "Ticket not found"}</AlertDescription>
           </Alert>
-          <Button onClick={() => navigate("/user/dashboard")} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
+          <BackButton to="/user/dashboard" label="Back to Dashboard" className="mt-4" />
         </div>
         <Footer />
       </div>
@@ -215,14 +213,7 @@ const TicketViewPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
         {/* Header */}
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/user/dashboard")}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
+          <BackButton to="/user/dashboard" label="Back to Dashboard" className="mb-4" />
           <h1 className="text-3xl font-bold mb-2">Your Ticket</h1>
           <p className="text-muted-foreground">Event registration confirmation</p>
         </div>

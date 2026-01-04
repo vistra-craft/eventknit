@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   Users,
   DollarSign,
   Star,
@@ -18,6 +17,7 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -563,10 +563,7 @@ const EventDetailsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Events
-            </Button>
+            <BackButton to="/admin/events" label="Back to Events" />
             <div>
               <h1 className="text-base font-semibold text-foreground">{eventData.title}</h1>
               <p className="text-muted-foreground">Event ID: {eventData.id}</p>

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Printer, X, FileDown, Grid, Maximize2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-// TODO: Install react-to-pdf package: npm install react-to-pdf
-// import { usePDF } from 'react-to-pdf';
+import { usePDF } from 'react-to-pdf';
 import type { TemplateData, TemplateElement } from '../../lib/template-api';
 
 interface PrintPreviewProps {
@@ -56,40 +55,35 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
   const tagHeightPx = (template.height || TAG_HEIGHT_IN * DPI);
 
   // PDF generation hook for grid layout
-  // TODO: Install react-to-pdf package to enable PDF export
-  // const { toPDF: toGridPDF, targetRef: gridRef } = usePDF({
-  //   filename: `${eventData.title}-ticket.pdf`,
-  //   page: {
-  //     format: [paperSize.widthMm, paperSize.heightMm],
-  //     orientation: 'portrait',
-  //     margin: 10,
-  //   },
-  //   canvas: {
-  //     mimeType: 'image/png',
-  //     qualityRatio: 1,
-  //   },
-  // });
-  const toGridPDF = () => { console.warn('PDF export requires react-to-pdf package'); };
-  const gridRef = React.createRef<HTMLDivElement>();
+  const { toPDF: toGridPDF, targetRef: gridRef } = usePDF({
+    filename: `${eventData.title}-tickets.pdf`,
+    page: {
+      format: [paperSize.widthMm, paperSize.heightMm],
+      orientation: 'portrait',
+      margin: 10,
+    },
+    canvas: {
+      mimeType: 'image/png',
+      qualityRatio: 1,
+    },
+  });
 
   // PDF generation hook for single tag
-  // const { toPDF: toSingleTagPDF, targetRef: singleTagPdfRef } = usePDF({
-  //   filename: `${eventData.title}-${attendeeData.firstName}-${attendeeData.lastName}-ticket.pdf`,
-  //   page: {
-  //     format: [
-  //       (template.width || TAG_WIDTH_IN * DPI) * 0.264583, // Convert px to mm
-  //       (template.height || TAG_HEIGHT_IN * DPI) * 0.264583,
-  //     ],
-  //     orientation: 'portrait',
-  //     margin: 0,
-  //   },
-  //   canvas: {
-  //     mimeType: 'image/png',
-  //     qualityRatio: 1,
-  //   },
-  // });
-  const toSingleTagPDF = () => { console.warn('PDF export requires react-to-pdf package'); };
-  const singleTagPdfRef = React.createRef<HTMLDivElement>();
+  const { toPDF: toSingleTagPDF, targetRef: singleTagPdfRef } = usePDF({
+    filename: `${eventData.title}-${attendeeData.firstName}-${attendeeData.lastName}-ticket.pdf`,
+    page: {
+      format: [
+        (template.width || TAG_WIDTH_IN * DPI) * 0.264583, // Convert px to mm
+        (template.height || TAG_HEIGHT_IN * DPI) * 0.264583,
+      ],
+      orientation: 'portrait',
+      margin: 0,
+    },
+    canvas: {
+      mimeType: 'image/png',
+      qualityRatio: 1,
+    },
+  });
 
   // Replace placeholders in text
   const replacePlaceholders = (text: string): string => {

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   Calendar,
   DollarSign,
   Star,
@@ -16,6 +15,7 @@ import {
   Loader2,
   AlertCircle
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -283,10 +283,6 @@ const OrganizerDetailsPage = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleBack = () => {
-    navigate("/admin/users/organizers");
-  };
-
   const handleEdit = () => {
     navigate(`/admin/users/organizers/${organizerData.id}/edit`);
   };
@@ -338,10 +334,7 @@ const OrganizerDetailsPage = () => {
     return (
       <AdminLayout>
         <div className="space-y-6">
-          <Button variant="outline" size="sm" onClick={() => navigate("/admin/users/organizers")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Organizers
-          </Button>
+          <BackButton to="/admin/users/organizers" label="Back to Organizers" />
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
@@ -357,10 +350,7 @@ const OrganizerDetailsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Organizers
-            </Button>
+            <BackButton to="/admin/users/organizers" label="Back to Organizers" />
             <div>
               <h1 className="text-lg font-semibold text-foreground">
                 {organizerData.firstName} {organizerData.lastName}

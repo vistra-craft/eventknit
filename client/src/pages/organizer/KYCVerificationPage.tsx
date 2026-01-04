@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import BackButton from '@/components/BackButton';
 
 import OrganizerLayout from './OrganizerLayout';
 import { EntityTypeSelector } from '@/components/kyc/EntityTypeSelector';
@@ -186,10 +187,7 @@ const KYCVerificationPage = () => {
   return (
     <OrganizerLayout>
       <div className="container mx-auto max-w-4xl py-8 px-4">
-        <Button variant="ghost" onClick={() => navigate('/organizer/dashboard')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </Button>
+        <BackButton to="/organizer/dashboard" label="Back to Dashboard" />
 
         <h1 className="text-3xl font-bold mt-6">KYC Verification</h1>
         <p className="text-muted-foreground mb-8">

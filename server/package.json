@@ -71,6 +71,7 @@
     "@types/sharp": "^0.31.1",
     "@types/supertest": "^6.0.3",
     "@types/twilio": "^3.19.2",
+    "@types/web-push": "^3.6.4",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.2",
     "husky": "^9.1.7",
@@ -123,6 +124,7 @@
     "stripe": "^17.7.0",
     "twilio": "^5.10.3",
     "uuid": "^11.0.3",
+    "web-push": "^3.6.7",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
   },

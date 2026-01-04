@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -15,65 +15,44 @@ import { Input } from "../../components/ui/input";
 import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { useToast } from "../../hooks/use-toast";
 import EmptyState from "../../components/EmptyState";
-
-interface SavedEvent {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  type: string;
-  image: string;
-  category?: string;
-  price?: string;
-  savedDate: string;
-}
+import { getSavedEvents, unsaveEvent, SavedEventData } from "../../lib/saved-events-api";
 
 const SavedEvents: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [savedEvents, setSavedEvents] = useState<SavedEvent[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<SavedEvent[]>([]);
+  const [savedEvents, setSavedEvents] = useState<SavedEventData[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<SavedEventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    // In a real implementation, fetch saved events from API
-    // For now, using mock data
-    const fetchSavedEvents = async () => {
-      try {
-        setLoading(true);
-        
-        // TODO: Replace with actual API call
-        // const response = await getSavedEvents();
-        
-        // Mock data for demonstration
-        const mockEvents: SavedEvent[] = [
-          // Initially empty - user will save events
-        ];
-        
-        setSavedEvents(mockEvents);
-        setFilteredEvents(mockEvents);
-      } catch (error) {
-        console.error("Error fetching saved events:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load saved events",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchSavedEvents = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getSavedEvents({ search: searchQuery || undefined });
+      setSavedEvents(response.data);
+      setFilteredEvents(response.data);
+    } catch (error) {
+      console.error("Error fetching saved events:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load saved events",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, searchQuery]);
 
+  useEffect(() => {
     fetchSavedEvents();
-  }, [toast]);
+  }, [fetchSavedEvents]);
 
   useEffect(() => {
     if (searchQuery) {
-      const filtered = savedEvents.filter(event =>
-        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.category?.toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = savedEvents.filter(saved =>
+        saved.event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        saved.event.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        saved.event.category?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredEvents(filtered);
     } else {
@@ -83,10 +62,8 @@ const SavedEvents: React.FC = () => {
 
   const handleRemoveFromSaved = async (eventId: string) => {
     try {
-      // TODO: Call API to remove from saved events
-      // await removeSavedEvent(eventId);
-      
-      setSavedEvents(prev => prev.filter(event => event.id !== eventId));
+      await unsaveEvent(eventId);
+      setSavedEvents(prev => prev.filter(saved => saved.eventId !== eventId));
       toast({
         title: "Removed",
         description: "Event removed from saved list",
@@ -101,8 +78,21 @@ const SavedEvents: React.FC = () => {
   };
 
   const handleRegisterForEvent = (eventId: string) => {
-    // Navigate to event page for registration
     navigate(`/event/${eventId}`);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatPrice = (price: number | null, currency: string) => {
+    if (price === null || price === 0) return 'Free';
+    return `${currency} ${price.toLocaleString()}`;
   };
 
   return (
@@ -137,29 +127,29 @@ const SavedEvents: React.FC = () => {
         </div>
       ) : filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <Card 
-              key={event.id} 
+          {filteredEvents.map((saved) => (
+            <Card
+              key={saved.id}
               className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
             >
               <div className="relative overflow-hidden">
                 <EventThumbnail
-                  src={event.image}
-                  alt={event.title}
-                  category={event.category || ''}
+                  src={saved.event.coverImage || ''}
+                  alt={saved.event.title}
+                  category={saved.event.category || ''}
                   size="md"
                 />
                 <button
-                  onClick={() => handleRemoveFromSaved(event.id)}
+                  onClick={() => handleRemoveFromSaved(saved.eventId)}
                   className="absolute top-4 right-4 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-colors"
                   aria-label="Remove from saved"
                 >
                   <Heart className="h-5 w-5 text-red-500 fill-red-500" />
                 </button>
-                {event.category && (
+                {saved.event.category && (
                   <div className="absolute top-4 left-4 z-10">
                     <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                      {event.category}
+                      {saved.event.category}
                     </Badge>
                   </div>
                 )}
@@ -167,47 +157,45 @@ const SavedEvents: React.FC = () => {
 
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                  {event.title}
+                  {saved.event.title}
                 </h3>
 
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="w-4 h-4" />
-                    <span>{event.date}</span>
+                    <span>{formatDate(saved.event.startDate)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin className="w-4 h-4" />
-                    <span>{event.location}</span>
+                    <span>{saved.event.venueName || saved.event.location || 'TBA'}</span>
                   </div>
-                  {event.price && (
-                    <div className="text-sm font-medium text-primary">
-                      From {event.price}
-                    </div>
-                  )}
+                  <div className="text-sm font-medium text-primary">
+                    {formatPrice(saved.event.basePrice, saved.event.currency)}
+                  </div>
                 </div>
 
                 <div className="text-xs text-muted-foreground mb-4">
-                  Saved on {new Date(event.savedDate).toLocaleDateString()}
+                  Saved on {new Date(saved.savedAt).toLocaleDateString()}
                 </div>
 
                 <div className="flex items-center gap-2 pt-4 border-t border-border">
-                  <Button 
+                  <Button
                     className="flex-1"
-                    onClick={() => handleRegisterForEvent(event.id)}
+                    onClick={() => handleRegisterForEvent(saved.eventId)}
                   >
-                    Register Now
+                    View Event
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => window.open(`/event/${event.id}`, '_blank')}
+                    onClick={() => window.open(`/event/${saved.eventId}`, '_blank')}
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => handleRemoveFromSaved(event.id)}
+                    onClick={() => handleRemoveFromSaved(saved.eventId)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout from "../AdminLayout";
-import { 
+import BackButton from "@/components/BackButton";
+import {
   Building2,
   DollarSign,
   Edit,
@@ -15,7 +16,6 @@ import {
   Save,
   Eye,
   Download,
-  ArrowLeft,
   GripVertical,
   Star,
   Mail,
@@ -374,14 +374,7 @@ const PartnershipTemplateBuilder = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={() => window.history.back()}
-              className="flex items-center"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton label="Back" />
             <div>
               <h1 className="text-lg font-semibold text-foreground mb-2 flex items-center">
                 <Layout className="h-6 w-6 mr-3 text-primary" />

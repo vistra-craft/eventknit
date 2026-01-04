@@ -4,18 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import AdminLayout from '@/pages/admin/AdminLayout';
-import { 
-  Download, 
-  FileText, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  Download,
+  FileText,
+  TrendingUp,
+  TrendingDown,
   DollarSign,
   Calendar,
   BarChart3,
-  PieChart,
-  ArrowLeft
+  PieChart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import BackButton from "@/components/BackButton";
 
 interface IncomeStatementData {
   period: string;
@@ -100,15 +100,7 @@ const IncomeStatementPage: React.FC = () => {
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(-1)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
+                <BackButton label="Back" />
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
                     <FileText className="w-6 h-6 text-primary" />

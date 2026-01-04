@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Save, X, Loader2 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,20 +9,62 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "../AdminLayout";
+import { useToast } from "@/hooks/use-toast";
+import { getExpenseById, createExpense, updateExpense } from "@/lib/platform-finance-api";
 
 const EditExpensePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const { toast } = useToast();
+  const isEditing = !!id;
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     category: "",
     description: "",
     amount: "",
-    date: "",
+    date: new Date().toISOString().split('T')[0],
     recipient: "",
-    status: "completed",
+    status: "COMPLETED",
     paymentMethod: "bank_transfer",
     receipt: "",
     notes: ""
   });
+
+  useEffect(() => {
+    if (isEditing) {
+      loadExpense();
+    }
+  }, [id]);
+
+  const loadExpense = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const response = await getExpenseById(id);
+      const expense = response.data;
+      setFormData({
+        category: expense.category || "",
+        description: expense.description || "",
+        amount: expense.amount || "",
+        date: expense.receiptDate ? expense.receiptDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        recipient: expense.recipient || "",
+        status: expense.status || "COMPLETED",
+        paymentMethod: expense.paymentMethod || "bank_transfer",
+        receipt: expense.receiptUrl || "",
+        notes: expense.notes || ""
+      });
+    } catch (error) {
+      console.error("Error loading expense:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load expense",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -30,15 +73,69 @@ const EditExpensePage = () => {
     }));
   };
 
-  const handleSave = () => {
-    console.log("Saving expense:", formData);
-    // TODO: Implement save logic
-    navigate("/admin/finance/expenses");
+  const handleSave = async () => {
+    if (!formData.category || !formData.description || !formData.amount) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const data = {
+        category: formData.category,
+        description: formData.description,
+        amount: parseFloat(formData.amount),
+        paymentMethod: formData.paymentMethod,
+        recipient: formData.recipient || undefined,
+        receiptUrl: formData.receipt || undefined,
+        receiptDate: formData.date || undefined,
+        notes: formData.notes || undefined,
+        status: formData.status,
+      };
+
+      if (isEditing && id) {
+        await updateExpense(id, data);
+        toast({
+          title: "Success",
+          description: "Expense updated successfully",
+        });
+      } else {
+        await createExpense(data);
+        toast({
+          title: "Success",
+          description: "Expense created successfully",
+        });
+      }
+      navigate("/admin/finance/expenses");
+    } catch (error) {
+      console.error("Error saving expense:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save expense",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
     navigate("/admin/finance/expenses");
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -46,23 +143,28 @@ const EditExpensePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/admin/finance/expenses" label="Back" />
             <div>
-              <h1 className="text-base font-semibold text-foreground">Edit Expense</h1>
-              <p className="text-gray-600">Update expense details</p>
+              <h1 className="text-base font-semibold text-foreground">
+                {isEditing ? "Edit Expense" : "New Expense"}
+              </h1>
+              <p className="text-gray-600">
+                {isEditing ? "Update expense details" : "Create a new expense record"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={saving}>
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {isEditing ? "Save Changes" : "Create Expense"}
             </Button>
           </div>
         </div>
@@ -76,7 +178,7 @@ const EditExpensePage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">Category *</Label>
                 <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -97,7 +199,7 @@ const EditExpensePage = () => {
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -108,7 +210,7 @@ const EditExpensePage = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="amount">Amount</Label>
+                  <Label htmlFor="amount">Amount *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -146,9 +248,9 @@ const EditExpensePage = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="COMPLETED">Completed</SelectItem>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="CANCELLED">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -177,12 +279,12 @@ const EditExpensePage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="receipt">Receipt</Label>
+                <Label htmlFor="receipt">Receipt URL</Label>
                 <Input
                   id="receipt"
                   value={formData.receipt}
                   onChange={(e) => handleInputChange("receipt", e.target.value)}
-                  placeholder="Receipt number or file name"
+                  placeholder="Receipt URL or file path"
                 />
               </div>
 

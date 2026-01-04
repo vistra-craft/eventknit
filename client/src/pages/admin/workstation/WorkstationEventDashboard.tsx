@@ -3,20 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
-import { 
-  Calendar, 
-  Users, 
-  QrCode, 
-  Printer, 
-  Monitor, 
-  History, 
+import {
+  Calendar,
+  Users,
+  QrCode,
+  Printer,
+  Monitor,
+  History,
   Eye,
   CheckCircle,
   Clock,
   MapPin,
   Building2,
   Star,
-  ArrowLeft,
   Activity,
   Zap,
   Settings,
@@ -27,6 +26,7 @@ import {
   Download
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import BackButton from "@/components/BackButton";
 import { getEvent, getEventAttendees, type EventAttendee, type EventStatistics, TicketStatus } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
 import { useToast } from "../../../hooks/use-toast";
@@ -289,14 +289,7 @@ const WorkstationEventDashboard: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate('/admin/workstation')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Events
-          </Button>
+          <BackButton to="/admin/workstation" label="Back to Events" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">{eventData.title}</h1>
             <p className="text-muted-foreground mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>

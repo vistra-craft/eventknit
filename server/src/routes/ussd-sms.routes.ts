@@ -5,6 +5,7 @@ import { UserRole } from '@prisma/client';
 
 const smsRouter = Router();
 const ussdRouter = Router();
+const mpesaRouter = Router();
 
 /**
  * @route   POST /api/v1/sms/webhook
@@ -32,5 +33,19 @@ smsRouter.get(
  */
 ussdRouter.post('/webhook', USSDSMSController.handleUSSD);
 
-export { smsRouter, ussdRouter };
+/**
+ * @route   POST /api/v1/mpesa/callback
+ * @desc    Handle M-Pesa STK Push callback
+ * @access  Public (webhook from Safaricom)
+ */
+mpesaRouter.post('/callback', USSDSMSController.handleMpesaCallback);
+
+/**
+ * @route   POST /api/v1/mpesa/timeout
+ * @desc    Handle M-Pesa timeout callback
+ * @access  Public (webhook from Safaricom)
+ */
+mpesaRouter.post('/timeout', USSDSMSController.handleMpesaTimeout);
+
+export { smsRouter, ussdRouter, mpesaRouter };
 

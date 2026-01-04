@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Printer,
-  ArrowLeft,
   Settings,
   Eye,
   Layout,
@@ -24,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/use-toast";
 import {
   getEventAttendees,
@@ -595,14 +595,7 @@ const WorkstationPrint: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/admin/workstation')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/admin/workstation" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
               <p className="text-sm text-muted-foreground">{currentEvent.title}</p>

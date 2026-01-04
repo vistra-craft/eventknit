@@ -5,19 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
+import {
+  Calendar,
+  MapPin,
+  Users,
   Clock,
   CheckCircle,
-  ArrowLeft,
   Send,
   FileText,
   Mic,
   Building2,
   Gift
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 
 interface FormField {
   id: string;
@@ -287,10 +287,7 @@ const PublicEventForm = () => {
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton label="Back" />
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${getTemplateColor(template.type)}`}>
                 {getTemplateIcon(template.type)}

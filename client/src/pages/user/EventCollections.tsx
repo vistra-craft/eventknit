@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,15 +11,22 @@ import { Loader2, Plus, FolderPlus, Users, Calendar, MapPin } from "lucide-react
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-// import { useAuth } from "@/hooks/useAuth";
 import EmptyState from "@/components/EmptyState";
-// import { getEvents } from "@/lib/event-api";
+import {
+  getMyCollections,
+  getPublicCollections as fetchPublicCollectionsApi,
+  createCollection,
+  getCollectionById,
+  EventCollectionData,
+  CollectionWithEvents,
+} from "@/lib/event-collection-api";
 
 const EventCollections: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [collections, setCollections] = useState<any[]>([]);
-  const [publicCollections, setPublicCollections] = useState<any[]>([]);
-  const [selectedCollection, setSelectedCollection] = useState<any>(null);
+  const [collections, setCollections] = useState<EventCollectionData[]>([]);
+  const [publicCollections, setPublicCollections] = useState<EventCollectionData[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<CollectionWithEvents | null>(null);
+  const [loadingCollection, setLoadingCollection] = useState(false);
   const [creating, setCreating] = useState(false);
   const [collectionData, setCollectionData] = useState({
     name: "",
@@ -41,14 +47,13 @@ const EventCollections: React.FC = () => {
   const fetchCollections = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await getUserCollections();
-      // if (response.success) {
-      //   setCollections(response.data.collections || []);
-      // }
-      setCollections([]);
+      const response = await getMyCollections();
+      if (response.success) {
+        setCollections(response.data || []);
+      }
     } catch (error) {
       console.error("Error fetching collections:", error);
+      setCollections([]);
     } finally {
       setLoading(false);
     }
@@ -56,14 +61,32 @@ const EventCollections: React.FC = () => {
 
   const fetchPublicCollections = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await getPublicCollections();
-      // if (response.success) {
-      //   setPublicCollections(response.data.collections || []);
-      // }
-      setPublicCollections([]);
+      const response = await fetchPublicCollectionsApi();
+      if (response.success) {
+        setPublicCollections(response.data || []);
+      }
     } catch (error) {
       console.error("Error fetching public collections:", error);
+      setPublicCollections([]);
+    }
+  };
+
+  const handleSelectCollection = async (collection: EventCollectionData) => {
+    try {
+      setLoadingCollection(true);
+      const response = await getCollectionById(collection.id);
+      if (response.success) {
+        setSelectedCollection(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching collection details:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load collection details",
+      });
+    } finally {
+      setLoadingCollection(false);
     }
   };
 
@@ -79,27 +102,25 @@ const EventCollections: React.FC = () => {
 
     try {
       setCreating(true);
-      // TODO: Replace with actual API call
-      // const response = await createCollection(collectionData);
-      // if (response.success) {
-      //   toast({
-      //     title: "Success",
-      //     description: "Collection created successfully",
-      //   });
-      //   setCollectionData({ name: "", description: "", isPublic: false, coverImage: "" });
-      //   setShowCreateDialog(false);
-      //   fetchCollections();
-      // }
-      toast({
-        title: "Success",
-        description: "Collection created successfully (demo)",
+      const response = await createCollection({
+        name: collectionData.name,
+        description: collectionData.description || undefined,
+        isPublic: collectionData.isPublic,
+        coverImage: collectionData.coverImage || undefined,
       });
-      setCollectionData({ name: "", description: "", isPublic: false, coverImage: "" });
-      setShowCreateDialog(false);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: response.message || "Collection created successfully",
+        });
+        setCollectionData({ name: "", description: "", isPublic: false, coverImage: "" });
+        setShowCreateDialog(false);
+        fetchCollections();
+      }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create collection",
+        description: error.response?.data?.message || error.message || "Failed to create collection",
         variant: "destructive",
       });
     } finally {
@@ -212,7 +233,7 @@ const EventCollections: React.FC = () => {
                 <Card
                   key={collection.id}
                   className="hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => setSelectedCollection(collection)}
+                  onClick={() => handleSelectCollection(collection)}
                 >
                   {collection.coverImage && (
                     <div className="h-32 overflow-hidden rounded-t-lg">
@@ -241,11 +262,11 @@ const EventCollections: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {collection.eventCount || 0} events
+                          {collection._count?.events || collection.eventCount || 0} events
                         </span>
                         <span className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          {collection.followerCount || 0} followers
+                          {collection._count?.followers || collection.followerCount || 0} followers
                         </span>
                       </div>
                     </div>
@@ -269,7 +290,7 @@ const EventCollections: React.FC = () => {
                 <Card
                   key={collection.id}
                   className="hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => setSelectedCollection(collection)}
+                  onClick={() => handleSelectCollection(collection)}
                 >
                   {collection.coverImage && (
                     <div className="h-32 overflow-hidden rounded-t-lg">
@@ -301,11 +322,11 @@ const EventCollections: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {collection.eventCount || 0} events
+                          {collection._count?.events || collection.eventCount || 0} events
                         </span>
                         <span className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          {collection.followerCount || 0} followers
+                          {collection._count?.followers || collection.followerCount || 0} followers
                         </span>
                       </div>
                     </div>
@@ -318,75 +339,81 @@ const EventCollections: React.FC = () => {
       </Tabs>
 
       {/* Collection Detail Dialog */}
-      {selectedCollection && (
-        <Dialog open={!!selectedCollection} onOpenChange={() => setSelectedCollection(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{selectedCollection.name}</DialogTitle>
-              <DialogDescription>
-                {selectedCollection.description || "Event collection"}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Collection Info */}
-              <div className="flex items-center gap-4">
-                <Badge variant="secondary">
-                  {selectedCollection.eventCount || 0} events
-                </Badge>
-                <Badge variant="secondary">
-                  <Users className="h-3 w-3 mr-1" />
-                  {selectedCollection.followerCount || 0} followers
-                </Badge>
-                {selectedCollection.isPublic && (
-                  <Badge>Public</Badge>
-                )}
-              </div>
-
-              {/* Events in Collection */}
-              <div>
-                <h3 className="font-semibold mb-3">Events in this Collection</h3>
-                {selectedCollection.events && selectedCollection.events.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedCollection.events.map((item: any) => (
-                      <Card
-                        key={item.id}
-                        className="hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/event/${item.event.id}`)}
-                      >
-                        <div className="relative">
-                          <EventThumbnail
-                            src={item.event.image}
-                            alt={item.event.title}
-                            category={item.event.category || ""}
-                            size="md"
-                          />
-                        </div>
-                        <CardContent className="p-4">
-                          <h4 className="font-semibold text-foreground mb-2 line-clamp-2">
-                            {item.event.title}
-                          </h4>
-                          <div className="space-y-1 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(item.event.startDate).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{item.event.location}</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No events in this collection yet</p>
-                )}
-              </div>
+      <Dialog open={!!selectedCollection || loadingCollection} onOpenChange={() => setSelectedCollection(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {loadingCollection ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          ) : selectedCollection && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedCollection.name}</DialogTitle>
+                <DialogDescription>
+                  {selectedCollection.description || "Event collection"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Collection Info */}
+                <div className="flex items-center gap-4">
+                  <Badge variant="secondary">
+                    {selectedCollection._count?.events || selectedCollection.eventCount || 0} events
+                  </Badge>
+                  <Badge variant="secondary">
+                    <Users className="h-3 w-3 mr-1" />
+                    {selectedCollection._count?.followers || selectedCollection.followerCount || 0} followers
+                  </Badge>
+                  {selectedCollection.isPublic && (
+                    <Badge>Public</Badge>
+                  )}
+                </div>
+
+                {/* Events in Collection */}
+                <div>
+                  <h3 className="font-semibold mb-3">Events in this Collection</h3>
+                  {selectedCollection.events && selectedCollection.events.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedCollection.events.map((item) => (
+                        <Card
+                          key={item.id}
+                          className="hover:shadow-md transition-shadow cursor-pointer"
+                          onClick={() => navigate(`/event/${item.event.id}`)}
+                        >
+                          <div className="relative">
+                            <EventThumbnail
+                              src={item.event.coverImage || ""}
+                              alt={item.event.title}
+                              category={item.event.category || ""}
+                              size="md"
+                            />
+                          </div>
+                          <CardContent className="p-4">
+                            <h4 className="font-semibold text-foreground mb-2 line-clamp-2">
+                              {item.event.title}
+                            </h4>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                <span>{new Date(item.event.startDate).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                <span>{item.event.location || item.event.venueName || "Online"}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No events in this collection yet</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

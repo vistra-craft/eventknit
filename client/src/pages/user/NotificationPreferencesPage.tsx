@@ -9,7 +9,6 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
-  ArrowLeft,
   Settings,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,6 +25,7 @@ import {
   type UpdateNotificationPreferencesData,
 } from "@/lib/notification-api";
 import DashboardNavbar from "./DashboardNavbar";
+import BackButton from "@/components/BackButton";
 
 const NotificationPreferencesPage = () => {
   const navigate = useNavigate();
@@ -182,10 +182,7 @@ const NotificationPreferencesPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/user/dashboard?section=notifications")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/user/dashboard?section=notifications" label="Back" />
             <div>
               <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                 <Bell className="h-6 w-6" />

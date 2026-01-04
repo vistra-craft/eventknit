@@ -1,9 +1,10 @@
 import { PaymentGateway } from './payment-gateway.interface.js';
 import { PaystackGateway } from './payment-gateways/paystack-gateway.js';
 import { StripeGateway } from './payment-gateways/stripe-gateway.js';
+import { MpesaGateway } from './payment-gateways/mpesa-gateway.js';
 import { logger } from '../utils/logger.js';
 
-export type GatewayType = 'PAYSTACK' | 'STRIPE' | 'PAYPAL';
+export type GatewayType = 'PAYSTACK' | 'STRIPE' | 'PAYPAL' | 'MPESA';
 
 export class PaymentGatewayManager {
   private gateways: Map<GatewayType, PaymentGateway> = new Map();
@@ -37,6 +38,19 @@ export class PaymentGatewayManager {
       }
     } catch (error) {
       logger.error('Failed to initialize Stripe gateway:', error);
+    }
+
+    // Initialize M-Pesa
+    try {
+      const mpesaGateway = new MpesaGateway();
+      if (mpesaGateway.isConfigured()) {
+        this.gateways.set('MPESA', mpesaGateway);
+        logger.info('M-Pesa gateway initialized');
+      } else {
+        logger.warn('M-Pesa gateway not configured');
+      }
+    } catch (error) {
+      logger.error('Failed to initialize M-Pesa gateway:', error);
     }
 
     // PayPal will be added later
@@ -97,11 +111,38 @@ export class PaymentGatewayManager {
         available: this.gateways.has('STRIPE'),
         configured: this.gateways.has('STRIPE') && this.gateways.get('STRIPE')!.isConfigured(),
       },
+      MPESA: {
+        available: this.gateways.has('MPESA'),
+        configured: this.gateways.has('MPESA') && this.gateways.get('MPESA')!.isConfigured(),
+      },
       PAYPAL: {
         available: false,
         configured: false,
       },
     };
+  }
+
+  /**
+   * Get M-Pesa gateway specifically (for STK Push operations)
+   */
+  getMpesaGateway(): MpesaGateway | null {
+    const gateway = this.gateways.get('MPESA');
+    return gateway ? (gateway as MpesaGateway) : null;
+  }
+
+  /**
+   * Get mobile money gateway for a specific country/currency
+   */
+  getMobileMoneyGateway(currency: string): PaymentGateway | null {
+    // M-Pesa for Kenya (KES)
+    if (currency === 'KES' && this.gateways.has('MPESA')) {
+      return this.gateways.get('MPESA')!;
+    }
+    // Paystack for Nigeria (NGN) mobile money
+    if (currency === 'NGN' && this.gateways.has('PAYSTACK')) {
+      return this.gateways.get('PAYSTACK')!;
+    }
+    return null;
   }
 }
 

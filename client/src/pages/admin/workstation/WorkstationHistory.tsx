@@ -4,10 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Input } from "../../../components/ui/input";
-import { 
-  History, 
-  Download, 
-  ArrowLeft,
+import {
+  History,
+  Download,
   CheckCircle,
   XCircle,
   Clock,
@@ -26,6 +25,7 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import BackButton from "@/components/BackButton";
 import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
 import { useToast } from "../../../hooks/use-toast";
@@ -385,14 +385,7 @@ const WorkstationHistory: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate('/admin/workstation')}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Workstation
-          </Button>
+          <BackButton to="/admin/workstation" label="Back to Workstation" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Scan History</h1>
             <p className="text-muted-foreground mt-2">View and analyze all QR code scans</p>

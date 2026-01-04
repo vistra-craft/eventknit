@@ -1,16 +1,25 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Save, X, Loader2 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "../AdminLayout";
+import { createWage, updateWage, getWageById } from "@/lib/platform-finance-api";
 
 const EditWagePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const isEditing = !!id;
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     employeeName: "",
     employeeId: "",
@@ -19,7 +28,7 @@ const EditWagePage = () => {
     amount: "",
     payPeriod: "",
     payDate: "",
-    status: "paid",
+    status: "pending",
     paymentMethod: "bank_transfer",
     hoursWorked: "",
     hourlyRate: "",
@@ -29,6 +38,47 @@ const EditWagePage = () => {
     notes: ""
   });
 
+  useEffect(() => {
+    if (isEditing && id) {
+      fetchWage(id);
+    }
+  }, [id, isEditing]);
+
+  const fetchWage = async (wageId: string) => {
+    try {
+      setLoading(true);
+      const response = await getWageById(wageId);
+      if (response.success && response.data) {
+        const wage = response.data;
+        setFormData({
+          employeeName: wage.employeeName || "",
+          employeeId: wage.employeeId || "",
+          position: wage.position || "",
+          department: wage.department || "",
+          amount: wage.amount || "",
+          payPeriod: wage.payPeriod || "",
+          payDate: wage.payDate ? wage.payDate.split("T")[0] : "",
+          status: wage.status || "pending",
+          paymentMethod: wage.paymentMethod || "bank_transfer",
+          hoursWorked: "",
+          hourlyRate: "",
+          overtime: "",
+          deductions: "",
+          bonuses: "",
+          notes: wage.notes || ""
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.message || "Failed to load wage details",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -36,15 +86,96 @@ const EditWagePage = () => {
     }));
   };
 
-  const handleSave = () => {
-    console.log("Saving wage:", formData);
-    // TODO: Implement save logic
-    navigate("/admin/finance/wages");
+  const handleSave = async () => {
+    if (!formData.employeeName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Employee name is required",
+      });
+      return;
+    }
+
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Valid amount is required",
+      });
+      return;
+    }
+
+    if (!formData.payPeriod.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Pay period is required",
+      });
+      return;
+    }
+
+    if (!formData.payDate) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Pay date is required",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const wageData = {
+        employeeName: formData.employeeName,
+        employeeId: formData.employeeId || undefined,
+        position: formData.position || undefined,
+        department: formData.department || undefined,
+        amount: parseFloat(formData.amount),
+        payPeriod: formData.payPeriod,
+        payDate: formData.payDate,
+        status: formData.status,
+        paymentMethod: formData.paymentMethod || undefined,
+        notes: formData.notes || undefined,
+      };
+
+      if (isEditing && id) {
+        await updateWage(id, wageData);
+        toast({
+          title: "Success",
+          description: "Wage updated successfully",
+        });
+      } else {
+        await createWage(wageData);
+        toast({
+          title: "Success",
+          description: "Wage created successfully",
+        });
+      }
+      navigate("/admin/finance/wages");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} wage`,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
     navigate("/admin/finance/wages");
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -52,23 +183,24 @@ const EditWagePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/admin/finance/wages" label="Back" />
             <div>
-              <h1 className="text-base font-semibold text-foreground">Edit Wage</h1>
-              <p className="text-gray-600">Update wage details</p>
+              <h1 className="text-base font-semibold text-foreground">{isEditing ? "Edit Wage" : "Add Wage"}</h1>
+              <p className="text-gray-600">{isEditing ? "Update wage details" : "Add a new wage payment"}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={saving}>
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </div>

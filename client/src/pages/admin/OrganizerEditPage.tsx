@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   Save,
   AlertCircle,
   Shield,
   Loader2,
   CheckCircle
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -325,10 +325,7 @@ const OrganizerEditPage = () => {
     return (
       <AdminLayout>
         <div className="space-y-6">
-          <Button variant="outline" size="sm" onClick={handleBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Organizers
-          </Button>
+          <BackButton onClick={handleBack} label="Back to Organizers" />
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
@@ -359,10 +356,7 @@ const OrganizerEditPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Organizer
-            </Button>
+            <BackButton onClick={handleBack} label="Back to Organizer" />
             <div>
               <h1 className="text-base font-semibold text-foreground">Edit Organizer</h1>
               <p className="text-gray-600">{organizerData.firstName} {organizerData.lastName} • {organizerData.company}</p>

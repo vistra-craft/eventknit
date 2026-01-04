@@ -1,7 +1,8 @@
 /**
  * Social Media OAuth Service
- * 
+ *
  * Handles OAuth flows for connecting social media accounts
+ * Tokens are encrypted at rest using AES-256-GCM
  */
 
 import { platformManager } from './platform-manager.js';
@@ -10,6 +11,7 @@ import { logger } from '../../utils/logger.js';
 import { NotFoundError, ValidationError } from '../../utils/errors.js';
 import { SocialPlatform } from '@prisma/client';
 import crypto from 'crypto';
+import { encrypt, decrypt, isEncrypted } from '../../utils/encryption.js';
 
 export class SocialMediaOAuthService {
   /**
@@ -34,10 +36,10 @@ export class SocialMediaOAuthService {
 
     const state = this.generateStateToken();
     const finalRedirectUri = redirectUri || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/organizer/social-media/callback?platform=${platform}`;
-    
+
     // Store state in database for verification (optional, can use session instead)
     // For now, we'll include organizerId in state token
-    
+
     const url = platformAdapter.getAuthorizationUrl(finalRedirectUri, `${state}:${organizerId}`);
 
     return { url, state };
@@ -91,12 +93,17 @@ export class SocialMediaOAuthService {
     });
 
     if (existingAccount) {
-      // Update existing account
+      // Update existing account with encrypted tokens
+      const encryptedAccessToken = encrypt(tokenResponse.accessToken);
+      const encryptedRefreshToken = tokenResponse.refreshToken
+        ? encrypt(tokenResponse.refreshToken)
+        : existingAccount.refreshToken;
+
       const updated = await prisma.socialAccount.update({
         where: { id: existingAccount.id },
         data: {
-          accessToken: tokenResponse.accessToken, // TODO: Encrypt this
-          refreshToken: tokenResponse.refreshToken || existingAccount.refreshToken, // TODO: Encrypt this
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
           tokenExpiry: tokenResponse.expiresIn
             ? new Date(Date.now() + tokenResponse.expiresIn * 1000)
             : null,
@@ -113,15 +120,20 @@ export class SocialMediaOAuthService {
       return updated;
     }
 
-    // Create new account connection
+    // Create new account connection with encrypted tokens
+    const encryptedAccessToken = encrypt(tokenResponse.accessToken);
+    const encryptedRefreshToken = tokenResponse.refreshToken
+      ? encrypt(tokenResponse.refreshToken)
+      : null;
+
     const account = await prisma.socialAccount.create({
       data: {
         platform: platform.toUpperCase() as SocialPlatform,
         accountId: profile.id,
         accountName: profile.name,
         accountHandle: profile.username,
-        accessToken: tokenResponse.accessToken, // TODO: Encrypt this
-        refreshToken: tokenResponse.refreshToken, // TODO: Encrypt this
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
         tokenExpiry: tokenResponse.expiresIn
           ? new Date(Date.now() + tokenResponse.expiresIn * 1000)
           : null,
@@ -157,13 +169,24 @@ export class SocialMediaOAuthService {
     }
 
     try {
-      const tokenResponse = await platformAdapter.refreshToken(account.refreshToken);
+      // Decrypt refresh token before using
+      const decryptedRefreshToken = isEncrypted(account.refreshToken)
+        ? decrypt(account.refreshToken)
+        : account.refreshToken;
+
+      const tokenResponse = await platformAdapter.refreshToken(decryptedRefreshToken);
+
+      // Encrypt new tokens before storing
+      const encryptedAccessToken = encrypt(tokenResponse.accessToken);
+      const encryptedRefreshToken = tokenResponse.refreshToken
+        ? encrypt(tokenResponse.refreshToken)
+        : account.refreshToken;
 
       const updated = await prisma.socialAccount.update({
         where: { id: accountId },
         data: {
-          accessToken: tokenResponse.accessToken, // TODO: Encrypt
-          refreshToken: tokenResponse.refreshToken || account.refreshToken, // TODO: Encrypt
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
           tokenExpiry: tokenResponse.expiresIn
             ? new Date(Date.now() + tokenResponse.expiresIn * 1000)
             : null,
@@ -181,6 +204,7 @@ export class SocialMediaOAuthService {
 
   /**
    * Validate and refresh token if needed
+   * Returns the decrypted access token ready for use
    */
   static async ensureValidToken(accountId: string): Promise<string> {
     const account = await prisma.socialAccount.findUnique({
@@ -204,25 +228,41 @@ export class SocialMediaOAuthService {
       if (account.refreshToken) {
         try {
           const refreshed = await this.refreshAccountToken(accountId);
-          return refreshed.accessToken || '';
+          // Decrypt the refreshed token before returning
+          if (refreshed.accessToken) {
+            return isEncrypted(refreshed.accessToken)
+              ? decrypt(refreshed.accessToken)
+              : refreshed.accessToken;
+          }
+          return '';
         } catch (error) {
           logger.warn(`Failed to refresh token, using existing token: ${error}`);
         }
       }
     }
 
+    // Decrypt access token for use
+    const decryptedAccessToken = isEncrypted(account.accessToken)
+      ? decrypt(account.accessToken)
+      : account.accessToken;
+
     // Validate token with platform
     const platformAdapter = platformManager.getPlatform(account.platform.toLowerCase());
     if (platformAdapter) {
-      const isValid = await platformAdapter.validateToken(account.accessToken);
+      const isValid = await platformAdapter.validateToken(decryptedAccessToken);
       if (!isValid && account.refreshToken) {
         // Token invalid, try to refresh
         const refreshed = await this.refreshAccountToken(accountId);
-        return refreshed.accessToken || '';
+        if (refreshed.accessToken) {
+          return isEncrypted(refreshed.accessToken)
+            ? decrypt(refreshed.accessToken)
+            : refreshed.accessToken;
+        }
+        return '';
       }
     }
 
-    return account.accessToken;
+    return decryptedAccessToken;
   }
 
   /**

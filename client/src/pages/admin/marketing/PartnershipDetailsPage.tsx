@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout from "../AdminLayout";
-import { 
-  Handshake, 
+import BackButton from "@/components/BackButton";
+import {
+  Handshake,
   Building2,
   Users,
   Star,
@@ -16,8 +17,7 @@ import {
   AlertCircle,
   Download,
   Share2,
-  Printer,
-  ArrowLeft
+  Printer
 } from "lucide-react";
 
 interface Partnership {
@@ -260,10 +260,7 @@ Generated on: ${new Date().toLocaleDateString()}
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-base font-semibold text-foreground mb-2">Partnership Not Found</h2>
             <p className="text-muted-foreground mb-4">The partnership you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/admin/marketing/partnerships')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Partnerships
-            </Button>
+            <BackButton to="/admin/marketing/partnerships" label="Back to Partnerships" />
           </div>
         </div>
       </AdminLayout>
@@ -276,14 +273,7 @@ Generated on: ${new Date().toLocaleDateString()}
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate('/admin/marketing/partnerships')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Partnerships
-            </Button>
+            <BackButton to="/admin/marketing/partnerships" label="Back to Partnerships" />
             <div>
               <h1 className="text-lg font-semibold text-foreground">Partnership Details</h1>
               <p className="text-gray-600">View and manage partnership information</p>

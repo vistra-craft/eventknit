@@ -2,11 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { 
-  Home, 
-  ArrowLeft, 
+import {
+  Home,
   AlertCircle
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 
 const NotFound = () => {
   const navigate = useNavigate();
@@ -53,15 +53,7 @@ const NotFound = () => {
                 <Home className="w-5 h-5 mr-2" />
                 Go Home
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => navigate(-1)}
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground px-8 py-3 text-lg font-semibold transition-all duration-300 hover:scale-105"
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                Go Back
-              </Button>
+              <BackButton label="Go Back" />
             </div>
           </div>
 

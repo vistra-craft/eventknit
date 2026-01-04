@@ -1,27 +1,71 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Save, X, Loader2 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "../AdminLayout";
+import { createIncome, updateIncome, getIncomeById } from "@/lib/platform-finance-api";
 
 const EditIncomePage = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { toast } = useToast();
+  const isEditing = !!id;
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     category: "",
     description: "",
     amount: "",
     date: "",
     source: "",
-    status: "completed",
+    status: "pending",
     paymentMethod: "bank_transfer",
     receipt: "",
     notes: ""
   });
+
+  useEffect(() => {
+    if (isEditing && id) {
+      fetchIncome(id);
+    }
+  }, [id, isEditing]);
+
+  const fetchIncome = async (incomeId: string) => {
+    try {
+      setLoading(true);
+      const response = await getIncomeById(incomeId);
+      if (response.success && response.data) {
+        const income = response.data;
+        setFormData({
+          category: income.category || "",
+          description: income.description || "",
+          amount: income.amount || "",
+          date: income.createdAt ? income.createdAt.split("T")[0] : "",
+          source: income.source || "",
+          status: income.status || "pending",
+          paymentMethod: income.paymentMethod || "bank_transfer",
+          receipt: income.reference || "",
+          notes: income.notes || ""
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.message || "Failed to load income details",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -30,15 +74,85 @@ const EditIncomePage = () => {
     }));
   };
 
-  const handleSave = () => {
-    console.log("Saving income:", formData);
-    // TODO: Implement save logic
-    navigate("/admin/finance/income");
+  const handleSave = async () => {
+    if (!formData.category) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Category is required",
+      });
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Description is required",
+      });
+      return;
+    }
+
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Valid amount is required",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const incomeData = {
+        category: formData.category,
+        description: formData.description,
+        amount: parseFloat(formData.amount),
+        source: formData.source || undefined,
+        reference: formData.receipt || undefined,
+        paymentMethod: formData.paymentMethod || undefined,
+        notes: formData.notes || undefined,
+        status: formData.status,
+      };
+
+      if (isEditing && id) {
+        await updateIncome(id, incomeData);
+        toast({
+          title: "Success",
+          description: "Income updated successfully",
+        });
+      } else {
+        await createIncome(incomeData);
+        toast({
+          title: "Success",
+          description: "Income created successfully",
+        });
+      }
+      navigate("/admin/finance/income");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} income`,
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
     navigate("/admin/finance/income");
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -46,23 +160,24 @@ const EditIncomePage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
+            <BackButton to="/admin/finance/income" label="Back" />
             <div>
-              <h1 className="text-base font-semibold text-foreground">Edit Income</h1>
-              <p className="text-gray-600">Update income details</p>
+              <h1 className="text-base font-semibold text-foreground">{isEditing ? "Edit Income" : "Add Income"}</h1>
+              <p className="text-gray-600">{isEditing ? "Update income details" : "Add a new income record"}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={saving}>
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </div>

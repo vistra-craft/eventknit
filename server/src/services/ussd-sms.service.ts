@@ -5,6 +5,8 @@ import { EventService } from './event.service.js';
 import { ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Prisma, UserRole } from '@prisma/client';
+import { getPaymentGatewayManager } from './payment-gateway-manager.js';
+import { MpesaGateway } from './payment-gateways/mpesa-gateway.js';
 
 export type SessionType = 'registration' | 'event_code' | 'support' | 'info';
 
@@ -23,6 +25,8 @@ export type RegistrationStep =
   | 'country'
   | 'postal_code'
   | 'event_code'
+  | 'payment'
+  | 'awaiting_payment'
   | 'confirm'
   | 'complete';
 
@@ -41,6 +45,14 @@ export interface SMSRegistrationState {
   postalCode?: string;
   eventCode?: string;
   role?: UserRole;
+  // Payment fields
+  eventId?: string;
+  eventTitle?: string;
+  paymentRequired?: boolean;
+  paymentAmount?: number;
+  paymentCurrency?: string;
+  ticketTypeId?: string;
+  ticketTypeName?: string;
 }
 
 export interface IncomingSMS {
@@ -134,7 +146,7 @@ export class USSDSMSService {
    */
   static async startEventCodeRegistration(phoneNumber: string, eventCode: string): Promise<void> {
     try {
-      // Find event by code
+      // Find event by code with pricing info
       const event = await prisma.event.findFirst({
         where: {
           registrationCode: eventCode,
@@ -147,6 +159,9 @@ export class USSDSMSService {
           registrationDeadline: true,
           startDate: true,
           isFree: true,
+          price: true,
+          currency: true,
+          ticketTypes: true,
         },
       });
 
@@ -179,13 +194,51 @@ export class USSDSMSService {
         return;
       }
 
+      // Determine payment requirements
+      let paymentRequired = !event.isFree;
+      let paymentAmount = 0;
+      let paymentCurrency = event.currency || 'KES';
+      let ticketTypeId: string | undefined;
+      let ticketTypeName: string | undefined;
+
+      if (!event.isFree) {
+        // Check for ticket types first
+        const ticketTypes = event.ticketTypes as Array<{
+          id: string;
+          name: string;
+          price: number;
+          currency?: string;
+          available?: number;
+        }> | null;
+
+        if (ticketTypes && ticketTypes.length > 0) {
+          // For SMS, use the first/cheapest available ticket type
+          const availableTicket = ticketTypes.find(t => !t.available || t.available > 0);
+          if (availableTicket) {
+            paymentAmount = availableTicket.price;
+            ticketTypeId = availableTicket.id;
+            ticketTypeName = availableTicket.name;
+            if (availableTicket.currency) {
+              paymentCurrency = availableTicket.currency;
+            }
+          }
+        } else if (event.price) {
+          // Use single price
+          paymentAmount = Number(event.price);
+        }
+
+        if (paymentAmount <= 0) {
+          paymentRequired = false;
+        }
+      }
+
       // Check if user exists
       const existingUser = await prisma.user.findFirst({
         where: { phoneNumber },
       });
 
-      if (existingUser) {
-        // User exists - try to register directly
+      if (existingUser && !paymentRequired) {
+        // User exists and event is free - try to register directly
         try {
           await EventService.registerForEvent(event.id, existingUser.id, {}, undefined, undefined);
           await smsService.sendSMS({
@@ -203,6 +256,13 @@ export class USSDSMSService {
       const session = await this.createOrUpdateSession(phoneNumber, 'event_code', {
         phoneNumber,
         eventCode,
+        eventId: event.id,
+        eventTitle: event.title,
+        paymentRequired,
+        paymentAmount,
+        paymentCurrency,
+        ticketTypeId,
+        ticketTypeName,
       });
 
       await this.sendStepMessage(session, 'welcome');
@@ -281,6 +341,12 @@ export class USSDSMSService {
         break;
       case 'event_code':
         await this.handleEventCodeStep(session.id, state, message);
+        break;
+      case 'payment':
+        await this.handlePaymentStep(session.id, state, message);
+        break;
+      case 'awaiting_payment':
+        await this.handleAwaitingPaymentStep(session.id, state, message);
         break;
       case 'confirm':
         await this.handleConfirmStep(session.id, state, message);
@@ -610,9 +676,15 @@ export class USSDSMSService {
       state.postalCode = message;
     }
 
-    // If event code registration, ask for event code, otherwise go to confirm
-    if (state.eventCode) {
-      // Event code already provided, go to confirm
+    // If event code registration with payment required, go to payment step
+    if (state.eventCode && state.paymentRequired && state.paymentAmount && state.paymentAmount > 0) {
+      await this.updateSessionStep(sessionId, 'payment', state);
+      await this.sendStepMessage(
+        { id: sessionId, currentStep: 'payment', state },
+        'payment',
+      );
+    } else if (state.eventCode) {
+      // Event code already provided, no payment needed - go to confirm
       await this.updateSessionStep(sessionId, 'confirm', state);
       await this.sendStepMessage(
         { id: sessionId, currentStep: 'confirm', state },
@@ -668,6 +740,277 @@ export class USSDSMSService {
       { id: sessionId, currentStep: 'confirm', state },
       'confirm',
     );
+  }
+
+  /**
+   * Handle payment step - user confirms they want to pay
+   */
+  private static async handlePaymentStep(
+    sessionId: string,
+    state: SMSRegistrationState,
+    message: string,
+  ): Promise<void> {
+    const response = message.trim().toUpperCase();
+
+    if (response === 'CANCEL' || response === 'NO' || response === 'N') {
+      await smsService.sendSMS({
+        to: state.phoneNumber,
+        message: 'Registration cancelled. Send the event code again to try again.',
+      });
+      await this.cancelSession(sessionId, state.phoneNumber);
+      return;
+    }
+
+    if (response !== 'PAY' && response !== 'YES' && response !== 'Y' && response !== '1') {
+      await smsService.sendSMS({
+        to: state.phoneNumber,
+        message: `Reply PAY or YES to proceed with payment of ${state.paymentCurrency} ${state.paymentAmount}. Reply CANCEL to abort.`,
+      });
+      return;
+    }
+
+    // Initiate M-Pesa STK Push
+    try {
+      const gatewayManager = getPaymentGatewayManager();
+      const mpesaGateway = gatewayManager.getMpesaGateway();
+
+      if (!mpesaGateway || !mpesaGateway.isConfigured()) {
+        await smsService.sendSMS({
+          to: state.phoneNumber,
+          message: 'Mobile payment is not available at the moment. Please try again later or register online.',
+        });
+        await this.cancelSession(sessionId, state.phoneNumber);
+        return;
+      }
+
+      // Generate a unique reference for this payment
+      const paymentReference = `SMS${Date.now()}${sessionId.slice(-6)}`;
+
+      // Initiate STK Push
+      const stkResponse = await mpesaGateway.initiateSTKPush({
+        phoneNumber: state.phoneNumber,
+        amount: state.paymentAmount!,
+        accountReference: paymentReference.slice(0, 12),
+        transactionDesc: `Event: ${state.eventTitle?.slice(0, 10) || 'Registration'}`,
+      });
+
+      // Update session with payment info
+      await prisma.sMSSession.update({
+        where: { id: sessionId },
+        data: {
+          currentStep: 'awaiting_payment',
+          state: state as unknown as Prisma.InputJsonValue,
+          paymentRequired: true,
+          paymentAmount: state.paymentAmount,
+          paymentCurrency: state.paymentCurrency,
+          paymentStatus: 'initiated',
+          paymentGateway: 'MPESA',
+          paymentReference: stkResponse.CheckoutRequestID,
+          paymentInitiatedAt: new Date(),
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000), // Extend by 10 minutes for payment
+        },
+      });
+
+      await smsService.sendSMS({
+        to: state.phoneNumber,
+        message: `M-Pesa payment request sent to ${state.phoneNumber}.\n\nAmount: KES ${state.paymentAmount}\n\nEnter your M-Pesa PIN on your phone to complete payment.\n\nReply STATUS to check payment or CANCEL to abort.`,
+      });
+
+      logger.info(`M-Pesa STK Push initiated for session ${sessionId}: ${stkResponse.CheckoutRequestID}`);
+    } catch (error) {
+      logger.error('Failed to initiate M-Pesa payment:', error);
+      await smsService.sendSMS({
+        to: state.phoneNumber,
+        message: 'Failed to initiate payment. Please try again later or register online.',
+      });
+    }
+  }
+
+  /**
+   * Handle awaiting payment step - user is waiting for payment confirmation
+   */
+  private static async handleAwaitingPaymentStep(
+    sessionId: string,
+    state: SMSRegistrationState,
+    message: string,
+  ): Promise<void> {
+    const response = message.trim().toUpperCase();
+
+    if (response === 'CANCEL' || response === 'STOP') {
+      await smsService.sendSMS({
+        to: state.phoneNumber,
+        message: 'Registration cancelled. If payment was made, it will be refunded.',
+      });
+      await prisma.sMSSession.update({
+        where: { id: sessionId },
+        data: {
+          paymentStatus: 'cancelled',
+          completed: true,
+        },
+      });
+      return;
+    }
+
+    if (response === 'STATUS' || response === 'CHECK') {
+      // Check payment status
+      const session = await prisma.sMSSession.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session || !session.paymentReference) {
+        await smsService.sendSMS({
+          to: state.phoneNumber,
+          message: 'No payment found. Please start registration again.',
+        });
+        return;
+      }
+
+      // Query M-Pesa for payment status
+      try {
+        const gatewayManager = getPaymentGatewayManager();
+        const mpesaGateway = gatewayManager.getMpesaGateway();
+
+        if (mpesaGateway) {
+          const queryResult = await mpesaGateway.querySTKPush(session.paymentReference);
+
+          if (queryResult.ResultCode === '0') {
+            // Payment successful - complete registration
+            await this.completePaymentAndRegistration(sessionId, state, session.paymentReference);
+            return;
+          } else if (queryResult.ResultCode === '1032') {
+            await smsService.sendSMS({
+              to: state.phoneNumber,
+              message: 'Payment was cancelled. Reply PAY to try again or CANCEL to abort registration.',
+            });
+            await prisma.sMSSession.update({
+              where: { id: sessionId },
+              data: {
+                currentStep: 'payment',
+                paymentStatus: 'cancelled',
+              },
+            });
+          } else if (queryResult.ResultCode) {
+            await smsService.sendSMS({
+              to: state.phoneNumber,
+              message: `Payment failed: ${queryResult.ResultDesc}. Reply PAY to try again or CANCEL to abort.`,
+            });
+            await prisma.sMSSession.update({
+              where: { id: sessionId },
+              data: {
+                currentStep: 'payment',
+                paymentStatus: 'failed',
+              },
+            });
+          } else {
+            await smsService.sendSMS({
+              to: state.phoneNumber,
+              message: 'Payment is still processing. Please complete the M-Pesa PIN prompt on your phone, then reply STATUS to check again.',
+            });
+          }
+        }
+      } catch (error) {
+        logger.error('Failed to query M-Pesa status:', error);
+        await smsService.sendSMS({
+          to: state.phoneNumber,
+          message: 'Could not check payment status. Please wait a moment and reply STATUS again.',
+        });
+      }
+      return;
+    }
+
+    if (response === 'PAY' || response === 'RETRY') {
+      // Retry payment
+      await this.handlePaymentStep(sessionId, state, 'PAY');
+      return;
+    }
+
+    // Default response for awaiting payment
+    await smsService.sendSMS({
+      to: state.phoneNumber,
+      message: 'Waiting for M-Pesa payment.\n\nReply:\nSTATUS - Check payment status\nPAY - Retry payment\nCANCEL - Cancel registration',
+    });
+  }
+
+  /**
+   * Complete payment and finish registration
+   */
+  private static async completePaymentAndRegistration(
+    sessionId: string,
+    state: SMSRegistrationState,
+    mpesaReceiptNumber?: string,
+  ): Promise<void> {
+    try {
+      // Update session payment status
+      await prisma.sMSSession.update({
+        where: { id: sessionId },
+        data: {
+          paymentStatus: 'completed',
+          paymentReceiptNumber: mpesaReceiptNumber,
+          paymentCompletedAt: new Date(),
+        },
+      });
+
+      // Complete the registration
+      await this.completeRegistration(sessionId, state);
+
+      logger.info(`Payment completed and registration finished for session ${sessionId}`);
+    } catch (error) {
+      logger.error('Failed to complete payment registration:', error);
+      await smsService.sendSMS({
+        to: state.phoneNumber,
+        message: 'Payment received but registration failed. Please contact support with your M-Pesa receipt.',
+        isCritical: true,
+      });
+    }
+  }
+
+  /**
+   * Handle M-Pesa callback - called by webhook
+   */
+  static async handleMpesaCallback(
+    checkoutRequestId: string,
+    resultCode: number,
+    resultDesc: string,
+    mpesaReceiptNumber?: string,
+    amount?: number,
+  ): Promise<void> {
+    try {
+      // Find session by payment reference
+      const session = await prisma.sMSSession.findFirst({
+        where: {
+          paymentReference: checkoutRequestId,
+          paymentStatus: 'initiated',
+        },
+      });
+
+      if (!session) {
+        logger.warn(`No session found for M-Pesa callback: ${checkoutRequestId}`);
+        return;
+      }
+
+      const state = session.state as unknown as SMSRegistrationState;
+
+      if (resultCode === 0) {
+        // Payment successful
+        await this.completePaymentAndRegistration(session.id, state, mpesaReceiptNumber);
+      } else {
+        // Payment failed
+        await prisma.sMSSession.update({
+          where: { id: session.id },
+          data: {
+            paymentStatus: 'failed',
+            currentStep: 'payment',
+          },
+        });
+
+        await smsService.sendSMS({
+          to: state.phoneNumber,
+          message: `Payment failed: ${resultDesc}.\n\nReply PAY to try again or CANCEL to abort registration.`,
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to handle M-Pesa callback:', error);
+    }
   }
 
   /**
@@ -880,6 +1223,22 @@ export class USSDSMSService {
 
     case 'event_code':
       message = 'Do you have an event code to register for?\n(Enter the code or reply SKIP to continue without event registration)';
+      break;
+
+    case 'payment':
+      message = `Payment Required\n\n`;
+      message += `Event: ${state.eventTitle || 'Event Registration'}\n`;
+      if (state.ticketTypeName) {
+        message += `Ticket: ${state.ticketTypeName}\n`;
+      }
+      message += `Amount: ${state.paymentCurrency || 'KES'} ${state.paymentAmount}\n\n`;
+      message += `Reply PAY to receive M-Pesa payment prompt.\n`;
+      message += `Reply CANCEL to abort registration.`;
+      break;
+
+    case 'awaiting_payment':
+      message = 'Waiting for M-Pesa payment.\n\n';
+      message += 'Reply:\nSTATUS - Check payment status\nPAY - Retry payment\nCANCEL - Cancel registration';
       break;
 
     case 'confirm':

@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Input } from "../../../components/ui/input";
-import { 
-  Calendar, 
-  Users, 
-  QrCode, 
-  Printer, 
+import {
+  Calendar,
+  Users,
+  QrCode,
+  Printer,
   Eye,
   CheckCircle,
   Clock,
@@ -17,7 +17,6 @@ import {
   Star,
   Activity,
   Target,
-  ArrowLeft,
   UserPlus,
   Download,
   Settings,
@@ -29,6 +28,7 @@ import {
   Filter
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
+import BackButton from "@/components/BackButton";
 
 interface EventData {
   id: string;
@@ -197,14 +197,7 @@ const WorkstationEvents: React.FC = () => {
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate('/admin/workstation/events')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Events
-            </Button>
+            <BackButton to="/admin/workstation/events" label="Back to Events" />
             <div>
               <h1 className="text-lg font-semibold text-foreground">{selectedEvent.title}</h1>
               <p className="text-muted-foreground mt-2">{selectedEvent.organizer} • {selectedEvent.date}</p>
