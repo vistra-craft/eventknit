@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { USSDSMSService, IncomingSMS } from '../services/ussd-sms.service.js';
+import { USSDService } from '../services/ussd.service.js';
 import { logger } from '../utils/logger.js';
 
 export class USSDSMSController {
@@ -53,8 +54,18 @@ export class USSDSMSController {
   }
 
   /**
-   * Handle USSD webhook (if using USSD gateway)
+   * Handle USSD webhook (Africa's Talking format)
    * POST /api/v1/ussd/webhook
+   *
+   * Africa's Talking sends:
+   * - sessionId: Unique session identifier
+   * - serviceCode: USSD code dialed (e.g., *123#)
+   * - phoneNumber: User's phone number (MSISDN)
+   * - text: User input, accumulated with * separator
+   *
+   * Response format:
+   * - CON <message>: Continue session (wait for more input)
+   * - END <message>: End session
    */
   static async handleUSSD(
     req: Request,
@@ -62,34 +73,36 @@ export class USSDSMSController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const phoneNumber = req.body.phoneNumber || req.body.msisdn;
+      // Africa's Talking format
       const sessionId = req.body.sessionId;
-      const userInput = req.body.text || req.body.input || '';
+      const serviceCode = req.body.serviceCode || '*384*123#';
+      const phoneNumber = req.body.phoneNumber || req.body.msisdn;
+      const text = req.body.text || '';
+
+      logger.info(`USSD request: sessionId=${sessionId}, phone=${phoneNumber}, text="${text}"`);
 
       if (!phoneNumber || !sessionId) {
-        res.status(400).json({
-          success: false,
-          message: 'Missing required fields: phoneNumber and sessionId',
-        });
+        // Return END response for invalid requests
+        res.set('Content-Type', 'text/plain');
+        res.status(200).send('END Invalid request. Please try again.');
         return;
       }
 
-      // Convert USSD to SMS format for processing
-      const incoming: IncomingSMS = {
-        from: phoneNumber,
-        body: userInput || 'START',
-        messageId: sessionId,
-      };
+      // Process USSD request using the new USSDService
+      const response = await USSDService.handleRequest({
+        sessionId,
+        serviceCode,
+        phoneNumber,
+        text,
+      });
 
-      // Process USSD input
-      await USSDSMSService.processIncomingSMS(incoming);
-
-      // USSD requires immediate response
-      // Get the response message (this would need to be stored in session)
-      res.status(200).send('END Registration service is processing. You will receive an SMS shortly.');
+      // Return plain text response (Africa's Talking format)
+      res.set('Content-Type', 'text/plain');
+      res.status(200).send(response);
     } catch (error) {
       logger.error('Failed to handle USSD webhook:', error);
-      res.status(200).send('END Error processing request. Please try again.');
+      res.set('Content-Type', 'text/plain');
+      res.status(200).send('END An error occurred. Please try again.');
     }
   }
 
@@ -165,14 +178,23 @@ export class USSDSMSController {
         }
       }
 
-      // Process callback asynchronously
-      USSDSMSService.handleMpesaCallback(
-        checkoutRequestId,
-        resultCode,
-        resultDesc,
-        mpesaReceiptNumber,
-        amount,
-      ).catch((error) => {
+      // Process callback asynchronously for both SMS and USSD sessions
+      Promise.all([
+        USSDSMSService.handleMpesaCallback(
+          checkoutRequestId,
+          resultCode,
+          resultDesc,
+          mpesaReceiptNumber,
+          amount,
+        ),
+        USSDService.handleMpesaCallback(
+          checkoutRequestId,
+          resultCode,
+          resultDesc,
+          mpesaReceiptNumber,
+          amount,
+        ),
+      ]).catch((error) => {
         logger.error('Failed to process M-Pesa callback:', error);
       });
 

@@ -302,6 +302,7 @@ model User {
   savedSearches                     SavedSearch[]                @relation("SavedSearches")
   savedEvents                       SavedEvent[]                 @relation("UserSavedEvents")
   activityHistory                   ActivityHistory[]            @relation("UserActivityHistory")
+  ussdSessions                      USSDSession[]
   // Organizer Dashboard Features
   eventTemplates                    EventTemplate[]              @relation("OrganizerTemplates")
   eventDrafts                       EventDraft[]                 @relation("OrganizerDrafts")
@@ -2262,6 +2263,60 @@ model SMSSession {
   @@index([completed])
   @@index([paymentReference])
   @@index([paymentStatus])
+}
+
+// USSD Session for real-time USSD interactions (Africa's Talking style)
+model USSDSession {
+  id              String   @id @default(cuid())
+  sessionId       String   @unique // Provider session ID (from Africa's Talking)
+  serviceCode     String   // USSD service code (e.g., *123#)
+  phoneNumber     String   // User's phone number (MSISDN)
+
+  // Menu navigation
+  currentLevel    Int      @default(0) // Current menu level
+  menuPath        String[] // Path of selections made (e.g., ["1", "2", "3"])
+  currentMenu     String   @default("main") // Current menu state
+
+  // Registration data collected
+  firstName       String?
+  lastName        String?
+  email           String?
+  jobTitle        String?
+  organization    String?
+
+  // Event registration
+  eventId         String?
+  eventCode       String?
+  eventTitle      String?
+  ticketTypeId    String?
+  ticketTypeName  String?
+
+  // Payment tracking
+  paymentRequired Boolean  @default(false)
+  paymentAmount   Decimal? @db.Decimal(10, 2)
+  paymentCurrency String?  @default("KES")
+  paymentStatus   String?  @default("pending") // pending, initiated, completed, failed, cancelled
+  paymentReference String? // M-Pesa CheckoutRequestID
+  paymentReceiptNumber String?
+  paymentInitiatedAt DateTime?
+  paymentCompletedAt DateTime?
+
+  // User linking
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+
+  // Session state
+  completed       Boolean  @default(false)
+  cancelled       Boolean  @default(false)
+  expiresAt       DateTime // USSD sessions typically last 2-3 minutes
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sessionId])
+  @@index([phoneNumber])
+  @@index([eventCode])
+  @@index([paymentReference])
+  @@index([expiresAt])
 }
 
 // ============================================

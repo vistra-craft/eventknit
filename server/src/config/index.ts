@@ -140,6 +140,18 @@ export const config = {
     defaultCountryCode: process.env.SMS_DEFAULT_COUNTRY_CODE || '1', // US default
   },
 
+  ussd: {
+    enabled: process.env.USSD_ENABLED === 'true',
+    provider: process.env.USSD_PROVIDER || 'africastalking', // africastalking, hubtel, etc.
+    serviceCode: process.env.USSD_SERVICE_CODE || '*384*123#',
+    // Africa's Talking credentials (if using AT)
+    africastalking: {
+      apiKey: process.env.AT_API_KEY || '',
+      username: process.env.AT_USERNAME || 'sandbox',
+    },
+    sessionTimeout: parseInt(process.env.USSD_SESSION_TIMEOUT || '180', 10), // 3 minutes default
+  },
+
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },
