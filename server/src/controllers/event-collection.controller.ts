@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { EventCollectionService } from '../services/event-collection.service.js';
-import { asyncHandler } from '../utils/async-handler.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { ValidationError } from '../utils/errors.js';
 
 export const eventCollectionController = {
@@ -45,8 +45,8 @@ export const eventCollectionController = {
     const { page, limit, isPublic } = req.query;
 
     const result = await EventCollectionService.getUserCollections(userId, {
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
+      page: page ? parseInt(page as string, 10) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
       isPublic: isPublic === 'true' ? true : isPublic === 'false' ? false : undefined,
     });
 
@@ -70,8 +70,8 @@ export const eventCollectionController = {
     const { page, limit } = req.query;
 
     const result = await EventCollectionService.getPublicCollections({
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
+      page: page ? parseInt(page as string, 10) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
     });
 
     res.json({

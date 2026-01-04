@@ -470,7 +470,7 @@ const ServicePointEventDashboard: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/service-point/events" label="Back to Events" />
+          <BackButton to="/admin/service-point" label="Back to Events" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">{eventData.title}</h1>
             <p className="text-muted-foreground mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>

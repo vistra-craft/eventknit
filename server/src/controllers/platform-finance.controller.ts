@@ -5,7 +5,7 @@ import {
   WageService,
   PlatformFinanceSummaryService,
 } from '../services/platform-finance.service.js';
-import { asyncHandler } from '../utils/async-handler.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { ValidationError } from '../utils/errors.js';
 
 export const platformFinanceController = {
@@ -14,8 +14,8 @@ export const platformFinanceController = {
     const { page, limit, category, status, startDate, endDate } = req.query;
 
     const result = await PlatformExpenseService.getExpenses({
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
+      page: page ? parseInt(page as string, 10) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
       category: category as string,
       status: status as string,
       startDate: startDate ? new Date(startDate as string) : undefined,
@@ -98,8 +98,8 @@ export const platformFinanceController = {
     const { page, limit, category, status, startDate, endDate } = req.query;
 
     const result = await PlatformIncomeService.getIncomes({
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
+      page: page ? parseInt(page as string, 10) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
       category: category as string,
       status: status as string,
       startDate: startDate ? new Date(startDate as string) : undefined,
@@ -182,8 +182,8 @@ export const platformFinanceController = {
     const { page, limit, department, status, payPeriod, startDate, endDate } = req.query;
 
     const result = await WageService.getWages({
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
+      page: page ? parseInt(page as string, 10) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
       department: department as string,
       status: status as string,
       payPeriod: payPeriod as string,

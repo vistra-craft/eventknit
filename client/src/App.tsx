@@ -153,7 +153,6 @@ import {
 import NotFound from "./pages/NotFound";
 import Support from "./pages/Support";
 // Admin Service Point imports
-import ServicePointOverview from "./pages/admin/service-point/ServicePointOverview";
 import ServicePointEvents from "./pages/admin/service-point/ServicePointEvents";
 import ServicePointEventDashboard from "./pages/admin/service-point/ServicePointEventDashboard";
 import ServicePointScanner from "./pages/admin/service-point/ServicePointScanner";
@@ -374,8 +373,7 @@ const App = () => (
       <Route path="/auth/create-account" element={<CreateAccount />} />
       <Route path="*" element={<NotFound />} />
       {/* Admin Service Point Routes */}
-      <Route path="/admin/service-point" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointOverview /></ProtectedRoute>} />
-      <Route path="/admin/service-point/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointEvents /></ProtectedRoute>} />
+      <Route path="/admin/service-point" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointEvents /></ProtectedRoute>} />
       <Route path="/admin/service-point/event/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointEventDashboard /></ProtectedRoute>} />
       <Route path="/admin/service-point/scanner" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointScanner /></ProtectedRoute>} />
       <Route path="/admin/service-point/print" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointPrint /></ProtectedRoute>} />

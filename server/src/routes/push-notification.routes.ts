@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import { pushNotificationController } from '../controllers/push-notification.controller.js';
-import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js';
+import { authenticate, authorize } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
@@ -34,14 +34,14 @@ router.post('/test', pushNotificationController.sendTestNotification);
 // Admin routes
 router.post(
   '/broadcast',
-  authorizeRoles('SUPERADMIN', 'ADMIN_STAFF'),
-  pushNotificationController.broadcast
+  authorize('SUPERADMIN', 'ADMIN_STAFF'),
+  pushNotificationController.broadcast,
 );
 
 router.post(
   '/cleanup',
-  authorizeRoles('SUPERADMIN', 'ADMIN_STAFF'),
-  pushNotificationController.cleanup
+  authorize('SUPERADMIN', 'ADMIN_STAFF'),
+  pushNotificationController.cleanup,
 );
 
 export default router;

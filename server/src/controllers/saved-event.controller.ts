@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { SavedEventService } from '../services/saved-event.service.js';
-import { asyncHandler } from '../utils/async-handler.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 import { ValidationError } from '../utils/errors.js';
 
 export const savedEventController = {
@@ -16,8 +16,8 @@ export const savedEventController = {
     const { page, limit, search, category } = req.query;
 
     const result = await SavedEventService.getSavedEvents(userId, {
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
+      page: page ? parseInt(page as string, 10) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
       search: search as string,
       category: category as string,
     });

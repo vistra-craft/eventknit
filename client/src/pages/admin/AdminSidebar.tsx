@@ -139,8 +139,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       icon: Monitor,
       group: "management",
       children: [
-        { name: "Events Overview", href: "/admin/service-point" },
-        { name: "Event Management", href: "/admin/service-point/events" },
+        { name: "Select Event", href: "/admin/service-point" },
         { name: "QR Scanner", href: "/admin/service-point/scanner" },
         { name: "Print Center", href: "/admin/service-point/print" },
         { name: "Template Editor", href: "/admin/service-point/templates" },
