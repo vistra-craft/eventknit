@@ -42,7 +42,7 @@ interface ScanStats {
   errorRate: number;
 }
 
-const WorkstationHistory: React.FC = () => {
+const ServicePointHistory: React.FC = () => {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId?: string }>();
   const [searchParams] = useSearchParams();
@@ -385,7 +385,7 @@ const WorkstationHistory: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/workstation" label="Back to Workstation" />
+          <BackButton to="/admin/service-point" label="Back" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Scan History</h1>
             <p className="text-muted-foreground mt-2">View and analyze all QR code scans</p>
@@ -800,4 +800,4 @@ const WorkstationHistory: React.FC = () => {
   );
 };
 
-export default WorkstationHistory;
+export default ServicePointHistory;

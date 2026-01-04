@@ -62,7 +62,7 @@ interface EventInfo {
   venue: string;
 }
 
-const WorkstationPrint: React.FC = () => {
+const ServicePointPrint: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -98,6 +98,8 @@ const WorkstationPrint: React.FC = () => {
   useEffect(() => {
     if (eventId) {
       loadData();
+    } else {
+      setIsLoading(false);
     }
   }, [eventId]);
 
@@ -589,13 +591,43 @@ const WorkstationPrint: React.FC = () => {
     );
   }
 
+  if (!eventId) {
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <BackButton to="/admin/service-point" label="Back" />
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
+              <p className="text-sm text-muted-foreground">Print badges for event attendees</p>
+            </div>
+          </div>
+          <Card>
+            <CardContent className="py-16">
+              <div className="flex flex-col items-center justify-center text-center">
+                <Printer className="w-16 h-16 text-muted-foreground/50 mb-4" />
+                <h2 className="text-xl font-semibold mb-2">No Event Selected</h2>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                  Please select an event from the Service Point dashboard to print badges for attendees.
+                </p>
+                <Button onClick={() => navigate('/admin/service-point')}>
+                  Go to Service Point
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/workstation" label="Back" />
+            <BackButton to="/admin/service-point" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
               <p className="text-sm text-muted-foreground">{currentEvent.title}</p>
@@ -605,7 +637,7 @@ const WorkstationPrint: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/admin/workstation/templates')}
+              onClick={() => navigate('/admin/service-point/templates')}
             >
               <Settings className="w-4 h-4 mr-2" />
               Edit Templates
@@ -679,7 +711,7 @@ const WorkstationPrint: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate('/admin/workstation/templates')}
+                    onClick={() => navigate('/admin/service-point/templates')}
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
@@ -716,7 +748,7 @@ const WorkstationPrint: React.FC = () => {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => navigate('/admin/workstation/templates')}
+                      onClick={() => navigate('/admin/service-point/templates')}
                     >
                       Create Template
                     </Button>
@@ -1072,4 +1104,4 @@ const WorkstationPrint: React.FC = () => {
   );
 };
 
-export default WorkstationPrint;
+export default ServicePointPrint;

@@ -64,6 +64,10 @@ import {
   isOnline,
   type SyncStatus,
 } from "../../../lib/offline-sync";
+import {
+  ensureDefaultFacility,
+  type EventFacility,
+} from "../../../lib/facility-api";
 
 // Scan result interface
 interface ScanResult {
@@ -82,25 +86,37 @@ interface ScanResult {
   isReEntry: boolean;
 }
 
-// Facility interface
-interface Facility {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-}
+// Facility icon mapping
+const getFacilityIcon = (iconId: string | null): React.ReactNode => {
+  switch (iconId) {
+    case 'shield': return <Shield className="w-4 h-4" />;
+    case 'door-open': return <Target className="w-4 h-4" />;
+    case 'utensils': return <Utensils className="w-4 h-4" />;
+    case 'coffee': return <Utensils className="w-4 h-4" />;
+    case 'gift': return <Gift className="w-4 h-4" />;
+    case 'star': return <Star className="w-4 h-4" />;
+    case 'car': return <Car className="w-4 h-4" />;
+    case 'clipboard': return <Activity className="w-4 h-4" />;
+    case 'award': return <Star className="w-4 h-4" />;
+    case 'users': return <User className="w-4 h-4" />;
+    case 'presentation': return <Eye className="w-4 h-4" />;
+    case 'camera': return <Camera className="w-4 h-4" />;
+    default: return <Shield className="w-4 h-4" />;
+  }
+};
 
 // Device ID generation and storage
 const getDeviceId = (): string => {
-  let deviceId = localStorage.getItem('workstation_device_id');
+  let deviceId = localStorage.getItem('service_point_device_id');
   if (!deviceId) {
     deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    localStorage.setItem('workstation_device_id', deviceId);
+    localStorage.setItem('service_point_device_id', deviceId);
   }
   return deviceId;
 };
 
 // Facility persistence
-const FACILITY_STORAGE_KEY = 'workstation_selected_facility';
+const FACILITY_STORAGE_KEY = 'service_point_selected_facility';
 const getStoredFacility = (): string | null => {
   return localStorage.getItem(FACILITY_STORAGE_KEY);
 };
@@ -161,7 +177,7 @@ const vibrateError = (): void => {
   }
 };
 
-const WorkstationScanner: React.FC = () => {
+const ServicePointScanner: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const eventIdParam = searchParams.get('event');
@@ -174,7 +190,7 @@ const WorkstationScanner: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<string>(
-    getStoredFacility() || "entrance"
+    getStoredFacility() || ""
   );
   const [scanMode, setScanMode] = useState<'check-in' | 'check-out'>('check-in');
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
@@ -193,7 +209,9 @@ const WorkstationScanner: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus());
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ synced: 0, total: 0 });
-  
+  const [facilities, setFacilities] = useState<EventFacility[]>([]);
+  const [facilitiesLoading, setFacilitiesLoading] = useState(false);
+
   // Refs
   const html5QrCodeRef = useRef<Html5QrcodeScanner | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
@@ -331,14 +349,42 @@ const WorkstationScanner: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Facilities
-  const facilities: Facility[] = [
-    { id: "entrance", name: "Main Entrance", icon: <Shield className="w-4 h-4" /> },
-    { id: "lunch", name: "Lunch Area", icon: <Utensils className="w-4 h-4" /> },
-    { id: "gifts", name: "Gifts Desk", icon: <Gift className="w-4 h-4" /> },
-    { id: "vip", name: "VIP Lounge", icon: <Star className="w-4 h-4" /> },
-    { id: "parking", name: "Parking", icon: <Car className="w-4 h-4" /> },
-  ];
+  // Load facilities when eventId changes
+  useEffect(() => {
+    const loadFacilities = async () => {
+      if (!eventId) {
+        setFacilities([]);
+        return;
+      }
+
+      try {
+        setFacilitiesLoading(true);
+        // This will create the default "Main Entrance" facility if none exist
+        const response = await ensureDefaultFacility(eventId);
+        if (response.success && response.data) {
+          setFacilities(response.data);
+          // If no facility is selected or selected facility doesn't exist, select the first one
+          const storedFacility = getStoredFacility();
+          const facilityExists = response.data.some(f => f.id === storedFacility);
+          if (!facilityExists && response.data.length > 0) {
+            setSelectedFacility(response.data[0].id);
+            setStoredFacility(response.data[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading facilities:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load facilities",
+          variant: "destructive",
+        });
+      } finally {
+        setFacilitiesLoading(false);
+      }
+    };
+
+    loadFacilities();
+  }, [eventId, toast]);
 
   // Load events
   useEffect(() => {
@@ -842,7 +888,7 @@ const WorkstationScanner: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/workstation" label="Back to Workstation" />
+          <BackButton to="/admin/service-point" label="Back" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Ticket Scanner</h1>
             <p className="text-muted-foreground mt-2">
@@ -855,7 +901,7 @@ const WorkstationScanner: React.FC = () => {
               onChange={(e) => {
                 const newEventId = e.target.value;
                 setEventId(newEventId);
-                navigate(`/admin/workstation/scanner?event=${newEventId}`);
+                navigate(`/admin/service-point/scanner?event=${newEventId}`);
               }}
               className="px-3 py-2 border border-border rounded-md text-sm"
             >
@@ -988,17 +1034,34 @@ const WorkstationScanner: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {facilities.map((facility) => (
-                      <Button
-                        key={facility.id}
-                        variant={selectedFacility === facility.id ? "default" : "outline"}
-                        className="h-16 flex flex-col items-center justify-center space-y-1"
-                        onClick={() => setSelectedFacility(facility.id)}
-                      >
-                        {facility.icon}
-                        <span className="text-xs">{facility.name}</span>
-                      </Button>
-                    ))}
+                    {facilitiesLoading ? (
+                      <div className="col-span-full text-center text-muted-foreground py-4">
+                        Loading facilities...
+                      </div>
+                    ) : facilities.length === 0 ? (
+                      <div className="col-span-full text-center text-muted-foreground py-4">
+                        No facilities configured for this event
+                      </div>
+                    ) : (
+                      facilities.map((facility) => (
+                        <Button
+                          key={facility.id}
+                          variant={selectedFacility === facility.id ? "default" : "outline"}
+                          className="h-16 flex flex-col items-center justify-center space-y-1"
+                          onClick={() => {
+                            setSelectedFacility(facility.id);
+                            setStoredFacility(facility.id);
+                          }}
+                          style={facility.color && selectedFacility === facility.id ? {
+                            backgroundColor: facility.color,
+                            borderColor: facility.color
+                          } : undefined}
+                        >
+                          {getFacilityIcon(facility.icon)}
+                          <span className="text-xs">{facility.name}</span>
+                        </Button>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1179,11 +1242,19 @@ const WorkstationScanner: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-center">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                      {facilities.find(f => f.id === selectedFacility)?.icon}
+                    <div
+                      className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                      style={{
+                        backgroundColor: facilities.find(f => f.id === selectedFacility)?.color
+                          ? `${facilities.find(f => f.id === selectedFacility)?.color}20`
+                          : 'hsl(var(--primary) / 0.1)',
+                        color: facilities.find(f => f.id === selectedFacility)?.color || undefined
+                      }}
+                    >
+                      {getFacilityIcon(facilities.find(f => f.id === selectedFacility)?.icon || null)}
                     </div>
                     <h3 className="font-semibold text-lg">
-                      {facilities.find(f => f.id === selectedFacility)?.name}
+                      {facilities.find(f => f.id === selectedFacility)?.name || 'No Facility Selected'}
                     </h3>
                   </div>
                 </CardContent>
@@ -1200,7 +1271,7 @@ const WorkstationScanner: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate('/admin/workstation/history')}
+                      onClick={() => navigate('/admin/service-point/history')}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
@@ -1407,4 +1478,4 @@ const WorkstationScanner: React.FC = () => {
   );
 };
 
-export default WorkstationScanner;
+export default ServicePointScanner;

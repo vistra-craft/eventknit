@@ -152,14 +152,14 @@ import {
 } from "./pages/admin/finance";
 import NotFound from "./pages/NotFound";
 import Support from "./pages/Support";
-// Admin Workstation imports
-import WorkstationOverview from "./pages/admin/workstation/WorkstationOverview";
-import WorkstationEvents from "./pages/admin/workstation/WorkstationEvents";
-import WorkstationEventDashboard from "./pages/admin/workstation/WorkstationEventDashboard";
-import WorkstationScanner from "./pages/admin/workstation/WorkstationScanner";
-import WorkstationPrint from "./pages/admin/workstation/WorkstationPrint";
-import WorkstationTemplates from "./pages/admin/workstation/WorkstationTemplates";
-import WorkstationHistory from "./pages/admin/workstation/WorkstationHistory";
+// Admin Service Point imports
+import ServicePointOverview from "./pages/admin/service-point/ServicePointOverview";
+import ServicePointEvents from "./pages/admin/service-point/ServicePointEvents";
+import ServicePointEventDashboard from "./pages/admin/service-point/ServicePointEventDashboard";
+import ServicePointScanner from "./pages/admin/service-point/ServicePointScanner";
+import ServicePointPrint from "./pages/admin/service-point/ServicePointPrint";
+import ServicePointTemplates from "./pages/admin/service-point/ServicePointTemplates";
+import ServicePointHistory from "./pages/admin/service-point/ServicePointHistory";
 // Auth imports
 import SignIn from "./pages/auth/SignIn";
 // import SignUp from "./pages/auth/SignUp";
@@ -373,14 +373,14 @@ const App = () => (
       <Route path="/auth/magic-link/verify" element={<MagicLinkVerify />} />
       <Route path="/auth/create-account" element={<CreateAccount />} />
       <Route path="*" element={<NotFound />} />
-      {/* Admin Workstation Routes */}
-      <Route path="/admin/workstation" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationOverview /></ProtectedRoute>} />
-      <Route path="/admin/workstation/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationEvents /></ProtectedRoute>} />
-      <Route path="/admin/workstation/event/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationEventDashboard /></ProtectedRoute>} />
-      <Route path="/admin/workstation/scanner" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationScanner /></ProtectedRoute>} />
-      <Route path="/admin/workstation/print" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationPrint /></ProtectedRoute>} />
-      <Route path="/admin/workstation/templates" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><WorkstationTemplates /></ProtectedRoute>} />
-      <Route path="/admin/workstation/history" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><WorkstationHistory /></ProtectedRoute>} />
+      {/* Admin Service Point Routes */}
+      <Route path="/admin/service-point" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointOverview /></ProtectedRoute>} />
+      <Route path="/admin/service-point/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointEvents /></ProtectedRoute>} />
+      <Route path="/admin/service-point/event/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointEventDashboard /></ProtectedRoute>} />
+      <Route path="/admin/service-point/scanner" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointScanner /></ProtectedRoute>} />
+      <Route path="/admin/service-point/print" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointPrint /></ProtectedRoute>} />
+      <Route path="/admin/service-point/templates" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><ServicePointTemplates /></ProtectedRoute>} />
+      <Route path="/admin/service-point/history" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointHistory /></ProtectedRoute>} />
         </Routes>
       </RoleViewWrapper>
       <Toaster />

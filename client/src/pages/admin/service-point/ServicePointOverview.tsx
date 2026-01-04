@@ -32,7 +32,7 @@ interface EventWithStats extends EventData {
   statistics?: EventStatistics;
 }
 
-const WorkstationOverview: React.FC = () => {
+const ServicePointOverview: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [events, setEvents] = useState<EventWithStats[]>([]);
@@ -186,28 +186,28 @@ const WorkstationOverview: React.FC = () => {
       description: "Check in attendees at the venue",
       icon: Scan,
       color: "from-blue-500 to-blue-600",
-      href: "/admin/workstation/scanner",
+      href: "/admin/service-point/scanner",
     },
     {
       title: "Print Badges",
       description: "Generate and print attendee badges",
       icon: Printer,
       color: "from-purple-500 to-purple-600",
-      href: "/admin/workstation/print",
+      href: "/admin/service-point/print",
     },
     {
       title: "Edit Templates",
       description: "Customize badge designs",
       icon: Layout,
       color: "from-orange-500 to-orange-600",
-      href: "/admin/workstation/templates",
+      href: "/admin/service-point/templates",
     },
     {
       title: "Scan History",
       description: "View all check-in records",
       icon: History,
       color: "from-green-500 to-green-600",
-      href: "/admin/workstation/history",
+      href: "/admin/service-point/history",
     },
   ];
 
@@ -220,7 +220,7 @@ const WorkstationOverview: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Workstation</h1>
+            <h1 className="text-2xl font-bold text-foreground">Service Point</h1>
             <p className="text-muted-foreground mt-1">Manage event check-ins, badges, and attendee operations</p>
           </div>
           <div className="flex items-center gap-2">
@@ -238,7 +238,7 @@ const WorkstationOverview: React.FC = () => {
               Refresh
             </Button>
             <Button
-              onClick={() => navigate('/admin/workstation/scanner')}
+              onClick={() => navigate('/admin/service-point/scanner')}
             >
               <Scan className="w-4 h-4 mr-2" />
               Start Scanning
@@ -399,7 +399,7 @@ const WorkstationOverview: React.FC = () => {
                       <Card
                         key={event.id}
                         className="group cursor-pointer hover:shadow-md transition-all duration-200 bg-card"
-                        onClick={() => navigate(`/admin/workstation/event/${event.id}`)}
+                        onClick={() => navigate(`/admin/service-point/event/${event.id}`)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-3">
@@ -436,7 +436,7 @@ const WorkstationOverview: React.FC = () => {
                               className="flex-1"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/admin/workstation/scanner?event=${event.id}`);
+                                navigate(`/admin/service-point/scanner?event=${event.id}`);
                               }}
                             >
                               <Scan className="w-4 h-4 mr-1" />
@@ -447,7 +447,7 @@ const WorkstationOverview: React.FC = () => {
                               variant="outline"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/admin/workstation/print?event=${event.id}`);
+                                navigate(`/admin/service-point/print?event=${event.id}`);
                               }}
                             >
                               <Printer className="w-4 h-4" />
@@ -472,7 +472,7 @@ const WorkstationOverview: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate('/admin/workstation/events')}
+                    onClick={() => navigate('/admin/service-point/events')}
                   >
                     View All
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -496,7 +496,7 @@ const WorkstationOverview: React.FC = () => {
                         <Card
                           key={event.id}
                           className="group cursor-pointer hover:shadow-lg transition-all duration-300 overflow-hidden"
-                          onClick={() => navigate(`/admin/workstation/event/${event.id}`)}
+                          onClick={() => navigate(`/admin/service-point/event/${event.id}`)}
                         >
                           <div className="relative h-40 overflow-hidden">
                             <img
@@ -561,7 +561,7 @@ const WorkstationOverview: React.FC = () => {
                   <div className="mt-6 text-center">
                     <Button
                       variant="outline"
-                      onClick={() => navigate('/admin/workstation/events')}
+                      onClick={() => navigate('/admin/service-point/events')}
                     >
                       View All {events.length} Events
                       <ArrowRight className="w-4 h-4 ml-2" />
@@ -577,4 +577,4 @@ const WorkstationOverview: React.FC = () => {
   );
 };
 
-export default WorkstationOverview;
+export default ServicePointOverview;

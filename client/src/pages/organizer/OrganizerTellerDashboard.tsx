@@ -184,16 +184,16 @@ const OrganizerTellerDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
-            <Link to="/organizer/workstation/scanner">
+            <Link to="/organizer/service-point/scanner">
               <Button className="w-full" size={isMobile ? 'default' : 'lg'}>
                 <QrCode className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 Open Scanner
               </Button>
             </Link>
-            <Link to="/organizer/workstation">
+            <Link to="/organizer/service-point">
               <Button className="w-full" variant="outline" size={isMobile ? 'default' : 'lg'}>
                 <Monitor className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
-                Workstation
+                Service Point
               </Button>
             </Link>
             <Link to="/organizer/events/assigned">
@@ -249,7 +249,7 @@ const OrganizerTellerDashboard = () => {
                     </div>
                     <div className={`flex ${isMobile ? 'w-full gap-2' : 'gap-2'}`}>
                       <Link
-                        to={`/organizer/workstation/scanner?eventId=${assignment.event.id}`}
+                        to={`/organizer/service-point/scanner?eventId=${assignment.event.id}`}
                         className={isMobile ? 'flex-1' : ''}
                       >
                         <Button size={isMobile ? 'default' : 'sm'} className={isMobile ? 'w-full' : ''}>

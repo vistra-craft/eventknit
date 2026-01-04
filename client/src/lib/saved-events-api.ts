@@ -1,4 +1,4 @@
-import { api } from './api';
+import { apiGet, apiPost, apiPatch, apiDelete } from './api';
 
 export interface SavedEventData {
   id: string;
@@ -51,56 +51,49 @@ export async function getSavedEvents(options?: SavedEventsOptions): Promise<GetS
   const queryString = params.toString();
   const url = `/saved-events${queryString ? `?${queryString}` : ''}`;
 
-  const response = await api.get(url);
-  return response.data;
+  return apiGet<GetSavedEventsResponse>(url);
 }
 
 /**
  * Save an event
  */
 export async function saveEvent(eventId: string, notes?: string): Promise<{ success: boolean; data: SavedEventData; message: string }> {
-  const response = await api.post(`/saved-events/${eventId}`, { notes });
-  return response.data;
+  return apiPost<{ success: boolean; data: SavedEventData; message: string }>(`/saved-events/${eventId}`, { notes });
 }
 
 /**
  * Unsave an event
  */
 export async function unsaveEvent(eventId: string): Promise<{ success: boolean; message: string }> {
-  const response = await api.delete(`/saved-events/${eventId}`);
-  return response.data;
+  return apiDelete<{ success: boolean; message: string }>(`/saved-events/${eventId}`);
 }
 
 /**
  * Check if an event is saved
  */
 export async function isEventSaved(eventId: string): Promise<{ success: boolean; data: { isSaved: boolean } }> {
-  const response = await api.get(`/saved-events/${eventId}/status`);
-  return response.data;
+  return apiGet<{ success: boolean; data: { isSaved: boolean } }>(`/saved-events/${eventId}/status`);
 }
 
 /**
  * Check multiple events saved status
  */
 export async function checkEventsSavedStatus(eventIds: string[]): Promise<{ success: boolean; data: Record<string, boolean> }> {
-  const response = await api.post('/saved-events/check-status', { eventIds });
-  return response.data;
+  return apiPost<{ success: boolean; data: Record<string, boolean> }>('/saved-events/check-status', { eventIds });
 }
 
 /**
  * Update notes for a saved event
  */
 export async function updateSavedEventNotes(eventId: string, notes: string): Promise<{ success: boolean; data: SavedEventData; message: string }> {
-  const response = await api.patch(`/saved-events/${eventId}/notes`, { notes });
-  return response.data;
+  return apiPatch<{ success: boolean; data: SavedEventData; message: string }>(`/saved-events/${eventId}/notes`, { notes });
 }
 
 /**
  * Get saved event count
  */
 export async function getSavedEventCount(): Promise<{ success: boolean; data: { count: number } }> {
-  const response = await api.get('/saved-events/count');
-  return response.data;
+  return apiGet<{ success: boolean; data: { count: number } }>('/saved-events/count');
 }
 
 /**

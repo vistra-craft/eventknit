@@ -30,7 +30,7 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     events: location.pathname.startsWith('/organizer/events'),
-    workstation: location.pathname.startsWith('/organizer/workstation'),
+    workstation: location.pathname.startsWith('/organizer/service-point'),
   });
 
   // Base navigation items - all organizer staff can see these
@@ -64,13 +64,13 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
         return [
           {
             id: 'workstation',
-            label: 'Workstation',
+            label: 'Service Point',
             icon: Monitor,
             group: 'main',
             children: [
-              { name: 'Events Overview', href: '/organizer/workstation' },
-              { name: 'QR Scanner', href: '/organizer/workstation/scanner' },
-              { name: 'Scan History', href: '/organizer/workstation/history' },
+              { name: 'Events Overview', href: '/organizer/service-point' },
+              { name: 'QR Scanner', href: '/organizer/service-point/scanner' },
+              { name: 'Scan History', href: '/organizer/service-point/history' },
             ],
           },
         ];
@@ -113,7 +113,7 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
     setExpandedItems((prev) => ({
       ...prev,
       events: location.pathname.startsWith('/organizer/events'),
-      workstation: location.pathname.startsWith('/organizer/workstation'),
+      workstation: location.pathname.startsWith('/organizer/service-point'),
     }));
   }, [location.pathname]);
 

@@ -43,7 +43,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand settings section if on settings pages
     settings: location.pathname.startsWith('/admin/settings'),
     // Auto-expand support section if on support pages
-    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings')
+    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings'),
+    // Auto-expand service point section if on service-point pages
+    workstation: location.pathname.startsWith('/admin/service-point')
   });
 
   const navigationItems = [
@@ -131,18 +133,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         // { name: "Partnerships", href: "/admin/marketing/partnerships" },
       ]
     },
-    { 
-      id: "workstation", 
-      label: "Workstation", 
+    {
+      id: "workstation",
+      label: "Service Point",
       icon: Monitor,
       group: "management",
       children: [
-        { name: "Events Overview", href: "/admin/workstation" },
-        { name: "Event Management", href: "/admin/workstation/events" },
-        { name: "QR Scanner", href: "/admin/workstation/scanner" },
-        { name: "Print Center", href: "/admin/workstation/print" },
-        { name: "Template Editor", href: "/admin/workstation/templates" },
-        { name: "Scan History", href: "/admin/workstation/history" },
+        { name: "Events Overview", href: "/admin/service-point" },
+        { name: "Event Management", href: "/admin/service-point/events" },
+        { name: "QR Scanner", href: "/admin/service-point/scanner" },
+        { name: "Print Center", href: "/admin/service-point/print" },
+        { name: "Template Editor", href: "/admin/service-point/templates" },
+        { name: "Scan History", href: "/admin/service-point/history" },
       ]
     },
     {
@@ -198,7 +200,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       finance: location.pathname.startsWith('/admin/finance'),
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings'),
-      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings')
+      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings'),
+      workstation: location.pathname.startsWith('/admin/service-point')
     }));
   }, [location.pathname]);
 

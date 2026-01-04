@@ -263,6 +263,7 @@ model User {
   promoCodesCreated                 PromoCode[]                  @relation("PromoCodeOrganizer")
   promoCodeRedemptions              PromoCodeRedemption[]        @relation("PromoCodeUser")
   eventAssignments                  EventStaff[]                 @relation("EventStaff")
+  checkpointStaffAssignments        CheckpointStaff[]            @relation("CheckpointStaffAssignment")
   // Event Payment Relations
   organizerDisbursements            OrganizerDisbursement[]      @relation("OrganizerDisbursements")
   disbursementsCreated              OrganizerDisbursement[]      @relation("DisbursementCreator")
@@ -688,6 +689,8 @@ model Event {
   featuredEvents         FeaturedEvent[]
   promoCodes             PromoCode[]               @relation("PromoCodeEvent")
   ticketScans            TicketScan[]
+  checkpoints            Checkpoint[]              @relation("EventCheckpoints")
+  checkpointScans        CheckpointScan[]          @relation("EventCheckpointScans")
   assignedStaff          EventStaff[]              @relation("EventStaff")
   // Event Payment Relations
   paymentTransactions    EventPaymentTransaction[]
@@ -734,6 +737,8 @@ model Event {
   // Badge/Workstation Relations
   badgeTemplates         BadgeTemplate[]           @relation("EventBadgeTemplates")
   badgePrintJobs         BadgePrintJob[]           @relation("EventBadgePrintJobs")
+  // Service Point Facilities
+  facilities             EventFacility[]           @relation("EventFacilities")
 
   @@index([organizerId])
   @@index([status])
@@ -806,6 +811,7 @@ model EventRegistration {
   // Relations
   promoCodeRedemption PromoCodeRedemption?     @relation("PromoCodeRedemption")
   ticketScans         TicketScan[]
+  checkpointScans     CheckpointScan[]         @relation("CheckpointScans")
   ticketLineItems     TicketLineItem[] // Multiple ticket types per registration
   // Event Payment Relations
   paymentTransaction  EventPaymentTransaction?
@@ -1136,9 +1142,11 @@ model TicketScan {
   scannedAt DateTime @default(now())
 
   // Facility tracking
-  facility   String? // Facility/station where scan occurred
-  deviceId   String? // Device ID that performed the scan
-  deviceType String? // Type of device (MOBILE, TABLET, DESKTOP, etc.)
+  facility    String? // Facility/station where scan occurred (legacy string field)
+  facilityId  String? // Reference to EventFacility
+  facilityRef EventFacility? @relation("FacilityScans", fields: [facilityId], references: [id])
+  deviceId    String? // Device ID that performed the scan
+  deviceType  String? // Type of device (MOBILE, TABLET, DESKTOP, etc.)
 
   // Validation
   isValid      Boolean @default(true) // Whether scan was valid
@@ -1159,6 +1167,160 @@ model TicketScan {
   @@index([scannedAt])
   @@index([scannedBy])
   @@index([facility])
+  @@index([facilityId])
+}
+
+// ============================================
+// Event Facility Model (Service Point Management)
+// ============================================
+
+model EventFacility {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String   // e.g., "Main Entrance", "Lunch Area"
+  code        String   // Short code for quick identification (e.g., "ENT", "L1")
+  description String?
+  icon        String?  // Icon identifier (e.g., "shield", "utensils", "gift")
+  color       String?  // Hex color for UI display
+  location    String?  // Physical location at venue
+  isActive    Boolean  @default(true)
+  allowCheckIn  Boolean @default(true)
+  allowCheckOut Boolean @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  event       Event        @relation("EventFacilities", fields: [eventId], references: [id], onDelete: Cascade)
+  scans       TicketScan[] @relation("FacilityScans")
+
+  @@unique([eventId, code])
+  @@index([eventId])
+  @@index([eventId, isActive])
+}
+
+// ============================================
+// Checkpoint Models (MICE Event Management)
+// ============================================
+
+// Checkpoint type enum
+enum CheckpointType {
+  DOOR          // Entry/Exit (main door)
+  MEAL          // Food service (breakfast, lunch, dinner)
+  GIFT          // Gift/swag distribution
+  SESSION       // Breakout sessions/workshops
+  REGISTRATION  // Registration desk
+  NETWORKING    // Networking areas
+  EXHIBITION    // Exhibition booth visits
+  CERTIFICATE   // Certificate collection
+  CUSTOM        // Custom checkpoint type
+}
+
+// Checkpoint definition model
+model Checkpoint {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation("EventCheckpoints", fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Checkpoint details
+  name        String          // e.g., "Lunch Day 1", "VIP Gift Bag", "Workshop A"
+  type        CheckpointType  @default(CUSTOM)
+  description String?         @db.Text
+
+  // Location/Station
+  location   String?  // Physical location at venue
+  stationCode String? // Short code for quick identification (e.g., "L1", "G1", "WA")
+
+  // Quota settings (per attendee)
+  quota           Int      @default(1) // How many times attendee can scan at this checkpoint (0 = unlimited)
+  quotaEnforced   Boolean  @default(true) // Whether quota is enforced
+
+  // Eligibility rules (JSON for flexibility)
+  // Example: { "ticketTypes": ["VIP", "Premium"], "tags": ["speaker"], "all": false }
+  eligibilityRules Json?   // Defines who can access this checkpoint
+
+  // Time window
+  activeFrom DateTime? // When checkpoint opens
+  activeTo   DateTime? // When checkpoint closes
+  isActive   Boolean   @default(true)
+
+  // Ordering for UI
+  displayOrder Int @default(0)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  // Admin user ID who created
+
+  // Relations
+  scans         CheckpointScan[]
+  staffAssignments CheckpointStaff[]
+
+  @@unique([eventId, stationCode])
+  @@index([eventId])
+  @@index([type])
+  @@index([isActive])
+  @@index([activeFrom, activeTo])
+}
+
+// Checkpoint scan record
+model CheckpointScan {
+  id             String     @id @default(uuid())
+  checkpointId   String
+  checkpoint     Checkpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+  registrationId String
+  registration   EventRegistration @relation("CheckpointScans", fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId        String
+  event          Event      @relation("EventCheckpointScans", fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Scan info
+  scannedBy String   // Staff user ID who performed the scan
+  scannedAt DateTime @default(now())
+
+  // Validation
+  isValid      Boolean @default(true) // Whether scan was valid
+  errorCode    String? // Error code if scan failed
+  errorMessage String? // Error message if scan failed
+
+  // Quota tracking
+  scanNumber Int // Which scan this is (1st, 2nd, etc.) for this attendee at this checkpoint
+
+  // Metadata
+  deviceId   String? // Device ID that performed the scan
+  deviceType String? // Type of device
+  ipAddress  String?
+  userAgent  String?
+  location   Json?   // GPS location if available
+  notes      String? // Optional notes by scanner
+
+  @@index([checkpointId])
+  @@index([registrationId])
+  @@index([eventId])
+  @@index([scannedAt])
+  @@index([scannedBy])
+}
+
+// Staff assignment to checkpoints
+model CheckpointStaff {
+  id           String     @id @default(uuid())
+  checkpointId String
+  checkpoint   Checkpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+  staffId      String
+  staff        User       @relation("CheckpointStaffAssignment", fields: [staffId], references: [id], onDelete: Cascade)
+
+  // Assignment details
+  assignedAt DateTime @default(now())
+  assignedBy String   // Admin user ID who assigned
+
+  // Shift scheduling
+  shiftStart DateTime?
+  shiftEnd   DateTime?
+  isActive   Boolean   @default(true)
+
+  @@unique([checkpointId, staffId])
+  @@index([checkpointId])
+  @@index([staffId])
+  @@index([isActive])
 }
 
 model EventStaff {

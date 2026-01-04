@@ -1,4 +1,4 @@
-import { api } from './api';
+import { apiGet, apiPost, apiPut, apiDelete } from './api';
 
 export interface EventCollectionData {
   id: string;
@@ -82,8 +82,7 @@ export async function getMyCollections(options?: {
   const queryString = params.toString();
   const url = `/collections${queryString ? `?${queryString}` : ''}`;
 
-  const response = await api.get(url);
-  return response.data;
+  return apiGet<{ success: boolean; data: EventCollectionData[]; pagination: PaginationInfo }>(url);
 }
 
 /**
@@ -100,8 +99,7 @@ export async function getPublicCollections(options?: {
   const queryString = params.toString();
   const url = `/collections/public${queryString ? `?${queryString}` : ''}`;
 
-  const response = await api.get(url);
-  return response.data;
+  return apiGet<{ success: boolean; data: EventCollectionData[]; pagination: PaginationInfo }>(url);
 }
 
 /**
@@ -110,8 +108,7 @@ export async function getPublicCollections(options?: {
 export async function getCollectionById(
   collectionId: string
 ): Promise<{ success: boolean; data: CollectionWithEvents }> {
-  const response = await api.get(`/collections/${collectionId}`);
-  return response.data;
+  return apiGet<{ success: boolean; data: CollectionWithEvents }>(`/collections/${collectionId}`);
 }
 
 /**
@@ -123,8 +120,7 @@ export async function createCollection(data: {
   isPublic?: boolean;
   coverImage?: string;
 }): Promise<{ success: boolean; data: EventCollectionData; message: string }> {
-  const response = await api.post('/collections', data);
-  return response.data;
+  return apiPost<{ success: boolean; data: EventCollectionData; message: string }>('/collections', data);
 }
 
 /**
@@ -139,8 +135,7 @@ export async function updateCollection(
     coverImage?: string;
   }
 ): Promise<{ success: boolean; data: EventCollectionData; message: string }> {
-  const response = await api.put(`/collections/${collectionId}`, data);
-  return response.data;
+  return apiPut<{ success: boolean; data: EventCollectionData; message: string }>(`/collections/${collectionId}`, data);
 }
 
 /**
@@ -149,8 +144,7 @@ export async function updateCollection(
 export async function deleteCollection(
   collectionId: string
 ): Promise<{ success: boolean; message: string }> {
-  const response = await api.delete(`/collections/${collectionId}`);
-  return response.data;
+  return apiDelete<{ success: boolean; message: string }>(`/collections/${collectionId}`);
 }
 
 /**
@@ -161,8 +155,7 @@ export async function addEventToCollection(
   eventId: string,
   notes?: string
 ): Promise<{ success: boolean; data: CollectionEventItem; message: string }> {
-  const response = await api.post(`/collections/${collectionId}/events`, { eventId, notes });
-  return response.data;
+  return apiPost<{ success: boolean; data: CollectionEventItem; message: string }>(`/collections/${collectionId}/events`, { eventId, notes });
 }
 
 /**
@@ -172,8 +165,7 @@ export async function removeEventFromCollection(
   collectionId: string,
   eventId: string
 ): Promise<{ success: boolean; message: string }> {
-  const response = await api.delete(`/collections/${collectionId}/events/${eventId}`);
-  return response.data;
+  return apiDelete<{ success: boolean; message: string }>(`/collections/${collectionId}/events/${eventId}`);
 }
 
 /**
@@ -182,6 +174,5 @@ export async function removeEventFromCollection(
 export async function toggleFollowCollection(
   collectionId: string
 ): Promise<{ success: boolean; data: { isFollowing: boolean }; message: string }> {
-  const response = await api.post(`/collections/${collectionId}/follow`);
-  return response.data;
+  return apiPost<{ success: boolean; data: { isFollowing: boolean }; message: string }>(`/collections/${collectionId}/follow`);
 }

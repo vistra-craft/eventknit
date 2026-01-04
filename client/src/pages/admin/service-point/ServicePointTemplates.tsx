@@ -91,7 +91,7 @@ const COLOR_PALETTE = [
   "#fecaca", "#fed7aa", "#fef08a", "#bbf7d0", "#99f6e4", "#a5f3fc", "#bfdbfe", "#c7d2fe", "#ddd6fe", "#fbcfe8",
 ];
 
-const WorkstationTemplates: React.FC = () => {
+const ServicePointTemplates: React.FC = () => {
   const { toast } = useToast();
 
   // Templates state
@@ -392,7 +392,7 @@ const WorkstationTemplates: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/workstation" label="Back" />
+            <BackButton to="/admin/service-point" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Template Editor</h1>
               <p className="text-sm text-muted-foreground">Design and customize badge templates for your events</p>
@@ -1089,4 +1089,4 @@ const WorkstationTemplates: React.FC = () => {
   );
 };
 
-export default WorkstationTemplates;
+export default ServicePointTemplates;

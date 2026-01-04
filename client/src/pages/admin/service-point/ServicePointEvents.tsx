@@ -73,7 +73,7 @@ interface Attendee {
   avatar?: string;
 }
 
-const WorkstationEvents: React.FC = () => {
+const ServicePointEvents: React.FC = () => {
   const navigate = useNavigate();
   const { eventId } = useParams();
   const [searchTerm, setSearchTerm] = useState("");
@@ -197,7 +197,7 @@ const WorkstationEvents: React.FC = () => {
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/workstation/events" label="Back to Events" />
+            <BackButton to="/admin/service-point/events" label="Back to Events" />
             <div>
               <h1 className="text-lg font-semibold text-foreground">{selectedEvent.title}</h1>
               <p className="text-muted-foreground mt-2">{selectedEvent.organizer} • {selectedEvent.date}</p>
@@ -268,7 +268,7 @@ const WorkstationEvents: React.FC = () => {
                   Facilities Management
                 </div>
                 <Button 
-                  onClick={() => navigate('/admin/workstation/scanner')}
+                  onClick={() => navigate('/admin/service-point/scanner')}
                   size="sm"
                 >
                   <QrCode className="w-4 h-4 mr-2" />
@@ -418,14 +418,14 @@ const WorkstationEvents: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <Button 
-              onClick={() => navigate('/admin/workstation/scanner')}
+              onClick={() => navigate('/admin/service-point/scanner')}
               className="bg-primary hover:bg-primary/90"
             >
               <QrCode className="w-4 h-4 mr-2" />
               QR Scanner
             </Button>
             <Button 
-              onClick={() => navigate('/admin/workstation/print')}
+              onClick={() => navigate('/admin/service-point/print')}
               variant="outline"
             >
               <Printer className="w-4 h-4 mr-2" />
@@ -458,7 +458,7 @@ const WorkstationEvents: React.FC = () => {
             <Card 
               key={event.id} 
               className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-              onClick={() => navigate(`/admin/workstation/events/${event.id}`)}
+              onClick={() => navigate(`/admin/service-point/event/${event.id}`)}
             >
               <div className="relative overflow-hidden">
                 <img 
@@ -553,4 +553,4 @@ const WorkstationEvents: React.FC = () => {
   );
 };
 
-export default WorkstationEvents;
+export default ServicePointEvents;

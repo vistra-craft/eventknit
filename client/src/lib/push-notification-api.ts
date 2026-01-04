@@ -1,4 +1,4 @@
-import { api } from './api';
+import { apiGet, apiPost, apiDelete } from './api';
 
 /**
  * Push Notification API
@@ -27,8 +27,8 @@ export function isPushSupported(): boolean {
  */
 export async function getVapidPublicKey(): Promise<string | null> {
   try {
-    const response = await api.get('/push/vapid-public-key');
-    return response.data.data?.publicKey || null;
+    const response = await apiGet<{ success: boolean; data?: { publicKey: string } }>('/push/vapid-public-key');
+    return response.data?.publicKey || null;
   } catch (error) {
     console.error('Failed to get VAPID public key:', error);
     return null;
@@ -128,12 +128,12 @@ export async function subscribeToPush(deviceId?: string): Promise<boolean> {
     });
 
     // Send subscription to server
-    const response = await api.post('/push/subscribe', {
+    const response = await apiPost<{ success: boolean }>('/push/subscribe', {
       subscription: subscription.toJSON(),
       deviceId,
     });
 
-    if (response.data.success) {
+    if (response.success) {
       console.log('Push subscription successful');
       return true;
     }
@@ -161,7 +161,7 @@ export async function unsubscribeFromPush(): Promise<boolean> {
       await subscription.unsubscribe();
 
       // Notify server
-      await api.post('/push/unsubscribe', {
+      await apiPost('/push/unsubscribe', {
         endpoint: subscription.endpoint,
       });
 
@@ -180,8 +180,8 @@ export async function unsubscribeFromPush(): Promise<boolean> {
  */
 export async function unsubscribeFromAllDevices(): Promise<{ success: boolean; count: number }> {
   try {
-    const response = await api.delete('/push/unsubscribe-all');
-    return { success: true, count: response.data.data?.count || 0 };
+    const response = await apiDelete<{ success: boolean; data?: { count: number } }>('/push/unsubscribe-all');
+    return { success: true, count: response.data?.count || 0 };
   } catch (error) {
     console.error('Failed to unsubscribe from all devices:', error);
     return { success: false, count: 0 };
@@ -211,8 +211,8 @@ export async function isSubscribedToPush(): Promise<boolean> {
  */
 export async function getPushSubscriptions(): Promise<PushSubscriptionInfo[]> {
   try {
-    const response = await api.get('/push/subscriptions');
-    return response.data.data || [];
+    const response = await apiGet<{ success: boolean; data: PushSubscriptionInfo[] }>('/push/subscriptions');
+    return response.data || [];
   } catch (error) {
     console.error('Failed to get push subscriptions:', error);
     return [];
@@ -224,8 +224,8 @@ export async function getPushSubscriptions(): Promise<PushSubscriptionInfo[]> {
  */
 export async function sendTestNotification(): Promise<boolean> {
   try {
-    const response = await api.post('/push/test');
-    return response.data.success;
+    const response = await apiPost<{ success: boolean }>('/push/test');
+    return response.success;
   } catch (error) {
     console.error('Failed to send test notification:', error);
     return false;

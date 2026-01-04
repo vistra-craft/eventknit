@@ -15,7 +15,7 @@ import {
   RefreshCw,
   Search,
   Loader2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,6 +144,7 @@ const EventDetailsPage = () => {
   const [refundsLoading, setRefundsLoading] = useState(false);
   const [disbursements, setDisbursements] = useState<Disbursement[]>([]);
   const [disbursementsLoading, setDisbursementsLoading] = useState(false);
+
   const { toast } = useToast();
 
   // Load scan config when scan-settings tab is active

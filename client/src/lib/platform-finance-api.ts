@@ -1,4 +1,4 @@
-import { api } from './api';
+import { apiGet, apiPost, apiPut, apiDelete } from './api';
 
 // Types
 export interface PlatformExpense {
@@ -100,13 +100,11 @@ export async function getExpenses(options?: {
   if (options?.endDate) params.append('endDate', options.endDate);
 
   const query = params.toString();
-  const response = await api.get(`/admin/platform-finance/expenses${query ? `?${query}` : ''}`);
-  return response.data;
+  return apiGet<PaginatedResponse<PlatformExpense>>(`/admin/platform-finance/expenses${query ? `?${query}` : ''}`);
 }
 
 export async function getExpenseById(id: string): Promise<{ success: boolean; data: PlatformExpense }> {
-  const response = await api.get(`/admin/platform-finance/expenses/${id}`);
-  return response.data;
+  return apiGet<{ success: boolean; data: PlatformExpense }>(`/admin/platform-finance/expenses/${id}`);
 }
 
 export async function createExpense(data: {
@@ -123,8 +121,7 @@ export async function createExpense(data: {
   taxRate?: number;
   notes?: string;
 }): Promise<{ success: boolean; data: PlatformExpense; message: string }> {
-  const response = await api.post('/admin/platform-finance/expenses', data);
-  return response.data;
+  return apiPost<{ success: boolean; data: PlatformExpense; message: string }>('/admin/platform-finance/expenses', data);
 }
 
 export async function updateExpense(id: string, data: {
@@ -142,13 +139,11 @@ export async function updateExpense(id: string, data: {
   notes?: string;
   status?: string;
 }): Promise<{ success: boolean; data: PlatformExpense; message: string }> {
-  const response = await api.put(`/admin/platform-finance/expenses/${id}`, data);
-  return response.data;
+  return apiPut<{ success: boolean; data: PlatformExpense; message: string }>(`/admin/platform-finance/expenses/${id}`, data);
 }
 
 export async function deleteExpense(id: string): Promise<{ success: boolean; message: string }> {
-  const response = await api.delete(`/admin/platform-finance/expenses/${id}`);
-  return response.data;
+  return apiDelete<{ success: boolean; message: string }>(`/admin/platform-finance/expenses/${id}`);
 }
 
 // INCOME
@@ -169,13 +164,11 @@ export async function getIncomes(options?: {
   if (options?.endDate) params.append('endDate', options.endDate);
 
   const query = params.toString();
-  const response = await api.get(`/admin/platform-finance/income${query ? `?${query}` : ''}`);
-  return response.data;
+  return apiGet<PaginatedResponse<PlatformIncome>>(`/admin/platform-finance/income${query ? `?${query}` : ''}`);
 }
 
 export async function getIncomeById(id: string): Promise<{ success: boolean; data: PlatformIncome }> {
-  const response = await api.get(`/admin/platform-finance/income/${id}`);
-  return response.data;
+  return apiGet<{ success: boolean; data: PlatformIncome }>(`/admin/platform-finance/income/${id}`);
 }
 
 export async function createIncome(data: {
@@ -189,8 +182,7 @@ export async function createIncome(data: {
   eventId?: string;
   notes?: string;
 }): Promise<{ success: boolean; data: PlatformIncome; message: string }> {
-  const response = await api.post('/admin/platform-finance/income', data);
-  return response.data;
+  return apiPost<{ success: boolean; data: PlatformIncome; message: string }>('/admin/platform-finance/income', data);
 }
 
 export async function updateIncome(id: string, data: {
@@ -205,13 +197,11 @@ export async function updateIncome(id: string, data: {
   notes?: string;
   status?: string;
 }): Promise<{ success: boolean; data: PlatformIncome; message: string }> {
-  const response = await api.put(`/admin/platform-finance/income/${id}`, data);
-  return response.data;
+  return apiPut<{ success: boolean; data: PlatformIncome; message: string }>(`/admin/platform-finance/income/${id}`, data);
 }
 
 export async function deleteIncome(id: string): Promise<{ success: boolean; message: string }> {
-  const response = await api.delete(`/admin/platform-finance/income/${id}`);
-  return response.data;
+  return apiDelete<{ success: boolean; message: string }>(`/admin/platform-finance/income/${id}`);
 }
 
 // WAGES
@@ -234,13 +224,11 @@ export async function getWages(options?: {
   if (options?.endDate) params.append('endDate', options.endDate);
 
   const query = params.toString();
-  const response = await api.get(`/admin/platform-finance/wages${query ? `?${query}` : ''}`);
-  return response.data;
+  return apiGet<PaginatedResponse<Wage>>(`/admin/platform-finance/wages${query ? `?${query}` : ''}`);
 }
 
 export async function getWageById(id: string): Promise<{ success: boolean; data: Wage }> {
-  const response = await api.get(`/admin/platform-finance/wages/${id}`);
-  return response.data;
+  return apiGet<{ success: boolean; data: Wage }>(`/admin/platform-finance/wages/${id}`);
 }
 
 export async function createWage(data: {
@@ -256,8 +244,7 @@ export async function createWage(data: {
   reference?: string;
   notes?: string;
 }): Promise<{ success: boolean; data: Wage; message: string }> {
-  const response = await api.post('/admin/platform-finance/wages', data);
-  return response.data;
+  return apiPost<{ success: boolean; data: Wage; message: string }>('/admin/platform-finance/wages', data);
 }
 
 export async function updateWage(id: string, data: {
@@ -274,13 +261,11 @@ export async function updateWage(id: string, data: {
   notes?: string;
   status?: string;
 }): Promise<{ success: boolean; data: Wage; message: string }> {
-  const response = await api.put(`/admin/platform-finance/wages/${id}`, data);
-  return response.data;
+  return apiPut<{ success: boolean; data: Wage; message: string }>(`/admin/platform-finance/wages/${id}`, data);
 }
 
 export async function deleteWage(id: string): Promise<{ success: boolean; message: string }> {
-  const response = await api.delete(`/admin/platform-finance/wages/${id}`);
-  return response.data;
+  return apiDelete<{ success: boolean; message: string }>(`/admin/platform-finance/wages/${id}`);
 }
 
 // SUMMARY
@@ -293,6 +278,5 @@ export async function getFinanceSummary(options?: {
   if (options?.endDate) params.append('endDate', options.endDate);
 
   const query = params.toString();
-  const response = await api.get(`/admin/platform-finance/summary${query ? `?${query}` : ''}`);
-  return response.data;
+  return apiGet<{ success: boolean; data: FinanceSummary }>(`/admin/platform-finance/summary${query ? `?${query}` : ''}`);
 }

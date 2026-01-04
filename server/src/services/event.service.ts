@@ -890,6 +890,26 @@ export class EventService {
       );
     }
 
+    // Safety check: prevent deletion if event has any registrations
+    const registrationCount = await prisma.eventRegistration.count({
+      where: { eventId },
+    });
+    if (registrationCount > 0) {
+      throw new ValidationError(
+        `Cannot delete event with ${registrationCount} registration(s). Please cancel registrations first or cancel the event instead.`,
+      );
+    }
+
+    // Safety check: prevent deletion if event has any payment history
+    const paymentCount = await prisma.eventPaymentTransaction.count({
+      where: { eventId },
+    });
+    if (paymentCount > 0) {
+      throw new ValidationError(
+        'Cannot delete event with payment history. Please cancel the event instead to preserve financial records.',
+      );
+    }
+
     // Soft delete
     await prisma.event.update({
       where: { id: eventId },
