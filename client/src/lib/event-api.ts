@@ -40,6 +40,8 @@ export interface EventFilters {
   offset?: number; // Deprecated: use page instead
   page?: number;
   type?: EventType;
+  dateFrom?: string; // ISO date string - filter events starting from this date
+  dateTo?: string; // ISO date string - filter events starting before this date
 }
 
 /**
@@ -243,6 +245,9 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   } else if (filters?.offset !== undefined) {
     queryParams.append('offset', filters.offset.toString());
   }
+  // Date range filtering
+  if (filters?.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
+  if (filters?.dateTo) queryParams.append('dateTo', filters.dateTo);
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';

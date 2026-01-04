@@ -54,6 +54,8 @@ export class EventController {
         offset?: number;
         page?: number;
         type?: EventType;
+        dateFrom?: string;
+        dateTo?: string;
       } = {};
 
       logger.debug('[EventController] Query params:', req.query);
@@ -84,6 +86,13 @@ export class EventController {
         filters.page = parseInt(req.query.page as string, 10);
       } else if (req.query.offset) {
         filters.offset = parseInt(req.query.offset as string, 10);
+      }
+      // Date range filtering
+      if (req.query.dateFrom) {
+        filters.dateFrom = req.query.dateFrom as string;
+      }
+      if (req.query.dateTo) {
+        filters.dateTo = req.query.dateTo as string;
       }
 
       logger.debug('[EventController] Parsed filters:', filters);

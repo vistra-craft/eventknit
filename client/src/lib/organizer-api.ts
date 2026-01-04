@@ -178,6 +178,8 @@ export const getOrganizerEvents = async (filters?: {
   offset?: number; // Deprecated: use page instead
   page?: number;
   upcoming?: boolean; // true for upcoming, false for past
+  dateFrom?: string; // ISO date string - filter events starting from this date
+  dateTo?: string; // ISO date string - filter events starting before this date
 }): Promise<EventsListResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -192,6 +194,9 @@ export const getOrganizerEvents = async (filters?: {
     queryParams.append('offset', filters.offset.toString());
   }
   if (filters?.upcoming !== undefined) queryParams.append('upcoming', filters.upcoming.toString());
+  // Date range filtering
+  if (filters?.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
+  if (filters?.dateTo) queryParams.append('dateTo', filters.dateTo);
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/organizer/events?${queryString}` : '/organizer/events';

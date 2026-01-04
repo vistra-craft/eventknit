@@ -7,6 +7,7 @@ import {
   Share2,
   QrCode,
   Search,
+  Loader2,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
@@ -14,7 +15,7 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { getUserRegisteredEvents } from "../../lib/event-api";
-import { downloadTicket } from "../../lib/utils/ticket";
+import { downloadTicketPDF } from "../../lib/ticket-api";
 import { shareEvent } from "../../lib/utils/share";
 import { useToast } from "../../hooks/use-toast";
 import { useAuth } from "../../hooks/useAuth";
@@ -30,6 +31,7 @@ interface TicketEvent {
   status?: 'upcoming' | 'ongoing' | 'completed';
   category?: string;
   ticketId?: string;
+  registrationId?: string;
 }
 
 const MyTickets: React.FC = () => {
@@ -56,7 +58,7 @@ const MyTickets: React.FC = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          const eventsWithTickets = response.data.events.map((event: { id: string; title: string; date?: string; location?: string; type?: string; image?: string; status?: string; category?: string; ticketId?: string }) => ({
+          const eventsWithTickets = response.data.events.map((event: { id: string; title: string; date?: string; location?: string; type?: string; image?: string; status?: string; category?: string; ticketId?: string; registrationId?: string; backupCode?: string }) => ({
             id: event.id,
             title: event.title,
             date: event.date,
@@ -65,7 +67,8 @@ const MyTickets: React.FC = () => {
             image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
             status: event.status || 'upcoming',
             category: event.category || '',
-            ticketId: event.ticketId || `TKT-${event.id.slice(0, 8).toUpperCase()}`,
+            ticketId: event.backupCode || `TKT-${event.id.slice(0, 8).toUpperCase()}`,
+            registrationId: event.registrationId,
           }));
           setTickets(eventsWithTickets);
           setFilteredTickets(eventsWithTickets);
@@ -104,27 +107,34 @@ const MyTickets: React.FC = () => {
     setFilteredTickets(filtered);
   }, [searchQuery, statusFilter, tickets]);
 
-  const handleDownloadTicket = (ticket: TicketEvent) => {
-    try {
-      downloadTicket({
-        eventTitle: ticket.title,
-        eventDate: ticket.date,
-        eventLocation: ticket.location,
-        attendeeName: user.name,
-        attendeeEmail: user.email,
-        ticketType: ticket.type,
-        ticketId: ticket.ticketId || `TKT-${ticket.id.slice(0, 8)}`,
-      });
-      toast({
-        title: "Downloaded",
-        description: "Ticket downloaded successfully",
-      });
-    } catch {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownloadTicket = async (ticket: TicketEvent) => {
+    if (!ticket.registrationId) {
       toast({
         title: "Error",
-        description: "Failed to download ticket",
+        description: "Ticket not available for download",
         variant: "destructive",
       });
+      return;
+    }
+
+    setDownloadingId(ticket.id);
+    try {
+      await downloadTicketPDF(ticket.registrationId);
+      toast({
+        title: "Downloaded",
+        description: "Ticket PDF downloaded successfully",
+      });
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download ticket",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -246,17 +256,27 @@ const MyTickets: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 pt-4 border-t border-border">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="flex-1"
+                    disabled={downloadingId === ticket.id}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDownloadTicket(ticket);
                     }}
                   >
-                    <Download className="h-4 w-4 mr-1" />
-                    Download
+                    {downloadingId === ticket.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </>
+                    )}
                   </Button>
                   <Button 
                     variant="outline" 

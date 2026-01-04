@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
-import { Loader2, CreditCard, Shield, AlertCircle } from 'lucide-react';
+import { Loader2, CreditCard, Shield, AlertCircle, Smartphone } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import type { EventData } from '@/types/event';
 import type { TicketSelection } from '../UnifiedRegistrationModal';
+import { registerForEvent } from '@/lib/event-api';
+import { initializePayment, verifyPayment } from '@/lib/payment-api';
 
 interface RegistrationData {
   userId?: string;
@@ -22,6 +26,7 @@ interface PaymentResult {
   amount?: number;
   currency?: string;
   status?: string;
+  registrationId?: string;
   [key: string]: unknown;
 }
 
@@ -34,6 +39,23 @@ interface PaymentStepProps {
   onContinue: (data: PaymentResult) => void;
 }
 
+// Paystack popup handler type
+declare global {
+  interface Window {
+    PaystackPop?: {
+      setup: (config: {
+        key: string;
+        email: string;
+        amount: number;
+        currency?: string;
+        ref?: string;
+        callback: (response: { reference: string }) => void;
+        onClose: () => void;
+      }) => { openIframe: () => void };
+    };
+  }
+}
+
 export const PaymentStep = ({
   event,
   selectedTickets,
@@ -44,8 +66,31 @@ export const PaymentStep = ({
 }: PaymentStepProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa'>('card');
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
+  const [paystackLoaded, setPaystackLoaded] = useState(false);
 
-  const currency = event.currency || 'USD';
+  const currency = event.currency || 'NGN';
+
+  // Load Paystack script
+  useEffect(() => {
+    if (document.getElementById('paystack-script')) {
+      setPaystackLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'paystack-script';
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    script.onload = () => setPaystackLoaded(true);
+    script.onerror = () => setError('Failed to load payment processor');
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup not needed as script should persist
+    };
+  }, []);
 
   // Calculate breakdown
   const ticketBreakdown = Object.entries(selectedTickets)
@@ -60,25 +105,127 @@ export const PaymentStep = ({
       };
     });
 
+  // Create registration first
+  const createRegistration = useCallback(async () => {
+    try {
+      // Convert selectedTickets to array format
+      const tickets = Object.entries(selectedTickets)
+        .filter(([, qty]) => qty > 0)
+        .map(([ticketType, quantity]) => ({ ticketType, quantity }));
+
+      const response = await registerForEvent(event.id, {
+        tickets,
+        registrationData: registrationData.registrationData,
+      });
+
+      if (response.success && response.data?.registrationId) {
+        return response.data.registrationId;
+      }
+      throw new Error(response.message || 'Failed to create registration');
+    } catch (err) {
+      throw err instanceof Error ? err : new Error('Registration failed');
+    }
+  }, [event.id, selectedTickets, registrationData]);
+
+  // Handle Paystack popup payment
+  const handlePaystackPayment = useCallback(async (regId: string) => {
+    if (!window.PaystackPop) {
+      setError('Payment processor not ready. Please try again.');
+      setIsProcessing(false);
+      return;
+    }
+
+    try {
+      // Initialize payment on backend
+      const initResponse = await initializePayment(regId);
+
+      if (!initResponse.success) {
+        throw new Error(initResponse.message || 'Failed to initialize payment');
+      }
+
+      const { authorizationUrl, reference } = initResponse.data;
+
+      // If we have a public key, use popup; otherwise redirect
+      const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+
+      if (publicKey && window.PaystackPop) {
+        // Use Paystack inline popup
+        const handler = window.PaystackPop.setup({
+          key: publicKey,
+          email: registrationData.email || '',
+          amount: Math.round(totalPrice * 100), // Convert to kobo/cents
+          currency: currency,
+          ref: reference,
+          callback: async (response) => {
+            // Verify payment
+            try {
+              const verifyResponse = await verifyPayment(response.reference);
+              if (verifyResponse.success && verifyResponse.data.success) {
+                onContinue({
+                  method: 'paystack',
+                  transactionId: response.reference,
+                  amount: totalPrice,
+                  currency: currency,
+                  status: 'success',
+                  registrationId: regId,
+                });
+              } else {
+                setError('Payment verification failed. Please contact support.');
+                setIsProcessing(false);
+              }
+            } catch {
+              // Payment might still have succeeded - webhook will handle it
+              onContinue({
+                method: 'paystack',
+                transactionId: response.reference,
+                amount: totalPrice,
+                currency: currency,
+                status: 'pending',
+                registrationId: regId,
+              });
+            }
+          },
+          onClose: () => {
+            setError('Payment was cancelled. Your registration is saved - click Pay to try again.');
+            setIsProcessing(false);
+          },
+        });
+
+        handler.openIframe();
+      } else if (authorizationUrl) {
+        // Fallback: redirect to Paystack checkout page
+        window.location.href = authorizationUrl;
+      } else {
+        throw new Error('No payment method available');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Payment initialization failed');
+      setIsProcessing(false);
+    }
+  }, [registrationData.email, totalPrice, currency, onContinue]);
+
   const handlePayment = async () => {
     setIsProcessing(true);
     setError(null);
 
     try {
-      // TODO: Integrate with Paystack
-      // For now, simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Step 1: Create registration if not already created
+      let regId = registrationId;
+      if (!regId) {
+        regId = await createRegistration();
+        setRegistrationId(regId);
+      }
 
-      // Proceed to confirmation
-      onContinue({
-        method: 'paystack',
-        transactionId: `TXN-${Date.now()}`,
-        amount: totalPrice,
-        currency: currency,
-        status: 'success',
-      });
-    } catch {
-      setError('Payment failed. Please try again.');
+      if (paymentMethod === 'card') {
+        // Step 2: Initialize and process Paystack payment
+        await handlePaystackPayment(regId);
+      } else if (paymentMethod === 'mpesa') {
+        // M-Pesa is handled via SMS/USSD flow
+        setError('M-Pesa payment is available via SMS registration. Please use card payment here or dial ' + (event.registrationCode ? `*384*${event.registrationCode}#` : 'our USSD code') + ' to pay with M-Pesa.');
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
       setIsProcessing(false);
     }
   };
@@ -150,32 +297,53 @@ export const PaymentStep = ({
         </Card>
       )}
 
-      {/* Payment Method */}
-      <Card className="p-4 border-2 border-primary/20 bg-primary/5">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="font-semibold flex items-center gap-2">
-            <CreditCard className="w-4 h-4" />
-            Payment Method
-          </h4>
-          <img
-            src="/paystack-logo.png"
-            alt="Paystack"
-            className="h-6"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          Secure payment processing powered by Paystack. You'll be redirected to complete your
-          payment.
-        </p>
+      {/* Payment Method Selection */}
+      <Card className="p-4">
+        <h4 className="font-semibold mb-3">Payment Method</h4>
+        <RadioGroup
+          value={paymentMethod}
+          onValueChange={(value) => setPaymentMethod(value as 'card' | 'mpesa')}
+          className="space-y-3"
+        >
+          <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
+            <RadioGroupItem value="card" id="card" />
+            <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
+              <CreditCard className="w-5 h-5 text-primary" />
+              <div>
+                <p className="font-medium">Card Payment</p>
+                <p className="text-xs text-muted-foreground">Visa, Mastercard, Verve</p>
+              </div>
+            </Label>
+            <img
+              src="/paystack-logo.png"
+              alt="Paystack"
+              className="h-5"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Shield className="w-4 h-4 text-green-600" />
-          <span>256-bit SSL encryption. Your payment information is secure.</span>
-        </div>
+          {currency === 'KES' && (
+            <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer opacity-60">
+              <RadioGroupItem value="mpesa" id="mpesa" />
+              <Label htmlFor="mpesa" className="flex items-center gap-3 cursor-pointer flex-1">
+                <Smartphone className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="font-medium">M-Pesa</p>
+                  <p className="text-xs text-muted-foreground">Available via SMS registration</p>
+                </div>
+              </Label>
+            </div>
+          )}
+        </RadioGroup>
       </Card>
+
+      {/* Security Notice */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-green-50 p-3 rounded-lg border border-green-200">
+        <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
+        <span>256-bit SSL encryption. Your payment information is secure.</span>
+      </div>
 
       {/* Refund Policy */}
       <Alert>
@@ -193,7 +361,12 @@ export const PaymentStep = ({
         <Button variant="outline" size="lg" className="flex-1" onClick={onBack} disabled={isProcessing}>
           Back
         </Button>
-        <Button size="lg" className="flex-1" onClick={handlePayment} disabled={isProcessing}>
+        <Button
+          size="lg"
+          className="flex-1"
+          onClick={handlePayment}
+          disabled={isProcessing || (!paystackLoaded && paymentMethod === 'card')}
+        >
           {isProcessing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -210,4 +383,3 @@ export const PaymentStep = ({
     </div>
   );
 };
-

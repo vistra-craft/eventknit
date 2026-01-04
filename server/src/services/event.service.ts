@@ -409,6 +409,8 @@ export class EventService {
     offset?: number;
     page?: number;
     type?: EventType;
+    dateFrom?: string; // ISO date string - filter events starting from this date
+    dateTo?: string; // ISO date string - filter events starting before this date
   } = {}) {
     const where: Prisma.EventWhereInput = {
       deletedAt: null,
@@ -434,6 +436,17 @@ export class EventService {
 
     if (filters.type) {
       where.type = filters.type;
+    }
+
+    // Date range filtering
+    if (filters.dateFrom || filters.dateTo) {
+      where.startDate = {};
+      if (filters.dateFrom) {
+        where.startDate.gte = new Date(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        where.startDate.lte = new Date(filters.dateTo);
+      }
     }
 
     if (filters.search) {

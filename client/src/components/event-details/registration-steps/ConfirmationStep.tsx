@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, Calendar, MapPin, Mail, Download, Share2 } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Mail, Download, Share2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { EventData } from '@/types/event';
 import type { TicketSelection } from '../UnifiedRegistrationModal';
+import { downloadTicketPDF } from '@/lib/ticket-api';
+import { shareEvent } from '@/lib/utils/share';
+import { useToast } from '@/hooks/use-toast';
 
 interface RegistrationData {
   userId?: string;
@@ -21,6 +25,7 @@ interface PaymentData {
   amount?: number;
   currency?: string;
   status?: string;
+  registrationId?: string;
   [key: string]: unknown;
 }
 
@@ -40,6 +45,8 @@ export const ConfirmationStep = ({
   onClose,
 }: ConfirmationStepProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
   const ticketBreakdown = Object.entries(selectedTickets)
@@ -58,21 +65,46 @@ export const ConfirmationStep = ({
     onClose();
   };
 
-  const handleDownloadTicket = () => {
-    // TODO: Implement ticket download
-    alert('Ticket download will be implemented soon');
+  const handleDownloadTicket = async () => {
+    if (!paymentData?.registrationId) {
+      toast({
+        title: "Info",
+        description: "Ticket will be available in your email shortly.",
+      });
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      await downloadTicketPDF(paymentData.registrationId);
+      toast({
+        title: "Downloaded",
+        description: "Ticket PDF downloaded successfully",
+      });
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download ticket. Check your email for the ticket.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
-  const handleShareEvent = () => {
-    // TODO: Implement share functionality
-    if (navigator.share) {
-      navigator.share({
-        title: event.title,
-        text: `Check out ${event.title}!`,
-        url: window.location.href.replace('/register', ''),
+  const handleShareEvent = async () => {
+    const shared = await shareEvent(event.title, event.id);
+    if (shared) {
+      toast({
+        title: "Shared",
+        description: "Event shared successfully",
       });
     } else {
-      alert('Share functionality not supported on this browser');
+      toast({
+        title: "Link Copied",
+        description: "Event link copied to clipboard",
+      });
     }
   };
 
@@ -181,9 +213,18 @@ export const ConfirmationStep = ({
         </Button>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" size="lg" onClick={handleDownloadTicket}>
-            <Download className="w-4 h-4 mr-2" />
-            Download
+          <Button variant="outline" size="lg" onClick={handleDownloadTicket} disabled={isDownloading}>
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </>
+            )}
           </Button>
           <Button variant="outline" size="lg" onClick={handleShareEvent}>
             <Share2 className="w-4 h-4 mr-2" />

@@ -34,6 +34,32 @@ const AnalyticsOverview = () => {
   const [stats, setStats] = useState<{ totalEvents?: number; totalAttendees?: number; totalRevenue?: number; totalSpeakers?: number; totalExhibitors?: number } | null>(null);
   const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; category?: string; capacity?: number }>>([]);
 
+  // Calculate date range based on selected time filter
+  const getDateRange = (range: string): { dateFrom: string; dateTo: string } => {
+    const now = new Date();
+    const dateTo = now.toISOString();
+    let dateFrom: Date;
+
+    switch (range) {
+      case '7d':
+        dateFrom = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '90d':
+        dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      case '1y':
+        dateFrom = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    return { dateFrom: dateFrom.toISOString(), dateTo };
+  };
+
   // Fetch analytics data
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -41,9 +67,11 @@ const AnalyticsOverview = () => {
         setLoading(true);
         setError(null);
 
+        const { dateFrom, dateTo } = getDateRange(timeRange);
+
         const [statsResponse, eventsResponse] = await Promise.all([
           getOrganizerDashboardStats(),
-          getOrganizerEvents({ limit: 100 }),
+          getOrganizerEvents({ limit: 100, dateFrom, dateTo }),
         ]);
 
         if (statsResponse.success) {
