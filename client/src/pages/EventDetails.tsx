@@ -402,7 +402,7 @@ const EventDetails = () => {
                       <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {safeSpeakers.slice(0, 8).map((speaker, index: number) => (
-                          <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border-0 bg-card-surface shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                          <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border-0 bg-card-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
                               {speaker?.image ? (
                                 <img src={speaker.image} alt={speaker.name || 'Speaker'} className="w-full h-full object-cover" />
@@ -431,7 +431,7 @@ const EventDetails = () => {
             {/* Right Column - Action Button and Info */}
             <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-20 lg:self-start">
               {/* Primary Action Card */}
-              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-6">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-6">
                 <div className="space-y-4">
                   {/* Price Display */}
                   {!event.isFree && (

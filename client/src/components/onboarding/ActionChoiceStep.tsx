@@ -49,7 +49,7 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Create Event Card */}
         <Card
-          className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-primary/10 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+          className="group border border-border bg-card-surface rounded-2xl shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
         >
           <CardHeader>
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
@@ -73,7 +73,7 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
 
         {/* Learn More Card */}
         <Card
-          className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-primary/10 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+          className="group border border-border bg-card-surface rounded-2xl shadow-none hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
         >
           <CardHeader>
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">

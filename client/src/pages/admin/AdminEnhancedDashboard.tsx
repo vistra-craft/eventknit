@@ -233,7 +233,7 @@ const AdminEnhancedDashboard = () => {
                 {stats.map((stat, index) => (
                   <div
                     key={index}
-                    className="rounded-2xl border-0 bg-card-surface p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:bg-primary/5"
+                    className="rounded-2xl border-0 bg-card-surface p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div className="rounded-lg bg-primary/10 p-3">
@@ -333,7 +333,7 @@ const AdminEnhancedDashboard = () => {
               </div>
 
               <div className="space-y-6">
-                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Organizer growth
                   </h3>
@@ -356,7 +356,7 @@ const AdminEnhancedDashboard = () => {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Events created
                   </h3>
@@ -379,7 +379,7 @@ const AdminEnhancedDashboard = () => {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Platform revenue
                   </h3>
@@ -401,7 +401,7 @@ const AdminEnhancedDashboard = () => {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <div className="rounded-2xl border-0 bg-card-surface p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                   <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Attendees / users
                   </h3>

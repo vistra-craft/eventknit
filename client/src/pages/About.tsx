@@ -204,7 +204,7 @@ const About = () => {
         {/* Interactive Stats Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
           {stats.map((stat, index) => (
-            <Card key={index} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all text-center group">
+            <Card key={index} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-center group">
               <CardContent className="p-5">
                 <div className="text-primary mb-3 flex justify-center group-hover:scale-110 transition-transform duration-300">
                   {stat.icon}
@@ -443,7 +443,7 @@ const About = () => {
               {eventCreationSteps.map((step, index) => (
                 <Card
                   key={index}
-                  className="text-center border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group"
+                  className="text-center border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group"
                 >
                   <CardContent className="p-5">
                     <div className="relative mb-4">
@@ -538,19 +538,19 @@ const About = () => {
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-4">
                       <div className="font-semibold text-foreground mb-2">Create an event</div>
                       <div className="text-muted-foreground">→</div>
                     </div>
-                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-4">
                       <div className="font-semibold text-foreground mb-2">Customize tickets</div>
                       <div className="text-muted-foreground">→</div>
                     </div>
-                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-4">
                       <div className="font-semibold text-foreground mb-2">Launch sales & track analytics</div>
                       <div className="text-muted-foreground">→</div>
                     </div>
-                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all p-4">
+                    <div className="bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-4">
                       <div className="font-semibold text-foreground mb-2">Start selling tickets online</div>
                     </div>
                   </div>
@@ -647,7 +647,7 @@ const About = () => {
                   key={index}
                   className={`${index % 2 === 0 ? 'text-right' : 'text-left'} ${index < 2 ? 'mb-8' : ''}`}
                 >
-                  <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
+                  <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
                     <CardContent className="p-5">
                       <div className="flex items-center gap-4">
                         {index % 2 === 0 ? (
@@ -691,7 +691,7 @@ const About = () => {
           
           {/* Compact benefits row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3 p-4 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <div className="flex items-center gap-3 p-4 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
               </div>
@@ -701,7 +701,7 @@ const About = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3 p-4 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <div className="flex items-center gap-3 p-4 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-primary" />
               </div>
@@ -711,7 +711,7 @@ const About = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-3 p-4 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <div className="flex items-center gap-3 p-4 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <Bell className="w-5 h-5 text-primary" />
               </div>
@@ -735,7 +735,7 @@ const About = () => {
           {/* Creative list layout with icons */}
           <div className="max-w-4xl mx-auto space-y-6">
             {values.map((value, index) => (
-              <div key={index} className="flex items-start gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
+              <div key={index} className="flex items-start gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
                   <div className="text-primary">
                     {value.icon}
@@ -768,7 +768,7 @@ const About = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-              <Card className="group overflow-hidden border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="group overflow-hidden border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <div className="relative overflow-hidden">
                   <img 
                     src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&h=300&fit=crop"
@@ -790,7 +790,7 @@ const About = () => {
                 </CardContent>
               </Card>
 
-              <Card className="group overflow-hidden border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="group overflow-hidden border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <div className="relative overflow-hidden">
                   <img 
                     src="/src/assets/event-concert.jpg"
@@ -812,7 +812,7 @@ const About = () => {
                 </CardContent>
               </Card>
 
-              <Card className="group overflow-hidden border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+              <Card className="group overflow-hidden border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <div className="relative overflow-hidden">
                   <img 
                     src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
@@ -897,7 +897,7 @@ const About = () => {
               <div className="flex animate-scroll gap-8">
                 {/* First set of testimonials */}
                 <div className="flex gap-8 flex-shrink-0">
-                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -918,7 +918,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -939,7 +939,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -963,7 +963,7 @@ const About = () => {
 
                 {/* Duplicate set for seamless loop */}
                 <div className="flex gap-8 flex-shrink-0">
-                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -984,7 +984,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -1005,7 +1005,7 @@ const About = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card className="w-80 bg-card-surface rounded-2xl shadow-sm border-0 hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -1045,7 +1045,7 @@ const About = () => {
             <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12 bg-card-surface rounded-2xl shadow-sm">
               {/* Left side - Contact methods */}
               <div className="space-y-8">
-                <div className="flex items-center gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
+                <div className="flex items-center gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <Mail className="w-8 h-8 text-primary" />
                   </div>
@@ -1056,7 +1056,7 @@ const About = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
+                <div className="flex items-center gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <Phone className="w-8 h-8 text-primary" />
                   </div>
@@ -1067,7 +1067,7 @@ const About = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all group">
+                <div className="flex items-center gap-6 p-5 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all group">
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <MapPin className="w-8 h-8 text-primary" />
                   </div>

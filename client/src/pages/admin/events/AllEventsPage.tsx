@@ -349,7 +349,7 @@ const AllEventsPage = () => {
         </div>
 
         {/* Filters */}
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="lg:col-span-2">
@@ -683,7 +683,7 @@ const AllEventsPage = () => {
         )}
 
         {filteredEvents.length === 0 && !loading && (
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-8 text-center">
               <div className="text-muted-foreground">
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />

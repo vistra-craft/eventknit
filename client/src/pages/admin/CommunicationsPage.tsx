@@ -781,7 +781,7 @@ const CommunicationsPage = () => {
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {announcements.filter(a => a.status === "sent").length}
@@ -789,7 +789,7 @@ const CommunicationsPage = () => {
               <p className="text-sm text-gray-600">Sent Announcements</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {notifications.filter(n => n.status === "active").length}
@@ -797,7 +797,7 @@ const CommunicationsPage = () => {
               <p className="text-sm text-gray-600">Active Notifications</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {emailTemplates.filter(t => t.isActive).length}
@@ -805,7 +805,7 @@ const CommunicationsPage = () => {
               <p className="text-sm text-gray-600">Active Templates</p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
               <div className="font-semibold text-primary mb-2">
                 {announcements.reduce((sum, a) => sum + a.views, 0)}
@@ -826,7 +826,7 @@ const CommunicationsPage = () => {
 
           <TabsContent value="announcements" className="space-y-6">
             {/* Filters */}
-            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
               <CardContent className="p-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
@@ -895,7 +895,7 @@ const CommunicationsPage = () => {
             ) : (
             <div className="space-y-3">
               {filteredAnnouncements.map((announcement) => (
-                <Card key={announcement.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card key={announcement.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -972,7 +972,7 @@ const CommunicationsPage = () => {
             ) : (
             <div className="space-y-3">
               {notifications.map((notification) => (
-                <Card key={notification.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card key={notification.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1044,7 +1044,7 @@ const CommunicationsPage = () => {
             ) : (
             <div className="space-y-3">
               {emailTemplates.map((template) => (
-                <Card key={template.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                <Card key={template.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1123,7 +1123,7 @@ const CommunicationsPage = () => {
             ) : (
               <div className="space-y-3">
                 {bulkMessages.map((message) => (
-                  <Card key={message.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+                  <Card key={message.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">

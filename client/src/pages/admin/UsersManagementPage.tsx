@@ -22,7 +22,7 @@ const UsersManagementPage = () => {
         </div>
 
         {/* Tabs */}
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:bg-primary/5 transition-all">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <CardContent className="p-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
