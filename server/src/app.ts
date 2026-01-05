@@ -38,6 +38,7 @@ import savedEventRoutes from './routes/saved-event.routes.js';
 import eventCollectionRoutes from './routes/event-collection.routes.js';
 import platformFinanceRoutes from './routes/platform-finance.routes.js';
 import pushNotificationRoutes from './routes/push-notification.routes.js';
+import attendeeImportRoutes from './routes/attendee-import.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -160,6 +161,7 @@ app.use('/api/v1/ussd', ussdRouter);
 app.use('/api/v1/mpesa', mpesaRouter);
 app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
+app.use('/api/v1/events', attendeeImportRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

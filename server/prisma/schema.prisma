@@ -739,6 +739,8 @@ model Event {
   badgePrintJobs         BadgePrintJob[]           @relation("EventBadgePrintJobs")
   // Service Point Facilities
   facilities             EventFacility[]           @relation("EventFacilities")
+  // Attendee Import History
+  attendeeImports        AttendeeImport[]          @relation("EventAttendeeImports")
 
   @@index([organizerId])
   @@index([status])
@@ -4573,4 +4575,25 @@ model BadgePrintJob {
   @@index([registrationId])
   @@index([status])
   @@index([printedAt])
+}
+
+// Attendee bulk import history for MICE events
+model AttendeeImport {
+  id                String    @id @default(uuid())
+  eventId           String
+  event             Event     @relation("EventAttendeeImports", fields: [eventId], references: [id], onDelete: Cascade)
+  importedBy        String    // User ID who initiated the import
+  fileName          String    // Original file name
+  totalRows         Int       // Total rows in file (excluding header)
+  successCount      Int       @default(0)
+  errorCount        Int       @default(0)
+  status            String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  sendWelcomeEmails Boolean   @default(false)
+  errors            Json?     // Array of { row, field, message } error details
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
+
+  @@index([eventId])
+  @@index([status])
+  @@index([createdAt])
 }

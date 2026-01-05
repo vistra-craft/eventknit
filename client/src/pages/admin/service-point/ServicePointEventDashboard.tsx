@@ -56,10 +56,15 @@ import {
   Award,
   Presentation,
   Camera,
+  Upload,
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
+import { AttendeeImportDialog } from "@/components/AttendeeImportDialog";
+import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
+import { QuickRegisterDialog } from "@/components/QuickRegisterDialog";
 import { getEvent, getEventAttendees, type EventAttendee, type EventStatistics, TicketStatus } from "../../../lib/workstation-api";
+import { exportAttendees } from "@/lib/attendee-import-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
 import {
   getFacilities,
@@ -107,8 +112,21 @@ const ServicePointEventDashboard: React.FC = () => {
     allowCheckOut: true,
   });
   const [facilitySaving, setFacilitySaving] = useState(false);
+
+  // Attendee import state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [deleteFacilityId, setDeleteFacilityId] = useState<string | null>(null);
   const [deletingFacility, setDeletingFacility] = useState(false);
+
+  // Attendee detail modal state
+  const [selectedAttendee, setSelectedAttendee] = useState<EventAttendee | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+
+  // Quick register dialog state
+  const [quickRegisterOpen, setQuickRegisterOpen] = useState(false);
+
+  // Export state
+  const [exporting, setExporting] = useState(false);
 
   // Facility icon mapping
   const getFacilityIcon = (iconId: string | null): React.ElementType => {
@@ -182,6 +200,71 @@ const ServicePointEventDashboard: React.FC = () => {
 
     loadEventData();
   }, [eventId, navigate, toast]);
+
+  // Refresh attendees function (for use after import)
+  const refreshAttendees = async () => {
+    if (!eventId) return;
+    try {
+      setAttendeesLoading(true);
+      const response = await getEventAttendees(eventId, pagination.page, pagination.limit);
+      if (response.success && response.data) {
+        setAttendees(response.data.attendees);
+        if (response.data.pagination) {
+          setPagination({
+            page: response.data.pagination.page,
+            limit: response.data.pagination.limit,
+            total: response.data.attendees.length,
+            totalPages: response.data.pagination.totalPages,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading attendees:', error);
+    } finally {
+      setAttendeesLoading(false);
+    }
+  };
+
+  // Open attendee detail modal
+  const handleViewAttendee = (attendee: EventAttendee) => {
+    setSelectedAttendee(attendee);
+    setDetailModalOpen(true);
+  };
+
+  // Handle export attendees
+  const handleExportAttendees = async () => {
+    if (!eventId) return;
+    try {
+      setExporting(true);
+      await exportAttendees(eventId);
+      toast({
+        title: "Export Complete",
+        description: "Attendees CSV has been downloaded",
+      });
+    } catch (error) {
+      console.error('Error exporting attendees:', error);
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export attendees",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Handle quick register success
+  const handleQuickRegisterSuccess = () => {
+    refreshAttendees();
+    // Also refresh statistics
+    if (eventId) {
+      getEvent(eventId).then(response => {
+        if (response.success && response.data) {
+          setStatistics(response.data.statistics);
+        }
+      });
+    }
+  };
 
   // Load attendees when attendees tab is active
   useEffect(() => {
@@ -682,8 +765,25 @@ const ServicePointEventDashboard: React.FC = () => {
                   Attendees Management
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Download className="w-4 h-4 mr-2" />
+                  <Button size="sm" onClick={() => setQuickRegisterOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Attendee
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportAttendees}
+                    disabled={exporting || attendees.length === 0}
+                  >
+                    {exporting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
                     Export
                   </Button>
                 </div>
@@ -704,12 +804,13 @@ const ServicePointEventDashboard: React.FC = () => {
                   {attendees.map((attendee) => (
                     <div
                       key={attendee.registrationId}
-                      className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => handleViewAttendee(attendee)}
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-medium text-primary">
-                            {attendee.attendeeName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            {attendee.attendeeName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                           </span>
                         </div>
                         <div>
@@ -734,13 +835,25 @@ const ServicePointEventDashboard: React.FC = () => {
                             Inside
                           </Badge>
                         )}
-                        <span className="text-sm text-muted-foreground">
-                          {attendee.checkedInAt
-                            ? new Date(attendee.checkedInAt).toLocaleString()
-                            : 'Not checked in'
-                          }
-                        </span>
-                        <Button variant="outline" size="sm">
+                        <div className="text-right text-sm">
+                          <div className="text-muted-foreground">
+                            Registered: {new Date(attendee.registeredAt).toLocaleDateString()}
+                          </div>
+                          <div className={attendee.checkedInAt ? 'text-green-600' : 'text-muted-foreground'}>
+                            {attendee.checkedInAt
+                              ? `Checked in: ${new Date(attendee.checkedInAt).toLocaleTimeString()}`
+                              : 'Not checked in'
+                            }
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewAttendee(attendee);
+                          }}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                       </div>
@@ -1101,6 +1214,41 @@ const ServicePointEventDashboard: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Attendee Import Dialog */}
+      {eventId && (
+        <AttendeeImportDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          eventId={eventId}
+          onImportComplete={() => {
+            refreshAttendees();
+            toast({
+              title: "Import Complete",
+              description: "Attendees have been imported successfully",
+            });
+          }}
+        />
+      )}
+
+      {/* Attendee Detail Modal */}
+      <AttendeeDetailModal
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        attendee={selectedAttendee}
+        registrationFields={eventData?.registrationFields}
+      />
+
+      {/* Quick Register Dialog */}
+      {eventId && (
+        <QuickRegisterDialog
+          open={quickRegisterOpen}
+          onOpenChange={setQuickRegisterOpen}
+          eventId={eventId}
+          event={eventData}
+          onSuccess={handleQuickRegisterSuccess}
+        />
+      )}
     </AdminLayout>
   );
 };

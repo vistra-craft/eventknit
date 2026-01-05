@@ -830,13 +830,12 @@ export class WorkstationController {
         data: {
           attendees: attendees.map((reg) => ({
             registrationId: reg.id,
-            eventId: reg.eventId,
-            attendee: {
-              id: reg.attendee.id,
-              name: `${reg.attendee.firstName || ''} ${reg.attendee.lastName || ''}`.trim(),
-              email: reg.attendee.email,
-              phone: reg.attendee.phoneNumber,
-            },
+            visitorId: reg.attendee.id,
+            attendeeName: `${reg.attendee.firstName || ''} ${reg.attendee.lastName || ''}`.trim(),
+            firstName: reg.attendee.firstName,
+            lastName: reg.attendee.lastName,
+            email: reg.attendee.email,
+            phoneNumber: reg.attendee.phoneNumber,
             ticketType: reg.ticketType,
             ticketStatus: reg.ticketStatus,
             isCurrentlyInside: reg.isCurrentlyInside,
@@ -844,6 +843,10 @@ export class WorkstationController {
             checkedOutAt: reg.checkedOutAt,
             reEntryCount: reg.reEntryCount,
             lastScanFacility: reg.lastScanFacility,
+            registeredAt: reg.createdAt,
+            backupCode: reg.backupCode,
+            qrCodeDataUrl: reg.qrCodeDataUrl,
+            registrationData: reg.registrationData as Record<string, unknown> | null,
           })),
           pagination: {
             page: pageNum,

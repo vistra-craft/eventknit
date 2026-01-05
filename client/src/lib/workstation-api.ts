@@ -234,7 +234,10 @@ export interface EventResponse {
  */
 export interface EventAttendee {
   registrationId: string;
+  visitorId: string;
   attendeeName: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
   phoneNumber: string | null;
   ticketType: string | null;
@@ -244,6 +247,10 @@ export interface EventAttendee {
   isCurrentlyInside: boolean;
   reEntryCount: number;
   lastScanFacility: string | null;
+  registeredAt: Date;
+  backupCode: string | null;
+  qrCodeDataUrl: string | null;
+  registrationData: Record<string, unknown> | null;
 }
 
 /**
