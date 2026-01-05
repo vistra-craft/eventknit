@@ -4,7 +4,9 @@ import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Input } from "../../../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "../../../components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import { getCategoriesByGroup, getCategoryLabel } from "@/lib/event-categories";
 import {
   Calendar,
   Users,
@@ -36,6 +38,8 @@ const ServicePointEvents: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<EventStatusFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const categoryGroups = getCategoriesByGroup();
 
   // Compute event status based on dates
   const computeEventStatus = (event: EventData): "upcoming" | "ongoing" | "completed" => {
@@ -83,7 +87,7 @@ const ServicePointEvents: React.FC = () => {
     fetchEvents();
   }, []);
 
-  // Filter events based on search and status
+  // Filter events based on search, status, and category
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
       // Search filter
@@ -100,9 +104,13 @@ const ServicePointEvents: React.FC = () => {
         (statusFilter === "upcoming" && event.computedStatus === "upcoming") ||
         (statusFilter === "completed" && event.computedStatus === "completed");
 
-      return matchesSearch && matchesStatus;
+      // Category filter
+      const matchesCategory =
+        categoryFilter === "all" || event.category === categoryFilter;
+
+      return matchesSearch && matchesStatus && matchesCategory;
     });
-  }, [events, searchTerm, statusFilter]);
+  }, [events, searchTerm, statusFilter, categoryFilter]);
 
   // Count events by status
   const statusCounts = useMemo(() => {
@@ -187,14 +195,48 @@ const ServicePointEvents: React.FC = () => {
 
         {/* Search and Filter */}
         <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search events by name, location, or venue..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search events by name, location, or venue..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent className="max-h-64">
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectGroup>
+                  <SelectLabel>Professional / MICE</SelectLabel>
+                  {categoryGroups.mice.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Entertainment</SelectLabel>
+                  {categoryGroups.entertainment.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Lifestyle</SelectLabel>
+                  {categoryGroups.lifestyle.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>General</SelectLabel>
+                  {categoryGroups.general.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as EventStatusFilter)}>
@@ -246,16 +288,17 @@ const ServicePointEvents: React.FC = () => {
                 <CalendarX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">No events found</h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || statusFilter !== "all"
+                  {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
                     ? "Try adjusting your search or filter criteria"
                     : "There are no approved events available for service point operations"}
                 </p>
-                {(searchTerm || statusFilter !== "all") && (
+                {(searchTerm || statusFilter !== "all" || categoryFilter !== "all") && (
                   <Button
                     variant="outline"
                     onClick={() => {
                       setSearchTerm("");
                       setStatusFilter("all");
+                      setCategoryFilter("all");
                     }}
                   >
                     Clear filters
@@ -297,7 +340,7 @@ const ServicePointEvents: React.FC = () => {
                   {event.category && (
                     <div className="absolute top-3 right-3">
                       <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                        {event.category}
+                        {getCategoryLabel(event.category)}
                       </Badge>
                     </div>
                   )}

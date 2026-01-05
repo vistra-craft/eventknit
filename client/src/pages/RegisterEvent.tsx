@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User, Ticket, Minus, Plus, Crown, Clock, CheckCircle, X } from "lucide-react";
 
 // UI Components
@@ -11,8 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // App Components
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import CheckoutHeader from "@/components/CheckoutHeader";
 
 // Hooks & API
 import { useEvent } from "@/hooks/useEvent";
@@ -35,6 +34,7 @@ interface FormErrors {
 const EventRegistration = () => {
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, user: authUser } = useAuth();
   const { event, isLoading, error: eventError, fetchEvent } = useEvent();
   const [currentStep] = useState<'registration' | 'confirmation'>('registration');
@@ -48,6 +48,8 @@ const EventRegistration = () => {
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [applyingCode, setApplyingCode] = useState(false);
+  // Track if URL promo code has been processed
+  const urlPromoApplied = useRef(false);
   // Consent state (operational consent is always true, so we don't need state for it)
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [demographicsConsent, setDemographicsConsent] = useState(false);
@@ -74,6 +76,92 @@ const EventRegistration = () => {
     }
   }, [isAuthenticated, authUser, formData]);
 
+  // Handle applying promo code - defined before useEffects that depend on it
+  const handleApplyPromoCode = useCallback(async (codeToApply?: string) => {
+    const code = codeToApply || promoCode;
+    if (!code.trim() || !event || !eventId) return;
+
+    setApplyingCode(true);
+    setPromoError(null);
+
+    try {
+      // Calculate total amount from all selected tickets
+      const totalAmount = event.ticketTypes?.reduce((sum, ticket) => {
+        const qty = selectedTickets[ticket.name] || 0;
+        return sum + (ticket.price * qty);
+      }, 0) || 0;
+
+      // Get the first selected ticket type for promo code validation (or null if none)
+      const firstSelectedTicketType = Object.keys(selectedTickets).find(name => selectedTickets[name] > 0) || null;
+
+      const response = await validatePromoCode(
+        code.trim(),
+        eventId,
+        firstSelectedTicketType,
+        totalAmount
+      );
+
+      if (response.success && response.data?.valid) {
+        setAppliedDiscount({
+          code: response.data.promoCode?.code || code.toUpperCase(),
+          amount: response.data.discountAmount || 0,
+        });
+        setPromoError(null);
+        // Update the input field if applying from URL
+        if (codeToApply) {
+          setPromoCode(code.toUpperCase());
+        }
+      } else {
+        setAppliedDiscount(null);
+        setPromoError(response.message || 'Invalid promo code');
+      }
+    } catch {
+      setAppliedDiscount(null);
+      setPromoError('Failed to validate promo code');
+    } finally {
+      setApplyingCode(false);
+    }
+  }, [promoCode, event, eventId, selectedTickets]);
+
+  // Auto-apply promo code from URL parameter (?promo=CODE)
+  useEffect(() => {
+    const urlPromoCode = searchParams.get('promo');
+
+    // Only apply if:
+    // 1. URL has promo code
+    // 2. Event is loaded
+    // 3. We haven't already applied it
+    // 4. No discount is currently applied
+    if (urlPromoCode && event && !urlPromoApplied.current && !appliedDiscount) {
+      // Set the promo code in input immediately for UX
+      setPromoCode(urlPromoCode.toUpperCase());
+
+      // If tickets are already selected (paid event with tickets), apply immediately
+      const hasSelectedTickets = Object.values(selectedTickets).some(qty => qty > 0);
+      const isPaidEvent = !event.isFree && event.price !== 0;
+
+      if (isPaidEvent && hasSelectedTickets) {
+        urlPromoApplied.current = true;
+        handleApplyPromoCode(urlPromoCode);
+      } else if (isPaidEvent && !event.ticketTypes?.length) {
+        // Paid event with no ticket types - apply immediately
+        urlPromoApplied.current = true;
+        handleApplyPromoCode(urlPromoCode);
+      }
+    }
+  }, [searchParams, event, selectedTickets, appliedDiscount, handleApplyPromoCode]);
+
+  // Auto-apply URL promo code when tickets are first selected
+  useEffect(() => {
+    const urlPromoCode = searchParams.get('promo');
+    const hasSelectedTickets = Object.values(selectedTickets).some(qty => qty > 0);
+
+    // If URL has promo code, tickets just got selected, and we haven't applied yet
+    if (urlPromoCode && hasSelectedTickets && !urlPromoApplied.current && !appliedDiscount && event && !event.isFree) {
+      urlPromoApplied.current = true;
+      handleApplyPromoCode(urlPromoCode);
+    }
+  }, [selectedTickets, searchParams, appliedDiscount, event, handleApplyPromoCode]);
 
   // Note: Guest checkout is now allowed - no authentication redirect
 
@@ -109,47 +197,6 @@ const EventRegistration = () => {
         ...prev,
         [fieldId]: "",
       }));
-    }
-  };
-
-  const handleApplyPromoCode = async () => {
-    if (!promoCode.trim() || !event || !eventId) return;
-
-    setApplyingCode(true);
-    setPromoError(null);
-
-    try {
-      // Calculate total amount from all selected tickets
-      const totalAmount = event.ticketTypes?.reduce((sum, ticket) => {
-        const qty = selectedTickets[ticket.name] || 0;
-        return sum + (ticket.price * qty);
-      }, 0) || 0;
-
-      // Get the first selected ticket type for promo code validation (or null if none)
-      const firstSelectedTicketType = Object.keys(selectedTickets).find(name => selectedTickets[name] > 0) || null;
-
-      const response = await validatePromoCode(
-        promoCode.trim(),
-        eventId,
-        firstSelectedTicketType,
-        totalAmount
-      );
-
-      if (response.success && response.data?.valid) {
-        setAppliedDiscount({
-          code: response.data.promoCode?.code || promoCode.toUpperCase(),
-          amount: response.data.discountAmount || 0,
-        });
-        setPromoError(null);
-      } else {
-        setAppliedDiscount(null);
-        setPromoError(response.message || 'Invalid promo code');
-      }
-    } catch {
-      setAppliedDiscount(null);
-      setPromoError('Failed to validate promo code');
-    } finally {
-      setApplyingCode(false);
     }
   };
 
@@ -618,7 +665,7 @@ const EventRegistration = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
+        <CheckoutHeader />
         <main className="flex-1 flex items-center justify-center py-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center space-y-4">
             <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
@@ -632,7 +679,7 @@ const EventRegistration = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
+        <CheckoutHeader />
         <main className="flex-1 flex items-center justify-center p-4 bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="max-w-md w-full">
             <Alert variant="destructive" className="mb-6">
@@ -658,7 +705,7 @@ const EventRegistration = () => {
   if (!event) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
+        <CheckoutHeader />
         <main className="flex-1 flex items-center justify-center p-4 bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-bold tracking-tight">
@@ -694,12 +741,12 @@ const EventRegistration = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar />
+      <CheckoutHeader backLink={`/event/${eventId}`} backLabel="Back to Event" eventTitle={event.title} />
 
-      <main className="flex-1 pt-20 pb-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
-        <div className="max-w-3xl mx-auto px-4 space-y-8">
+      <main className="flex-1 pt-6 pb-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
+        <div className="max-w-3xl mx-auto px-4 space-y-6">
           {/* Progress Indicator */}
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center justify-center py-4 -mt-2">
             <div className="flex items-center space-x-4">
               <div className="flex items-center">
                 <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">1</div>
@@ -724,18 +771,6 @@ const EventRegistration = () => {
                 </>
               )}
             </div>
-          </div>
-
-          <div>
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/event/${eventId}`)}
-              className="gap-2 hover:bg-gray-900 hover:text-white transition-colors"
-              size="lg"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Event Details
-            </Button>
           </div>
 
           <section className="rounded-2xl bg-card-surface shadow-sm border border-border/40 overflow-hidden">
@@ -994,7 +1029,7 @@ const EventRegistration = () => {
                             />
                             <Button
                               type="button"
-                              onClick={handleApplyPromoCode}
+                              onClick={() => handleApplyPromoCode()}
                               disabled={!promoCode.trim() || applyingCode}
                               variant="outline"
                             >
@@ -1323,7 +1358,6 @@ const EventRegistration = () => {
 
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

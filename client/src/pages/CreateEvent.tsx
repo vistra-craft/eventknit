@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { CategorySelect } from "@/components/CategorySelect";
 import { 
   MapPin, 
   Users, 
@@ -92,8 +93,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
     { id: 1, name: "General Admission", type: "paid", price: "50", quantity: "100" }
   ]);
-  const [categories, setCategories] = useState(["Music", "Concert"]);
-  const [newCategory, setNewCategory] = useState("");
+  const [customCategory, setCustomCategory] = useState(""); // For "Other" category
   const [tags, setTags] = useState<Tag[]>([]);
   const [newTag, setNewTag] = useState("");
   const [faqs, setFaqs] = useState([{ question: "", answer: "" }]);
@@ -160,11 +160,6 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
     { value: "number", label: "Number" },
   ];
 
-  const eventCategories = [
-    "Technology", "Business", "Arts", "Music", "Sports", "Education", 
-    "Health", "Food", "Travel", "Networking", "Workshop", "Conference", 
-    "Wellness", "Entertainment", "Community", "Charity"
-  ];
 
   const handleInputChange = <K extends keyof EventData>(
     field: K,
@@ -193,17 +188,6 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
 
   const removeTicketType = (id: number) => {
     setTicketTypes(ticketTypes.filter(ticket => ticket.id !== id));
-  };
-
-  const addCategory = () => {
-    if (newCategory && !categories.includes(newCategory)) {
-      setCategories([...categories, newCategory]);
-      setNewCategory("");
-    }
-  };
-
-  const removeCategory = (category: string) => {
-    setCategories(categories.filter(cat => cat !== category));
   };
 
   const addTag = () => {
@@ -424,21 +408,15 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Primary Category *</Label>
-                      <Select value={eventData.category} onValueChange={(value) => handleInputChange("category", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {eventCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <CategorySelect
+                      label="Primary Category"
+                      required
+                      value={eventData.category || ''}
+                      onValueChange={(value) => handleInputChange("category", value)}
+                      placeholder="Select category..."
+                      customValue={customCategory}
+                      onCustomValueChange={setCustomCategory}
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -671,64 +649,36 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
 
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardHeader>
-                  <CardTitle>Categorization & Tags</CardTitle>
+                  <CardTitle>Event Tags</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Additional Categories</Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {categories.map((category) => (
-                        <Badge key={category} variant="secondary" className="pr-1">
-                          {category}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-1 ml-1"
-                            onClick={() => removeCategory(category)}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="Add category" 
-                        value={newCategory}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCategory(e.target.value)}
-                        onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && (e.preventDefault(), addCategory())}
-                      />
-                      <Button onClick={addCategory} variant="outline">Add</Button>
-                    </div>
+                  <p className="text-sm text-muted-foreground">
+                    Add tags to help attendees discover your event (e.g., networking, beginner-friendly, free-food)
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="outline" className="pr-1">
+                        <Tag className="w-3 h-3 mr-1" />
+                        {tag}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-1 ml-1"
+                          onClick={() => removeTag(tag)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </Badge>
+                    ))}
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Event Tags</Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="pr-1">
-                          <Tag className="w-3 h-3 mr-1" />
-                          {tag}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto p-1 ml-1"
-                            onClick={() => removeTag(tag)}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="Add tags (e.g., networking, beginner-friendly)" 
-                        value={newTag}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTag(e.target.value)}
-                        onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                      />
-                      <Button onClick={addTag} variant="outline">Add Tag</Button>
-                    </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add a tag"
+                      value={newTag}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTag(e.target.value)}
+                      onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    />
+                    <Button onClick={addTag} variant="outline">Add Tag</Button>
                   </div>
                 </CardContent>
               </Card>

@@ -43,8 +43,6 @@ import StandaloneCreateEventPage from "./pages/organizer/StandaloneCreateEventPa
 import OnboardingWizard from "./pages/organizer/OnboardingWizard";
 import OrganizerSettingsPage from "./pages/organizer/OrganizerSettingsPage";
 import SubscriptionManagement from "./pages/organizer/SubscriptionManagement";
-import WhiteLabelBranding from "./pages/organizer/WhiteLabelBranding";
-import CustomDomains from "./pages/organizer/CustomDomains";
 import VenueManagement from "./pages/organizer/VenueManagement";
 // Analytics imports
 import { 
@@ -70,19 +68,18 @@ import AttendeeCommunication from "./pages/organizer/AttendeeCommunication";
 import FinancialManagement from "./pages/organizer/FinancialManagement";
 import EventCollaboration from "./pages/organizer/EventCollaboration";
 import AffiliateProgram from "./pages/organizer/AffiliateProgram";
-import PromoCodeManager from "./pages/organizer/marketing/PromoCodeManager";
-import OrganizerPromoCodeManager from "./pages/organizer/marketing/OrganizerPromoCodeManager";
 // Admin Dashboard imports
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarketingPage from "./pages/admin/AdminMarketingPage";
 import AdminProfilePage from "./pages/admin/AdminProfilePage";
-import { 
+import {
   AdminCampaignsPage,
   AdminSocialMediaPage,
   AdminEmailMarketingPage,
   AdminPromotionsPage,
   AdminPartnershipsPage
 } from "./pages/admin/marketing";
+import AdminPromoCodeFormPage from "./pages/admin/marketing/AdminPromoCodeFormPage";
 import AdminAdvancedTicketTypes from "./pages/admin/tickets/AdminAdvancedTicketTypes";
 import AdminDynamicPricing from "./pages/admin/tickets/AdminDynamicPricing";
 // Admin Events imports
@@ -130,8 +127,9 @@ import { AdminAnalyticsOverview } from "./pages/admin/analytics";
 // Admin Support import
 import SupportPage from "./pages/admin/SupportPage";
 import PlatformFeedbackPage from "./pages/admin/PlatformFeedbackPage";
-// Admin White-Label import
+// Admin Branding imports
 import WhiteLabelManagementPage from "./pages/admin/WhiteLabelManagementPage";
+import AdminCustomDomainsPage from "./pages/admin/AdminCustomDomainsPage";
 // Admin Finance imports
 import { 
   FinanceDashboard,
@@ -243,11 +241,6 @@ const App = () => (
       <Route path="/organizer/verification" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><VerificationPage /></ProtectedRoute>} />
       <Route path="/organizer/kyc" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><KYCVerificationPage /></ProtectedRoute>} />
       <Route path="/organizer/subscription" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><SubscriptionManagement /></ProtectedRoute>} />
-      {/* White-Label Routes */}
-      <Route path="/organizer/branding" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><WhiteLabelBranding /></ProtectedRoute>} />
-      <Route path="/organizer/custom-domains" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><CustomDomains /></ProtectedRoute>} />
-      {/* Marketing Routes */}
-      <Route path="/organizer/promo-codes" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><OrganizerPromoCodeManager /></ProtectedRoute>} />
       {/* Venue & Seating Routes */}
       <Route path="/organizer/venues" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><VenueManagement /></ProtectedRoute>} />
       {/* Legacy Profile Route - redirects to settings */}
@@ -315,8 +308,9 @@ const App = () => (
       {/* Admin Support Routes */}
       <Route path="/admin/support" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.SUPPORT]}><SupportPage /></ProtectedRoute>} />
       <Route path="/admin/feedback" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><PlatformFeedbackPage /></ProtectedRoute>} />
-      {/* Admin White-Label Route */}
+      {/* Admin Branding Routes */}
       <Route path="/admin/white-label" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><WhiteLabelManagementPage /></ProtectedRoute>} />
+      <Route path="/admin/custom-domains" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminCustomDomainsPage /></ProtectedRoute>} />
       {/* Admin Finance Routes */}
       <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><FinanceDashboard /></ProtectedRoute>} />
       <Route path="/admin/finance/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><EventFinanceDashboard /></ProtectedRoute>} />
@@ -340,7 +334,9 @@ const App = () => (
       <Route path="/admin/marketing/social" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminSocialMediaPage /></ProtectedRoute>} />
       <Route path="/admin/marketing/email" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminEmailMarketingPage /></ProtectedRoute>} />
       <Route path="/admin/marketing/promotions" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPromotionsPage /></ProtectedRoute>} />
-      <Route path="/admin/marketing/promo-codes" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><PromoCodeManager /></ProtectedRoute>} />
+      <Route path="/admin/marketing/promo-codes" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPromotionsPage /></ProtectedRoute>} />
+      <Route path="/admin/marketing/promo-codes/create" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPromoCodeFormPage /></ProtectedRoute>} />
+      <Route path="/admin/marketing/promo-codes/:id/edit" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPromoCodeFormPage /></ProtectedRoute>} />
       <Route path="/admin/marketing/affiliate" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AffiliateProgram /></ProtectedRoute>} />
       <Route path="/admin/marketing/partnerships" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminPartnershipsPage /></ProtectedRoute>} />
       {/* Admin Tickets Routes */}

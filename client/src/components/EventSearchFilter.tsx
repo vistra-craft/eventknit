@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Search, MapPin, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { EVENT_CATEGORIES, getCategoriesByGroup } from "@/lib/event-categories";
 
 export interface SearchFilters {
   search?: string;
@@ -17,19 +18,8 @@ interface EventSearchFilterProps {
   onFiltersChange: (filters: SearchFilters) => void;
 }
 
-const categories = [
-  { value: "all", label: "All Categories" },
-  { value: "technology", label: "Technology" },
-  { value: "business", label: "Business" },
-  { value: "arts", label: "Arts" },
-  { value: "music", label: "Music" },
-  { value: "sports", label: "Sports" },
-  { value: "education", label: "Education" },
-  { value: "health", label: "Health" },
-  { value: "food", label: "Food" },
-  { value: "community", label: "Community" },
-  { value: "charity", label: "Charity" },
-];
+// Categories are now imported from event-categories.ts
+const categoryGroups = getCategoriesByGroup();
 
 const dateRanges = [
   { value: "anytime", label: "Anytime" },
@@ -145,12 +135,40 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                     <SelectTrigger className="h-9 text-xs rounded-full border-border">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="max-h-64">
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectGroup>
+                        <SelectLabel>Professional / MICE</SelectLabel>
+                        {categoryGroups.mice.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>Entertainment</SelectLabel>
+                        {categoryGroups.entertainment.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>Lifestyle</SelectLabel>
+                        {categoryGroups.lifestyle.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectGroup>
+                        <SelectLabel>General</SelectLabel>
+                        {categoryGroups.general.map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
 

@@ -1,19 +1,15 @@
 import { useState, useEffect } from "react";
-import { CreditCard, Lock, ArrowLeft, Loader2, Ticket, Calendar, MapPin, AlertCircle } from "lucide-react";
+import { Lock, Loader2, Ticket, Calendar, MapPin, AlertCircle, CreditCard, CheckCircle } from "lucide-react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
 // UI Components
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // App Components
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import CheckoutHeader from "@/components/CheckoutHeader";
 
 // API
 import { initializePayment, verifyPayment } from "@/lib/payment-api";
@@ -29,22 +25,12 @@ interface PaymentData {
   registrationId: string;
   eventId: string;
   eventTitle: string;
+  eventDate?: string;
+  eventLocation?: string;
   tickets: TicketType[];
   totalPrice: number;
-}
-
-interface CardDetails {
-  cardNumber: string;
-  expiryDate: string;
-  cvv: string;
-  cardholderName: string;
-}
-
-interface BillingDetails {
-  address: string;
-  city: string;
-  zipCode: string;
-  country: string;
+  discount?: number;
+  promoCode?: string;
 }
 
 const PaymentPage = () => {
@@ -52,56 +38,41 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
-  const [initializing, setInitializing] = useState<boolean>(false);
+  const [verifying, setVerifying] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("card");
-  
+
   // Get payment data from location state
   const paymentData = location.state as PaymentData | undefined;
-  
+
   // Check if this is a payment callback (from Paystack redirect)
   const reference = searchParams.get('reference');
   const trxref = searchParams.get('trxref');
-  
-  const [cardDetails, setCardDetails] = useState<CardDetails>({
-    cardNumber: "",
-    expiryDate: "",
-    cvv: "",
-    cardholderName: "",
-  });
-
-  const [billingDetails, setBillingDetails] = useState<BillingDetails>({
-    address: "",
-    city: "",
-    zipCode: "",
-    country: "United States",
-  });
 
   // Handle payment callback from Paystack
   useEffect(() => {
     const handlePaymentCallback = async () => {
       const paymentRef = reference || trxref;
-      if (paymentRef && paymentData) {
-        setLoading(true);
+      if (paymentRef) {
+        setVerifying(true);
         try {
           const verification = await verifyPayment(paymentRef);
           if (verification.success && verification.data.success) {
             // Payment successful - redirect to confirmation
-            navigate(`/event/${paymentData.eventId}/registration-confirmation`, {
+            navigate(`/confirmation`, {
               state: {
-                eventId: paymentData.eventId,
-                eventTitle: paymentData.eventTitle,
-                tickets: paymentData.tickets,
-                totalPrice: paymentData.totalPrice,
+                eventId: paymentData?.eventId,
+                eventTitle: paymentData?.eventTitle,
+                tickets: paymentData?.tickets,
+                totalPrice: paymentData?.totalPrice,
                 paymentMethod: 'paystack',
                 paymentId: paymentRef,
                 date: new Date().toISOString(),
                 isFreeEvent: false,
                 success: true,
-              }
+              },
+              replace: true
             });
           } else {
-            // Payment failed
             setError('Payment verification failed. Please try again or contact support.');
           }
         } catch (err: unknown) {
@@ -110,7 +81,7 @@ const PaymentPage = () => {
             : 'Failed to verify payment. Please contact support.';
           setError(errorMessage);
         } finally {
-          setLoading(false);
+          setVerifying(false);
         }
       }
     };
@@ -127,10 +98,24 @@ const PaymentPage = () => {
     }
   }, [paymentData, reference, trxref, navigate]);
 
+  // Show verifying state when returning from Paystack
+  if (verifying || (reference || trxref)) {
+    return (
+      <div className="min-h-screen bg-background">
+        <CheckoutHeader />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-lg font-medium">Verifying your payment...</p>
+          <p className="text-sm text-muted-foreground">Please wait while we confirm your transaction.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!paymentData) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
+        <CheckoutHeader />
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
@@ -138,52 +123,25 @@ const PaymentPage = () => {
     );
   }
 
-  const { eventTitle, tickets: paymentTickets } = paymentData;
+  const { eventTitle, tickets: paymentTickets, eventDate, eventLocation } = paymentData;
   const subtotal = paymentTickets.reduce((sum: number, ticket: TicketType) => sum + (ticket.price * ticket.quantity), 0);
-  const tax = paymentData.totalPrice - subtotal;
+  const discount = paymentData.discount || 0;
+  const serviceFee = paymentData.totalPrice - subtotal + discount;
 
-  const handleCardInputChange = (field: keyof CardDetails, value: string) => {
-    let formattedValue = value;
-    
-    // Format card number with spaces
-    if (field === 'cardNumber') {
-      formattedValue = value.replace(/\D/g, '').replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-    }
-    // Format expiry date
-    else if (field === 'expiryDate') {
-      formattedValue = value.replace(/\D/g, '').replace(/(\d{2})(?=\d{2})/, '$1/').slice(0, 5);
-    }
-    // Format CVV
-    else if (field === 'cvv') {
-      formattedValue = value.replace(/\D/g, '').slice(0, 4);
-    }
-    
-    setCardDetails(prev => ({
-      ...prev,
-      [field]: formattedValue
-    }));
-  };
-
-  const handleBillingInputChange = (field: keyof BillingDetails, value: string) => {
-    setBillingDetails((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handlePayWithPaystack = async () => {
     if (!paymentData?.registrationId) {
       setError('Registration ID is missing. Please go back and try again.');
       return;
     }
 
     setError(null);
-    setInitializing(true);
+    setLoading(true);
 
     try {
       // Initialize Paystack payment
       const response = await initializePayment(paymentData.registrationId);
 
-      if (response.success && response.data) {
+      if (response.success && response.data?.authorizationUrl) {
         // Redirect to Paystack checkout
         window.location.href = response.data.authorizationUrl;
       } else {
@@ -194,298 +152,189 @@ const PaymentPage = () => {
         ? (err.message as string)
         : 'Failed to initialize payment. Please try again.';
       setError(errorMessage);
-      setInitializing(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
-        {/* Progress Indicators */}
-        <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">1</div>
-              <span className="ml-2 text-sm font-medium">Registration</span>
-            </div>
-            <div className="w-8 h-0.5 bg-primary"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">2</div>
-              <span className="ml-2 text-sm font-medium">Payment</span>
-            </div>
-            <div className="w-8 h-0.5 bg-muted"></div>
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-semibold">3</div>
-              <span className="ml-2 text-sm font-medium text-muted-foreground">Confirmation</span>
+    <div className="min-h-screen bg-background flex flex-col">
+      <CheckoutHeader backLink={`/event/${paymentData.eventId}/register`} backLabel="Back to Registration" eventTitle={eventTitle} />
+
+      <main className="flex-1 pt-6 pb-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
+        <div className="max-w-4xl mx-auto px-4">
+          {/* Progress Indicators */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <span className="ml-2 text-sm font-medium">Registration</span>
+              </div>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">2</div>
+                <span className="ml-2 text-sm font-medium">Payment</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-semibold">3</div>
+                <span className="ml-2 text-sm font-medium text-muted-foreground">Confirmation</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Navigation Header */}
-        <div className="flex items-center gap-2 mb-6">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => navigate(`/event/${paymentData.eventId}/register`)}
-            className="hover:border-primary hover:bg-primary/5 transition-all duration-200"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Complete Your Purchase</h1>
-        </div>
+          {/* Page Title */}
+          <div className="mb-6">
+            <h1 className="text-xl font-bold">Complete Your Purchase</h1>
+            <p className="text-sm text-muted-foreground">Secure payment powered by Paystack</p>
+          </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Payment Form - Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              {/* Payment Method Selection */}
-              <Card variant="default">
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Order Summary - Left Column */}
+            <div className="lg:col-span-3">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="h-5 w-5" />
+                    Order Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Event Info */}
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-lg">{eventTitle}</h3>
+                    {eventDate && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>{eventDate}</span>
+                      </div>
+                    )}
+                    {eventLocation && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{eventLocation}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Ticket Details */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm text-muted-foreground">TICKETS</h4>
+                    {paymentTickets.map((ticket, index) => (
+                      <div key={index} className="flex justify-between items-center py-2">
+                        <div>
+                          <p className="font-medium">{ticket.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {ticket.quantity} x KES {ticket.price.toLocaleString()}
+                          </p>
+                        </div>
+                        <p className="font-semibold">
+                          KES {(ticket.price * ticket.quantity).toLocaleString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Pricing Breakdown */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal</span>
+                      <span>KES {subtotal.toLocaleString()}</span>
+                    </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Discount {paymentData.promoCode && `(${paymentData.promoCode})`}</span>
+                        <span>-KES {discount.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {serviceFee > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Service Fee</span>
+                        <span>KES {serviceFee.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <Separator className="my-2" />
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span>KES {paymentData.totalPrice.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Payment Action - Right Column */}
+            <div className="lg:col-span-2">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm sticky top-24">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    Payment Method
+                    Payment
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Credit/Debit Card
-                      </Label>
+                <CardContent className="space-y-6">
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      You'll be redirected to Paystack to complete your payment securely.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Lock className="h-3 w-3" />
+                      <span>256-bit SSL encrypted</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="paypal" id="paypal" />
-                      <Label htmlFor="paypal" className="flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
-                        PayPal
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
-
-              {/* Card Details */}
-              {paymentMethod === 'card' && (
-                <Card variant="default">
-                  <CardHeader>
-                    <CardTitle>Card Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input
-                        id="cardNumber"
-                        placeholder="1234 5678 9012 3456"
-                        value={cardDetails.cardNumber}
-                        onChange={(e) =>
-                          handleCardInputChange("cardNumber", e.target.value)
-                        }
-                        className="h-10"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiryDate">Expiry Date</Label>
-                        <Input
-                          id="expiryDate"
-                          placeholder="MM/YY"
-                          value={cardDetails.expiryDate}
-                          onChange={(e) =>
-                            handleCardInputChange("expiryDate", e.target.value)
-                          }
-                          className="h-10"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input
-                          id="cvv"
-                          placeholder="123"
-                          value={cardDetails.cvv}
-                          onChange={(e) =>
-                            handleCardInputChange("cvv", e.target.value)
-                          }
-                          className="h-10"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cardholderName">Cardholder Name</Label>
-                      <Input
-                        id="cardholderName"
-                        placeholder="John Doe"
-                        value={cardDetails.cardholderName}
-                        onChange={(e) =>
-                          handleCardInputChange("cardholderName", e.target.value)
-                        }
-                        className="h-10"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Billing Address */}
-              <Card variant="default">
-                <CardHeader>
-                  <CardTitle>Billing Address</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      placeholder="123 Main Street"
-                      value={billingDetails.address}
-                      onChange={(e) =>
-                        handleBillingInputChange("address", e.target.value)
-                      }
-                      className="h-10"
-                    />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
-                      <Input
-                        id="city"
-                        placeholder="New York"
-                        value={billingDetails.city}
-                        onChange={(e) =>
-                          handleBillingInputChange("city", e.target.value)
-                        }
-                        className="h-10"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="zipCode">ZIP Code</Label>
-                      <Input
-                        id="zipCode"
-                        placeholder="10001"
-                        value={billingDetails.zipCode}
-                        onChange={(e) =>
-                          handleBillingInputChange("zipCode", e.target.value)
-                        }
-                        className="h-10"
-                      />
+                  <Button
+                    onClick={handlePayWithPaystack}
+                    disabled={loading}
+                    className="w-full py-6 text-lg font-semibold"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Redirecting to Paystack...
+                      </>
+                    ) : (
+                      <>
+                        Pay KES {paymentData.totalPrice.toLocaleString()}
+                      </>
+                    )}
+                  </Button>
+
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground">
+                      By clicking Pay, you agree to our Terms of Service
+                    </p>
+                  </div>
+
+                  {/* Payment Methods */}
+                  <div className="pt-4 border-t">
+                    <p className="text-xs text-muted-foreground text-center mb-3">Accepted payment methods</p>
+                    <div className="flex items-center justify-center gap-4">
+                      <div className="px-3 py-1 bg-muted rounded text-xs font-medium">Visa</div>
+                      <div className="px-3 py-1 bg-muted rounded text-xs font-medium">Mastercard</div>
+                      <div className="px-3 py-1 bg-muted rounded text-xs font-medium">M-Pesa</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Submit Button */}
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  disabled={loading || initializing}
-                  className="px-8 py-3 text-lg font-semibold"
-                >
-                  {initializing ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Initializing Payment...
-                    </>
-                  ) : loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    `Pay $${paymentData.totalPrice.toFixed(2)}`
-                  )}
-                </Button>
-              </div>
-            </form>
-          </div>
-
-          {/* Order Summary - Right Column */}
-          <div className="lg:col-span-1">
-            <Card variant="default" className="sticky top-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Ticket className="h-5 w-5" />
-                  Order Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Event Info */}
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">{eventTitle}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Dec 15, 2024</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>New York, NY</span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Ticket Details */}
-                <div className="space-y-3">
-                  {paymentTickets.map((ticket, index) => (
-                    <div key={index} className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{ticket.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Qty: {ticket.quantity}
-                        </p>
-                      </div>
-                      <p className="font-semibold">
-                        ${(ticket.price * ticket.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                {/* Pricing Breakdown */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Service Fee</span>
-                    <span>${tax.toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span>${paymentData.totalPrice.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {/* Security Notice */}
-                <div className="bg-muted rounded-lg p-3 mt-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Lock className="h-4 w-4" />
-                    <span>Secure payment processing</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           </div>
         </div>
-      </div>
-      <Footer />
+      </main>
     </div>
   );
 };

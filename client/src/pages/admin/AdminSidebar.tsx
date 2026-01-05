@@ -42,8 +42,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     // Auto-expand settings section if on settings pages
     settings: location.pathname.startsWith('/admin/settings'),
+    // Auto-expand branding section if on branding pages
+    branding: location.pathname === '/admin/white-label' || location.pathname === '/admin/custom-domains',
     // Auto-expand support section if on support pages
-    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings'),
+    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback',
     // Auto-expand service point section if on service-point pages
     workstation: location.pathname.startsWith('/admin/service-point')
   });
@@ -156,11 +158,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       ]
     },
     {
-      id: "whitelabel",
-      label: "White-Label",
-      href: "/admin/white-label",
+      id: "branding",
+      label: "Branding",
       icon: Palette,
-      group: "management"
+      group: "management",
+      children: [
+        { name: "White Label", href: "/admin/white-label" },
+        { name: "Custom Domains", href: "/admin/custom-domains" },
+      ]
     },
     {
       id: "support",
@@ -199,7 +204,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       finance: location.pathname.startsWith('/admin/finance'),
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings'),
-      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings'),
+      branding: location.pathname === '/admin/white-label' || location.pathname === '/admin/custom-domains',
+      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback',
       workstation: location.pathname.startsWith('/admin/service-point')
     }));
   }, [location.pathname]);
@@ -246,7 +252,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
 
   return (
     <div
-      className={`bg-card-surface border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
+      className={`bg-card-surface border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 h-full`}
     >
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="p-4">
@@ -335,9 +341,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
                         to={item.href!}
                         onClick={handleNavigationClick}
                         className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
-                          isItemActive 
-                            ? 'bg-primary/10 text-primary font-medium' 
-                            : 'text-primary hover:bg-accent-coral hover:text-white'
+                          isItemActive
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
                         }`}
                         title={!isOpen ? item.label : undefined}
                       >

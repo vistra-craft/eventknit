@@ -4,7 +4,7 @@ import { Search, Calendar, MapPin, Users, Eye, Clock, MoreHorizontal, TrendingUp
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
@@ -18,6 +18,7 @@ import { recallEvent } from "../../../lib/admin-api";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { useToast } from "../../../hooks/use-toast";
+import { getCategoriesByGroup } from "@/lib/event-categories";
 
 interface Event {
   id: string;
@@ -231,8 +232,8 @@ const UpcomingEventsPage = () => {
     return matchesTime;
   });
 
-  // Get unique categories from events
-  const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
+  // Get categories from shared constants
+  const categoryGroups = getCategoriesByGroup();
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
@@ -332,11 +333,32 @@ const UpcomingEventsPage = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-64">
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
+                  <SelectGroup>
+                    <SelectLabel>Professional / MICE</SelectLabel>
+                    {categoryGroups.mice.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Entertainment</SelectLabel>
+                    {categoryGroups.entertainment.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Lifestyle</SelectLabel>
+                    {categoryGroups.lifestyle.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>General</SelectLabel>
+                    {categoryGroups.general.map((cat) => (
+                      <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>

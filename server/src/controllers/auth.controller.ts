@@ -80,15 +80,21 @@ export class AuthController {
     try {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
+      const rememberMe = req.body.rememberMe === true;
 
       const result = await AuthService.login(req.body, ipAddress, userAgent);
 
       // Set refresh token as HttpOnly cookie
+      // If rememberMe is true, extend cookie to 30 days, otherwise 7 days
+      const cookieMaxAge = rememberMe
+        ? 30 * 24 * 60 * 60 * 1000 // 30 days
+        : 7 * 24 * 60 * 60 * 1000; // 7 days
+
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: cookieMaxAge,
       });
 
       res.status(200).json({

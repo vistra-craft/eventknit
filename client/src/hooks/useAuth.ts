@@ -41,11 +41,11 @@ export const useAuth = () => {
    * Login user
    */
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, rememberMe?: boolean) => {
       try {
         dispatch({ type: 'AUTH_START' });
 
-        const response = await authApi.login({ email, password });
+        const response = await authApi.login({ email, password, rememberMe });
 
         if (response.success && response.data) {
           setAccessToken(response.data.accessToken);

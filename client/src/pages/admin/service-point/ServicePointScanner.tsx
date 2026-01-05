@@ -65,9 +65,9 @@ import {
   type SyncStatus,
 } from "../../../lib/offline-sync";
 import {
-  ensureDefaultFacility,
-  type EventFacility,
-} from "../../../lib/facility-api";
+  ensureDefaultSession,
+  type EventSession,
+} from "../../../lib/session-api";
 
 // Scan result interface
 interface ScanResult {
@@ -76,7 +76,7 @@ interface ScanResult {
   attendeeName: string;
   ticketType: string | null;
   scannedAt: string;
-  facility: string | null;
+  session: string | null;
   status: 'success' | 'error';
   errorCode?: string;
   errorMessage?: string;
@@ -86,8 +86,8 @@ interface ScanResult {
   isReEntry: boolean;
 }
 
-// Facility icon mapping
-const getFacilityIcon = (iconId: string | null): React.ReactNode => {
+// Session icon mapping
+const getSessionIcon = (iconId: string | null): React.ReactNode => {
   switch (iconId) {
     case 'shield': return <Shield className="w-4 h-4" />;
     case 'door-open': return <Target className="w-4 h-4" />;
@@ -115,13 +115,13 @@ const getDeviceId = (): string => {
   return deviceId;
 };
 
-// Facility persistence
-const FACILITY_STORAGE_KEY = 'service_point_selected_facility';
-const getStoredFacility = (): string | null => {
-  return localStorage.getItem(FACILITY_STORAGE_KEY);
+// Session persistence
+const SESSION_STORAGE_KEY = 'service_point_selected_session';
+const getStoredSession = (): string | null => {
+  return localStorage.getItem(SESSION_STORAGE_KEY);
 };
-const setStoredFacility = (facility: string): void => {
-  localStorage.setItem(FACILITY_STORAGE_KEY, facility);
+const setStoredSession = (session: string): void => {
+  localStorage.setItem(SESSION_STORAGE_KEY, session);
 };
 
 // Sound effects
@@ -189,8 +189,8 @@ const ServicePointScanner: React.FC = () => {
   const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
-  const [selectedFacility, setSelectedFacility] = useState<string>(
-    getStoredFacility() || ""
+  const [selectedSession, setSelectedSession] = useState<string>(
+    getStoredSession() || ""
   );
   const [scanMode, setScanMode] = useState<'check-in' | 'check-out'>('check-in');
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
@@ -209,8 +209,8 @@ const ServicePointScanner: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus());
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ synced: 0, total: 0 });
-  const [facilities, setFacilities] = useState<EventFacility[]>([]);
-  const [facilitiesLoading, setFacilitiesLoading] = useState(false);
+  const [sessions, setSessions] = useState<EventSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   // Refs
   const html5QrCodeRef = useRef<Html5QrcodeScanner | null>(null);
@@ -349,41 +349,41 @@ const ServicePointScanner: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Load facilities when eventId changes
+  // Load sessions when eventId changes
   useEffect(() => {
-    const loadFacilities = async () => {
+    const loadSessions = async () => {
       if (!eventId) {
-        setFacilities([]);
+        setSessions([]);
         return;
       }
 
       try {
-        setFacilitiesLoading(true);
-        // This will create the default "Main Entrance" facility if none exist
-        const response = await ensureDefaultFacility(eventId);
+        setSessionsLoading(true);
+        // This will create the default "Main Entrance" session if none exist
+        const response = await ensureDefaultSession(eventId);
         if (response.success && response.data) {
-          setFacilities(response.data);
-          // If no facility is selected or selected facility doesn't exist, select the first one
-          const storedFacility = getStoredFacility();
-          const facilityExists = response.data.some(f => f.id === storedFacility);
-          if (!facilityExists && response.data.length > 0) {
-            setSelectedFacility(response.data[0].id);
-            setStoredFacility(response.data[0].id);
+          setSessions(response.data);
+          // If no session is selected or selected session doesn't exist, select the first one
+          const storedSession = getStoredSession();
+          const sessionExists = response.data.some(f => f.id === storedSession);
+          if (!sessionExists && response.data.length > 0) {
+            setSelectedSession(response.data[0].id);
+            setStoredSession(response.data[0].id);
           }
         }
       } catch (error) {
-        console.error('Error loading facilities:', error);
+        console.error('Error loading sessions:', error);
         toast({
           title: "Error",
-          description: "Failed to load facilities",
+          description: "Failed to load sessions",
           variant: "destructive",
         });
       } finally {
-        setFacilitiesLoading(false);
+        setSessionsLoading(false);
       }
     };
 
-    loadFacilities();
+    loadSessions();
   }, [eventId, toast]);
 
   // Load events
@@ -454,10 +454,10 @@ const ServicePointScanner: React.FC = () => {
     }
   }, [eventId, currentEvent, events]);
 
-  // Save facility selection
+  // Save session selection
   useEffect(() => {
-    setStoredFacility(selectedFacility);
-  }, [selectedFacility]);
+    setStoredSession(selectedSession);
+  }, [selectedSession]);
 
   // Process scanned code
   const processCode = useCallback(async (code: string) => {
@@ -488,7 +488,7 @@ const ServicePointScanner: React.FC = () => {
     const scanRequest: ScanRequest = {
       code: formattedCode,
       eventId,
-      facility: selectedFacility,
+      session: selectedSession,
       deviceId,
       deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
     };
@@ -509,7 +509,7 @@ const ServicePointScanner: React.FC = () => {
         attendeeName: 'Pending sync...',
         ticketType: null,
         scannedAt: offlineItem.timestamp.toISOString(),
-        facility: selectedFacility,
+        session: selectedSession,
         status: 'success', // Show as success but indicate it's pending
         signatureValid: false,
         codeType,
@@ -556,7 +556,7 @@ const ServicePointScanner: React.FC = () => {
           attendeeName: response.data.attendeeName,
           ticketType: response.data.ticketType,
           scannedAt: response.data.scannedAt instanceof Date ? response.data.scannedAt.toISOString() : response.data.scannedAt,
-          facility: response.data.facility,
+          session: response.data.session,
           status: 'success',
           signatureValid: response.data.signatureValid,
           codeType: response.data.codeType,
@@ -600,7 +600,7 @@ const ServicePointScanner: React.FC = () => {
           attendeeName: 'Error',
           ticketType: null,
           scannedAt: new Date().toISOString(),
-          facility: selectedFacility,
+          session: selectedSession,
           status: 'error',
           errorCode: error.code,
           errorMessage: error.message,
@@ -653,7 +653,7 @@ const ServicePointScanner: React.FC = () => {
         variant: "destructive",
       });
     }
-  }, [eventId, selectedFacility, scanMode, soundEnabled, toast, deviceId, isOnlineState, isMobile]);
+  }, [eventId, selectedSession, scanMode, soundEnabled, toast, deviceId, isOnlineState, isMobile]);
 
   // Stop QR scanning
   const stopScanning = useCallback(() => {
@@ -791,7 +791,7 @@ const ServicePointScanner: React.FC = () => {
       const manualRequest: ScanRequest = {
         code: attendee.registrationId, // Use registration ID as code
         eventId,
-        facility: selectedFacility,
+        session: selectedSession,
         deviceId,
         deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
       };
@@ -809,7 +809,7 @@ const ServicePointScanner: React.FC = () => {
           attendeeName: response.data.attendeeName,
           ticketType: response.data.ticketType,
           scannedAt: response.data.scannedAt instanceof Date ? response.data.scannedAt.toISOString() : response.data.scannedAt,
-          facility: response.data.facility,
+          session: response.data.session,
           status: 'success',
           signatureValid: response.data.signatureValid,
           codeType: response.data.codeType,
@@ -1024,41 +1024,41 @@ const ServicePointScanner: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Facility Selection */}
+              {/* Session Selection */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Settings className="w-5 h-5 mr-2" />
-                    Select Facility
+                    Select Session
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {facilitiesLoading ? (
+                    {sessionsLoading ? (
                       <div className="col-span-full text-center text-muted-foreground py-4">
-                        Loading facilities...
+                        Loading sessions...
                       </div>
-                    ) : facilities.length === 0 ? (
+                    ) : sessions.length === 0 ? (
                       <div className="col-span-full text-center text-muted-foreground py-4">
-                        No facilities configured for this event
+                        No sessions configured for this event
                       </div>
                     ) : (
-                      facilities.map((facility) => (
+                      sessions.map((sess) => (
                         <Button
-                          key={facility.id}
-                          variant={selectedFacility === facility.id ? "default" : "outline"}
+                          key={sess.id}
+                          variant={selectedSession === sess.id ? "default" : "outline"}
                           className="h-16 flex flex-col items-center justify-center space-y-1"
                           onClick={() => {
-                            setSelectedFacility(facility.id);
-                            setStoredFacility(facility.id);
+                            setSelectedSession(sess.id);
+                            setStoredSession(sess.id);
                           }}
-                          style={facility.color && selectedFacility === facility.id ? {
-                            backgroundColor: facility.color,
-                            borderColor: facility.color
+                          style={sess.color && selectedSession === sess.id ? {
+                            backgroundColor: sess.color,
+                            borderColor: sess.color
                           } : undefined}
                         >
-                          {getFacilityIcon(facility.icon)}
-                          <span className="text-xs">{facility.name}</span>
+                          {getSessionIcon(sess.icon)}
+                          <span className="text-xs">{sess.name}</span>
                         </Button>
                       ))
                     )}
@@ -1232,12 +1232,12 @@ const ServicePointScanner: React.FC = () => {
 
             {/* Scan Results */}
             <div className="space-y-6">
-              {/* Current Facility Stats */}
+              {/* Current Session Stats */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Target className="w-5 h-5 mr-2" />
-                    Current Facility
+                    Current Session
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1245,16 +1245,16 @@ const ServicePointScanner: React.FC = () => {
                     <div
                       className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
                       style={{
-                        backgroundColor: facilities.find(f => f.id === selectedFacility)?.color
-                          ? `${facilities.find(f => f.id === selectedFacility)?.color}20`
+                        backgroundColor: sessions.find(f => f.id === selectedSession)?.color
+                          ? `${sessions.find(f => f.id === selectedSession)?.color}20`
                           : 'hsl(var(--primary) / 0.1)',
-                        color: facilities.find(f => f.id === selectedFacility)?.color || undefined
+                        color: sessions.find(f => f.id === selectedSession)?.color || undefined
                       }}
                     >
-                      {getFacilityIcon(facilities.find(f => f.id === selectedFacility)?.icon || null)}
+                      {getSessionIcon(sessions.find(f => f.id === selectedSession)?.icon || null)}
                     </div>
                     <h3 className="font-semibold text-lg">
-                      {facilities.find(f => f.id === selectedFacility)?.name || 'No Facility Selected'}
+                      {sessions.find(f => f.id === selectedSession)?.name || 'No Session Selected'}
                     </h3>
                   </div>
                 </CardContent>
@@ -1299,7 +1299,7 @@ const ServicePointScanner: React.FC = () => {
                             </div>
                             <div>
                               <p className="font-medium text-sm">{result.attendeeName}</p>
-                              <p className="text-xs text-muted-foreground">{result.facility || 'Unknown'}</p>
+                              <p className="text-xs text-muted-foreground">{result.session || 'Unknown'}</p>
                               {result.isReEntry && (
                                 <Badge variant="secondary" className="text-xs mt-1">Re-entry</Badge>
                               )}

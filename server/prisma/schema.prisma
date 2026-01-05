@@ -149,6 +149,13 @@ enum DiscountType {
   FIXED_AMOUNT
 }
 
+enum PromoCodeScope {
+  PLATFORM      // Works on any event (admin only)
+  ORGANIZER     // Works on all events by the organizer
+  EVENT         // Works on a single event
+  MULTI_EVENT   // Works on selected multiple events
+}
+
 enum DataAccessLevel {
   RESTRICTED // Summary cards only (total attendees, total revenue)
   STANDARD // Attendee list + payment summaries (no transaction IDs)
@@ -261,6 +268,7 @@ model User {
   templatesCreated                  TicketTemplate[]             @relation("TemplateCreator")
   featuredEventsCreated             FeaturedEvent[]              @relation("FeaturedEventCreator")
   promoCodesCreated                 PromoCode[]                  @relation("PromoCodeOrganizer")
+  referralCodes                     PromoCode[]                  @relation("PromoCodeReferrer")
   promoCodeRedemptions              PromoCodeRedemption[]        @relation("PromoCodeUser")
   eventAssignments                  EventStaff[]                 @relation("EventStaff")
   checkpointStaffAssignments        CheckpointStaff[]            @relation("CheckpointStaffAssignment")
@@ -1075,9 +1083,13 @@ model FeaturedEvent {
 model PromoCode {
   id          String  @id @default(uuid())
   code        String  @unique
-  organizerId String
-  eventId     String?
+  organizerId String?  // Null for platform-wide codes created by admin
+  eventId     String?  // For single-event scope (backward compatible)
   event       Event?  @relation("PromoCodeEvent", fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Scope configuration
+  scope      PromoCodeScope @default(EVENT)
+  eventIds   String[]       // For MULTI_EVENT scope - array of event IDs
 
   // Discount details
   discountType   DiscountType
@@ -1088,6 +1100,24 @@ model PromoCode {
   // Applicability
   applicableTicketTypes String[] // Which ticket types it applies to (empty = all)
   isActive              Boolean  @default(true)
+
+  // Advanced features
+  firstTimeOnly Boolean @default(false) // Only for users with no prior purchases
+  isStackable   Boolean @default(false) // Can be combined with other codes
+  isReferral    Boolean @default(false) // Is this a referral code
+  referrerUserId String? // User who owns this referral code
+
+  // Bulk generation
+  codePrefix String? // Prefix pattern for bulk codes (e.g., "SUMMER2024")
+  batchId    String? // Groups codes generated in same batch
+
+  // Campaign Attribution
+  campaignName   String?  // e.g., "Summer Sale 2024"
+  campaignSource String?  // e.g., "Instagram", "Email", "Influencer"
+
+  // Tiered Discounts
+  isTiered       Boolean  @default(false)
+  discountTiers  Json?    // Array of {minUsage, maxUsage, discountValue, discountType}
 
   // Limits
   usageLimit     Int? // Max number of uses (null = unlimited)
@@ -1101,15 +1131,19 @@ model PromoCode {
   // Tracking
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  createdBy String?  // Admin/organizer who created it
 
   // Relations
-  organizer   User                  @relation("PromoCodeOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  organizer   User?                 @relation("PromoCodeOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  referrer    User?                 @relation("PromoCodeReferrer", fields: [referrerUserId], references: [id], onDelete: SetNull)
   redemptions PromoCodeRedemption[]
   variants    PromoCodeVariant[]    @relation("PromoCodeVariants")
 
   @@index([code])
   @@index([organizerId])
   @@index([eventId])
+  @@index([scope])
+  @@index([batchId])
   @@index([isActive, validFrom, validUntil])
 }
 

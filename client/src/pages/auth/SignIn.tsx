@@ -38,18 +38,15 @@ const SignIn = () => {
   });
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Clear loading state and reset form when component mounts or when navigating to login
+  // Clear loading state when component mounts or when navigating to login
   // This ensures the form is immediately accessible after logout
+  // NOTE: Do NOT reset formData here - it interferes with browser password autofill
   useEffect(() => {
     // Always clear loading state and error when component mounts
     // This ensures fresh state when navigating back to login page
     clearError();
-    
-    // Reset form data to ensure clean state
-    setFormData({
-      email: '',
-      password: ''
-    });
+
+    // Reset OAuth form state only (not main login form - browser handles that)
     setEmailOAuthEmail('');
     setEmailOAuthCode('');
     setEmailOAuthCodeSent(false);
@@ -71,9 +68,9 @@ const SignIn = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    
+
     try {
-      await login(formData.email, formData.password);
+      await login(formData.email, formData.password, rememberMe);
       // Navigation is handled by the useAuth hook
     } catch (error) {
       // Error is handled by the auth context
@@ -398,7 +395,9 @@ const SignIn = () => {
                     <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="letsdesignabrar@gmail.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -413,7 +412,9 @@ const SignIn = () => {
                     <div className="relative">
                       <Input
                         id="password"
+                        name="password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
                         placeholder="Enter your password"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}

@@ -1,607 +1,611 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminLayout from "../AdminLayout";
-import { 
-  Gift, 
-  Target,
+import {
+  Tag,
   Percent,
   DollarSign,
   Plus,
   Users,
   TrendingUp,
-  BarChart3,
   Edit,
   Copy,
-  MoreHorizontal,
+  Trash2,
   CheckCircle,
   Clock,
   AlertCircle,
   Search,
-  EyeOff,
+  XCircle,
+  Globe,
   Building2,
-  Shield
+  Calendar,
+  Loader2,
+  Layers,
+  ToggleLeft,
+  ToggleRight,
+  Sparkles,
 } from "lucide-react";
-
-interface Promotion {
-  id: string;
-  name: string;
-  organizer: string;
-  code: string;
-  type: 'percentage' | 'fixed' | 'buy_one_get_one' | 'free_shipping';
-  value: number;
-  status: 'active' | 'inactive' | 'expired' | 'scheduled' | 'pending_approval';
-  startDate: string;
-  endDate: string;
-  usageLimit?: number;
-  usedCount: number;
-  minOrderAmount?: number;
-  applicableEvents: string[];
-  description: string;
-  revenue: number;
-  conversions: number;
-  approvalStatus: 'approved' | 'pending' | 'rejected';
-}
-
-interface PromotionTemplate {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-}
+import { useToast } from "@/hooks/use-toast";
+import {
+  getAdminPromoCodes,
+  getPromoCodeStats,
+  deleteAdminPromoCode,
+  toggleAdminPromoCode,
+  bulkGeneratePromoCodes,
+  getScopeLabel,
+  getScopeBadgeClass,
+  type AdminPromoCode,
+  type PromoCodeStats,
+  type PromoCodeScope,
+  type DiscountType,
+  type BulkGenerateData,
+} from "@/lib/admin-promo-code-api";
 
 const AdminPromotionsPage = () => {
-  const [activeTab, setActiveTab] = useState("promotions");
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [promoCodes, setPromoCodes] = useState<AdminPromoCode[]>([]);
+  const [stats, setStats] = useState<PromoCodeStats | null>(null);
+  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterApproval, setFilterApproval] = useState("all");
+  const [filterScope, setFilterScope] = useState<PromoCodeScope | "all">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
 
-  // Mock platform-wide promotions data
-  const promotions: Promotion[] = [
-    {
-      id: "1",
-      name: "Early Bird Discount",
-      organizer: "Tech Events Co.",
-      code: "EARLY30",
-      type: "percentage",
-      value: 30,
-      status: "active",
-      startDate: "2024-01-01",
-      endDate: "2024-03-01",
-      usageLimit: 1000,
-      usedCount: 245,
-      minOrderAmount: 50,
-      applicableEvents: ["Tech Summit 2024", "Music Festival 2024"],
-      description: "Early bird discount for upcoming events",
-      revenue: 125000,
-      conversions: 450,
-      approvalStatus: "approved"
-    },
-    {
-      id: "2",
-      name: "Student Special",
-      organizer: "Music Events Ltd",
-      code: "STUDENT20",
-      type: "percentage",
-      value: 20,
-      status: "active",
-      startDate: "2024-01-15",
-      endDate: "2024-12-31",
-      usageLimit: 500,
-      usedCount: 89,
-      minOrderAmount: 25,
-      applicableEvents: ["All Events"],
-      description: "Special discount for students",
-      revenue: 32000,
-      conversions: 120,
-      approvalStatus: "approved"
-    },
-    {
-      id: "3",
-      name: "Group Booking",
-      organizer: "Business Academy",
-      code: "GROUP10",
-      type: "percentage",
-      value: 10,
-      status: "active",
-      startDate: "2024-01-20",
-      endDate: "2024-06-30",
-      usageLimit: 200,
-      usedCount: 34,
-      minOrderAmount: 100,
-      applicableEvents: ["Corporate Events"],
-      description: "Group booking discount",
-      revenue: 18000,
-      conversions: 80,
-      approvalStatus: "approved"
-    },
-    {
-      id: "4",
-      name: "Flash Sale",
-      organizer: "Wellness Corp",
-      code: "FLASH50",
-      type: "fixed",
-      value: 50,
-      status: "expired",
-      startDate: "2024-01-10",
-      endDate: "2024-01-12",
-      usageLimit: 100,
-      usedCount: 100,
-      minOrderAmount: 100,
-      applicableEvents: ["Tech Summit 2024"],
-      description: "Limited time flash sale",
-      revenue: 50000,
-      conversions: 200,
-      approvalStatus: "approved"
-    },
-    {
-      id: "5",
-      name: "Valentine's Special",
-      organizer: "Entertainment Group",
-      code: "VALENTINE25",
-      type: "percentage",
-      value: 25,
-      status: "scheduled",
-      startDate: "2024-02-10",
-      endDate: "2024-02-15",
-      usageLimit: 300,
-      usedCount: 0,
-      minOrderAmount: 40,
-      applicableEvents: ["Romance Events"],
-      description: "Valentine's Day special promotion",
-      revenue: 0,
-      conversions: 0,
-      approvalStatus: "pending"
-    },
-    {
-      id: "6",
-      name: "Holiday Bundle",
-      organizer: "Event Masters",
-      code: "HOLIDAY40",
-      type: "percentage",
-      value: 40,
-      status: "pending_approval",
-      startDate: "2024-12-01",
-      endDate: "2024-12-31",
-      usageLimit: 500,
-      usedCount: 0,
-      minOrderAmount: 75,
-      applicableEvents: ["Holiday Events"],
-      description: "Holiday season bundle promotion",
-      revenue: 0,
-      conversions: 0,
-      approvalStatus: "pending"
-    }
-  ];
+  // Dialog states
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
 
-  // Mock promotion templates
-  const promotionTemplates: PromotionTemplate[] = [
-    {
-      id: "1",
-      name: "Percentage Discount",
-      description: "Create a percentage-based discount",
-      type: "percentage",
-      icon: Percent,
-      color: "bg-blue-500"
-    },
-    {
-      id: "2",
-      name: "Fixed Amount",
-      description: "Create a fixed dollar amount discount",
-      type: "fixed",
-      icon: DollarSign,
-      color: "bg-green-500"
-    },
-    {
-      id: "3",
-      name: "Buy One Get One",
-      description: "Create a BOGO promotion",
-      type: "buy_one_get_one",
-      icon: Gift,
-      color: "bg-purple-500"
-    },
-    {
-      id: "4",
-      name: "Free Shipping",
-      description: "Create a free shipping promotion",
-      type: "free_shipping",
-      icon: Target,
-      color: "bg-orange-500"
-    }
-  ];
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'percentage': return <Percent className="h-4 w-4" />;
-      case 'fixed': return <DollarSign className="h-4 w-4" />;
-      case 'buy_one_get_one': return <Gift className="h-4 w-4" />;
-      case 'free_shipping': return <Target className="h-4 w-4" />;
-      default: return <Gift className="h-4 w-4" />;
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'percentage': return "bg-blue-100 text-blue-800";
-      case 'fixed': return "bg-green-100 text-green-800";
-      case 'buy_one_get_one': return "bg-purple-100 text-purple-800";
-      case 'free_shipping': return "bg-orange-100 text-orange-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return "bg-green-100 text-green-800";
-      case 'inactive': return "bg-gray-100 text-gray-800";
-      case 'expired': return "bg-red-100 text-red-800";
-      case 'scheduled': return "bg-blue-100 text-blue-800";
-      case 'pending_approval': return "bg-orange-100 text-orange-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getApprovalColor = (status: string) => {
-    switch (status) {
-      case 'approved': return "bg-green-100 text-green-800";
-      case 'pending': return "bg-yellow-100 text-yellow-800";
-      case 'rejected': return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active': return <CheckCircle className="h-4 w-4" />;
-      case 'inactive': return <EyeOff className="h-4 w-4" />;
-      case 'expired': return <AlertCircle className="h-4 w-4" />;
-      case 'scheduled': return <Clock className="h-4 w-4" />;
-      case 'pending_approval': return <AlertCircle className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
-    }
-  };
-
-  const filteredPromotions = promotions.filter(promotion => {
-    const matchesSearch = promotion.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         promotion.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         promotion.organizer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         promotion.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || promotion.type === filterType;
-    const matchesStatus = filterStatus === "all" || promotion.status === filterStatus;
-    const matchesApproval = filterApproval === "all" || promotion.approvalStatus === filterApproval;
-    
-    return matchesSearch && matchesType && matchesStatus && matchesApproval;
+  // Bulk form state
+  const [bulkData, setBulkData] = useState<BulkGenerateData>({
+    count: 10,
+    prefix: "",
+    scope: "PLATFORM",
+    discountType: "PERCENTAGE",
+    discountValue: 0,
+    validFrom: new Date().toISOString().slice(0, 16),
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
   });
 
-  const totalRevenue = promotions.reduce((sum, promotion) => sum + promotion.revenue, 0);
-  const totalConversions = promotions.reduce((sum, promotion) => sum + promotion.conversions, 0);
-  const activePromotions = promotions.filter(p => p.status === 'active').length;
-  const totalUsage = promotions.reduce((sum, promotion) => sum + promotion.usedCount, 0);
+  const [saving, setSaving] = useState(false);
+
+  // Load data
+  useEffect(() => {
+    loadData();
+  }, [pagination.page, filterScope, filterStatus, searchTerm]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [codesRes, statsRes] = await Promise.all([
+        getAdminPromoCodes({
+          scope: filterScope !== "all" ? filterScope : undefined,
+          isActive: filterStatus === "all" ? undefined : filterStatus === "active",
+          search: searchTerm || undefined,
+          page: pagination.page,
+          limit: pagination.limit,
+        }),
+        getPromoCodeStats(),
+      ]);
+
+      if (codesRes.success && codesRes.data) {
+        setPromoCodes(codesRes.data.promoCodes);
+        setPagination(codesRes.data.pagination);
+      }
+
+      if (statsRes.success && statsRes.data) {
+        setStats(statsRes.data);
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load promo codes",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingCodeId) return;
+
+    try {
+      const response = await deleteAdminPromoCode(deletingCodeId);
+      if (response.success) {
+        toast({ title: "Success", description: "Promo code deleted successfully" });
+        setDeleteDialogOpen(false);
+        setDeletingCodeId(null);
+        loadData();
+      } else {
+        toast({ title: "Error", description: response.message || "Failed to delete", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete promo code", variant: "destructive" });
+    }
+  };
+
+  const handleToggle = async (id: string) => {
+    try {
+      const response = await toggleAdminPromoCode(id);
+      if (response.success) {
+        toast({ title: "Success", description: response.data?.isActive ? "Promo code activated" : "Promo code deactivated" });
+        loadData();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to toggle status", variant: "destructive" });
+    }
+  };
+
+  const handleBulkGenerate = async () => {
+    if (!bulkData.prefix.trim()) {
+      toast({ title: "Error", description: "Prefix is required", variant: "destructive" });
+      return;
+    }
+
+    if (!bulkData.discountValue || bulkData.discountValue <= 0) {
+      toast({ title: "Error", description: "Discount value must be greater than 0", variant: "destructive" });
+      return;
+    }
+
+    if (bulkData.discountType === "PERCENTAGE" && bulkData.discountValue > 100) {
+      toast({ title: "Error", description: "Percentage discount cannot exceed 100%", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await bulkGeneratePromoCodes(bulkData);
+      if (response.success && response.data) {
+        toast({ title: "Success", description: `Generated ${response.data.count} promo codes` });
+        setBulkDialogOpen(false);
+        loadData();
+      } else {
+        toast({ title: "Error", description: response.message || "Failed to generate", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to generate promo codes", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast({ title: "Copied!", description: "Code copied to clipboard" });
+  };
+
+  const getStatus = (code: AdminPromoCode): "active" | "inactive" | "expired" => {
+    if (!code.isActive) return "inactive";
+    const now = new Date();
+    if (now > new Date(code.validUntil)) return "expired";
+    return "active";
+  };
+
+  const getStatusBadge = (code: AdminPromoCode) => {
+    const status = getStatus(code);
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>;
+      case "inactive":
+        return <Badge className="bg-gray-100 text-gray-800"><XCircle className="h-3 w-3 mr-1" />Inactive</Badge>;
+      case "expired":
+        return <Badge className="bg-red-100 text-red-800"><AlertCircle className="h-3 w-3 mr-1" />Expired</Badge>;
+    }
+  };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              Platform Promotions
-            </h1>
-            <p className="text-gray-600">
-              Monitor and manage platform-wide promotional campaigns
-            </p>
+            <h1 className="text-lg font-semibold text-foreground">Promo Codes</h1>
+            <p className="text-muted-foreground text-sm">Create and manage platform-wide promotional codes</p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setBulkDialogOpen(true)}>
+              <Layers className="h-4 w-4 mr-2" />
+              Bulk Generate
+            </Button>
+            <Button onClick={() => navigate("/admin/marketing/promo-codes/create")}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Promotion
+              Create Code
             </Button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-8">
-          <button
-            onClick={() => setActiveTab("promotions")}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "promotions" 
-                ? "bg-background text-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Promotions
-          </button>
-          <button
-            onClick={() => setActiveTab("templates")}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "templates" 
-                ? "bg-background text-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Templates
-          </button>
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "analytics" 
-                ? "bg-background text-foreground shadow-sm" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Analytics
-          </button>
+        {/* Stats */}
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Codes</p>
+                    <p className="text-2xl font-bold">{stats.totalCodes}</p>
+                  </div>
+                  <Tag className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active</p>
+                    <p className="text-2xl font-bold text-green-600">{stats.activeCodes}</p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Redemptions</p>
+                    <p className="text-2xl font-bold">{stats.totalRedemptions}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Discount</p>
+                    <p className="text-2xl font-bold">${stats.totalDiscountGiven.toLocaleString()}</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by code..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterScope} onValueChange={(v) => setFilterScope(v as PromoCodeScope | "all")}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Scope" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Scopes</SelectItem>
+              <SelectItem value="PLATFORM">Platform-wide</SelectItem>
+              <SelectItem value="ORGANIZER">Organizer-wide</SelectItem>
+              <SelectItem value="EVENT">Single Event</SelectItem>
+              <SelectItem value="MULTI_EVENT">Multi-Event</SelectItem>
+            </SelectContent>
+          </Select>
+          <Tabs value={filterStatus} onValueChange={(v) => setFilterStatus(v as "all" | "active" | "inactive")}>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="active">Active</TabsTrigger>
+              <TabsTrigger value="inactive">Inactive</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
-        {/* Promotions Tab */}
-        {activeTab === "promotions" && (
-          <>
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <Card className="border-border">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Active Promotions</p>
-                      <p className="font-semibold text-foreground">{activePromotions}</p>
-                    </div>
-                    <Gift className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Usage</p>
-                      <p className="font-semibold text-foreground">{totalUsage.toLocaleString()}</p>
-                    </div>
-                    <Users className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Revenue Generated</p>
-                      <p className="font-semibold text-foreground">${totalRevenue.toLocaleString()}</p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-border">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Conversions</p>
-                      <p className="font-semibold text-foreground">{totalConversions}</p>
-                    </div>
-                    <Target className="h-8 w-8 text-primary" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Search and Filters */}
-            <div className="bg-card rounded-xl border border-border p-6 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search promotions..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <select 
-                  value={filterType} 
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="all">All Types</option>
-                  <option value="percentage">Percentage</option>
-                  <option value="fixed">Fixed Amount</option>
-                  <option value="buy_one_get_one">BOGO</option>
-                  <option value="free_shipping">Free Shipping</option>
-                </select>
-                <select 
-                  value={filterStatus} 
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="expired">Expired</option>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="pending_approval">Pending Approval</option>
-                </select>
-                <select 
-                  value={filterApproval} 
-                  onChange={(e) => setFilterApproval(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="all">All Approval</option>
-                  <option value="approved">Approved</option>
-                  <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Promotions List */}
-            <div className="space-y-4">
-              {filteredPromotions.map((promotion) => (
-                <Card key={promotion.id} className="border-border hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
-                        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                          {getTypeIcon(promotion.type)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="text-lg font-semibold text-foreground">{promotion.name}</h3>
-                            <Badge className={`text-xs ${getTypeColor(promotion.type)}`}>
-                              {promotion.type}
-                            </Badge>
-                            <Badge className={`text-xs ${getStatusColor(promotion.status)}`}>
-                              <div className="flex items-center space-x-1">
-                                {getStatusIcon(promotion.status)}
-                                <span>{promotion.status.replace('_', ' ')}</span>
-                              </div>
-                            </Badge>
-                            <Badge className={`text-xs ${getApprovalColor(promotion.approvalStatus)}`}>
-                              {promotion.approvalStatus}
-                            </Badge>
-                          </div>
-                          <p className="text-muted-foreground mb-2 font-medium flex items-center">
-                            <Building2 className="h-3 w-3 mr-1" />
-                            {promotion.organizer}
-                          </p>
-                          <div className="flex items-center space-x-4 mb-2">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-foreground">Code:</span>
-                              <code className="px-2 py-1 bg-muted rounded text-sm font-mono">{promotion.code}</code>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-foreground">Value:</span>
-                              <span className="text-sm font-semibold text-primary">
-                                {promotion.type === 'percentage' ? `${promotion.value}%` : `$${promotion.value}`}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground mb-3">{promotion.description}</p>
-                          <div className="flex items-center space-x-6 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Start:</span>
-                              <span className="ml-1 font-medium">{promotion.startDate}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">End:</span>
-                              <span className="ml-1 font-medium">{promotion.endDate}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Used:</span>
-                              <span className="ml-1 font-medium">{promotion.usedCount}</span>
-                              {promotion.usageLimit && (
-                                <span className="ml-1 text-muted-foreground">/ {promotion.usageLimit}</span>
-                              )}
-                            </div>
-                            {promotion.minOrderAmount && (
-                              <div>
-                                <span className="text-muted-foreground">Min Order:</span>
-                                <span className="ml-1 font-medium">${promotion.minOrderAmount}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-6 text-sm">
-                        {promotion.revenue > 0 && (
-                          <div className="text-center">
-                            <p className="font-semibold text-foreground">${promotion.revenue.toLocaleString()}</p>
-                            <p className="text-muted-foreground">Revenue</p>
-                          </div>
-                        )}
-                        {promotion.conversions > 0 && (
-                          <div className="text-center">
-                            <p className="font-semibold text-foreground">{promotion.conversions}</p>
-                            <p className="text-muted-foreground">Conversions</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        {promotion.approvalStatus === "pending" && (
-                          <Button variant="outline" size="sm" className="text-green-600 hover:text-green-700">
-                            <Shield className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Templates Tab */}
-        {activeTab === "templates" && (
-          <Card className="border-border">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Promotion Templates</CardTitle>
-                <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Template
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {promotionTemplates.map((template) => (
-                  <div key={template.id} className="p-4 border border-border rounded-lg hover:border-primary transition-colors cursor-pointer">
-                    <div className={`w-12 h-12 rounded-lg ${template.color} flex items-center justify-center mb-3`}>
-                      <template.icon className="h-6 w-6 text-white" />
-                    </div>
-                    <h3 className="font-medium text-foreground mb-2">{template.name}</h3>
-                    <p className="text-sm text-muted-foreground">{template.description}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Analytics Tab */}
-        {activeTab === "analytics" && (
-          <Card className="border-border">
-            <CardContent className="p-12 text-center">
-              <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Platform Promotion Analytics</h3>
-              <p className="text-muted-foreground mb-4">
-                Detailed analytics and insights for platform-wide promotional campaigns
-              </p>
-              <Button variant="outline">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                View Detailed Reports
+        {/* Promo Codes List */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : promoCodes.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Tag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No promo codes found</h3>
+              <p className="text-muted-foreground mb-4">Create your first promo code to get started</p>
+              <Button onClick={() => navigate("/admin/marketing/promo-codes/create")}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Code
               </Button>
             </CardContent>
           </Card>
-        )}
+        ) : (
+          <div className="space-y-4">
+            {promoCodes.map((code) => (
+              <Card key={code.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <code className="px-3 py-1 bg-muted rounded text-lg font-mono font-semibold">
+                          {code.code}
+                        </code>
+                        <Button variant="ghost" size="sm" onClick={() => handleCopyCode(code.code)}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Badge className={getScopeBadgeClass(code.scope)}>
+                          {code.scope === "PLATFORM" && <Globe className="h-3 w-3 mr-1" />}
+                          {code.scope === "ORGANIZER" && <Building2 className="h-3 w-3 mr-1" />}
+                          {code.scope === "EVENT" && <Calendar className="h-3 w-3 mr-1" />}
+                          {getScopeLabel(code.scope)}
+                        </Badge>
+                        {getStatusBadge(code)}
+                        {code.firstTimeOnly && (
+                          <Badge variant="outline" className="text-purple-600 border-purple-200">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            First-time only
+                          </Badge>
+                        )}
+                      </div>
 
-        {filteredPromotions.length === 0 && activeTab === "promotions" && (
-          <div className="text-center py-12">
-            <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No promotions found</h3>
-            <p className="text-muted-foreground">Try adjusting your search or filter criteria.</p>
+                      <div className="flex items-center gap-4 text-sm mb-2">
+                        <span className="font-medium text-primary text-lg">
+                          {code.discountType === "PERCENTAGE" ? (
+                            <><Percent className="h-4 w-4 inline mr-1" />{code.discountValue}% off</>
+                          ) : (
+                            <><DollarSign className="h-4 w-4 inline" />{code.discountValue} off</>
+                          )}
+                        </span>
+                        {code.minOrderAmount && (
+                          <span className="text-muted-foreground">
+                            Min order: ${code.minOrderAmount}
+                          </span>
+                        )}
+                        {code.maxDiscount && (
+                          <span className="text-muted-foreground">
+                            Max: ${code.maxDiscount}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {new Date(code.validFrom).toLocaleDateString()} - {new Date(code.validUntil).toLocaleDateString()}
+                        </span>
+                        <span>
+                          Used: {code.usedCount}{code.usageLimit ? ` / ${code.usageLimit}` : ""}
+                        </span>
+                        {code.event && (
+                          <span>Event: {code.event.title}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggle(code.id)}
+                        title={code.isActive ? "Deactivate" : "Activate"}
+                      >
+                        {code.isActive ? (
+                          <ToggleRight className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <ToggleLeft className="h-5 w-5 text-gray-400" />
+                        )}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/marketing/promo-codes/${code.id}/edit`)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => { setDeletingCodeId(code.id); setDeleteDialogOpen(true); }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <div className="flex justify-center gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  disabled={pagination.page === 1}
+                  onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                >
+                  Previous
+                </Button>
+                <span className="px-4 py-2 text-sm">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={pagination.page === pagination.totalPages}
+                  onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Bulk Generate Dialog */}
+      <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bulk Generate Promo Codes</DialogTitle>
+            <DialogDescription>
+              Generate multiple unique promo codes at once
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Prefix *</Label>
+                <Input
+                  value={bulkData.prefix}
+                  onChange={(e) => setBulkData({ ...bulkData, prefix: e.target.value.toUpperCase() })}
+                  placeholder="e.g. SUMMER, VIP, LAUNCH"
+                  maxLength={10}
+                />
+                <p className="text-xs text-muted-foreground">Result: {bulkData.prefix || "PREFIX"}-XXXXXX</p>
+              </div>
+              <div className="space-y-2">
+                <Label>Count (1-1000) *</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={bulkData.count}
+                  onChange={(e) => setBulkData({ ...bulkData, count: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Discount Type *</Label>
+                <Select value={bulkData.discountType} onValueChange={(v) => setBulkData({ ...bulkData, discountType: v as DiscountType })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                    <SelectItem value="FIXED_AMOUNT">Fixed Amount ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Discount Value *</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={bulkData.discountValue === 0 ? "" : bulkData.discountValue}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setBulkData({ ...bulkData, discountValue: isNaN(val) || val < 0 ? 0 : val });
+                  }}
+                  placeholder={bulkData.discountType === "PERCENTAGE" ? "e.g. 10" : "e.g. 5.00"}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Valid From *</Label>
+                <Input
+                  type="datetime-local"
+                  value={bulkData.validFrom}
+                  onChange={(e) => setBulkData({ ...bulkData, validFrom: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Valid Until *</Label>
+                <Input
+                  type="datetime-local"
+                  value={bulkData.validUntil}
+                  onChange={(e) => setBulkData({ ...bulkData, validUntil: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Usage Limit (per code)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={bulkData.usageLimit || ""}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setBulkData({ ...bulkData, usageLimit: isNaN(val) || val < 1 ? undefined : val });
+                  }}
+                  placeholder="1 (default)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Scope</Label>
+                <Select value={bulkData.scope} onValueChange={(v) => setBulkData({ ...bulkData, scope: v as PromoCodeScope })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PLATFORM">Platform-wide</SelectItem>
+                    <SelectItem value="EVENT">Single Event</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkGenerate} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Generate {bulkData.count} Codes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Promo Code</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this promo code? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingCodeId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };

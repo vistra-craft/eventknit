@@ -42,8 +42,15 @@ export class PaystackGateway implements PaymentGateway {
     }
 
     try {
-      // Convert amount to smallest currency unit (kobo for NGN, cents for USD)
+      // Convert amount to smallest currency unit (kobo for NGN, cents for KES)
       const amountInSmallestUnit = Math.round(request.amount * 100);
+
+      logger.info('Paystack payment initialization request:', {
+        email: request.email,
+        amount: amountInSmallestUnit,
+        currency: request.currency,
+        reference: request.reference,
+      });
 
       const response = await this.paystack.transaction.initialize({
         email: request.email,
@@ -66,9 +73,14 @@ export class PaystackGateway implements PaymentGateway {
         };
       }
 
+      logger.error('Paystack returned unsuccessful response:', response);
       throw new Error('Failed to initialize Paystack payment');
     } catch (error: any) {
-      logger.error('Paystack payment initialization error:', error);
+      logger.error('Paystack payment initialization error:', {
+        message: error.message,
+        response: error.response?.data || error.response || 'No response data',
+        stack: error.stack,
+      });
       throw new Error(`Paystack payment failed: ${error.message}`);
     }
   }

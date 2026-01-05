@@ -67,22 +67,22 @@ import { getEvent, getEventAttendees, type EventAttendee, type EventStatistics, 
 import { exportAttendees } from "@/lib/attendee-import-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
 import {
-  getFacilities,
-  createFacility,
-  updateFacility,
-  deleteFacility,
-  type EventFacility,
-  type CreateFacilityRequest,
-  FACILITY_ICONS,
-  FACILITY_COLORS,
-} from "../../../lib/facility-api";
+  getSessions,
+  createSession,
+  updateSession,
+  deleteSession,
+  type EventSession,
+  type CreateSessionRequest,
+  SESSION_ICONS,
+  SESSION_COLORS,
+} from "../../../lib/session-api";
 import { useToast } from "../../../hooks/use-toast";
 
 const ServicePointEventDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'attendees' | 'facilities'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'attendees' | 'sessions'>('overview');
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [statistics, setStatistics] = useState<EventStatistics | null>(null);
@@ -95,12 +95,12 @@ const ServicePointEventDashboard: React.FC = () => {
     totalPages: 0,
   });
 
-  // Facilities state
-  const [facilities, setFacilities] = useState<EventFacility[]>([]);
-  const [facilitiesLoading, setFacilitiesLoading] = useState(false);
-  const [facilityDialogOpen, setFacilityDialogOpen] = useState(false);
-  const [editingFacility, setEditingFacility] = useState<EventFacility | null>(null);
-  const [facilityFormData, setFacilityFormData] = useState<CreateFacilityRequest>({
+  // Sessions state
+  const [sessions, setSessions] = useState<EventSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<EventSession | null>(null);
+  const [sessionFormData, setSessionFormData] = useState<CreateSessionRequest>({
     name: '',
     code: '',
     description: '',
@@ -111,12 +111,12 @@ const ServicePointEventDashboard: React.FC = () => {
     allowCheckIn: true,
     allowCheckOut: true,
   });
-  const [facilitySaving, setFacilitySaving] = useState(false);
+  const [sessionSaving, setSessionSaving] = useState(false);
 
   // Attendee import state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [deleteFacilityId, setDeleteFacilityId] = useState<string | null>(null);
-  const [deletingFacility, setDeletingFacility] = useState(false);
+  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+  const [deletingSession, setDeletingSession] = useState(false);
 
   // Attendee detail modal state
   const [selectedAttendee, setSelectedAttendee] = useState<EventAttendee | null>(null);
@@ -128,8 +128,8 @@ const ServicePointEventDashboard: React.FC = () => {
   // Export state
   const [exporting, setExporting] = useState(false);
 
-  // Facility icon mapping
-  const getFacilityIcon = (iconId: string | null): React.ElementType => {
+  // Session icon mapping
+  const getSessionIcon = (iconId: string | null): React.ElementType => {
     const iconMap: Record<string, React.ElementType> = {
       'shield': Shield,
       'door-open': DoorOpen,
@@ -305,50 +305,50 @@ const ServicePointEventDashboard: React.FC = () => {
     loadAttendees();
   }, [eventId, activeTab, pagination.page, pagination.limit, toast]);
 
-  // Load facilities when facilities tab is active
+  // Load sessions when sessions tab is active
   useEffect(() => {
-    const loadFacilities = async () => {
-      if (!eventId || activeTab !== 'facilities') return;
+    const loadSessions = async () => {
+      if (!eventId || activeTab !== 'sessions') return;
 
       try {
-        setFacilitiesLoading(true);
-        const response = await getFacilities(eventId, { includeStats: true });
+        setSessionsLoading(true);
+        const response = await getSessions(eventId, { includeStats: true });
         if (response.success && response.data) {
-          setFacilities(response.data);
+          setSessions(response.data);
         }
       } catch (error) {
-        console.error('Error loading facilities:', error);
+        console.error('Error loading sessions:', error);
         toast({
           title: "Error",
-          description: "Failed to load facilities",
+          description: "Failed to load sessions",
           variant: "destructive",
         });
       } finally {
-        setFacilitiesLoading(false);
+        setSessionsLoading(false);
       }
     };
 
-    loadFacilities();
+    loadSessions();
   }, [eventId, activeTab, toast]);
 
-  // Facility management handlers
-  const handleOpenFacilityDialog = (facility?: EventFacility) => {
-    if (facility) {
-      setEditingFacility(facility);
-      setFacilityFormData({
-        name: facility.name,
-        code: facility.code,
-        description: facility.description || '',
-        icon: facility.icon || 'shield',
-        color: facility.color || '#3b82f6',
-        location: facility.location || '',
-        isActive: facility.isActive,
-        allowCheckIn: facility.allowCheckIn,
-        allowCheckOut: facility.allowCheckOut,
+  // Session management handlers
+  const handleOpenSessionDialog = (session?: EventSession) => {
+    if (session) {
+      setEditingSession(session);
+      setSessionFormData({
+        name: session.name,
+        code: session.code,
+        description: session.description || '',
+        icon: session.icon || 'shield',
+        color: session.color || '#3b82f6',
+        location: session.location || '',
+        isActive: session.isActive,
+        allowCheckIn: session.allowCheckIn,
+        allowCheckOut: session.allowCheckOut,
       });
     } else {
-      setEditingFacility(null);
-      setFacilityFormData({
+      setEditingSession(null);
+      setSessionFormData({
         name: '',
         code: '',
         description: '',
@@ -360,16 +360,16 @@ const ServicePointEventDashboard: React.FC = () => {
         allowCheckOut: true,
       });
     }
-    setFacilityDialogOpen(true);
+    setSessionDialogOpen(true);
   };
 
-  const handleCloseFacilityDialog = () => {
-    setFacilityDialogOpen(false);
-    setEditingFacility(null);
+  const handleCloseSessionDialog = () => {
+    setSessionDialogOpen(false);
+    setEditingSession(null);
   };
 
-  const handleSaveFacility = async () => {
-    if (!eventId || !facilityFormData.name || !facilityFormData.code) {
+  const handleSaveSession = async () => {
+    if (!eventId || !sessionFormData.name || !sessionFormData.code) {
       toast({
         title: "Error",
         description: "Name and code are required",
@@ -379,66 +379,66 @@ const ServicePointEventDashboard: React.FC = () => {
     }
 
     try {
-      setFacilitySaving(true);
+      setSessionSaving(true);
 
-      if (editingFacility) {
-        const response = await updateFacility(eventId, editingFacility.id, facilityFormData);
+      if (editingSession) {
+        const response = await updateSession(eventId, editingSession.id, sessionFormData);
         if (response.success) {
-          setFacilities(prev =>
-            prev.map(f => f.id === editingFacility.id ? response.data : f)
+          setSessions(prev =>
+            prev.map(s => s.id === editingSession.id ? response.data : s)
           );
           toast({
             title: "Success",
-            description: "Facility updated successfully",
+            description: "Session updated successfully",
           });
         }
       } else {
-        const response = await createFacility(eventId, facilityFormData);
+        const response = await createSession(eventId, sessionFormData);
         if (response.success) {
-          setFacilities(prev => [...prev, response.data]);
+          setSessions(prev => [...prev, response.data]);
           toast({
             title: "Success",
-            description: "Facility created successfully",
+            description: "Session created successfully",
           });
         }
       }
 
-      handleCloseFacilityDialog();
+      handleCloseSessionDialog();
     } catch (error) {
-      console.error('Error saving facility:', error);
+      console.error('Error saving session:', error);
       toast({
         title: "Error",
-        description: editingFacility ? "Failed to update facility" : "Failed to create facility",
+        description: editingSession ? "Failed to update session" : "Failed to create session",
         variant: "destructive",
       });
     } finally {
-      setFacilitySaving(false);
+      setSessionSaving(false);
     }
   };
 
-  const handleDeleteFacility = async () => {
-    if (!eventId || !deleteFacilityId) return;
+  const handleDeleteSession = async () => {
+    if (!eventId || !deleteSessionId) return;
 
     try {
-      setDeletingFacility(true);
-      const response = await deleteFacility(eventId, deleteFacilityId);
+      setDeletingSession(true);
+      const response = await deleteSession(eventId, deleteSessionId);
       if (response.success) {
-        setFacilities(prev => prev.filter(f => f.id !== deleteFacilityId));
+        setSessions(prev => prev.filter(s => s.id !== deleteSessionId));
         toast({
           title: "Success",
-          description: "Facility deleted successfully",
+          description: "Session deleted successfully",
         });
       }
     } catch (error) {
-      console.error('Error deleting facility:', error);
+      console.error('Error deleting session:', error);
       toast({
         title: "Error",
-        description: "Failed to delete facility",
+        description: "Failed to delete session",
         variant: "destructive",
       });
     } finally {
-      setDeletingFacility(false);
-      setDeleteFacilityId(null);
+      setDeletingSession(false);
+      setDeleteSessionId(null);
     }
   };
 
@@ -695,11 +695,11 @@ const ServicePointEventDashboard: React.FC = () => {
             Attendees
           </Button>
           <Button
-            variant={activeTab === 'facilities' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('facilities')}
+            variant={activeTab === 'sessions' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('sessions')}
           >
             <Building2 className="w-4 h-4 mr-2" />
-            Facilities
+            Sessions
           </Button>
         </div>
 
@@ -892,20 +892,20 @@ const ServicePointEventDashboard: React.FC = () => {
           </Card>
         )}
 
-        {activeTab === 'facilities' && (
+        {activeTab === 'sessions' && (
           <>
-            {/* Facilities Summary */}
+            {/* Sessions Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-base font-semibold text-primary mb-2">{facilities.length}</div>
-                  <p className="text-sm text-gray-600">Total Facilities</p>
+                  <div className="text-base font-semibold text-primary mb-2">{sessions.length}</div>
+                  <p className="text-sm text-gray-600">Total Sessions</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
-                    {facilities.filter(f => f.isActive).length}
+                    {sessions.filter(s => s.isActive).length}
                   </div>
                   <p className="text-sm text-gray-600">Active</p>
                 </CardContent>
@@ -913,7 +913,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
-                    {facilities.reduce((sum, f) => sum + (f.stats?.totalScans || 0), 0)}
+                    {sessions.reduce((sum, s) => sum + (s.stats?.totalScans || 0), 0)}
                   </div>
                   <p className="text-sm text-gray-600">Total Scans</p>
                 </CardContent>
@@ -921,64 +921,64 @@ const ServicePointEventDashboard: React.FC = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
-                    {facilities.reduce((sum, f) => sum + (f.stats?.uniqueAttendees || 0), 0)}
+                    {sessions.reduce((sum, s) => sum + (s.stats?.uniqueAttendees || 0), 0)}
                   </div>
                   <p className="text-sm text-gray-600">Unique Attendees</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Facilities List */}
+            {/* Sessions List */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Settings className="w-5 h-5 mr-2" />
-                    Facilities Management
+                    Sessions Management
                   </div>
-                  <Button onClick={() => handleOpenFacilityDialog()} size="sm">
+                  <Button onClick={() => handleOpenSessionDialog()} size="sm">
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Facility
+                    Add Session
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {facilitiesLoading ? (
+                {sessionsLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="ml-2 text-muted-foreground">Loading facilities...</span>
+                    <span className="ml-2 text-muted-foreground">Loading sessions...</span>
                   </div>
-                ) : facilities.length > 0 ? (
+                ) : sessions.length > 0 ? (
                   <div className="space-y-3">
-                    {facilities.map((facility) => {
-                      const FacilityIcon = getFacilityIcon(facility.icon);
+                    {sessions.map((session) => {
+                      const SessionIcon = getSessionIcon(session.icon);
                       return (
-                        <div key={facility.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={session.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
                           <div className="flex items-center gap-4">
                             <div
                               className="w-12 h-12 rounded-xl flex items-center justify-center"
-                              style={{ backgroundColor: `${facility.color || '#3b82f6'}20` }}
+                              style={{ backgroundColor: `${session.color || '#3b82f6'}20` }}
                             >
-                              <FacilityIcon
+                              <SessionIcon
                                 className="h-6 w-6"
-                                style={{ color: facility.color || '#3b82f6' }}
+                                style={{ color: session.color || '#3b82f6' }}
                               />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-foreground">{facility.name}</h4>
-                                <Badge variant="outline" className="text-xs">{facility.code}</Badge>
-                                {!facility.isActive && (
+                                <h4 className="font-medium text-foreground">{session.name}</h4>
+                                <Badge variant="outline" className="text-xs">{session.code}</Badge>
+                                {!session.isActive && (
                                   <Badge variant="secondary" className="text-xs">Inactive</Badge>
                                 )}
                               </div>
-                              {facility.description && (
-                                <p className="text-sm text-muted-foreground">{facility.description}</p>
+                              {session.description && (
+                                <p className="text-sm text-muted-foreground">{session.description}</p>
                               )}
-                              {facility.location && (
+                              {session.location && (
                                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                   <MapPin className="h-3 w-3" />
-                                  {facility.location}
+                                  {session.location}
                                 </p>
                               )}
                             </div>
@@ -986,17 +986,17 @@ const ServicePointEventDashboard: React.FC = () => {
                           <div className="flex items-center gap-4">
                             <div className="text-right">
                               <div className="text-sm font-medium text-foreground">
-                                {facility.stats?.totalScans || 0} scans
+                                {session.stats?.totalScans || 0} scans
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {facility.stats?.uniqueAttendees || 0} unique
+                                {session.stats?.uniqueAttendees || 0} unique
                               </div>
                             </div>
                             <div className="flex items-center gap-1">
-                              {facility.allowCheckIn && (
+                              {session.allowCheckIn && (
                                 <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">IN</Badge>
                               )}
-                              {facility.allowCheckOut && (
+                              {session.allowCheckOut && (
                                 <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">OUT</Badge>
                               )}
                             </div>
@@ -1004,7 +1004,7 @@ const ServicePointEventDashboard: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleOpenFacilityDialog(facility)}
+                                onClick={() => handleOpenSessionDialog(session)}
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
@@ -1012,7 +1012,7 @@ const ServicePointEventDashboard: React.FC = () => {
                                 variant="outline"
                                 size="sm"
                                 className="text-red-600 border-red-200 hover:bg-red-50"
-                                onClick={() => setDeleteFacilityId(facility.id)}
+                                onClick={() => setDeleteSessionId(session.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -1025,13 +1025,13 @@ const ServicePointEventDashboard: React.FC = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Shield className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No facilities yet</h3>
+                    <h3 className="text-lg font-medium mb-2">No sessions yet</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      Create facilities to define check-in points for this event
+                      Create sessions to define check-in points for this event
                     </p>
-                    <Button onClick={() => handleOpenFacilityDialog()} size="sm">
+                    <Button onClick={() => handleOpenSessionDialog()} size="sm">
                       <Plus className="h-4 w-4 mr-2" />
-                      Add First Facility
+                      Add First Session
                     </Button>
                   </div>
                 )}
@@ -1041,34 +1041,34 @@ const ServicePointEventDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Facility Create/Edit Dialog */}
-      <Dialog open={facilityDialogOpen} onOpenChange={setFacilityDialogOpen}>
+      {/* Session Create/Edit Dialog */}
+      <Dialog open={sessionDialogOpen} onOpenChange={setSessionDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editingFacility ? 'Edit Facility' : 'Add New Facility'}</DialogTitle>
+            <DialogTitle>{editingSession ? 'Edit Session' : 'Add New Session'}</DialogTitle>
             <DialogDescription>
-              {editingFacility
-                ? 'Update the facility details below.'
+              {editingSession
+                ? 'Update the session details below.'
                 : 'Create a new check-in point or service location for this event.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="facility-name">Name *</Label>
+                <Label htmlFor="session-name">Name *</Label>
                 <Input
-                  id="facility-name"
-                  value={facilityFormData.name}
-                  onChange={(e) => setFacilityFormData({ ...facilityFormData, name: e.target.value })}
+                  id="session-name"
+                  value={sessionFormData.name}
+                  onChange={(e) => setSessionFormData({ ...sessionFormData, name: e.target.value })}
                   placeholder="e.g., Main Entrance"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="facility-code">Code *</Label>
+                <Label htmlFor="session-code">Code *</Label>
                 <Input
-                  id="facility-code"
-                  value={facilityFormData.code}
-                  onChange={(e) => setFacilityFormData({ ...facilityFormData, code: e.target.value.toUpperCase() })}
+                  id="session-code"
+                  value={sessionFormData.code}
+                  onChange={(e) => setSessionFormData({ ...sessionFormData, code: e.target.value.toUpperCase() })}
                   placeholder="e.g., ENT"
                   maxLength={10}
                 />
@@ -1076,22 +1076,22 @@ const ServicePointEventDashboard: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="facility-description">Description</Label>
+              <Label htmlFor="session-description">Description</Label>
               <Textarea
-                id="facility-description"
-                value={facilityFormData.description}
-                onChange={(e) => setFacilityFormData({ ...facilityFormData, description: e.target.value })}
-                placeholder="Optional description of this facility"
+                id="session-description"
+                value={sessionFormData.description}
+                onChange={(e) => setSessionFormData({ ...sessionFormData, description: e.target.value })}
+                placeholder="Optional description of this session"
                 rows={2}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="facility-location">Location</Label>
+              <Label htmlFor="session-location">Location</Label>
               <Input
-                id="facility-location"
-                value={facilityFormData.location}
-                onChange={(e) => setFacilityFormData({ ...facilityFormData, location: e.target.value })}
+                id="session-location"
+                value={sessionFormData.location}
+                onChange={(e) => setSessionFormData({ ...sessionFormData, location: e.target.value })}
                 placeholder="e.g., Building A, Ground Floor"
               />
             </div>
@@ -1099,21 +1099,21 @@ const ServicePointEventDashboard: React.FC = () => {
             <div className="space-y-2">
               <Label>Icon</Label>
               <div className="grid grid-cols-6 gap-2">
-                {FACILITY_ICONS.map((iconOption) => {
-                  const IconComponent = getFacilityIcon(iconOption.id);
+                {SESSION_ICONS.map((iconOption) => {
+                  const IconComponent = getSessionIcon(iconOption.id);
                   return (
                     <button
                       key={iconOption.id}
                       type="button"
-                      onClick={() => setFacilityFormData({ ...facilityFormData, icon: iconOption.id })}
+                      onClick={() => setSessionFormData({ ...sessionFormData, icon: iconOption.id })}
                       className={`p-2 rounded-lg border transition-colors ${
-                        facilityFormData.icon === iconOption.id
+                        sessionFormData.icon === iconOption.id
                           ? 'border-primary bg-primary/10'
                           : 'border-border hover:border-primary/50'
                       }`}
                       title={iconOption.label}
                     >
-                      <IconComponent className="h-5 w-5 mx-auto" style={{ color: facilityFormData.color }} />
+                      <IconComponent className="h-5 w-5 mx-auto" style={{ color: sessionFormData.color }} />
                     </button>
                   );
                 })}
@@ -1123,13 +1123,13 @@ const ServicePointEventDashboard: React.FC = () => {
             <div className="space-y-2">
               <Label>Color</Label>
               <div className="flex flex-wrap gap-2">
-                {FACILITY_COLORS.map((colorOption) => (
+                {SESSION_COLORS.map((colorOption) => (
                   <button
                     key={colorOption.id}
                     type="button"
-                    onClick={() => setFacilityFormData({ ...facilityFormData, color: colorOption.id })}
+                    onClick={() => setSessionFormData({ ...sessionFormData, color: colorOption.id })}
                     className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                      facilityFormData.color === colorOption.id
+                      sessionFormData.color === colorOption.id
                         ? 'border-foreground scale-110'
                         : 'border-transparent'
                     }`}
@@ -1142,67 +1142,67 @@ const ServicePointEventDashboard: React.FC = () => {
 
             <div className="grid grid-cols-3 gap-4 pt-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="facility-active" className="text-sm">Active</Label>
+                <Label htmlFor="session-active" className="text-sm">Active</Label>
                 <Switch
-                  id="facility-active"
-                  checked={facilityFormData.isActive}
-                  onCheckedChange={(checked) => setFacilityFormData({ ...facilityFormData, isActive: checked })}
+                  id="session-active"
+                  checked={sessionFormData.isActive}
+                  onCheckedChange={(checked) => setSessionFormData({ ...sessionFormData, isActive: checked })}
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="facility-checkin" className="text-sm">Check-In</Label>
+                <Label htmlFor="session-checkin" className="text-sm">Check-In</Label>
                 <Switch
-                  id="facility-checkin"
-                  checked={facilityFormData.allowCheckIn}
-                  onCheckedChange={(checked) => setFacilityFormData({ ...facilityFormData, allowCheckIn: checked })}
+                  id="session-checkin"
+                  checked={sessionFormData.allowCheckIn}
+                  onCheckedChange={(checked) => setSessionFormData({ ...sessionFormData, allowCheckIn: checked })}
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="facility-checkout" className="text-sm">Check-Out</Label>
+                <Label htmlFor="session-checkout" className="text-sm">Check-Out</Label>
                 <Switch
-                  id="facility-checkout"
-                  checked={facilityFormData.allowCheckOut}
-                  onCheckedChange={(checked) => setFacilityFormData({ ...facilityFormData, allowCheckOut: checked })}
+                  id="session-checkout"
+                  checked={sessionFormData.allowCheckOut}
+                  onCheckedChange={(checked) => setSessionFormData({ ...sessionFormData, allowCheckOut: checked })}
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseFacilityDialog}>
+            <Button variant="outline" onClick={handleCloseSessionDialog}>
               Cancel
             </Button>
-            <Button onClick={handleSaveFacility} disabled={facilitySaving}>
-              {facilitySaving ? (
+            <Button onClick={handleSaveSession} disabled={sessionSaving}>
+              {sessionSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (
-                editingFacility ? 'Update Facility' : 'Create Facility'
+                editingSession ? 'Update Session' : 'Create Session'
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Facility Confirmation */}
-      <AlertDialog open={!!deleteFacilityId} onOpenChange={() => setDeleteFacilityId(null)}>
+      {/* Delete Session Confirmation */}
+      <AlertDialog open={!!deleteSessionId} onOpenChange={() => setDeleteSessionId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Facility</AlertDialogTitle>
+            <AlertDialogTitle>Delete Session</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this facility? This action cannot be undone.
-              Any scan history associated with this facility will be preserved but the facility reference will be removed.
+              Are you sure you want to delete this session? This action cannot be undone.
+              Any scan history associated with this session will be preserved but the session reference will be removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteFacility}
-              disabled={deletingFacility}
+              onClick={handleDeleteSession}
+              disabled={deletingSession}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deletingFacility ? (
+              {deletingSession ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Deleting...

@@ -47,25 +47,25 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden lg:h-screen lg:overflow-hidden">
+    <div className="min-h-screen lg:min-h-0 lg:h-screen bg-background flex flex-col lg:overflow-hidden">
       {/* Main layout area (sidebar + header + page content) */}
-      <div className="max-w-7xl w-full mx-auto flex flex-1 lg:h-full lg:overflow-hidden">
-        {/* Sidebar */}
-        <div className="hidden lg:block w-64 flex-shrink-0 lg:sticky lg:top-0 lg:self-start lg:h-screen lg:overflow-hidden">
+      <div className="max-w-7xl w-full mx-auto flex flex-1 lg:h-full min-h-0 overflow-hidden">
+        {/* Sidebar - fixed height, no scroll propagation */}
+        <div className="hidden lg:flex w-64 flex-shrink-0 h-full overflow-hidden">
           <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 min-w-0 flex flex-col lg:overflow-y-auto scrollbar-hide lg:h-full">
-          {/* Header */}
-          <div className="px-4 sm:px-6">
+        {/* Main Content - scrollable area */}
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+          {/* Header - fixed */}
+          <div className="px-4 sm:px-6 flex-shrink-0">
             <AdminHeader
               onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
             />
           </div>
 
-          {/* Page Content */}
-          <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
+          {/* Page Content - scrollable */}
+          <main className="flex-1 min-h-0 px-4 sm:px-6 pt-6 pb-6 overflow-y-auto scrollbar-hide">
             {children}
           </main>
         </div>

@@ -120,7 +120,7 @@ export class PaymentService {
     try {
       const response = await gatewayInstance.initializePayment({
         amount: data.amount,
-        currency: data.currency || registration.event?.currency || 'NGN',
+        currency: data.currency || registration.event?.currency || 'KES',
         email: data.email,
         reference,
         metadata: {
@@ -834,7 +834,7 @@ export class PaymentService {
         // Compare signatures using timing-safe comparison
         return crypto.timingSafeEqual(
           Buffer.from(v1Signature, 'hex'),
-          Buffer.from(expectedSignature, 'hex')
+          Buffer.from(expectedSignature, 'hex'),
         );
       } catch (error) {
         logger.error('Stripe webhook signature verification error:', error);

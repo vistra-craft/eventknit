@@ -82,11 +82,17 @@ export class PaymentController {
         return;
       }
 
+      // Get event currency for payment
+      const eventWithCurrency = await prisma.event.findUnique({
+        where: { id: registration.eventId },
+        select: { currency: true },
+      });
+
       const paymentData: InitializePaymentData = {
         registrationId,
         email: registration.attendee.email,
         amount: Number(registration.totalAmount),
-        currency: 'NGN', // Can be made configurable
+        currency: eventWithCurrency?.currency || 'KES',
         metadata: {
           userId: req.user.id,
           eventId: registration.eventId,
@@ -253,11 +259,17 @@ export class PaymentController {
         return;
       }
 
+      // Get event currency for payment
+      const eventWithCurrency = await prisma.event.findUnique({
+        where: { id: registration.eventId },
+        select: { currency: true },
+      });
+
       const paymentData: InitializePaymentData = {
         registrationId,
         email: registration.attendee.email || email,
         amount: Number(registration.totalAmount),
-        currency: 'NGN', // Can be made configurable
+        currency: eventWithCurrency?.currency || 'KES',
         metadata: {
           eventId: registration.eventId,
           isGuest: true,

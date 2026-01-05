@@ -34,7 +34,7 @@ interface ScanStats {
   totalScans: number;
   approvedScans: number;
   rejectedScans: number;
-  scansByFacility: Record<string, number>;
+  scansBySession: Record<string, number>;
   scansByHour: Record<string, number>;
   scansByDay: Record<string, number>;
   peakScanHour: string;
@@ -49,7 +49,7 @@ const ServicePointHistory: React.FC = () => {
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFacility, setSelectedFacility] = useState<string>("all");
+  const [selectedSession, setSelectedSession] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedScanType, setSelectedScanType] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<string>("all");
@@ -66,7 +66,7 @@ const ServicePointHistory: React.FC = () => {
     totalScans: 0,
     approvedScans: 0,
     rejectedScans: 0,
-    scansByFacility: {},
+    scansBySession: {},
     scansByHour: {},
     scansByDay: {},
     peakScanHour: '',
@@ -106,7 +106,7 @@ const ServicePointHistory: React.FC = () => {
         const filters: ScanHistoryFilters = {
           page: pagination.page,
           limit: pagination.limit,
-          facility: selectedFacility !== 'all' ? selectedFacility : undefined,
+          session: selectedSession !== 'all' ? selectedSession : undefined,
           scanType: selectedScanType !== 'all' ? (selectedScanType as ScanType) : undefined,
         };
 
@@ -167,7 +167,7 @@ const ServicePointHistory: React.FC = () => {
     };
 
     loadScans();
-  }, [selectedEventId, selectedFacility, selectedScanType, selectedDate, pagination.page, pagination.limit, toast]);
+  }, [selectedEventId, selectedSession, selectedScanType, selectedDate, pagination.page, pagination.limit, toast]);
 
   const calculateStats = (scanData: TicketScanRecord[]) => {
     const totalScans = scanData.length;
@@ -175,14 +175,14 @@ const ServicePointHistory: React.FC = () => {
     const rejectedScans = scanData.filter(s => !s.isValid).length;
     const reEntryCount = scanData.filter(s => s.isReEntry).length;
     
-    const scansByFacility: Record<string, number> = {};
+    const scansBySession: Record<string, number> = {};
     const scansByHour: Record<string, number> = {};
     const scansByDay: Record<string, number> = {};
     
     scanData.forEach(scan => {
-      // Facility stats
-      const facility = scan.facility || 'Unknown';
-      scansByFacility[facility] = (scansByFacility[facility] || 0) + 1;
+      // Session stats
+      const sess = scan.session || 'Unknown';
+      scansBySession[sess] = (scansBySession[sess] || 0) + 1;
       
       // Hour stats
       const hour = new Date(scan.scannedAt).getHours();
@@ -210,7 +210,7 @@ const ServicePointHistory: React.FC = () => {
       totalScans,
       approvedScans,
       rejectedScans,
-      scansByFacility,
+      scansBySession,
       scansByHour,
       scansByDay,
       peakScanHour,
@@ -241,9 +241,9 @@ const ServicePointHistory: React.FC = () => {
     return true;
   });
 
-  // Helper function to get facility icon
-  const getFacilityIconFromName = React.useCallback((facilityName: string): React.ReactNode => {
-    const name = facilityName.toLowerCase();
+  // Helper function to get session icon
+  const getSessionIconFromName = React.useCallback((sessionName: string): React.ReactNode => {
+    const name = sessionName.toLowerCase();
     if (name.includes('entrance')) return <Shield className="w-4 h-4" />;
     if (name.includes('lunch')) return <Utensils className="w-4 h-4" />;
     if (name.includes('gift')) return <Gift className="w-4 h-4" />;
@@ -252,26 +252,26 @@ const ServicePointHistory: React.FC = () => {
     return <Building2 className="w-4 h-4" />;
   }, []);
 
-  // Get unique facilities from scans
-  const facilities = React.useMemo(() => {
-    const facilitySet = new Set<string>();
+  // Get unique sessions from scans
+  const sessionsOptions = React.useMemo(() => {
+    const sessionSet = new Set<string>();
     scans.forEach(scan => {
-      if (scan.facility) {
-        facilitySet.add(scan.facility);
+      if (scan.session) {
+        sessionSet.add(scan.session);
       }
     });
     
-    const facilityList = Array.from(facilitySet).map(facility => ({
-      id: facility,
-      name: facility,
-      icon: getFacilityIconFromName(facility),
+    const sessionList = Array.from(sessionSet).map(sess => ({
+      id: sess,
+      name: sess,
+      icon: getSessionIconFromName(sess),
     }));
 
     return [
-      { id: "all", name: "All Facilities", icon: <Building2 className="w-4 h-4" /> },
-      ...facilityList,
+      { id: "all", name: "All Sessions", icon: <Building2 className="w-4 h-4" /> },
+      ...sessionList,
     ];
-  }, [scans, getFacilityIconFromName]);
+  }, [scans, getSessionIconFromName]);
 
   const getStatusColor = (isValid: boolean) => {
     return isValid 
@@ -315,7 +315,7 @@ const ServicePointHistory: React.FC = () => {
       'Attendee Name',
       'Ticket Type',
       'Scan Type',
-      'Facility',
+      'Session',
       'Scanned At',
       'Scanned By',
       'Valid',
@@ -329,7 +329,7 @@ const ServicePointHistory: React.FC = () => {
       scan.attendeeName,
       scan.ticketType || '',
       scan.scanType,
-      scan.facility || '',
+      scan.session || '',
       new Date(scan.scannedAt).toISOString(),
       scan.scannedBy,
       scan.isValid ? 'Yes' : 'No',
@@ -492,12 +492,12 @@ const ServicePointHistory: React.FC = () => {
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     <select
-                      value={selectedFacility}
-                      onChange={(e) => setSelectedFacility(e.target.value)}
+                      value={selectedSession}
+                      onChange={(e) => setSelectedSession(e.target.value)}
                       className="px-3 py-2 border border-border rounded-md text-sm"
                     >
-                      {facilities.map(facility => (
-                        <option key={facility.id} value={facility.id}>{facility.name}</option>
+                      {sessionsOptions.map(sess => (
+                        <option key={sess.id} value={sess.id}>{sess.name}</option>
                       ))}
                     </select>
                     <select
@@ -589,8 +589,8 @@ const ServicePointHistory: React.FC = () => {
                                 <p className="text-sm text-muted-foreground">Registration: {scan.registrationId}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <div className="flex items-center gap-1">
-                                    {getFacilityIconFromName(scan.facility || '')}
-                                    <span className="text-xs text-gray-500">{scan.facility || 'Unknown'}</span>
+                                    {getSessionIconFromName(scan.session || '')}
+                                    <span className="text-xs text-gray-500">{scan.session || 'Unknown'}</span>
                                   </div>
                                   <span className="text-xs text-gray-400">•</span>
                                   <span className="text-xs text-gray-500">{scan.scannedBy}</span>
@@ -663,33 +663,33 @@ const ServicePointHistory: React.FC = () => {
             ) : (
               /* Statistics View */
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Scans by Facility */}
+                {/* Scans by Session */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <BarChart3 className="w-5 h-5 mr-2" />
-                      Scans by Facility
+                      Scans by Session
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {Object.keys(stats.scansByFacility).length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">No facility data available</div>
+                    {Object.keys(stats.scansBySession).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">No session data available</div>
                     ) : (
                       <div className="space-y-3">
-                        {Object.entries(stats.scansByFacility)
+                        {Object.entries(stats.scansBySession)
                           .sort(([, a], [, b]) => b - a)
-                          .map(([facility, count]) => (
-                            <div key={facility} className="flex items-center justify-between">
+                          .map(([sess, count]) => (
+                            <div key={sess} className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                {getFacilityIconFromName(facility)}
-                                <span className="text-sm font-medium">{facility}</span>
+                                {getSessionIconFromName(sess)}
+                                <span className="text-sm font-medium">{sess}</span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <div className="w-24 bg-gray-200 rounded-full h-2">
                                   <div 
                                     className="bg-primary h-2 rounded-full"
                                     style={{ 
-                                      width: `${(count / Math.max(...Object.values(stats.scansByFacility))) * 100}%` 
+                                      width: `${(count / Math.max(...Object.values(stats.scansBySession))) * 100}%` 
                                     }}
                                   ></div>
                                 </div>

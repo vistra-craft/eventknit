@@ -31,6 +31,7 @@ import emailTemplateRoutes from './routes/email-template.routes.js';
 import unifiedMessagingRoutes from './routes/unified-messaging.routes.js';
 import feedbackRoutes from './routes/feedback.routes.js';
 import adminFeedbackRoutes from './routes/admin-feedback.routes.js';
+import adminPromoCodeRoutes from './routes/admin-promo-code.routes.js';
 import { smsRouter, ussdRouter, mpesaRouter } from './routes/ussd-sms.routes.js';
 import userDashboardRoutes from './routes/user-dashboard.routes.js';
 import organizerDashboardRoutes from './routes/organizer-dashboard.routes.js';
@@ -161,6 +162,7 @@ app.use('/api/v1/ussd', ussdRouter);
 app.use('/api/v1/mpesa', mpesaRouter);
 app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
+app.use('/api/v1/admin/promo-codes', adminPromoCodeRoutes);
 app.use('/api/v1/events', attendeeImportRoutes);
 
 // Error handler middleware (must be last)
