@@ -26,7 +26,7 @@ export const EventInfo = ({ description, fullDescription, requirements, ageRestr
 
       {/* Important Information (Requirements) */}
       {(requirements?.length || ageRestriction) && (
-        <Card className="p-6 rounded-2xl border-0 bg-card-surface shadow-sm">
+        <Card className="p-6 rounded-2xl border border-border bg-background shadow-sm">
           <h3 className="text-xl font-bold mb-4">Important Information</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             {ageRestriction && (
@@ -63,7 +63,7 @@ export const EventInfo = ({ description, fullDescription, requirements, ageRestr
           <h2 className="text-3xl font-bold mb-6">Featured Speakers</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {speakers.map((speaker, index) => (
-              <Card key={index} className="p-4 flex items-start gap-4 rounded-2xl border-0 bg-card-surface hover:shadow-md transition-shadow">
+              <Card key={index} className="p-4 flex items-start gap-4 rounded-2xl border border-border bg-background shadow-sm transition-shadow">
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
                   {speaker.image ? (
                     <img src={speaker.image} alt={speaker.name} className="w-full h-full object-cover" />

@@ -104,7 +104,7 @@ export const RelatedEventsSimple = ({
           <div
             key={event.id}
             onClick={() => navigate(`/event/${event.id}`)}
-            className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-card-surface shadow-sm hover:shadow-md transition-all duration-200"
+            className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-background shadow-sm hover:shadow-md hover:shadow-primary/5 hover:border-primary/30 transition-all duration-200"
           >
             {/* Event Image */}
             <div className="relative h-48 overflow-hidden">
@@ -122,7 +122,7 @@ export const RelatedEventsSimple = ({
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               {event.category && (
                 <div className="absolute top-3 left-3">
-                  <span className="px-2 py-1 bg-card-surface/90 text-foreground backdrop-blur-sm rounded-full text-xs font-semibold shadow-sm">
+                  <span className="px-2 py-1 bg-muted/80 text-foreground backdrop-blur-sm rounded-full text-xs">
                     {event.category}
                   </span>
                 </div>

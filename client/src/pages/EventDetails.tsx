@@ -217,7 +217,7 @@ const EventDetails = () => {
             <Button
               variant="outline"
               onClick={() => navigate('/')}
-              className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors"
+              className="gap-2 border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               size="lg"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -260,7 +260,7 @@ const EventDetails = () => {
               {/* Event Agenda Summary */}
               <section>
                 <h2 className="text-3xl font-bold mb-6">Event Schedule</h2>
-                <Card className="border-0 bg-card-surface shadow-sm p-6">
+                <Card className="border border-border bg-background rounded-2xl shadow-sm p-6">
                   <div className="space-y-3">
                     {(() => {
                       // Debug logging
@@ -402,7 +402,7 @@ const EventDetails = () => {
                       <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {safeSpeakers.slice(0, 8).map((speaker, index: number) => (
-                          <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border-0 bg-card-surface shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                          <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border border-border bg-background shadow-sm transition-all">
                             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
                               {speaker?.image ? (
                                 <img src={speaker.image} alt={speaker.name || 'Speaker'} className="w-full h-full object-cover" />
@@ -431,7 +431,7 @@ const EventDetails = () => {
             {/* Right Column - Action Button and Info */}
             <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-20 lg:self-start">
               {/* Primary Action Card */}
-              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-6">
+              <Card className="border border-border bg-background rounded-2xl shadow-sm transition-all p-6">
                 <div className="space-y-4">
                   {/* Price Display */}
                   {!event.isFree && (
@@ -459,11 +459,11 @@ const EventDetails = () => {
 
                   {/* Secondary Actions */}
                   <div className="grid grid-cols-2 gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                    <Button variant="outline" size="sm" className="gap-2 border-border text-muted-foreground hover:text-foreground hover:bg-muted">
                       <Heart className="w-4 h-4" />
                       Save
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-2 border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                    <Button variant="outline" size="sm" className="gap-2 border-border text-muted-foreground hover:text-foreground hover:bg-muted">
                       <Share2 className="w-4 h-4" />
                       Share
                     </Button>
@@ -528,7 +528,7 @@ const EventDetails = () => {
                     }
                   }, 100);
                 }}
-                className="gap-2 text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 View All
                 <ArrowRight className="w-4 h-4" />

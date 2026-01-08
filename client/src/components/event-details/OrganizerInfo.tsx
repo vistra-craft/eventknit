@@ -102,7 +102,7 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
                       href={url.startsWith('http') ? url : `https://${url}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card-surface hover:bg-primary/10 hover:border-primary transition-colors"
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-border bg-background hover:bg-muted transition-colors"
                       title={platformLabels[platformLower] || platform}
                     >
                       {Icon}

@@ -773,7 +773,7 @@ const EventRegistration = () => {
             </div>
           </div>
 
-          <section className="rounded-2xl bg-card-surface shadow-sm border border-border/40 overflow-hidden">
+          <section className="rounded-2xl bg-background shadow-sm border border-border overflow-hidden">
             <div className="relative h-52 md:h-56 bg-muted">
               {event.image ? (
                 <img src={event.image} alt={event.title} className="h-full w-full object-cover" />
@@ -832,7 +832,7 @@ const EventRegistration = () => {
             </div>
           </section>
 
-          <section className="rounded-2xl bg-card-surface shadow-sm border border-border/40">
+          <section className="rounded-2xl bg-background shadow-sm border border-border">
             {currentStep === "registration" ? (
               <div className="p-6 md:p-8 space-y-8">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

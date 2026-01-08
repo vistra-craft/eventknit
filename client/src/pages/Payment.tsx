@@ -201,7 +201,7 @@ const PaymentPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Order Summary - Left Column */}
             <div className="lg:col-span-3">
-              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+              <Card className="border border-border bg-background rounded-2xl shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Ticket className="h-5 w-5" />
