@@ -41,7 +41,8 @@ const ExhibitorCard: React.FC<{
 }> = ({ exhibitor, onClick }) => {
   return (
     <Card
-      className="group cursor-pointer border border-border bg-background rounded-2xl shadow-sm hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300"
+      variant="github"
+      className="group cursor-pointer hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300"
       onClick={onClick}
     >
       <CardContent className="p-5">

@@ -71,7 +71,7 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Registration Status Card */}
-          <Card className="border border-border bg-background rounded-2xl shadow-sm overflow-hidden">
+          <Card variant="github" className="overflow-hidden">
             <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
@@ -112,7 +112,7 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
           </Card>
 
           {/* Event Details */}
-          <Card className="border border-border bg-background rounded-2xl shadow-sm">
+          <Card variant="github">
             <CardHeader>
               <CardTitle>Event Details</CardTitle>
             </CardHeader>
@@ -153,7 +153,7 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
           </Card>
 
           {/* My Schedule (Placeholder for favorited sessions) */}
-          <Card className="border border-border bg-background rounded-2xl shadow-sm">
+          <Card variant="github">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bookmark className="w-5 h-5 text-primary" />
@@ -175,7 +175,7 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Profile Card */}
-          <Card className="border border-border bg-background rounded-2xl shadow-sm">
+          <Card variant="github">
             <CardContent className="pt-6 text-center">
               <Avatar
                 src={user.profileImage}
@@ -196,7 +196,7 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="border border-border bg-background rounded-2xl shadow-sm">
+          <Card variant="github">
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
@@ -240,7 +240,7 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
 
           {/* Event Stats (Optional) */}
           {event.registrationDate && (
-            <Card className="border border-border bg-background rounded-2xl shadow-sm">
+            <Card variant="github">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground uppercase tracking-wide">Registered on</p>

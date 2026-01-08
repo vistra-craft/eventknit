@@ -170,7 +170,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Sidebar - User Profile Card */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24 border border-border bg-background rounded-2xl shadow-sm overflow-hidden">
+            <Card variant="github" className="sticky top-24 overflow-hidden">
               {/* Edit link */}
               <div className="absolute top-3 right-3">
                 <Button variant="link" size="sm" className="text-xs text-muted-foreground">
@@ -200,7 +200,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
           {/* Main Content Area */}
           <div className="lg:col-span-3 space-y-8">
             {/* Quick Action Buttons */}
-            <Card className="border border-border bg-background rounded-2xl shadow-sm overflow-hidden">
+            <Card variant="github" className="overflow-hidden">
               <div className="bg-primary text-white text-center py-3">
                 <span className="font-medium">
                   {event.hashtag ? `#${event.hashtag}` : event.title}
@@ -229,7 +229,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
 
             {/* Sponsors Section */}
             {event.sponsors && event.sponsors.length > 0 && (
-              <Card className="border border-border bg-background rounded-2xl shadow-sm">
+              <Card variant="github">
                 <CardContent className="p-6 space-y-6">
                   {sponsorTierOrder.map(tier => {
                     const sponsors = sponsorsByTier[tier];
@@ -273,7 +273,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
             )}
 
             {/* Event Details */}
-            <Card className="border border-border bg-background rounded-2xl shadow-sm">
+            <Card variant="github">
               <CardContent className="p-6 space-y-6">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground mb-4">

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
  * - elevated: Card with stronger shadow for emphasis
  * - interactive: Clickable card with hover lift effect (signup page style)
  * - minimal: Flat card with minimal styling
+ * - github: Clean GitHub/X style with border (Phase 1 UI cleanup)
  * - glass: Glassmorphism effect for overlays
  */
 const cardVariants = cva(
@@ -27,8 +28,11 @@ const cardVariants = cva(
         // Interactive: Clickable card with hover effects (signup page style)
         interactive: "border-border bg-card-surface text-card-foreground shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer",
 
-        // Minimal: Flat card with no shadow
+        // Minimal: Flat card with minimal styling
         minimal: "border-border bg-card-surface text-card-foreground shadow-none",
+
+        // GitHub/X: Clean style with subtle border and shadow (Phase 1 UI cleanup)
+        github: "border-border bg-background text-foreground shadow-sm",
 
         // Glass: Glassmorphism effect
         glass: "border-white/20 bg-white/10 backdrop-blur-sm text-card-foreground shadow-sm",
