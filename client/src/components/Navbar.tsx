@@ -7,7 +7,7 @@ import { ProfileDropdown } from "./ProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleView } from "@/contexts/RoleViewContext";
 import { UserRole } from "@/types/auth";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 interface NavItem {
   name: string;
@@ -246,13 +246,13 @@ const Navbar: React.FC<NavbarProps> = () => {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {navItems.map((item) => {
                   return (
                     <button
                       key={item.name}
                       onClick={() => handleNavigation(item)}
-                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-accent-coral hover:text-white transition-colors duration-200"
+                      className="text-sm font-medium px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     >
                       {item.name}
                     </button>
@@ -261,18 +261,18 @@ const Navbar: React.FC<NavbarProps> = () => {
               </div>
 
               {/* Desktop Actions */}
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 {!isAuthenticated && (
                   <>
                     <button
                       onClick={() => navigate('/auth/signin')}
-                      className="text-sm font-medium px-3 py-1.5 rounded-md text-foreground/80 hover:bg-accent-coral hover:text-white transition-colors duration-200"
+                      className="text-sm font-medium px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     >
                       Login
                     </button>
                     <button
                       onClick={() => navigate('/auth/signup')}
-                      className="text-sm font-medium text-white bg-accent-coral px-4 py-1.5 rounded-md hover:bg-accent-coral/90 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200"
+                      className="text-sm font-medium text-primary-foreground bg-primary px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
                     >
                       Sign Up
                     </button>
@@ -282,7 +282,7 @@ const Navbar: React.FC<NavbarProps> = () => {
                 {isAuthenticated && (
                   <button
                     onClick={handleCreateEvent}
-                    className="text-sm font-medium text-foreground/80 hover:text-nav-hover transition-colors duration-200"
+                    className="text-sm font-medium px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                   >
                     Create Event
                   </button>
@@ -306,8 +306,8 @@ const Navbar: React.FC<NavbarProps> = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-background/95 backdrop-blur-xl border-t border-border shadow-lg">
-            <div className="container mx-auto px-6 py-4">
+          <div className="md:hidden bg-background border-t border-border shadow-lg">
+            <div className="container mx-auto px-6 py-4 space-y-1">
               {navItems.map((item) => (
                 <button
                   key={item.name}
@@ -315,15 +315,15 @@ const Navbar: React.FC<NavbarProps> = () => {
                     handleNavigation(item);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
+                  className="block w-full text-left px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted font-medium transition-colors"
                 >
                   {item.name}
                 </button>
               ))}
-              
-              <div className="mt-4 space-y-2 border-t border-border pt-4">
+
+              <div className="pt-2 border-t border-border mt-2 space-y-1">
                 <button
-                  className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
+                  className="block w-full text-left px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted font-medium transition-colors"
                   onClick={() => {
                     handleCreateEvent();
                     setIsMobileMenuOpen(false);
@@ -331,16 +331,40 @@ const Navbar: React.FC<NavbarProps> = () => {
                 >
                   Create Event
                 </button>
-                
+
+                {/* Mobile Auth Buttons */}
+                {!isAuthenticated && (
+                  <div className="pt-2 space-y-2">
+                    <button
+                      onClick={() => {
+                        navigate('/auth/signin');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted font-medium transition-colors"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/auth/signup');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="block w-full text-center px-3 py-2.5 rounded-md bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      Sign Up
+                    </button>
+                  </div>
+                )}
+
                 {/* Mobile Profile Section */}
                 {isAuthenticated && user && (
-                  <div className="border-t border-border pt-4 mt-4 space-y-2">
+                  <div className="border-t border-border pt-2 mt-2 space-y-1">
                     <button
                       onClick={() => {
                         navigate(getProfileRoute());
                         setIsMobileMenuOpen(false);
                       }}
-                      className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
+                      className="block w-full text-left px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted font-medium transition-colors"
                     >
                       Profile
                     </button>
@@ -350,13 +374,13 @@ const Navbar: React.FC<NavbarProps> = () => {
                         navigate(route);
                         setIsMobileMenuOpen(false);
                       }}
-                      className="block w-full text-left px-3 py-2 text-foreground/80 hover:text-nav-hover font-medium"
+                      className="block w-full text-left px-3 py-2.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted font-medium transition-colors"
                     >
                       Dashboard
                     </button>
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left px-3 py-2 text-destructive hover:text-destructive/80 font-medium"
+                      className="block w-full text-left px-3 py-2.5 rounded-md text-destructive hover:bg-destructive/10 font-medium transition-colors"
                     >
                       Logout
                     </button>

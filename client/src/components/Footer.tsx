@@ -1,15 +1,9 @@
 import { Link } from "react-router-dom";
 
-// Custom SVG icons for social media (avoiding deprecated lucide icons)
+// Custom SVG icons for social media
 const XIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
-const FacebookIcon = ({ size = 18 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
   </svg>
 );
 
@@ -29,161 +23,110 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-footer text-footer-foreground">
-      <div className="container mx-auto px-6 py-8">
-        {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          {/* Brand Column */}
-          <div className="md:col-span-1">
-            <Link to="/" className="inline-block mb-3">
-              <span className="text-xl font-bold text-footer-foreground">
-                EventKnit
-              </span>
+    <footer className="border-t border-border bg-muted/30">
+      <div className="container mx-auto px-6 py-10">
+        {/* Main Content */}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+          {/* Brand */}
+          <div className="max-w-xs">
+            <Link to="/" className="inline-flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">E</span>
+              </div>
+              <span className="text-lg font-bold text-foreground">EventKnit</span>
             </Link>
-            <p className="text-footer-muted text-sm leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Your complete event management and ticketing platform.
             </p>
           </div>
 
-          {/* Product Column */}
-          <div>
-            <h4 className="text-sm font-semibold text-footer-foreground mb-4">
-              Product
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/events"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Browse Events
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/create-event"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Create Event
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/pricing"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Pricing
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Links */}
+          <div className="flex flex-wrap gap-x-12 gap-y-6">
+            {/* Product */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Product</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Browse Events
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    About
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
-          {/* Company Column */}
-          <div>
-            <h4 className="text-sm font-semibold text-footer-foreground mb-4">
-              Company
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/about"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/contact"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/careers"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Careers
-                </Link>
-              </li>
-            </ul>
-          </div>
+            {/* Legal */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Legal</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/terms-of-service" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Terms
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/privacy-policy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/cookie-policy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Cookies
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
-          {/* Legal Column */}
-          <div>
-            <h4 className="text-sm font-semibold text-footer-foreground mb-4">
-              Legal
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/privacy-policy"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/terms-of-service"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/cookie-policy"
-                  className="text-sm text-footer-muted hover:text-footer-hover transition-colors"
-                >
-                  Cookie Policy
-                </Link>
-              </li>
-            </ul>
+            {/* Support */}
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Support</h4>
+              <ul className="space-y-2">
+                <li>
+                  <a href="mailto:support@eventknit.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Contact Us
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-footer-border" />
+        <div className="border-t border-border mt-8 pt-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Copyright */}
+            <p className="text-xs text-muted-foreground">
+              &copy; {currentYear} EventKnit. All rights reserved.
+            </p>
 
-        {/* Bottom Bar */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6">
-          <p className="text-sm text-footer-muted">
-            &copy; {currentYear} EventKnit. All rights reserved.
-          </p>
-
-          {/* Social Links */}
-          <div className="flex items-center gap-4">
-            <a
-              href="#"
-              className="text-footer-muted hover:text-footer-hover transition-colors"
-              aria-label="X (Twitter)"
-            >
-              <XIcon size={18} />
-            </a>
-            <a
-              href="#"
-              className="text-footer-muted hover:text-footer-hover transition-colors"
-              aria-label="Facebook"
-            >
-              <FacebookIcon size={18} />
-            </a>
-            <a
-              href="#"
-              className="text-footer-muted hover:text-footer-hover transition-colors"
-              aria-label="Instagram"
-            >
-              <InstagramIcon size={18} />
-            </a>
-            <a
-              href="#"
-              className="text-footer-muted hover:text-footer-hover transition-colors"
-              aria-label="LinkedIn"
-            >
-              <LinkedinIcon size={18} />
-            </a>
+            {/* Social Links */}
+            <div className="flex items-center gap-4">
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="X (Twitter)"
+              >
+                <XIcon size={16} />
+              </a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Instagram"
+              >
+                <InstagramIcon size={16} />
+              </a>
+              <a
+                href="#"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="LinkedIn"
+              >
+                <LinkedinIcon size={16} />
+              </a>
+            </div>
           </div>
         </div>
       </div>
