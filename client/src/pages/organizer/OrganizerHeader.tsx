@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Building2, Moon, Sun } from "lucide-react";
+import { Menu, User, ChevronDown, LogOut, Building2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { useTheme } from "../../hooks/useTheme";
 import NotificationBell from "../../components/NotificationBell";
+import ThemeToggle from "../../components/ThemeToggle";
 
 interface OrganizerHeaderProps {
   onMenuToggle?: () => void;
@@ -15,7 +15,6 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-  const { resolvedTheme, toggleTheme } = useTheme();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Get user display name and organization from actual user data
@@ -55,19 +54,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
         
         <div className="flex items-center space-x-4">
           {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleTheme}
-            className="text-muted-foreground hover:bg-accent-coral hover:text-white transition-colors"
-            title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
-          >
-            {resolvedTheme === 'light' ? (
-              <Moon className="h-5 w-5" />
-            ) : (
-              <Sun className="h-5 w-5" />
-            )}
-          </Button>
+          <ThemeToggle />
 
           <NotificationBell />
           
@@ -77,7 +64,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
               variant="ghost" 
               size="sm"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center space-x-2 hover:bg-accent-coral hover:text-white transition-colors"
+              className="flex items-center space-x-2 hover:bg-muted transition-colors"
             >
               {userAvatar ? (
                 <img 
@@ -134,7 +121,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                       setIsProfileOpen(false);
                       navigate('/organizer/profile');
                     }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
                   >
                     <User className="h-4 w-4" />
                     <span>View Profile</span>

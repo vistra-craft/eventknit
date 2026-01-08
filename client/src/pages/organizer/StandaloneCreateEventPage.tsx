@@ -35,10 +35,10 @@ const StandaloneCreateEventPage: React.FC = () => {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-page-title mb-2">
               Create Your First Event
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-page-subtitle">
               Fill out the details below to create your event. Once submitted, it will be reviewed and approved.
             </p>
           </div>

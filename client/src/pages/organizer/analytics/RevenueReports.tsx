@@ -54,9 +54,9 @@ const RevenueReports = () => {
 
   // Calculate revenue data from real events
   const revenueStats = stats ? [
-    { title: "Total Revenue", value: `$${stats.totalRevenue?.toLocaleString() || "0"}`, change: "+0%", changeType: "positive", description: "Total revenue generated", bgColor: "bg-emerald-100", color: "text-emerald-600" },
-    { title: "Platform Fees", value: `$${Math.round((stats.totalRevenue || 0) * 0.1).toLocaleString()}`, change: "+0%", changeType: "neutral", description: "Platform service fees", bgColor: "bg-blue-100", color: "text-blue-600" },
-    { title: "Net Revenue", value: `$${Math.round((stats.totalRevenue || 0) * 0.9).toLocaleString()}`, change: "+0%", changeType: "positive", description: "Revenue after fees", bgColor: "bg-green-100", color: "text-green-600" },
+    { title: "Total Revenue", value: `$${stats.totalRevenue?.toLocaleString() || "0"}`, change: "+0%", changeType: "positive", description: "Total revenue generated", bgColor: "bg-success-light", color: "text-success" },
+    { title: "Platform Fees", value: `$${Math.round((stats.totalRevenue || 0) * 0.1).toLocaleString()}`, change: "+0%", changeType: "neutral", description: "Platform service fees", bgColor: "bg-primary/10", color: "text-primary" },
+    { title: "Net Revenue", value: `$${Math.round((stats.totalRevenue || 0) * 0.9).toLocaleString()}`, change: "+0%", changeType: "positive", description: "Revenue after fees", bgColor: "bg-success-light", color: "text-success" },
   ] : [];
 
   const revenueBreakdown = events.map(e => {
@@ -158,11 +158,11 @@ const RevenueReports = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge variant="secondary" className="bg-success-light text-success">Completed</Badge>;
       case "upcoming":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Upcoming</Badge>;
+        return <Badge variant="secondary" className="bg-primary/10 text-primary">Upcoming</Badge>;
       case "active":
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Active</Badge>;
+        return <Badge variant="secondary" className="bg-warning/10 text-warning">Active</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -171,19 +171,19 @@ const RevenueReports = () => {
   const getInsightTypeColor = (type: string) => {
     switch (type) {
       case "growth":
-        return "text-green-600 bg-green-100 border-green-200";
+        return "text-success bg-success-light border-success/20";
       case "strategy":
-        return "text-blue-600 bg-blue-100 border-blue-200";
+        return "text-primary bg-primary/10 border-primary/20";
       case "payment":
-        return "text-purple-600 bg-purple-100 border-purple-200";
+        return "text-primary bg-primary/10 border-primary/20";
       case "policy":
-        return "text-orange-600 bg-orange-100 border-orange-200";
+        return "text-warning bg-warning/10 border-warning/20";
       case "timing":
-        return "text-red-600 bg-red-100 border-red-200";
+        return "text-destructive bg-destructive/10 border-destructive/20";
       case "pricing":
-        return "text-yellow-600 bg-yellow-100 border-yellow-200";
+        return "text-warning bg-warning/10 border-warning/20";
       default:
-        return "text-gray-600 bg-gray-100 border-gray-200";
+        return "text-muted-foreground bg-muted border-border";
     }
   };
 
@@ -194,8 +194,8 @@ const RevenueReports = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Revenue Reports</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-page-title">Revenue Reports</h1>
+            <p className="text-page-subtitle mt-1">
               Comprehensive financial analytics and revenue insights for your events
             </p>
           </div>

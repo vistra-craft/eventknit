@@ -126,7 +126,7 @@ const SpeakerModal: React.FC<{ speaker: Speaker; onClose: () => void }> = ({ spe
                   className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
                 />
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground mb-1">{speaker.name}</h2>
+                  <h2 className="text-page-title mb-1">{speaker.name}</h2>
                   <p className="text-lg font-medium text-primary mb-1">{speaker.title}</p>
                   {speaker.country && (
                     <p className="text-sm text-muted-foreground mb-1">{speaker.country}</p>
@@ -368,7 +368,7 @@ const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
           {/* Main Content - Speakers Grid */}
           <div className="lg:col-span-3">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Event Speakers</h1>
+              <h1 className="text-page-title mb-2">Event Speakers</h1>
               <p className="text-muted-foreground">
                 Meet the industry experts and thought leaders speaking at this event
               </p>

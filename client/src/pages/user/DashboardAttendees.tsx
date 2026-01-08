@@ -183,7 +183,7 @@ const DashboardAttendees: React.FC = () => {
             <div className="mb-8">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h1 className="text-3xl font-bold text-foreground mb-2">Event Attendees</h1>
+                  <h1 className="text-page-title mb-2">Event Attendees</h1>
                   <p className="text-muted-foreground">
                     Connect with fellow attendees, speakers, and exhibitors
                   </p>

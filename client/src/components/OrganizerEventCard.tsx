@@ -107,7 +107,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
       )}
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+          <h3 className="text-xl font-bold text-foreground">
             {event.title}
           </h3>
           {/* Hide category badge for specific events */}
@@ -144,7 +144,6 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
           <Button 
             variant="outline" 
             size="sm"
-            className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               window.location.href = `/organizer/event/${event.id}`;

@@ -9,7 +9,6 @@ import {
   DollarSign,
   Clock,
   CheckCircle,
-  Loader2,
   AlertCircle,
   Edit,
   MapPin,
@@ -22,6 +21,7 @@ import { Badge } from "../../components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Pagination } from "../../components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Loader } from "../../components/ui/loader";
 import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 
@@ -110,25 +110,25 @@ const AllEvents = () => {
       title: "Total Events",
       value: totalEvents.toString(),
       icon: Calendar,
-      color: "text-accent-electric",
-      bgColor: "bg-accent-electric/10",
-      borderColor: "border-accent-electric/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Active Events",
       value: activeEvents.toString(),
       icon: CheckCircle,
-      color: "text-accent-neon",
-      bgColor: "bg-accent-neon/10",
-      borderColor: "border-accent-neon/20",
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
     },
     {
       title: "Upcoming Events",
       value: upcomingEvents.toString(),
       icon: Clock,
-      color: "text-accent-coral",
-      bgColor: "bg-accent-coral/10",
-      borderColor: "border-accent-coral/20",
+      color: "text-warning",
+      bgColor: "bg-warning/10",
+      borderColor: "border-warning/20",
     },
     {
       title: "Total Attendees",
@@ -142,9 +142,9 @@ const AllEvents = () => {
       title: "Total Revenue",
       value: `$${totalRevenue.toLocaleString()}`,
       icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
     },
   ];
 
@@ -154,8 +154,8 @@ const AllEvents = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-lg font-semibold text-foreground mb-2">All Events</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-page-title mb-2">All Events</h1>
+          <p className="text-page-subtitle">
             Manage and view all your events in one place.
           </p>
         </div>
@@ -266,7 +266,7 @@ const AllEvents = () => {
 
         {loading ? (
           <div className="text-center py-12">
-            <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+            <Loader size="lg" className="mx-auto mb-4" />
             <p className="text-muted-foreground">Loading events...</p>
           </div>
         ) : filteredEvents.length > 0 ? (

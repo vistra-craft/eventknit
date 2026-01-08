@@ -10,7 +10,6 @@ import {
   Clock,
   CheckCircle,
   ArrowUpRight,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -18,6 +17,7 @@ import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Pagination } from "../../components/ui/pagination";
+import { Loader } from "../../components/ui/loader";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 import { getOrganizerUpcomingEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 
@@ -104,25 +104,25 @@ const UpcomingEvents = () => {
       title: "Upcoming Events",
       value: totalUpcoming.toString(),
       icon: Calendar,
-      color: "text-accent-electric",
-      bgColor: "bg-accent-electric/10",
-      borderColor: "border-accent-electric/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Total Capacity",
       value: totalCapacity.toLocaleString(),
       icon: Users,
-      color: "text-accent-neon",
-      bgColor: "bg-accent-neon/10",
-      borderColor: "border-accent-neon/20",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Registered",
       value: totalRegistered.toLocaleString(),
       icon: CheckCircle,
-      color: "text-accent-coral",
-      bgColor: "bg-accent-coral/10",
-      borderColor: "border-accent-coral/20",
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
     },
     {
       title: "Avg Conversion",
@@ -136,9 +136,9 @@ const UpcomingEvents = () => {
       title: "Revenue",
       value: `$${totalRevenue.toLocaleString()}`,
       icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
     },
   ];
 
@@ -148,8 +148,8 @@ const UpcomingEvents = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-lg font-semibold text-foreground mb-2">Upcoming Events</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-page-title mb-2">Upcoming Events</h1>
+          <p className="text-page-subtitle">
             Manage your upcoming events and track their progress.
           </p>
         </div>
@@ -245,7 +245,7 @@ const UpcomingEvents = () => {
 
         {loading ? (
           <div className="text-center py-12">
-            <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+            <Loader size="lg" className="mx-auto mb-4" />
             <p className="text-muted-foreground">Loading upcoming events...</p>
           </div>
         ) : filteredEvents.length > 0 ? (

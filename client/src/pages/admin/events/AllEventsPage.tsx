@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, Loader2, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
+import { Loader } from "../../../components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { EVENT_CATEGORIES, getCategoriesByGroup } from "@/lib/event-categories";
@@ -20,6 +21,7 @@ import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
+import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;
@@ -217,10 +219,10 @@ const AllEventsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: "bg-primary/10 text-primary border-primary/20",
-      pending: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      cancelled: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      completed: "bg-primary/10 text-primary border-primary/20"
+      active: "bg-success-light text-success border-success/20",
+      pending: "bg-warning/10 text-warning border-warning/20",
+      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+      completed: "bg-muted text-muted-foreground border-border"
     };
     return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
@@ -228,7 +230,7 @@ const AllEventsPage = () => {
   const getTypeBadge = (type: string) => {
     return type === "public" 
       ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+      : "bg-secondary/10 text-secondary border-secondary/20";
   };
 
   const getPriceBadge = (price: string) => {
@@ -295,7 +297,7 @@ const AllEventsPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading events...</span>
         </div>
       </AdminLayout>
@@ -761,7 +763,7 @@ const AllEventsPage = () => {
               >
                 {bulkUpdating ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader size="sm" className="h-4 w-4 mr-2" />
                     Updating...
                   </>
                 ) : (

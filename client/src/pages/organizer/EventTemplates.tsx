@@ -322,11 +322,11 @@ const EventTemplates = () => {
 
   const getTemplateColor = (type: string) => {
     switch (type) {
-      case 'attendee': return 'bg-blue-100 text-blue-800';
-      case 'speaker': return 'bg-purple-100 text-purple-800';
-      case 'exhibitor': return 'bg-green-100 text-green-800';
-      case 'sponsor': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'attendee': return 'bg-primary/10 text-primary';
+      case 'speaker': return 'bg-primary/10 text-primary';
+      case 'exhibitor': return 'bg-success/10 text-success';
+      case 'sponsor': return 'bg-warning/10 text-warning';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -438,10 +438,10 @@ const EventTemplates = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Event Templates</h1>
+            <h1 className="text-page-title">Event Templates</h1>
             <p className="text-muted-foreground mt-1">Create and manage shareable forms for attendees, speakers, exhibitors, and sponsors</p>
           </div>
-          <Button onClick={() => setShowCreateForm(true)} className="bg-accent-neon hover:bg-accent-neon/80 text-primary">
+          <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create Template
           </Button>
@@ -764,7 +764,7 @@ const EventTemplates = () => {
                   }}>
                     Cancel
                   </Button>
-                  <Button onClick={saveTemplate} className="bg-accent-neon hover:bg-accent-neon/80 text-primary">
+                  <Button onClick={saveTemplate}>
                     <Save className="h-4 w-4 mr-2" />
                     {editingTemplate ? 'Update Template' : 'Create Template'}
                   </Button>

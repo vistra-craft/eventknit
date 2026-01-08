@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ButtonLoader } from "@/components/ui/loader";
 import OrganizerLayout from "./OrganizerLayout";
 import {
   User,
@@ -14,7 +15,6 @@ import {
   Camera,
   Save,
   Edit3,
-  Loader2,
   AlertCircle,
   CheckCircle
 } from "lucide-react";
@@ -149,7 +149,7 @@ const Profile = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Profile</h1>
+            <h1 className="text-page-title">Profile</h1>
             <p className="text-muted-foreground mt-1">Manage your personal information</p>
           </div>
           <div className="flex gap-2">
@@ -160,7 +160,7 @@ const Profile = () => {
                 </Button>
                 <Button onClick={handleSave} disabled={loading}>
                   {loading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <ButtonLoader />
                   ) : (
                     <Save className="h-4 w-4 mr-2" />
                   )}
@@ -223,7 +223,7 @@ const Profile = () => {
                   disabled={loading}
                 >
                   {loading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <ButtonLoader />
                   ) : (
                     <Camera className="h-4 w-4 mr-2" />
                   )}

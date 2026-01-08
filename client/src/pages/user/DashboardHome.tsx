@@ -21,6 +21,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Loader } from "../../components/ui/loader";
 import EmptyState from "../../components/EmptyState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
 import { Avatar } from "../../components/ui/avatar";
@@ -200,7 +201,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'upcoming': return 'bg-primary/10 text-primary';
-      case 'ongoing': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'ongoing': return 'bg-success-light text-success';
       case 'completed': return 'bg-muted text-muted-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
@@ -361,7 +362,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
           <div className="lg:col-span-3 space-y-8">
             {/* Welcome Header */}
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">
+              <h1 className="text-page-title">
                 Welcome back, {user.name.split(' ')[0]}
               </h1>
               <p className="text-muted-foreground mt-1">
@@ -401,8 +402,8 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                       <p className="text-3xl font-bold text-foreground mt-1">{totalEvents || userEvents.length}</p>
                       <p className="text-xs text-muted-foreground mt-2">All time</p>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
-                      <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Calendar className="w-6 h-6 text-primary" />
                     </div>
                   </div>
                 </CardContent>
@@ -417,8 +418,8 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                       <p className="text-3xl font-bold text-foreground mt-1">{completedEvents.length}</p>
                       <p className="text-xs text-muted-foreground mt-2">Completed events</p>
                     </div>
-                    <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors">
-                      <Star className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    <div className="w-12 h-12 rounded-xl bg-success-light flex items-center justify-center group-hover:bg-success/20 transition-colors">
+                      <Star className="w-6 h-6 text-success" />
                     </div>
                   </div>
                 </CardContent>
@@ -500,7 +501,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
             <div>
               {/* Section Header with Tabs */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <h2 className="text-xl font-semibold text-foreground">My Events</h2>
+                <h2 className="text-section-header">My Events</h2>
 
                 {/* Filter Tabs */}
                 <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
@@ -528,7 +529,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               {loading ? (
                 <div className="flex items-center justify-center py-16">
                   <div className="flex items-center gap-3 text-muted-foreground">
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <Loader size="default" />
                     <span>Loading your events...</span>
                   </div>
                 </div>
@@ -661,7 +662,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                 <div ref={loadMoreRef} className="py-8 text-center">
                   {loadingMore && (
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <Loader size="sm" />
                       <span>Loading more events...</span>
                     </div>
                   )}

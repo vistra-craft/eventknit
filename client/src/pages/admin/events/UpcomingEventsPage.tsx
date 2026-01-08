@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, Clock, MoreHorizontal, TrendingUp, Loader2, AlertCircle, X, Edit, BarChart3, Download, Share2, Copy } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Clock, MoreHorizontal, TrendingUp, AlertCircle, X, Edit, BarChart3, Download, Share2, Copy } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
 import { Label } from "../../../components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
+import { Loader } from "../../../components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
@@ -19,6 +20,7 @@ import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { useToast } from "../../../hooks/useToast";
 import { getCategoriesByGroup } from "@/lib/event-categories";
+import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;
@@ -236,15 +238,11 @@ const UpcomingEventsPage = () => {
   const categoryGroups = getCategoriesByGroup();
 
   const getTypeBadge = (type: string) => {
-    return type === "public" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+    return getEventTypeBadgeClass(type);
   };
 
   const getPriceBadge = (isFree: boolean) => {
-    return isFree
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-muted text-muted-foreground border-border";
+    return getPriceBadgeClass(isFree);
   };
 
   const getRegistrationRate = (registrations: number, capacity: number) => {
@@ -254,9 +252,9 @@ const UpcomingEventsPage = () => {
 
   const getDaysUntilBadge = (days: number) => {
     if (days <= 7) {
-      return "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+      return "bg-destructive/10 text-destructive border-destructive/20";
     } else if (days <= 30) {
-      return "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+      return "bg-warning/10 text-warning border-warning/20";
     } else {
       return "bg-primary/10 text-primary border-primary/20";
     }
@@ -266,7 +264,7 @@ const UpcomingEventsPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading upcoming events...</span>
         </div>
       </AdminLayout>
@@ -459,7 +457,7 @@ const UpcomingEventsPage = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate(`/admin/events/${event.id}/preview`)}
-                      className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+                      className="border-primary text-primary hover:bg-muted"
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
@@ -474,7 +472,7 @@ const UpcomingEventsPage = () => {
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-primary hover:bg-accent-coral hover:text-white">
+                        <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -636,7 +634,7 @@ const UpcomingEventsPage = () => {
             >
               {recalling ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="w-4 h-4 mr-2" />
                   Recalling...
                 </>
               ) : (

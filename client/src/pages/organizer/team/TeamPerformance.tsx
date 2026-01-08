@@ -17,9 +17,9 @@ import {
   Award,
   Target,
   RefreshCw,
-  Loader2,
   ArrowRight,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -95,13 +95,13 @@ const TeamPerformance = () => {
   // @ts-expect-error - Intentionally unused, reserved for future implementation
   const _getPerformanceColor = (value: number, type: "accuracy" | "time") => {
     if (type === "accuracy") {
-      if (value >= 95) return "text-green-600";
-      if (value >= 90) return "text-yellow-600";
-      return "text-red-600";
+      if (value >= 95) return "text-success";
+      if (value >= 90) return "text-warning";
+      return "text-destructive";
     } else {
-      if (value <= 2) return "text-green-600";
-      if (value <= 3) return "text-yellow-600";
-      return "text-red-600";
+      if (value <= 2) return "text-success";
+      if (value <= 3) return "text-warning";
+      return "text-destructive";
     }
   };
   /* eslint-enable @typescript-eslint/no-unused-vars */
@@ -109,18 +109,18 @@ const TeamPerformance = () => {
   const getCoverageBadge = (status: "adequate" | "understaffed" | "overstaffed") => {
     switch (status) {
       case "adequate":
-        return <Badge className="bg-green-500">Adequate</Badge>;
+        return <Badge className="bg-success-light text-success">Adequate</Badge>;
       case "understaffed":
-        return <Badge className="bg-red-500">Understaffed</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive">Understaffed</Badge>;
       case "overstaffed":
-        return <Badge className="bg-yellow-500">Overstaffed</Badge>;
+        return <Badge className="bg-warning/10 text-warning">Overstaffed</Badge>;
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader size="lg" />
       </div>
     );
   }
@@ -130,8 +130,8 @@ const TeamPerformance = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className={`${isMobile ? "text-2xl" : "text-3xl"} font-bold`}>Team Performance</h1>
-          <p className={`${isMobile ? "text-sm" : ""} text-muted-foreground`}>
+          <h1 className={`${isMobile ? "text-xl" : "text-page-title"}`}>Team Performance</h1>
+          <p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground`}>
             Track staff efficiency and ticket scanning metrics
           </p>
         </div>
@@ -435,7 +435,7 @@ const TeamPerformance = () => {
                 <CardTitle className={isMobile ? "text-lg" : ""}>With Staff</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">{coverage.eventsWithStaff}</div>
+                <div className="text-3xl font-bold text-success">{coverage.eventsWithStaff}</div>
               </CardContent>
             </Card>
 
@@ -444,7 +444,7 @@ const TeamPerformance = () => {
                 <CardTitle className={isMobile ? "text-lg" : ""}>Without Staff</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-600">{coverage.eventsWithoutStaff}</div>
+                <div className="text-3xl font-bold text-destructive">{coverage.eventsWithoutStaff}</div>
               </CardContent>
             </Card>
 

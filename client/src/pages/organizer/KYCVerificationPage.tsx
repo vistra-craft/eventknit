@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 
 import OrganizerLayout from './OrganizerLayout';
@@ -10,6 +10,7 @@ import { DirectorsForm } from '@/components/kyc/DirectorsForm';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Loader } from '@/components/ui/loader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import {
@@ -178,7 +179,7 @@ const KYCVerificationPage = () => {
     return (
       <OrganizerLayout>
         <div className="flex justify-center min-h-[400px] items-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader size="lg" />
         </div>
       </OrganizerLayout>
     );
@@ -208,7 +209,7 @@ const KYCVerificationPage = () => {
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : isCompleted
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-success text-white'
                         : 'bg-muted text-muted-foreground'
                     }`}
                   >
@@ -219,7 +220,7 @@ const KYCVerificationPage = () => {
                   </span>
                 </div>
                 {index < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-green-500' : 'bg-muted'}`} />
+                  <div className={`flex-1 h-0.5 mx-2 ${isCompleted ? 'bg-success' : 'bg-muted'}`} />
                 )}
               </React.Fragment>
             );

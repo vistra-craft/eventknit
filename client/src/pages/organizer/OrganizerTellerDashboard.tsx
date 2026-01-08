@@ -99,7 +99,7 @@ const OrganizerTellerDashboard = () => {
   const getEventStatusBadge = (status: string) => {
     switch (status) {
       case 'APPROVED':
-        return <Badge className="bg-green-500">Active</Badge>;
+        return <Badge className="bg-success text-white">Active</Badge>;
       case 'PENDING':
         return <Badge variant="outline">Pending</Badge>;
       case 'CANCELLED':
@@ -121,7 +121,7 @@ const OrganizerTellerDashboard = () => {
     <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       {/* Header */}
       <div>
-        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold`}>Teller Dashboard</h1>
+        <h1 className="text-page-title">Teller Dashboard</h1>
         <p className={`${isMobile ? 'text-sm' : ''} text-muted-foreground`}>
           Manage your assigned events and scanning activities
         </p>

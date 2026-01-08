@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
-  Loader2,
   AlertCircle,
   Crown,
   Zap,
@@ -17,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Loader, ButtonLoader } from '@/components/ui/loader';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getSubscription, upgradeSubscription, cancelSubscription, type SubscriptionTier, type OrganizerSubscription } from '@/lib/organizer-api';
 import { useToast } from '@/hooks/useToast';
@@ -25,7 +25,7 @@ const TIER_INFO = {
   BASIC: {
     name: 'Basic',
     icon: Shield,
-    color: 'bg-gray-100 text-gray-700 border-gray-300',
+    color: 'bg-muted text-muted-foreground border-border',
     description: 'Free tier with aggregated data only',
     features: [
       'Event creation and management',
@@ -38,7 +38,7 @@ const TIER_INFO = {
   STANDARD: {
     name: 'Standard',
     icon: Zap,
-    color: 'bg-blue-100 text-blue-700 border-blue-300',
+    color: 'bg-primary/10 text-primary border-primary/30',
     description: 'Free tier with basic attendee data (requires consent)',
     features: [
       'Everything in Basic',
@@ -52,7 +52,7 @@ const TIER_INFO = {
   PREMIUM: {
     name: 'Premium',
     icon: Crown,
-    color: 'bg-purple-100 text-purple-700 border-purple-300',
+    color: 'bg-primary/10 text-primary border-primary/30',
     description: 'Paid tier with advanced analytics and demographics',
     features: [
       'Everything in Standard',
@@ -192,7 +192,7 @@ const SubscriptionManagement = () => {
     return (
       <OrganizerLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" />
         </div>
       </OrganizerLayout>
     );
@@ -216,24 +216,27 @@ const SubscriptionManagement = () => {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Subscription Management</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-page-title">Subscription Management</h1>
+          <p className="text-page-subtitle mt-2">
             Manage your subscription tier and access to attendee data
           </p>
         </div>
 
         {/* Current Subscription Card */}
-        <Card className="border-2">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {React.createElement(currentTierInfo.icon, { className: 'h-6 w-6' })}
                 <div>
-                  <CardTitle className="text-xl">Current Plan: {currentTierInfo.name}</CardTitle>
+                  <CardTitle className="text-card-title">Current Plan: {currentTierInfo.name}</CardTitle>
                   <CardDescription>{currentTierInfo.description}</CardDescription>
                 </div>
               </div>
-              <Badge className={currentTierInfo.color}>
+              <Badge className={subscription.isActive 
+                ? 'bg-success-light text-success border-success hover:bg-success-light/80 hover:border-success/80' 
+                : 'bg-muted text-muted-foreground border-muted-foreground/20 hover:bg-muted/80'
+              }>
                 {subscription.isActive ? 'Active' : 'Inactive'}
               </Badge>
             </div>
@@ -279,7 +282,7 @@ const SubscriptionManagement = () => {
 
         {/* Tier Comparison */}
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Available Plans</h2>
+          <h2 className="text-section-header mb-4">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {Object.entries(TIER_INFO).map(([tier, info]) => {
               const TierIcon = info.icon;
@@ -303,18 +306,18 @@ const SubscriptionManagement = () => {
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
                       <TierIcon className={`h-8 w-8 ${info.color.split(' ')[1]}`} />
-                      <CardTitle className="text-xl">{info.name}</CardTitle>
+                      <CardTitle className="text-card-title">{info.name}</CardTitle>
                     </div>
                     <CardDescription>{info.description}</CardDescription>
                     <div className="mt-4">
-                      <span className="text-3xl font-bold">{info.price}</span>
+                      <span className="text-2xl font-bold">{info.price}</span>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-3 mb-6">
                       {info.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
                           <span className="text-sm">{feature}</span>
                         </li>
                       ))}
@@ -404,7 +407,7 @@ const SubscriptionManagement = () => {
               >
                 {upgrading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <ButtonLoader />
                     Processing...
                   </>
                 ) : (
@@ -440,7 +443,7 @@ const SubscriptionManagement = () => {
               >
                 {canceling ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <ButtonLoader />
                     Processing...
                   </>
                 ) : (

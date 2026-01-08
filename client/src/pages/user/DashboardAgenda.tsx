@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Loader } from '@/components/ui/loader';
 import EmptyState from '@/components/EmptyState';
-import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils } from 'lucide-react';
 import { getEventById } from '@/lib/event-api';
 
 interface EventData {
@@ -211,13 +212,13 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'keynote': return 'bg-purple-100 text-purple-800';
-      case 'panel': return 'bg-blue-100 text-blue-800';
-      case 'workshop': return 'bg-green-100 text-green-800';
-      case 'break': return 'bg-yellow-100 text-yellow-800';
-      case 'meal': return 'bg-orange-100 text-orange-800';
-      case 'networking': return 'bg-pink-100 text-pink-800';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'keynote': return 'bg-primary/10 text-primary';
+      case 'panel': return 'bg-primary/10 text-primary';
+      case 'workshop': return 'bg-success-light text-success';
+      case 'break': return 'bg-muted text-muted-foreground';
+      case 'meal': return 'bg-muted text-muted-foreground';
+      case 'networking': return 'bg-primary/10 text-primary';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -282,7 +283,7 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
           <div className="lg:col-span-3">
             <Card className="bg-card rounded-2xl shadow-lg border border-border">
               <CardHeader className="pb-4">
-                <CardTitle className="text-2xl font-bold text-foreground">Event Agenda</CardTitle>
+                <CardTitle className="text-page-title">Event Agenda</CardTitle>
                 <p className="text-muted-foreground">
                   Complete schedule of sessions, workshops, and networking opportunities.
                 </p>
@@ -290,7 +291,7 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
               <CardContent>
                 {loading ? (
                   <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-4" />
+                    <Loader size="lg" className="mx-auto mb-4" />
                     <p className="text-muted-foreground">Loading agenda...</p>
                   </div>
                 ) : agendaItems.length > 0 ? (

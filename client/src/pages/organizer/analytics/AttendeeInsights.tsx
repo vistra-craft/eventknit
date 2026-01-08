@@ -43,9 +43,9 @@ const AttendeeInsights = () => {
   }, [timeRange, selectedEvent]);
 
   const attendeeStats = stats ? [
-    { title: "Total Attendees", value: stats.totalAttendees?.toLocaleString() || "0", change: "+0%", changeType: "positive" as const, trend: "up", description: "Total registered attendees", bgColor: "bg-green-100", color: "text-green-600" },
-    { title: "Avg per Event", value: stats.totalEvents ? Math.round((stats.totalAttendees || 0) / stats.totalEvents).toString() : "0", change: "+0%", changeType: "positive" as const, trend: "up", description: "Average attendees per event", bgColor: "bg-blue-100", color: "text-blue-600" },
-    { title: "Growth Rate", value: "+0%", change: "+0%", changeType: "positive" as const, trend: "up", description: "Attendee growth rate", bgColor: "bg-purple-100", color: "text-purple-600" },
+    { title: "Total Attendees", value: stats.totalAttendees?.toLocaleString() || "0", change: "+0%", changeType: "positive" as const, trend: "up", description: "Total registered attendees", bgColor: "bg-success-light", color: "text-success" },
+    { title: "Avg per Event", value: stats.totalEvents ? Math.round((stats.totalAttendees || 0) / stats.totalEvents).toString() : "0", change: "+0%", changeType: "positive" as const, trend: "up", description: "Average attendees per event", bgColor: "bg-primary/10", color: "text-primary" },
+    { title: "Growth Rate", value: "+0%", change: "+0%", changeType: "positive" as const, trend: "up", description: "Attendee growth rate", bgColor: "bg-primary/10", color: "text-primary" },
   ] : [];
 
 
@@ -134,19 +134,19 @@ const AttendeeInsights = () => {
   const getInsightTypeColor = (type: string) => {
     switch (type) {
       case "timing":
-        return "text-blue-600 bg-blue-100 border-blue-200";
+        return "text-primary bg-primary/10 border-primary/20";
       case "device":
-        return "text-green-600 bg-green-100 border-green-200";
+        return "text-success bg-success-light border-success/20";
       case "pricing":
-        return "text-yellow-600 bg-yellow-100 border-yellow-200";
+        return "text-warning bg-warning/10 border-warning/20";
       case "marketing":
-        return "text-purple-600 bg-purple-100 border-purple-200";
+        return "text-primary bg-primary/10 border-primary/20";
       case "networking":
-        return "text-red-600 bg-red-100 border-red-200";
+        return "text-destructive bg-destructive/10 border-destructive/20";
       case "content":
-        return "text-orange-600 bg-orange-100 border-orange-200";
+        return "text-warning bg-warning/10 border-warning/20";
       default:
-        return "text-gray-600 bg-gray-100 border-gray-200";
+        return "text-muted-foreground bg-muted border-border";
     }
   };
 
@@ -157,8 +157,8 @@ const AttendeeInsights = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Attendee Insights</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-page-title">Attendee Insights</h1>
+            <p className="text-page-subtitle mt-1">
               Understand your audience demographics, behavior, and preferences
             </p>
           </div>

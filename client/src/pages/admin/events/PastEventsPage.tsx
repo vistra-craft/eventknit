@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
-import { Search, Calendar, MapPin, Users, Eye, History, MoreHorizontal, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, History, MoreHorizontal, TrendingUp, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Loader } from "../../../components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
+import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;
@@ -125,15 +127,11 @@ const PastEventsPage = () => {
   const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
 
   const getTypeBadge = (type: string) => {
-    return type === "public" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+    return getEventTypeBadgeClass(type);
   };
 
   const getPriceBadge = (isFree: boolean) => {
-    return isFree
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-muted text-muted-foreground border-border";
+    return getPriceBadgeClass(isFree);
   };
 
   const getAttendanceRate = (expected: number, actual: number) => {
@@ -161,7 +159,7 @@ const PastEventsPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading past events...</span>
         </div>
       </AdminLayout>
@@ -305,11 +303,11 @@ const PastEventsPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-muted">
                       <Eye className="h-4 w-4 mr-1" />
                       View Details
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-primary hover:bg-accent-coral hover:text-white">
+                    <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </div>

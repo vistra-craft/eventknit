@@ -16,8 +16,8 @@ import {
   User,
   CheckCircle,
   AlertCircle,
-  Loader2,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
 import { getOrganizerStaffAssignments, getOrganizerEvents, type EventStaffAssignment } from "@/lib/organizer-api";
 
@@ -176,10 +176,10 @@ const TeamCalendar = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return "bg-green-100 text-green-800";
-      case 'pending': return "bg-yellow-100 text-yellow-800";
-      case 'declined': return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'confirmed': return "bg-success-light text-success";
+      case 'pending': return "bg-warning/10 text-warning";
+      case 'declined': return "bg-destructive/10 text-destructive";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
@@ -206,8 +206,8 @@ const TeamCalendar = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Team Calendar</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-page-title mb-2">Team Calendar</h1>
+          <p className="text-page-subtitle">
             Schedule staff assignments and track event coverage
           </p>
         </div>
@@ -231,8 +231,8 @@ const TeamCalendar = () => {
             </Button>
           </div>
           <Button 
-            className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto"
             onClick={() => navigate('/organizer/events')}
+            className="w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Manage Events
@@ -282,7 +282,7 @@ const TeamCalendar = () => {
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader size="md" />
                 </div>
               ) : eventAssignments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -371,7 +371,7 @@ const TeamCalendar = () => {
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader size="md" />
                 </div>
               ) : staffSchedules.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -429,7 +429,7 @@ const TeamCalendar = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Confirmed</span>
-                  <span className="font-medium text-green-600">
+                  <span className="font-medium text-success">
                     {eventAssignments.reduce((sum, event) => 
                       sum + event.staff.filter(s => s.status === 'confirmed').length, 0
                     )}

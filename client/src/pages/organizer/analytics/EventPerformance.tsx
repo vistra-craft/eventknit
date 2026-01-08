@@ -116,8 +116,8 @@ const EventPerformance = () => {
       trend: "up",
       title: "Total Events",
       changeType: "positive" as const,
-      bgColor: "bg-blue-100",
-      color: "text-blue-600",
+      bgColor: "bg-primary/10",
+      color: "text-primary",
     },
     { 
       metric: "Avg Attendees", 
@@ -126,8 +126,8 @@ const EventPerformance = () => {
       trend: "up",
       title: "Avg Attendees",
       changeType: "positive" as const,
-      bgColor: "bg-green-100",
-      color: "text-green-600",
+      bgColor: "bg-success-light",
+      color: "text-success",
     },
     { 
       metric: "Total Revenue", 
@@ -136,8 +136,8 @@ const EventPerformance = () => {
       trend: "up",
       title: "Total Revenue",
       changeType: "positive" as const,
-      bgColor: "bg-emerald-100",
-      color: "text-emerald-600",
+      bgColor: "bg-success-light",
+      color: "text-success",
     },
   ];
 
@@ -223,26 +223,26 @@ const EventPerformance = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge variant="secondary" className="bg-success-light text-success">Completed</Badge>;
       case "upcoming":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Upcoming</Badge>;
+        return <Badge variant="secondary" className="bg-primary/10 text-primary">Upcoming</Badge>;
       case "active":
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Active</Badge>;
+        return <Badge variant="secondary" className="bg-warning/10 text-warning">Active</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
   const getPerformanceColor = (score: number) => {
-    if (score >= 90) return "text-green-600";
-    if (score >= 80) return "text-yellow-600";
-    return "text-red-600";
+    if (score >= 90) return "text-success";
+    if (score >= 80) return "text-warning";
+    return "text-destructive";
   };
 
   const getPerformanceBg = (score: number) => {
-    if (score >= 90) return "bg-green-100";
-    if (score >= 80) return "bg-yellow-100";
-    return "bg-red-100";
+    if (score >= 90) return "bg-success-light";
+    if (score >= 80) return "bg-warning/10";
+    return "bg-destructive/10";
   };
 
   return (
@@ -252,8 +252,8 @@ const EventPerformance = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Event Performance</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-page-title">Event Performance</h1>
+            <p className="text-page-subtitle mt-1">
               Detailed performance metrics and analytics for your events
             </p>
           </div>

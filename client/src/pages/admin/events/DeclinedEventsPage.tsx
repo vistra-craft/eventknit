@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
-import { Search, Calendar, MapPin, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw, Loader2, AlertCircle } from "lucide-react";
+import { Search, Calendar, MapPin, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Loader } from "../../../components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { approveEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/useToast";
+
+import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;
@@ -104,15 +107,11 @@ const DeclinedEventsPage = () => {
   const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
 
   const getTypeBadge = (type: string) => {
-    return type === "public" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+    return getEventTypeBadgeClass(type);
   };
 
   const getPriceBadge = (isFree: boolean) => {
-    return isFree
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-muted text-muted-foreground border-border";
+    return getPriceBadgeClass(isFree);
   };
 
   const handleReapprove = async (eventId: string) => {
@@ -156,7 +155,7 @@ const DeclinedEventsPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading declined events...</span>
         </div>
       </AdminLayout>
@@ -262,7 +261,7 @@ const DeclinedEventsPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
-                      <Badge className="bg-accent-coral/10 text-accent-coral border-accent-coral/20 text-xs">
+                      <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
                         Declined
                       </Badge>
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
@@ -287,18 +286,18 @@ const DeclinedEventsPage = () => {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">by {event.organizer}</p>
-                    <div className="bg-accent-coral/10 border border-accent-coral/20 rounded-lg p-3 mb-2">
+                    <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-2">
                       <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 text-accent-coral mt-0.5" />
+                        <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-accent-coral">Reason: {event.reason}</p>
-                          <p className="text-xs text-accent-coral/80">Declined by {event.declinedBy}</p>
+                          <p className="text-sm font-medium text-destructive">Reason: {event.reason}</p>
+                          <p className="text-xs text-destructive/80">Declined by {event.declinedBy}</p>
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-muted">
                       <Eye className="h-4 w-4 mr-1" />
                       Review
                     </Button>
@@ -310,13 +309,13 @@ const DeclinedEventsPage = () => {
                       className="bg-primary hover:bg-primary/90 text-white"
                     >
                       {processing === event.id ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        <Loader size="sm" className="h-4 w-4 mr-1" />
                       ) : (
                         <RotateCcw className="h-4 w-4 mr-1" />
                       )}
                       Re-approve
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-primary hover:bg-accent-coral hover:text-white">
+                    <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </div>

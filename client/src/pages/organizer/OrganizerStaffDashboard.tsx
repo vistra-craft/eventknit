@@ -93,7 +93,7 @@ const OrganizerStaffDashboard = () => {
   const getEventStatusBadge = (status: string) => {
     switch (status) {
       case 'APPROVED':
-        return <Badge className="bg-green-500">Active</Badge>;
+        return <Badge className="bg-success text-white">Active</Badge>;
       case 'PENDING':
         return <Badge variant="outline">Pending</Badge>;
       case 'CANCELLED':

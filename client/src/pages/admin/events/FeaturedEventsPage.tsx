@@ -195,11 +195,11 @@ const FeaturedEventsPage = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-semibold text-foreground truncate">{displayTitle}</h3>
-                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs">
+                          <Badge className="bg-warning/10 text-warning border-warning/20 text-xs">
                             <Star className="h-3 w-3 mr-1" />
                             Featured
                           </Badge>
-                          <Badge className={`text-xs ${featuredEvent.isActive ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}`}>
+                          <Badge className={`text-xs ${featuredEvent.isActive ? "bg-success-light text-success border-success/20" : "bg-muted text-muted-foreground border-border"}`}>
                             {featuredEvent.isActive ? "Active" : "Inactive"}
                           </Badge>
                           <Badge variant="outline" className="text-xs ml-2">

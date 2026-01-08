@@ -220,7 +220,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
               <>
                 <button
                   onClick={() => handleNavigate('/organizer/events/create-standalone')}
-                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Create Event
@@ -242,7 +242,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                               className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${
                                 isActive
                                   ? 'bg-primary text-primary-foreground'
-                                  : 'text-primary hover:bg-accent-coral hover:text-white'
+                                  : 'text-foreground hover:bg-muted'
                               }`}
                             >
                               <Users className="w-3 h-3" />
@@ -259,7 +259,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                             setIsOpen(false);
                             onClose?.();
                           }}
-                          className="w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white rounded-md mt-1 flex items-center gap-2"
+                          className="w-full text-left px-3 py-1.5 text-xs text-foreground hover:bg-muted rounded-md mt-1 flex items-center gap-2"
                         >
                           <RefreshCw className="w-3 h-3" />
                           Reset to {getRoleLabel(user?.role || UserRole.ATTENDEE)}
@@ -274,7 +274,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                 {/* Full menu for organizers with events or non-organizers */}
                 <button
                   onClick={() => handleNavigate(getProfileRoute())}
-                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
                 >
                   <User className="w-4 h-4" />
                   Profile
@@ -285,7 +285,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                     const route = await getDashboardRoute();
                     handleNavigate(route);
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
@@ -307,7 +307,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                               className={`w-full text-left px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-2 ${
                                 isActive
                                   ? 'bg-primary text-primary-foreground'
-                                  : 'text-primary hover:bg-accent-coral hover:text-white'
+                                  : 'text-foreground hover:bg-muted'
                               }`}
                             >
                               <Users className="w-3 h-3" />
@@ -324,7 +324,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                             setIsOpen(false);
                             onClose?.();
                           }}
-                          className="w-full text-left px-3 py-1.5 text-xs text-primary hover:bg-accent-coral hover:text-white rounded-md mt-1 flex items-center gap-2"
+                          className="w-full text-left px-3 py-1.5 text-xs text-foreground hover:bg-muted rounded-md mt-1 flex items-center gap-2"
                         >
                           <RefreshCw className="w-3 h-3" />
                           Reset to {getRoleLabel(user?.role || UserRole.ATTENDEE)}
@@ -336,7 +336,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
 
                 <button
                   onClick={() => handleNavigate(getProfileRoute())}
-                  className="w-full text-left px-4 py-2 text-sm text-primary hover:bg-accent-coral hover:text-white flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
                 >
                   <Settings className="w-4 h-4" />
                   Settings

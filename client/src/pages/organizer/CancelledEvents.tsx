@@ -6,7 +6,6 @@ import {
   Users,
   DollarSign,
   XCircle,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -14,6 +13,7 @@ import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Pagination } from "../../components/ui/pagination";
+import { Loader } from "../../components/ui/loader";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
 
@@ -95,9 +95,9 @@ const CancelledEvents = () => {
       title: "Cancelled Events",
       value: totalCancelled.toString(),
       icon: XCircle,
-      color: "text-red-600",
-      bgColor: "bg-red-100",
-      borderColor: "border-red-200",
+      color: "text-destructive",
+      bgColor: "bg-destructive/10",
+      borderColor: "border-destructive/20",
     },
     {
       title: "Total Attendees",
@@ -111,9 +111,9 @@ const CancelledEvents = () => {
       title: "Total Revenue",
       value: `$${totalRevenue.toLocaleString()}`,
       icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
     },
   ];
 
@@ -122,8 +122,8 @@ const CancelledEvents = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-lg font-semibold text-foreground mb-2">Cancelled Events</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-page-title mb-2">Cancelled Events</h1>
+          <p className="text-page-subtitle">
             View events that have been cancelled by you or the admin
           </p>
         </div>
@@ -208,8 +208,8 @@ const CancelledEvents = () => {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground ml-3">Loading cancelled events...</p>
+            <Loader size="md" className="mr-3" />
+            <p className="text-muted-foreground">Loading cancelled events...</p>
           </div>
         ) : filteredEvents.length === 0 ? (
           <div className="text-center py-12 border rounded-lg">

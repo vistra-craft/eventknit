@@ -149,7 +149,7 @@ const WhiteLabelBrandingPage = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">White-Label Branding</h1>
+            <h1 className="text-page-title">White-Label Branding</h1>
             <p className="text-muted-foreground mt-1">
               Customize your brand appearance across the platform
             </p>
@@ -174,13 +174,13 @@ const WhiteLabelBrandingPage = () => {
         </div>
 
         {branding?.status === 'PENDING_APPROVAL' && (
-          <Card className="border-yellow-200 bg-yellow-50">
+          <Card className="border-warning/30 bg-warning/10">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
                 <div>
-                  <p className="font-medium text-yellow-900">Pending Approval</p>
-                  <p className="text-sm text-yellow-700 mt-1">
+                  <p className="font-medium text-foreground">Pending Approval</p>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Your branding changes are pending admin approval. Once approved, they will be
                     active across the platform.
                   </p>

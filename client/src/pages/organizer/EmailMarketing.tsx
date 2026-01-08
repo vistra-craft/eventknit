@@ -176,7 +176,7 @@ const EmailMarketing = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Email Marketing</h1>
+            <h1 className="text-page-title">Email Marketing</h1>
             <p className="text-muted-foreground mt-1">
               Create and manage email campaigns
             </p>
@@ -241,7 +241,7 @@ const EmailMarketing = () => {
                       </div>
                       <div>
                         <span className="text-muted-foreground">Bounced:</span>
-                        <span className="ml-1 font-semibold text-red-600">
+                        <span className="ml-1 font-semibold text-destructive">
                           {campaign.bouncedCount}
                         </span>
                       </div>
@@ -315,7 +315,7 @@ const EmailMarketing = () => {
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-sm text-muted-foreground">Bounce Rate</div>
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-destructive">
                         {campaignAnalytics.rates.bounceRate.toFixed(1)}%
                       </div>
                     </CardContent>

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
+import { AlertCircle } from "lucide-react";
 import OrganizerLayout from "../OrganizerLayout";
 import {
   BarChart3,
@@ -99,9 +100,9 @@ const AnalyticsOverview = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: "Calendar",
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      borderColor: "border-blue-200",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
       description: "Events created",
     },
     {
@@ -110,9 +111,9 @@ const AnalyticsOverview = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: "Users",
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      borderColor: "border-green-200",
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
       description: "Registered attendees",
     },
     {
@@ -121,9 +122,9 @@ const AnalyticsOverview = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: "DollarSign",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100",
-      borderColor: "border-emerald-200",
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
       description: "Revenue generated",
     },
     {
@@ -132,9 +133,9 @@ const AnalyticsOverview = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: "Mic",
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
-      borderColor: "border-purple-200",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
       description: "Event speakers",
     },
     {
@@ -143,9 +144,9 @@ const AnalyticsOverview = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: "Building2",
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
-      borderColor: "border-orange-200",
+      color: "text-warning",
+      bgColor: "bg-warning/10",
+      borderColor: "border-warning/20",
       description: "Event exhibitors",
     },
     {
@@ -156,9 +157,9 @@ const AnalyticsOverview = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: "TrendingUp",
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-100",
-      borderColor: "border-indigo-200",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
       description: "View to registration",
     },
   ] : [];
@@ -276,22 +277,22 @@ const AnalyticsOverview = () => {
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case "positive":
-        return "text-green-600 bg-green-100 border-green-200";
+        return "text-success bg-success-light border-success/20";
       case "negative":
-        return "text-red-600 bg-red-100 border-red-200";
+        return "text-destructive bg-destructive/10 border-destructive/20";
       default:
-        return "text-blue-600 bg-blue-100 border-blue-200";
+        return "text-primary bg-primary/10 border-primary/20";
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge variant="secondary" className="bg-success-light text-success">Completed</Badge>;
       case "upcoming":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Upcoming</Badge>;
+        return <Badge variant="secondary" className="bg-primary/10 text-primary">Upcoming</Badge>;
       case "active":
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Active</Badge>;
+        return <Badge variant="secondary" className="bg-warning/10 text-warning">Active</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -301,7 +302,7 @@ const AnalyticsOverview = () => {
     return (
       <OrganizerLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading analytics...</span>
         </div>
       </OrganizerLayout>
@@ -326,8 +327,8 @@ const AnalyticsOverview = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Analytics Overview</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-page-title">Analytics Overview</h1>
+            <p className="text-page-subtitle mt-1">
               Comprehensive insights into your event performance and audience engagement
             </p>
           </div>

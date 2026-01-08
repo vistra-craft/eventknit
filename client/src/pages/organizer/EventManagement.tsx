@@ -21,7 +21,6 @@ import {
   X,
   MoreHorizontal,
   Copy,
-  Loader2,
   AlertCircle,
   Mail,
   Plus,
@@ -31,6 +30,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Loader, ButtonLoader } from "../../components/ui/loader";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
@@ -215,7 +215,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: { eventId: string; e
               <Button onClick={handleSendMessage} disabled={sending}>
                 {sending ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <ButtonLoader />
                     Sending...
                   </>
                 ) : (
@@ -438,7 +438,7 @@ const EventManagement = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
+          <Loader size="lg" className="mx-auto mb-4" />
           <p className="text-muted-foreground">Loading event data...</p>
         </div>
       </div>
@@ -1604,7 +1604,7 @@ const EventManagement = () => {
             >
               {cancelling ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <ButtonLoader />
                   Cancelling...
                 </>
               ) : (

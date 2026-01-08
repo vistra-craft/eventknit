@@ -128,16 +128,16 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventData: propEventD
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'ongoing': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'upcoming': return 'bg-primary/10 text-primary';
+      case 'ongoing': return 'bg-success-light text-success';
+      case 'completed': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
         {/* Breadcrumb */}
         <div className="mb-6">
           <Link 
@@ -164,7 +164,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventData: propEventD
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold mb-2">{eventData.title}</h1>
+                  <h1 className="text-page-title mb-2">{eventData.title}</h1>
                   <Badge className={`${getStatusColor(eventData.status || 'upcoming')} border-0`}>
                     {(eventData.status || 'upcoming').charAt(0).toUpperCase() + (eventData.status || 'upcoming').slice(1)}
                   </Badge>
@@ -225,7 +225,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventData: propEventD
 
           <TabsContent value="overview" className="mt-0">
             <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Event Overview</h2>
+              <h2 className="text-section-header mb-4">Event Overview</h2>
               {eventData.description && (
                 <div className="mb-6">
                   <h3 className="font-medium mb-2">Description</h3>

@@ -14,7 +14,6 @@ import {
   CreditCard,
   RefreshCw,
   Search,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
@@ -25,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader } from "@/components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
@@ -427,7 +427,7 @@ const EventDetailsPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading event details...</span>
         </div>
       </AdminLayout>
@@ -451,24 +451,24 @@ const EventDetailsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: "bg-primary/10 text-primary border-primary/20",
-      pending: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      cancelled: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      completed: "bg-primary/10 text-primary border-primary/20"
+      active: "bg-success-light text-success border-success/20",
+      pending: "bg-warning/10 text-warning border-warning/20",
+      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+      completed: "bg-muted text-muted-foreground border-border"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeBadge = (type: string) => {
     return type === "public" 
       ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+      : "bg-secondary/10 text-secondary border-secondary/20";
   };
 
   const getPriceBadge = (price: string) => {
     return price === "free" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-orange-100 text-orange-800 border-orange-200";
+      ? "bg-success-light text-success border-success/20"
+      : "bg-primary/10 text-primary border-primary/20";
   };
 
   const formatCurrency = (amount: number) => {
@@ -757,10 +757,10 @@ const EventDetailsPage = () => {
                         <Badge 
                           className={
                             eventData.organizerDataAccess === 'RESTRICTED' 
-                              ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20'
+                              ? 'bg-warning/10 text-warning border-warning/20'
                               : eventData.organizerDataAccess === 'STANDARD'
-                              ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20'
-                              : 'bg-primary/10 text-primary border-primary/20'
+                              ? 'bg-primary/10 text-primary border-primary/20'
+                              : 'bg-success-light text-success border-success/20'
                           }
                         >
                           {eventData.organizerDataAccess || 'RESTRICTED'}
@@ -790,7 +790,7 @@ const EventDetailsPage = () => {
                           disabled={updatingAccess || eventData.organizerDataAccess === 'RESTRICTED'}
                         >
                           {updatingAccess && eventData.organizerDataAccess !== 'RESTRICTED' ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader size="sm" className="h-4 w-4 mr-2" />
                           ) : null}
                           Set Restricted
                         </Button>
@@ -801,7 +801,7 @@ const EventDetailsPage = () => {
                           disabled={updatingAccess || eventData.organizerDataAccess === 'STANDARD'}
                         >
                           {updatingAccess && eventData.organizerDataAccess !== 'STANDARD' ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader size="sm" className="h-4 w-4 mr-2" />
                           ) : null}
                           Set Standard
                         </Button>
@@ -812,7 +812,7 @@ const EventDetailsPage = () => {
                           disabled={updatingAccess || eventData.organizerDataAccess === 'FULL'}
                         >
                           {updatingAccess && eventData.organizerDataAccess !== 'FULL' ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            <Loader size="sm" className="h-4 w-4 mr-2" />
                           ) : null}
                           Set Full
                         </Button>
@@ -854,7 +854,7 @@ const EventDetailsPage = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Rating</span>
                       <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-accent-coral fill-current" />
+                        <Star className="h-4 w-4 text-warning fill-current" />
                         <span className="text-sm font-medium text-foreground">{eventData.rating}</span>
                       </div>
                     </div>
@@ -953,9 +953,9 @@ const EventDetailsPage = () => {
                           <div>
                             <p className="text-sm font-medium text-foreground">{sponsor.name}</p>
                             <Badge className={`text-xs ${
-                              sponsor.level === 'gold' ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20' :
-                              sponsor.level === 'silver' ? 'bg-gray-100 text-gray-800 border-gray-200' :
-                              'bg-orange-100 text-orange-800 border-orange-200'
+                              sponsor.level === 'gold' ? 'bg-warning/10 text-warning border-warning/20' :
+                              sponsor.level === 'silver' ? 'bg-muted text-muted-foreground border-border' :
+                              'bg-primary/10 text-primary border-primary/20'
                             }`}>
                               {sponsor.level}
                             </Badge>
@@ -989,7 +989,7 @@ const EventDetailsPage = () => {
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-base font-semibold text-accent-coral mb-2">
+                  <div className="text-base font-semibold text-warning mb-2">
                     {registrations.filter(r => r.status === 'PENDING').length}
                   </div>
                   <p className="text-sm text-gray-600">Pending</p>
@@ -1078,19 +1078,19 @@ const EventDetailsPage = () => {
                           </div>
                           <div className="flex items-center gap-4">
                             <Badge className={`text-xs ${
-                              isConfirmed ? 'bg-primary/10 text-primary border-primary/20' :
-                              isPending ? 'bg-accent-coral/10 text-accent-coral border-accent-coral/20' :
-                              'bg-accent-coral/10 text-accent-coral border-accent-coral/20'
+                              isConfirmed ? 'bg-success-light text-success border-success/20' :
+                              isPending ? 'bg-warning/10 text-warning border-warning/20' :
+                              'bg-destructive/10 text-destructive border-destructive/20'
                             }`}>
                               {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : reg.status}
                             </Badge>
                             {reg.ticketType && (
-                              <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                              <Badge className="text-xs bg-primary/10 text-primary border-primary/20">
                                 {reg.ticketType}
                               </Badge>
                             )}
                             {hasPaid && (
-                              <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
+                              <Badge className="text-xs bg-success-light text-success border-success/20">
                                 Paid
                               </Badge>
                             )}
@@ -1132,13 +1132,13 @@ const EventDetailsPage = () => {
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.pendingPayments}</div>
+                  <div className="text-base font-semibold text-warning mb-2">{metrics.pendingPayments}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.failedPayments}</div>
+                  <div className="text-base font-semibold text-destructive mb-2">{metrics.failedPayments}</div>
                   <p className="text-sm text-gray-600">Failed</p>
                 </CardContent>
               </Card>
@@ -1232,10 +1232,10 @@ const EventDetailsPage = () => {
                               <div className="text-sm text-gray-600">{formatDateTime(reg.createdAt)}</div>
                             </div>
                             <Badge className={`text-xs ${
-                              isSuccessful ? 'bg-green-100 text-green-800 border-green-200' :
-                              isPending ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                              isFailed ? 'bg-red-100 text-red-800 border-red-200' :
-                              'bg-gray-100 text-gray-800 border-gray-200'
+                              isSuccessful ? 'bg-success-light text-success border-success/20' :
+                              isPending ? 'bg-warning/10 text-warning border-warning/20' :
+                              isFailed ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                              'bg-muted text-muted-foreground border-border'
                             }`}>
                               {isSuccessful ? 'Completed' : isPending ? 'Pending' : isFailed ? 'Failed' : paymentStatus}
                             </Badge>
@@ -1269,7 +1269,7 @@ const EventDetailsPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-base font-semibold text-accent-coral mb-2">{formatCurrency(metrics.totalRefunds)}</div>
+                  <div className="text-base font-semibold text-success mb-2">{formatCurrency(metrics.totalRefunds)}</div>
                   <p className="text-sm text-gray-600">Total Refunds</p>
                 </CardContent>
               </Card>
@@ -1281,7 +1281,7 @@ const EventDetailsPage = () => {
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.pendingRefunds}</div>
+                  <div className="text-base font-semibold text-warning mb-2">{metrics.pendingRefunds}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
@@ -1320,7 +1320,7 @@ const EventDetailsPage = () => {
               <CardContent>
                 {refundsLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader size="lg" className="h-8 w-8" />
                     <span className="ml-2 text-muted-foreground">Loading refunds...</span>
                   </div>
                 ) : refunds.length > 0 ? (
@@ -1349,20 +1349,20 @@ const EventDetailsPage = () => {
                             )}
                           </div>
                           <Badge className={`text-xs ${
-                            refund.status === 'COMPLETED' || refund.status === 'PROCESSED' ? 'bg-green-100 text-green-800 border-green-200' :
-                            refund.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                            refund.status === 'FAILED' || refund.status === 'REJECTED' ? 'bg-red-100 text-red-800 border-red-200' :
-                            'bg-gray-100 text-gray-800 border-gray-200'
+                            refund.status === 'COMPLETED' || refund.status === 'PROCESSED' ? 'bg-success-light text-success border-success/20' :
+                            refund.status === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' :
+                            refund.status === 'FAILED' || refund.status === 'REJECTED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                            'bg-muted text-muted-foreground border-border'
                           }`}>
                             {refund.status}
                           </Badge>
                           <div className="flex items-center gap-2">
                             {refund.status === 'PENDING' && (
                               <>
-                                <Button variant="outline" size="sm" className="text-primary border-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                                <Button variant="outline" size="sm" className="text-primary border-primary hover:bg-muted">
                                   <CheckCircle className="h-4 w-4" />
                                 </Button>
-                                <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                                <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive/5">
                                   <XCircle className="h-4 w-4" />
                                 </Button>
                               </>
@@ -1412,7 +1412,7 @@ const EventDetailsPage = () => {
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
-                  <div className="text-base font-semibold text-accent-coral mb-2">{metrics.remittancesPending}</div>
+                  <div className="text-base font-semibold text-warning mb-2">{metrics.remittancesPending}</div>
                   <p className="text-sm text-gray-600">Pending</p>
                 </CardContent>
               </Card>
@@ -1479,7 +1479,7 @@ const EventDetailsPage = () => {
               <CardContent>
                 {disbursementsLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader size="lg" className="h-8 w-8" />
                     <span className="ml-2 text-muted-foreground">Loading disbursements...</span>
                   </div>
                 ) : disbursements.length > 0 ? (
@@ -1503,10 +1503,10 @@ const EventDetailsPage = () => {
                             <div className="text-sm text-gray-600">{formatDateTime(disbursement.createdAt)}</div>
                           </div>
                           <Badge className={`text-xs ${
-                            disbursement.status === 'COMPLETED' || disbursement.status === 'PROCESSED' ? 'bg-green-100 text-green-800 border-green-200' :
-                            disbursement.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                            disbursement.status === 'FAILED' ? 'bg-red-100 text-red-800 border-red-200' :
-                            'bg-gray-100 text-gray-800 border-gray-200'
+                            disbursement.status === 'COMPLETED' || disbursement.status === 'PROCESSED' ? 'bg-success-light text-success border-success/20' :
+                            disbursement.status === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' :
+                            disbursement.status === 'FAILED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                            'bg-muted text-muted-foreground border-border'
                           }`}>
                             {disbursement.status}
                           </Badge>
@@ -1608,7 +1608,7 @@ const EventDetailsPage = () => {
             {scanConfigLoading ? (
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-12 text-center">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                  <Loader size="lg" className="w-6 h-6 mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">Loading scan settings...</p>
                 </CardContent>
               </Card>
@@ -1750,7 +1750,7 @@ const EventDetailsPage = () => {
                     >
                       {scanConfigSaving ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Loader size="sm" className="w-4 h-4 mr-2" />
                           Saving...
                         </>
                       ) : (

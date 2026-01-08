@@ -702,7 +702,7 @@ const OrganizerSettingsPage = () => {
 
       {/* Organizer-Specific Information */}
       <div className="border-t pt-6 mt-6">
-        <h3 className="text-lg font-semibold mb-4">Organizer Information</h3>
+        <h3 className="text-section-header mb-4">Organizer Information</h3>
         
         <div>
           <Label htmlFor="organizationName">Organization Name</Label>
@@ -745,7 +745,7 @@ const OrganizerSettingsPage = () => {
 
       {/* Account Information */}
       <div className="border-t pt-6 mt-6">
-        <h3 className="text-lg font-semibold mb-4">Account Information</h3>
+        <h3 className="text-section-header mb-4">Account Information</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -764,7 +764,7 @@ const OrganizerSettingsPage = () => {
             <Label>Account Status</Label>
             <div className="mt-1">
               {accountInfo.status === UserStatus.ACTIVE ? (
-                <Badge className="bg-success text-white">Active</Badge>
+                <Badge className="bg-success-light text-success">Active</Badge>
               ) : accountInfo.status === UserStatus.SUSPENDED ? (
                 <Badge variant="destructive">Suspended</Badge>
               ) : accountInfo.status === UserStatus.DEACTIVATED ? (
@@ -819,7 +819,7 @@ const OrganizerSettingsPage = () => {
   const renderNotificationSettings = () => (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Email Notifications</h3>
+        <h3 className="text-section-header">Email Notifications</h3>
         
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -929,7 +929,7 @@ const OrganizerSettingsPage = () => {
   const renderSecuritySettings = () => (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Account Security</h3>
+        <h3 className="text-section-header">Account Security</h3>
         
         <div className="flex items-center justify-between">
           <div>
@@ -957,7 +957,7 @@ const OrganizerSettingsPage = () => {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Password</h3>
+        <h3 className="text-section-header">Password</h3>
         
         <div>
           <Label htmlFor="currentPassword">Current Password</Label>
@@ -1082,7 +1082,7 @@ const OrganizerSettingsPage = () => {
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Session Settings</h3>
+        <h3 className="text-section-header">Session Settings</h3>
         
         <div>
           <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
@@ -1126,8 +1126,8 @@ const OrganizerSettingsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-page-title">Settings</h1>
+            <p className="text-page-subtitle">
               Manage your account settings and preferences
             </p>
           </div>

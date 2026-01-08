@@ -14,7 +14,6 @@ import {
   Calendar,
   BarChart3,
   Users,
-  Loader2,
   Plus,
   Edit,
   Trash2,
@@ -23,6 +22,8 @@ import {
   DollarSign,
   MessageSquare,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
+import { ButtonLoader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
 import { 
   getOrganizerStaff, 
@@ -78,13 +79,13 @@ const RolesPermissions = () => {
       id: 'ORGANIZER_STAFF',
       name: 'Staff Member',
       description: 'Basic staff members with scanning and check-in permissions',
-      color: 'bg-blue-100 text-blue-800'
+      color: 'bg-primary/10 text-primary'
     },
     {
       id: 'ORGANIZER_TELLER',
       name: 'Teller',
       description: 'Staff members who can handle ticket sales and scanning',
-      color: 'bg-purple-100 text-purple-800'
+      color: 'bg-primary/10 text-primary'
     }
   ];
 
@@ -177,15 +178,15 @@ const RolesPermissions = () => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'events': return 'bg-purple-50 text-purple-700';
-      case 'attendees': return 'bg-blue-50 text-blue-700';
-      case 'tickets': return 'bg-green-50 text-green-700';
-      case 'analytics': return 'bg-orange-50 text-orange-700';
-      case 'financial': return 'bg-yellow-50 text-yellow-700';
-      case 'team': return 'bg-indigo-50 text-indigo-700';
-      case 'communication': return 'bg-pink-50 text-pink-700';
-      case 'settings': return 'bg-gray-50 text-gray-700';
-      default: return 'bg-gray-50 text-gray-700';
+      case 'events': return 'bg-primary/10 text-primary';
+      case 'attendees': return 'bg-primary/10 text-primary';
+      case 'tickets': return 'bg-success-light text-success';
+      case 'analytics': return 'bg-warning/10 text-warning';
+      case 'financial': return 'bg-warning/10 text-warning';
+      case 'team': return 'bg-primary/10 text-primary';
+      case 'communication': return 'bg-primary/10 text-primary';
+      case 'settings': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -356,8 +357,8 @@ const RolesPermissions = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Roles & Permissions</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-page-title mb-2">Roles & Permissions</h1>
+          <p className="text-page-subtitle">
             Manage custom roles and permissions for your team members. System roles cannot be modified.
           </p>
         </div>
@@ -366,7 +367,6 @@ const RolesPermissions = () => {
             setFormData({ name: '', description: '', permissionKeys: [] });
             setShowCreateDialog(true);
           }}
-          className="bg-accent-neon hover:bg-accent-neon/80 text-primary"
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Custom Role
@@ -382,7 +382,7 @@ const RolesPermissions = () => {
           <CardContent>
             {loading || permissionsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <Loader size="md" />
               </div>
             ) : (
               <div className="space-y-4">
@@ -458,7 +458,7 @@ const RolesPermissions = () => {
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2">
                                   <h3 className="font-medium text-foreground">{role.name}</h3>
-                                  <Badge variant="outline" className="text-xs bg-indigo-100 text-indigo-800">
+                                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary">
                                     {staffCount} {staffCount === 1 ? 'staff' : 'staff'}
                                   </Badge>
                                   <Badge variant="outline" className="text-xs">
@@ -558,7 +558,7 @@ const RolesPermissions = () => {
                         {(selectedRoleData as TeamRoleTemplate).description || 'No description provided'}
                       </p>
                       <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className="text-xs bg-indigo-100 text-indigo-800">
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary">
                           {getCustomRoleStaffCount((selectedRoleData as TeamRoleTemplate).id)} staff members
                         </Badge>
                         <Badge variant="outline" className="text-xs">
@@ -628,7 +628,7 @@ const RolesPermissions = () => {
         <CardContent>
           {permissionsLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader size="md" />
             </div>
           ) : (
             <div className="space-y-4">
@@ -740,7 +740,7 @@ const RolesPermissions = () => {
               Cancel
             </Button>
             <Button onClick={handleCreateRole} disabled={submitting || !formData.name.trim()}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {submitting && <ButtonLoader />}
               Create Role
             </Button>
           </DialogFooter>
@@ -826,7 +826,7 @@ const RolesPermissions = () => {
               Cancel
             </Button>
             <Button onClick={handleEditRole} disabled={submitting || !formData.name.trim()}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {submitting && <ButtonLoader />}
               Save Changes
             </Button>
           </DialogFooter>
@@ -841,10 +841,10 @@ const RolesPermissions = () => {
             <DialogDescription>
               Are you sure you want to delete "{deletingRole?.name}"? This action cannot be undone.
               {deletingRole && getCustomRoleStaffCount(deletingRole.id) > 0 && (
-                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="mt-2 p-3 bg-warning/10 border border-warning/20 rounded-md">
                   <div className="flex items-start space-x-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
-                    <div className="text-sm text-yellow-800">
+                    <AlertCircle className="h-4 w-4 text-warning mt-0.5" />
+                    <div className="text-sm text-foreground">
                       <strong>Warning:</strong> {getCustomRoleStaffCount(deletingRole.id)} staff member(s) are assigned to this role. 
                       They will lose their custom role assignment.
                     </div>
@@ -865,7 +865,7 @@ const RolesPermissions = () => {
               onClick={handleDeleteRole} 
               disabled={submitting}
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {submitting && <ButtonLoader />}
               Delete Role
             </Button>
           </DialogFooter>

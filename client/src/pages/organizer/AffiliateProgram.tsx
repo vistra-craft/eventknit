@@ -155,7 +155,7 @@ const AffiliateProgram = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Affiliate Program</h1>
+            <h1 className="text-page-title">Affiliate Program</h1>
             <p className="text-muted-foreground mt-1">
               Create affiliate programs and track performance
             </p>

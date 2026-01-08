@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, Loader2, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -12,11 +12,13 @@ import { Textarea } from "../../../components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
+import { Loader } from "../../../components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { approveEvent, rejectEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
+import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;
@@ -158,15 +160,13 @@ const PendingApprovalPage = () => {
   const categories = Array.from(new Set(events.map(e => e.category).filter(Boolean)));
 
   const getTypeBadge = (type: string) => {
-    return type === "public" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-accent-coral/10 text-accent-coral border-accent-coral/20";
+    return getEventTypeBadgeClass(type);
   };
 
   const getPriceBadge = (price: string) => {
     return price === "free" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-muted text-muted-foreground border-border";
+      ? getPriceBadgeClass(true)
+      : getPriceBadgeClass(false);
   };
 
   const handleApproveClick = (event: Event) => {
@@ -269,7 +269,7 @@ const PendingApprovalPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading pending events...</span>
         </div>
       </AdminLayout>
@@ -382,7 +382,7 @@ const PendingApprovalPage = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
-                      <Badge className="bg-accent-coral/10 text-accent-coral border-accent-coral/20 text-xs">
+                      <Badge className={`${getEventStatusBadgeClass('pending')} text-xs`}>
                         Pending
                       </Badge>
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
@@ -413,13 +413,13 @@ const PendingApprovalPage = () => {
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-sm text-muted-foreground">by {event.organizer}</p>
                       {!event.isFree && !event.organizerVerified && (
-                        <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs flex items-center gap-1">
+                        <Badge className="bg-warning/10 text-warning border-warning/20 text-xs flex items-center gap-1">
                           <Shield className="h-3 w-3" />
                           Unverified Organizer
                         </Badge>
                       )}
                       {!event.isFree && event.organizerVerified && (
-                        <Badge className="bg-green-100 text-green-800 border-green-200 text-xs flex items-center gap-1">
+                        <Badge className="bg-success-light text-success border-success/20 text-xs flex items-center gap-1">
                           <Shield className="h-3 w-3" />
                           Verified
                         </Badge>
@@ -428,7 +428,7 @@ const PendingApprovalPage = () => {
                     <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/admin/events/${event.id}/preview`)} className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/admin/events/${event.id}/preview`)} className="border-primary text-primary hover:bg-muted">
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
                     </Button>
@@ -440,7 +440,7 @@ const PendingApprovalPage = () => {
                       className="bg-primary hover:bg-primary/90 text-white"
                     >
                       {processing === event.id ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        <Loader size="sm" className="h-4 w-4 mr-1" />
                       ) : (
                         <Check className="h-4 w-4 mr-1" />
                       )}
@@ -457,7 +457,7 @@ const PendingApprovalPage = () => {
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-primary hover:bg-accent-coral hover:text-white">
+                          <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -602,7 +602,7 @@ const PendingApprovalPage = () => {
               >
                 {processing === eventToApprove?.id ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader size="sm" className="h-4 w-4 mr-2" />
                     Approving...
                   </>
                 ) : (
@@ -644,7 +644,7 @@ const PendingApprovalPage = () => {
               >
                 {processing === selectedEventId ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader size="sm" className="h-4 w-4 mr-2" />
                     Rejecting...
                   </>
                 ) : (

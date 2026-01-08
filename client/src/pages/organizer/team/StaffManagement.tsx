@@ -19,7 +19,6 @@ import {
   Phone,
   Edit,
   Trash2,
-  Loader2,
   BarChart3,
   Users,
   Calendar,
@@ -27,6 +26,8 @@ import {
   Target,
   RefreshCw,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
+import { ButtonLoader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
@@ -344,10 +345,10 @@ const StaffManagement = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return "bg-green-100 text-green-800";
-      case 'SUSPENDED': return "bg-yellow-100 text-yellow-800";
-      case 'DEACTIVATED': return "bg-gray-100 text-gray-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'ACTIVE': return "bg-success-light text-success";
+      case 'SUSPENDED': return "bg-warning/10 text-warning";
+      case 'DEACTIVATED': return "bg-muted text-muted-foreground";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
@@ -362,11 +363,11 @@ const StaffManagement = () => {
   const getCoverageBadge = (status: "adequate" | "understaffed" | "overstaffed") => {
     switch (status) {
       case "adequate":
-        return <Badge className="bg-green-500">Adequate</Badge>;
+        return <Badge className="bg-success-light text-success">Adequate</Badge>;
       case "understaffed":
-        return <Badge className="bg-red-500">Understaffed</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive">Understaffed</Badge>;
       case "overstaffed":
-        return <Badge className="bg-yellow-500">Overstaffed</Badge>;
+        return <Badge className="bg-warning/10 text-warning">Overstaffed</Badge>;
     }
   };
 
@@ -378,15 +379,15 @@ const StaffManagement = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Staff Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-page-title mb-2">Staff Management</h1>
+          <p className="text-page-subtitle">
             Manage your event staff and track performance
           </p>
         </div>
         {activeTab === "staff" && (
         <Button 
-          className="bg-accent-neon hover:bg-accent-neon/80 text-primary w-full sm:w-auto"
             onClick={() => setShowAddDialog(true)}
+            className="w-full sm:w-auto"
         >
           <UserPlus className="h-4 w-4 mr-2" />
           Add Staff
@@ -438,7 +439,7 @@ const StaffManagement = () => {
                     <p className="text-sm font-medium text-muted-foreground">Active Staff</p>
                     <p className="text-2xl font-bold text-foreground">{activeStaffCount}</p>
               </div>
-                  <CheckCircle className="h-8 w-8 text-green-500" />
+                  <CheckCircle className="h-8 w-8 text-success" />
             </div>
           </CardContent>
         </Card>
@@ -537,7 +538,7 @@ const StaffManagement = () => {
         <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader size="md" />
                 </div>
               ) : paginatedStaff.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -560,7 +561,7 @@ const StaffManagement = () => {
                                   {member.firstName} {member.lastName}
                                 </h3>
                                 {member.isEmailVerified && (
-                        <Badge className="bg-green-100 text-green-800 text-xs">
+                        <Badge className="bg-success-light text-success text-xs">
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     Verified
                         </Badge>
@@ -583,7 +584,7 @@ const StaffManagement = () => {
                         {getRoleLabel(member.role)}
                       </Badge>
                       {member.customRole && (
-                        <Badge variant="outline" className="text-xs bg-indigo-100 text-indigo-800 border-indigo-300">
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary">
                           {member.customRole.name}
                         </Badge>
                       )}
@@ -648,8 +649,8 @@ const StaffManagement = () => {
           {/* Performance Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h2 className={`${isMobile ? "text-2xl" : "text-3xl"} font-bold`}>Staff Performance</h2>
-              <p className={`${isMobile ? "text-sm" : ""} text-muted-foreground`}>
+              <h2 className={`${isMobile ? "text-xl" : "text-section-header"}`}>Staff Performance</h2>
+              <p className={`${isMobile ? "text-xs" : "text-sm"} text-muted-foreground`}>
                 Track staff efficiency and ticket scanning metrics
               </p>
             </div>
@@ -696,7 +697,7 @@ const StaffManagement = () => {
 
           {performanceLoading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              <Loader size="lg" />
             </div>
           ) : (
             <>
@@ -937,7 +938,7 @@ const StaffManagement = () => {
                         <CardTitle className={isMobile ? "text-lg" : ""}>With Staff</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-green-600">{coverage.eventsWithStaff}</div>
+                        <div className="text-3xl font-bold text-success">{coverage.eventsWithStaff}</div>
                       </CardContent>
                     </Card>
 
@@ -946,7 +947,7 @@ const StaffManagement = () => {
                         <CardTitle className={isMobile ? "text-lg" : ""}>Without Staff</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold text-red-600">{coverage.eventsWithoutStaff}</div>
+                        <div className="text-3xl font-bold text-destructive">{coverage.eventsWithoutStaff}</div>
                       </CardContent>
                     </Card>
 
@@ -1169,14 +1170,8 @@ const StaffManagement = () => {
               Cancel
             </Button>
             <Button onClick={handleAddStaff} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Staff"
-              )}
+              {submitting && <ButtonLoader />}
+              {submitting ? "Creating..." : "Create Staff"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1271,14 +1266,8 @@ const StaffManagement = () => {
               Cancel
             </Button>
             <Button onClick={handleEditStaff} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Staff"
-              )}
+              {submitting && <ButtonLoader />}
+              {submitting ? "Updating..." : "Update Staff"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1298,14 +1287,8 @@ const StaffManagement = () => {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteStaff} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
+              {submitting && <ButtonLoader />}
+              {submitting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
