@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader } from "@/components/ui/loader";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
 import { getOrganizerDashboardStats, getOrganizerDashboardEvents, getSubscription, type OrganizerDashboardEvent, type OrganizerSubscription } from "../../lib/organizer-api";
 import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
@@ -187,9 +190,9 @@ const EnhancedDashboard = () => {
       <div>
         {/* Success Message */}
         {successMessage && (
-          <Alert className="mb-6 border-green-500/20 bg-green-500/10">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700 dark:text-green-400">
+          <Alert className="mb-6 border-success/20 bg-success-light">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <AlertDescription className="text-success">
               {successMessage}
             </AlertDescription>
           </Alert>
@@ -197,10 +200,10 @@ const EnhancedDashboard = () => {
 
         {/* Verification Reminder */}
         {showVerificationReminder && verificationReminder && (
-          <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-            <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <Alert className="mb-6 border-primary/20 bg-primary/5">
+            <Shield className="h-4 w-4 text-primary" />
             <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-blue-900 dark:text-blue-100 flex-1">
+              <span className="text-foreground flex-1">
                 <strong>Verification Required:</strong> {verificationReminder}
               </span>
               <div className="flex items-center gap-2">
@@ -208,11 +211,10 @@ const EnhancedDashboard = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    navigate('/organizer/verification', { 
-                      state: { redirectAfterVerification: '/organizer/dashboard' } 
+                    navigate('/organizer/verification', {
+                      state: { redirectAfterVerification: '/organizer/dashboard' }
                     });
                   }}
-                  className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
                 >
                   Verify Identity
                 </Button>
@@ -220,7 +222,6 @@ const EnhancedDashboard = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowVerificationReminder(false)}
-                  className="text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -233,33 +234,31 @@ const EnhancedDashboard = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-lg sm:text-xl font-semibold text-foreground">Dashboard Overview</h1>
+              <h1 className="text-page-title">Dashboard Overview</h1>
               {!subscriptionLoading && subscription && (
                 <SubscriptionTierBadge tier={subscription.tier} size="sm" />
               )}
             </div>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <p className="text-page-subtitle">
               Welcome back! Here's what's happening with your events.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="px-3 py-2 border border-primary rounded-lg text-sm focus:ring-2 focus:ring-accent-coral focus:border-accent-coral bg-white text-foreground hover:bg-accent-coral hover:text-white transition-colors"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="1y">Last year</option>
-            </select>
-            <Link
-              to="/organizer/events/create"
-              className="bg-accent-coral hover:bg-accent-coral/90 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
-            >
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+                <SelectItem value="1y">Last year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => navigate("/organizer/events/create")}>
               <Plus className="h-4 w-4 mr-2" />
               Create Event
-            </Link>
+            </Button>
           </div>
         </div>
 
@@ -282,17 +281,16 @@ const EnhancedDashboard = () => {
             const daysUntilExpiry = Math.ceil((expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
             if (daysUntilExpiry <= 7 && daysUntilExpiry > 0) {
               return (
-                <Alert className="mb-6 border-orange-200 bg-orange-50">
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                <Alert className="mb-6 border-destructive/20 bg-destructive/5">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
                   <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-orange-900 flex-1">
+                    <span className="text-foreground flex-1">
                       <strong>Premium Subscription Expiring:</strong> Your Premium subscription expires in {daysUntilExpiry} {daysUntilExpiry === 1 ? 'day' : 'days'} on {expiryDate.toLocaleDateString()}.
                     </span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => navigate('/organizer/subscription')}
-                      className="border-orange-300 text-orange-700 hover:bg-orange-100"
                     >
                       Manage Subscription
                     </Button>
@@ -308,79 +306,81 @@ const EnhancedDashboard = () => {
         {/* Main Content */}
         <div className="space-y-8">
           {/* Quick Actions */}
-          <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all p-6">
-            <h3 className="text-base font-semibold text-foreground mb-4">
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="flex items-center p-4 border border-primary rounded-lg bg-card-surface">
-                <div className="w-10 h-10 bg-accent-electric/10 rounded-lg flex items-center justify-center mr-3">
-                  <Calendar className="h-5 w-5 text-accent-electric" />
+          <Card className="border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <h3 className="text-card-title mb-4">
+                Quick Actions
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex items-center p-4 border border-border rounded-lg bg-card-surface">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Total Events</p>
+                    <p className="text-sm text-muted-foreground">{totalEvents} {totalEvents === 1 ? 'event' : 'events'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-foreground">Total Events</p>
-                  <p className="text-sm text-muted-foreground">{totalEvents} {totalEvents === 1 ? 'event' : 'events'}</p>
-                </div>
+
+                <Link
+                  to="/organizer/analytics"
+                  className="flex items-center p-4 border border-border rounded-lg hover:border-primary/30 hover:bg-muted transition-colors duration-200"
+                >
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">View Analytics</p>
+                    <p className="text-sm text-muted-foreground">Performance insights</p>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/organizer/attendees"
+                  className={`flex items-center p-4 border border-border rounded-lg hover:border-primary/30 hover:bg-muted transition-colors duration-200 ${subscription?.tier === 'BASIC' ? 'relative' : ''}`}
+                >
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground flex items-center gap-2">
+                      Manage Attendees
+                      {subscription?.tier === 'BASIC' && (
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      )}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {subscription?.tier === 'BASIC' ? 'Upgrade to view' : 'View and manage'}
+                    </p>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/organizer/tickets/scanner"
+                  className="flex items-center p-4 border border-border rounded-lg hover:border-primary/30 hover:bg-muted transition-colors duration-200"
+                >
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Ticket Scanner</p>
+                    <p className="text-sm text-muted-foreground">Check-in attendees</p>
+                  </div>
+                </Link>
               </div>
-
-              <Link
-                to="/organizer/analytics"
-                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">View Analytics</p>
-                  <p className="text-sm text-muted-foreground">Performance insights</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/organizer/attendees"
-                className={`flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200 ${subscription?.tier === 'BASIC' ? 'relative' : ''}`}
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground flex items-center gap-2">
-                    Manage Attendees
-                    {subscription?.tier === 'BASIC' && (
-                      <Lock className="h-3 w-3 text-muted-foreground" />
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {subscription?.tier === 'BASIC' ? 'Upgrade to view' : 'View and manage'}
-                  </p>
-                </div>
-              </Link>
-
-              <Link
-                to="/organizer/tickets/scanner"
-                className="flex items-center p-4 border border-primary rounded-lg hover:border-accent-coral hover:bg-accent-coral hover:text-white transition-colors duration-200"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                  <Calendar className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Ticket Scanner</p>
-                  <p className="text-sm text-muted-foreground">Check-in attendees</p>
-                </div>
-              </Link>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Insights Cards Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Performance Insights */}
-            <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-              <div className="p-6 border-b border-border">
-                <h3 className="text-base font-semibold text-foreground">
+            <Card className="border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="border-b border-border">
+                <CardTitle>
                   Performance Insights
-                </h3>
-              </div>
-              <div className="p-6 space-y-4">
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-foreground">Best Performing Event</p>
@@ -402,7 +402,7 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">Last 30 days</p>
                   </div>
                   <div className="text-right">
-                    <p className={`text-sm font-bold ${(performanceInsights?.revenueGrowth.percentage || 0) >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                    <p className={`text-sm font-bold ${(performanceInsights?.revenueGrowth.percentage || 0) >= 0 ? 'text-primary' : 'text-destructive'}`}>
                       {(performanceInsights?.revenueGrowth.percentage || 0) >= 0 ? '+' : ''}
                       {performanceInsights?.revenueGrowth.percentage.toFixed(0) || '0'}%
                     </p>
@@ -424,17 +424,17 @@ const EnhancedDashboard = () => {
                     <p className="text-xs text-muted-foreground">capacity</p>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Upcoming Deadlines */}
-            <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-              <div className="p-6 border-b border-border">
-                <h3 className="text-base font-semibold text-foreground">
+            <Card className="border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="border-b border-border">
+                <CardTitle>
                   Upcoming Deadlines
-                </h3>
-              </div>
-              <div className="p-6 space-y-4">
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
                 {upcomingDeadlines.length > 0 ? (
                   upcomingDeadlines.slice(0, 3).map((deadline, index) => {
                     const formatDeadlineType = (type: string) => {
@@ -475,7 +475,7 @@ const EnhancedDashboard = () => {
                           <p className="text-xs text-muted-foreground">{deadline.eventTitle}</p>
                         </div>
                         <div className="text-right">
-                          <p className={`text-sm font-bold ${isUrgent ? 'text-accent-coral' : 'text-primary'}`}>
+                          <p className={`text-sm font-bold ${isUrgent ? 'text-destructive' : 'text-primary'}`}>
                             {formatDaysRemaining(deadline.daysRemaining)}
                           </p>
                           <p className="text-xs text-muted-foreground">left</p>
@@ -488,17 +488,17 @@ const EnhancedDashboard = () => {
                     <p className="text-sm text-muted-foreground">No upcoming deadlines</p>
                   </div>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Event Health Score */}
-            <div className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-              <div className="p-6 border-b border-border">
-                <h3 className="text-base font-semibold text-foreground">
+            <Card className="border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="border-b border-border">
+                <CardTitle>
                   Event Health Score
-                </h3>
-              </div>
-              <div className="p-6">
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
                 <div className="text-center mb-4">
                   <div className="w-20 h-20 mx-auto bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center mb-2">
                     <span className="text-xl font-bold text-white">
@@ -543,8 +543,8 @@ const EnhancedDashboard = () => {
                     <span className="text-sm text-muted-foreground">Sponsor Engagement</span>
                     <div className="flex items-center gap-2">
                       <div className="w-16 h-2 bg-muted rounded-full">
-                        <div 
-                          className={`h-full rounded-full ${(healthScore?.components.sponsorEngagement || 0) >= 90 ? 'bg-accent-coral' : 'bg-primary'}`}
+                        <div
+                          className={`h-full rounded-full ${(healthScore?.components.sponsorEngagement || 0) >= 90 ? 'bg-primary' : 'bg-primary'}`}
                           style={{ width: `${Math.min(healthScore?.components.sponsorEngagement || 0, 100)}%` }}
                         ></div>
                       </div>
@@ -554,17 +554,17 @@ const EnhancedDashboard = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* My Events Section */}
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold text-foreground">My Events</h2>
+              <h2 className="text-section-header">My Events</h2>
               <Link
                 to="/organizer/events"
-                className="text-primary hover:text-accent-coral font-medium text-sm flex items-center transition-colors"
+                className="text-primary hover:text-primary/80 font-medium text-sm flex items-center transition-colors"
               >
                 View all events
                 <ArrowUpRight className="h-4 w-4 ml-1" />
@@ -574,7 +574,8 @@ const EnhancedDashboard = () => {
             {/* Events Grid */}
             {loading ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Loading events...</p>
+                <Loader size="default" />
+                <p className="text-muted-foreground mt-4">Loading events...</p>
               </div>
             ) : recentEvents.length > 0 ? (
               <>
@@ -588,7 +589,7 @@ const EnhancedDashboard = () => {
                   <div ref={loadMoreRef} className="py-8 text-center">
                     {loadingMore && (
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <Loader size="sm" />
                         <span>Loading more events...</span>
                       </div>
                     )}
