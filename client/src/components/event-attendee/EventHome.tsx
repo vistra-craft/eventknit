@@ -129,7 +129,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
 
         {/* Hero Content */}
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-          <div className="px-4 sm:px-6">
+          <div className="container mx-auto max-w-7xl">
             <div className="max-w-4xl">
               {/* Event Title & Hashtag */}
               <div className="mb-4">
