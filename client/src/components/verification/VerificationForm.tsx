@@ -16,7 +16,7 @@ import {
   type IdentityVerificationData,
   type BusinessVerificationData
 } from '@/lib/verification-api';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 // File uploads use base64 encoding
 
 interface VerificationFormProps {

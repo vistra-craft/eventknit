@@ -12,19 +12,20 @@ declare global {
     };
   }
 }
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import Logo from '@/components/Logo';
+import { Eye, EyeOff } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
 import { useAuth } from '@/hooks/useAuth';
+import BackButton from '@/components/BackButton';
+import Logo from '@/components/Logo';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, facebookAuth, googleAuth } from '@/lib/auth-api';
 import loginImage from '@/assets/login.jpeg';
 
 const SignIn = () => {
-  const navigate = useNavigate();
   const { login, isLoading, error: authError, clearError, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [emailOAuthEmail, setEmailOAuthEmail] = useState('');
@@ -204,20 +205,20 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex flex-col">
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-5xl mx-auto">
-          <div className="bg-card-surface rounded-2xl overflow-hidden flex flex-col lg:flex-row min-h-[420px] max-h-[600px]">
+          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row min-h-[420px] max-h-[600px]">
           {/* Left Panel - Image with Overlay */}
           <div className="hidden lg:flex lg:w-1/2 relative">
-            <img 
-              src={loginImage} 
-              alt="Welcome to EventKnit" 
+            <img
+              src={loginImage}
+              alt="Welcome to EventKnit"
               className="w-full h-full object-cover"
             />
             {/* Overlay Text - Centered */}
-            <div className="absolute inset-0 flex items-center justify-center p-8">
+            <div className="absolute inset-0 flex items-center justify-center p-8 bg-black/30">
               <div className="text-center">
                 <h2 className="text-white text-3xl font-bold mb-2">Your Event Management Hub</h2>
                 <p className="text-white/90 text-lg">Sign in to manage your events and ticketing</p>
@@ -228,20 +229,13 @@ const SignIn = () => {
           {/* Right Panel - Sign In Form */}
           <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8">
             <div className="w-full max-w-md mx-auto">
-              {/* Logo at top */}
+              {/* Header */}
               <div className="mb-6">
-                <div className="flex items-center justify-between gap-4 mb-2">
-                  <Logo className="inline-flex items-center gap-2" />
-                  <button
-                    type="button"
-                    onClick={() => navigate('/')}
-                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
-                  >
-                    <ArrowLeft className="w-3 h-3" />
-                    <span>Back to home</span>
-                  </button>
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <BackButton to="/" label="Back to home" />
+                  <Logo />
                 </div>
-                <h1 className="text-2xl font-bold text-primary mb-1">Log in to your account</h1>
+                <h1 className="text-2xl font-bold text-foreground mb-1">Log in to your account</h1>
                 <p className="text-sm text-muted-foreground">Welcome back! Please enter your details.</p>
               </div>
 
@@ -249,12 +243,12 @@ const SignIn = () => {
               <div className="mb-6 flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 bg-card-surface border border-border hover:bg-accent-coral hover:text-white text-foreground font-medium flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 h-11"
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
                   type="button"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -264,12 +258,12 @@ const SignIn = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 bg-card-surface border border-border hover:bg-accent-coral hover:text-white text-foreground font-medium flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 h-11"
                   onClick={handleFacebookSignIn}
                   disabled={isLoading}
                   type="button"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="#1877F2">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                   </svg>
                   Facebook
@@ -287,7 +281,7 @@ const SignIn = () => {
               </div>
 
               {/* Sign In Form */}
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* OAuth Options - Hidden by default, can be shown if needed */}
                 {(showEmailOAuthForm || emailOAuthCodeSent) && (
                   <div className="space-y-3">
@@ -384,7 +378,7 @@ const SignIn = () => {
                 )}
 
                 {/* Main Sign In Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   {authError && (
                     <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
                       {authError}
@@ -401,7 +395,7 @@ const SignIn = () => {
                       placeholder="letsdesignabrar@gmail.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="h-12 border-border focus:border-primary focus:ring-primary"
+                      className="h-11 border-border focus:border-primary focus:ring-primary"
                       required
                       disabled={isLoading}
                     />
@@ -418,14 +412,14 @@ const SignIn = () => {
                         placeholder="Enter your password"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="h-12 pr-10 border-border focus:border-primary focus:ring-primary"
+                        className="h-11 pr-10 border-border focus:border-primary focus:ring-primary"
                         required
                         disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-primary"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         disabled={isLoading}
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -448,21 +442,32 @@ const SignIn = () => {
                         Remember for 30 days
                       </Label>
                     </div>
-                    <Link
-                      to="/auth/forgot-password"
-                      className="inline-flex items-center px-2 py-1 rounded-md text-sm text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto text-sm"
+                      asChild
                     >
-                      Forgot password?
-                    </Link>
+                      <Link to="/auth/forgot-password">
+                        Forgot password?
+                      </Link>
+                    </Button>
                   </div>
 
                   {/* Log In Button */}
-                  <Button 
-                    type="submit" 
-                    className="w-full h-12 rounded-xl bg-accent-coral hover:bg-accent-coral/90 text-white font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                  <Button
+                    type="submit"
+                    variant="default"
+                    className="w-full h-11"
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Signing in...' : 'Log In'}
+                    {isLoading ? (
+                      <>
+                        <Loader size="sm" className="mr-2" />
+                        Signing in...
+                      </>
+                    ) : (
+                      'Log In'
+                    )}
                   </Button>
                 </form>
 
@@ -470,9 +475,13 @@ const SignIn = () => {
                 <div className="text-center pt-2">
                   <p className="text-sm text-muted-foreground">
                     Don't have an account?{' '}
-                    <Link to="/auth/signup" className="inline-flex items-center px-2 py-1 rounded-md text-primary font-medium hover:bg-accent-coral hover:text-white transition-colors">
-                      Sign up
-                    </Link>
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto font-medium"
+                      asChild
+                    >
+                      <Link to="/auth/signup">Sign up</Link>
+                    </Button>
                   </p>
                 </div>
               </div>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Printer, X, FileDown, Grid, Maximize2 } from 'lucide-react';
-import { Button } from '../../components/ui/button';
+import { Button } from '@/components/ui/button';
 import { usePDF } from 'react-to-pdf';
-import type { TemplateData, TemplateElement } from '../../lib/template-api';
+import type { TemplateData, TemplateElement } from '@/lib/template-api';
 
 interface PrintPreviewProps {
   template: TemplateData;

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import AdminLayout from "../AdminLayout";
 import { getUserById, type User } from "@/lib/admin-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const OrganizerPreviewPage = () => {
   const { organizerId } = useParams<{ organizerId: string }>();

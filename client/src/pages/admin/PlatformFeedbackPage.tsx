@@ -42,7 +42,7 @@ import {
   FeedbackAnalytics,
   FeedbackFilters,
 } from "@/lib/feedback-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const PlatformFeedbackPage: React.FC = () => {
   const [loading, setLoading] = useState(true);

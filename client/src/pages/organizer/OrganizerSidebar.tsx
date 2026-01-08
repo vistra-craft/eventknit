@@ -211,7 +211,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                           className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                             isItemActive
                               ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                              : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
                           }`}
                           title={!isOpen ? item.label : undefined}
                         >
@@ -238,7 +238,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                                 className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
                                   isChildActive(child.href)
                                     ? 'bg-primary/10 text-primary font-medium'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                    : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
                                 }`}
                               >
                                 {child.name}
@@ -256,9 +256,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                       to={item.href!}
                       onClick={handleNavigationClick}
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
-                        isItemActive 
-                          ? 'bg-primary text-primary-foreground' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                        isItemActive
+                          ? 'bg-primary/10 text-primary font-medium'
+                          : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
                       }`}
                       title={!isOpen ? item.label : undefined}
                     >

@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import {
   getEventAttendees,
   getEventConfig,

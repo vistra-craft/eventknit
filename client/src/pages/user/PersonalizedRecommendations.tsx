@@ -7,7 +7,7 @@ import { Loader2, Calendar, MapPin, Users, ArrowRight, Sparkles } from "lucide-r
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { getPersonalizedRecommendations } from "@/lib/user-dashboard-api";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import EmptyState from "@/components/EmptyState";
 
 const PersonalizedRecommendations: React.FC = () => {

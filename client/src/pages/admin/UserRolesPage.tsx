@@ -30,7 +30,7 @@ import AdminLayout from "./AdminLayout";
 import { getRoles, type RoleInfo } from "@/lib/admin-api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole as UserRoleEnum } from "@/types/auth";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useEffect } from "react";
 
 // Define all available pages/permissions based on the website structure

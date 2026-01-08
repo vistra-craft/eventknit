@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Star, ThumbsUp, Plus, X, CheckCircle } from "lucide-react";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { getEventReviews, createEventReview, markReviewHelpful } from "@/lib/user-dashboard-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { Avatar } from "@/components/ui/avatar";
 
 const EventReviews: React.FC = () => {

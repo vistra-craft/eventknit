@@ -1,7 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Users, ArrowLeft, Mail } from 'lucide-react';
+import { Calendar, Users, Mail } from 'lucide-react';
+import BackButton from '@/components/BackButton';
+import Logo from '@/components/Logo';
 
 const UserTypeSelection = () => {
   const navigate = useNavigate();
@@ -25,24 +27,8 @@ const UserTypeSelection = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between gap-4 mb-4">
-            <button
-              type="button"
-              onClick={() => navigate('/auth/email-entry')}
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
-            >
-              <ArrowLeft className="w-3 h-3" />
-              <span>Back to email</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="inline-flex items-center gap-2"
-            >
-              <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">EK</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">EventKnit</span>
-            </button>
+            <BackButton to="/auth/signup" label="Back" />
+            <Logo />
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -84,7 +70,8 @@ const UserTypeSelection = () => {
               </p>
               <Button
                 type="button"
-                className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white text-sm font-medium"
+                variant="default"
+                className="w-full h-11"
               >
                 Continue as attendee
               </Button>
@@ -111,7 +98,8 @@ const UserTypeSelection = () => {
               </p>
               <Button
                 type="button"
-                className="w-full h-11 bg-accent-coral hover:bg-accent-coral/90 text-white text-sm font-medium"
+                variant="default"
+                className="w-full h-11"
               >
                 Continue as organizer
               </Button>

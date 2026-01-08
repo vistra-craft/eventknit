@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 vi.mock('@/lib/ticket-api');
 vi.mock('@/lib/event-api');
 vi.mock('@/hooks/useAuth');
-vi.mock('@/hooks/use-toast', () => ({
+vi.mock('@/hooks/useToast', () => ({
   useToast: () => ({
     toast: vi.fn(),
   }),

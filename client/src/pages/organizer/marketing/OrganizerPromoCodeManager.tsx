@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
 import { getOrganizerEvents } from '@/lib/organizer-api';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import OrganizerLayout from '../OrganizerLayout';
 
 interface OrganizerEvent {

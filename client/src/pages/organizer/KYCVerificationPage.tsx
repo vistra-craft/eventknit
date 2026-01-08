@@ -28,7 +28,7 @@ import {
   type OrganizerDirector,
 } from '@/lib/organizer-api';
 
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 type Step = 'entity-type' | 'directors' | 'documents' | 'review';
 

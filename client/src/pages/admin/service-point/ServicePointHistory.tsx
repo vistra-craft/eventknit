@@ -28,7 +28,7 @@ import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../hooks/useToast";
 
 interface ScanStats {
   totalScans: number;

@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { approveEvent } from "../../../lib/admin-api";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../hooks/useToast";
 
 interface Event {
   id: string;

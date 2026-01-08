@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "./AdminLayout";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { getSettings, setSettings, type SystemSetting } from "@/lib/system-settings-api";
 import { SettingsSection, SettingsField, ThemeSelector, LanguageSelector, TimezoneSelector, DateFormatSelector } from "@/components/settings";
 

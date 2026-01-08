@@ -10,8 +10,16 @@ interface BackButtonProps {
 }
 
 /**
- * Standardized back button component matching the auth page style.
- * Uses ArrowLeft icon with small text, hover effect changes background to accent-coral.
+ * Unified BackButton Component
+ *
+ * A consistent back navigation button used across the application.
+ * Style: text-sm, subtle gray hover background, muted text that darkens on hover.
+ *
+ * Usage:
+ * - <BackButton /> - Goes back one page
+ * - <BackButton to="/dashboard" /> - Navigates to specific route
+ * - <BackButton label="Back to events" /> - Custom label
+ * - <BackButton onClick={() => handleBack()} /> - Custom handler
  */
 const BackButton: React.FC<BackButtonProps> = ({
   to,
@@ -35,9 +43,9 @@ const BackButton: React.FC<BackButtonProps> = ({
     <button
       type="button"
       onClick={handleClick}
-      className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors ${className}`}
+      className={`inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors ${className}`}
     >
-      <ArrowLeft className="w-3 h-3" />
+      <ArrowLeft className="w-4 h-4" />
       <span>{label}</span>
     </button>
   );

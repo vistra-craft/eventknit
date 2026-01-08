@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getSeatMapAvailability, reserveSeats, type Seat, type SeatMap } from '@/lib/venue-api';
 import { Loader2, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 interface SeatMapSelectorProps {
   eventId: string;

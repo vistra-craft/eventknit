@@ -32,8 +32,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
-import { useToast } from '@/hooks/use-toast';
-import AdminLayout from '../../admin/AdminLayout';
+import { useToast } from '@/hooks/useToast';
+import AdminLayout from '@/pages/admin/AdminLayout';
 
 const PromoCodeManager = () => {
   const { toast } = useToast();

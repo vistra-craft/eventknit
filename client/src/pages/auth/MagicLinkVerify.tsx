@@ -6,6 +6,7 @@ import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
 import { verifyMagicLink, requestMagicLink } from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 const MagicLinkVerify = () => {
   const navigate = useNavigate();
@@ -53,11 +54,7 @@ const MagicLinkVerify = () => {
         }
       })
       .catch((err: unknown) => {
-        const errorMessage =
-          err && typeof err === 'object' && 'message' in err
-            ? (err.message as string)
-            : 'Invalid or expired magic link. Please request a new one.';
-        setError(errorMessage);
+        setError(extractErrorMessage(err, 'Invalid or expired magic link. Please request a new one.'));
         setStatus('error');
       });
   }, [searchParams, navigate, dispatch]);
@@ -77,11 +74,7 @@ const MagicLinkVerify = () => {
         navigate('/auth/signin');
       }, 2000);
     } catch (err: unknown) {
-      const errorMessage =
-        err && typeof err === 'object' && 'message' in err
-          ? (err.message as string)
-          : 'Failed to send magic link. Please try again.';
-      setError(errorMessage);
+      setError(extractErrorMessage(err, 'Failed to send magic link. Please try again.'));
     }
   };
 
@@ -142,7 +135,7 @@ const MagicLinkVerify = () => {
                       />
                       <Button
                         onClick={handleRequestNewLink}
-                        className="bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                        variant="default"
                       >
                         <Mail className="w-4 h-4 mr-2" />
                         Send Link
@@ -154,7 +147,7 @@ const MagicLinkVerify = () => {
 
                   <Button
                     variant="outline"
-                    className="w-full border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
+                    className="w-full"
                     onClick={() => navigate('/auth/signin')}
                   >
                     Go to login

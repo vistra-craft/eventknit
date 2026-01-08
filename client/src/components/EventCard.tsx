@@ -84,21 +84,20 @@ export const EventCard: React.FC<EventCardProps> = ({
     <Card
       variant="interactive"
       onClick={handleCardClick}
-      className="group overflow-hidden border-0 bg-card-surface rounded-2xl transition-all duration-300 hover:bg-primary/5 cursor-pointer"
+      className="group overflow-hidden border border-border bg-background rounded-2xl transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer"
     >
       {/* Event Image */}
       <div className="relative overflow-hidden h-64 rounded-lg">
         {image ? (
-          <img src={image} alt={title} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" />
+          <img src={image} alt={title} className="w-full h-full object-cover object-top transition-transform duration-300" />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <span className="text-muted-foreground text-sm">No image</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 bg-accent-coral text-white backdrop-blur-sm rounded-full text-xs font-bold shadow-none">
+          <span className="px-3 py-1 bg-muted/80 text-foreground backdrop-blur-sm rounded-full text-xs">
             {category}
           </span>
         </div>
@@ -107,12 +106,12 @@ export const EventCard: React.FC<EventCardProps> = ({
       {/* Event Details */}
       <div className="pt-4 pb-2 pl-4 space-y-2">
         {/* Title */}
-        <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2 leading-tight group-hover:text-accent-coral">
+        <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2 leading-tight">
           {title}
         </h3>
 
         {/* Date */}
-        <div className="flex items-center gap-2 text-sm font-medium text-primary group-hover:text-accent-coral transition-colors">
+        <div className="flex items-center gap-2 text-sm font-medium text-primary transition-colors">
           <Calendar className="w-4 h-4" />
           <span>{dateDisplay}</span>
         </div>

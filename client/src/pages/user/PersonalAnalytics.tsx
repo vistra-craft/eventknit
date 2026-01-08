@@ -11,7 +11,7 @@ import {
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
 import { getPersonalAnalytics, getActivityHistory } from "@/lib/user-dashboard-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 interface EventData {
   id: number;

@@ -10,7 +10,7 @@ import {
   QrCode,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/useMobile';
 import { getOrganizerStaffEvents, type EventStaffAssignment } from '@/lib/organizer-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

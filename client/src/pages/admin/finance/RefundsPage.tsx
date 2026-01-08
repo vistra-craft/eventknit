@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AdminLayout from "../AdminLayout";
 import { getRefunds, getRefundSummary, type Refund } from "@/lib/financial-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const RefundsPage = () => {
   const navigate = useNavigate();

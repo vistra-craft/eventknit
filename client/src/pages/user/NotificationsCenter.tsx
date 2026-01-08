@@ -16,7 +16,7 @@ import {
   type NotificationType,
   type NotificationPriority,
 } from "../../lib/notification-api";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../hooks/useToast";
 // Helper function to format time distance
 const formatDistanceToNow = (date: Date): string => {
   const now = new Date();

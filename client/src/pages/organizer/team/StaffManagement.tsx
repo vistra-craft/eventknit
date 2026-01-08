@@ -27,8 +27,8 @@ import {
   Target,
   RefreshCw,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/useToast";
+import { useIsMobile } from "@/hooks/useMobile";
 import {
   getOrganizerStaff,
   createOrganizerStaff,

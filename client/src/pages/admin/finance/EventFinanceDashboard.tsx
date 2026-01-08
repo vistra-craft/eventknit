@@ -13,7 +13,7 @@ import {
   type FinanceInsights,
   type FinanceInsightsPeriod,
 } from "@/lib/financial-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { CustomLineChart, CustomBarChart } from "@/components/charts/ChartComponents";
 
 const EventFinanceDashboard = () => {

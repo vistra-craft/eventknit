@@ -109,13 +109,13 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                 placeholder="Search events…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10 text-sm rounded-full border-border bg-card-surface focus-visible:border-[0.5px] focus-visible:border-primary/30"
+                className="pl-9 h-10 text-sm rounded-full border-border bg-background focus-visible:border-[0.5px] focus-visible:border-primary/30"
               />
             </div>
             <button
               type="button"
               onClick={() => setShowFilters((prev) => !prev)}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-card-surface text-foreground/80 hover:bg-accent-coral hover:text-white transition-colors"
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Filter className="w-4 h-4" />
             </button>

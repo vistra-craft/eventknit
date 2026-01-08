@@ -39,8 +39,8 @@ import {
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
-import { useToast } from "../../../hooks/use-toast";
-import { useIsMobile } from "../../../hooks/use-mobile";
+import { useToast } from "../../../hooks/useToast";
+import { useIsMobile } from "../../../hooks/useMobile";
 import {
   scanTicket,
   scanOut,

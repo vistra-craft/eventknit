@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { getTicket, getTicketPublic, downloadTicketPDF } from "@/lib/ticket-api";
 import type { TicketData } from "@/lib/ticket-api";
 import { getEventById } from "@/lib/event-api";

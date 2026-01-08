@@ -1,37 +1,56 @@
 import React from 'react';
-import { Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type LogoProps = {
   text?: string;
   textOnly?: boolean;
+  showText?: boolean;
   to?: string;
   className?: string;
   onClick?: () => void;
+  size?: 'sm' | 'default' | 'lg';
 };
 
 /**
  * EventKnit Logo Component
- * Always displays with coral color for both icon and text (matching signup page style)
+ * Uses design system tokens: bg-primary for icon, text-foreground for text
+ *
+ * Usage:
+ * - <Logo /> - Full logo with icon and text, links to home
+ * - <Logo showText={false} /> - Icon only
+ * - <Logo textOnly /> - Text only
+ * - <Logo size="sm" /> - Small size (useful in headers)
+ * - <Logo to="/dashboard" /> - Links to specific route
+ * - <Logo onClick={() => {}} /> - Custom click handler
  */
-const Logo: React.FC<LogoProps> = ({ 
-  text = 'EventKnit', 
-  textOnly = false, 
-  to = '/', 
+const Logo: React.FC<LogoProps> = ({
+  text = 'EventKnit',
+  textOnly = false,
+  showText = true,
+  to = '/',
   className = '',
-  onClick
+  onClick,
+  size = 'default'
 }) => {
+  const sizeClasses = {
+    sm: { icon: 'w-7 h-7', text: 'text-sm', letter: 'text-xs' },
+    default: { icon: 'w-8 h-8', text: 'text-base', letter: 'text-sm' },
+    lg: { icon: 'w-10 h-10', text: 'text-xl', letter: 'text-base' }
+  };
+
+  const sizes = sizeClasses[size];
+
   const content = textOnly ? (
-    <span className={`text-xl font-bold text-accent-coral ${className}`}>{text}</span>
+    <span className={`font-semibold text-foreground ${sizes.text} ${className}`}>{text}</span>
   ) : (
-    <div 
-      className={`flex items-center gap-2 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    <div
+      className={`inline-flex items-center gap-2 ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
-      <div className="w-8 h-8 bg-accent-coral rounded-lg flex items-center justify-center">
-        <Calendar className="w-5 h-5 text-white" />
+      <div className={`${sizes.icon} bg-primary rounded-lg flex items-center justify-center`}>
+        <span className={`text-primary-foreground font-bold ${sizes.letter}`}>E</span>
       </div>
-      <span className="text-xl font-bold text-accent-coral">{text}</span>
+      {showText && <span className={`font-semibold text-foreground ${sizes.text}`}>{text}</span>}
     </div>
   );
 

@@ -1,20 +1,45 @@
 /**
  * User Dashboard API Functions
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { apiGet, apiPost, apiPut, apiDelete, apiPatch, type ApiResponse } from "./api";
+import type { User } from "@/types/auth";
+import type {
+  EventRecommendation,
+  UserActivity,
+  EventReview,
+  TicketTransfer,
+  EventCollection,
+  CollectionItem,
+  UserInterest,
+  SavedSearch,
+  SearchFilters,
+  DirectMessage,
+  UserProfile,
+  UserFollow,
+  EventShare,
+  SharePlatformStats,
+  TicketResale,
+  UserWallet,
+  WalletTicket,
+  WalletPassData,
+  CalendarSync,
+  CalendarEventData,
+  CalendarType,
+  UserFeed,
+  EventSubscription,
+} from "@/types/user-dashboard";
 
 /**
  * Get personalized event recommendations
  */
-export const getPersonalizedRecommendations = async (limit?: number): Promise<ApiResponse<{ recommendations: any[] }>> => {
+export const getPersonalizedRecommendations = async (limit?: number): Promise<ApiResponse<{ recommendations: EventRecommendation[] }>> => {
   const queryParams = new URLSearchParams();
   if (limit) queryParams.append('limit', limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/recommendations?${queryString}` : '/user-dashboard/recommendations';
-  return apiGet<ApiResponse<{ recommendations: any[] }>>(endpoint);
+  return apiGet<ApiResponse<{ recommendations: EventRecommendation[] }>>(endpoint);
 };
 
 /**
@@ -40,7 +65,7 @@ export const getActivityHistory = async (filters?: {
   limit?: number;
   activityType?: string;
 }): Promise<ApiResponse<{
-  activities: any[];
+  activities: UserActivity[];
   total: number;
   page: number;
   limit: number;
@@ -51,7 +76,7 @@ export const getActivityHistory = async (filters?: {
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.activityType) queryParams.append('activityType', filters.activityType);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/activity-history?${queryString}` : '/user-dashboard/activity-history';
   return apiGet(endpoint);
@@ -67,7 +92,7 @@ export const createEventReview = async (eventId: string, data: {
   pros?: string[];
   cons?: string[];
   registrationId?: string;
-}): Promise<ApiResponse<{ review: any }>> => {
+}): Promise<ApiResponse<{ review: EventReview }>> => {
   return apiPost(`/user-dashboard/events/${eventId}/reviews`, data);
 };
 
@@ -79,7 +104,7 @@ export const getEventReviews = async (eventId: string, filters?: {
   limit?: number;
   rating?: number;
 }): Promise<ApiResponse<{
-  reviews: any[];
+  reviews: EventReview[];
   total: number;
   page: number;
   limit: number;
@@ -92,7 +117,7 @@ export const getEventReviews = async (eventId: string, filters?: {
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.rating) queryParams.append('rating', filters.rating.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/events/${eventId}/reviews?${queryString}` : `/user-dashboard/events/${eventId}/reviews`;
   return apiGet(endpoint);
@@ -101,7 +126,7 @@ export const getEventReviews = async (eventId: string, filters?: {
 /**
  * Mark review as helpful
  */
-export const markReviewHelpful = async (reviewId: string): Promise<ApiResponse<{ review: any }>> => {
+export const markReviewHelpful = async (reviewId: string): Promise<ApiResponse<{ review: EventReview }>> => {
   return apiPost(`/user-dashboard/reviews/${reviewId}/helpful`);
 };
 
@@ -112,7 +137,7 @@ export const initiateTicketTransfer = async (registrationId: string, data: {
   toUserId?: string;
   toEmail?: string;
   message?: string;
-}): Promise<ApiResponse<{ transfer: any }>> => {
+}): Promise<ApiResponse<{ transfer: TicketTransfer }>> => {
   return apiPost(`/user-dashboard/transfers/${registrationId}`, data);
 };
 
@@ -126,7 +151,7 @@ export const acceptTicketTransfer = async (transferToken: string): Promise<ApiRe
 /**
  * Cancel ticket transfer
  */
-export const cancelTicketTransfer = async (transferId: string): Promise<ApiResponse<{ transfer: any }>> => {
+export const cancelTicketTransfer = async (transferId: string): Promise<ApiResponse<{ transfer: TicketTransfer }>> => {
   return apiPost(`/user-dashboard/transfers/${transferId}/cancel`);
 };
 
@@ -138,7 +163,7 @@ export const getTransferHistory = async (filters?: {
   limit?: number;
   type?: 'sent' | 'received';
 }): Promise<ApiResponse<{
-  transfers: any[];
+  transfers: TicketTransfer[];
   total: number;
   page: number;
   limit: number;
@@ -149,7 +174,7 @@ export const getTransferHistory = async (filters?: {
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.type) queryParams.append('type', filters.type);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/transfers?${queryString}` : '/user-dashboard/transfers';
   return apiGet(endpoint);
@@ -163,7 +188,7 @@ export const createCollection = async (data: {
   description?: string;
   isPublic?: boolean;
   coverImage?: string;
-}): Promise<ApiResponse<{ collection: any }>> => {
+}): Promise<ApiResponse<{ collection: EventCollection }>> => {
   return apiPost('/user-dashboard/collections', data);
 };
 
@@ -172,7 +197,7 @@ export const getUserCollections = async (filters?: {
   limit?: number;
   isPublic?: boolean;
 }): Promise<ApiResponse<{
-  collections: any[];
+  collections: EventCollection[];
   total: number;
   page: number;
   limit: number;
@@ -183,7 +208,7 @@ export const getUserCollections = async (filters?: {
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.isPublic !== undefined) queryParams.append('isPublic', filters.isPublic.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/collections?${queryString}` : '/user-dashboard/collections';
   return apiGet(endpoint);
@@ -193,7 +218,7 @@ export const getPublicCollections = async (filters?: {
   page?: number;
   limit?: number;
 }): Promise<ApiResponse<{
-  collections: any[];
+  collections: EventCollection[];
   total: number;
   page: number;
   limit: number;
@@ -203,17 +228,17 @@ export const getPublicCollections = async (filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/collections/public?${queryString}` : '/user-dashboard/collections/public';
   return apiGet(endpoint);
 };
 
-export const getCollectionById = async (collectionId: string): Promise<ApiResponse<{ collection: any }>> => {
+export const getCollectionById = async (collectionId: string): Promise<ApiResponse<{ collection: EventCollection }>> => {
   return apiGet(`/user-dashboard/collections/${collectionId}`);
 };
 
-export const addEventToCollection = async (collectionId: string, eventId: string, notes?: string): Promise<ApiResponse<{ item: any }>> => {
+export const addEventToCollection = async (collectionId: string, eventId: string, notes?: string): Promise<ApiResponse<{ item: CollectionItem }>> => {
   return apiPost(`/user-dashboard/collections/${collectionId}/events/${eventId}`, { notes });
 };
 
@@ -230,7 +255,7 @@ export const updateCollection = async (collectionId: string, data: {
   description?: string;
   isPublic?: boolean;
   coverImage?: string;
-}): Promise<ApiResponse<{ collection: any }>> => {
+}): Promise<ApiResponse<{ collection: EventCollection }>> => {
   return apiPut(`/user-dashboard/collections/${collectionId}`, data);
 };
 
@@ -246,11 +271,11 @@ export const upsertInterest = async (data: {
   subcategory?: string;
   tags?: string[];
   weight?: number;
-}): Promise<ApiResponse<{ interest: any }>> => {
+}): Promise<ApiResponse<{ interest: UserInterest }>> => {
   return apiPost('/user-dashboard/interests', data);
 };
 
-export const getUserInterests = async (): Promise<ApiResponse<{ interests: any[] }>> => {
+export const getUserInterests = async (): Promise<ApiResponse<{ interests: UserInterest[] }>> => {
   return apiGet('/user-dashboard/interests');
 };
 
@@ -258,7 +283,7 @@ export const removeInterest = async (category: string): Promise<ApiResponse<{ su
   return apiDelete(`/user-dashboard/interests/${category}`);
 };
 
-export const updateInterestWeight = async (category: string, weight: number): Promise<ApiResponse<{ interest: any }>> => {
+export const updateInterestWeight = async (category: string, weight: number): Promise<ApiResponse<{ interest: UserInterest }>> => {
   return apiPatch(`/user-dashboard/interests/${category}/weight`, { weight });
 };
 
@@ -268,24 +293,24 @@ export const updateInterestWeight = async (category: string, weight: number): Pr
 export const createSavedSearch = async (data: {
   name: string;
   searchQuery: string;
-  filters?: any;
+  filters?: SearchFilters;
   notifyOnNewEvents?: boolean;
   notificationFrequency?: string;
-}): Promise<ApiResponse<{ search: any }>> => {
+}): Promise<ApiResponse<{ search: SavedSearch }>> => {
   return apiPost('/user-dashboard/saved-searches', data);
 };
 
-export const getUserSavedSearches = async (): Promise<ApiResponse<{ searches: any[] }>> => {
+export const getUserSavedSearches = async (): Promise<ApiResponse<{ searches: SavedSearch[] }>> => {
   return apiGet('/user-dashboard/saved-searches');
 };
 
 export const updateSavedSearch = async (searchId: string, data: {
   name?: string;
   searchQuery?: string;
-  filters?: any;
+  filters?: SearchFilters;
   notifyOnNewEvents?: boolean;
   notificationFrequency?: string;
-}): Promise<ApiResponse<{ search: any }>> => {
+}): Promise<ApiResponse<{ search: SavedSearch }>> => {
   return apiPut(`/user-dashboard/saved-searches/${searchId}`, data);
 };
 
@@ -295,7 +320,7 @@ export const deleteSavedSearch = async (searchId: string): Promise<ApiResponse<{
 
 export const executeSavedSearch = async (searchId: string): Promise<ApiResponse<{
   searchQuery: string;
-  filters: any;
+  filters: SearchFilters;
 }>> => {
   return apiPost(`/user-dashboard/saved-searches/${searchId}/execute`);
 };
@@ -310,7 +335,7 @@ export const sendMessage = async (data: {
   eventId?: string;
   registrationId?: string;
   parentMessageId?: string;
-}): Promise<ApiResponse<{ message: any }>> => {
+}): Promise<ApiResponse<{ message: DirectMessage }>> => {
   return apiPost('/user-dashboard/messages', data);
 };
 
@@ -319,7 +344,7 @@ export const getInbox = async (filters?: {
   limit?: number;
   isRead?: boolean;
 }): Promise<ApiResponse<{
-  messages: any[];
+  messages: DirectMessage[];
   total: number;
   unreadCount: number;
   page: number;
@@ -331,7 +356,7 @@ export const getInbox = async (filters?: {
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
   if (filters?.isRead !== undefined) queryParams.append('isRead', filters.isRead.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/messages/inbox?${queryString}` : '/user-dashboard/messages/inbox';
   return apiGet(endpoint);
@@ -341,7 +366,7 @@ export const getSentMessages = async (filters?: {
   page?: number;
   limit?: number;
 }): Promise<ApiResponse<{
-  messages: any[];
+  messages: DirectMessage[];
   total: number;
   page: number;
   limit: number;
@@ -351,17 +376,17 @@ export const getSentMessages = async (filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/messages/sent?${queryString}` : '/user-dashboard/messages/sent';
   return apiGet(endpoint);
 };
 
-export const getMessageThread = async (messageId: string): Promise<ApiResponse<{ message: any }>> => {
+export const getMessageThread = async (messageId: string): Promise<ApiResponse<{ message: DirectMessage }>> => {
   return apiGet(`/user-dashboard/messages/${messageId}`);
 };
 
-export const markMessageAsRead = async (messageId: string): Promise<ApiResponse<{ message: any }>> => {
+export const markMessageAsRead = async (messageId: string): Promise<ApiResponse<{ message: DirectMessage }>> => {
   return apiPost(`/user-dashboard/messages/${messageId}/read`);
 };
 
@@ -372,7 +397,7 @@ export const deleteMessage = async (messageId: string): Promise<ApiResponse<{ su
 /**
  * Social Networking
  */
-export const followUser = async (userId: string): Promise<ApiResponse<{ follow: any }>> => {
+export const followUser = async (userId: string): Promise<ApiResponse<{ follow: UserFollow }>> => {
   return apiPost(`/user-dashboard/social/follow/${userId}`);
 };
 
@@ -384,7 +409,7 @@ export const getFollowers = async (userId: string, filters?: {
   page?: number;
   limit?: number;
 }): Promise<ApiResponse<{
-  followers: any[];
+  followers: UserFollow[];
   total: number;
   page: number;
   limit: number;
@@ -394,7 +419,7 @@ export const getFollowers = async (userId: string, filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/social/followers/${userId}?${queryString}` : `/user-dashboard/social/followers/${userId}`;
   return apiGet(endpoint);
@@ -404,7 +429,7 @@ export const getFollowing = async (userId: string, filters?: {
   page?: number;
   limit?: number;
 }): Promise<ApiResponse<{
-  following: any[];
+  following: UserFollow[];
   total: number;
   page: number;
   limit: number;
@@ -414,7 +439,7 @@ export const getFollowing = async (userId: string, filters?: {
   const queryParams = new URLSearchParams();
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/social/following/${userId}?${queryString}` : `/user-dashboard/social/following/${userId}`;
   return apiGet(endpoint);
@@ -424,7 +449,7 @@ export const isFollowing = async (userId: string): Promise<ApiResponse<{ isFollo
   return apiGet(`/user-dashboard/social/is-following/${userId}`);
 };
 
-export const getUserProfile = async (userId: string): Promise<ApiResponse<{ profile: any }>> => {
+export const getUserProfile = async (userId: string): Promise<ApiResponse<{ profile: UserProfile }>> => {
   return apiGet(`/user-dashboard/social/profile/${userId}`);
 };
 
@@ -435,7 +460,7 @@ export const trackEventShare = async (eventId: string, data: {
   platform: string;
   shareUrl?: string;
   referrer?: string;
-}): Promise<ApiResponse<{ share: any }>> => {
+}): Promise<ApiResponse<{ share: EventShare }>> => {
   return apiPost(`/user-dashboard/events/${eventId}/share`, data);
 };
 
@@ -443,8 +468,8 @@ export const getEventShareAnalytics = async (eventId: string): Promise<ApiRespon
   totalShares: number;
   totalClicks: number;
   totalConversions: number;
-  platformStats: any[];
-  recentShares: any[];
+  platformStats: SharePlatformStats[];
+  recentShares: EventShare[];
 }>> => {
   return apiGet(`/user-dashboard/events/${eventId}/share/analytics`);
 };
@@ -454,7 +479,7 @@ export const listTicketForResale = async (data: {
   registrationId: string;
   resalePrice: number;
   expiresAt?: string;
-}): Promise<ApiResponse<{ resale: any }>> => {
+}): Promise<ApiResponse<{ resale: TicketResale }>> => {
   return apiPost('/user-dashboard/resale/list', data);
 };
 
@@ -466,7 +491,7 @@ export const getMarketplaceTickets = async (filters?: {
   page?: number;
   limit?: number;
 }): Promise<ApiResponse<{
-  tickets: any[];
+  tickets: TicketResale[];
   pagination: {
     page: number;
     limit: number;
@@ -481,16 +506,16 @@ export const getMarketplaceTickets = async (filters?: {
   if (filters?.maxPrice) queryParams.append('maxPrice', filters.maxPrice.toString());
   if (filters?.page) queryParams.append('page', filters.page.toString());
   if (filters?.limit) queryParams.append('limit', filters.limit.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/resale/marketplace?${queryString}` : '/user-dashboard/resale/marketplace';
   return apiGet(endpoint);
 };
 
-export const getUserResales = async (status?: string): Promise<ApiResponse<{ resales: any[] }>> => {
+export const getUserResales = async (status?: string): Promise<ApiResponse<{ resales: TicketResale[] }>> => {
   const queryParams = new URLSearchParams();
   if (status) queryParams.append('status', status);
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/resale/my-listings?${queryString}` : '/user-dashboard/resale/my-listings';
   return apiGet(endpoint);
@@ -505,11 +530,11 @@ export const cancelResale = async (resaleId: string): Promise<ApiResponse<{ succ
 };
 
 // ========== Digital Wallet ==========
-export const getWallet = async (): Promise<ApiResponse<{ wallet: any }>> => {
+export const getWallet = async (): Promise<ApiResponse<{ wallet: UserWallet }>> => {
   return apiGet('/user-dashboard/wallet');
 };
 
-export const addTicketToWallet = async (registrationId: string): Promise<ApiResponse<{ walletTicket: any }>> => {
+export const addTicketToWallet = async (registrationId: string): Promise<ApiResponse<{ walletTicket: WalletTicket }>> => {
   return apiPost('/user-dashboard/wallet/add', { registrationId });
 };
 
@@ -520,19 +545,19 @@ export const removeTicketFromWallet = async (registrationId: string): Promise<Ap
 export const updateWalletPreferences = async (data: {
   autoAddTickets?: boolean;
   backupEnabled?: boolean;
-}): Promise<ApiResponse<{ wallet: any }>> => {
+}): Promise<ApiResponse<{ wallet: UserWallet }>> => {
   return apiPut('/user-dashboard/wallet/preferences', data);
 };
 
 export const generateAppleWalletPass = async (registrationId: string): Promise<ApiResponse<{
-  passData: any;
+  passData: WalletPassData;
   downloadUrl: string;
 }>> => {
   return apiGet(`/user-dashboard/wallet/${registrationId}/apple-pass`);
 };
 
 export const generateGooglePayPass = async (registrationId: string): Promise<ApiResponse<{
-  passData: any;
+  passData: WalletPassData;
   saveUrl: string;
 }>> => {
   return apiGet(`/user-dashboard/wallet/${registrationId}/google-pass`);
@@ -541,13 +566,13 @@ export const generateGooglePayPass = async (registrationId: string): Promise<Api
 // ========== Event Calendar Integration ==========
 export const syncToCalendar = async (data: {
   registrationId: string;
-  calendarType: 'GOOGLE' | 'APPLE' | 'OUTLOOK' | 'ICAL';
+  calendarType: CalendarType;
   reminderMinutes?: number;
-}): Promise<ApiResponse<{ sync: any; calendarData: any }>> => {
+}): Promise<ApiResponse<{ sync: CalendarSync; calendarData: CalendarEventData }>> => {
   return apiPost('/user-dashboard/calendar/sync', data);
 };
 
-export const getUserCalendarSyncs = async (): Promise<ApiResponse<{ syncs: any[] }>> => {
+export const getUserCalendarSyncs = async (): Promise<ApiResponse<{ syncs: CalendarSync[] }>> => {
   return apiGet('/user-dashboard/calendar/syncs');
 };
 
@@ -556,7 +581,7 @@ export const removeCalendarSync = async (syncId: string): Promise<ApiResponse<{ 
 };
 
 // ========== Personal Event Feed ==========
-export const getFeed = async (): Promise<ApiResponse<{ feed: any }>> => {
+export const getFeed = async (): Promise<ApiResponse<{ feed: UserFeed }>> => {
   return apiGet('/user-dashboard/feed');
 };
 
@@ -565,9 +590,9 @@ export const refreshFeed = async (): Promise<ApiResponse<{ success: boolean; ite
 };
 
 export const updateFeedPreferences = async (data: {
-  preferences?: any;
-  filters?: any;
-}): Promise<ApiResponse<{ feed: any }>> => {
+  preferences?: UserFeed['preferences'];
+  filters?: UserFeed['filters'];
+}): Promise<ApiResponse<{ feed: UserFeed }>> => {
   return apiPut('/user-dashboard/feed/preferences', data);
 };
 
@@ -584,7 +609,7 @@ export const subscribeToEvent = async (data: {
   eventId: string;
   updateTypes?: string[];
   channels?: string[];
-}): Promise<ApiResponse<{ subscription: any }>> => {
+}): Promise<ApiResponse<{ subscription: EventSubscription }>> => {
   return apiPost(`/user-dashboard/events/${data.eventId}/subscribe`, data);
 };
 
@@ -592,10 +617,10 @@ export const unsubscribeFromEvent = async (eventId: string): Promise<ApiResponse
   return apiPost(`/user-dashboard/events/${eventId}/unsubscribe`, {});
 };
 
-export const getUserSubscriptions = async (activeOnly?: boolean): Promise<ApiResponse<{ subscriptions: any[] }>> => {
+export const getUserSubscriptions = async (activeOnly?: boolean): Promise<ApiResponse<{ subscriptions: EventSubscription[] }>> => {
   const queryParams = new URLSearchParams();
   if (activeOnly !== undefined) queryParams.append('activeOnly', activeOnly.toString());
-  
+
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/user-dashboard/subscriptions?${queryString}` : '/user-dashboard/subscriptions';
   return apiGet(endpoint);
@@ -604,7 +629,7 @@ export const getUserSubscriptions = async (activeOnly?: boolean): Promise<ApiRes
 export const updateSubscriptionPreferences = async (eventId: string, data: {
   updateTypes?: string[];
   channels?: string[];
-}): Promise<ApiResponse<{ subscription: any }>> => {
+}): Promise<ApiResponse<{ subscription: EventSubscription }>> => {
   return apiPut(`/user-dashboard/subscriptions/${eventId}/preferences`, data);
 };
 
@@ -631,14 +656,14 @@ export const getRoleSwitchOptions = async (): Promise<ApiResponse<RoleSwitchOpti
 export const becomeOrganizer = async (data: {
   organizationName: string;
   businessEmail?: string;
-}): Promise<ApiResponse<{ user: any }>> => {
+}): Promise<ApiResponse<{ user: User }>> => {
   return apiPost('/user/role-switch/become-organizer', data);
 };
 
 /**
  * Switch from ORGANIZER to ATTENDEE role
  */
-export const becomeAttendee = async (): Promise<ApiResponse<{ user: any }>> => {
+export const becomeAttendee = async (): Promise<ApiResponse<{ user: User }>> => {
   return apiPost('/user/role-switch/become-attendee', {});
 };
 

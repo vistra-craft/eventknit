@@ -3,17 +3,35 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * EventKnit Card Variants
+ *
+ * USAGE GUIDE:
+ * - default: Standard card with subtle shadow
+ * - elevated: Card with stronger shadow for emphasis
+ * - interactive: Clickable card with hover lift effect (signup page style)
+ * - minimal: Flat card with minimal styling
+ * - glass: Glassmorphism effect for overlays
+ */
 const cardVariants = cva(
-  "rounded-xl border transition-all duration-200",
+  "rounded-2xl border transition-all duration-200",
   {
     variants: {
       variant: {
-        default: "border-card-border bg-card-surface text-card-foreground shadow-card",
-        elevated: "border-card-border bg-card-surface text-card-foreground shadow-card-hover",
-        gradient: "border-card-border bg-gradient-card text-card-foreground shadow-card",
-        glass: "border-glass-border bg-glass-bg backdrop-blur-sm text-card-foreground shadow-card",
-        minimal: "border-card-border bg-card-surface text-card-foreground shadow-sm",
-        interactive: "border-card-border bg-card-surface text-card-foreground shadow-none hover:shadow-none hover:-translate-y-0.25 cursor-pointer"
+        // Default: Standard card with subtle shadow
+        default: "border-border bg-card-surface text-card-foreground shadow-sm",
+
+        // Elevated: Stronger shadow for emphasis
+        elevated: "border-border bg-card-surface text-card-foreground shadow-md",
+
+        // Interactive: Clickable card with hover effects (signup page style)
+        interactive: "border-border bg-card-surface text-card-foreground shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer",
+
+        // Minimal: Flat card with no shadow
+        minimal: "border-border bg-card-surface text-card-foreground shadow-none",
+
+        // Glass: Glassmorphism effect
+        glass: "border-white/20 bg-white/10 backdrop-blur-sm text-card-foreground shadow-sm",
       },
     },
     defaultVariants: {
@@ -55,7 +73,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("font-semibold leading-none tracking-tight", className)}
+    className={cn("text-base font-semibold leading-none tracking-tight", className)}
     {...props}
   />
 ))

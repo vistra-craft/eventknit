@@ -41,7 +41,7 @@ import { transformEventData } from "../../lib/event-utils";
 import type { EventData } from "../../types/event";
 import { shareEvent } from "../../lib/utils/share";
 import { exportEventData } from "../../lib/utils/export";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../hooks/useToast";
 import { OrganizerEventStaffAssignment } from "../../components/OrganizerEventStaffAssignment";
 import { sendToEventRegistrations, getCommunicationHistory } from "../../lib/organizer-dashboard-api";
 import { Textarea } from "../../components/ui/textarea";

@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
 import { setupPassword } from "@/lib/auth-api";
 import { shareEvent } from "@/lib/utils/share";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
 import { setAccessToken } from "@/lib/api";
 

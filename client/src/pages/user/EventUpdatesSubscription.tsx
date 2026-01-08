@@ -19,7 +19,7 @@ import {
   getUserSubscriptions,
   updateSubscriptionPreferences,
 } from "@/lib/user-dashboard-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 interface Subscription {
   id: string;

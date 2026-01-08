@@ -6,11 +6,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '../../../../contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import AllEventsPage from '../AllEventsPage';
-import * as eventApi from '../../../../lib/event-api';
-import * as adminApi from '../../../../lib/admin-api';
-import { useToast } from '../../../../hooks/use-toast';
+import * as eventApi from '@/lib/event-api';
+import * as adminApi from '@/lib/admin-api';
+import { useToast } from '@/hooks/useToast';
 
 // Mock dependencies
 vi.mock('../../../../lib/event-api', () => ({
@@ -27,7 +27,7 @@ vi.mock('../../../../lib/admin-api', () => ({
   bulkUpdateOrganizerDataAccess: vi.fn(),
 }));
 
-vi.mock('../../../../hooks/use-toast', () => ({
+vi.mock('../../../../hooks/useToast', () => ({
   useToast: vi.fn(() => ({
     toast: vi.fn(),
   })),

@@ -15,7 +15,7 @@ import { Pagination } from "../../../components/ui/pagination";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { approveEvent, rejectEvent } from "../../../lib/admin-api";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
 
 interface Event {

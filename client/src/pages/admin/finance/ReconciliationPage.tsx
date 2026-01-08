@@ -14,7 +14,7 @@ import {
   autoFixReconciliation,
   type Reconciliation,
 } from "@/lib/financial-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const ReconciliationPage = () => {
   const navigate = useNavigate();

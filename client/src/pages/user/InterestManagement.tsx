@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, X, Star, Tag } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { getUserInterests, upsertInterest, removeInterest, updateInterestWeight } from "@/lib/user-dashboard-api";
 import EmptyState from "@/components/EmptyState";
 

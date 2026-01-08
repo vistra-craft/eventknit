@@ -20,8 +20,8 @@ import {
   Loader2,
   ArrowRight,
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/useMobile";
+import { useToast } from "@/hooks/useToast";
 import {
   getOrganizerTeamSummary,
   getOrganizerTeamPerformance,

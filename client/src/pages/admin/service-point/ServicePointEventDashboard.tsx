@@ -76,7 +76,7 @@ import {
   SESSION_ICONS,
   SESSION_COLORS,
 } from "../../../lib/session-api";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../hooks/useToast";
 
 const ServicePointEventDashboard: React.FC = () => {
   const navigate = useNavigate();

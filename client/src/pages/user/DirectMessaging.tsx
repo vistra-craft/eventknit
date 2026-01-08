@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Send, Mail, MailOpen, Trash2, Reply, Calendar } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { getInbox, getSentMessages, sendMessage, getMessageThread, markMessageAsRead, deleteMessage } from "@/lib/user-dashboard-api";
 import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";

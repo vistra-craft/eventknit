@@ -23,7 +23,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole as AdminApiUserRole } from "@/lib/admin-api";
 import { UserRole } from "@/types/auth";
 import { usePermissions } from "@/hooks/usePermissions";

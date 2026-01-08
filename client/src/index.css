@@ -38,9 +38,15 @@
     /* BLACK & WHITE */
     --color-black: 0 0% 0%;           /* #000000 - Pure black */
     --color-white: 0 0% 100%;         /* #FFFFFF - Pure white */
+    --color-off-white: 210 20% 99%;   /* #FCFCFD - Soft off-white, easy on eyes */
 
     /* DESTRUCTIVE - Red for errors/warnings */
     --color-destructive: 0 84% 60%;   /* #EF4444 */
+
+    /* SUCCESS - Green for positive states */
+    --color-success: 142 76% 36%;     /* #16a34a - Available, success, completed */
+    --color-success-light: 142 76% 95%; /* Light tint for backgrounds */
+    --color-success-dark: 142 76% 30%; /* Darker for hover */
 
     /* ========================================================================
        SEMANTIC COLOR VARIABLES - Built from base tokens
@@ -58,22 +64,29 @@
     --primary-dark: var(--color-blue-dark);
     --primary-hover: var(--color-blue-hover);
 
-    /* Accent (Also Blue for X/Twitter style) */
+    /* Accent (Blue for X/Twitter style) */
     --accent: var(--color-blue);
     --accent-foreground: var(--color-white);
-    --accent-electric: var(--color-blue);
-    --accent-neon: var(--color-blue-glow);
+    --accent-light: var(--color-blue-light);
+    /* DEPRECATED: accent-coral renamed - keeping for backward compatibility */
     --accent-coral: var(--color-blue);
 
-    /* Navigation */
+    /* Success */
+    --success: var(--color-success);
+    --success-foreground: var(--color-white);
+    --success-light: var(--color-success-light);
+
+    /* Navigation & Sidebar */
     --nav-hover: var(--color-blue);
+    --sidebar-item-hover: var(--color-blue-light);
+    --sidebar-item-hover-text: var(--color-blue);
 
     /* EventKnit Brand */
     --eventknit-brand: var(--color-blue);
     --eventknit-brand-foreground: var(--color-white);
 
     /* Cards */
-    --card-surface: var(--color-white);
+    --card-surface: var(--color-off-white);
     --card-border: var(--color-gray-100);
     --card-hover: var(--color-blue);
 
@@ -91,11 +104,11 @@
 
     /* Borders & Inputs */
     --border: var(--color-gray-100);
-    --input: var(--color-white);
+    --input: var(--color-off-white);
     --ring: var(--color-blue);
 
     /* Sidebar */
-    --sidebar-background: var(--color-white);
+    --sidebar-background: var(--color-off-white);
     --sidebar-foreground: var(--color-gray-900);
     --sidebar-primary: var(--color-blue);
     --sidebar-primary-foreground: var(--color-white);
@@ -119,12 +132,12 @@
     --gradient-primary: linear-gradient(135deg, hsl(var(--color-blue)) 0%, hsl(var(--color-blue-dark)) 100%);
 
     /* Card Gradient - Used in card components */
-    --gradient-card: linear-gradient(145deg, hsl(var(--color-white)) 0%, hsl(var(--color-gray-50)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--color-off-white)) 0%, hsl(var(--color-gray-50)) 100%);
 
     /* ========================================================================
        GLASS EFFECTS - Light Theme
        ======================================================================== */
-    --glass-bg: hsl(var(--color-white) / 0.95);
+    --glass-bg: hsl(var(--color-off-white) / 0.95);
     --glass-border: hsl(var(--color-gray-200) / 0.5);
 
     /* ========================================================================
@@ -164,7 +177,7 @@
     --destructive-foreground: var(--color-white);
 
     --border: var(--color-gray-100);
-    --input: var(--color-white);
+    --input: var(--color-off-white);
     --ring: var(--primary);
 
     --radius: 0.5rem;
@@ -185,6 +198,9 @@
     --color-blue-dark: 204 88% 48%;   /* Darker variant */
     --color-blue-light: 204 50% 20%;  /* Dark tint for backgrounds */
     --color-destructive: 0 72% 58%;   /* More visible red for errors */
+    --color-success: 142 71% 45%;     /* Brighter green for dark mode */
+    --color-success-light: 142 50% 20%; /* Dark tint for backgrounds */
+    --color-success-dark: 142 71% 40%; /* Darker for hover */
 
     /* Dark mode grays */
     --color-gray-50: 0 0% 10%;        /* #1a1a1a - Main background */
@@ -213,12 +229,19 @@
     /* Accent (Blue) - Enhanced */
     --accent: var(--color-blue);
     --accent-foreground: var(--color-white);
-    --accent-electric: var(--color-blue);
-    --accent-neon: var(--color-blue-glow);
+    --accent-light: var(--color-blue-light);
+    /* DEPRECATED: accent-coral renamed - keeping for backward compatibility */
     --accent-coral: var(--color-blue);
 
-    /* Navigation */
+    /* Success - Dark Mode */
+    --success: var(--color-success);
+    --success-foreground: var(--color-white);
+    --success-light: var(--color-success-light);
+
+    /* Navigation & Sidebar - Dark Mode */
     --nav-hover: var(--color-blue);
+    --sidebar-item-hover: var(--color-blue-light);
+    --sidebar-item-hover-text: var(--color-blue);
 
     /* EventKnit Brand */
     --eventknit-brand: var(--color-blue);
@@ -356,7 +379,49 @@
 
 @layer utilities {
 
-  /* Typography Utilities */
+  /* ========================================================================
+     UNIFIED PAGE TYPOGRAPHY - Use these for consistent text across pages
+     ======================================================================== */
+
+  /* Page Titles - Main heading on each page (24px) */
+  .text-page-title {
+    @apply text-2xl font-bold text-foreground;
+  }
+
+  /* Page Subtitle - Description below page title (14px) */
+  .text-page-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Section Header - Section titles within a page (18px) */
+  .text-section-header {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  /* Card Title - Title inside cards (16px) */
+  .text-card-title {
+    @apply text-base font-semibold text-foreground;
+  }
+
+  /* Card Description - Description inside cards (14px) */
+  .text-card-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Form Label - Labels for form inputs (14px) */
+  .text-form-label {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  /* Metadata - Small info like dates, counts (12px) */
+  .text-metadata {
+    @apply text-xs text-muted-foreground;
+  }
+
+  /* ========================================================================
+     LEGACY TYPOGRAPHY UTILITIES - Keeping for backward compatibility
+     ======================================================================== */
+
   .text-display {
     @apply text-6xl font-bold tracking-tight;
   }
@@ -411,6 +476,26 @@
 
   .text-button-large {
     @apply text-base font-medium;
+  }
+
+  /* ========================================================================
+     COLOR UTILITIES - Semantic color classes
+     ======================================================================== */
+
+  .text-success {
+    @apply text-[hsl(var(--success))];
+  }
+
+  .bg-success {
+    @apply bg-[hsl(var(--success))];
+  }
+
+  .bg-success-light {
+    @apply bg-[hsl(var(--success-light))];
+  }
+
+  .border-success {
+    @apply border-[hsl(var(--success))];
   }
 
   /* Animation Utilities */

@@ -23,7 +23,7 @@ import {
   cancelPaymentPlan,
   createPaymentPlan,
 } from "@/lib/payment-plan-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 interface PaymentPlan {
   id: string;

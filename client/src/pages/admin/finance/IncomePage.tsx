@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "../AdminLayout";
 import { getIncomes, deleteIncome, type PlatformIncome } from "@/lib/accounting-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const IncomePage = () => {
   const navigate = useNavigate();

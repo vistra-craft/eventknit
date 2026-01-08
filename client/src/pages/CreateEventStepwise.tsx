@@ -40,7 +40,7 @@ import { transformEventData, type BackendEvent } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import { applyTemplate } from '@/lib/organizer-dashboard-api';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
 import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
 import { DragAndDropFormBuilder } from '@/components/event-wizard/DragAndDropFormBuilder';

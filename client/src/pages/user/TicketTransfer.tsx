@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Send, X, CheckCircle, Clock, User, Calendar, MapPin } from "lucide-react";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { initiateTicketTransfer, getTransferHistory, cancelTicketTransfer } from "@/lib/user-dashboard-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const TicketTransfer: React.FC = () => {
   const [loading, setLoading] = useState(true);

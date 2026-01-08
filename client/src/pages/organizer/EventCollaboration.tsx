@@ -23,7 +23,7 @@ import {
   removeCollaborator,
   getEventActivityLog,
 } from "@/lib/organizer-dashboard-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useParams } from "react-router-dom";
 
 interface Collaborator {

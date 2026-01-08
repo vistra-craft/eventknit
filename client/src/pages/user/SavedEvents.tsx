@@ -13,7 +13,7 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { EventThumbnail } from "../../components/ui/event-thumbnail";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../hooks/useToast";
 import EmptyState from "../../components/EmptyState";
 import { getSavedEvents, unsaveEvent, SavedEventData } from "../../lib/saved-events-api";
 

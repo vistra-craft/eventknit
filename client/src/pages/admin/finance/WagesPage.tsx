@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "../AdminLayout";
 import { getExpenses, deleteExpense, type PlatformExpense } from "@/lib/accounting-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const WagesPage = () => {
   const navigate = useNavigate();

@@ -24,7 +24,7 @@ import DashboardMyBadge from "./DashboardMyBadge";
 import DashboardAttendees from "./DashboardAttendees";
 import { shareEvent } from "../../lib/utils/share";
 import { downloadTicket } from "../../lib/utils/ticket";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../hooks/useToast";
 import { useAuth } from "../../hooks/useAuth";
 
 interface EventDetailViewProps {

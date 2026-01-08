@@ -7,7 +7,7 @@ import type { EventData } from '@/types/event';
 import type { TicketSelection } from '../UnifiedRegistrationModal';
 import { downloadTicketPDF } from '@/lib/ticket-api';
 import { shareEvent } from '@/lib/utils/share';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 interface RegistrationData {
   userId?: string;

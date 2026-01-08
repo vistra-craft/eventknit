@@ -25,7 +25,7 @@ import {
   deleteSegment,
   sendToSegment,
 } from "@/lib/organizer-dashboard-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 interface Segment {
   id: string;

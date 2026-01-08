@@ -47,14 +47,14 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
         <h2 className="text-2xl font-bold text-foreground mb-2">
           Let's get to know you first!
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Tell us what kind of events you want to host and we'll help make it happen.
         </p>
       </div>
 
       {/* Event Types */}
       <div className="space-y-4">
-        <Label className="text-base font-medium">What type of events do you host? *</Label>
+        <Label className="text-sm font-medium">What type of events do you host? *</Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {eventTypes.map((type) => (
             <Button
@@ -62,9 +62,9 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
               type="button"
               variant={formData.eventTypes.includes(type) ? "default" : "outline"}
               onClick={() => handleEventTypeToggle(type)}
-              className={`h-10 ${
+              className={`h-10 text-sm ${
                 formData.eventTypes.includes(type)
-                  ? 'bg-eventknit text-eventknit-foreground'
+                  ? ''
                   : 'border-border hover:bg-muted hover:border-border'
               }`}
             >
@@ -76,12 +76,12 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
 
       {/* Organization Type */}
       <div className="space-y-2">
-        <Label htmlFor="organizationType">Which best describes your organization? *</Label>
-        <Select 
-          value={formData.organizationType} 
+        <Label htmlFor="organizationType" className="text-sm font-medium">Which best describes your organization? *</Label>
+        <Select
+          value={formData.organizationType}
           onValueChange={(value) => onUpdate({ organizationType: value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-11">
             <SelectValue placeholder="Select your organization type" />
           </SelectTrigger>
           <SelectContent>
@@ -94,12 +94,12 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
 
       {/* Events Per Year */}
       <div className="space-y-2">
-        <Label htmlFor="eventsPerYear">How many events do you plan to organize in the next year? *</Label>
-        <Select 
-          value={formData.eventsPerYear} 
+        <Label htmlFor="eventsPerYear" className="text-sm font-medium">How many events do you plan to organize in the next year? *</Label>
+        <Select
+          value={formData.eventsPerYear}
           onValueChange={(value) => onUpdate({ eventsPerYear: value })}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-11">
             <SelectValue placeholder="Number of events" />
           </SelectTrigger>
           <SelectContent>
@@ -119,7 +119,7 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
           checked={formData.isRecurringSeries}
           onCheckedChange={(checked) => onUpdate({ isRecurringSeries: checked === true })}
         />
-        <Label htmlFor="isRecurringSeries" className="cursor-pointer">
+        <Label htmlFor="isRecurringSeries" className="text-sm cursor-pointer">
           My events are part of a recurring series
         </Label>
       </div>

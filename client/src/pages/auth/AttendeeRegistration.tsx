@@ -6,7 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, ArrowLeft } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
+import BackButton from '@/components/BackButton';
+import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
 
@@ -259,20 +262,20 @@ const AttendeeRegistration = () => {
             <div className="space-y-1.5">
               <p className="text-xs font-medium text-foreground">Password requirements:</p>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li className={`flex items-center gap-2 ${formData.password.length >= 8 ? 'text-green-600' : ''}`}>
-                  <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                <li className={`flex items-center gap-2 ${formData.password.length >= 8 ? 'text-success' : ''}`}>
+                  <span className={formData.password.length >= 8 ? 'text-success' : 'text-muted-foreground'}>
                     {formData.password.length >= 8 ? '✓' : '○'}
                   </span>
                   At least 8 characters
                 </li>
-                <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? 'text-green-600' : ''}`}>
-                  <span className={/[a-zA-Z]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
+                <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? 'text-success' : ''}`}>
+                  <span className={/[a-zA-Z]/.test(formData.password) ? 'text-success' : 'text-muted-foreground'}>
                     {/[a-zA-Z]/.test(formData.password) ? '✓' : '○'}
                   </span>
                   At least one letter
                 </li>
-                <li className={`flex items-center gap-2 ${/\d/.test(formData.password) ? 'text-green-600' : ''}`}>
-                  <span className={/\d/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
+                <li className={`flex items-center gap-2 ${/\d/.test(formData.password) ? 'text-success' : ''}`}>
+                  <span className={/\d/.test(formData.password) ? 'text-success' : 'text-muted-foreground'}>
                     {/\d/.test(formData.password) ? '✓' : '○'}
                   </span>
                   At least one number
@@ -326,17 +329,18 @@ const AttendeeRegistration = () => {
 
       {/* Interests */}
       <div className="space-y-4">
-        <Label className="text-base font-medium">What are you interested in? *</Label>
+        <Label className="text-sm font-medium">What are you interested in? *</Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {interests.map((interest) => (
             <Button
               key={interest}
+              type="button"
               variant={formData.interests.includes(interest) ? "default" : "outline"}
               onClick={() => handleInterestToggle(interest)}
-              className={`h-10 ${
+              className={`h-10 text-sm ${
                 formData.interests.includes(interest)
-                  ? 'bg-eventknit text-eventknit-foreground'
-                  : 'border-border hover:border-eventknit/50'
+                  ? ''
+                  : 'border-border hover:bg-muted hover:border-border'
               }`}
             >
               {interest}
@@ -347,17 +351,18 @@ const AttendeeRegistration = () => {
 
       {/* Event Types */}
       <div className="space-y-4">
-        <Label className="text-base font-medium">What types of events do you enjoy? *</Label>
+        <Label className="text-sm font-medium">What types of events do you enjoy? *</Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {eventTypes.map((eventType) => (
             <Button
               key={eventType}
+              type="button"
               variant={formData.eventTypes.includes(eventType) ? "default" : "outline"}
               onClick={() => handleEventTypeToggle(eventType)}
-              className={`h-10 ${
+              className={`h-10 text-sm ${
                 formData.eventTypes.includes(eventType)
-                  ? 'bg-eventknit text-eventknit-foreground'
-                  : 'border-border hover:border-eventknit/50'
+                  ? ''
+                  : 'border-border hover:bg-muted hover:border-border'
               }`}
             >
               {eventType}
@@ -405,7 +410,7 @@ const AttendeeRegistration = () => {
         <div className="space-y-2">
           <Label htmlFor="gender">Gender</Label>
           <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
-            <SelectTrigger>
+            <SelectTrigger className="h-11">
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
             <SelectContent>
@@ -474,25 +479,13 @@ const AttendeeRegistration = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-3 h-3" />
-              <span>Back to home</span>
-            </button>
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-primary">EventKnit</span>
-            </div>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <BackButton to="/auth/user-type" label="Back" />
+            <Logo />
           </div>
           
           {/* Progress Indicator */}
@@ -521,7 +514,7 @@ const AttendeeRegistration = () => {
         </div>
 
         {/* Form Content */}
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
           <CardContent className="p-8">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
@@ -539,21 +532,27 @@ const AttendeeRegistration = () => {
               <Button
                 variant="outline"
                 onClick={handleBack}
-                className="px-6 border border-border hover:bg-accent-coral hover:text-white transition-colors"
+                className="px-6 h-11"
                 disabled={isLoading}
               >
                 Back
               </Button>
               <Button
+                variant="default"
                 onClick={handleNext}
-                className="px-6 bg-accent-coral hover:bg-accent-coral/90 text-white font-medium"
+                className="px-6 h-11"
                 disabled={isLoading}
               >
-                {isLoading
-                  ? 'Registering...'
-                  : currentStep === 3
-                  ? 'Complete registration'
-                  : 'Continue'}
+                {isLoading ? (
+                  <>
+                    <Loader size="sm" className="mr-2" />
+                    Registering...
+                  </>
+                ) : currentStep === 3 ? (
+                  'Complete registration'
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </div>
           </CardContent>

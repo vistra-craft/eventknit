@@ -28,7 +28,7 @@ import { getUserRegisteredEvents } from "../../lib/event-api";
 import { useAuth } from "../../hooks/useAuth";
 import { shareEvent } from "../../lib/utils/share";
 import { downloadTicket } from "../../lib/utils/ticket";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../hooks/useToast";
 
 interface EventData {
   id: string;

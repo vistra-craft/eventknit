@@ -17,7 +17,7 @@ import { getEvents, EventStatus } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../hooks/useToast";
 import { getCategoriesByGroup } from "@/lib/event-categories";
 
 interface Event {

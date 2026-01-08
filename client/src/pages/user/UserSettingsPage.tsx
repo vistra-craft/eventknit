@@ -27,7 +27,7 @@ import { UserStatus, UserRole } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
 import { useTheme } from "@/hooks/useTheme";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import {
   getUserPreferences,
   updateUserPreferences,

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/ui/badge";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { ConfirmationDialog } from "../../../components/ui/confirmation-dialog";
-import { useToast } from "../../../hooks/use-toast";
+import { useToast } from "../../../hooks/useToast";
 import AdminLayout from "../AdminLayout";
 import {
   getAllFeaturedEvents,

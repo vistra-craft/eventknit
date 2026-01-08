@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import AdminLayout from "../AdminLayout";
 import { getEventById, type EventData } from "@/lib/event-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const EventPreviewPage = () => {
   const { eventId } = useParams<{ eventId: string }>();

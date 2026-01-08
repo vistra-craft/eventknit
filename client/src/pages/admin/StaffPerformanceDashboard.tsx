@@ -10,7 +10,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/useMobile';
 import {
   getTeamSummary,
   getTeamPerformance,
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import AdminLayout from './AdminLayout';
 
 const StaffPerformanceDashboard = () => {

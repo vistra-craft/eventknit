@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, Shield, X } from 'lucide-react';
+import { CheckCircle2, Shield, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader } from '@/components/ui/loader';
 import { EventPreferencesStep } from '@/components/onboarding/EventPreferencesStep';
 import { ProcessOverview } from '@/components/onboarding/ProcessOverview';
 import { ActionChoiceStep } from '@/components/onboarding/ActionChoiceStep';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
+import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
 
 type OnboardingStep = 1 | 2 | 3;
@@ -157,30 +159,23 @@ const OnboardingWizard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <button
-              type="button"
-              onClick={() => navigate('/auth/email-entry')}
-              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-3 h-3" />
-              <span>Back to Sign Up</span>
-            </button>
-            <Logo to="/" />
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <BackButton to="/auth/signup" label="Back to Sign Up" />
+            <Logo />
           </div>
 
           {/* Progress Indicator */}
-          <div className="flex items-center justify-center space-x-4 mb-6">
+          <div className="flex items-center justify-center space-x-4">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                     step <= currentStep
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground'
                   }`}
                 >
@@ -199,12 +194,12 @@ const OnboardingWizard = () => {
         </div>
 
         {/* Form Content */}
-        <div className="bg-card-surface rounded-2xl shadow-sm p-8">
+        <div className="bg-card-surface rounded-2xl shadow-md p-8">
             {/* Event Created Success Message */}
             {eventCreatedMessage && (
-              <Alert className="mb-6 border-green-500/20 bg-green-500/10">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-700 dark:text-green-400">
+              <Alert className="mb-6 border-success/20 bg-success-light">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <AlertDescription className="text-success">
                   {eventCreatedMessage}
                 </AlertDescription>
               </Alert>
@@ -212,10 +207,10 @@ const OnboardingWizard = () => {
 
             {/* Verification Reminder */}
             {showVerificationReminder && verificationStatus && !verificationStatus.identityVerified && (
-              <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950">
-                <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Alert className="mb-6 border-primary/20 bg-primary/5">
+                <Shield className="h-4 w-4 text-primary" />
                 <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="text-blue-900 dark:text-blue-100 flex-1">
+                  <span className="text-foreground flex-1">
                     <strong>Verification Required:</strong> Complete identity verification to help speed up event approval and receive payouts from ticket sales.
                   </span>
                   <div className="flex items-center gap-2">
@@ -223,11 +218,11 @@ const OnboardingWizard = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        navigate('/organizer/verification', { 
-                          state: { redirectAfterVerification: '/organizer/onboarding' } 
+                        navigate('/organizer/verification', {
+                          state: { redirectAfterVerification: '/organizer/onboarding' }
                         });
                       }}
-                      className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900"
+                      className="border-primary/30 text-primary hover:bg-primary/10"
                     >
                       Verify Identity
                     </Button>
@@ -235,7 +230,7 @@ const OnboardingWizard = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowVerificationReminder(false)}
-                      className="text-blue-700 hover:bg-blue-100 dark:text-blue-300 dark:hover:bg-blue-900"
+                      className="text-muted-foreground hover:text-foreground"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -258,11 +253,18 @@ const OnboardingWizard = () => {
               <div className="flex justify-end mt-8">
                 <Button
                   onClick={handleNext}
-                  variant="outline"
-                  className="px-6 bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none focus:shadow-none focus-visible:shadow-none"
+                  variant="default"
+                  className="px-6 h-11"
                   disabled={isLoading}
                 >
-                  Continue
+                  {isLoading ? (
+                    <>
+                      <Loader size="sm" className="mr-2" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Continue'
+                  )}
                 </Button>
               </div>
             )}

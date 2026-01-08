@@ -35,7 +35,7 @@ import {
   type CreateExpenseData,
   type CreateIncomeData,
 } from "@/lib/admin-financial-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 const AdminFinancialManagement = () => {
   const [activeTab, setActiveTab] = useState("overview");

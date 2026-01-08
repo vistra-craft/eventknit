@@ -63,8 +63,8 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
           <CardContent>
             <Button
               onClick={handleCreateEvent}
-              variant="outline"
-              className="w-full bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none"
+              variant="default"
+              className="w-full h-11"
             >
               Create Event
             </Button>
@@ -88,7 +88,7 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
             <Button
               onClick={() => setShowLearnMore(true)}
               variant="outline"
-              className="w-full bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none"
+              className="w-full h-11"
             >
               Learn More
             </Button>
@@ -118,8 +118,8 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
           <div className="mt-6">
             <Button
               onClick={handleCreateEvent}
-              variant="outline"
-              className="w-full bg-card-surface border-2 border-border hover:bg-accent-coral hover:text-white hover:border-transparent text-foreground font-medium transition-colors shadow-none"
+              variant="default"
+              className="w-full h-11"
             >
               Get Started - Create Your First Event
             </Button>

@@ -20,7 +20,7 @@ import {
   markFeedItemViewed,
   dismissFeedItem,
 } from "@/lib/user-dashboard-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useNavigate } from "react-router-dom";
 
 interface FeedItem {

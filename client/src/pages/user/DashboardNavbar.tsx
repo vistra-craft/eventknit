@@ -14,7 +14,7 @@ import {
   Heart,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import Logo from '../../components/Logo';
+import Logo from '@/components/Logo';
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
 import NotificationBell from "../../components/NotificationBell";

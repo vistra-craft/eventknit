@@ -12,7 +12,7 @@ vi.mock('@/lib/user-dashboard-api', () => ({
   generateGooglePayPass: vi.fn(),
 }))
 
-vi.mock('@/hooks/use-toast', () => ({
+vi.mock('@/hooks/useToast', () => ({
   useToast: () => ({ toast: vi.fn() }),
 }))
 
@@ -67,7 +67,7 @@ describe('DigitalWallet', () => {
   it('handles load error with toast', async () => {
     ;(api.getWallet as vi.Mock).mockRejectedValue(new Error('fail'))
     const toastSpy = vi.fn()
-    vi.mocked(await import('@/hooks/use-toast')).useToast = () => ({ toast: toastSpy } as { toast: (options?: unknown) => void })
+    vi.mocked(await import('@/hooks/useToast')).useToast = () => ({ toast: toastSpy } as { toast: (options?: unknown) => void })
 
     render(<DigitalWallet />)
 

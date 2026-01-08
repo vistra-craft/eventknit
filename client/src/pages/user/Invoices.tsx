@@ -20,7 +20,7 @@ import {
   downloadInvoice,
   generateInvoiceHTML,
 } from "@/lib/invoice-api";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Invoice {

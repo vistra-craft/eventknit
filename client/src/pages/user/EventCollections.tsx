@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Plus, FolderPlus, Users, Calendar, MapPin } from "lucide-react";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import EmptyState from "@/components/EmptyState";
 import {
   getMyCollections,

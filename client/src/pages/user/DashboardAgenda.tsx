@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import EmptyState from '../../components/EmptyState';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import EmptyState from '@/components/EmptyState';
 import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils, Loader2 } from 'lucide-react';
-import { getEventById } from '../../lib/event-api';
+import { getEventById } from '@/lib/event-api';
 
 interface EventData {
   id: number;

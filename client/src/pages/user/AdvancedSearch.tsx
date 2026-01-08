@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Search, Save, Trash2, Bell, Filter, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useNavigate } from "react-router-dom";
 import { getEvents } from "@/lib/event-api";
 import { createSavedSearch, getUserSavedSearches, deleteSavedSearch, executeSavedSearch } from "@/lib/user-dashboard-api";
