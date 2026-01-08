@@ -39,7 +39,7 @@ const SpeakerCard: React.FC<{
 }> = ({ speaker, onClick }) => {
   return (
     <Card
-      className="group cursor-pointer border-0 shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1"
+      className="group cursor-pointer border border-border bg-background rounded-2xl shadow-sm hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 transition-all duration-300"
       onClick={onClick}
     >
       <CardContent className="p-6 text-center">

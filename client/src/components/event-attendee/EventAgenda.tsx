@@ -221,7 +221,7 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
                 const speakers = getSpeakerNames(item);
 
                 return (
-                  <Card key={item.id || idx} className="border-0 shadow-card hover:shadow-card-hover transition-shadow">
+                  <Card key={item.id || idx} className="border border-border bg-background rounded-2xl shadow-sm hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 transition-all">
                     <CardContent className="p-5">
                       <div className="flex items-start gap-4">
                         {/* Type Icon */}

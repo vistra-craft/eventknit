@@ -33,11 +33,11 @@ interface EventHomeProps {
 
 // Quick action button config
 const quickActionConfig = {
-  speakers: { label: 'Speakers', icon: Mic2, color: 'bg-red-500 hover:bg-red-600' },
-  exhibitors: { label: 'Exhibitors', icon: Building2, color: 'bg-teal-500 hover:bg-teal-600' },
-  agenda: { label: 'Agenda', icon: CalendarDays, color: 'bg-green-500 hover:bg-green-600' },
-  'my-event': { label: 'My Event', icon: Heart, color: 'bg-rose-500 hover:bg-rose-600' },
-  'my-badge': { label: 'My Badge', icon: BadgeCheck, color: 'bg-purple-500 hover:bg-purple-600' },
+  speakers: { label: 'Speakers', icon: Mic2, color: 'bg-primary hover:bg-primary/90' },
+  exhibitors: { label: 'Exhibitors', icon: Building2, color: 'bg-primary hover:bg-primary/90' },
+  agenda: { label: 'Agenda', icon: CalendarDays, color: 'bg-primary hover:bg-primary/90' },
+  'my-event': { label: 'My Event', icon: Heart, color: 'bg-primary hover:bg-primary/90' },
+  'my-badge': { label: 'My Badge', icon: BadgeCheck, color: 'bg-primary hover:bg-primary/90' },
 };
 
 // Sponsor tier order for display
@@ -129,7 +129,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
 
         {/* Hero Content */}
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-          <div className="container mx-auto">
+          <div className="px-4 sm:px-6">
             <div className="max-w-4xl">
               {/* Event Title & Hashtag */}
               <div className="mb-4">
@@ -166,11 +166,11 @@ export const EventHome: React.FC<EventHomeProps> = ({
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 py-8">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Sidebar - User Profile Card */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24 border-0 shadow-card overflow-hidden">
+            <Card className="sticky top-24 border border-border bg-background rounded-2xl shadow-sm overflow-hidden">
               {/* Edit link */}
               <div className="absolute top-3 right-3">
                 <Button variant="link" size="sm" className="text-xs text-muted-foreground">
@@ -200,7 +200,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
           {/* Main Content Area */}
           <div className="lg:col-span-3 space-y-8">
             {/* Quick Action Buttons */}
-            <Card className="border-0 shadow-card overflow-hidden">
+            <Card className="border border-border bg-background rounded-2xl shadow-sm overflow-hidden">
               <div className="bg-primary text-white text-center py-3">
                 <span className="font-medium">
                   {event.hashtag ? `#${event.hashtag}` : event.title}
@@ -229,7 +229,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
 
             {/* Sponsors Section */}
             {event.sponsors && event.sponsors.length > 0 && (
-              <Card className="border-0 shadow-card">
+              <Card className="border border-border bg-background rounded-2xl shadow-sm">
                 <CardContent className="p-6 space-y-6">
                   {sponsorTierOrder.map(tier => {
                     const sponsors = sponsorsByTier[tier];
@@ -273,7 +273,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
             )}
 
             {/* Event Details */}
-            <Card className="border-0 shadow-card">
+            <Card className="border border-border bg-background rounded-2xl shadow-sm">
               <CardContent className="p-6 space-y-6">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground mb-4">
