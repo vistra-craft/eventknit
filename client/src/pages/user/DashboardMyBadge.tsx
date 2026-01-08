@@ -67,7 +67,7 @@ const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) 
               <div className="p-8 bg-white">
                 {/* Attendee Info */}
                 <div className="text-center mb-8">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl font-bold text-gray-700">{user.initials}</span>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">{badgeData.attendeeName}</h3>
@@ -76,7 +76,7 @@ const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) 
 
                 {/* QR Code Section */}
                 <div className="flex justify-center mb-4">
-                  <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                  <div className="w-32 h-32 bg-muted/50 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
                     <QrCode className="w-12 h-12 text-gray-400" />
                   </div>
                 </div>

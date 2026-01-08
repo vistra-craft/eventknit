@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, X, Star, Tag } from "lucide-react";
+import { Plus, X, Star, Tag } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
 import { getUserInterests, upsertInterest, removeInterest, updateInterestWeight } from "@/lib/user-dashboard-api";
 import EmptyState from "@/components/EmptyState";
@@ -133,7 +134,7 @@ const InterestManagement: React.FC = () => {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="xl" className="text-primary" />
         </div>
       </div>
     );

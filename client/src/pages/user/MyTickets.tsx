@@ -7,8 +7,8 @@ import {
   Share2,
   QrCode,
   Search,
-  Loader2,
 } from "lucide-react";
+import { Loader } from "../../components/ui/loader";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -155,10 +155,10 @@ const MyTickets: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'ongoing': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'upcoming': return 'bg-primary/10 text-primary';
+      case 'ongoing': return 'bg-success/10 text-success';
+      case 'completed': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -268,7 +268,7 @@ const MyTickets: React.FC = () => {
                   >
                     {downloadingId === ticket.id ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        <Loader size="sm" className="mr-1" />
                         Downloading...
                       </>
                     ) : (

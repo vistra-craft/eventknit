@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Search, Save, Trash2, Bell, Filter, X } from "lucide-react";
+import { Search, Save, Trash2, Bell, Filter, X } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/useToast";
 import { useNavigate } from "react-router-dom";
@@ -349,7 +350,7 @@ const AdvancedSearch: React.FC = () => {
                 <Button onClick={handleSearch} disabled={searching}>
                   {searching ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Searching...
                     </>
                   ) : (

@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MapPin, Users, ArrowRight, Sparkles } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowRight, Sparkles } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { getPersonalizedRecommendations } from "@/lib/user-dashboard-api";
 import { useNavigate } from "react-router-dom";
@@ -44,7 +45,7 @@ const PersonalizedRecommendations: React.FC = () => {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="xl" className="text-primary" />
         </div>
       </div>
     );

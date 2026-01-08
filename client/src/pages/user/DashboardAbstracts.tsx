@@ -100,11 +100,11 @@ const DashboardAbstracts: React.FC<DashboardAbstractsProps> = ({ eventData }) =>
   const getStatusBadge = (status: AbstractSubmission['status']) => {
     switch (status) {
       case 'approved':
-        return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
+        return <Badge variant="default" className="bg-success/10 text-success"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
       case 'rejected':
         return <Badge variant="destructive"><AlertCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
       case 'under_review':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800"><Clock className="w-3 h-3 mr-1" />Under Review</Badge>;
+        return <Badge variant="secondary" className="bg-primary/10 text-primary"><Clock className="w-3 h-3 mr-1" />Under Review</Badge>;
       default:
         return <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
     }

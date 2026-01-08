@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/EmptyState';
-import { Award, Globe, Loader2 } from 'lucide-react';
+import { Award, Globe } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
 import { getEventById } from '@/lib/event-api';
 
 interface EventData {
@@ -65,12 +66,12 @@ const DashboardSponsors: React.FC<DashboardSponsorsProps> = ({ eventData }) => {
 
   const getLevelColor = (level: string) => {
     switch (level.toLowerCase()) {
-      case 'platinum': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
-      case 'gold': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'silver': return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
-      case 'bronze': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'partner': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      default: return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
+      case 'platinum': return 'bg-muted text-muted-foreground';
+      case 'gold': return 'bg-warning/10 text-warning';
+      case 'silver': return 'bg-secondary/10 text-secondary';
+      case 'bronze': return 'bg-warning/20 text-orange-600 dark:text-orange-400';
+      case 'partner': return 'bg-primary/10 text-primary';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -138,7 +139,7 @@ const DashboardSponsors: React.FC<DashboardSponsorsProps> = ({ eventData }) => {
               <CardContent>
                 {loading ? (
                   <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-4" />
+                    <Loader size="xl" className="text-primary mx-auto mb-4" />
                     <p className="text-muted-foreground">Loading sponsors...</p>
                   </div>
                 ) : sponsors.length > 0 ? (

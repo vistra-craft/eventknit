@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, Calendar, DollarSign, BarChart3, Star } from "lucide-react";
+import { TrendingUp, Calendar, DollarSign, BarChart3, Star } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import {
   CustomAreaChart,
   CustomBarChart,
@@ -76,7 +77,7 @@ const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="xl" className="text-primary" />
         </div>
       </div>
     );
@@ -112,8 +113,8 @@ const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: Calendar,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     },
     {
       title: "Completed Events",
@@ -121,8 +122,8 @@ const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: Star,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
+      color: "text-success",
+      bgColor: "bg-success/10",
     },
     {
       title: "Upcoming Events",

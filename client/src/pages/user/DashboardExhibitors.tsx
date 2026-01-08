@@ -102,22 +102,22 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
 
   const getSponsorTypeColor = (type: string) => {
     switch (type) {
-      case 'platinum': return 'bg-gray-100 text-gray-800';
-      case 'gold': return 'bg-yellow-100 text-yellow-800';
-      case 'silver': return 'bg-gray-100 text-gray-600';
-      case 'bronze': return 'bg-orange-100 text-orange-800';
-      case 'partner': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'platinum': return 'bg-muted text-muted-foreground';
+      case 'gold': return 'bg-warning/10 text-warning';
+      case 'silver': return 'bg-secondary/10 text-secondary';
+      case 'bronze': return 'bg-warning/20 text-orange-600 dark:text-orange-400';
+      case 'partner': return 'bg-primary/10 text-primary';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
-      case 'technology': return 'bg-blue-100 text-blue-800';
-      case 'security': return 'bg-red-100 text-red-800';
-      case 'mobile': return 'bg-green-100 text-green-800';
-      case 'finance': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'technology': return 'bg-primary/10 text-primary';
+      case 'security': return 'bg-destructive/10 text-destructive';
+      case 'mobile': return 'bg-success/10 text-success';
+      case 'finance': return 'bg-secondary/10 text-secondary';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 

@@ -206,7 +206,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
                         className={`w-full text-left text-sm flex items-center gap-2 py-2 px-2 rounded-md transition-colors ${
                           isActive
                             ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-accent-coral hover:text-white"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
                         <Icon className="h-4 w-4" />

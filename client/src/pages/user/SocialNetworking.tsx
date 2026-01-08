@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, UserPlus, UserMinus, Users, Building2, Mail } from "lucide-react";
+import { UserPlus, UserMinus, Users, Building2, Mail } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/hooks/useAuth";
@@ -82,7 +83,7 @@ const SocialNetworking: React.FC = () => {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="xl" className="text-primary" />
         </div>
       </div>
     );

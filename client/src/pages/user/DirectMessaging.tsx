@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Send, Mail, MailOpen, Trash2, Reply, Calendar } from "lucide-react";
+import { Send, Mail, MailOpen, Trash2, Reply, Calendar } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/useToast";
 import { getInbox, getSentMessages, sendMessage, getMessageThread, markMessageAsRead, deleteMessage } from "@/lib/user-dashboard-api";
@@ -153,7 +154,7 @@ const DirectMessaging: React.FC = () => {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="xl" className="text-primary" />
         </div>
       </div>
     );
@@ -224,7 +225,7 @@ const DirectMessaging: React.FC = () => {
               >
                 {sending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader size="sm" className="mr-2" />
                     Sending...
                   </>
                 ) : (
