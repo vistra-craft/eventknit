@@ -215,12 +215,11 @@ const EventDetails = () => {
           {/* Back Button */}
           <div className="mb-6">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => navigate('/')}
-              className="gap-2 border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              size="lg"
+              className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors -ml-2"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
               Back to Home
             </Button>
           </div>
