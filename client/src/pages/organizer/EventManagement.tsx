@@ -258,7 +258,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: { eventId: string; e
                           {message.sentCount} sent
                         </span>
                         {message.failedCount > 0 && (
-                          <span className="flex items-center gap-1 text-red-600">
+                          <span className="flex items-center gap-1 text-destructive">
                             <XCircle className="h-3 w-3" />
                             {message.failedCount} failed
                           </span>
@@ -529,16 +529,16 @@ const EventManagement = () => {
     switch (status?.toUpperCase()) {
       case "CONFIRMED":
       case "APPROVED":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success-light text-success border-success/20";
       case "PENDING":
       case "UNDER_REVIEW":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-muted text-muted-foreground border-border";
       case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/10 text-destructive border-destructive/20";
       case "CANCELLED":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -654,7 +654,7 @@ const EventManagement = () => {
                       <p className="text-sm text-muted-foreground">Confirmed</p>
                       <p className="text-lg font-semibold">{confirmedAttendees}</p>
                     </div>
-                    <CheckCircle className="w-8 h-8 text-green-600" />
+                    <CheckCircle className="w-8 h-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -665,7 +665,7 @@ const EventManagement = () => {
                       <p className="text-sm text-muted-foreground">Pending</p>
                       <p className="text-lg font-semibold">{pendingAttendees}</p>
                     </div>
-                    <Clock className="w-8 h-8 text-yellow-600" />
+                    <Clock className="w-8 h-8 text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -769,7 +769,7 @@ const EventManagement = () => {
                       <p className="text-sm text-muted-foreground">Confirmed</p>
                       <p className="text-lg font-semibold">{(apiData.speakers as Speaker[]).filter((s) => s.status === 'confirmed').length}</p>
                     </div>
-                    <CheckCircle className="w-8 h-8 text-green-600" />
+                    <CheckCircle className="w-8 h-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -780,7 +780,7 @@ const EventManagement = () => {
                       <p className="text-sm text-muted-foreground">Total Sessions</p>
                       <p className="text-lg font-semibold">{(apiData.speakers as Speaker[]).reduce((sum: number, s) => sum + (s.sessions || 0), 0)}</p>
                     </div>
-                    <Calendar className="w-8 h-8 text-blue-600" />
+                    <Calendar className="w-8 h-8 text-primary" />
                   </div>
                 </CardContent>
               </Card>
@@ -855,7 +855,7 @@ const EventManagement = () => {
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
                       <p className="text-lg font-semibold">${(apiData.sponsors as unknown as Sponsor[]).reduce((sum: number, s) => sum + (s.amount || 0), 0).toLocaleString()}</p>
                     </div>
-                    <DollarSign className="w-8 h-8 text-green-600" />
+                    <DollarSign className="w-8 h-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -866,7 +866,7 @@ const EventManagement = () => {
                       <p className="text-sm text-muted-foreground">Gold Sponsors</p>
                       <p className="text-lg font-semibold">{(apiData.sponsors as unknown as Sponsor[]).filter((s) => s.level?.includes('Gold') || s.name?.includes('Gold')).length}</p>
                     </div>
-                    <Star className="w-8 h-8 text-yellow-600" />
+                    <Star className="w-8 h-8 text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -939,12 +939,12 @@ const EventManagement = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
                       <p className="text-lg font-semibold">
-                        {hasPaymentDetailsAccess 
+                        {hasPaymentDetailsAccess
                           ? `$${totalRevenue.toLocaleString()}`
                           : 'N/A'}
                       </p>
                     </div>
-                    <DollarSign className="w-8 h-8 text-green-600" />
+                    <DollarSign className="w-8 h-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -954,12 +954,12 @@ const EventManagement = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Ticket Sales</p>
                       <p className="text-lg font-semibold">
-                        {hasPaymentDetailsAccess 
+                        {hasPaymentDetailsAccess
                           ? `$${(totalRevenue * 0.7).toLocaleString()}`
                           : 'N/A'}
                       </p>
                     </div>
-                    <Users className="w-8 h-8 text-blue-600" />
+                    <Users className="w-8 h-8 text-primary" />
                   </div>
                 </CardContent>
               </Card>
@@ -969,12 +969,12 @@ const EventManagement = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Platform Fee</p>
                       <p className="text-lg font-semibold">
-                        {hasPaymentDetailsAccess 
+                        {hasPaymentDetailsAccess
                           ? `$${(totalRevenue * 0.3).toLocaleString()}`
                           : 'N/A'}
                       </p>
                     </div>
-                    <Star className="w-8 h-8 text-yellow-600" />
+                    <Star className="w-8 h-8 text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -1005,7 +1005,7 @@ const EventManagement = () => {
                         <p className="font-medium">Total Revenue</p>
                         <p className="text-sm text-muted-foreground">From all ticket sales</p>
                       </div>
-                      <p className="font-bold text-green-600">${totalRevenue.toLocaleString()}</p>
+                      <p className="font-bold text-success">${totalRevenue.toLocaleString()}</p>
                     </div>
                     {apiData.sponsors.length > 0 && (
                       <div className="flex justify-between items-center p-4 border rounded-lg">
@@ -1092,46 +1092,46 @@ const EventManagement = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="border-l-4 border-l-blue-500">
+                  <Card className="border-l-4 border-l-primary">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Speakers</p>
-                          <p className="text-lg font-semibold text-blue-600">{apiData.speakers.length}</p>
+                          <p className="text-lg font-semibold text-primary">{apiData.speakers.length}</p>
                         </div>
-                        <Mic className="w-8 h-8 text-blue-500/60" />
+                        <Mic className="w-8 h-8 text-primary/60" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border-l-4 border-l-green-500">
+                  <Card className="border-l-4 border-l-success">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-lg font-semibold text-green-600">
-                            ${hasPaymentDetailsAccess 
+                          <p className="text-lg font-semibold text-success">
+                            ${hasPaymentDetailsAccess
                               ? (apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()
                               : 'N/A'}
                           </p>
                         </div>
-                        <DollarSign className="w-8 h-8 text-green-500/60" />
+                        <DollarSign className="w-8 h-8 text-success/60" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border-l-4 border-l-purple-500">
+                  <Card className="border-l-4 border-l-primary">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Conversion</p>
-                          <p className="text-lg font-semibold text-purple-600">
-                            {eventData.capacity && eventData.capacity > 0 
+                          <p className="text-lg font-semibold text-primary">
+                            {eventData.capacity && eventData.capacity > 0
                               ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(1)
                               : 0}%
                           </p>
                         </div>
-                        <Target className="w-8 h-8 text-purple-500/60" />
+                        <Target className="w-8 h-8 text-primary/60" />
                       </div>
                     </CardContent>
                   </Card>
@@ -1146,11 +1146,11 @@ const EventManagement = () => {
                           <p className="text-sm text-muted-foreground">Sponsors</p>
                           <p className="text-lg font-semibold">{apiData.sponsors.length}</p>
                         </div>
-                        <Star className="w-8 h-8 text-yellow-500/60" />
+                        <Star className="w-8 h-8 text-muted-foreground/60" />
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1158,11 +1158,11 @@ const EventManagement = () => {
                           <p className="text-sm text-muted-foreground">Confirmed</p>
                           <p className="text-lg font-semibold">{confirmedAttendees}</p>
                         </div>
-                        <CheckCircle className="w-8 h-8 text-green-500/60" />
+                        <CheckCircle className="w-8 h-8 text-success/60" />
                       </div>
                     </CardContent>
                   </Card>
-                  
+
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1170,7 +1170,7 @@ const EventManagement = () => {
                           <p className="text-sm text-muted-foreground">Pending</p>
                           <p className="text-lg font-semibold">{pendingAttendees}</p>
                         </div>
-                        <Clock className="w-8 h-8 text-yellow-500/60" />
+                        <Clock className="w-8 h-8 text-muted-foreground/60" />
                       </div>
                     </CardContent>
                   </Card>
@@ -1383,8 +1383,8 @@ const EventManagement = () => {
             )}
             {(eventData?.venue || eventData?.location) && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-lg bg-blue-500/10">
-                  <MapPin className="w-5 h-5 text-blue-600" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <MapPin className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Location</p>
@@ -1398,8 +1398,8 @@ const EventManagement = () => {
               </div>
             )}
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <Users className="w-5 h-5 text-green-600" />
+              <div className="p-2 rounded-lg bg-success/10">
+                <Users className="w-5 h-5 text-success" />
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Attendees</p>
@@ -1407,7 +1407,7 @@ const EventManagement = () => {
                   {apiData.attendees.length} / {eventData?.capacity || '∞'}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {eventData?.capacity && eventData.capacity > 0 
+                  {eventData?.capacity && eventData.capacity > 0
                     ? `${((apiData.attendees.length / eventData.capacity) * 100).toFixed(0)}% full`
                     : 'Unlimited'}
                 </p>
@@ -1415,8 +1415,8 @@ const EventManagement = () => {
             </div>
             {hasPaymentDetailsAccess && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-lg bg-purple-500/10">
-                  <DollarSign className="w-5 h-5 text-purple-600" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <DollarSign className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Revenue</p>
@@ -1481,7 +1481,7 @@ const EventManagement = () => {
                   <div className="absolute bottom-4 left-4 right-4 text-white">
                     <h2 className="text-lg font-semibold mb-2">{eventData.title}</h2>
                     {eventData.category && (
-                      <Badge className="bg-green-500/90 text-white">
+                      <Badge className="bg-success text-white">
                         {eventData.category}
                       </Badge>
                     )}
@@ -1492,7 +1492,7 @@ const EventManagement = () => {
                 <div>
                   <h2 className="text-lg font-semibold mb-2">{eventData.title}</h2>
                   {eventData.category && (
-                    <Badge className="bg-green-500/90 text-white">
+                    <Badge className="bg-success text-white">
                       {eventData.category}
                     </Badge>
                   )}

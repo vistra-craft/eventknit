@@ -57,13 +57,13 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
   const getStatusColor = (category: string) => {
     switch (category.toLowerCase()) {
       case "music":
-        return "bg-accent-neon/10 text-accent-neon border-accent-neon/20";
+        return "bg-primary/10 text-primary border-primary/20";
       case "comedy":
-        return "bg-accent-electric/10 text-accent-electric border-accent-electric/20";
+        return "bg-primary/10 text-primary border-primary/20";
       case "sports":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
+        return "bg-success/10 text-success border-success/20";
       case "arts":
-        return "bg-purple-500/10 text-purple-500 border-purple-500/20";
+        return "bg-primary/10 text-primary border-primary/20";
       default:
         return "bg-muted text-muted-foreground border-border";
     }
@@ -85,7 +85,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
   };
 
   return (
-    <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+    <Card className="group cursor-pointer border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
       {/* Event Image */}
       {event.image && !imageError ? (
         <div className="relative w-full h-48 overflow-hidden bg-muted">
