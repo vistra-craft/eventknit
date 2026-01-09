@@ -15,9 +15,9 @@ import {
   CreditCard,
   Award,
   FileText,
-  Loader2,
   AlertCircle
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminLayout from "./AdminLayout";
 import { getUserById, getAdminStaffEvents, suspendUser, activateUser, getStaffProfile, getEmergencyContact, type EventStaffAssignment, type User as ApiUser, type StaffProfile, type EmergencyContact } from "@/lib/admin-api";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 interface StaffDetails {
   id: string;
@@ -325,12 +326,13 @@ const StaffDetailsPage = () => {
   ];
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      active: "bg-green-100 text-green-800 border-green-200",
-      inactive: "bg-red-100 text-red-800 border-red-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200"
+    const statusMap: Record<string, string> = {
+      active: "ACTIVE",
+      inactive: "DEACTIVATED",
+      pending: "PENDING",
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    const mappedStatus = statusMap[status] || status;
+    return getEventStatusBadgeClass(mappedStatus);
   };
 
   const getRoleBadge = (role: string) => {
@@ -408,7 +410,7 @@ const StaffDetailsPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader />
           <span className="ml-2 text-muted-foreground">Loading staff details...</span>
         </div>
       </AdminLayout>
@@ -455,13 +457,13 @@ const StaffDetailsPage = () => {
             </Button>
             {staffData.status === 'active' && (
               <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={actionLoading}>
-                {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
+                {actionLoading ? <Loader className="inline mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
                 Suspend
               </Button>
             )}
             {staffData.status === 'inactive' && (
               <Button size="sm" onClick={handleActivate} disabled={actionLoading}>
-                {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                {actionLoading ? <Loader className="inline mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
                 Activate
               </Button>
             )}
@@ -782,7 +784,7 @@ const StaffDetailsPage = () => {
               <CardContent>
                 {loadingEvents ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader />
                   </div>
                 ) : staffEvents.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">

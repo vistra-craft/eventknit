@@ -28,21 +28,21 @@ const UsersManagementPage = () => {
               <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
                 <TabsTrigger
                   value="staff"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-accent-coral data-[state=inactive]:hover:text-white transition-colors"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-primary data-[state=inactive]:hover:text-primary-foreground transition-colors"
                 >
                   <Shield className="h-4 w-4 mr-2" />
                   Staff
                 </TabsTrigger>
                 <TabsTrigger
                   value="organizers"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-accent-coral data-[state=inactive]:hover:text-white transition-colors"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-primary data-[state=inactive]:hover:text-primary-foreground transition-colors"
                 >
                   <Users className="h-4 w-4 mr-2" />
                   Organizers
                 </TabsTrigger>
                 <TabsTrigger
                   value="attendees"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-accent-coral data-[state=inactive]:hover:text-white transition-colors"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-4 data-[state=inactive]:hover:bg-primary data-[state=inactive]:hover:text-primary-foreground transition-colors"
                 >
                   <UserCheck className="h-4 w-4 mr-2" />
                   Attendees

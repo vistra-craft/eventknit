@@ -17,7 +17,6 @@ import {
   Check,
   X,
   Eye,
-  Loader2,
   Palette,
   Globe,
   Building,
@@ -27,6 +26,7 @@ import {
   Clock,
   CheckCircle,
 } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import AdminLayout from './AdminLayout';
 import {
   Dialog,
@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { getEventStatusBadgeClass } from '@/lib/utils/event-badge-helpers';
 
 const WhiteLabelManagementPage = () => {
   const { toast } = useToast();
@@ -131,16 +132,13 @@ const WhiteLabelManagementPage = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Active</Badge>;
-      case 'PENDING_APPROVAL':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>;
-      case 'INACTIVE':
-        return <Badge className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    const statusMap: Record<string, string> = {
+      ACTIVE: "ACTIVE",
+      PENDING_APPROVAL: "PENDING",
+      INACTIVE: "DECLINED",
+    };
+    const mappedStatus = statusMap[status] || status;
+    return <Badge className={getEventStatusBadgeClass(mappedStatus)}>{status}</Badge>;
   };
 
   const filteredBrandings = brandings.filter(b => {
@@ -267,7 +265,7 @@ const WhiteLabelManagementPage = () => {
               <TabsContent value={activeTab} className="mt-4">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader size="lg" />
                   </div>
                 ) : filteredBrandings.length === 0 ? (
                   <div className="text-center py-12">
@@ -368,7 +366,7 @@ const WhiteLabelManagementPage = () => {
                                     disabled={processingId === branding.id}
                                   >
                                     {processingId === branding.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                      <Loader size="sm" />
                                     ) : (
                                       <>
                                         <Check className="h-4 w-4 mr-1" />
@@ -604,7 +602,7 @@ const WhiteLabelManagementPage = () => {
                 onClick={handleReject}
                 disabled={!rejectionReason.trim() || processingId !== null}
               >
-                {processingId ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
+                {processingId ? <Loader size="sm" /> : 'Reject'}
               </Button>
             </DialogFooter>
           </DialogContent>

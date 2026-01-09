@@ -23,8 +23,8 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Loader2,
 } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import {
   validateImportFile,
   executeImport,
@@ -161,7 +161,7 @@ export function AttendeeImportDialog({
         />
         {isLoading ? (
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            <Loader size="lg" />
             <p className="text-sm text-muted-foreground">Validating file...</p>
           </div>
         ) : (
@@ -317,7 +317,7 @@ export function AttendeeImportDialog({
   const renderProgressStep = () => (
     <div className="space-y-4 py-4">
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        <Loader size="lg" />
         <div className="text-center">
           <p className="font-medium">Importing attendees...</p>
           <p className="text-sm text-muted-foreground mt-1">
@@ -472,7 +472,7 @@ export function AttendeeImportDialog({
               <Button onClick={handleImport} disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader size="sm" className="mr-2" />
                     Importing...
                   </>
                 ) : (

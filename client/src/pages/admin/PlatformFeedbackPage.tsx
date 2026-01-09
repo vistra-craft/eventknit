@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Loader2,
   TrendingUp,
   TrendingDown,
   Users,
@@ -32,6 +31,7 @@ import {
   Eye,
   Minus,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import {
   getAllFeedback,
   getFeedbackAnalytics,
@@ -164,9 +164,9 @@ const PlatformFeedbackPage: React.FC = () => {
   };
 
   const getNpsColor = (score: number) => {
-    if (score >= 9) return "text-green-600 bg-green-100";
-    if (score >= 7) return "text-yellow-600 bg-yellow-100";
-    return "text-red-600 bg-red-100";
+    if (score >= 9) return "text-success bg-success/10";
+    if (score >= 7) return "text-warning bg-warning/10";
+    return "text-destructive bg-destructive/10";
   };
 
   const getNpsCategory = (score: number) => {
@@ -176,7 +176,7 @@ const PlatformFeedbackPage: React.FC = () => {
   };
 
   const renderNpsGauge = (score: number) => {
-    const color = score >= 50 ? "text-green-600" : score >= 0 ? "text-yellow-600" : "text-red-600";
+    const color = score >= 50 ? "text-success" : score >= 0 ? "text-warning" : "text-destructive";
 
     return (
       <div className="flex items-center gap-2">
@@ -197,7 +197,7 @@ const PlatformFeedbackPage: React.FC = () => {
   if (loading && !analytics) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader size="lg" />
       </div>
     );
   }
@@ -206,7 +206,7 @@ const PlatformFeedbackPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Platform Feedback</h1>
+          <h1 className="text-page-title text-foreground">Platform Feedback</h1>
           <p className="text-muted-foreground">
             Monitor NPS scores and feedback from attendees and organizers
           </p>
@@ -261,7 +261,7 @@ const PlatformFeedbackPage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-success">
                   {analytics?.retention?.wouldUseAgain || 0}%
                 </div>
               </CardContent>
@@ -274,7 +274,7 @@ const PlatformFeedbackPage: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="text-3xl font-bold text-primary">
                   {analytics?.retention?.wouldRecommend || 0}%
                 </div>
               </CardContent>
@@ -288,11 +288,11 @@ const PlatformFeedbackPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="text-center p-4 bg-success/10 rounded-lg">
+                  <div className="text-2xl font-bold text-success">
                     {analytics?.distribution?.promoters || 0}
                   </div>
-                  <div className="text-sm text-green-700">Promoters (9-10)</div>
+                  <div className="text-sm text-success">Promoters (9-10)</div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {analytics?.totalResponses
                       ? Math.round(
@@ -304,11 +304,11 @@ const PlatformFeedbackPage: React.FC = () => {
                     %
                   </div>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold text-muted-foreground">
                     {analytics?.distribution?.passives || 0}
                   </div>
-                  <div className="text-sm text-yellow-700">Passives (7-8)</div>
+                  <div className="text-sm text-muted-foreground">Passives (7-8)</div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {analytics?.totalResponses
                       ? Math.round(
@@ -320,11 +320,11 @@ const PlatformFeedbackPage: React.FC = () => {
                     %
                   </div>
                 </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">
+                <div className="text-center p-4 bg-destructive/10 rounded-lg">
+                  <div className="text-2xl font-bold text-destructive">
                     {analytics?.distribution?.detractors || 0}
                   </div>
-                  <div className="text-sm text-red-700">Detractors (0-6)</div>
+                  <div className="text-sm text-destructive">Detractors (0-6)</div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {analytics?.totalResponses
                       ? Math.round(
@@ -358,7 +358,7 @@ const PlatformFeedbackPage: React.FC = () => {
                       <span>{category.label}</span>
                       <span className="font-medium">{category.value.toFixed(1)}/5</span>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-primary transition-all"
                         style={{ width: `${(category.value / 5) * 100}%` }}
@@ -506,7 +506,7 @@ const PlatformFeedbackPage: React.FC = () => {
             <CardContent className="pt-6">
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <Loader />
                 </div>
               ) : feedback.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -627,7 +627,7 @@ const PlatformFeedbackPage: React.FC = () => {
                   >
                     {triggering ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader size="sm" className="mr-2" />
                         Sending...
                       </>
                     ) : (
@@ -766,7 +766,7 @@ const PlatformFeedbackPage: React.FC = () => {
                 >
                   {savingNotes ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Saving...
                     </>
                   ) : (

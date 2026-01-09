@@ -386,13 +386,13 @@ const AdminMarketingOverview = () => {
                   </div>
                   <div className="flex items-center space-x-1">
                     {metric.change > 0 ? (
-                      <ArrowUpRight className="h-4 w-4 text-green-600" />
+                      <ArrowUpRight className="h-4 w-4 text-success" />
                     ) : (
-                      <ArrowDownRight className="h-4 w-4 text-red-600" />
+                      <ArrowDownRight className="h-4 w-4 text-destructive" />
                     )}
                     <span
                       className={`text-sm font-medium ${
-                        metric.change > 0 ? "text-green-600" : "text-red-600"
+                        metric.change > 0 ? "text-success" : "text-destructive"
                       }`}
                     >
                       {Math.abs(metric.change)}%
@@ -401,7 +401,7 @@ const AdminMarketingOverview = () => {
                 </div>
                 <div>
                   <p className="text-base font-semibold text-foreground mb-1">{metric.value}</p>
-                  <p className="text-sm text-gray-600">{metric.title}</p>
+                  <p className="text-sm text-muted-foreground">{metric.title}</p>
                 </div>
               </CardContent>
             </Card>
@@ -509,14 +509,14 @@ const AdminMarketingOverview = () => {
                       <action.icon className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold text-foreground group-hover:text-accent-coral transition-colors">
+                      <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
                         {action.title}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {action.description}
                       </p>
                     </div>
-                    <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-accent-coral transition-colors" />
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 </Link>
               ))}

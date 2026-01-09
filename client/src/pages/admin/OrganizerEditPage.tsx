@@ -4,9 +4,9 @@ import {
   Save,
   AlertCircle,
   Shield,
-  Loader2,
   CheckCircle
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
   type OrganizerProfile,
   type EmergencyContact
 } from "@/lib/admin-api";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 interface OrganizerDetails {
   id: string;
@@ -297,13 +298,14 @@ const OrganizerEditPage = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      verified: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      suspended: "bg-red-100 text-red-800 border-red-200",
-      rejected: "bg-gray-100 text-gray-800 border-gray-200"
+    const statusMap: Record<string, string> = {
+      verified: "APPROVED",
+      pending: "PENDING",
+      suspended: "SUSPENDED",
+      rejected: "DECLINED"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    const mappedStatus = statusMap[status] || status;
+    return getEventStatusBadgeClass(mappedStatus);
   };
 
   // Loading state
@@ -312,7 +314,7 @@ const OrganizerEditPage = () => {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <Loader />
             <p className="mt-2 text-muted-foreground">Loading organizer details...</p>
           </div>
         </div>
@@ -368,7 +370,7 @@ const OrganizerEditPage = () => {
             </Button>
             <Button size="sm" onClick={handleSave} disabled={isSaving || loading}>
               {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader className="inline mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
@@ -654,7 +656,7 @@ const OrganizerEditPage = () => {
           </Button>
           <Button onClick={handleSave} disabled={isSaving || loading}>
             {isSaving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader className="inline mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}

@@ -7,9 +7,9 @@ import {
   Target,
   Award,
   ArrowRight,
-  Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { useIsMobile } from '@/hooks/useMobile';
 import {
   getTeamSummary,
@@ -91,7 +91,7 @@ const StaffPerformanceDashboard = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          <Loader size="lg" />
         </div>
       </AdminLayout>
     );

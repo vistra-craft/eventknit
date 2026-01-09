@@ -37,6 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EventStaffAssignment } from "@/components/EventStaffAssignment";
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
+import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 interface EventDetails {
   id: string;
@@ -450,25 +451,15 @@ const EventDetailsPage = () => {
 
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      active: "bg-success-light text-success border-success/20",
-      pending: "bg-warning/10 text-warning border-warning/20",
-      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
-      completed: "bg-muted text-muted-foreground border-border"
-    };
-    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
+    return getEventStatusBadgeClass(status);
   };
 
   const getTypeBadge = (type: string) => {
-    return type === "public" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-secondary/10 text-secondary border-secondary/20";
+    return getEventTypeBadgeClass(type);
   };
 
-  const getPriceBadge = (price: string) => {
-    return price === "free" 
-      ? "bg-success-light text-success border-success/20"
-      : "bg-primary/10 text-primary border-primary/20";
+  const getPriceBadge = (isFree: boolean) => {
+    return getPriceBadgeClass(isFree);
   };
 
   const formatCurrency = (amount: number) => {

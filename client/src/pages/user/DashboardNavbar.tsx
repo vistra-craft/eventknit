@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   MessageCircle,
   Home,
@@ -15,7 +15,7 @@ import { Button } from "../../components/ui/button";
 import Logo from '@/components/Logo';
 import { useAuth } from "../../hooks/useAuth";
 import NotificationBell from "../../components/NotificationBell";
-import ThemeToggle from "../../components/ThemeToggle";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 interface User {
   name: string;
@@ -64,15 +64,13 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, 
         <div className="flex justify-between items-center h-16">
           {/* Left Side - Logo and Event Title */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              <Logo />
-              {eventTitle && (
-                <>
-                  <span className="text-muted-foreground mx-2">&gt;</span>
-                  <span className="text-lg font-medium text-foreground">{eventTitle}</span>
-                </>
-              )}
-            </Link>
+            <Logo />
+            {eventTitle && (
+              <>
+                <span className="text-muted-foreground mx-2">&gt;</span>
+                <span className="text-lg font-medium text-foreground">{eventTitle}</span>
+              </>
+            )}
           </div>
 
           {/* Right Side - Icons and Profile */}

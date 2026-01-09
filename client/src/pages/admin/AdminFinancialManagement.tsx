@@ -17,6 +17,7 @@ import {
   FileText,
   BarChart3,
 } from "lucide-react";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 import {
   createExpense,
   getExpenses,
@@ -306,18 +307,15 @@ const AdminFinancialManagement = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<
-      string,
-      { variant: "outline" | "default" | "destructive"; label: string }
-    > = {
-      pending: { variant: "outline", label: "Pending" },
-      approved: { variant: "default", label: "Approved" },
-      paid: { variant: "default", label: "Paid" },
-      received: { variant: "default", label: "Received" },
-      cancelled: { variant: "destructive", label: "Cancelled" },
+    const statusMap: Record<string, string> = {
+      pending: "PENDING",
+      approved: "APPROVED",
+      paid: "APPROVED",
+      received: "APPROVED",
+      cancelled: "DECLINED",
     };
-    const config = variants[status] || { variant: "outline", label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const mappedStatus = statusMap[status] || status;
+    return <Badge className={getEventStatusBadgeClass(mappedStatus)}>{status}</Badge>;
   };
 
   return (
@@ -325,7 +323,7 @@ const AdminFinancialManagement = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Financial Management</h1>
+            <h1 className="text-page-title">Financial Management</h1>
             <p className="text-muted-foreground mt-1">
               Track platform income and expenditures
             </p>
@@ -353,7 +351,7 @@ const AdminFinancialManagement = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-success">
                         {formatCurrency(overview.totalIncome)}
                       </div>
                     </CardContent>
@@ -365,7 +363,7 @@ const AdminFinancialManagement = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-destructive">
                         {formatCurrency(overview.totalExpenses)}
                       </div>
                     </CardContent>
@@ -379,7 +377,7 @@ const AdminFinancialManagement = () => {
                     <CardContent>
                       <div
                         className={`text-2xl font-bold ${
-                          overview.netProfit >= 0 ? "text-green-600" : "text-red-600"
+                          overview.netProfit >= 0 ? "text-success" : "text-destructive"
                         }`}
                       >
                         {formatCurrency(overview.netProfit)}
@@ -410,7 +408,7 @@ const AdminFinancialManagement = () => {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-semibold text-red-600">
+                                <p className="font-semibold text-destructive">
                                   {formatCurrency(Number(expense.amount))}
                                 </p>
                                 {getStatusBadge(expense.status)}
@@ -443,7 +441,7 @@ const AdminFinancialManagement = () => {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="font-semibold text-green-600">
+                                <p className="font-semibold text-success">
                                   {formatCurrency(Number(income.amount))}
                                 </p>
                                 {getStatusBadge(income.status)}
@@ -539,7 +537,7 @@ const AdminFinancialManagement = () => {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="text-lg font-bold text-red-600">
+                            <p className="text-lg font-bold text-destructive">
                               {formatCurrency(Number(expense.amount))}
                             </p>
                           </div>
@@ -641,7 +639,7 @@ const AdminFinancialManagement = () => {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="text-lg font-bold text-green-600">
+                            <p className="text-lg font-bold text-success">
                               {formatCurrency(Number(income.amount))}
                             </p>
                           </div>
@@ -732,7 +730,7 @@ const AdminFinancialManagement = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-green-600">
+                      <div className="text-2xl font-bold text-success">
                         {formatCurrency(monthlySummary.summary.totalIncome)}
                       </div>
                     </CardContent>
@@ -744,7 +742,7 @@ const AdminFinancialManagement = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-red-600">
+                      <div className="text-2xl font-bold text-destructive">
                         {formatCurrency(monthlySummary.summary.totalExpenses)}
                       </div>
                     </CardContent>
@@ -759,8 +757,8 @@ const AdminFinancialManagement = () => {
                       <div
                         className={`text-2xl font-bold ${
                           monthlySummary.summary.netProfit >= 0
-                            ? "text-green-600"
-                            : "text-red-600"
+                            ? "text-success"
+                            : "text-destructive"
                         }`}
                       >
                         {formatCurrency(monthlySummary.summary.netProfit)}
@@ -786,7 +784,7 @@ const AdminFinancialManagement = () => {
                                 className="flex justify-between items-center p-2 border rounded"
                               >
                                 <span className="font-medium">{category}</span>
-                                <span className="text-red-600 font-semibold">
+                                <span className="text-destructive font-semibold">
                                   {formatCurrency(amount)}
                                 </span>
                               </div>
@@ -813,7 +811,7 @@ const AdminFinancialManagement = () => {
                                 className="flex justify-between items-center p-2 border rounded"
                               >
                                 <span className="font-medium">{category}</span>
-                                <span className="text-green-600 font-semibold">
+                                <span className="text-success font-semibold">
                                   {formatCurrency(amount)}
                                 </span>
                               </div>

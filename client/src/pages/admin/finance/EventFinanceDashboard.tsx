@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, ArrowRight, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AdminLayout from "../AdminLayout";
 import {
   getPaymentTransactions,
@@ -283,33 +284,35 @@ const EventFinanceDashboard = () => {
               </div>
 
               {growthPeriod === "monthly" && (
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
-                >
-                  <option value="All">All months</option>
-                  {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="mt-1 w-full sm:w-44 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All months</SelectItem>
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((m) => (
+                      <SelectItem key={m} value={m}>
+                        {m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
 
               {growthPeriod === "yearly" && (
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
-                >
-                  <option value="All">All years</option>
-                  {financeGrowth?.totalRevenue.map((d) => (
-                    <option key={d.label} value={d.label}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="mt-1 w-full sm:w-44 h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All years</SelectItem>
+                    {financeGrowth?.totalRevenue.map((d) => (
+                      <SelectItem key={d.label} value={d.label}>
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Lock, Loader2, AlertCircle, Mail, BarChart3, Users, TrendingUp } from 'lucide-react';
+import { Download, Lock, AlertCircle, Mail, BarChart3, Users, TrendingUp } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -164,7 +165,7 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
       <Card className={className}>
         <CardContent className="p-12 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+            <Loader size="lg" className="mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Loading consent statistics...</p>
           </div>
         </CardContent>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Lock, Loader2, Ticket, Calendar, MapPin, AlertCircle, CreditCard, CheckCircle } from "lucide-react";
+import { Lock, Ticket, Calendar, MapPin, AlertCircle, CreditCard, CheckCircle } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 
 // UI Components
@@ -104,7 +105,7 @@ const PaymentPage = () => {
       <div className="min-h-screen bg-background">
         <CheckoutHeader />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <Loader size="lg" />
           <p className="text-lg font-medium">Verifying your payment...</p>
           <p className="text-sm text-muted-foreground">Please wait while we confirm your transaction.</p>
         </div>
@@ -117,7 +118,7 @@ const PaymentPage = () => {
       <div className="min-h-screen bg-background">
         <CheckoutHeader />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 className="w-8 h-8 animate-spin" />
+          <Loader size="lg" />
         </div>
       </div>
     );
@@ -304,7 +305,7 @@ const PaymentPage = () => {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        <Loader className="mr-2" />
                         Redirecting to Paystack...
                       </>
                     ) : (

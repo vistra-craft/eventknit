@@ -11,8 +11,8 @@ import {
   MapPin,
   Clock,
   ExternalLink,
-  Loader2,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
@@ -267,7 +267,7 @@ const RegistrationConfirmation: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader size="lg" />
       </div>
     );
   }
@@ -468,7 +468,7 @@ const RegistrationConfirmation: React.FC = () => {
             disabled={isDownloading || !confirmationData?.registrationId}
             className="flex-col h-auto py-3 gap-1"
           >
-            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {isDownloading ? <Loader size="sm" /> : <Download className="w-4 h-4" />}
             <span className="text-[10px]">Download</span>
           </Button>
           <Button

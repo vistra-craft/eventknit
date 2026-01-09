@@ -4,9 +4,9 @@ import {
   Save,
   Shield,
   AlertCircle,
-  Loader2,
   CheckCircle
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -360,7 +360,7 @@ const StaffEditPage = () => {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <Loader size="lg" className="mx-auto" />
             <p className="mt-2 text-muted-foreground">Loading staff details...</p>
           </div>
         </div>
@@ -416,7 +416,7 @@ const StaffEditPage = () => {
             </Button>
             <Button size="sm" onClick={handleSave} disabled={isSaving || loading}>
               {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader size="sm" className="mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
@@ -750,7 +750,7 @@ const StaffEditPage = () => {
           </Button>
           <Button onClick={handleSave} disabled={isSaving || loading}>
             {isSaving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader size="sm" className="mr-2" />
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}

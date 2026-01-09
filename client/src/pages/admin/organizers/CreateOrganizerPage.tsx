@@ -102,7 +102,7 @@ const CreateOrganizerPage = () => {
           </Button>
           <div>
             <h1 className="text-lg font-semibold text-foreground">Create New Organizer</h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Create a new organizer account. The organizer will be able to create and manage events.
             </p>
           </div>
@@ -160,7 +160,7 @@ const CreateOrganizerPage = () => {
                   required
                   minLength={8}
                 />
-                <p className="text-xs text-gray-500">Minimum 8 characters</p>
+                <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
               </div>
 
               <div className="space-y-2">

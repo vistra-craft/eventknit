@@ -165,7 +165,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
               <Button 
                 onClick={addAgendaItem} 
                 variant="ghost"
-                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+                className="text-primary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" /> Add Session
               </Button>
@@ -252,7 +252,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
               <Button 
                 onClick={addSpeaker} 
                 variant="ghost"
-                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+                className="text-primary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-2"
                 disabled={speakers.length >= 20}
               >
                 <Plus className="h-4 w-4" /> Add Speaker
@@ -326,7 +326,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
               <Button 
                 onClick={addExhibitor} 
                 variant="ghost"
-                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+                className="text-primary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" /> Add Exhibitor
               </Button>
@@ -411,7 +411,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
               <Button 
                 onClick={addSponsor} 
                 variant="ghost"
-                className="text-primary hover:bg-accent-coral hover:text-white transition-colors flex items-center gap-2"
+                className="text-primary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" /> Add Sponsor
               </Button>

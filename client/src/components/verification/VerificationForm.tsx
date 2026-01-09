@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, CheckCircle2, XCircle, Clock, Shield, Building2, User, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, CheckCircle2, XCircle, Clock, Shield, Building2, User, AlertCircle } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
 import { 
   getVerificationStatus, 
   submitIdentityVerification, 
@@ -397,7 +398,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader size="lg" className="text-primary" />
         <span className="ml-2 text-muted-foreground">Loading verification status...</span>
       </div>
     );
@@ -408,7 +409,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
       return <Badge className="bg-primary/10 text-primary border-primary/20"><CheckCircle2 className="h-3 w-3 mr-1" />Verified</Badge>;
     }
     if (status === 'PENDING') {
-      return <Badge className="bg-accent-coral/10 text-accent-coral border-accent-coral/20"><Clock className="h-3 w-3 mr-1" />Pending Review</Badge>;
+      return <Badge className="bg-warning/10 text-warning border-warning/20"><Clock className="h-3 w-3 mr-1" />Pending Review</Badge>;
     }
     if (status === 'REJECTED') {
       return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
@@ -727,11 +728,11 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                 <Button
                   type="submit"
                   disabled={submitting || !identityData.idDocumentFrontUrl}
-                  className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white"
+                  className="w-full"
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Submitting...
                     </>
                   ) : (
@@ -931,11 +932,11 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                   <Button
                     type="submit"
                     disabled={submitting}
-                    className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white"
+                    className="w-full"
                   >
                     {submitting ? (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader size="sm" className="mr-2" />
                         Submitting...
                       </>
                     ) : (

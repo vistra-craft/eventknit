@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CreditCard, Lock, Loader2 } from "lucide-react";
+import { CreditCard, Lock } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -278,7 +279,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <Loader className="mr-2" />
                 Processing...
               </>
             ) : (

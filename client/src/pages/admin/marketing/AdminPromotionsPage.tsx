@@ -50,12 +50,12 @@ import {
   Globe,
   Building2,
   Calendar,
-  Loader2,
   Layers,
   ToggleLeft,
   ToggleRight,
   Sparkles,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
 import {
   getAdminPromoCodes,
@@ -269,9 +269,9 @@ const AdminPromotionsPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Active</p>
-                    <p className="text-2xl font-bold text-green-600">{stats.activeCodes}</p>
+                    <p className="text-2xl font-bold text-success">{stats.activeCodes}</p>
                   </div>
-                  <CheckCircle className="h-8 w-8 text-green-500" />
+                  <CheckCircle className="h-8 w-8 text-success/70" />
                 </div>
               </CardContent>
             </Card>
@@ -335,7 +335,7 @@ const AdminPromotionsPage = () => {
         {/* Promo Codes List */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader size="lg" />
           </div>
         ) : promoCodes.length === 0 ? (
           <Card>
@@ -582,7 +582,7 @@ const AdminPromotionsPage = () => {
               Cancel
             </Button>
             <Button onClick={handleBulkGenerate} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving && <Loader size="sm" className="mr-2" />}
               Generate {bulkData.count} Codes
             </Button>
           </DialogFooter>

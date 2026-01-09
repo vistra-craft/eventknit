@@ -28,6 +28,7 @@ import * as authApi from "@/lib/auth-api";
 import AdminLayout from "./AdminLayout";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { UserRole, UserStatus } from "@/types/auth";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 const AdminProfilePage = () => {
   const navigate = useNavigate();
@@ -231,16 +232,13 @@ const AdminProfilePage = () => {
 
 
   const getStatusBadge = (status: UserStatus) => {
-    switch (status) {
-      case UserStatus.ACTIVE:
-        return <Badge className="bg-green-500">Active</Badge>;
-      case UserStatus.SUSPENDED:
-        return <Badge variant="destructive">Suspended</Badge>;
-      case UserStatus.DEACTIVATED:
-        return <Badge variant="secondary">Deactivated</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
+    const statusMap: Record<UserStatus, string> = {
+      [UserStatus.ACTIVE]: "ACTIVE",
+      [UserStatus.SUSPENDED]: "SUSPENDED",
+      [UserStatus.DEACTIVATED]: "DEACTIVATED",
+    };
+    const mappedStatus = statusMap[status] || status;
+    return <Badge className={getEventStatusBadgeClass(mappedStatus)}>{status}</Badge>;
   };
 
   const getRoleLabel = (role: UserRole) => {
@@ -284,19 +282,19 @@ const AdminProfilePage = () => {
 
         {/* Save Status */}
         {saveStatus === "success" && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-success/10 border border-success/20 rounded-lg p-4">
             <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <span className="text-green-800">{saveMessage || "Settings saved successfully!"}</span>
+              <CheckCircle className="h-5 w-5 text-success mr-2" />
+              <span className="text-success">{saveMessage || "Settings saved successfully!"}</span>
             </div>
           </div>
         )}
 
         {saveStatus === "error" && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
             <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <span className="text-red-800">{saveMessage || "Failed to save settings. Please try again."}</span>
+              <AlertCircle className="h-5 w-5 text-destructive mr-2" />
+              <span className="text-destructive">{saveMessage || "Failed to save settings. Please try again."}</span>
             </div>
           </div>
         )}
@@ -469,7 +467,7 @@ const AdminProfilePage = () => {
                     <div className="mt-1 flex items-center gap-2">
                       {accountInfo.isEmailVerified ? (
                         <>
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <CheckCircle2 className="h-4 w-4 text-success" />
                           <span className="text-sm">Verified</span>
                           {accountInfo.emailVerifiedAt && (
                             <span className="text-xs text-muted-foreground">
@@ -479,7 +477,7 @@ const AdminProfilePage = () => {
                         </>
                       ) : (
                         <>
-                          <XCircle className="h-4 w-4 text-red-600" />
+                          <XCircle className="h-4 w-4 text-destructive" />
                           <span className="text-sm">Not Verified</span>
                         </>
                       )}

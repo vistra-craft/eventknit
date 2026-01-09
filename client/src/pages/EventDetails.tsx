@@ -9,7 +9,8 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Loader2, Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight } from "lucide-react";
+import { Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Card } from "@/components/ui/card";
 
 // Helper function to format time for display
@@ -181,7 +182,7 @@ const EventDetails = () => {
         <Navbar />
         <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+            <Loader size="lg" className="mx-auto mb-4" />
             <p className="text-muted-foreground">Loading event...</p>
           </div>
         </div>

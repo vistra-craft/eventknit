@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/useToast";
 import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus, type UserRole as AdminApiUserRole } from "@/lib/admin-api";
 import { UserRole } from "@/types/auth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 // Staff roles that exist in the enum but not in the admin-api UserRole type
 type StaffRole = AdminApiUserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
@@ -105,12 +106,13 @@ const StaffManagementContent = () => {
   }, [searchTerm, statusFilter, roleFilter]);
 
   const getStatusBadge = (status: UserStatus) => {
-    const variants = {
-      ACTIVE: "bg-green-100 text-green-800 border-green-200",
-      SUSPENDED: "bg-red-100 text-red-800 border-red-200",
-      DEACTIVATED: "bg-gray-100 text-gray-800 border-gray-200",
+    const statusMap: Record<UserStatus, string> = {
+      ACTIVE: "ACTIVE",
+      SUSPENDED: "SUSPENDED",
+      DEACTIVATED: "DEACTIVATED",
     };
-    return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    const mappedStatus = statusMap[status] || status;
+    return getEventStatusBadgeClass(mappedStatus);
   };
 
   const getRoleBadge = (role: AdminApiUserRole | StaffRole) => {
@@ -305,10 +307,10 @@ const StaffManagementContent = () => {
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-base font-semibold text-accent-coral mb-2">
+            <div className="text-base font-semibold text-destructive mb-2">
               {staffMembers.filter((s) => s.status === "SUSPENDED").length}
             </div>
-            <p className="text-sm text-gray-600">Suspended</p>
+            <p className="text-sm text-muted-foreground">Suspended</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">

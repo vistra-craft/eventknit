@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Users,
   Calendar,
@@ -16,9 +18,9 @@ import {
   RefreshCw,
   Building2,
   Activity,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import {
   CustomLineChart,
   CustomAreaChart,
@@ -289,33 +291,34 @@ const AdminAnalyticsOverview = () => {
               <h1 className="text-base font-semibold text-foreground">
                 Platform Analytics
               </h1>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Comprehensive insights into platform performance and user engagement
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
-              >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="1y">Last year</option>
-              </select>
-              <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+              <Select value={timeRange} onValueChange={(value) => setTimeRange(value as "7d" | "30d" | "90d" | "1y")}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="90d">Last 90 days</SelectItem>
+                  <SelectItem value="1y">Last year</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="hover:bg-primary hover:text-white transition-colors">
                 <Filter className="h-4 w-4 mr-2" />
                 Filters
               </Button>
-              <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+              <Button variant="outline" size="sm" className="hover:bg-primary hover:text-white transition-colors">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="hover:bg-gray-900 hover:text-white transition-colors"
+                className="hover:bg-primary hover:text-white transition-colors"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
               >
@@ -328,7 +331,7 @@ const AdminAnalyticsOverview = () => {
           {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader />
               <span className="ml-2 text-muted-foreground">Loading analytics...</span>
             </div>
           )}

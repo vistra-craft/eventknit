@@ -50,22 +50,25 @@ export interface LoaderProps
 const SpinnerLoader = React.forwardRef<
   HTMLDivElement,
   LoaderProps
->(({ className, size = "default", ...props }, ref) => (
-  <div ref={ref} className={cn("relative", className)} {...props}>
-    <div
-      className={cn(
-        sizeMap[size || "default"].spinner,
-        "rounded-full border-2 border-muted-foreground/20"
-      )}
-    />
-    <div
-      className={cn(
-        sizeMap[size || "default"].spinner,
-        "absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin"
-      )}
-    />
-  </div>
-));
+>(({ className, size, ...props }, ref) => {
+  const validSize = size && size in sizeMap ? size : "default";
+  return (
+    <div ref={ref} className={cn("relative", className)} {...props}>
+      <div
+        className={cn(
+          sizeMap[validSize].spinner,
+          "rounded-full border-2 border-muted-foreground/20"
+        )}
+      />
+      <div
+        className={cn(
+          sizeMap[validSize].spinner,
+          "absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin"
+        )}
+      />
+    </div>
+  );
+});
 SpinnerLoader.displayName = "SpinnerLoader";
 
 /**
@@ -74,23 +77,26 @@ SpinnerLoader.displayName = "SpinnerLoader";
 const DotsLoader = React.forwardRef<
   HTMLDivElement,
   LoaderProps
->(({ className, size = "default", ...props }, ref) => (
-  <div ref={ref} className={cn("flex items-center gap-1", className)} {...props}>
-    {[0, 1, 2].map((i) => (
-      <div
-        key={i}
-        className={cn(
-          sizeMap[size || "default"].dots,
-          "rounded-full bg-primary animate-bounce"
-        )}
-        style={{
-          animationDelay: `${i * 0.15}s`,
-          animationDuration: "0.6s",
-        }}
-      />
-    ))}
-  </div>
-));
+>(({ className, size, ...props }, ref) => {
+  const validSize = size && size in sizeMap ? size : "default";
+  return (
+    <div ref={ref} className={cn("flex items-center gap-1", className)} {...props}>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className={cn(
+            sizeMap[validSize].dots,
+            "rounded-full bg-primary animate-bounce"
+          )}
+          style={{
+            animationDelay: `${i * 0.15}s`,
+            animationDuration: "0.6s",
+          }}
+        />
+      ))}
+    </div>
+  );
+});
 DotsLoader.displayName = "DotsLoader";
 
 /**
@@ -99,22 +105,25 @@ DotsLoader.displayName = "DotsLoader";
 const PulseLoader = React.forwardRef<
   HTMLDivElement,
   LoaderProps
->(({ className, size = "default", ...props }, ref) => (
-  <div ref={ref} className={cn("relative", className)} {...props}>
-    <div
-      className={cn(
-        sizeMap[size || "default"].pulse,
-        "rounded-full bg-primary/30 animate-ping absolute inset-0"
-      )}
-    />
-    <div
-      className={cn(
-        sizeMap[size || "default"].pulse,
-        "rounded-full bg-primary relative"
-      )}
-    />
-  </div>
-));
+>(({ className, size, ...props }, ref) => {
+  const validSize = size && size in sizeMap ? size : "default";
+  return (
+    <div ref={ref} className={cn("relative", className)} {...props}>
+      <div
+        className={cn(
+          sizeMap[validSize].pulse,
+          "rounded-full bg-primary/30 animate-ping absolute inset-0"
+        )}
+      />
+      <div
+        className={cn(
+          sizeMap[validSize].pulse,
+          "rounded-full bg-primary relative"
+        )}
+      />
+    </div>
+  );
+});
 PulseLoader.displayName = "PulseLoader";
 
 /**
@@ -123,24 +132,27 @@ PulseLoader.displayName = "PulseLoader";
 const BarsLoader = React.forwardRef<
   HTMLDivElement,
   LoaderProps
->(({ className, size = "default", ...props }, ref) => (
-  <div ref={ref} className={cn("flex items-end gap-0.5", className)} {...props}>
-    {[0, 1, 2, 3].map((i) => (
-      <div
-        key={i}
-        className={cn(
-          sizeMap[size || "default"].bars,
-          "bg-primary rounded-full animate-pulse"
-        )}
-        style={{
-          animationDelay: `${i * 0.15}s`,
-          animationDuration: "0.8s",
-          transform: `scaleY(${0.4 + (i % 2) * 0.6})`,
-        }}
-      />
-    ))}
-  </div>
-));
+>(({ className, size, ...props }, ref) => {
+  const validSize = size && size in sizeMap ? size : "default";
+  return (
+    <div ref={ref} className={cn("flex items-end gap-0.5", className)} {...props}>
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className={cn(
+            sizeMap[validSize].bars,
+            "bg-primary rounded-full animate-pulse"
+          )}
+          style={{
+            animationDelay: `${i * 0.15}s`,
+            animationDuration: "0.8s",
+            transform: `scaleY(${0.4 + (i % 2) * 0.6})`,
+          }}
+        />
+      ))}
+    </div>
+  );
+});
 BarsLoader.displayName = "BarsLoader";
 
 /**

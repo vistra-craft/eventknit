@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Download, QrCode, Share2, Printer, Loader2, AlertCircle } from "lucide-react";
+import { Download, QrCode, Share2, Printer, AlertCircle } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -133,7 +134,7 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <Loader size="lg" />
             <span className="ml-2 text-muted-foreground">Loading badge...</span>
           </div>
         )}

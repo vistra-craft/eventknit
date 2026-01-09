@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import AdminLayout from "../AdminLayout";
 import { getUserById, type User } from "@/lib/admin-api";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 import { useToast } from "@/hooks/useToast";
 
 const OrganizerPreviewPage = () => {
@@ -50,12 +51,7 @@ const OrganizerPreviewPage = () => {
   }, [organizerId, navigate, toast]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, string> = {
-      ACTIVE: "bg-green-100 text-green-800 border-green-200",
-      SUSPENDED: "bg-red-100 text-red-800 border-red-200",
-      DEACTIVATED: "bg-gray-100 text-gray-800 border-gray-200",
-    };
-    return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    return getEventStatusBadgeClass(status);
   };
 
   const formatDate = (dateString: string) => {
@@ -106,7 +102,7 @@ const OrganizerPreviewPage = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Organizer Preview</h1>
-            <p className="text-sm text-gray-600">View organizer details</p>
+            <p className="text-sm text-muted-foreground">View organizer details</p>
           </div>
           <Button
             variant="default"

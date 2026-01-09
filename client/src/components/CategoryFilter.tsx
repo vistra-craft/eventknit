@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 
 const categories = [
   { id: "all", name: "All Events", icon: Calendar, color: "primary" },
-  { id: "music", name: "Music", icon: Music, color: "accent-electric" },
-  { id: "comedy", name: "Comedy", icon: Mic, color: "accent-coral" },
-  { id: "sports", name: "Sports", icon: Trophy, color: "accent-neon" },
+  { id: "music", name: "Music", icon: Music, color: "primary" },
+  { id: "comedy", name: "Comedy", icon: Mic, color: "primary" },
+  { id: "sports", name: "Sports", icon: Trophy, color: "primary" },
   { id: "arts", name: "Arts", icon: Palette, color: "primary" },
-  { id: "theater", name: "Theater", icon: Theater, color: "accent-electric" },
-  { id: "community", name: "Community", icon: Users, color: "accent-coral" },
-  { id: "featured", name: "Featured", icon: Sparkles, color: "accent-neon" },
+  { id: "theater", name: "Theater", icon: Theater, color: "primary" },
+  { id: "community", name: "Community", icon: Users, color: "primary" },
+  { id: "featured", name: "Featured", icon: Sparkles, color: "primary" },
 ];
 
 interface CategoryFilterProps {

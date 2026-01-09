@@ -204,7 +204,7 @@ const AdminAdvancedTicketTypes = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Advanced Ticket Types</h1>
+            <h1 className="text-page-title">Advanced Ticket Types</h1>
             <p className="text-muted-foreground mt-1">
               Create group packages, bundles, donations, and reserved seating
             </p>

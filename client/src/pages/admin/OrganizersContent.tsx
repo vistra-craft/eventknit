@@ -24,6 +24,7 @@ import { getUsers, suspendUser, deactivateUser, activateUser, type User, type Us
 import { exportUserData } from "@/lib/utils/export";
 import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole } from "@/types/auth";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 const OrganizersContent = () => {
   const navigate = useNavigate();
@@ -88,12 +89,13 @@ const OrganizersContent = () => {
   }, [searchTerm, statusFilter]);
 
   const getStatusBadge = (status: UserStatus) => {
-    const variants = {
-      ACTIVE: "bg-green-100 text-green-800 border-green-200",
-      SUSPENDED: "bg-red-100 text-red-800 border-red-200",
-      DEACTIVATED: "bg-gray-100 text-gray-800 border-gray-200",
+    const statusMap: Record<UserStatus, string> = {
+      ACTIVE: "ACTIVE",
+      SUSPENDED: "SUSPENDED",
+      DEACTIVATED: "DEACTIVATED",
     };
-    return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    const mappedStatus = statusMap[status] || status;
+    return getEventStatusBadgeClass(mappedStatus);
   };
 
   const formatDate = (dateString: string) => {
@@ -215,7 +217,7 @@ const OrganizersContent = () => {
   if (loading && organizers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading organizers...</div>
+        <div className="text-muted-foreground">Loading organizers...</div>
       </div>
     );
   }
@@ -226,10 +228,10 @@ const OrganizersContent = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold text-foreground">Organizers</h2>
-          <p className="text-gray-600">Manage external event organizers</p>
+          <p className="text-muted-foreground">Manage external event organizers</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             Showing {organizers.length} of {total} organizers
           </div>
           <Select value={limit.toString()} onValueChange={(value) => {
@@ -248,11 +250,11 @@ const OrganizersContent = () => {
           </Select>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-white transition-colors">
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-white transition-colors">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -279,7 +281,7 @@ const OrganizersContent = () => {
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
             <div className="text-base font-semibold text-primary mb-2">{total || organizers.length}</div>
-            <p className="text-sm text-gray-600">Total Organizers</p>
+            <p className="text-sm text-muted-foreground">Total Organizers</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
@@ -287,15 +289,15 @@ const OrganizersContent = () => {
             <div className="text-base font-semibold text-primary mb-2">
               {organizers.filter((o) => o.status === "ACTIVE").length}
             </div>
-            <p className="text-sm text-gray-600">Active</p>
+            <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-red-600 mb-2">
+            <div className="text-lg font-semibold text-destructive mb-2">
               {organizers.filter((o) => o.status === "SUSPENDED").length}
             </div>
-            <p className="text-sm text-gray-600">Suspended</p>
+            <p className="text-sm text-muted-foreground">Suspended</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
@@ -303,7 +305,7 @@ const OrganizersContent = () => {
             <div className="text-base font-semibold text-muted-foreground mb-2">
               {organizers.filter((o) => o.status === "DEACTIVATED").length}
             </div>
-            <p className="text-sm text-gray-600">Deactivated</p>
+            <p className="text-sm text-muted-foreground">Deactivated</p>
           </CardContent>
         </Card>
       </div>
@@ -314,7 +316,7 @@ const OrganizersContent = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search organizers..."
                   value={searchTerm}
@@ -348,7 +350,7 @@ const OrganizersContent = () => {
         </CardHeader>
         <CardContent>
           {filteredOrganizers.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">No organizers found</div>
+            <div className="text-center py-8 text-muted-foreground">No organizers found</div>
           ) : (
             <div className="space-y-3">
               {filteredOrganizers.map((organizer) => (
@@ -367,12 +369,12 @@ const OrganizersContent = () => {
                       <h4 className="text-sm font-medium text-foreground">
                         {organizer.firstName} {organizer.lastName}
                       </h4>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-muted-foreground">
                         {organizer.organizationName || "No organization"}
                       </p>
-                      <p className="text-sm text-gray-600">{organizer.email}</p>
+                      <p className="text-sm text-muted-foreground">{organizer.email}</p>
                       {organizer.businessEmail && (
-                        <p className="text-sm text-gray-600">Business: {organizer.businessEmail}</p>
+                        <p className="text-sm text-muted-foreground">Business: {organizer.businessEmail}</p>
                       )}
                       <div className="flex items-center gap-2 mt-1">
                         <Badge className={`text-xs ${getStatusBadge(organizer.status)}`}>
@@ -383,7 +385,7 @@ const OrganizersContent = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Joined: {formatDate(organizer.createdAt)}
                       </div>
                     </div>
@@ -425,7 +427,7 @@ const OrganizersContent = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleSuspendOrganizer(organizer.id)}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            className="text-destructive border-destructive/20 hover:bg-destructive/5"
                             title="Suspend Organizer"
                             disabled={actionLoading === organizer.id}
                           >
@@ -450,7 +452,7 @@ const OrganizersContent = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleActivateOrganizer(organizer.id)}
-                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            className="text-success border-success/20 hover:bg-success/5"
                             title="Activate Organizer"
                             disabled={actionLoading === organizer.id}
                           >

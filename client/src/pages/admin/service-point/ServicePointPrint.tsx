@@ -20,8 +20,8 @@ import {
   FileText,
   QrCode,
   X,
-  Loader2,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
@@ -571,7 +571,7 @@ const ServicePointPrint: React.FC = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4" />;
-      case 'printing': return <Loader2 className="w-4 h-4 animate-spin" />;
+      case 'printing': return <Loader size="sm" />;
       case 'completed': return <CheckCircle className="w-4 h-4" />;
       case 'failed': return <AlertCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
@@ -583,7 +583,7 @@ const ServicePointPrint: React.FC = () => {
       <AdminLayout>
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <Loader size="lg" />
             <p className="text-muted-foreground">Loading print center...</p>
           </div>
         </div>
@@ -648,49 +648,49 @@ const ServicePointPrint: React.FC = () => {
         {/* Stats Cards */}
         {eventStats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all bg-primary/5">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-600">Total Attendees</p>
-                    <p className="text-2xl font-bold text-blue-900">{eventStats.totalAttendees}</p>
+                    <p className="text-sm text-muted-foreground">Total Attendees</p>
+                    <p className="text-2xl font-bold text-primary">{eventStats.totalAttendees}</p>
                   </div>
-                  <Users className="w-8 h-8 text-blue-500" />
+                  <Users className="w-8 h-8 text-primary/50" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all bg-success/5">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-600">Checked In</p>
-                    <p className="text-2xl font-bold text-green-900">{eventStats.checkedIn}</p>
+                    <p className="text-sm text-muted-foreground">Checked In</p>
+                    <p className="text-2xl font-bold text-success">{eventStats.checkedIn}</p>
                   </div>
-                  <CheckCircle className="w-8 h-8 text-green-500" />
+                  <CheckCircle className="w-8 h-8 text-success/50" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all bg-muted">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-600">Badges Printed</p>
-                    <p className="text-2xl font-bold text-purple-900">{printedBadges.size}</p>
+                    <p className="text-sm text-muted-foreground">Badges Printed</p>
+                    <p className="text-2xl font-bold text-foreground">{printedBadges.size}</p>
                   </div>
-                  <Printer className="w-8 h-8 text-purple-500" />
+                  <Printer className="w-8 h-8 text-muted-foreground/50" />
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all bg-muted/50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-orange-600">Pending</p>
-                    <p className="text-2xl font-bold text-orange-900">
+                    <p className="text-sm text-muted-foreground">Pending</p>
+                    <p className="text-2xl font-bold text-foreground">
                       {eventStats.totalAttendees - printedBadges.size}
                     </p>
                   </div>
-                  <Clock className="w-8 h-8 text-orange-500" />
+                  <Clock className="w-8 h-8 text-muted-foreground/50" />
                 </div>
               </CardContent>
             </Card>
@@ -851,7 +851,7 @@ const ServicePointPrint: React.FC = () => {
                       disabled={selectedAttendees.length === 0 || isPrinting}
                     >
                       {isPrinting ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader size="sm" className="mr-2" />
                       ) : (
                         <Printer className="w-4 h-4 mr-2" />
                       )}
@@ -1088,7 +1088,7 @@ const ServicePointPrint: React.FC = () => {
                   </Button>
                   <Button onClick={() => handlePrintBadge(previewAttendee)} disabled={isPrinting}>
                     {isPrinting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                     ) : (
                       <Printer className="w-4 h-4 mr-2" />
                     )}

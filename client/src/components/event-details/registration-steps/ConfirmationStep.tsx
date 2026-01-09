@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, Calendar, MapPin, Mail, Download, Share2, Loader2 } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Mail, Download, Share2 } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { useNavigate } from 'react-router-dom';
 import type { EventData } from '@/types/event';
 import type { TicketSelection } from '../UnifiedRegistrationModal';
@@ -216,7 +217,7 @@ export const ConfirmationStep = ({
           <Button variant="outline" size="lg" onClick={handleDownloadTicket} disabled={isDownloading}>
             {isDownloading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader size="sm" className="mr-2" />
                 Downloading...
               </>
             ) : (

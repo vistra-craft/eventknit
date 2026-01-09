@@ -202,10 +202,10 @@ const CommunicationsPage = () => {
       draft: "bg-muted text-muted-foreground border-border",
       scheduled: "bg-primary/10 text-primary border-primary/20",
       sent: "bg-primary/10 text-primary border-primary/20",
-      cancelled: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
       active: "bg-primary/10 text-primary border-primary/20",
       inactive: "bg-muted text-muted-foreground border-border",
-      expired: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
+      expired: "bg-destructive/10 text-destructive border-destructive/20"
     };
     return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
@@ -213,18 +213,18 @@ const CommunicationsPage = () => {
   const getTypeBadge = (type: string) => {
     const variants = {
       general: "bg-primary/10 text-primary border-primary/20",
-      maintenance: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      maintenance: "bg-warning/10 text-warning border-warning/20",
       feature: "bg-primary/10 text-primary border-primary/20",
-      urgent: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      urgent: "bg-warning/10 text-warning border-warning/20",
       info: "bg-primary/10 text-primary border-primary/20",
-      warning: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      error: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      warning: "bg-warning/10 text-warning border-warning/20",
+      error: "bg-destructive/10 text-destructive border-destructive/20",
       success: "bg-primary/10 text-primary border-primary/20",
       welcome: "bg-primary/10 text-primary border-primary/20",
       event: "bg-primary/10 text-primary border-primary/20",
       payment: "bg-primary/10 text-primary border-primary/20",
-      notification: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      marketing: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
+      notification: "bg-muted text-muted-foreground border-border",
+      marketing: "bg-muted text-muted-foreground border-border"
     };
     return variants[type as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
@@ -786,7 +786,7 @@ const CommunicationsPage = () => {
               <div className="font-semibold text-primary mb-2">
                 {announcements.filter(a => a.status === "sent").length}
               </div>
-              <p className="text-sm text-gray-600">Sent Announcements</p>
+              <p className="text-sm text-muted-foreground">Sent Announcements</p>
             </CardContent>
           </Card>
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -794,7 +794,7 @@ const CommunicationsPage = () => {
               <div className="font-semibold text-primary mb-2">
                 {notifications.filter(n => n.status === "active").length}
               </div>
-              <p className="text-sm text-gray-600">Active Notifications</p>
+              <p className="text-sm text-muted-foreground">Active Notifications</p>
             </CardContent>
           </Card>
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -802,7 +802,7 @@ const CommunicationsPage = () => {
               <div className="font-semibold text-primary mb-2">
                 {emailTemplates.filter(t => t.isActive).length}
               </div>
-              <p className="text-sm text-gray-600">Active Templates</p>
+              <p className="text-sm text-muted-foreground">Active Templates</p>
             </CardContent>
           </Card>
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -810,7 +810,7 @@ const CommunicationsPage = () => {
               <div className="font-semibold text-primary mb-2">
                 {announcements.reduce((sum, a) => sum + a.views, 0)}
               </div>
-              <p className="text-sm text-gray-600">Total Views</p>
+              <p className="text-sm text-muted-foreground">Total Views</p>
             </CardContent>
           </Card>
         </div>
@@ -914,7 +914,7 @@ const CommunicationsPage = () => {
                             {announcement.targetAudience}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{announcement.content}</p>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{announcement.content}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>Views: {announcement.views.toLocaleString()}</span>
                           <span>Created: {formatDate(announcement.createdAt)}</span>
@@ -991,7 +991,7 @@ const CommunicationsPage = () => {
                             {notification.targetAudience}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3">{notification.message}</p>
+                        <p className="text-sm text-muted-foreground mb-3">{notification.message}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>Views: {notification.views.toLocaleString()}</span>
                           <span>Clicks: {notification.clicks.toLocaleString()}</span>
@@ -1060,7 +1060,7 @@ const CommunicationsPage = () => {
                             {template.category || 'Notification'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{template.description || 'No description'}</p>
+                        <p className="text-sm text-muted-foreground mb-2">{template.description || 'No description'}</p>
                         <p className="text-sm font-medium text-foreground mb-3">Subject: {template.subject || 'No subject'}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
                           <span>Usage: {template.usageCount.toLocaleString()}</span>
@@ -1094,7 +1094,7 @@ const CommunicationsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-semibold text-foreground">Bulk Messages</h2>
-                <p className="text-sm text-gray-600 mt-1">Send messages to multiple users at once</p>
+                <p className="text-sm text-muted-foreground mt-1">Send messages to multiple users at once</p>
               </div>
               <Button onClick={() => { resetBulkMessageForm(); setShowBulkMessageForm(true); }}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -1142,12 +1142,12 @@ const CommunicationsPage = () => {
                               {message.targetAudience}
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{message.content}</p>
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{message.content}</p>
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span>Recipients: {message.totalRecipients.toLocaleString()}</span>
                             <span>Sent: {message.sentCount.toLocaleString()}</span>
                             {message.failedCount > 0 && (
-                              <span className="text-accent-coral">Failed: {message.failedCount.toLocaleString()}</span>
+                              <span className="text-destructive">Failed: {message.failedCount.toLocaleString()}</span>
                             )}
                             <span>Created: {formatDate(message.createdAt)}</span>
                             {message.scheduledAt && (
@@ -1742,7 +1742,7 @@ const CommunicationsPage = () => {
                   <p>Recipients: {viewingBulkMessage.totalRecipients.toLocaleString()}</p>
                   <p>Sent: {viewingBulkMessage.sentCount.toLocaleString()}</p>
                   {viewingBulkMessage.failedCount > 0 && (
-                    <p className="text-accent-coral">Failed: {viewingBulkMessage.failedCount.toLocaleString()}</p>
+                    <p className="text-destructive">Failed: {viewingBulkMessage.failedCount.toLocaleString()}</p>
                   )}
                   <p>Created: {formatDate(viewingBulkMessage.createdAt)}</p>
                   {viewingBulkMessage.scheduledAt && (
@@ -1776,7 +1776,7 @@ const CommunicationsPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Live Chat Support</h3>
-                    <p className="text-sm text-gray-600">Chat with our support team</p>
+                    <p className="text-sm text-muted-foreground">Chat with our support team</p>
                   </div>
                 </div>
                 <Button

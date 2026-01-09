@@ -8,7 +8,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { User, Mail, Lock, Phone, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, AlertCircle } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { Link } from 'react-router-dom';
 import type { EventData, RegistrationField } from '@/types/event';
 import type { TicketSelection } from '../UnifiedRegistrationModal';
@@ -471,7 +472,7 @@ export const RegistrationStep = ({
         <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader size="sm" className="mr-2" />
               Processing...
             </>
           ) : event.isFree ? (
@@ -551,7 +552,7 @@ export const RegistrationStep = ({
             <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Logging in...
                 </>
               ) : (
@@ -715,7 +716,7 @@ export const RegistrationStep = ({
             <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Creating account...
                 </>
               ) : (

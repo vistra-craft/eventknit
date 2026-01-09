@@ -659,7 +659,7 @@ const AdminPartnershipsPage = () => {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
+                <Button>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Partnership
                 </Button>
@@ -1248,7 +1248,7 @@ const AdminPartnershipsPage = () => {
                 <CardTitle>Partnership Templates</CardTitle>
                 <div className="flex space-x-2">
                   <Link to="/admin/marketing/partnerships/templates/builder">
-                    <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
+                    <Button>
                       <Plus className="h-4 w-4 mr-2" />
                       Create Template
                     </Button>

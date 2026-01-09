@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
+import { CheckCircle, XCircle, Mail } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { verifyMagicLink, requestMagicLink } from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
@@ -84,7 +85,7 @@ const MagicLinkVerify = () => {
         <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
           <CardHeader className="text-center pb-4">
             <div className="mx-auto w-16 h-16 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4">
-              {status === 'loading' && <Loader2 className="w-8 h-8 text-eventknit animate-spin" />}
+              {status === 'loading' && <Loader size="lg" />}
               {status === 'success' && <CheckCircle className="w-8 h-8 text-green-600" />}
               {status === 'error' && <XCircle className="w-8 h-8 text-destructive" />}
             </div>

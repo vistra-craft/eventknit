@@ -49,7 +49,6 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Loader2,
   DoorOpen,
   Coffee,
   ClipboardList,
@@ -58,6 +57,7 @@ import {
   Camera,
   Upload,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { AttendeeImportDialog } from "@/components/AttendeeImportDialog";
@@ -527,7 +527,7 @@ const ServicePointEventDashboard: React.FC = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading event data...</span>
         </div>
       </AdminLayout>
@@ -780,7 +780,7 @@ const ServicePointEventDashboard: React.FC = () => {
                     disabled={exporting || attendees.length === 0}
                   >
                     {exporting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                     ) : (
                       <Download className="w-4 h-4 mr-2" />
                     )}
@@ -792,7 +792,7 @@ const ServicePointEventDashboard: React.FC = () => {
             <CardContent>
               {attendeesLoading ? (
                 <div className="flex items-center justify-center h-32">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <Loader />
                   <span className="ml-2 text-muted-foreground">Loading attendees...</span>
                 </div>
               ) : attendees.length === 0 ? (
@@ -945,7 +945,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <CardContent>
                 {sessionsLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader size="lg" />
                     <span className="ml-2 text-muted-foreground">Loading sessions...</span>
                   </div>
                 ) : sessions.length > 0 ? (
@@ -1174,7 +1174,7 @@ const ServicePointEventDashboard: React.FC = () => {
             <Button onClick={handleSaveSession} disabled={sessionSaving}>
               {sessionSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Saving...
                 </>
               ) : (
@@ -1204,7 +1204,7 @@ const ServicePointEventDashboard: React.FC = () => {
             >
               {deletingSession ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Deleting...
                 </>
               ) : (

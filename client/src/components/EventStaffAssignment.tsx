@@ -9,9 +9,9 @@ import {
   MapPin,
   CheckCircle,
   XCircle,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -403,7 +403,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
           {/* Assignments List */}
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <Loader />
             </div>
           ) : assignments.length === 0 ? (
             <Alert>
@@ -598,7 +598,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
             >
               {assigning ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   {editingAssignment ? "Updating..." : "Assigning..."}
                 </>
               ) : (
@@ -697,7 +697,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
             >
               {assigning ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Assigning...
                 </>
               ) : (

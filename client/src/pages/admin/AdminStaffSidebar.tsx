@@ -181,7 +181,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
           {isMobile && (
             <button
               onClick={onToggle}
-              className="p-2 rounded-lg hover:bg-accent-coral hover:text-white transition-colors text-muted-foreground"
+              className="p-2 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors text-muted-foreground"
             >
               <Menu className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -211,7 +211,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                           className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                             isItemActive
                               ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
+                              : 'text-muted-foreground hover:bg-primary hover:text-primary-foreground'
                           }`}
                           title={!isOpen ? item.label : undefined}
                         >
@@ -240,7 +240,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                                 className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
                                   isChildActive(child.href)
                                     ? 'bg-primary/10 text-primary font-medium'
-                                    : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
+                                    : 'text-muted-foreground hover:bg-primary hover:text-primary-foreground'
                                 }`}
                               >
                                 {child.name}
@@ -260,7 +260,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                         isItemActive
                           ? 'bg-primary/10 text-primary font-medium'
-                          : 'text-muted-foreground hover:bg-accent-coral hover:text-white'
+                          : 'text-muted-foreground hover:bg-primary hover:text-primary-foreground'
                       }`}
                       title={!isOpen ? item.label : undefined}
                     >

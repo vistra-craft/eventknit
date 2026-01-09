@@ -114,7 +114,7 @@ const AttendeesPage = () => {
   const getStatusBadge = (status: UserStatus) => {
     const variants = {
       ACTIVE: "bg-primary/10 text-primary border-primary/20",
-      SUSPENDED: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
+      SUSPENDED: "bg-destructive/10 text-destructive border-destructive/20",
       DEACTIVATED: "bg-muted text-muted-foreground border-border",
     };
     return variants[status] || "bg-muted text-muted-foreground border-border";
@@ -150,7 +150,7 @@ const AttendeesPage = () => {
   if (error && attendees.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-accent-coral">{error}</div>
+        <div className="text-destructive">{error}</div>
       </div>
     );
   }
@@ -183,11 +183,11 @@ const AttendeesPage = () => {
           </Select>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors">
+          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors">
+          <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -212,7 +212,7 @@ const AttendeesPage = () => {
         </Card>
         <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
           <CardContent className="p-4 text-center">
-            <div className="text-lg font-semibold text-accent-coral mb-2">
+            <div className="text-lg font-semibold text-destructive mb-2">
               {attendees.filter((a) => a.status === "SUSPENDED").length}
             </div>
             <p className="text-sm text-muted-foreground">Suspended</p>
@@ -346,7 +346,7 @@ const AttendeesPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => setPreviewAttendee(attendee)}
-                        className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors"
+                        className="border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
@@ -355,7 +355,7 @@ const AttendeesPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditAttendee(attendee.id)}
-                        className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral transition-colors"
+                        className="border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Edit

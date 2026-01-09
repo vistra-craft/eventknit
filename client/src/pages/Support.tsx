@@ -44,8 +44,8 @@ const Support = () => {
 
   const supportTabs = [
     { id: "chat", label: "Live Chat", icon: MessageCircle, color: "text-primary" },
-    { id: "knowledge", label: "Knowledge Base", icon: BookOpen, color: "text-accent-electric" },
-    { id: "contact", label: "Contact Us", icon: Mail, color: "text-accent-neon" },
+    { id: "knowledge", label: "Knowledge Base", icon: BookOpen, color: "text-primary" },
+    { id: "contact", label: "Contact Us", icon: Mail, color: "text-primary" },
     { id: "community", label: "Community", icon: Users, color: "text-primary" }
   ];
 
@@ -441,8 +441,8 @@ const Support = () => {
 
           {/* Decorative Elements */}
           <div className="absolute top-20 left-10 w-32 h-32 bg-primary/5 rounded-full blur-xl"></div>
-          <div className="absolute top-40 right-10 w-24 h-24 bg-accent-electric/20 rounded-full blur-lg"></div>
-          <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-accent-neon/20 rounded-full blur-md"></div>
+          <div className="absolute top-40 right-10 w-24 h-24 bg-primary/10 rounded-full blur-lg"></div>
+          <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-primary/10 rounded-full blur-md"></div>
         </div>
       </div>
 

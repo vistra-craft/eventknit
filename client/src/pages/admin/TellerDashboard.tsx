@@ -15,6 +15,7 @@ import { getAdminStaffEvents, type EventStaffAssignment } from '@/lib/admin-api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getEventStatusBadgeClass } from '@/lib/utils/event-badge-helpers';
 
 const TellerDashboard = () => {
   const { user } = useAuth();
@@ -97,16 +98,7 @@ const TellerDashboard = () => {
   };
 
   const getEventStatusBadge = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return <Badge className="bg-green-500">Active</Badge>;
-      case 'PENDING':
-        return <Badge variant="outline">Pending</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    return <Badge className={getEventStatusBadgeClass(status)}>{status}</Badge>;
   };
 
   if (loading) {
@@ -122,7 +114,7 @@ const TellerDashboard = () => {
       {/* Header */}
       <div>
         <h1 className="text-base font-semibold text-foreground">Teller Dashboard</h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Manage your assigned events and scanning activities
         </p>
       </div>

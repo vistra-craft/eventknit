@@ -385,7 +385,7 @@ const AdminSocialMediaPage = () => {
             <Calendar className="h-4 w-4 mr-2" />
             Schedule Post
           </Button>
-          <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
+          <Button>
             <Plus className="h-4 w-4 mr-2" />
             Create Post
           </Button>

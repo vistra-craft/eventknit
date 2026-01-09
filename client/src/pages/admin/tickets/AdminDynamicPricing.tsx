@@ -185,7 +185,7 @@ const AdminDynamicPricing = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Dynamic Pricing</h1>
+            <h1 className="text-page-title">Dynamic Pricing</h1>
             <p className="text-muted-foreground mt-1">
               Create pricing rules for time-based, demand-based, and group discounts
             </p>

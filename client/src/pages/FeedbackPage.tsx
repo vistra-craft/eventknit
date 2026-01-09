@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Star, CheckCircle, AlertCircle } from "lucide-react";
+import { Star, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { validateFeedbackToken, submitFeedbackViaToken } from "@/lib/feedback-api";
 import Logo from "@/components/Logo";
 
@@ -130,7 +131,7 @@ const FeedbackPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader size="lg" />
       </div>
     );
   }
@@ -341,7 +342,7 @@ const FeedbackPage: React.FC = () => {
             >
               {submitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Submitting...
                 </>
               ) : (

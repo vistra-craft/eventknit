@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getEvents, EventStatus, EventType } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
-import { Loader2 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 
 interface RelatedEventsSimpleProps {
   currentEventId?: string;
@@ -85,7 +85,7 @@ export const RelatedEventsSimple = ({
       <section className="py-8">
         <h2 className="text-2xl font-bold mb-6">More events you might like</h2>
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <Loader />
         </div>
       </section>
     );

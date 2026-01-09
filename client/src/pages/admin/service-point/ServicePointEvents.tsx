@@ -16,12 +16,12 @@ import {
   MapPin,
   Activity,
   Search,
-  Loader2,
   AlertCircle,
   CalendarX,
   History,
   FileText,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus, type EventData } from "@/lib/event-api";
 
@@ -254,7 +254,7 @@ const ServicePointEvents: React.FC = () => {
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <Loader size="lg" className="mb-4" />
             <p className="text-muted-foreground">Loading events...</p>
           </div>
         )}

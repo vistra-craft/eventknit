@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
-import { Loader2, CreditCard, Shield, AlertCircle, Smartphone } from 'lucide-react';
+import { CreditCard, Shield, AlertCircle, Smartphone } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import type { EventData } from '@/types/event';
@@ -369,7 +370,7 @@ export const PaymentStep = ({
         >
           {isProcessing ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader size="sm" className="mr-2" />
               Processing...
             </>
           ) : (

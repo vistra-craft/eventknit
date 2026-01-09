@@ -126,7 +126,7 @@ export const LockedDashboard = ({ pendingEvents = [] }: LockedDashboardProps) =>
         <Button
           onClick={() => navigate('/organizer/events/create-standalone')}
           size="lg"
-          className="bg-accent-coral hover:bg-accent-coral/90 text-white font-medium px-8"
+          className="font-medium px-8"
         >
           <Plus className="w-5 h-5 mr-2" />
           Create Your First Event

@@ -749,12 +749,12 @@ const AdminSettingsPage = () => {
       </div>
       
       {settings.maintenanceMode && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
           <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+            <AlertCircle className="h-5 w-5 text-warning mr-2" />
             <div>
-              <h4 className="font-medium text-yellow-800">Maintenance Mode Active</h4>
-              <p className="text-sm text-yellow-700">Users will see the maintenance message when accessing the site.</p>
+              <h4 className="font-medium text-warning">Maintenance Mode Active</h4>
+              <p className="text-sm text-warning/80">Users will see the maintenance message when accessing the site.</p>
             </div>
           </div>
         </div>
@@ -815,19 +815,19 @@ const AdminSettingsPage = () => {
 
         {/* Save Status */}
         {saveStatus === "success" && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-success/10 border border-success/20 rounded-lg p-4">
             <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <span className="text-green-800">Settings saved successfully!</span>
+              <CheckCircle className="h-5 w-5 text-success mr-2" />
+              <span className="text-success">Settings saved successfully!</span>
             </div>
           </div>
         )}
         
         {saveStatus === "error" && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
             <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <span className="text-red-800">Failed to save settings. Please try again.</span>
+              <AlertCircle className="h-5 w-5 text-destructive mr-2" />
+              <span className="text-destructive">Failed to save settings. Please try again.</span>
             </div>
           </div>
         )}

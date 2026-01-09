@@ -29,9 +29,9 @@ import {
   Percent,
   DollarSign,
   Search,
-  Loader2,
   Tag,
 } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
 import { getOrganizerEvents } from '@/lib/organizer-api';
 import { useToast } from '@/hooks/useToast';
@@ -369,7 +369,7 @@ const OrganizerPromoCodeManager = () => {
         {/* Promo Codes List */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <Loader size="lg" />
           </div>
         ) : filteredCodes.length === 0 ? (
           <Card>

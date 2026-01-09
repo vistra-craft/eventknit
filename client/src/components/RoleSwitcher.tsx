@@ -16,7 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Users, Shield, Building2, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Users, Shield, Building2, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import {
   getRoleSwitchOptions,
   becomeOrganizer,
@@ -166,7 +167,7 @@ const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ className }) => {
       <Card className={className}>
         <CardContent className="py-6">
           <div className="flex items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <Loader />
           </div>
         </CardContent>
       </Card>
@@ -325,7 +326,7 @@ const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ className }) => {
             <Button onClick={handleBecomeOrganizer} disabled={switching}>
               {switching ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Switching...
                 </>
               ) : (
@@ -366,7 +367,7 @@ const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ className }) => {
             <Button onClick={handleBecomeAttendee} disabled={switching}>
               {switching ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Switching...
                 </>
               ) : (

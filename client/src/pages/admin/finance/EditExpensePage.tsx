@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, X, Loader2 } from "lucide-react";
+import { Save, X } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,7 +132,7 @@ const EditExpensePage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader size="lg" />
         </div>
       </AdminLayout>
     );
@@ -160,7 +161,7 @@ const EditExpensePage = () => {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader size="sm" className="mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}

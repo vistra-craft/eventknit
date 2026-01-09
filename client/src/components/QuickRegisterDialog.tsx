@@ -30,7 +30,6 @@ import {
   User,
   Mail,
   Phone,
-  Loader2,
   CheckCircle,
   AlertCircle,
   Printer,
@@ -38,6 +37,7 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { quickRegisterAttendee, type QuickRegisterResult } from '@/lib/attendee-import-api';
 import type { RegistrationField, EventData } from '@/types/event';
 
@@ -385,7 +385,7 @@ export function QuickRegisterDialog({
         <Button type="submit" disabled={isLoading}>
           {isLoading ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader size="sm" className="mr-2" />
               Registering...
             </>
           ) : (

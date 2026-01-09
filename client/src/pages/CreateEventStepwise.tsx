@@ -10,17 +10,16 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { 
-  Users, 
-  Ticket, 
-  Plus, 
-  X, 
+import {
+  Users,
+  Ticket,
+  Plus,
+  X,
   CheckCircle,
   Calendar,
   Camera,
   FileText,
   AlertCircle,
-  Loader2,
   Save,
   Eye,
   Upload,
@@ -34,6 +33,7 @@ import {
   ArrowRight,
   ArrowLeft
 } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData, type BackendEvent } from '@/lib/event-utils';
@@ -1832,7 +1832,7 @@ export default function CreateEventStepwise() {
               className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                 eventType === 'in-person'
                   ? 'bg-primary text-white hover:bg-primary/90'
-                  : 'border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral'
+                  : 'border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary'
               }`}
             >
               <MapPin className="mr-2 h-4 w-4" />
@@ -1845,7 +1845,7 @@ export default function CreateEventStepwise() {
               className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                 eventType === 'online'
                   ? 'bg-primary text-white hover:bg-primary/90'
-                  : 'border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral'
+                  : 'border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary'
               }`}
             >
               <Globe className="mr-2 h-4 w-4" />
@@ -1858,7 +1858,7 @@ export default function CreateEventStepwise() {
               className={`h-11 text-sm font-medium rounded-xl transition-all duration-200 ${
                 eventType === 'hybrid'
                   ? 'bg-primary text-white hover:bg-primary/90'
-                  : 'border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral'
+                  : 'border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary'
               }`}
             >
               <Users className="mr-2 h-4 w-4" />
@@ -2521,7 +2521,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addTicketType}
-          className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+          className="w-full border-dashed border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Another Ticket Type
@@ -2698,7 +2698,7 @@ export default function CreateEventStepwise() {
           <Button
             variant="outline"
             onClick={addRegistrationField}
-            className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+            className="w-full border-dashed border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Custom Field
@@ -2760,11 +2760,11 @@ export default function CreateEventStepwise() {
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingImage}
-                className="border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+                className="border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
               >
                 {isUploadingImage ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader size="sm" className="mr-2" />
                     Uploading...
                   </>
                 ) : (
@@ -2942,7 +2942,7 @@ export default function CreateEventStepwise() {
         <Button
           variant="outline"
           onClick={addFaq}
-          className="w-full border-dashed border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+          className="w-full border-dashed border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add FAQ
@@ -3283,7 +3283,7 @@ export default function CreateEventStepwise() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <Loader size="lg" className="mx-auto mb-4" />
           <p className="text-muted-foreground">
             {isLoadingEvent ? "Loading event data..." : "Loading template..."}
           </p>
@@ -3308,7 +3308,7 @@ export default function CreateEventStepwise() {
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
             {isSavingDraft ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader size="sm" />
                 <span>Saving draft...</span>
               </>
             ) : lastSaved ? (
@@ -3392,7 +3392,7 @@ export default function CreateEventStepwise() {
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                     disabled={isSubmitting}
                   >
                     <ArrowLeft className="w-3 h-3" />
@@ -3408,7 +3408,7 @@ export default function CreateEventStepwise() {
                   <Button
                     variant="outline"
                     onClick={() => setShowPreview(true)}
-                    className="px-6 border border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral"
+                    className="px-6 border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
                     disabled={isSubmitting}
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -3420,17 +3420,17 @@ export default function CreateEventStepwise() {
                 {isSubmitting ? (
                   <Button
                     onClick={handleNext}
-                    className="px-6 h-11 rounded-xl bg-transparent text-primary hover:bg-accent-coral hover:text-white transition-colors shadow-none"
+                    className="px-6 h-11 rounded-xl bg-transparent text-primary hover:bg-primary hover:text-primary-foreground transition-colors shadow-none"
                     disabled={isSubmitting}
                   >
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader size="sm" className="mr-2" />
                     {currentStep === 8 ? 'Publishing...' : 'Validating...'}
                   </Button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleNext}
-                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-accent-coral hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                     disabled={isSubmitting}
                   >
                     <span>{currentStep === 8 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>

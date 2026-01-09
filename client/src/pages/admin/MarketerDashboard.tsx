@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import EmptyState from '@/components/EmptyState';
+import { getEventStatusBadgeClass } from '@/lib/utils/event-badge-helpers';
 
 const MarketerDashboard = () => {
   const { user } = useAuth();
@@ -72,16 +73,7 @@ const MarketerDashboard = () => {
   };
 
   const getEventStatusBadge = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return <Badge className="bg-green-500">Active</Badge>;
-      case 'PENDING':
-        return <Badge variant="outline">Pending</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    return <Badge className={getEventStatusBadgeClass(status)}>{status}</Badge>;
   };
 
   if (loading) {
@@ -160,19 +152,19 @@ const MarketerDashboard = () => {
         <CardContent>
           <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
             <Link to="/admin/marketing/campaigns">
-              <Button className="w-full bg-accent-coral hover:bg-accent-coral/90 text-white" size={isMobile ? 'default' : 'lg'}>
+              <Button className="w-full" size={isMobile ? 'default' : 'lg'}>
                 <Megaphone className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 Create Campaign
               </Button>
             </Link>
             <Link to="/admin/analytics/events">
-              <Button className="w-full border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral" variant="outline" size={isMobile ? 'default' : 'lg'}>
+              <Button className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary" variant="outline" size={isMobile ? 'default' : 'lg'}>
                 <BarChart3 className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 View Analytics
               </Button>
             </Link>
             <Link to="/admin/events/assigned">
-              <Button className="w-full border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral" variant="outline" size={isMobile ? 'default' : 'lg'}>
+              <Button className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary" variant="outline" size={isMobile ? 'default' : 'lg'}>
                 <Calendar className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 My Events
               </Button>
@@ -247,7 +239,7 @@ const MarketerDashboard = () => {
             {upcomingEvents.length > 5 && (
               <div className="mt-4 text-center">
                 <Link to="/admin/events/assigned">
-                  <Button variant="outline" className="border-primary text-primary hover:bg-accent-coral hover:text-white hover:border-accent-coral">
+                  <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary">
                     View All {upcomingEvents.length} Upcoming Events
                   </Button>
                 </Link>

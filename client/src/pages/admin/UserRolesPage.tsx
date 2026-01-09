@@ -271,7 +271,7 @@ const UserRolesPage = () => {
         {/* Loading State */}
         {loading && (
           <div className="flex items-center justify-center h-64">
-            <div className="text-gray-600">Loading roles...</div>
+            <div className="text-muted-foreground">Loading roles...</div>
           </div>
         )}
 
@@ -282,17 +282,17 @@ const UserRolesPage = () => {
               const canModify = canModifyRole(role.role as UserRoleEnum);
               const getRoleColor = (roleType: UserRoleEnum) => {
                 const colors: Record<UserRoleEnum, string> = {
-                  [UserRoleEnum.SUPERADMIN]: "bg-red-100 text-red-800",
-                  [UserRoleEnum.ADMIN_STAFF]: "bg-blue-100 text-blue-800",
-                  [UserRoleEnum.MARKETER]: "bg-pink-100 text-pink-800",
-                  [UserRoleEnum.SUPPORT]: "bg-purple-100 text-purple-800",
-                  [UserRoleEnum.TELLER]: "bg-green-100 text-green-800",
-                  [UserRoleEnum.ORGANIZER]: "bg-yellow-100 text-yellow-800",
-                  [UserRoleEnum.ORGANIZER_STAFF]: "bg-orange-100 text-orange-800",
-                  [UserRoleEnum.ORGANIZER_TELLER]: "bg-teal-100 text-teal-800",
-                  [UserRoleEnum.ATTENDEE]: "bg-gray-100 text-gray-800",
+                  [UserRoleEnum.SUPERADMIN]: "bg-destructive/10 text-destructive",
+                  [UserRoleEnum.ADMIN_STAFF]: "bg-primary/10 text-primary",
+                  [UserRoleEnum.MARKETER]: "bg-accent-coral/10 text-accent-coral",
+                  [UserRoleEnum.SUPPORT]: "bg-secondary/10 text-secondary",
+                  [UserRoleEnum.TELLER]: "bg-success/10 text-success",
+                  [UserRoleEnum.ORGANIZER]: "bg-warning/10 text-warning",
+                  [UserRoleEnum.ORGANIZER_STAFF]: "bg-accent-orange/10 text-accent-orange",
+                  [UserRoleEnum.ORGANIZER_TELLER]: "bg-muted text-muted-foreground",
+                  [UserRoleEnum.ATTENDEE]: "bg-muted text-muted-foreground",
                 };
-                return colors[roleType] || "bg-gray-100 text-gray-800";
+                return colors[roleType] || "bg-muted text-muted-foreground";
               };
 
               return (

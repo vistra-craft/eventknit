@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Search, Eye, Calendar, TrendingUp, TrendingDown, DollarSign, Edit, Trash2, X, Loader2, AlertCircle } from "lucide-react";
+import { CreditCard, Search, Eye, Calendar, TrendingUp, TrendingDown, DollarSign, Edit, Trash2, X, AlertCircle } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -186,7 +187,7 @@ const TransactionsPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading transactions...</span>
         </div>
       </AdminLayout>
@@ -400,7 +401,7 @@ const TransactionsPage = () => {
                         disabled={deleting === transaction.id}
                       >
                         {deleting === transaction.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader size="sm" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
                         )}

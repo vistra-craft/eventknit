@@ -268,7 +268,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-6">
               {/* Profile Card */}
-              <Card className="overflow-hidden border-0 shadow-card">
+              <Card className="overflow-hidden border-0 shadow-md">
                 {/* Profile Header with gradient */}
                 <div className="h-20 bg-gradient-to-br from-primary via-primary to-primary-dark" />
 
@@ -331,7 +331,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               </Card>
 
               {/* Quick Links Card */}
-              <Card className="border-0 shadow-card">
+              <Card className="border-0 shadow-md">
                 <CardContent className="p-4">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Links</p>
                   <nav className="space-y-1">
@@ -373,7 +373,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
             {/* Stats Cards - Redesigned */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Upcoming Events Card */}
-              <Card className="border-0 shadow-card overflow-hidden group hover:shadow-card-hover transition-all">
+              <Card className="border-0 shadow-sm overflow-hidden group hover:shadow-md transition-all">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
@@ -394,7 +394,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               </Card>
 
               {/* Total Events Card */}
-              <Card className="border-0 shadow-card overflow-hidden group hover:shadow-card-hover transition-all">
+              <Card className="border-0 shadow-sm overflow-hidden group hover:shadow-md transition-all">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
@@ -410,7 +410,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
               </Card>
 
               {/* Completed Events Card */}
-              <Card className="border-0 shadow-card overflow-hidden group hover:shadow-card-hover transition-all">
+              <Card className="border-0 shadow-sm overflow-hidden group hover:shadow-md transition-all">
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between">
                     <div>
@@ -428,7 +428,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
 
             {/* Featured Next Event - Hero Style */}
             {nextEvent && (
-              <Card className="border-0 shadow-card overflow-hidden">
+              <Card className="border-0 shadow-md overflow-hidden">
                 <div className="relative h-48 sm:h-56">
                   <img
                     src={nextEvent.image}
@@ -538,7 +538,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
                   {filteredEvents.map((event) => (
                     <Card
                       key={event.id}
-                      className="group border-0 shadow-card hover:shadow-card-hover transition-all cursor-pointer"
+                      className="group border-0 shadow-sm hover:shadow-md transition-all cursor-pointer"
                       onClick={() => handleViewEvent(event)}
                     >
                       <div className="flex gap-4 p-4">

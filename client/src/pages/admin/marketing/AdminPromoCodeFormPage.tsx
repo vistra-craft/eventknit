@@ -15,10 +15,10 @@ import {
 import AdminLayout from "../AdminLayout";
 import {
   ArrowLeft,
-  Loader2,
   Plus,
   X,
 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
 import {
   getAdminPromoCodeById,
@@ -161,7 +161,7 @@ const AdminPromoCodeFormPage = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading...</span>
         </div>
       </AdminLayout>
@@ -197,7 +197,7 @@ const AdminPromoCodeFormPage = () => {
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving && <Loader size="sm" className="mr-2" />}
               {isEditing ? "Update" : "Create"}
             </Button>
           </div>

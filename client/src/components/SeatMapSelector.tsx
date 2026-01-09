@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getSeatMapAvailability, reserveSeats, type Seat, type SeatMap } from '@/lib/venue-api';
-import { Loader2, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import { useToast } from '@/hooks/useToast';
 
 interface SeatMapSelectorProps {
@@ -176,7 +177,7 @@ const SeatMapSelector = ({
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <Loader size="lg" />
           </div>
         </CardContent>
       </Card>
@@ -400,7 +401,7 @@ const SeatMapSelector = ({
             >
               {reserving ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Reserving...
                 </>
               ) : (

@@ -4,7 +4,7 @@ import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import NotificationBell from "../../components/NotificationBell";
-import ThemeToggle from "../../components/ThemeToggle";
+import { ThemeToggle } from "../../components/ThemeToggle";
 
 interface AdminHeaderProps {
   onMenuToggle?: () => void;

@@ -1235,7 +1235,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                         <Settings className="w-4 h-4 mr-2" />
                         Advanced Settings
                       </Button>
-                      <Button className="bg-accent-coral hover:bg-accent-coral/90 text-white">
+                      <Button>
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Publish Event
                       </Button>

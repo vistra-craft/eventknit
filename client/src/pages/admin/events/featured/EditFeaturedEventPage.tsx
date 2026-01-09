@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Upload, Camera, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Camera, X } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -255,7 +256,7 @@ const EditFeaturedEventPage = () => {
                     >
                       {isUploadingImage ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Loader size="sm" className="mr-2" />
                           Uploading...
                         </>
                       ) : (
@@ -372,7 +373,7 @@ const EditFeaturedEventPage = () => {
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Saving...
                 </>
               ) : (

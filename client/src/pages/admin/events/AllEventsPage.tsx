@@ -218,19 +218,11 @@ const AllEventsPage = () => {
   const locations = Array.from(new Set(events.map(e => e.location).filter(Boolean))).slice(0, 10);
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      active: "bg-success-light text-success border-success/20",
-      pending: "bg-warning/10 text-warning border-warning/20",
-      cancelled: "bg-destructive/10 text-destructive border-destructive/20",
-      completed: "bg-muted text-muted-foreground border-border"
-    };
-    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
+    return getEventStatusBadgeClass(status);
   };
 
   const getTypeBadge = (type: string) => {
-    return type === "public" 
-      ? "bg-primary/10 text-primary border-primary/20"
-      : "bg-secondary/10 text-secondary border-secondary/20";
+    return getEventTypeBadgeClass(type);
   };
 
   const getPriceBadge = (price: string) => {

@@ -2,7 +2,7 @@ import { EventCard } from "@/components/EventCard";
 import { useEffect, useState } from "react";
 import { getEvents, EventStatus } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
-import { Loader2 } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 
 interface RelatedEventsProps {
   currentEventId?: string;
@@ -49,7 +49,7 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
       <section className="space-y-6">
         <h2 className="text-3xl font-bold">You Might Also Like</h2>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader size="lg" />
         </div>
       </section>
     );

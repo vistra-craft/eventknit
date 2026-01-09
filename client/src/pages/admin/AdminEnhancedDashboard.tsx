@@ -6,6 +6,7 @@ import type { AdminDashboardGrowthPeriod, AdminDashboardGrowthPoint } from "../.
 import { CustomLineChart, CustomBarChart } from "../../components/charts/ChartComponents";
 import { CHART_COLORS } from "../../components/charts/chartConstants";
 import Logo from "@/components/Logo";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const AdminEnhancedDashboard = () => {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d");
@@ -194,16 +195,17 @@ const AdminEnhancedDashboard = () => {
             </p>
           </div>
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as "7d" | "30d" | "90d" | "1y")}
-              className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
-            >
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="1y">Last year</option>
-            </select>
+            <Select value={timeRange} onValueChange={(value) => setTimeRange(value as "7d" | "30d" | "90d" | "1y")}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+                <SelectItem value="1y">Last year</SelectItem>
+              </SelectContent>
+            </Select>
             <Link
               to="/admin/events/create"
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
@@ -302,33 +304,35 @@ const AdminEnhancedDashboard = () => {
                   </div>
 
                   {growthPeriod === "monthly" && growthData && (
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
-                    >
-                      <option value="All">All months</option>
-                      {growthData.organizers.map((d) => (
-                        <option key={d.label} value={d.label}>
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                      <SelectTrigger className="mt-1 w-full sm:w-44 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All">All months</SelectItem>
+                        {growthData.organizers.map((d) => (
+                          <SelectItem key={d.label} value={d.label}>
+                            {d.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
 
                   {growthPeriod === "yearly" && growthData && (
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary sm:w-44"
-                    >
-                      <option value="All">All years</option>
-                      {growthData.organizers.map((d) => (
-                        <option key={d.label} value={d.label}>
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                      <SelectTrigger className="mt-1 w-full sm:w-44 h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All">All years</SelectItem>
+                        {growthData.organizers.map((d) => (
+                          <SelectItem key={d.label} value={d.label}>
+                            {d.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 </div>
               </div>

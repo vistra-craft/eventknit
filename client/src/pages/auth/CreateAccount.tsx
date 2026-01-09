@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, Lock, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Mail, Lock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader } from "@/components/ui/loader";
 import * as authApi from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
@@ -155,7 +156,7 @@ const CreateAccount = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+            <Loader size="lg" className="mx-auto mb-4" />
             <p className="text-muted-foreground">Verifying invitation link...</p>
           </CardContent>
         </Card>
@@ -303,7 +304,7 @@ const CreateAccount = () => {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader size="sm" className="mr-2" />
                     Creating Account...
                   </>
                 ) : (
@@ -328,7 +329,7 @@ const CreateAccount = () => {
                 >
                   {isResending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader size="sm" className="mr-2" />
                       Sending...
                     </>
                   ) : (

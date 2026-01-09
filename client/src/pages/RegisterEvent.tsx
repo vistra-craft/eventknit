@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Loader2, AlertCircle, Check, RefreshCw, User, Ticket, Minus, Plus, Crown, Clock, CheckCircle, X } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, AlertCircle, Check, RefreshCw, User, Ticket, Minus, Plus, Crown, Clock, CheckCircle, X } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -668,7 +669,7 @@ const EventRegistration = () => {
         <CheckoutHeader />
         <main className="flex-1 flex items-center justify-center py-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center space-y-4">
-            <Loader2 className="h-12 w-12 text-primary animate-spin mx-auto" />
+            <Loader size="lg" className="mx-auto" />
             <p className="text-muted-foreground">Loading event details...</p>
           </div>
         </main>
@@ -1033,7 +1034,7 @@ const EventRegistration = () => {
                               disabled={!promoCode.trim() || applyingCode}
                               variant="outline"
                             >
-                              {applyingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                              {applyingCode ? <Loader size="sm" /> : "Apply"}
                             </Button>
                           </div>
                         ) : (
@@ -1287,7 +1288,7 @@ const EventRegistration = () => {
                       >
                         {submitting ? (
                           <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            <Loader className="mr-2" />
                             Processing...
                           </>
                         ) : (

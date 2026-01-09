@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Eye, Ban, User, Flag, MessageSquare, Calendar, Search, Loader2, Shield } from "lucide-react";
+import { CheckCircle, XCircle, Eye, Ban, User, Flag, MessageSquare, Calendar, Search, Shield } from "lucide-react";
+import { Loader } from "@/components/ui/loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import AdminLayout from "./AdminLayout";
 import { suspendUser, deactivateUser, activateUser } from "@/lib/moderation-api";
+import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 interface ReportedContent {
   id: string;
@@ -194,23 +196,24 @@ const ModerationPage = () => {
   });
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      pending: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      reviewed: "bg-primary/10 text-primary border-primary/20",
-      approved: "bg-primary/10 text-primary border-primary/20",
-      rejected: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      active: "bg-primary/10 text-primary border-primary/20",
-      suspended: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      banned: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
+    const statusMap: Record<string, string> = {
+      pending: "PENDING",
+      reviewed: "APPROVED",
+      approved: "APPROVED",
+      rejected: "DECLINED",
+      active: "ACTIVE",
+      suspended: "SUSPENDED",
+      banned: "DEACTIVATED",
     };
-    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
+    const mappedStatus = statusMap[status] || status;
+    return getEventStatusBadgeClass(mappedStatus);
   };
 
   const getSeverityBadge = (severity: string) => {
     const variants = {
       low: "bg-primary/10 text-primary border-primary/20",
-      medium: "bg-accent-coral/10 text-accent-coral border-accent-coral/20",
-      high: "bg-accent-coral/10 text-accent-coral border-accent-coral/20"
+      medium: "bg-warning/10 text-warning border-warning/20",
+      high: "bg-destructive/10 text-destructive border-destructive/20"
     };
     return variants[severity as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
@@ -371,7 +374,7 @@ const ModerationPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-accent-coral mb-2">
+              <div className="font-semibold text-warning mb-2">
                 {mockReportedContent.filter(r => r.status === "pending").length}
               </div>
               <p className="text-sm text-muted-foreground">Pending Reports</p>
@@ -379,7 +382,7 @@ const ModerationPage = () => {
           </Card>
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-accent-coral mb-2">
+              <div className="font-semibold text-destructive mb-2">
                 {mockReportedContent.filter(r => r.severity === "high").length}
               </div>
               <p className="text-sm text-muted-foreground">High Severity</p>
@@ -387,7 +390,7 @@ const ModerationPage = () => {
           </Card>
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-accent-coral mb-2">
+              <div className="font-semibold text-destructive mb-2">
                 {mockUserViolations.filter(u => u.status === "suspended").length}
               </div>
               <p className="text-sm text-muted-foreground">Suspended Users</p>
@@ -395,7 +398,7 @@ const ModerationPage = () => {
           </Card>
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-accent-coral mb-2">
+              <div className="font-semibold text-destructive mb-2">
                 {mockUserViolations.filter(u => u.status === "banned").length}
               </div>
               <p className="text-sm text-muted-foreground">Banned Users</p>
@@ -571,7 +574,7 @@ const ModerationPage = () => {
                             disabled={actionLoading === violation.userId}
                           >
                             {actionLoading === violation.userId ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              <Loader size="sm" className="mr-1" />
                             ) : (
                               <Ban className="h-4 w-4 mr-1" />
                             )}
@@ -587,7 +590,7 @@ const ModerationPage = () => {
                               disabled={actionLoading === violation.userId}
                             >
                               {actionLoading === violation.userId ? (
-                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                <Loader size="sm" className="mr-1" />
                               ) : (
                                 <Shield className="h-4 w-4 mr-1" />
                               )}
@@ -600,7 +603,7 @@ const ModerationPage = () => {
                               disabled={actionLoading === violation.userId}
                             >
                               {actionLoading === violation.userId ? (
-                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                <Loader size="sm" className="mr-1" />
                               ) : (
                                 <Ban className="h-4 w-4 mr-1" />
                               )}
@@ -616,7 +619,7 @@ const ModerationPage = () => {
                             disabled={actionLoading === violation.userId}
                           >
                             {actionLoading === violation.userId ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              <Loader size="sm" className="mr-1" />
                             ) : (
                               <Shield className="h-4 w-4 mr-1" />
                             )}
@@ -658,11 +661,11 @@ const ModerationPage = () => {
             <AlertDialogAction
               onClick={handleSuspendUser}
               disabled={actionLoading !== null}
-              className="bg-accent-coral hover:bg-accent-coral/90"
+              className="bg-destructive hover:bg-destructive/90"
             >
               {actionLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Suspending...
                 </>
               ) : (
@@ -702,7 +705,7 @@ const ModerationPage = () => {
             >
               {actionLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader size="sm" className="mr-2" />
                   Banning...
                 </>
               ) : (
