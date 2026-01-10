@@ -366,7 +366,7 @@ const AllEvents = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4 text-white">
                     <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
-                    <Badge className="bg-green-500/90 text-white">
+                    <Badge className="bg-success/50/90 text-white">
                       {previewEvent.status || 'Active'}
                     </Badge>
                   </div>
@@ -375,7 +375,7 @@ const AllEvents = () => {
               {!previewEvent.image && (
                 <div>
                   <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
-                  <Badge className="bg-green-500/90 text-white">
+                  <Badge className="bg-success/50/90 text-white">
                     {previewEvent.status || 'Active'}
                   </Badge>
                 </div>

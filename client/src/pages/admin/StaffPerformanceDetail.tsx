@@ -129,7 +129,7 @@ const StaffPerformanceDetail = () => {
               <h1 className="text-base font-semibold text-foreground">
                 {performance.staffName}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {performance.staffEmail} • {performance.role}
               </p>
             </div>
@@ -221,13 +221,13 @@ const StaffPerformanceDetail = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Successful</span>
-                <span className="text-sm font-semibold text-green-600">
+                <span className="text-sm font-semibold text-success">
                   {formatNumber(performance.successfulScans)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Failed</span>
-                <span className="text-sm font-semibold text-red-600">
+                <span className="text-sm font-semibold text-destructive">
                   {formatNumber(performance.failedScans)}
                 </span>
               </div>
@@ -255,13 +255,13 @@ const StaffPerformanceDetail = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Completed</span>
-                <span className="text-sm font-semibold text-green-600">
+                <span className="text-sm font-semibold text-success">
                   {performance.eventsCompleted}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Active</span>
-                <span className="text-sm font-semibold text-blue-600">
+                <span className="text-sm font-semibold text-primary">
                   {performance.eventsActive}
                 </span>
               </div>

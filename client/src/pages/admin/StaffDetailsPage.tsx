@@ -337,23 +337,23 @@ const StaffDetailsPage = () => {
 
   const getRoleBadge = (role: string) => {
     const variants = {
-      event_manager: "bg-blue-100 text-blue-800 border-blue-200",
-      ticket_scanner: "bg-green-100 text-green-800 border-green-200",
+      event_manager: "bg-primary/10 text-primary border-primary",
+      ticket_scanner: "bg-success/10 text-success border-success",
       support_staff: "bg-purple-100 text-purple-800 border-purple-200",
-      admin: "bg-red-100 text-red-800 border-red-200",
+      admin: "bg-destructive/10 text-destructive border-destructive",
       supervisor: "bg-orange-100 text-orange-800 border-orange-200"
     };
-    return variants[role as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[role as keyof typeof variants] || "bg-muted text-gray-800 border-gray-200";
   };
 
 
   const getEarningsStatusBadge = (status: string) => {
     const variants = {
-      paid: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      processing: "bg-blue-100 text-blue-800 border-blue-200"
+      paid: "bg-success/10 text-success border-success",
+      pending: "bg-warning/10 text-warning border-warning",
+      processing: "bg-primary/10 text-primary border-primary"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-gray-800 border-gray-200";
   };
 
   const formatCurrency = (amount: number) => {
@@ -443,7 +443,7 @@ const StaffDetailsPage = () => {
               <h1 className="text-base font-semibold text-foreground">
                 {staffData.firstName} {staffData.lastName}
               </h1>
-              <p className="text-gray-600">{staffData.role.replace('_', ' ')} • {staffData.department.replace('_', ' ')}</p>
+              <p className="text-muted-foreground">{staffData.role.replace('_', ' ')} • {staffData.department.replace('_', ' ')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -475,7 +475,7 @@ const StaffDetailsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Shield className="h-5 w-5 text-blue-600" />
+                <Shield className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Status</span>
               </div>
               <Badge className={`text-xs ${getStatusBadge(staffData.status)}`}>
@@ -486,7 +486,7 @@ const StaffDetailsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Calendar className="h-5 w-5 text-green-600" />
+                <Calendar className="h-5 w-5 text-success" />
                 <span className="text-sm font-medium">Events</span>
               </div>
               <p className="text-lg font-bold text-foreground">{staffData.eventsManaged}</p>
@@ -495,7 +495,7 @@ const StaffDetailsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <DollarSign className="h-5 w-5 text-success" />
                 <span className="text-sm font-medium">Total Earnings</span>
               </div>
               <p className="text-lg font-bold text-foreground">{formatCurrency(staffData.totalEarnings)}</p>
@@ -513,7 +513,7 @@ const StaffDetailsPage = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Star className="h-5 w-5 text-yellow-600" />
+                <Star className="h-5 w-5 text-warning" />
                 <span className="text-sm font-medium">Rating</span>
               </div>
               <p className="text-lg font-bold text-foreground">{staffData.rating}</p>
@@ -557,7 +557,7 @@ const StaffDetailsPage = () => {
                         <h3 className="text-base font-semibold text-foreground">
                           {staffData.firstName} {staffData.lastName}
                         </h3>
-                        <p className="text-gray-600">Employee ID: {staffData.employeeId}</p>
+                        <p className="text-muted-foreground">Employee ID: {staffData.employeeId}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge className={`text-xs ${getStatusBadge(staffData.status)}`}>
                             {staffData.status}
@@ -571,27 +571,27 @@ const StaffDetailsPage = () => {
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Email</label>
+                        <label className="text-sm font-medium text-muted-foreground">Email</label>
                         <p className="text-sm text-foreground">{staffData.email}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Phone</label>
+                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
                         <p className="text-sm text-foreground">{staffData.phone || "Not provided"}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Location</label>
+                        <label className="text-sm font-medium text-muted-foreground">Location</label>
                         <p className="text-sm text-foreground">{staffData.location}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Department</label>
+                        <label className="text-sm font-medium text-muted-foreground">Department</label>
                         <p className="text-sm text-foreground">{staffData.department.replace('_', ' ')}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Hire Date</label>
+                        <label className="text-sm font-medium text-muted-foreground">Hire Date</label>
                         <p className="text-sm text-foreground">{formatDate(staffData.hireDate)}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Last Active</label>
+                        <label className="text-sm font-medium text-muted-foreground">Last Active</label>
                         <p className="text-sm text-foreground">{formatDateTime(staffData.lastActive)}</p>
                       </div>
                     </div>
@@ -606,30 +606,30 @@ const StaffDetailsPage = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Events Completed</label>
+                        <label className="text-sm font-medium text-muted-foreground">Events Completed</label>
                         <p className="text-sm text-foreground">{staffData.performance.eventsCompleted}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Average Rating</label>
+                        <label className="text-sm font-medium text-muted-foreground">Average Rating</label>
                         <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          <Star className="h-4 w-4 text-warning fill-current" />
                           <span className="text-sm text-foreground">{staffData.performance.averageRating}</span>
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">On-Time Rate</label>
+                        <label className="text-sm font-medium text-muted-foreground">On-Time Rate</label>
                         <p className="text-sm text-foreground">{staffData.performance.onTimeRate}%</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Customer Satisfaction</label>
+                        <label className="text-sm font-medium text-muted-foreground">Customer Satisfaction</label>
                         <p className="text-sm text-foreground">{staffData.performance.customerSatisfaction}%</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Last Review</label>
+                        <label className="text-sm font-medium text-muted-foreground">Last Review</label>
                         <p className="text-sm text-foreground">{formatDate(staffData.performance.lastPerformanceReview)}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Next Review</label>
+                        <label className="text-sm font-medium text-muted-foreground">Next Review</label>
                         <p className="text-sm text-foreground">{formatDate(staffData.performance.nextReviewDate)}</p>
                       </div>
                     </div>
@@ -645,15 +645,15 @@ const StaffDetailsPage = () => {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Name</label>
+                          <label className="text-sm font-medium text-muted-foreground">Name</label>
                           <p className="text-sm text-foreground">{staffData.emergencyContact.name}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Phone</label>
+                          <label className="text-sm font-medium text-muted-foreground">Phone</label>
                           <p className="text-sm text-foreground">{staffData.emergencyContact.phone}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Relationship</label>
+                          <label className="text-sm font-medium text-muted-foreground">Relationship</label>
                           <p className="text-sm text-foreground">{staffData.emergencyContact.relationship}</p>
                         </div>
                       </div>
@@ -670,23 +670,23 @@ const StaffDetailsPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Annual Salary</span>
+                      <span className="text-sm text-muted-foreground">Annual Salary</span>
                       <span className="text-sm font-medium text-foreground">{formatCurrency(staffData.salary)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Hourly Rate</span>
+                      <span className="text-sm text-muted-foreground">Hourly Rate</span>
                       <span className="text-sm font-medium text-foreground">{formatCurrency(staffData.hourlyRate)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Total Earnings</span>
+                      <span className="text-sm text-muted-foreground">Total Earnings</span>
                       <span className="text-sm font-medium text-foreground">{formatCurrency(staffData.totalEarnings)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Pending Dues</span>
-                      <span className="text-sm font-medium text-red-600">{formatCurrency(staffData.pendingDues)}</span>
+                      <span className="text-sm text-muted-foreground">Pending Dues</span>
+                      <span className="text-sm font-medium text-destructive">{formatCurrency(staffData.pendingDues)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Total Hours</span>
+                      <span className="text-sm text-muted-foreground">Total Hours</span>
                       <span className="text-sm font-medium text-foreground">{staffData.totalHours}h</span>
                     </div>
                   </CardContent>
@@ -726,12 +726,12 @@ const StaffDetailsPage = () => {
                   {Object.entries(staffData.permissions).map(([permission, hasAccess]) => (
                     <div key={permission} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                        <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-success/50' : 'bg-gray-300'}`}></div>
                         <span className="text-sm font-medium text-foreground">
                           {permission.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                         </span>
                       </div>
-                      <Badge className={hasAccess ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}>
+                      <Badge className={hasAccess ? "bg-success/10 text-success border-success" : "bg-muted text-gray-800 border-gray-200"}>
                         {hasAccess ? "Allowed" : "Denied"}
                       </Badge>
                     </div>
@@ -757,7 +757,7 @@ const StaffDetailsPage = () => {
                         </div>
                         <div>
                           <h4 className="font-medium text-foreground">{earning.description}</h4>
-                          <p className="text-sm text-gray-600">{formatDate(earning.date)} • {earning.type}</p>
+                          <p className="text-sm text-muted-foreground">{formatDate(earning.date)} • {earning.type}</p>
                           <Badge className={`text-xs ${getEarningsStatusBadge(earning.status)}`}>
                             {earning.status}
                           </Badge>
@@ -804,20 +804,20 @@ const StaffDetailsPage = () => {
                               {assignment.event?.title || "Event"}
                             </h4>
                             {assignment.event?.startDate && (
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 {new Date(assignment.event.startDate).toLocaleDateString()}
                               </p>
                             )}
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                              <Badge className="text-xs bg-primary/10 text-primary border-primary">
                                 {assignment.role}
                               </Badge>
                               {assignment.isActive ? (
-                                <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
+                                <Badge className="text-xs bg-success/10 text-success border-success">
                                   Active
                                 </Badge>
                               ) : (
-                                <Badge className="text-xs bg-gray-100 text-gray-800 border-gray-200">
+                                <Badge className="text-xs bg-muted text-gray-800 border-gray-200">
                                   Inactive
                                 </Badge>
                               )}
@@ -830,7 +830,7 @@ const StaffDetailsPage = () => {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             {assignment.facility && (
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-muted-foreground">
                                 {assignment.facility}
                               </div>
                             )}
@@ -870,11 +870,11 @@ const StaffDetailsPage = () => {
                         </div>
                         <div>
                           <h4 className="font-medium text-foreground">{doc.name}</h4>
-                          <p className="text-sm text-gray-600">Uploaded: {formatDate(doc.uploadDate)}</p>
+                          <p className="text-sm text-muted-foreground">Uploaded: {formatDate(doc.uploadDate)}</p>
                           {doc.expiryDate && (
-                            <p className="text-sm text-gray-600">Expires: {formatDate(doc.expiryDate)}</p>
+                            <p className="text-sm text-muted-foreground">Expires: {formatDate(doc.expiryDate)}</p>
                           )}
-                          <Badge className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                          <Badge className="text-xs bg-primary/10 text-primary border-primary">
                             {doc.type}
                           </Badge>
                         </div>

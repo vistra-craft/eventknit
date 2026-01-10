@@ -349,7 +349,7 @@ const EventTemplates = () => {
             <div key={field.id} className="space-y-2">
               <Label className="flex items-center gap-2">
                 {field.label}
-                {field.required && <span className="text-red-500">*</span>}
+                {field.required && <span className="text-destructive">*</span>}
               </Label>
               {renderFormField(field)}
             </div>
@@ -744,7 +744,7 @@ const EventTemplates = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => removeField(field.id)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

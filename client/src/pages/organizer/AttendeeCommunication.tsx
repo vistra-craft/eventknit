@@ -217,7 +217,7 @@ const AttendeeCommunication = () => {
                             {message.sentCount} sent
                           </span>
                           {message.failedCount > 0 && (
-                            <span className="flex items-center gap-1 text-red-600">
+                            <span className="flex items-center gap-1 text-destructive">
                               <XCircle className="h-3 w-3" />
                               {message.failedCount} failed
                             </span>

@@ -226,7 +226,7 @@ const TicketViewPage: React.FC = () => {
                 <TicketIcon className="w-5 h-5" />
                 {ticket.eventTitle}
               </CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Badge variant="outline" className="bg-success/5 text-success border-success">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Confirmed
               </Badge>

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Users,
   Calendar,
@@ -105,9 +104,9 @@ const AdminAnalyticsOverview = () => {
           change: stats.totalEvents.change,
           changeType: stats.totalEvents.changeType,
           icon: Calendar,
-          color: "text-blue-600",
-          bgColor: "bg-blue-100",
-          borderColor: "border-blue-200",
+          color: "text-primary",
+          bgColor: "bg-primary/10",
+          borderColor: "border-primary",
           description: "All events on platform",
         },
         {
@@ -116,9 +115,9 @@ const AdminAnalyticsOverview = () => {
           change: stats.organizers.change,
           changeType: stats.organizers.changeType,
           icon: Building2,
-          color: "text-green-600",
-          bgColor: "bg-green-100",
-          borderColor: "border-green-200",
+          color: "text-success",
+          bgColor: "bg-success/10",
+          borderColor: "border-success",
           description: "Registered organizers",
         },
         {
@@ -138,8 +137,8 @@ const AdminAnalyticsOverview = () => {
           change: stats.platformRevenue.change,
           changeType: stats.platformRevenue.changeType,
           icon: DollarSign,
-          color: "text-emerald-600",
-          bgColor: "bg-emerald-100",
+          color: "text-success",
+          bgColor: "bg-success/10",
           borderColor: "border-emerald-200",
           description: "Total platform revenue",
         },
@@ -272,11 +271,11 @@ const AdminAnalyticsOverview = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge variant="secondary" className="bg-success/10 text-success">Active</Badge>;
       case "pending":
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+        return <Badge variant="secondary" className="bg-warning/10 text-warning">Pending</Badge>;
       case "approved":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Approved</Badge>;
+        return <Badge variant="secondary" className="bg-primary/10 text-primary">Approved</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -365,13 +364,13 @@ const AdminAnalyticsOverview = () => {
                       </p>
                       <div className="flex items-center">
                         {stat.changeType === "positive" ? (
-                          <ArrowUpRight className="h-3 w-3 text-green-600 mr-1" />
+                          <ArrowUpRight className="h-3 w-3 text-success mr-1" />
                         ) : (
-                          <ArrowDownRight className="h-3 w-3 text-red-600 mr-1" />
+                          <ArrowDownRight className="h-3 w-3 text-destructive mr-1" />
                         )}
                         <span
                           className={`text-xs font-medium ${
-                            stat.changeType === "positive" ? "text-green-600" : "text-red-600"
+                            stat.changeType === "positive" ? "text-success" : "text-destructive"
                           }`}
                         >
                           {stat.change}
@@ -479,14 +478,14 @@ const AdminAnalyticsOverview = () => {
                         </div>
                         <div className="text-right">
                           <p className={`text-sm font-bold ${
-                            metric.status === "excellent" ? "text-green-600" : 
-                            metric.status === "good" ? "text-blue-600" : "text-red-600"
+                            metric.status === "excellent" ? "text-success" : 
+                            metric.status === "good" ? "text-primary" : "text-destructive"
                           }`}>
                             {metric.value}{metric.unit}
                           </p>
                           <p className={`text-xs ${
-                            metric.status === "excellent" ? "text-green-600" : 
-                            metric.status === "good" ? "text-blue-600" : "text-red-600"
+                            metric.status === "excellent" ? "text-success" : 
+                            metric.status === "good" ? "text-primary" : "text-destructive"
                           }`}>
                             {metric.status}
                           </p>
@@ -509,7 +508,7 @@ const AdminAnalyticsOverview = () => {
                       <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="font-medium text-foreground">{event.title}</h3>
+                            <h3 className="text-base font-medium text-foreground">{event.title}</h3>
                             {getStatusBadge(event.status)}
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -630,7 +629,7 @@ const AdminAnalyticsOverview = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Growth Rate</span>
-                        <span className="font-semibold text-green-600">+32%</span>
+                        <span className="font-semibold text-success">+32%</span>
                       </div>
                     </div>
                   </CardContent>

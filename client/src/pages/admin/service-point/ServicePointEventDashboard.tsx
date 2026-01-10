@@ -462,13 +462,13 @@ const ServicePointEventDashboard: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'upcoming':
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-primary/10 text-primary border-primary";
       case 'ongoing':
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success/10 text-success border-success";
       case 'completed':
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -488,15 +488,15 @@ const ServicePointEventDashboard: React.FC = () => {
   const getTicketStatusColor = (status: TicketStatus) => {
     switch (status) {
       case TicketStatus.ACTIVE:
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success/10 text-success border-success";
       case TicketStatus.DEACTIVATED:
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/10 text-destructive border-destructive";
       case TicketStatus.EXPIRED:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       case TicketStatus.CANCELLED:
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/10 text-destructive border-destructive";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -725,7 +725,7 @@ const ServicePointEventDashboard: React.FC = () => {
                     <p className="text-sm font-medium text-muted-foreground">Checked In</p>
                     <p className="font-semibold text-foreground">{statistics?.checkedIn || 0}</p>
                   </div>
-                  <CheckCircle className="h-8 w-8 text-green-600" />
+                  <CheckCircle className="h-8 w-8 text-success" />
                 </div>
               </CardContent>
             </Card>
@@ -737,7 +737,7 @@ const ServicePointEventDashboard: React.FC = () => {
                     <p className="text-sm font-medium text-muted-foreground">Currently Inside</p>
                     <p className="font-semibold text-foreground">{statistics?.currentlyInside || 0}</p>
                   </div>
-                  <Activity className="h-8 w-8 text-blue-600" />
+                  <Activity className="h-8 w-8 text-primary" />
                 </div>
               </CardContent>
             </Card>
@@ -839,7 +839,7 @@ const ServicePointEventDashboard: React.FC = () => {
                           <div className="text-muted-foreground">
                             Registered: {new Date(attendee.registeredAt).toLocaleDateString()}
                           </div>
-                          <div className={attendee.checkedInAt ? 'text-green-600' : 'text-muted-foreground'}>
+                          <div className={attendee.checkedInAt ? 'text-success' : 'text-muted-foreground'}>
                             {attendee.checkedInAt
                               ? `Checked in: ${new Date(attendee.checkedInAt).toLocaleTimeString()}`
                               : 'Not checked in'
@@ -899,7 +899,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{sessions.length}</div>
-                  <p className="text-sm text-gray-600">Total Sessions</p>
+                  <p className="text-sm text-muted-foreground">Total Sessions</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -907,7 +907,7 @@ const ServicePointEventDashboard: React.FC = () => {
                   <div className="text-base font-semibold text-primary mb-2">
                     {sessions.filter(s => s.isActive).length}
                   </div>
-                  <p className="text-sm text-gray-600">Active</p>
+                  <p className="text-sm text-muted-foreground">Active</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -915,7 +915,7 @@ const ServicePointEventDashboard: React.FC = () => {
                   <div className="text-base font-semibold text-primary mb-2">
                     {sessions.reduce((sum, s) => sum + (s.stats?.totalScans || 0), 0)}
                   </div>
-                  <p className="text-sm text-gray-600">Total Scans</p>
+                  <p className="text-sm text-muted-foreground">Total Scans</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -923,7 +923,7 @@ const ServicePointEventDashboard: React.FC = () => {
                   <div className="text-base font-semibold text-primary mb-2">
                     {sessions.reduce((sum, s) => sum + (s.stats?.uniqueAttendees || 0), 0)}
                   </div>
-                  <p className="text-sm text-gray-600">Unique Attendees</p>
+                  <p className="text-sm text-muted-foreground">Unique Attendees</p>
                 </CardContent>
               </Card>
             </div>
@@ -994,10 +994,10 @@ const ServicePointEventDashboard: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               {session.allowCheckIn && (
-                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">IN</Badge>
+                                <Badge variant="outline" className="text-xs bg-success/5 text-success border-success">IN</Badge>
                               )}
                               {session.allowCheckOut && (
-                                <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">OUT</Badge>
+                                <Badge variant="outline" className="text-xs bg-destructive/5 text-destructive border-destructive">OUT</Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
@@ -1011,7 +1011,7 @@ const ServicePointEventDashboard: React.FC = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                className="text-destructive border-destructive hover:bg-destructive/5"
                                 onClick={() => setDeleteSessionId(session.id)}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1026,7 +1026,7 @@ const ServicePointEventDashboard: React.FC = () => {
                   <div className="text-center py-12">
                     <Shield className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No sessions yet</h3>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Create sessions to define check-in points for this event
                     </p>
                     <Button onClick={() => handleOpenSessionDialog()} size="sm">
@@ -1200,7 +1200,7 @@ const ServicePointEventDashboard: React.FC = () => {
             <AlertDialogAction
               onClick={handleDeleteSession}
               disabled={deletingSession}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-destructive/90"
             >
               {deletingSession ? (
                 <>

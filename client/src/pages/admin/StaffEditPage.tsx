@@ -336,22 +336,22 @@ const StaffEditPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: "bg-green-100 text-green-800 border-green-200",
-      inactive: "bg-red-100 text-red-800 border-red-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200"
+      active: "bg-success/10 text-success border-success",
+      inactive: "bg-destructive/10 text-destructive border-destructive",
+      pending: "bg-warning/10 text-warning border-warning"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-gray-800 border-gray-200";
   };
 
   const getRoleBadge = (role: string) => {
     const variants = {
-      event_manager: "bg-blue-100 text-blue-800 border-blue-200",
-      ticket_scanner: "bg-green-100 text-green-800 border-green-200",
+      event_manager: "bg-primary/10 text-primary border-primary",
+      ticket_scanner: "bg-success/10 text-success border-success",
       support_staff: "bg-purple-100 text-purple-800 border-purple-200",
-      admin: "bg-red-100 text-red-800 border-red-200",
+      admin: "bg-destructive/10 text-destructive border-destructive",
       supervisor: "bg-orange-100 text-orange-800 border-orange-200"
     };
-    return variants[role as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[role as keyof typeof variants] || "bg-muted text-gray-800 border-gray-200";
   };
 
   // Loading state
@@ -395,9 +395,9 @@ const StaffEditPage = () => {
         )}
 
         {success && (
-          <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700 dark:text-green-400">{success}</AlertDescription>
+          <Alert className="border-success bg-success/5 dark:bg-green-900/20 dark:border-green-800">
+            <CheckCircle className="h-4 w-4 text-success" />
+            <AlertDescription className="text-success dark:text-green-400">{success}</AlertDescription>
           </Alert>
         )}
 
@@ -407,7 +407,7 @@ const StaffEditPage = () => {
             <BackButton onClick={handleBack} label="Back to Staff" />
             <div>
               <h1 className="text-base font-semibold text-foreground">Edit Staff Member</h1>
-              <p className="text-gray-600">{staffData.firstName} {staffData.lastName} • {staffData.role.replace('_', ' ')}</p>
+              <p className="text-muted-foreground">{staffData.firstName} {staffData.lastName} • {staffData.role.replace('_', ' ')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -430,8 +430,8 @@ const StaffEditPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-600">Current Status:</span>
+                <Shield className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium text-muted-foreground">Current Status:</span>
                 <Badge className={`text-xs ${getStatusBadge(staffData.status)}`}>
                   {staffData.status}
                 </Badge>
@@ -439,7 +439,7 @@ const StaffEditPage = () => {
                   {staffData.role.replace('_', ' ')}
                 </Badge>
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 Last updated: {new Date().toLocaleDateString()}
               </div>
             </div>
@@ -604,12 +604,12 @@ const StaffEditPage = () => {
                   </div>
                 </div>
                 
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="p-4 bg-warning/5 border border-warning rounded-lg">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-medium text-yellow-800">Employment Changes</h4>
-                      <p className="text-sm text-yellow-700 mt-1">
+                      <h4 className="text-sm font-medium text-warning">Employment Changes</h4>
+                      <p className="text-sm text-warning mt-1">
                         Changes to role, department, or status may affect the staff member's permissions and access levels.
                       </p>
                     </div>
@@ -619,19 +619,19 @@ const StaffEditPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Hire Date</Label>
-                    <p className="text-sm text-gray-600 mt-1">{new Date(staffData.hireDate).toLocaleDateString()}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{new Date(staffData.hireDate).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <Label>Last Active</Label>
-                    <p className="text-sm text-gray-600 mt-1">{new Date(staffData.lastActive).toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{new Date(staffData.lastActive).toLocaleString()}</p>
                   </div>
                   <div>
                     <Label>Events Managed</Label>
-                    <p className="text-sm text-gray-600 mt-1">{staffData.eventsManaged}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{staffData.eventsManaged}</p>
                   </div>
                   <div>
                     <Label>Total Hours</Label>
-                    <p className="text-sm text-gray-600 mt-1">{staffData.totalHours}h</p>
+                    <p className="text-sm text-muted-foreground mt-1">{staffData.totalHours}h</p>
                   </div>
                 </div>
               </CardContent>
@@ -657,7 +657,7 @@ const StaffEditPage = () => {
                   }).map(([permission, label]) => (
                     <div key={permission} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <Shield className="h-4 w-4 text-gray-600" />
+                        <Shield className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium text-foreground">{label}</span>
                       </div>
                       <Select
@@ -676,12 +676,12 @@ const StaffEditPage = () => {
                   ))}
                 </div>
                 
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-4 bg-primary/5 border border-primary rounded-lg">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-medium text-blue-800">Permission Changes</h4>
-                      <p className="text-sm text-blue-700 mt-1">
+                      <h4 className="text-sm font-medium text-primary">Permission Changes</h4>
+                      <p className="text-sm text-primary mt-1">
                         Permission changes will take effect immediately. Ensure the staff member is notified of any access changes.
                       </p>
                     </div>

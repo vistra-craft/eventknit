@@ -308,19 +308,19 @@ const AdminNotificationSettingsPage = () => {
         </div>
 
         {saveStatus === "success" && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="bg-success/5 border border-success rounded-lg p-4 mb-4">
             <div className="flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              <span className="text-green-800">Settings saved successfully!</span>
+              <CheckCircle className="h-5 w-5 text-success mr-2" />
+              <span className="text-success">Settings saved successfully!</span>
             </div>
           </div>
         )}
 
         {saveStatus === "error" && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <div className="bg-destructive/5 border border-destructive rounded-lg p-4 mb-4">
             <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <span className="text-red-800">Failed to save settings. Please try again.</span>
+              <AlertCircle className="h-5 w-5 text-destructive mr-2" />
+              <span className="text-destructive">Failed to save settings. Please try again.</span>
             </div>
           </div>
         )}
@@ -888,9 +888,9 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Delivered</p>
-                          <p className="font-semibold text-green-600">{analytics.totalDelivered.toLocaleString()}</p>
+                          <p className="font-semibold text-success">{analytics.totalDelivered.toLocaleString()}</p>
                         </div>
-                        <CheckCircle className="h-8 w-8 text-green-600" />
+                        <CheckCircle className="h-8 w-8 text-success" />
                       </div>
                     </CardContent>
                   </Card>
@@ -899,9 +899,9 @@ const AdminNotificationSettingsPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-muted-foreground">Failed</p>
-                          <p className="font-semibold text-red-600">{analytics.totalFailed.toLocaleString()}</p>
+                          <p className="font-semibold text-destructive">{analytics.totalFailed.toLocaleString()}</p>
                         </div>
-                        <AlertCircle className="h-8 w-8 text-red-600" />
+                        <AlertCircle className="h-8 w-8 text-destructive" />
                       </div>
                     </CardContent>
                   </Card>
@@ -933,8 +933,8 @@ const AdminNotificationSettingsPage = () => {
                               <Badge variant="secondary">{stats.sent} sent</Badge>
                             </div>
                             <div className="flex items-center gap-4 text-sm">
-                              <span className="text-green-600">✓ {stats.delivered} delivered</span>
-                              {stats.failed > 0 && <span className="text-red-600">✗ {stats.failed} failed</span>}
+                              <span className="text-success">✓ {stats.delivered} delivered</span>
+                              {stats.failed > 0 && <span className="text-destructive">✗ {stats.failed} failed</span>}
                             </div>
                           </div>
                           <div className="text-right">

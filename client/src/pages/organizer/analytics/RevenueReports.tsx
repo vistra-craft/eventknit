@@ -246,13 +246,13 @@ const RevenueReports = () => {
                     </p>
                     <div className="flex items-center">
                       {stat.changeType === "positive" ? (
-                        <ArrowUpRight className="h-3 w-3 text-green-600 mr-1" />
+                        <ArrowUpRight className="h-3 w-3 text-success mr-1" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-red-600 mr-1" />
+                        <ArrowDownRight className="h-3 w-3 text-destructive mr-1" />
                       )}
                       <span
                         className={`text-xs font-medium ${
-                          stat.changeType === "positive" ? "text-green-600" : "text-red-600"
+                          stat.changeType === "positive" ? "text-success" : "text-destructive"
                         }`}
                       >
                         {stat.change}
@@ -407,7 +407,7 @@ const RevenueReports = () => {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Refunds</p>
-                          <p className="font-medium text-red-600">-${event.refunds.toLocaleString()}</p>
+                          <p className="font-medium text-destructive">-${event.refunds.toLocaleString()}</p>
                         </div>
                       </div>
                       
@@ -419,7 +419,7 @@ const RevenueReports = () => {
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Growth</p>
-                            <p className="font-medium text-green-600">+{event.growth}%</p>
+                            <p className="font-medium text-success">+{event.growth}%</p>
                           </div>
                         </div>
                         <Button variant="outline" size="sm">

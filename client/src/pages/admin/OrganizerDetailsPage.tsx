@@ -253,22 +253,22 @@ const OrganizerDetailsPage = () => {
 
   const getTicketStatusBadge = (status: string) => {
     const variants = {
-      open: "bg-red-100 text-red-800 border-red-200",
-      in_progress: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      resolved: "bg-green-100 text-green-800 border-green-200",
-      closed: "bg-gray-100 text-gray-800 border-gray-200"
+      open: "bg-destructive/10 text-destructive border-destructive",
+      in_progress: "bg-warning/10 text-warning border-warning",
+      resolved: "bg-success/10 text-success border-success",
+      closed: "bg-muted text-foreground border-border"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-foreground border-border";
   };
 
   const getPriorityBadge = (priority: string) => {
     const variants = {
-      low: "bg-gray-100 text-gray-800 border-gray-200",
-      medium: "bg-blue-100 text-blue-800 border-blue-200",
+      low: "bg-muted text-foreground border-border",
+      medium: "bg-primary/10 text-primary border-primary",
       high: "bg-orange-100 text-orange-800 border-orange-200",
-      urgent: "bg-red-100 text-red-800 border-red-200"
+      urgent: "bg-destructive/10 text-destructive border-destructive"
     };
-    return variants[priority as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[priority as keyof typeof variants] || "bg-muted text-foreground border-border";
   };
 
   const formatCurrency = (amount: number) => {
@@ -390,7 +390,7 @@ const OrganizerDetailsPage = () => {
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Shield className="h-5 w-5 text-blue-600" />
+                <Shield className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium">Status</span>
               </div>
               <Badge className={`text-xs ${getStatusBadge(organizerData.status)}`}>
@@ -401,7 +401,7 @@ const OrganizerDetailsPage = () => {
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Calendar className="h-5 w-5 text-green-600" />
+                <Calendar className="h-5 w-5 text-success" />
                 <span className="text-sm font-medium">Events</span>
               </div>
               <p className="text-lg font-bold text-primary">{organizerData.totalEvents}</p>
@@ -410,7 +410,7 @@ const OrganizerDetailsPage = () => {
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
+                <DollarSign className="h-5 w-5 text-success" />
                 <span className="text-sm font-medium">Revenue</span>
               </div>
               <p className="text-lg font-bold text-foreground">{formatCurrency(organizerData.totalRevenue)}</p>
@@ -419,7 +419,7 @@ const OrganizerDetailsPage = () => {
           <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Star className="h-5 w-5 text-yellow-600" />
+                <Star className="h-5 w-5 text-warning" />
                 <span className="text-sm font-medium">Rating</span>
               </div>
               <p className="text-lg font-bold text-primary">{organizerData.rating}</p>
@@ -485,7 +485,7 @@ const OrganizerDetailsPage = () => {
                         <label className="text-sm font-medium text-muted-foreground">Website</label>
                         <p className="text-sm text-foreground">
                           {organizerData.website ? (
-                            <a href={organizerData.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            <a href={organizerData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                               {organizerData.website}
                             </a>
                           ) : "Not provided"}
@@ -580,7 +580,7 @@ const OrganizerDetailsPage = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Average Rating</span>
                       <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                        <Star className="h-4 w-4 text-warning fill-current" />
                         <span className="text-sm font-medium text-foreground">{organizerData.rating}</span>
                       </div>
                     </div>
@@ -597,21 +597,21 @@ const OrganizerDetailsPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                      <div className="w-2 h-2 bg-success/50 rounded-full mt-2"></div>
                       <div>
                         <p className="text-sm text-foreground">Event "Tech Innovation Summit" published</p>
                         <p className="text-xs text-muted-foreground">2 hours ago</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                      <div className="w-2 h-2 bg-primary/50 rounded-full mt-2"></div>
                       <div>
                         <p className="text-sm text-foreground">Payment received: $45,000</p>
                         <p className="text-xs text-muted-foreground">1 day ago</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2"></div>
+                      <div className="w-2 h-2 bg-warning/50 rounded-full mt-2"></div>
                       <div>
                         <p className="text-sm text-foreground">Support ticket resolved</p>
                         <p className="text-xs text-muted-foreground">3 days ago</p>
@@ -632,7 +632,7 @@ const OrganizerDetailsPage = () => {
               <CardContent>
                 <div className="space-y-3">
                   {organizerEvents.map((event) => (
-                    <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <Calendar className="h-5 w-5 text-primary" />
@@ -680,7 +680,7 @@ const OrganizerDetailsPage = () => {
               <CardContent>
                 <div className="space-y-3">
                   {organizerData.supportTickets?.map((ticket) => (
-                    <div key={ticket.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={ticket.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <FileText className="h-5 w-5 text-primary" />
@@ -713,8 +713,8 @@ const OrganizerDetailsPage = () => {
                       </div>
                     </div>
                   )) || (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                       <p>No support tickets found</p>
                     </div>
                   )}

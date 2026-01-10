@@ -149,7 +149,7 @@ const EditExpensePage = () => {
               <h1 className="text-base font-semibold text-foreground">
                 {isEditing ? "Edit Expense" : "New Expense"}
               </h1>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 {isEditing ? "Update expense details" : "Create a new expense record"}
               </p>
             </div>

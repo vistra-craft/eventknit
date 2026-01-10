@@ -153,7 +153,7 @@ const EventFinanceDashboard = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       </AdminLayout>
     );
@@ -166,7 +166,7 @@ const EventFinanceDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Event Finance Dashboard</h1>
-            <p className="text-gray-600">Overview of event-related payments and finances</p>
+            <p className="text-muted-foreground">Overview of event-related payments and finances</p>
           </div>
           <Button variant="outline" size="sm" onClick={loadFinancialData}>
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -179,16 +179,16 @@ const EventFinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-green-100">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
+                <div className="p-3 rounded-lg bg-success/10">
+                  <TrendingUp className="h-6 w-6 text-success" />
                 </div>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Total Revenue</h3>
-                <p className="font-semibold text-green-600">
+                <p className="font-semibold text-success">
                   {formatCurrency(stats.totalRevenue)}
                 </p>
-                <p className="text-sm text-gray-600">From all event payments</p>
+                <p className="text-sm text-muted-foreground">From all event payments</p>
               </div>
             </CardContent>
           </Card>
@@ -196,16 +196,16 @@ const EventFinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-blue-100">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <DollarSign className="h-6 w-6 text-primary" />
                 </div>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Platform Fees</h3>
-                <p className="font-semibold text-blue-600">
+                <p className="font-semibold text-primary">
                   {formatCurrency(stats.platformFees)}
                 </p>
-                <p className="text-sm text-gray-600">Commission earned</p>
+                <p className="text-sm text-muted-foreground">Commission earned</p>
               </div>
             </CardContent>
           </Card>
@@ -222,7 +222,7 @@ const EventFinanceDashboard = () => {
                 <p className="font-semibold text-purple-600">
                   {formatCurrency(stats.pendingDisbursements)}
                 </p>
-                <p className="text-sm text-gray-600">Awaiting payout to organizers</p>
+                <p className="text-sm text-muted-foreground">Awaiting payout to organizers</p>
               </div>
             </CardContent>
           </Card>
@@ -230,16 +230,16 @@ const EventFinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-red-100">
-                  <TrendingDown className="h-6 w-6 text-red-600" />
+                <div className="p-3 rounded-lg bg-destructive/10">
+                  <TrendingDown className="h-6 w-6 text-destructive" />
                 </div>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Total Refunds</h3>
-                <p className="font-semibold text-red-600">
+                <p className="font-semibold text-destructive">
                   {formatCurrency(stats.totalRefunds)}
                 </p>
-                <p className="text-sm text-gray-600">Refunded to customers</p>
+                <p className="text-sm text-muted-foreground">Refunded to customers</p>
               </div>
             </CardContent>
           </Card>
@@ -275,7 +275,7 @@ const EventFinanceDashboard = () => {
                     className={`px-3 py-1 rounded-full transition-colors ${
                       growthPeriod === option.id
                         ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-gray-900 hover:text-white"
+                        : "text-muted-foreground hover:bg-primary "
                     }`}
                   >
                     {option.label}
@@ -424,9 +424,9 @@ const EventFinanceDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">Payment Transactions</h3>
-                  <p className="text-sm text-gray-600">View all payments</p>
+                  <p className="text-sm text-muted-foreground">View all payments</p>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -439,9 +439,9 @@ const EventFinanceDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground">Disbursements</h3>
-                  <p className="text-sm text-gray-600">Manage payouts</p>
+                  <p className="text-sm text-muted-foreground">Manage payouts</p>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -454,9 +454,9 @@ const EventFinanceDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground">Refunds</h3>
-                  <p className="text-sm text-gray-600">Process refunds</p>
+                  <p className="text-sm text-muted-foreground">Process refunds</p>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -469,9 +469,9 @@ const EventFinanceDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground">Reconciliation</h3>
-                  <p className="text-sm text-gray-600">Sync with Paystack</p>
+                  <p className="text-sm text-muted-foreground">Sync with Paystack</p>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -502,15 +502,15 @@ const EventFinanceDashboard = () => {
                       <div className="font-medium text-foreground">
                         {tx.event?.title || "Unknown Event"}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {tx.attendeeName || tx.attendeeEmail} • {tx.transactionNumber}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-green-600">
+                      <div className="font-semibold text-success">
                         {formatCurrency(tx.amount, tx.currency)}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {tx.paymentDate
                           ? new Date(tx.paymentDate).toLocaleDateString()
                           : "N/A"}

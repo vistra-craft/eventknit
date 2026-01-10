@@ -187,7 +187,7 @@ const EditWagePage = () => {
             <BackButton to="/admin/finance/wages" label="Back" />
             <div>
               <h1 className="text-base font-semibold text-foreground">{isEditing ? "Edit Wage" : "Add Wage"}</h1>
-              <p className="text-gray-600">{isEditing ? "Update wage details" : "Add a new wage payment"}</p>
+              <p className="text-muted-foreground">{isEditing ? "Update wage details" : "Add a new wage payment"}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

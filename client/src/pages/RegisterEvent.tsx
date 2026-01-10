@@ -948,7 +948,7 @@ const EventRegistration = () => {
                                     <AlertCircle className="w-3 h-3" /> {availability.reason}
                                   </span>
                                 ) : (
-                                  <span className="flex items-center gap-1 text-green-600">
+                                  <span className="flex items-center gap-1 text-success">
                                     <CheckCircle className="w-3 h-3" /> Available
                                   </span>
                                 )}
@@ -1038,13 +1038,13 @@ const EventRegistration = () => {
                             </Button>
                           </div>
                         ) : (
-                          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm font-medium text-green-800">
+                          <div className="rounded-xl border border-success bg-success/5 px-4 py-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-medium text-success">
                               <CheckCircle className="w-4 h-4" />
                               {appliedDiscount.code}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold text-green-700">
+                              <span className="text-sm font-semibold text-success">
                                 -${appliedDiscount.amount.toFixed(2)}
                               </span>
                               <Button type="button" variant="ghost" size="sm" onClick={handleRemovePromoCode}>
@@ -1312,11 +1312,11 @@ const EventRegistration = () => {
                   </p>
                 </div>
                 {isGuestRegistration ? (
-                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-left space-y-2">
-                    <p className="text-sm text-blue-900">
+                  <div className="rounded-2xl border border-primary bg-primary/5 p-4 text-left space-y-2">
+                    <p className="text-sm text-primary">
                       <strong>Check your email!</strong> We've sent a ticket confirmation (with QR code) and an optional account invitation.
                     </p>
-                    <p className="text-xs text-blue-700">
+                    <p className="text-xs text-primary">
                       Creating an account is optional but lets you manage future registrations faster.
                     </p>
                   </div>

@@ -636,7 +636,7 @@ const UserSettingsPage = () => {
             <Label>Account Status</Label>
             <div className="mt-1">
               {accountInfo.status === UserStatus.ACTIVE ? (
-                <Badge className="bg-green-500">Active</Badge>
+                <Badge className="bg-success/50">Active</Badge>
               ) : accountInfo.status === UserStatus.SUSPENDED ? (
                 <Badge variant="destructive">Suspended</Badge>
               ) : accountInfo.status === UserStatus.DEACTIVATED ? (
@@ -654,7 +654,7 @@ const UserSettingsPage = () => {
             <div className="mt-1 flex items-center gap-2">
               {accountInfo.isEmailVerified ? (
                 <>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-success" />
                   <span className="text-sm">Verified</span>
                   {accountInfo.emailVerifiedAt && (
                     <span className="text-xs text-muted-foreground">
@@ -664,7 +664,7 @@ const UserSettingsPage = () => {
                 </>
               ) : (
                 <>
-                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertCircle className="h-4 w-4 text-destructive" />
                   <span className="text-sm">Not Verified</span>
                 </>
               )}
@@ -1010,19 +1010,19 @@ const UserSettingsPage = () => {
 
           {/* Save Status */}
           {saveStatus === "success" && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-success/5 border border-success rounded-lg p-4">
               <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-                <span className="text-green-800">{saveMessage || "Settings saved successfully!"}</span>
+                <CheckCircle className="h-5 w-5 text-success mr-2" />
+                <span className="text-success">{saveMessage || "Settings saved successfully!"}</span>
               </div>
             </div>
           )}
           
           {saveStatus === "error" && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-destructive/5 border border-destructive rounded-lg p-4">
               <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                <span className="text-red-800">{saveMessage || "Failed to save settings. Please try again."}</span>
+                <AlertCircle className="h-5 w-5 text-destructive mr-2" />
+                <span className="text-destructive">{saveMessage || "Failed to save settings. Please try again."}</span>
               </div>
             </div>
           )}

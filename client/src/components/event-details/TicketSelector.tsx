@@ -138,7 +138,7 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
                       <AlertCircle className="w-3 h-3" /> {availability.reason}
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-green-600">
+                    <span className="flex items-center gap-1 text-success">
                       <CheckCircle className="w-3 h-3" /> Available
                     </span>
                   )}
@@ -200,7 +200,7 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
         <div className="mt-3 pt-3 border-t border-border">
           <Link 
             to="/terms-of-service#refund-policy"
-            className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-xs transition-colors text-center block"
+            className="text-primary hover:text-primary hover:underline font-medium text-xs transition-colors text-center block"
           >
             View Refund Policy →
           </Link>

@@ -102,7 +102,7 @@ export const OrganizerEventGrid = () => {
               </div>
               
               {/* Trending badge */}
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+              <div className="flex items-center gap-2 px-3 py-1 bg-success/10 text-success rounded-full text-sm font-medium">
                 <TrendingUp className="w-4 h-4" />
                 <span>Trending</span>
               </div>

@@ -72,7 +72,7 @@ const SearchBar = ({ onSearch, initialSearch = "", initialLocation }: SearchBarP
         {/* Search Button */}
         <Button 
           onClick={handleSearch}
-          className="bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground px-6 py-3 h-auto rounded-none rounded-r-lg font-medium"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 h-auto rounded-none rounded-r-lg font-medium"
         >
           Search
           <Search className="w-4 h-4 ml-2" />

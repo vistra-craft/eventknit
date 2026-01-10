@@ -537,7 +537,7 @@ const AdminPartnershipsPage = () => {
       description: "Create a comprehensive sponsorship package",
       type: "sponsor",
       icon: Star,
-      color: "bg-yellow-500"
+      color: "bg-warning/50"
     },
     {
       id: "2",
@@ -545,7 +545,7 @@ const AdminPartnershipsPage = () => {
       description: "Set up a venue partnership agreement",
       type: "venue",
       icon: Building2,
-      color: "bg-blue-500"
+      color: "bg-primary/50"
     },
     {
       id: "3",
@@ -553,7 +553,7 @@ const AdminPartnershipsPage = () => {
       description: "Create a media partnership proposal",
       type: "media",
       icon: Globe,
-      color: "bg-green-500"
+      color: "bg-success/50"
     },
     {
       id: "4",
@@ -586,32 +586,32 @@ const AdminPartnershipsPage = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'sponsor': return "bg-yellow-100 text-yellow-800";
-      case 'venue': return "bg-blue-100 text-blue-800";
-      case 'media': return "bg-green-100 text-green-800";
+      case 'sponsor': return "bg-warning/10 text-warning";
+      case 'venue': return "bg-primary/10 text-primary";
+      case 'media': return "bg-success/10 text-success";
       case 'vendor': return "bg-purple-100 text-purple-800";
       case 'influencer': return "bg-pink-100 text-pink-800";
-      default: return "bg-gray-100 text-gray-800";
+      default: return "bg-muted text-foreground";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return "bg-green-100 text-green-800";
-      case 'pending': return "bg-yellow-100 text-yellow-800";
-      case 'expired': return "bg-red-100 text-red-800";
-      case 'negotiating': return "bg-blue-100 text-blue-800";
+      case 'active': return "bg-success/10 text-success";
+      case 'pending': return "bg-warning/10 text-warning";
+      case 'expired': return "bg-destructive/10 text-destructive";
+      case 'negotiating': return "bg-primary/10 text-primary";
       case 'pending_approval': return "bg-orange-100 text-orange-800";
-      default: return "bg-gray-100 text-gray-800";
+      default: return "bg-muted text-foreground";
     }
   };
 
   const getApprovalColor = (status: string) => {
     switch (status) {
-      case 'approved': return "bg-green-100 text-green-800";
-      case 'pending': return "bg-yellow-100 text-yellow-800";
-      case 'rejected': return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'approved': return "bg-success/10 text-success";
+      case 'pending': return "bg-warning/10 text-warning";
+      case 'rejected': return "bg-destructive/10 text-destructive";
+      default: return "bg-muted text-foreground";
     }
   };
 
@@ -652,7 +652,7 @@ const AdminPartnershipsPage = () => {
             <h1 className="text-lg font-semibold text-foreground">
               Platform Partnerships
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Monitor and manage platform-wide strategic partnerships
             </p>
           </div>
@@ -1108,7 +1108,7 @@ const AdminPartnershipsPage = () => {
                             </Badge>
                             {partnership.rating && (
                               <div className="flex items-center space-x-1">
-                                <Star className="h-4 w-4 text-yellow-500" />
+                                <Star className="h-4 w-4 text-warning" />
                                 <span className="text-sm font-medium">{partnership.rating}</span>
                               </div>
                             )}
@@ -1200,7 +1200,7 @@ const AdminPartnershipsPage = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-green-600 hover:text-green-700"
+                            className="text-success hover:text-success"
                             title="Approve Partnership"
                           >
                             <Shield className="h-4 w-4 mr-1" />
@@ -1664,12 +1664,12 @@ const AdminPartnershipsPage = () => {
                 
                 <div className="bg-muted p-4 rounded-lg">
                   <h4 className="font-medium mb-2">Template Preview</h4>
-                  <div className="bg-white border rounded-lg p-4">
+                  <div className="bg-card border rounded-lg p-4">
                     <div className="text-center mb-4">
-                      <div className="w-12 h-12 bg-eventknit rounded-lg flex items-center justify-center text-eventknit-foreground font-bold mx-auto mb-2">
+                      <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold mx-auto mb-2">
                         EK
                       </div>
-                      <h4 className="font-semibold"><span className="text-eventknit">EventKnit</span> Partnership Agreement</h4>
+                      <h4 className="font-semibold"><span className="text-primary">EventKnit</span> Partnership Agreement</h4>
                       <p className="text-sm text-muted-foreground">{selectedTemplate.type.toUpperCase()} Template</p>
                     </div>
                     <div className="space-y-2 text-sm">

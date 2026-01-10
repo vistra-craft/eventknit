@@ -60,7 +60,7 @@ const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) 
               {/* Badge Header */}
               <div className="bg-white border-b border-gray-200 p-4 rounded-t-xl">
                 <h2 className="text-lg font-bold text-center text-gray-900">{badgeData.eventName}</h2>
-                <p className="text-sm text-center text-gray-600 mt-1">{eventData?.date || 'Date TBD'}</p>
+                <p className="text-sm text-center text-muted-foreground mt-1">{eventData?.date || 'Date TBD'}</p>
               </div>
               
               {/* Badge Content */}
@@ -71,19 +71,19 @@ const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) 
                     <span className="text-2xl font-bold text-gray-700">{user.initials}</span>
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">{badgeData.attendeeName}</h3>
-                  <p className="text-base text-gray-600">{badgeData.company}</p>
+                  <p className="text-base text-muted-foreground">{badgeData.company}</p>
                 </div>
 
                 {/* QR Code Section */}
                 <div className="flex justify-center mb-4">
                   <div className="w-32 h-32 bg-muted/50 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
-                    <QrCode className="w-12 h-12 text-gray-400" />
+                    <QrCode className="w-12 h-12 text-muted-foreground" />
                   </div>
                 </div>
 
                 {/* Alternative Code Section */}
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <p className="text-xs text-gray-600 mb-2">Alternative Code</p>
+                  <p className="text-xs text-muted-foreground mb-2">Alternative Code</p>
                   <p className="text-lg font-mono font-bold text-gray-900">{badgeData.alternativeCode}</p>
                 </div>
               </div>

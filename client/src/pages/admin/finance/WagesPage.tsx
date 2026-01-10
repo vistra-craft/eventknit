@@ -75,24 +75,24 @@ const WagesPage = () => {
   const getStatusBadge = (status: string) => {
     const normalizedStatus = status.toLowerCase();
     const variants: Record<string, string> = {
-      completed: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      cancelled: "bg-red-100 text-red-800 border-red-200"
+      completed: "bg-success/10 text-success border-success/20",
+      pending: "bg-warning/10 text-warning border-warning/20",
+      cancelled: "bg-destructive/10 text-destructive border-destructive/20"
     };
-    return variants[normalizedStatus] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[normalizedStatus] || "bg-muted text-muted-foreground border-border";
   };
 
   const getPaymentMethodBadge = (method?: string) => {
-    if (!method) return "bg-gray-100 text-gray-800 border-gray-200";
+    if (!method) return "bg-muted text-muted-foreground border-border";
     const normalizedMethod = method.toLowerCase();
     const variants: Record<string, string> = {
-      bank_transfer: "bg-blue-100 text-blue-800 border-blue-200",
-      check: "bg-orange-100 text-orange-800 border-orange-200",
-      cash: "bg-gray-100 text-gray-800 border-gray-200",
-      mpesa: "bg-green-100 text-green-800 border-green-200",
-      mobile_money: "bg-teal-100 text-teal-800 border-teal-200"
+      bank_transfer: "bg-primary/10 text-primary border-primary/20",
+      check: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+      cash: "bg-muted text-muted-foreground border-border",
+      mpesa: "bg-success/10 text-success border-success/20",
+      mobile_money: "bg-teal-500/10 text-teal-600 border-teal-500/20"
     };
-    return variants[normalizedMethod] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[normalizedMethod] || "bg-muted text-muted-foreground border-border";
   };
 
   const formatCurrency = (amount: number) => {
@@ -182,7 +182,7 @@ const WagesPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Wage Management</h1>
-            <p className="text-gray-600">Track and manage employee wages and payroll</p>
+            <p className="text-muted-foreground">Track and manage employee wages and payroll</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => navigate('/admin/finance')}>
@@ -200,26 +200,26 @@ const WagesPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-red-600 mb-2">
+              <div className="font-semibold text-destructive mb-2">
                 {formatCurrency(totalPaid)}
               </div>
-              <p className="text-sm text-gray-600">Total Wages Paid</p>
+              <p className="text-sm text-muted-foreground">Total Wages Paid</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-yellow-600 mb-2">
+              <div className="font-semibold text-warning mb-2">
                 {formatCurrency(pendingAmount)}
               </div>
-              <p className="text-sm text-gray-600">Pending Payments</p>
+              <p className="text-sm text-muted-foreground">Pending Payments</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-gray-600 mb-2">
+              <div className="font-semibold text-foreground mb-2">
                 {wages.length}
               </div>
-              <p className="text-sm text-gray-600">Total Records</p>
+              <p className="text-sm text-muted-foreground">Total Records</p>
             </CardContent>
           </Card>
         </div>
@@ -230,7 +230,7 @@ const WagesPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search by description or recipient..."
                     value={searchTerm}
@@ -258,8 +258,8 @@ const WagesPage = () => {
         {filteredWages.length === 0 ? (
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
-              <div className="text-gray-500">
-                <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <div className="text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-medium mb-2">No wage records found</h3>
                 <p>Try adjusting your search or filter criteria, or add a new wage entry</p>
               </div>
@@ -273,8 +273,8 @@ const WagesPage = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-lg bg-blue-100">
-                          <User className="h-5 w-5 text-blue-600" />
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <User className="h-5 w-5 text-primary" />
                         </div>
                         <h3 className="text-lg font-semibold text-foreground">{wage.recipient || 'Employee'}</h3>
                         <Badge className={`text-xs ${getStatusBadge(wage.status)}`}>
@@ -286,7 +286,7 @@ const WagesPage = () => {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
                         <div className="flex items-center gap-1">
                           <span>{wage.description}</span>
                         </div>
@@ -303,7 +303,7 @@ const WagesPage = () => {
                     </div>
                     <div className="flex items-center gap-2 ml-4">
                       <div className="text-right">
-                        <p className="font-semibold text-red-600">
+                        <p className="font-semibold text-destructive">
                           -{formatCurrency(Number(wage.amount))}
                         </p>
                       </div>
@@ -348,43 +348,43 @@ const WagesPage = () => {
               <div className="p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">ID</label>
+                    <label className="text-sm font-medium text-muted-foreground">ID</label>
                     <p className="text-sm text-foreground">{selectedWage.id}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Reference</label>
+                    <label className="text-sm font-medium text-muted-foreground">Reference</label>
                     <p className="text-sm text-foreground">{selectedWage.reference || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Recipient</label>
+                    <label className="text-sm font-medium text-muted-foreground">Recipient</label>
                     <p className="text-sm text-foreground">{selectedWage.recipient || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Amount</label>
-                    <p className="text-sm font-semibold text-red-600">-{formatCurrency(Number(selectedWage.amount))}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Amount</label>
+                    <p className="text-sm font-semibold text-destructive">-{formatCurrency(Number(selectedWage.amount))}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Status</label>
+                    <label className="text-sm font-medium text-muted-foreground">Status</label>
                     <Badge className={`text-xs ${getStatusBadge(selectedWage.status)}`}>
                       {selectedWage.status}
                     </Badge>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Payment Method</label>
+                    <label className="text-sm font-medium text-muted-foreground">Payment Method</label>
                     <p className="text-sm text-foreground">{formatPaymentMethod(selectedWage.paymentMethod)}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Date</label>
+                    <label className="text-sm font-medium text-muted-foreground">Date</label>
                     <p className="text-sm text-foreground">{formatDate(selectedWage.expenseDate)}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Currency</label>
+                    <label className="text-sm font-medium text-muted-foreground">Currency</label>
                     <p className="text-sm text-foreground">{selectedWage.currency}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Description</label>
+                  <label className="text-sm font-medium text-muted-foreground">Description</label>
                   <p className="text-sm text-foreground">{selectedWage.description}</p>
                 </div>
               </div>

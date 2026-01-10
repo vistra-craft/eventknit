@@ -185,9 +185,9 @@ const Profile = () => {
         )}
 
         {success && (
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700">{success}</AlertDescription>
+          <Alert className="border-success bg-success/5">
+            <CheckCircle className="h-4 w-4 text-success" />
+            <AlertDescription className="text-success">{success}</AlertDescription>
           </Alert>
         )}
 
@@ -379,7 +379,7 @@ const Profile = () => {
               </div>
               <div>
                 <span className="text-muted-foreground">Email Verified:</span>
-                <span className={`ml-2 font-medium ${user?.isEmailVerified ? 'text-green-600' : 'text-orange-600'}`}>
+                <span className={`ml-2 font-medium ${user?.isEmailVerified ? 'text-success' : 'text-orange-600'}`}>
                   {user?.isEmailVerified ? 'Yes' : 'No'}
                 </span>
               </div>

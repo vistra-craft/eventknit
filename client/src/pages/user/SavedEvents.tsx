@@ -144,7 +144,7 @@ const SavedEvents: React.FC = () => {
                   className="absolute top-4 right-4 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-colors"
                   aria-label="Remove from saved"
                 >
-                  <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+                  <Heart className="h-5 w-5 text-destructive fill-red-500" />
                 </button>
                 {saved.event.category && (
                   <div className="absolute top-4 left-4 z-10">

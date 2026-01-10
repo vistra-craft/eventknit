@@ -262,7 +262,7 @@ const PartnershipTemplateBuilder = () => {
             <Label className="text-xs">{field.label} {field.required && '*'}</Label>
             <div className="flex space-x-1">
               {[1, 2, 3, 4, 5].map(star => (
-                <Star key={star} className="h-4 w-4 text-gray-300" />
+                <Star key={star} className="h-4 w-4 text-muted-foreground" />
               ))}
             </div>
           </div>
@@ -271,8 +271,8 @@ const PartnershipTemplateBuilder = () => {
         return (
           <div key={field.id} style={baseStyle}>
             <Label className="text-xs">{field.label} {field.required && '*'}</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded h-16 flex items-center justify-center">
-              <span className="text-xs text-gray-500">Signature Area</span>
+            <div className="border-2 border-dashed border-border rounded h-16 flex items-center justify-center">
+              <span className="text-xs text-muted-foreground">Signature Area</span>
             </div>
           </div>
         );
@@ -280,8 +280,8 @@ const PartnershipTemplateBuilder = () => {
         return (
           <div key={field.id} style={baseStyle}>
             <Label className="text-xs">{field.label} {field.required && '*'}</Label>
-            <div className="h-8 bg-gray-100 rounded flex items-center justify-center">
-              <span className="text-xs text-gray-500">{field.type}</span>
+            <div className="h-8 bg-muted rounded flex items-center justify-center">
+              <span className="text-xs text-muted-foreground">{field.type}</span>
             </div>
           </div>
         );
@@ -292,18 +292,18 @@ const PartnershipTemplateBuilder = () => {
     if (!selectedTemplate) return null;
 
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
+      <div className="bg-card border border-border rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8 pb-6 border-b border-gray-200">
+        <div className="text-center mb-8 pb-6 border-b border-border">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-eventknit rounded-lg flex items-center justify-center text-eventknit-foreground font-bold text-xl">
+            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold text-xl">
               EK
             </div>
           </div>
-          <h1 className="text-lg font-semibold text-foreground mb-2"><span className="text-eventknit">{selectedTemplate.branding.companyName}</span></h1>
-          <p className="text-gray-600">{selectedTemplate.branding.tagline}</p>
+          <h1 className="text-lg font-semibold text-foreground mb-2"><span className="text-primary">{selectedTemplate.branding.companyName}</span></h1>
+          <p className="text-muted-foreground">{selectedTemplate.branding.tagline}</p>
           <div className="mt-4">
-            <Badge className={`${selectedTemplate.type === 'sponsor' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+            <Badge className={`${selectedTemplate.type === 'sponsor' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
               {selectedTemplate.type.toUpperCase()} PARTNERSHIP AGREEMENT
             </Badge>
           </div>
@@ -314,8 +314,8 @@ const PartnershipTemplateBuilder = () => {
           {selectedTemplate.fields.map(field => (
             <div key={field.id} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                <Label className="text-sm font-medium text-foreground">
+                  {field.label} {field.required && <span className="text-destructive">*</span>}
                 </Label>
                 {field.type === 'textarea' ? (
                   <Textarea 
@@ -329,7 +329,7 @@ const PartnershipTemplateBuilder = () => {
                     {field.options?.map(option => (
                       <div key={option} className="flex items-center space-x-2">
                         <input type="checkbox" disabled className="rounded" />
-                        <span className="text-sm text-gray-600">{option}</span>
+                        <span className="text-sm text-muted-foreground">{option}</span>
                       </div>
                     ))}
                   </div>
@@ -340,8 +340,8 @@ const PartnershipTemplateBuilder = () => {
                     ))}
                   </div>
                 ) : field.type === 'signature' ? (
-                  <div className="mt-1 border-2 border-dashed border-gray-300 rounded-lg h-20 flex items-center justify-center">
-                    <span className="text-gray-500">Digital Signature Area</span>
+                  <div className="mt-1 border-2 border-dashed border-border rounded-lg h-20 flex items-center justify-center">
+                    <span className="text-muted-foreground">Digital Signature Area</span>
                   </div>
                 ) : (
                   <Input 
@@ -356,11 +356,11 @@ const PartnershipTemplateBuilder = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-12 pt-6 border-t border-gray-200 text-center">
-          <p className="text-sm text-gray-500">
-            This partnership agreement is generated by <span className="text-eventknit">EventKnit</span> Platform
+        <div className="mt-12 pt-6 border-t border-border text-center">
+          <p className="text-sm text-muted-foreground">
+            This partnership agreement is generated by <span className="text-primary">EventKnit</span> Platform
           </p>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Generated on {new Date().toLocaleDateString()}
           </p>
         </div>
@@ -426,7 +426,7 @@ const PartnershipTemplateBuilder = () => {
                     onClick={() => setSelectedTemplate(template)}
                   >
                     <div className="flex items-center space-x-2 mb-1">
-                      {template.type === 'sponsor' ? <Star className="h-4 w-4 text-yellow-500" /> : <Building2 className="h-4 w-4 text-green-500" />}
+                      {template.type === 'sponsor' ? <Star className="h-4 w-4 text-warning" /> : <Building2 className="h-4 w-4 text-success" />}
                       <span className="font-medium text-sm">{template.name}</span>
                       {template.isDefault && <Badge variant="outline" className="text-xs">Default</Badge>}
                     </div>
@@ -486,11 +486,11 @@ const PartnershipTemplateBuilder = () => {
 
                     {/* Drag and Drop Canvas */}
                     <div 
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-4 min-h-[600px] relative bg-gray-50"
+                      className="border-2 border-dashed border-border rounded-lg p-4 min-h-[600px] relative bg-muted"
                       onDragOver={handleDragOver}
                       onDrop={handleDrop}
                     >
-                      <div className="text-center text-gray-500 mb-4">
+                      <div className="text-center text-muted-foreground mb-4">
                         Drag field types here to add them to your template
                       </div>
                       
@@ -505,7 +505,7 @@ const PartnershipTemplateBuilder = () => {
                           {selectedTemplate.fields.map(field => (
                             <div key={field.id} className="flex items-center justify-between p-2 border rounded">
                               <div className="flex items-center space-x-2">
-                                <GripVertical className="h-4 w-4 text-gray-400" />
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm">{field.label}</span>
                                 <Badge variant="outline" className="text-xs">{field.type}</Badge>
                                 {field.required && <Badge variant="destructive" className="text-xs">Required</Badge>}

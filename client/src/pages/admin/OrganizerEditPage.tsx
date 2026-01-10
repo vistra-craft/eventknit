@@ -349,9 +349,9 @@ const OrganizerEditPage = () => {
         )}
 
         {success && (
-          <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-700 dark:text-green-400">{success}</AlertDescription>
+          <Alert className="border-success bg-success/5 dark:bg-green-900/20 dark:border-green-800">
+            <CheckCircle className="h-4 w-4 text-success" />
+            <AlertDescription className="text-success dark:text-green-400">{success}</AlertDescription>
           </Alert>
         )}
 
@@ -361,7 +361,7 @@ const OrganizerEditPage = () => {
             <BackButton onClick={handleBack} label="Back to Organizer" />
             <div>
               <h1 className="text-base font-semibold text-foreground">Edit Organizer</h1>
-              <p className="text-gray-600">{organizerData.firstName} {organizerData.lastName} • {organizerData.company}</p>
+              <p className="text-muted-foreground">{organizerData.firstName} {organizerData.lastName} • {organizerData.company}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -384,13 +384,13 @@ const OrganizerEditPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-600">Current Status:</span>
+                <Shield className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium text-muted-foreground">Current Status:</span>
                 <Badge className={`text-xs ${getStatusBadge(organizerData.status)}`}>
                   {organizerData.status}
                 </Badge>
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 Last updated: {new Date().toLocaleDateString()}
               </div>
             </div>
@@ -609,12 +609,12 @@ const OrganizerEditPage = () => {
                   </Select>
                 </div>
                 
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="p-4 bg-warning/5 border border-warning rounded-lg">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <AlertCircle className="h-5 w-5 text-warning mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-medium text-yellow-800">Status Change Notice</h4>
-                      <p className="text-sm text-yellow-700 mt-1">
+                      <h4 className="text-sm font-medium text-warning">Status Change Notice</h4>
+                      <p className="text-sm text-warning mt-1">
                         Changing the organizer status will affect their ability to create and manage events. 
                         Please ensure you have a valid reason for the status change.
                       </p>
@@ -625,21 +625,21 @@ const OrganizerEditPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Join Date</Label>
-                    <p className="text-sm text-gray-600 mt-1">{new Date(organizerData.joinDate).toLocaleDateString()}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{new Date(organizerData.joinDate).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <Label>Verification Date</Label>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {organizerData.verificationDate ? new Date(organizerData.verificationDate).toLocaleDateString() : "Not verified"}
                     </p>
                   </div>
                   <div>
                     <Label>Total Events</Label>
-                    <p className="text-sm text-gray-600 mt-1">{organizerData.totalEvents}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{organizerData.totalEvents}</p>
                   </div>
                   <div>
                     <Label>Total Revenue</Label>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(organizerData.totalRevenue)}
                     </p>
                   </div>

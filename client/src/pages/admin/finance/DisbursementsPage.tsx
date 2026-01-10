@@ -87,24 +87,24 @@ const DisbursementsPage = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { className: string; icon: React.ReactNode }> = {
       completed: {
-        className: "bg-green-100 text-green-800 border-green-200",
+        className: "bg-success/10 text-success border-success/20",
         icon: <CheckCircle className="h-4 w-4" />,
       },
       pending: {
-        className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        className: "bg-warning/10 text-warning border-warning/20",
         icon: <Clock className="h-4 w-4" />,
       },
       processing: {
-        className: "bg-blue-100 text-blue-800 border-blue-200",
-        icon: <Clock className="h-4 w-4" />,
+        className: "bg-primary/10 text-primary border-primary/20",
+        icon: <RefreshCw className="h-4 w-4 animate-spin" />,
       },
       failed: {
-        className: "bg-red-100 text-red-800 border-red-200",
-        icon: <XCircle className="h-4 w-4" />,
+        className: "bg-destructive/10 text-destructive border-destructive/20",
+        icon: <AlertCircle className="h-4 w-4" />,
       },
     };
     const variant = variants[status] || {
-      className: "bg-gray-100 text-gray-800 border-gray-200",
+      className: "bg-muted text-muted-foreground border-border",
       icon: <Clock className="h-4 w-4" />,
     };
     return variant;
@@ -129,7 +129,7 @@ const DisbursementsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Disbursements</h1>
-            <p className="text-gray-600">Manage organizer payouts and disbursements</p>
+            <p className="text-muted-foreground">Manage organizer payouts and disbursements</p>
           </div>
           <Button onClick={() => navigate("/admin/finance/disbursements/create")}>
             Create Disbursement
@@ -141,30 +141,30 @@ const DisbursementsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Total Disbursed</div>
-                <div className="font-semibold text-green-600">
+                <div className="text-sm text-muted-foreground">Total Disbursed</div>
+                <div className="font-semibold text-success">
                   {formatCurrency(summary.totalDisbursed)}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Pending</div>
-                <div className="font-semibold text-yellow-600">
+                <div className="text-sm text-muted-foreground">Pending</div>
+                <div className="font-semibold text-warning">
                   {formatCurrency(summary.totalPending)}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Completed</div>
+                <div className="text-sm text-muted-foreground">Completed</div>
                 <div className="font-semibold">{summary.completedCount}</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Processing</div>
-                <div className="font-semibold text-blue-600">{summary.processingCount}</div>
+                <div className="text-sm text-muted-foreground">Processing</div>
+                <div className="font-semibold text-primary">{summary.processingCount}</div>
               </CardContent>
             </Card>
           </div>
@@ -175,7 +175,7 @@ const DisbursementsPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search disbursements..."
                   value={filters.search}
@@ -211,7 +211,7 @@ const DisbursementsPage = () => {
             {loading ? (
               <div className="text-center py-8">Loading...</div>
             ) : filteredDisbursements.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No disbursements found</div>
+              <div className="text-center py-8 text-muted-foreground">No disbursements found</div>
             ) : (
               <Table>
                 <TableHeader>

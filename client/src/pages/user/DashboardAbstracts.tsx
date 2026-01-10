@@ -165,7 +165,7 @@ const DashboardAbstracts: React.FC<DashboardAbstractsProps> = ({ eventData }) =>
                 
                 {/* Status Messages */}
                 {submissionStatus === 'success' && (
-                  <Alert className="border-green-200 bg-green-50 text-green-800">
+                  <Alert className="border-success bg-success/5 text-success">
                     <CheckCircle className="w-4 h-4" />
                     <div>
                       <h4 className="font-medium">Abstract Submitted Successfully!</h4>

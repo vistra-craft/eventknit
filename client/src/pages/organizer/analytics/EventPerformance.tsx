@@ -300,13 +300,13 @@ const EventPerformance = () => {
                     </p>
                     <div className="flex items-center">
                       {metric.changeType === "positive" ? (
-                        <ArrowUpRight className="h-3 w-3 text-green-600 mr-1" />
+                        <ArrowUpRight className="h-3 w-3 text-success mr-1" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-red-600 mr-1" />
+                        <ArrowDownRight className="h-3 w-3 text-destructive mr-1" />
                       )}
                       <span
                         className={`text-xs font-medium ${
-                          metric.changeType === "positive" ? "text-green-600" : "text-red-600"
+                          metric.changeType === "positive" ? "text-success" : "text-destructive"
                         }`}
                       >
                         {metric.change}
@@ -531,19 +531,19 @@ const EventPerformance = () => {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">Registration</span>
-                            <span className="text-sm font-medium text-green-600">+{event.trends.registrationGrowth}%</span>
+                            <span className="text-sm font-medium text-success">+{event.trends.registrationGrowth}%</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">Revenue</span>
-                            <span className="text-sm font-medium text-green-600">+{event.trends.revenueGrowth}%</span>
+                            <span className="text-sm font-medium text-success">+{event.trends.revenueGrowth}%</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">Attendance</span>
-                            <span className="text-sm font-medium text-green-600">+{event.trends.attendanceGrowth}%</span>
+                            <span className="text-sm font-medium text-success">+{event.trends.attendanceGrowth}%</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">Satisfaction</span>
-                            <span className="text-sm font-medium text-green-600">+{event.trends.satisfactionGrowth}%</span>
+                            <span className="text-sm font-medium text-success">+{event.trends.satisfactionGrowth}%</span>
                           </div>
                         </div>
                       </div>

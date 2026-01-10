@@ -164,7 +164,7 @@ const WhiteLabelManagementPage = () => {
             </p>
           </div>
           {pendingCount > 0 && (
-            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+            <Badge className="bg-warning/10 text-warning border-warning">
               {pendingCount} pending approval
             </Badge>
           )}
@@ -175,8 +175,8 @@ const WhiteLabelManagementPage = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-yellow-100">
-                  <Clock className="h-5 w-5 text-yellow-600" />
+                <div className="p-2 rounded-lg bg-warning/10">
+                  <Clock className="h-5 w-5 text-warning" />
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">
@@ -190,8 +190,8 @@ const WhiteLabelManagementPage = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-green-100">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                <div className="p-2 rounded-lg bg-success/10">
+                  <CheckCircle className="h-5 w-5 text-success" />
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">
@@ -205,8 +205,8 @@ const WhiteLabelManagementPage = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-red-100">
-                  <AlertCircle className="h-5 w-5 text-red-600" />
+                <div className="p-2 rounded-lg bg-destructive/10">
+                  <AlertCircle className="h-5 w-5 text-destructive" />
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">
@@ -220,8 +220,8 @@ const WhiteLabelManagementPage = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-100">
-                  <Palette className="h-5 w-5 text-blue-600" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Palette className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-2xl font-semibold">{brandings.length}</p>
@@ -253,7 +253,7 @@ const WhiteLabelManagementPage = () => {
                 <TabsTrigger value="pending">
                   Pending Approval
                   {pendingCount > 0 && (
-                    <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-warning/10 text-warning rounded-full">
                       {pendingCount}
                     </span>
                   )}
@@ -535,9 +535,9 @@ const WhiteLabelManagementPage = () => {
 
                 {/* Rejection Reason (if rejected) */}
                 {selectedBranding.status === 'INACTIVE' && selectedBranding.rejectionReason && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-red-800 mb-1">Rejection Reason</h4>
-                    <p className="text-sm text-red-700">{selectedBranding.rejectionReason}</p>
+                  <div className="bg-destructive/5 border border-destructive rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-destructive mb-1">Rejection Reason</h4>
+                    <p className="text-sm text-destructive">{selectedBranding.rejectionReason}</p>
                   </div>
                 )}
               </div>

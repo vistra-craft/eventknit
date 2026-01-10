@@ -221,11 +221,11 @@ const AdminPromotionsPage = () => {
     const status = getStatus(code);
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>;
+        return <Badge className="bg-success/10 text-success"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>;
       case "inactive":
-        return <Badge className="bg-gray-100 text-gray-800"><XCircle className="h-3 w-3 mr-1" />Inactive</Badge>;
+        return <Badge className="bg-muted text-foreground"><XCircle className="h-3 w-3 mr-1" />Inactive</Badge>;
       case "expired":
-        return <Badge className="bg-red-100 text-red-800"><AlertCircle className="h-3 w-3 mr-1" />Expired</Badge>;
+        return <Badge className="bg-destructive/10 text-destructive"><AlertCircle className="h-3 w-3 mr-1" />Expired</Badge>;
     }
   };
 
@@ -420,9 +420,9 @@ const AdminPromotionsPage = () => {
                         title={code.isActive ? "Deactivate" : "Activate"}
                       >
                         {code.isActive ? (
-                          <ToggleRight className="h-5 w-5 text-green-600" />
+                          <ToggleRight className="h-5 w-5 text-success" />
                         ) : (
-                          <ToggleLeft className="h-5 w-5 text-gray-400" />
+                          <ToggleLeft className="h-5 w-5 text-muted-foreground" />
                         )}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => navigate(`/admin/marketing/promo-codes/${code.id}/edit`)}>
@@ -431,7 +431,7 @@ const AdminPromotionsPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-red-600 hover:text-red-700"
+                        className="text-destructive hover:text-destructive"
                         onClick={() => { setDeletingCodeId(code.id); setDeleteDialogOpen(true); }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -600,7 +600,7 @@ const AdminPromotionsPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeletingCodeId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

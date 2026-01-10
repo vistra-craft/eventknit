@@ -149,23 +149,23 @@ const AdminCampaignsPage = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'email': return "bg-blue-100 text-blue-800";
+      case 'email': return "bg-primary/10 text-primary";
       case 'social': return "bg-purple-100 text-purple-800";
-      case 'promotion': return "bg-green-100 text-green-800";
+      case 'promotion': return "bg-success/10 text-success";
       case 'referral': return "bg-orange-100 text-orange-800";
-      case 'paid': return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'paid': return "bg-destructive/10 text-destructive";
+      default: return "bg-muted text-foreground";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return "bg-green-100 text-green-800";
-      case 'paused': return "bg-yellow-100 text-yellow-800";
-      case 'completed': return "bg-gray-100 text-gray-800";
-      case 'draft': return "bg-blue-100 text-blue-800";
+      case 'active': return "bg-success/10 text-success";
+      case 'paused': return "bg-warning/10 text-warning";
+      case 'completed': return "bg-muted text-foreground";
+      case 'draft': return "bg-primary/10 text-primary";
       case 'scheduled': return "bg-purple-100 text-purple-800";
-      default: return "bg-gray-100 text-gray-800";
+      default: return "bg-muted text-foreground";
     }
   };
 
@@ -200,7 +200,7 @@ const AdminCampaignsPage = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-lg font-semibold text-foreground">Campaigns</h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Create, manage, and track your marketing campaigns
           </p>
         </div>

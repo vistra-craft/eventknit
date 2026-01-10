@@ -206,12 +206,12 @@ export function AttendeeImportDialog({
             <p className="text-2xl font-bold">{validationResult.totalRows}</p>
             <p className="text-xs text-muted-foreground">Total Rows</p>
           </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">{validationResult.validRows}</p>
+          <div className="text-center p-3 bg-success/5 rounded-lg">
+            <p className="text-2xl font-bold text-success">{validationResult.validRows}</p>
             <p className="text-xs text-muted-foreground">Valid</p>
           </div>
-          <div className="text-center p-3 bg-red-50 rounded-lg">
-            <p className="text-2xl font-bold text-red-600">{validationResult.errorRows}</p>
+          <div className="text-center p-3 bg-destructive/5 rounded-lg">
+            <p className="text-2xl font-bold text-destructive">{validationResult.errorRows}</p>
             <p className="text-xs text-muted-foreground">Errors</p>
           </div>
         </div>
@@ -251,18 +251,18 @@ export function AttendeeImportDialog({
 
         {/* Errors */}
         {validationResult.errors.length > 0 && (
-          <div className="border border-red-200 rounded-lg p-3 bg-red-50">
-            <p className="text-sm font-medium text-red-800 mb-2">
+          <div className="border border-destructive rounded-lg p-3 bg-destructive/5">
+            <p className="text-sm font-medium text-destructive mb-2">
               Validation Errors ({validationResult.errors.length})
             </p>
             <div className="max-h-32 overflow-y-auto space-y-1">
               {validationResult.errors.slice(0, 10).map((err, i) => (
-                <p key={i} className="text-xs text-red-700">
+                <p key={i} className="text-xs text-destructive">
                   Row {err.row}: {err.field} - {err.message}
                 </p>
               ))}
               {validationResult.errors.length > 10 && (
-                <p className="text-xs text-red-600 font-medium">
+                <p className="text-xs text-destructive font-medium">
                   ...and {validationResult.errors.length - 10} more errors
                 </p>
               )}
@@ -338,9 +338,9 @@ export function AttendeeImportDialog({
       <div className="space-y-4">
         <div className="flex flex-col items-center gap-3 py-4">
           {isSuccess ? (
-            <CheckCircle className="h-12 w-12 text-green-600" />
+            <CheckCircle className="h-12 w-12 text-success" />
           ) : (
-            <AlertCircle className="h-12 w-12 text-yellow-600" />
+            <AlertCircle className="h-12 w-12 text-warning" />
           )}
           <div className="text-center">
             <p className="font-medium">
@@ -354,30 +354,30 @@ export function AttendeeImportDialog({
 
         {/* Results Summary */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">{importResult.successCount}</p>
+          <div className="text-center p-3 bg-success/5 rounded-lg">
+            <p className="text-2xl font-bold text-success">{importResult.successCount}</p>
             <p className="text-xs text-muted-foreground">Imported</p>
           </div>
-          <div className="text-center p-3 bg-red-50 rounded-lg">
-            <p className="text-2xl font-bold text-red-600">{importResult.errorCount}</p>
+          <div className="text-center p-3 bg-destructive/5 rounded-lg">
+            <p className="text-2xl font-bold text-destructive">{importResult.errorCount}</p>
             <p className="text-xs text-muted-foreground">Failed</p>
           </div>
         </div>
 
         {/* Error Details */}
         {importResult.errors.length > 0 && (
-          <div className="border border-red-200 rounded-lg p-3 bg-red-50">
-            <p className="text-sm font-medium text-red-800 mb-2">
+          <div className="border border-destructive rounded-lg p-3 bg-destructive/5">
+            <p className="text-sm font-medium text-destructive mb-2">
               Failed Imports ({importResult.errors.length})
             </p>
             <div className="max-h-32 overflow-y-auto space-y-1">
               {importResult.errors.slice(0, 10).map((err, i) => (
-                <p key={i} className="text-xs text-red-700">
+                <p key={i} className="text-xs text-destructive">
                   Row {err.row}: {err.message}
                 </p>
               ))}
               {importResult.errors.length > 10 && (
-                <p className="text-xs text-red-600 font-medium">
+                <p className="text-xs text-destructive font-medium">
                   ...and {importResult.errors.length - 10} more errors
                 </p>
               )}

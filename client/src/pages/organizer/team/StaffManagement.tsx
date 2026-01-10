@@ -465,7 +465,7 @@ const StaffManagement = () => {
                       {staff.filter(m => m.status === 'SUSPENDED').length}
                 </p>
               </div>
-                  <Clock className="h-8 w-8 text-yellow-500" />
+                  <Clock className="h-8 w-8 text-warning" />
             </div>
           </CardContent>
         </Card>

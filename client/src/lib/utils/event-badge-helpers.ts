@@ -22,7 +22,7 @@ export const getEventStatusBadgeClass = (status: string | undefined): string => 
     case 'approved':
     case 'published':
     case 'successful':
-      return 'bg-success-light text-success border-success/20';
+      return 'bg-success/10 text-success border-success/20';
     
     // Warning/Pending states
     case 'pending':
@@ -76,7 +76,7 @@ export const getEventTypeBadgeClass = (type: string | undefined): string => {
  */
 export const getPriceBadgeClass = (isFree: boolean | undefined): string => {
   return isFree 
-    ? 'bg-success-light text-success border-success/20'
+    ? 'bg-success/10 text-success border-success/20'
     : 'bg-primary/10 text-primary border-primary/20';
 };
 
@@ -90,7 +90,7 @@ export const getApprovalLevelBadgeClass = (level: string | undefined): string =>
     case 'high':
     case 'verified':
     case 'approved':
-      return 'bg-success-light text-success border-success/20';
+      return 'bg-success/10 text-success border-success/20';
     
     case 'medium':
     case 'partial':
@@ -115,7 +115,7 @@ export const getAttendanceStatusBadgeClass = (status: string | undefined): strin
   switch (status?.toLowerCase()) {
     case 'attended':
     case 'present':
-      return 'bg-success-light text-success border-success/20';
+      return 'bg-success/10 text-success border-success/20';
     
     case 'registered':
     case 'confirmed':
@@ -189,7 +189,7 @@ export const getEventStatusBackgroundClass = (status: string | undefined): strin
     case 'approved':
     case 'published':
     case 'successful':
-      return 'bg-success-light/50';
+      return 'bg-success/10';
     
     case 'pending':
     case 'reviewing':

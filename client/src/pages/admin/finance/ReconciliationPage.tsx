@@ -134,24 +134,24 @@ const ReconciliationPage = () => {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { className: string; icon: React.ReactNode }> = {
       completed: {
-        className: "bg-green-100 text-green-800 border-green-200",
+        className: "bg-success/10 text-success border-success/20",
         icon: <CheckCircle className="h-4 w-4" />,
       },
       discrepancies_found: {
-        className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        className: "bg-warning/10 text-warning border-warning/20",
         icon: <AlertTriangle className="h-4 w-4" />,
       },
       in_progress: {
-        className: "bg-blue-100 text-blue-800 border-blue-200",
+        className: "bg-primary/10 text-primary border-primary/20",
         icon: <RefreshCw className="h-4 w-4 animate-spin" />,
       },
       failed: {
-        className: "bg-red-100 text-red-800 border-red-200",
+        className: "bg-destructive/10 text-destructive border-destructive/20",
         icon: <AlertTriangle className="h-4 w-4" />,
       },
     };
     const variant = variants[status] || {
-      className: "bg-gray-100 text-gray-800 border-gray-200",
+      className: "bg-muted text-muted-foreground border-border",
       icon: <RefreshCw className="h-4 w-4" />,
     };
     return variant;
@@ -172,7 +172,7 @@ const ReconciliationPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Payment Reconciliation</h1>
-            <p className="text-gray-600">Reconcile Paystack transactions with system records</p>
+            <p className="text-muted-foreground">Reconcile Paystack transactions with system records</p>
           </div>
         </div>
 
@@ -184,7 +184,7 @@ const ReconciliationPage = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                <label className="text-sm font-medium text-foreground mb-2 block">
                   Start Date
                 </label>
                 <Input
@@ -194,7 +194,7 @@ const ReconciliationPage = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                <label className="text-sm font-medium text-foreground mb-2 block">
                   End Date
                 </label>
                 <Input
@@ -204,7 +204,7 @@ const ReconciliationPage = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                <label className="text-sm font-medium text-foreground mb-2 block">
                   Event ID (Optional)
                 </label>
                 <Input
@@ -241,7 +241,7 @@ const ReconciliationPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search reconciliations..."
                   value={filters.search}
@@ -277,7 +277,7 @@ const ReconciliationPage = () => {
             {loading ? (
               <div className="text-center py-8">Loading...</div>
             ) : filteredReconciliations.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No reconciliations found</div>
+              <div className="text-center py-8 text-muted-foreground">No reconciliations found</div>
             ) : (
               <Table>
                 <TableHeader>
@@ -304,22 +304,22 @@ const ReconciliationPage = () => {
                         <TableCell>
                           <div className="text-sm">
                             <div>{formatDate(r.startDate)}</div>
-                            <div className="text-gray-500">to {formatDate(r.endDate)}</div>
+                            <div className="text-muted-foreground">to {formatDate(r.endDate)}</div>
                           </div>
                         </TableCell>
                         <TableCell>{r.totalPaystackTransactions}</TableCell>
                         <TableCell>{r.totalSystemTransactions}</TableCell>
-                        <TableCell className="text-green-600 font-semibold">
+                        <TableCell className="text-success font-semibold">
                           {r.matchedTransactions}
                         </TableCell>
-                        <TableCell className="text-red-600 font-semibold">
+                        <TableCell className="text-destructive font-semibold">
                           {r.unmatchedTransactions}
                         </TableCell>
                         <TableCell
                           className={
                             r.discrepancyAmount === 0
-                              ? "text-green-600"
-                              : "text-red-600 font-semibold"
+                              ? "text-success"
+                              : "text-destructive font-semibold"
                           }
                         >
                           {formatCurrency(r.discrepancyAmount)}

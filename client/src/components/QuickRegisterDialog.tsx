@@ -399,8 +399,8 @@ export function QuickRegisterDialog({
   const renderSuccessStep = () => (
     <div className="space-y-6">
       <div className="flex flex-col items-center text-center py-4">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle className="h-8 w-8 text-green-600" />
+        <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle className="h-8 w-8 text-success" />
         </div>
         <h3 className="text-lg font-semibold">Registration Successful!</h3>
         <p className="text-muted-foreground mt-1">{result?.attendeeName} has been registered.</p>
@@ -433,7 +433,7 @@ export function QuickRegisterDialog({
               onClick={handleCopyBackupCode}
             >
               {copiedCode ? (
-                <Check className="w-4 h-4 text-green-600" />
+                <Check className="w-4 h-4 text-success" />
               ) : (
                 <Copy className="w-4 h-4" />
               )}

@@ -595,7 +595,7 @@ const RolesPermissions = () => {
                               <div className="ml-6 space-y-1">
                                 {categoryPermissions.map(permission => (
                                   <div key={permission.id} className="flex items-center space-x-2">
-                                    <Check className="h-3 w-3 text-green-500" />
+                                    <Check className="h-3 w-3 text-success" />
                                     <span className="text-sm text-foreground">{permission.name}</span>
                                   </div>
                                 ))}

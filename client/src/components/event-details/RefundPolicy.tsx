@@ -14,7 +14,7 @@ export const RefundPolicy = () => {
       
       <Link 
         to="/terms-of-service#refund-policy"
-        className="text-blue-600 hover:text-blue-700 hover:underline font-medium text-sm transition-colors"
+        className="text-primary hover:text-primary hover:underline font-medium text-sm transition-colors"
       >
         View Refund Policy →
       </Link>

@@ -263,7 +263,7 @@ const PastEventsPage = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
+                      <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
                       <Badge className="bg-muted text-muted-foreground border-border text-xs">
                         Completed
                       </Badge>

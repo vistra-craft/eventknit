@@ -53,30 +53,30 @@ const ConfirmationDialog = ({
   const getIcon = () => {
     switch (type) {
       case "danger":
-        return <AlertCircle className="h-5 w-5 text-red-600" />;
+        return <AlertCircle className="h-5 w-5 text-destructive" />;
       case "warning":
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <AlertTriangle className="h-5 w-5 text-warning" />;
       case "info":
-        return <Info className="h-5 w-5 text-blue-600" />;
+        return <Info className="h-5 w-5 text-primary" />;
       case "success":
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="h-5 w-5 text-success" />;
       default:
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <AlertTriangle className="h-5 w-5 text-warning" />;
     }
   };
 
   const getIconBg = () => {
     switch (type) {
       case "danger":
-        return "bg-red-100";
+        return "bg-destructive/10";
       case "warning":
-        return "bg-yellow-100";
+        return "bg-warning/10";
       case "info":
-        return "bg-blue-100";
+        return "bg-primary/10";
       case "success":
-        return "bg-green-100";
+        return "bg-success/10";
       default:
-        return "bg-yellow-100";
+        return "bg-warning/10";
     }
   };
 

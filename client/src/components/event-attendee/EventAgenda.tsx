@@ -14,8 +14,8 @@ interface EventAgendaProps {
 // Session type configuration
 const sessionTypeConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string }> = {
   keynote: { icon: Mic, color: 'text-purple-600', bgColor: 'bg-purple-100' },
-  panel: { icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  workshop: { icon: Calendar, color: 'text-green-600', bgColor: 'bg-green-100' },
+  panel: { icon: Users, color: 'text-primary', bgColor: 'bg-primary/10' },
+  workshop: { icon: Calendar, color: 'text-success', bgColor: 'bg-success/10' },
   session: { icon: Calendar, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
   break: { icon: Coffee, color: 'text-amber-600', bgColor: 'bg-amber-100' },
   networking: { icon: Users, color: 'text-pink-600', bgColor: 'bg-pink-100' },

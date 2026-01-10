@@ -329,7 +329,7 @@ export const PaymentStep = ({
             <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer opacity-60">
               <RadioGroupItem value="mpesa" id="mpesa" />
               <Label htmlFor="mpesa" className="flex items-center gap-3 cursor-pointer flex-1">
-                <Smartphone className="w-5 h-5 text-green-600" />
+                <Smartphone className="w-5 h-5 text-success" />
                 <div>
                   <p className="font-medium">M-Pesa</p>
                   <p className="text-xs text-muted-foreground">Available via SMS registration</p>
@@ -341,8 +341,8 @@ export const PaymentStep = ({
       </Card>
 
       {/* Security Notice */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-green-50 p-3 rounded-lg border border-green-200">
-        <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-success/5 p-3 rounded-lg border border-success">
+        <Shield className="w-4 h-4 text-success flex-shrink-0" />
         <span>256-bit SSL encryption. Your payment information is secure.</span>
       </div>
 

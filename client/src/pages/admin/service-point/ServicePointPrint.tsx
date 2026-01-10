@@ -560,11 +560,11 @@ const ServicePointPrint: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return "bg-yellow-100 text-yellow-800";
-      case 'printing': return "bg-blue-100 text-blue-800";
-      case 'completed': return "bg-green-100 text-green-800";
-      case 'failed': return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+      case 'pending': return "bg-warning/10 text-warning";
+      case 'printing': return "bg-primary/10 text-primary";
+      case 'completed': return "bg-success/10 text-success";
+      case 'failed': return "bg-destructive/10 text-destructive";
+      default: return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
 
@@ -901,7 +901,7 @@ const ServicePointPrint: React.FC = () => {
                           <div className="flex items-center gap-4">
                             <Badge variant="outline">{attendee.ticketType || 'Standard'}</Badge>
                             {printedBadges.has(attendee.registrationId) && (
-                              <Badge className="bg-green-100 text-green-800">Printed</Badge>
+                              <Badge className="bg-success/10 text-success">Printed</Badge>
                             )}
                             <div className="flex gap-1">
                               <Button
@@ -966,7 +966,7 @@ const ServicePointPrint: React.FC = () => {
                           </div>
                         </div>
                         {printedBadges.has(attendee.registrationId) && (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
+                          <CheckCircle className="w-5 h-5 text-success" />
                         )}
                       </div>
                       <div className="flex items-center justify-between">

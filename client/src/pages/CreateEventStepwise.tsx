@@ -2391,18 +2391,18 @@ export default function CreateEventStepwise() {
                       {/* Discount Preview */}
                       {ticket.originalPrice && ticket.price && 
                        parseFloat(ticket.originalPrice) > parseFloat(ticket.price) && (
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="p-3 bg-success/5 border border-success rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-semibold text-green-900">
+                              <p className="text-sm font-semibold text-success">
                                 Discount Preview
                               </p>
-                              <p className="text-xs text-green-700">
+                              <p className="text-xs text-success">
                                 {Math.round(((parseFloat(ticket.originalPrice) - parseFloat(ticket.price)) / parseFloat(ticket.originalPrice)) * 100)}% OFF
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-semibold text-green-900">
+                              <p className="text-sm font-semibold text-success">
                                 Save ${(parseFloat(ticket.originalPrice) - parseFloat(ticket.price)).toFixed(2)}
                               </p>
                             </div>
@@ -2543,7 +2543,7 @@ export default function CreateEventStepwise() {
           if (!isNaN(capacity) && capacity > 0 && totalTicketQuantity > 0) {
             const matches = totalTicketQuantity === capacity;
             return (
-              <Card className={`mt-4 border-2 ${matches ? 'border-green-500 bg-green-50/50' : 'border-destructive bg-destructive/10'}`}>
+              <Card className={`mt-4 border-2 ${matches ? 'border-success bg-success/5/50' : 'border-destructive bg-destructive/10'}`}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -3352,10 +3352,10 @@ export default function CreateEventStepwise() {
 
         {/* Verification Info Banner - Eventbrite style: Verification needed for payouts, not event creation */}
         {!loadingVerification && !isEditMode && hasPaidTickets() && !verificationStatus?.identityVerified && (
-          <Alert className="mb-4 border-blue-200 bg-blue-50">
-            <Shield className="h-4 w-4 text-blue-600" />
+          <Alert className="mb-4 border-primary bg-primary/5">
+            <Shield className="h-4 w-4 text-primary" />
             <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-blue-900">
+              <span className="text-primary">
                 <strong>Note:</strong> Identity verification is required to receive payouts from ticket sales. You can create and publish your event now, but complete verification to receive funds.
               </span>
               <Button
@@ -3364,7 +3364,7 @@ export default function CreateEventStepwise() {
                 onClick={() => navigate('/organizer/verification', { 
                   state: { redirectAfterVerification: location.pathname } 
                 })}
-                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                className="border-primary text-primary hover:bg-primary/10"
               >
                 Verify Identity
               </Button>

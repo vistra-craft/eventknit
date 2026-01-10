@@ -211,22 +211,22 @@ const NotificationPreferencesPage = () => {
 
         {/* Save Status */}
         {saveStatus === "success" && (
-          <Card className="mb-6 border-green-200 bg-green-50">
+          <Card className="mb-6 border-success bg-success/5">
             <CardContent className="py-4">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-green-800">{saveMessage}</span>
+                <CheckCircle className="h-5 w-5 text-success" />
+                <span className="text-success">{saveMessage}</span>
               </div>
             </CardContent>
           </Card>
         )}
 
         {saveStatus === "error" && (
-          <Card className="mb-6 border-red-200 bg-red-50">
+          <Card className="mb-6 border-destructive bg-destructive/5">
             <CardContent className="py-4">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <span className="text-red-800">{saveMessage}</span>
+                <AlertCircle className="h-5 w-5 text-destructive" />
+                <span className="text-destructive">{saveMessage}</span>
               </div>
             </CardContent>
           </Card>

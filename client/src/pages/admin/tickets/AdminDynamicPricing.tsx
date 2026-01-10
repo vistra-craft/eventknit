@@ -235,7 +235,7 @@ const AdminDynamicPricing = () => {
                     ${priceCalculation.finalPrice.toFixed(2)}
                   </p>
                   {priceCalculation.discount && (
-                    <p className="text-sm text-green-600">
+                    <p className="text-sm text-success">
                       Saved: ${priceCalculation.discount.toFixed(2)} (from $
                       {priceCalculation.originalPrice.toFixed(2)})
                     </p>

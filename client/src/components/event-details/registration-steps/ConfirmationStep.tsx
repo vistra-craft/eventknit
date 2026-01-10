@@ -113,8 +113,8 @@ export const ConfirmationStep = ({
     <div className="space-y-6">
       {/* Success Header */}
       <div className="text-center py-6">
-        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle className="w-10 h-10 text-green-600" />
+        <div className="mx-auto w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle className="w-10 h-10 text-success" />
         </div>
         <h2 className="text-2xl font-bold mb-2">Registration Successful!</h2>
         <p className="text-muted-foreground">
@@ -171,12 +171,12 @@ export const ConfirmationStep = ({
       </Card>
 
       {/* Confirmation Email Notice */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
+      <Card className="p-4 bg-primary/5 border-primary">
         <div className="flex gap-3">
-          <Mail className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <Mail className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-semibold text-blue-900 mb-1">Check Your Email</h4>
-            <p className="text-sm text-blue-700">
+            <h4 className="font-semibold text-primary mb-1">Check Your Email</h4>
+            <p className="text-sm text-primary">
               A confirmation email with your ticket(s) and QR code has been sent to{' '}
               <strong>{registrationData?.email || 'your email'}</strong>
             </p>
@@ -201,7 +201,7 @@ export const ConfirmationStep = ({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status:</span>
-              <span className="text-green-600 font-medium">Paid</span>
+              <span className="text-success font-medium">Paid</span>
             </div>
           </div>
         </Card>

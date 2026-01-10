@@ -446,7 +446,7 @@ const AllEventsPage = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-foreground">
                     {selectedEvents.size} event{selectedEvents.size !== 1 ? 's' : ''} selected
                   </span>
                   <Button
@@ -531,7 +531,7 @@ const AllEventsPage = () => {
                     }}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
+                      <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
                         <Badge className={`text-xs ${getStatusBadge(event.status)}`}>
                           {event.status}
                         </Badge>

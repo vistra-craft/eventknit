@@ -59,13 +59,13 @@ export function AttendeeDetailModal({
   const getStatusColor = (status: TicketStatus) => {
     switch (status) {
       case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success/10 text-success';
       case 'DEACTIVATED':
         return 'bg-gray-100 text-gray-800';
       case 'EXPIRED':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning';
       case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -125,7 +125,7 @@ export function AttendeeDetailModal({
             </Badge>
           )}
           {attendee.isCurrentlyInside && (
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+            <Badge variant="secondary" className="bg-primary/10 text-primary">
               Inside Venue
             </Badge>
           )}
@@ -166,7 +166,7 @@ export function AttendeeDetailModal({
             <div className="p-3 bg-muted rounded-lg">
               <div className="flex items-center gap-2 mb-1">
                 {attendee.checkedInAt ? (
-                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <CheckCircle className="w-4 h-4 text-success" />
                 ) : (
                   <Clock className="w-4 h-4 text-muted-foreground" />
                 )}
@@ -200,7 +200,7 @@ export function AttendeeDetailModal({
                 onClick={handleCopyBackupCode}
               >
                 {copiedCode ? (
-                  <Check className="w-4 h-4 text-green-600" />
+                  <Check className="w-4 h-4 text-success" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}

@@ -143,16 +143,16 @@ const SeatMapSelector = ({
 
   const getSeatStatusColor = (seat: Seat, isSelected: boolean) => {
     if (isSelected) {
-      return 'bg-blue-500 hover:bg-blue-600 text-white';
+      return 'bg-primary hover:bg-primary/90 text-white';
     }
 
     switch (seat.status) {
       case 'available':
-        return 'bg-green-100 hover:bg-green-200 border-green-300';
+        return 'bg-success/10 hover:bg-green-200 border-green-300';
       case 'reserved':
-        return 'bg-yellow-100 border-yellow-300 cursor-not-allowed opacity-60';
+        return 'bg-warning/10 border-yellow-300 cursor-not-allowed opacity-60';
       case 'booked':
-        return 'bg-red-100 border-red-300 cursor-not-allowed opacity-60';
+        return 'bg-destructive/10 border-red-300 cursor-not-allowed opacity-60';
       case 'blocked':
         return 'bg-gray-200 border-gray-300 cursor-not-allowed opacity-40';
       default:
@@ -239,19 +239,19 @@ const SeatMapSelector = ({
           {/* Legend */}
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-green-100 border border-green-300 rounded" />
+              <div className="w-6 h-6 bg-success/10 border border-green-300 rounded" />
               <span>Available</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-blue-500 rounded" />
+              <div className="w-6 h-6 bg-primary rounded" />
               <span>Selected</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-yellow-100 border border-yellow-300 rounded opacity-60" />
+              <div className="w-6 h-6 bg-warning/10 border border-yellow-300 rounded opacity-60" />
               <span>Reserved</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-red-100 border border-red-300 rounded opacity-60" />
+              <div className="w-6 h-6 bg-destructive/10 border border-red-300 rounded opacity-60" />
               <span>Booked</span>
             </div>
             <div className="flex items-center gap-2">

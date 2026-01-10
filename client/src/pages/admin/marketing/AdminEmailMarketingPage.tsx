@@ -210,33 +210,33 @@ const AdminEmailMarketingPage = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'newsletter': return "bg-blue-100 text-blue-800";
-      case 'promotional': return "bg-green-100 text-green-800";
+      case 'newsletter': return "bg-primary/10 text-primary";
+      case 'promotional': return "bg-success/10 text-success";
       case 'transactional': return "bg-purple-100 text-purple-800";
       case 'welcome': return "bg-orange-100 text-orange-800";
-      case 'reminder': return "bg-yellow-100 text-yellow-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'reminder': return "bg-warning/10 text-warning";
+      default: return "bg-muted text-foreground";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'sent': return "bg-green-100 text-green-800";
-      case 'scheduled': return "bg-blue-100 text-blue-800";
-      case 'sending': return "bg-yellow-100 text-yellow-800";
-      case 'draft': return "bg-gray-100 text-gray-800";
-      case 'paused': return "bg-red-100 text-red-800";
+      case 'sent': return "bg-success/10 text-success";
+      case 'scheduled': return "bg-primary/10 text-primary";
+      case 'sending': return "bg-warning/10 text-warning";
+      case 'draft': return "bg-muted text-foreground";
+      case 'paused': return "bg-destructive/10 text-destructive";
       case 'pending_approval': return "bg-orange-100 text-orange-800";
-      default: return "bg-gray-100 text-gray-800";
+      default: return "bg-muted text-foreground";
     }
   };
 
   const getApprovalColor = (status: string) => {
     switch (status) {
-      case 'approved': return "bg-green-100 text-green-800";
-      case 'pending': return "bg-yellow-100 text-yellow-800";
-      case 'rejected': return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case 'approved': return "bg-success/10 text-success";
+      case 'pending': return "bg-warning/10 text-warning";
+      case 'rejected': return "bg-destructive/10 text-destructive";
+      default: return "bg-muted text-foreground";
     }
   };
 
@@ -278,7 +278,7 @@ const AdminEmailMarketingPage = () => {
             <h1 className="text-lg font-semibold text-foreground">
               Platform Email Marketing
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Monitor and manage platform-wide email campaigns
             </p>
           </div>
@@ -518,7 +518,7 @@ const AdminEmailMarketingPage = () => {
 
                       <div className="flex items-center space-x-2">
                         {campaign.approvalStatus === "pending" && (
-                          <Button variant="outline" size="sm" className="text-green-600 hover:text-green-700">
+                          <Button variant="outline" size="sm" className="text-success hover:text-success">
                             <Shield className="h-4 w-4 mr-1" />
                             Approve
                           </Button>

@@ -302,8 +302,8 @@ const OrganizerPromoCodeManager = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <div className="p-2 bg-success/10 dark:bg-green-900/30 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-success dark:text-green-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Active Codes</p>
@@ -315,8 +315,8 @@ const OrganizerPromoCodeManager = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                  <Percent className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-primary/10 dark:bg-blue-900/30 rounded-lg">
+                  <Percent className="w-5 h-5 text-primary dark:text-blue-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Redemptions</p>

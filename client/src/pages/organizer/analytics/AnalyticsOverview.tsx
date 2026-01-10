@@ -373,13 +373,13 @@ const AnalyticsOverview = () => {
                     </p>
                     <div className="flex items-center">
                       {stat.changeType === "positive" ? (
-                        <ArrowUpRight className="h-3 w-3 text-green-600 mr-1" />
+                        <ArrowUpRight className="h-3 w-3 text-success mr-1" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-red-600 mr-1" />
+                        <ArrowDownRight className="h-3 w-3 text-destructive mr-1" />
                       )}
                       <span
                         className={`text-xs font-medium ${
-                          stat.changeType === "positive" ? "text-green-600" : "text-red-600"
+                          stat.changeType === "positive" ? "text-success" : "text-destructive"
                         }`}
                       >
                         {stat.change}
@@ -489,7 +489,7 @@ const AnalyticsOverview = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-green-600">{topPerformingEvents[0].conversion}%</p>
+                          <p className="text-sm font-bold text-success">{topPerformingEvents[0].conversion}%</p>
                           <p className="text-xs text-muted-foreground">conversion</p>
                         </div>
                       </div>

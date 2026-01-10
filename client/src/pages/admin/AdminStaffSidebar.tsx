@@ -167,7 +167,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
 
   return (
     <div
-      className={`bg-white border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
+      className={`bg-background border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
     >
       <div className="p-4">
         <div

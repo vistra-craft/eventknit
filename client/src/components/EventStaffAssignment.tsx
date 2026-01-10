@@ -289,23 +289,23 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
 
   const getRoleBadgeColor = (role: EventStaffRole) => {
     const colors: Record<EventStaffRole, string> = {
-      SCANNER: "bg-blue-100 text-blue-800",
+      SCANNER: "bg-primary/10 text-primary",
       SUPPORT: "bg-purple-100 text-purple-800",
       MANAGER: "bg-orange-100 text-orange-800",
-      COORDINATOR: "bg-green-100 text-green-800",
-      SUPERVISOR: "bg-red-100 text-red-800",
-      TICKET_SELLER: "bg-yellow-100 text-yellow-800",
+      COORDINATOR: "bg-success/10 text-success",
+      SUPERVISOR: "bg-destructive/10 text-destructive",
+      TICKET_SELLER: "bg-warning/10 text-warning",
     };
     return colors[role] || "bg-gray-100 text-gray-800";
   };
 
   const getStaffTypeBadge = (staffType: string) => {
     return staffType === "ADMIN_STAFF" ? (
-      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+      <Badge variant="outline" className="bg-primary/5 text-primary border-primary">
         Admin Staff
       </Badge>
     ) : (
-      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+      <Badge variant="outline" className="bg-success/5 text-success border-success">
         Organizer Staff
       </Badge>
     );
@@ -427,7 +427,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
                         </Badge>
                         {getStaffTypeBadge(assignment.staffType)}
                         {assignment.isActive ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <Badge variant="outline" className="bg-success/5 text-success border-success">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Active
                           </Badge>

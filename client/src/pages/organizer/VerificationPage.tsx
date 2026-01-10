@@ -35,15 +35,15 @@ const VerificationPage = () => {
     return (
       <OrganizerLayout>
         <div className="max-w-2xl mx-auto p-6">
-          <Card className="border-green-200 bg-green-50">
+          <Card className="border-success bg-success/5">
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle2 className="w-8 h-8 text-green-600" />
+                <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-success" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-green-900 mb-2">Verification Submitted!</h2>
-                  <p className="text-green-700">
+                  <p className="text-success">
                     Your verification has been submitted successfully. You'll be redirected shortly...
                   </p>
                 </div>

@@ -352,10 +352,10 @@ const AdminSocialMediaPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-      case 'scheduled': return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-      case 'draft': return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+      case 'published': return "bg-success/10 text-success dark:bg-green-900/30 dark:text-green-400";
+      case 'scheduled': return "bg-primary/10 text-primary dark:bg-blue-900/30 dark:text-blue-400";
+      case 'draft': return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+      default: return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-300";
     }
   };
 
@@ -506,7 +506,7 @@ const AdminSocialMediaPage = () => {
                       <div className={`w-10 h-10 rounded-lg ${account.color} flex items-center justify-center`}>
                         <account.icon className="h-5 w-5 text-white" />
                       </div>
-                      <Badge className={account.status === "connected" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      <Badge className={account.status === "connected" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}>
                         {account.status}
                       </Badge>
                     </div>
@@ -549,15 +549,15 @@ const AdminSocialMediaPage = () => {
                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.content}</p>
                       <div className="flex items-center space-x-6 text-sm">
                         <div className="flex items-center space-x-1">
-                          <Heart className="h-4 w-4 text-red-500" />
+                          <Heart className="h-4 w-4 text-destructive" />
                           <span>{post.engagement.likes}</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <MessageCircle className="h-4 w-4 text-blue-500" />
+                          <MessageCircle className="h-4 w-4 text-primary" />
                           <span>{post.engagement.comments}</span>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <Share className="h-4 w-4 text-green-500" />
+                          <Share className="h-4 w-4 text-success" />
                           <span>{post.engagement.shares}</span>
                         </div>
                         {post.engagement.views && (
@@ -640,15 +640,15 @@ const AdminSocialMediaPage = () => {
                         <p className="text-muted-foreground mb-3">{post.content}</p>
                         <div className="flex items-center space-x-6 text-sm">
                           <div className="flex items-center space-x-1">
-                            <Heart className="h-4 w-4 text-red-500" />
+                            <Heart className="h-4 w-4 text-destructive" />
                             <span>{post.engagement.likes}</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <MessageCircle className="h-4 w-4 text-blue-500" />
+                            <MessageCircle className="h-4 w-4 text-primary" />
                             <span>{post.engagement.comments}</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <Share className="h-4 w-4 text-green-500" />
+                            <Share className="h-4 w-4 text-success" />
                             <span>{post.engagement.shares}</span>
                           </div>
                           <div className="text-muted-foreground">
@@ -665,7 +665,7 @@ const AdminSocialMediaPage = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDeletePost(post.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/5"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -704,7 +704,7 @@ const AdminSocialMediaPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <Badge className={account.status === "connected" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                    <Badge className={account.status === "connected" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}>
                       {account.status}
                     </Badge>
                     <Button variant="outline" size="sm">

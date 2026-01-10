@@ -421,10 +421,10 @@ const EventReviews: React.FC = () => {
                             )}
                             {review.pros && review.pros.length > 0 && (
                               <div className="mb-2">
-                                <p className="text-sm font-medium text-green-600 mb-1">Pros:</p>
+                                <p className="text-sm font-medium text-success mb-1">Pros:</p>
                                 <div className="flex flex-wrap gap-2">
                                   {review.pros.map((pro: string, index: number) => (
-                                    <Badge key={index} variant="secondary" className="bg-green-50 text-green-700">
+                                    <Badge key={index} variant="secondary" className="bg-success/5 text-success">
                                       {pro}
                                     </Badge>
                                   ))}
@@ -433,7 +433,7 @@ const EventReviews: React.FC = () => {
                             )}
                             {review.cons && review.cons.length > 0 && (
                               <div className="mb-2">
-                                <p className="text-sm font-medium text-red-600 mb-1">Cons:</p>
+                                <p className="text-sm font-medium text-destructive mb-1">Cons:</p>
                                 <div className="flex flex-wrap gap-2">
                                   {review.cons.map((con: string, index: number) => (
                                     <Badge key={index} variant="destructive">

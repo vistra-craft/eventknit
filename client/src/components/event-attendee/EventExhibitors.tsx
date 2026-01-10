@@ -30,8 +30,8 @@ const sponsorTierColors: Record<string, string> = {
   gold: 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white',
   silver: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white',
   bronze: 'bg-gradient-to-r from-orange-600 to-orange-700 text-white',
-  associate: 'bg-blue-100 text-blue-800',
-  community: 'bg-green-100 text-green-800',
+  associate: 'bg-primary/10 text-primary',
+  community: 'bg-success/10 text-success',
 };
 
 // Exhibitor Card

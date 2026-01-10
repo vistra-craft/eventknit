@@ -855,11 +855,11 @@ const ServicePointScanner: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'success':
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success/10 text-success border-success";
       case 'error':
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/10 text-destructive border-destructive";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
     }
   };
 
@@ -929,7 +929,7 @@ const ServicePointScanner: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Offline Indicator & Sync Status */}
               {(!isOnlineState || syncStatus.queueLength > 0) && (
-                <Card className={!isOnlineState ? 'border-amber-500 bg-amber-50' : 'border-blue-500 bg-blue-50'}>
+                <Card className={!isOnlineState ? 'border-amber-500 bg-amber-50' : 'border-blue-500 bg-primary/5'}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -945,13 +945,13 @@ const ServicePointScanner: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <Cloud className="w-5 h-5 text-blue-600" />
+                            <Cloud className="w-5 h-5 text-primary" />
                             <div>
                               <p className="text-sm font-medium text-blue-900">
                                 {syncStatus.queueLength} scan(s) pending sync
                               </p>
                               {syncStatus.failedItems > 0 && (
-                                <p className="text-xs text-red-700">
+                                <p className="text-xs text-destructive">
                                   {syncStatus.failedItems} failed - check sync details
                                 </p>
                               )}
@@ -1123,7 +1123,7 @@ const ServicePointScanner: React.FC = () => {
                   <div className="space-y-4">
                     {/* Camera View - Mobile Optimized */}
                     <div 
-                      className={`relative bg-gray-100 rounded-lg overflow-hidden ${
+                      className={`relative bg-muted rounded-lg overflow-hidden ${
                         isMobile ? 'aspect-square' : 'aspect-video'
                       } ${
                         flashStatus === 'success' ? 'bg-green-200' : 
@@ -1134,12 +1134,12 @@ const ServicePointScanner: React.FC = () => {
                       {!isScanning && (
                         <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
                           <div className="text-center p-4">
-                            <QrCode className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} text-gray-400 mx-auto mb-4`} />
+                            <QrCode className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} text-muted-foreground mx-auto mb-4`} />
                             <p className={`${isMobile ? 'text-sm' : 'text-base'} text-muted-foreground mb-2`}>
                               Camera not active
                             </p>
                             {cameraPermission === 'denied' && (
-                              <p className="text-xs text-red-600 mt-2">
+                              <p className="text-xs text-destructive mt-2">
                                 Camera access denied. Please enable in browser settings.
                               </p>
                             )}
@@ -1222,7 +1222,7 @@ const ServicePointScanner: React.FC = () => {
                         </Button>
                       </div>
                       {manualInput && detectCodeType(manualInput) === 'UNKNOWN' && (
-                        <p className="text-xs text-red-600">Invalid code format</p>
+                        <p className="text-xs text-destructive">Invalid code format</p>
                       )}
                     </div>
                   </div>
@@ -1289,12 +1289,12 @@ const ServicePointScanner: React.FC = () => {
                         <div key={result.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              result.status === 'success' ? 'bg-green-100' : 'bg-red-100'
+                              result.status === 'success' ? 'bg-success/10' : 'bg-destructive/10'
                             }`}>
                               {result.status === 'success' ? (
-                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                <CheckCircle className="w-4 h-4 text-success" />
                               ) : (
-                                <XCircle className="w-4 h-4 text-red-600" />
+                                <XCircle className="w-4 h-4 text-destructive" />
                               )}
                             </div>
                             <div>
@@ -1339,19 +1339,19 @@ const ServicePointScanner: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Successful</span>
-                      <span className="font-semibold text-green-600">
+                      <span className="font-semibold text-success">
                         {scanResults.filter(r => r.status === 'success').length}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Errors</span>
-                      <span className="font-semibold text-red-600">
+                      <span className="font-semibold text-destructive">
                         {scanResults.filter(r => r.status === 'error').length}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Re-entries</span>
-                      <span className="font-semibold text-blue-600">
+                      <span className="font-semibold text-primary">
                         {scanResults.filter(r => r.isReEntry).length}
                       </span>
                     </div>

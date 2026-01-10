@@ -117,15 +117,15 @@ const StaffManagementContent = () => {
 
   const getRoleBadge = (role: AdminApiUserRole | StaffRole) => {
     const variants: Record<string, string> = {
-      'SUPERADMIN': "bg-red-100 text-red-800",
-      'ADMIN_STAFF': "bg-blue-100 text-blue-800",
+      'SUPERADMIN': "bg-destructive/10 text-destructive",
+      'ADMIN_STAFF': "bg-primary/10 text-primary",
       'MARKETER': "bg-pink-100 text-pink-800",
       'SUPPORT': "bg-purple-100 text-purple-800",
-      'TELLER': "bg-green-100 text-green-800",
-      'ORGANIZER': "bg-yellow-100 text-yellow-800",
-      'ATTENDEE': "bg-gray-100 text-gray-800",
+      'TELLER': "bg-success/10 text-success",
+      'ORGANIZER': "bg-warning/10 text-warning",
+      'ATTENDEE': "bg-muted text-gray-800",
     };
-    return variants[role] || "bg-gray-100 text-gray-800";
+    return variants[role] || "bg-muted text-gray-800";
   };
 
   const formatDate = (dateString: string) => {
@@ -245,7 +245,7 @@ const StaffManagementContent = () => {
   if (loading && staffMembers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Loading staff members...</div>
+        <div className="text-muted-foreground">Loading staff members...</div>
       </div>
     );
   }
@@ -256,7 +256,7 @@ const StaffManagementContent = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold text-foreground">Staff Management</h2>
-          <p className="text-gray-600">Manage company employees and event staff</p>
+          <p className="text-muted-foreground">Manage company employees and event staff</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-sm text-gray-500">
@@ -294,7 +294,7 @@ const StaffManagementContent = () => {
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
             <div className="text-base font-semibold text-primary mb-2">{total || staffMembers.length}</div>
-            <p className="text-sm text-gray-600">Total Staff</p>
+            <p className="text-sm text-muted-foreground">Total Staff</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
@@ -302,7 +302,7 @@ const StaffManagementContent = () => {
             <div className="text-base font-semibold text-primary mb-2">
               {staffMembers.filter((s) => s.status === "ACTIVE").length}
             </div>
-            <p className="text-sm text-gray-600">Active</p>
+            <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
@@ -318,7 +318,7 @@ const StaffManagementContent = () => {
             <div className="text-base font-semibold text-muted-foreground mb-2">
               {staffMembers.filter((s) => s.status === "DEACTIVATED").length}
             </div>
-            <p className="text-sm text-gray-600">Deactivated</p>
+            <p className="text-sm text-muted-foreground">Deactivated</p>
           </CardContent>
         </Card>
       </div>
@@ -329,7 +329,7 @@ const StaffManagementContent = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search staff members..."
                   value={searchTerm}
@@ -379,7 +379,7 @@ const StaffManagementContent = () => {
         </CardHeader>
         <CardContent>
           {filteredStaff.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">No staff members found</div>
+            <div className="text-center py-8 text-muted-foreground">No staff members found</div>
           ) : (
             <div className="space-y-3">
               {filteredStaff.map((staff) => (
@@ -398,9 +398,9 @@ const StaffManagementContent = () => {
                       <h4 className="text-sm font-medium text-foreground">
                         {staff.firstName} {staff.lastName}
                       </h4>
-                      <p className="text-sm text-gray-600">{staff.email}</p>
+                      <p className="text-sm text-muted-foreground">{staff.email}</p>
                       {staff.phoneNumber && (
-                        <p className="text-sm text-gray-600">{staff.phoneNumber}</p>
+                        <p className="text-sm text-muted-foreground">{staff.phoneNumber}</p>
                       )}
                       <div className="flex items-center gap-2 mt-1">
                         <Badge className={`text-xs ${getRoleBadge(staff.role)}`}>
@@ -414,7 +414,7 @@ const StaffManagementContent = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Joined: {formatDate(staff.createdAt)}
                       </div>
                     </div>
@@ -456,7 +456,7 @@ const StaffManagementContent = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleSuspendStaff(staff.id)}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            className="text-destructive border-destructive hover:bg-destructive/5"
                             title="Suspend Staff"
                             disabled={actionLoading === staff.id}
                           >
@@ -481,7 +481,7 @@ const StaffManagementContent = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleActivateStaff(staff.id)}
-                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            className="text-success border-success hover:bg-success/5"
                             title="Activate Staff"
                             disabled={actionLoading === staff.id}
                           >

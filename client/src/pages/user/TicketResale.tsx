@@ -254,7 +254,7 @@ const TicketResale = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-muted-foreground">Resale Price</p>
-                            <p className="text-lg font-bold text-green-600">
+                            <p className="text-lg font-bold text-success">
                               {formatCurrency(Number(ticket.resalePrice), ticket.currency)}
                             </p>
                           </div>
@@ -306,7 +306,7 @@ const TicketResale = () => {
                             </div>
                             <div>
                               <span className="text-muted-foreground">Resale: </span>
-                              <span className="font-semibold text-green-600">
+                              <span className="font-semibold text-success">
                                 {formatCurrency(Number(resale.resalePrice), resale.currency)}
                               </span>
                             </div>

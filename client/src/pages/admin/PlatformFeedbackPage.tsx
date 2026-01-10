@@ -32,6 +32,7 @@ import {
   Minus,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
+import AdminLayout from "./AdminLayout";
 import {
   getAllFeedback,
   getFeedbackAnalytics,
@@ -196,14 +197,17 @@ const PlatformFeedbackPage: React.FC = () => {
 
   if (loading && !analytics) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader size="lg" />
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader size="lg" />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-page-title text-foreground">Platform Feedback</h1>
@@ -245,7 +249,7 @@ const PlatformFeedbackPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
+                  <Star className="h-6 w-6 text-warning fill-warning" />
                   <span className="text-3xl font-bold">
                     {analytics?.averageNps?.toFixed(1) || 0}
                   </span>
@@ -778,7 +782,8 @@ const PlatformFeedbackPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AdminLayout>
   );
 };
 

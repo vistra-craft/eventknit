@@ -25,7 +25,7 @@ const AuthDemo = () => {
           <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-eventknit/20">
             <CardHeader className="text-center pb-4">
               <div className="mx-auto w-20 h-20 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Calendar className="w-10 h-10 text-eventknit" />
+                <Calendar className="w-10 h-10 text-primary" />
               </div>
               <CardTitle className="text-xl font-semibold text-foreground">
                 User Type Selection
@@ -37,7 +37,7 @@ const AuthDemo = () => {
               </p>
               <Button
                 onClick={() => navigate('/auth/user-type')}
-                className="w-full bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground h-12"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12"
               >
                 Try User Type Selection
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -49,7 +49,7 @@ const AuthDemo = () => {
           <Card className="group hover:shadow-lg transition-all duration-300 cursor-pointer border-2 hover:border-eventknit/20">
             <CardHeader className="text-center pb-4">
               <div className="mx-auto w-20 h-20 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Calendar className="w-10 h-10 text-eventknit" />
+                <Calendar className="w-10 h-10 text-primary" />
               </div>
               <CardTitle className="text-xl font-semibold text-foreground">
                 Stepwise Event Creation
@@ -61,7 +61,7 @@ const AuthDemo = () => {
               </p>
               <Button
                 onClick={() => navigate('/create-event-stepwise')}
-                className="w-full bg-eventknit hover:bg-eventknit/90 text-eventknit-foreground h-12"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12"
               >
                 Try Stepwise Creation
                 <ArrowRight className="w-4 h-4 ml-2" />

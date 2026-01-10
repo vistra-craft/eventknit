@@ -637,8 +637,8 @@ const ServicePointTemplates: React.FC = () => {
                             </div>
                           )}
                           {element.type === 'image' && (
-                            <div className="w-full h-full bg-gray-100 border border-gray-200 rounded flex items-center justify-center">
-                              <Image className="w-1/3 h-1/3 text-gray-400" />
+                            <div className="w-full h-full bg-muted border border-gray-200 rounded flex items-center justify-center">
+                              <Image className="w-1/3 h-1/3 text-muted-foreground" />
                             </div>
                           )}
                           {element.type === 'shape' && (
@@ -686,7 +686,7 @@ const ServicePointTemplates: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-500 hover:text-red-600"
+                        className="text-destructive hover:text-destructive"
                         onClick={() => deleteElement(selectedElement!)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1016,7 +1016,7 @@ const ServicePointTemplates: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-full text-red-500 hover:text-red-600"
+                            className="w-full text-destructive hover:text-destructive"
                             onClick={handleDeleteTemplate}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />

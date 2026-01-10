@@ -93,7 +93,7 @@ const EventPreviewPage = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-base font-semibold text-foreground">Event Preview</h1>
-            <p className="text-sm text-gray-600">View event details</p>
+            <p className="text-sm text-muted-foreground">View event details</p>
           </div>
           <Button
             variant="default"
@@ -129,7 +129,7 @@ const EventPreviewPage = () => {
                     <Badge className="ml-2 mb-2">{event.status}</Badge>
                   )}
                   {event.description && (
-                    <p className="text-sm text-gray-600 mt-3">{event.description}</p>
+                    <p className="text-sm text-muted-foreground mt-3">{event.description}</p>
                   )}
                 </div>
               </div>

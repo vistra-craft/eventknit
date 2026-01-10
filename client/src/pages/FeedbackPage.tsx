@@ -156,7 +156,7 @@ const FeedbackPage: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <CheckCircle className="h-12 w-12 text-success mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Thank You!</h2>
             <p className="text-muted-foreground mb-4">
               Your feedback has been submitted successfully. We appreciate your time!

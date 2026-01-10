@@ -104,31 +104,31 @@ const MaintenancePage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      idle: "bg-gray-100 text-gray-800 border-gray-200",
-      running: "bg-blue-100 text-blue-800 border-blue-200",
-      completed: "bg-green-100 text-green-800 border-green-200",
-      failed: "bg-red-100 text-red-800 border-red-200"
+      idle: "bg-muted text-muted-foreground border-border",
+      running: "bg-primary/10 text-primary border-primary/20",
+      completed: "bg-success/10 text-success border-success/20",
+      failed: "bg-destructive/10 text-destructive border-destructive/20"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeBadge = (type: string) => {
     const variants = {
-      database: "bg-purple-100 text-purple-800 border-purple-200",
-      system: "bg-blue-100 text-blue-800 border-blue-200",
-      security: "bg-red-100 text-red-800 border-red-200",
-      performance: "bg-green-100 text-green-800 border-green-200"
+      database: "bg-primary/10 text-primary border-primary/20",
+      system: "bg-primary/10 text-primary border-primary/20",
+      security: "bg-destructive/10 text-destructive border-destructive/20",
+      performance: "bg-success/10 text-success border-success/20"
     };
-    return variants[type as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[type as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getImpactBadge = (impact: string) => {
     const variants = {
-      low: "bg-green-100 text-green-800 border-green-200",
-      medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      high: "bg-red-100 text-red-800 border-red-200"
+      low: "bg-success/10 text-success border-success/20",
+      medium: "bg-warning/10 text-warning border-warning/20",
+      high: "bg-destructive/10 text-destructive border-destructive/20"
     };
-    return variants[impact as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[impact as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeIcon = (type: string) => {
@@ -171,7 +171,7 @@ const MaintenancePage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">System Maintenance</h1>
-            <p className="text-gray-600">Manage system maintenance tasks and maintenance mode</p>
+            <p className="text-muted-foreground">Manage system maintenance tasks and maintenance mode</p>
           </div>
         </div>
 
@@ -186,13 +186,13 @@ const MaintenancePage = () => {
           <CardContent>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-muted-foreground mb-2">
                   {maintenanceMode.enabled 
                     ? "System is currently in maintenance mode" 
                     : "System is running normally"}
                 </p>
                 {maintenanceMode.enabled && (
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     <p>Started: {maintenanceMode.startTime ? formatDate(maintenanceMode.startTime) : 'N/A'}</p>
                     <p>Estimated Duration: {maintenanceMode.estimatedDuration}</p>
                   </div>
@@ -216,12 +216,12 @@ const MaintenancePage = () => {
               </Button>
             </div>
             {maintenanceMode.enabled && (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                  <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
                   <div>
-                    <p className="font-medium text-yellow-800">Maintenance Mode Active</p>
-                    <p className="text-sm text-yellow-700">{maintenanceMode.message}</p>
+                    <p className="font-medium text-warning">Maintenance Mode Active</p>
+                    <p className="text-sm text-muted-foreground">{maintenanceMode.message}</p>
                   </div>
                 </div>
               </div>
@@ -262,7 +262,7 @@ const MaintenancePage = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground">{task.name}</h3>
-                        <p className="text-sm text-gray-600">{task.description}</p>
+                        <p className="text-sm text-muted-foreground">{task.description}</p>
                       </div>
                     </div>
                     <Badge className={`text-xs ${getStatusBadge(task.status)}`}>
@@ -279,7 +279,7 @@ const MaintenancePage = () => {
                     </Badge>
                   </div>
 
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
+                  <div className="space-y-2 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4" />
                       <span>Duration: {task.duration}</span>
@@ -337,11 +337,11 @@ const MaintenancePage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardContent className="p-6 text-center">
-                <div className="p-3 rounded-lg bg-blue-100 mx-auto mb-4 w-fit">
-                  <Database className="h-6 w-6 text-blue-600" />
+                <div className="p-3 rounded-lg bg-primary/10 mx-auto mb-4 w-fit">
+                  <Database className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">Database Cleanup</h3>
-                <p className="text-sm text-gray-600 mb-4">Clean up old data and optimize tables</p>
+                <p className="text-sm text-muted-foreground mb-4">Clean up old data and optimize tables</p>
                 <Button size="sm" className="w-full">
                   Run Cleanup
                 </Button>
@@ -350,11 +350,11 @@ const MaintenancePage = () => {
 
             <Card className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardContent className="p-6 text-center">
-                <div className="p-3 rounded-lg bg-green-100 mx-auto mb-4 w-fit">
-                  <Server className="h-6 w-6 text-green-600" />
+                <div className="p-3 rounded-lg bg-success/10 mx-auto mb-4 w-fit">
+                  <Server className="h-6 w-6 text-success" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">Cache Clear</h3>
-                <p className="text-sm text-gray-600 mb-4">Clear all application caches</p>
+                <p className="text-sm text-muted-foreground mb-4">Clear all application caches</p>
                 <Button size="sm" variant="outline" className="w-full">
                   Clear Cache
                 </Button>
@@ -363,11 +363,11 @@ const MaintenancePage = () => {
 
             <Card className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardContent className="p-6 text-center">
-                <div className="p-3 rounded-lg bg-purple-100 mx-auto mb-4 w-fit">
-                  <Shield className="h-6 w-6 text-purple-600" />
+                <div className="p-3 rounded-lg bg-destructive/10 mx-auto mb-4 w-fit">
+                  <Shield className="h-6 w-6 text-destructive" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">Security Scan</h3>
-                <p className="text-sm text-gray-600 mb-4">Run security vulnerability scan</p>
+                <p className="text-sm text-muted-foreground mb-4">Run security vulnerability scan</p>
                 <Button size="sm" variant="outline" className="w-full">
                   Start Scan
                 </Button>
@@ -376,11 +376,11 @@ const MaintenancePage = () => {
 
             <Card className="border-border bg-card hover:shadow-md transition-all duration-200">
               <CardContent className="p-6 text-center">
-                <div className="p-3 rounded-lg bg-orange-100 mx-auto mb-4 w-fit">
-                  <Settings className="h-6 w-6 text-orange-600" />
+                <div className="p-3 rounded-lg bg-warning/10 mx-auto mb-4 w-fit">
+                  <Settings className="h-6 w-6 text-warning" />
                 </div>
                 <h3 className="font-semibold text-foreground mb-2">System Restart</h3>
-                <p className="text-sm text-gray-600 mb-4">Restart system services</p>
+                <p className="text-sm text-muted-foreground mb-4">Restart system services</p>
                 <Button size="sm" variant="destructive" className="w-full">
                   Restart
                 </Button>

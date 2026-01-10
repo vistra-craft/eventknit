@@ -72,7 +72,7 @@ const EditTransactionPage = () => {
             <BackButton to="/admin/finance/transactions" label="Back" />
             <div>
               <h1 className="text-base font-semibold text-foreground">Edit Transaction</h1>
-              <p className="text-gray-600">Update transaction details</p>
+              <p className="text-muted-foreground">Update transaction details</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

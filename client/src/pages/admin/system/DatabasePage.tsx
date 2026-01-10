@@ -131,11 +131,11 @@ const DatabasePage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: "bg-green-100 text-green-800 border-green-200",
-      archived: "bg-gray-100 text-gray-800 border-gray-200",
-      maintenance: "bg-yellow-100 text-yellow-800 border-yellow-200"
+      active: "bg-success/10 text-success border-success/20",
+      archived: "bg-muted text-muted-foreground border-border",
+      maintenance: "bg-warning/10 text-warning border-warning/20"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTrendIcon = (trend: string) => {
@@ -145,9 +145,9 @@ const DatabasePage = () => {
   };
 
   const getTrendColor = (trend: string) => {
-    if (trend === "up") return "text-red-600";
-    if (trend === "down") return "text-green-600";
-    return "text-gray-600";
+    if (trend === "up") return "text-destructive";
+    if (trend === "down") return "text-success";
+    return "text-muted-foreground";
   };
 
   return (
@@ -157,7 +157,7 @@ const DatabasePage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Database Management</h1>
-            <p className="text-gray-600">Monitor and manage database performance and storage</p>
+            <p className="text-muted-foreground">Monitor and manage database performance and storage</p>
           </div>
           <div className="flex items-center gap-3">
             <Button 
@@ -194,7 +194,7 @@ const DatabasePage = () => {
                   <div className="space-y-2">
                     <h3 className="font-semibold text-foreground">{metric.name}</h3>
                     <p className="font-semibold text-primary">{metric.value}</p>
-                    <p className="text-sm text-gray-600">{metric.description}</p>
+                    <p className="text-sm text-muted-foreground">{metric.description}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -246,16 +246,16 @@ const DatabasePage = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                     <div>
-                      <p className="text-gray-600">Rows</p>
+                      <p className="text-muted-foreground">Rows</p>
                       <p className="font-semibold text-foreground">{table.rows.toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Size</p>
+                      <p className="text-muted-foreground">Size</p>
                       <p className="font-semibold text-foreground">{table.size}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       Modified {table.lastModified}
                     </div>
                     <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ const DatabasePage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Create a full backup of the database
                 </p>
                 <Button className="w-full">
@@ -306,7 +306,7 @@ const DatabasePage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Restore database from backup file
                 </p>
                 <Button variant="outline" className="w-full">
@@ -324,7 +324,7 @@ const DatabasePage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Optimize database performance and clean up
                 </p>
                 <Button variant="outline" className="w-full">

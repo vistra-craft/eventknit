@@ -164,7 +164,7 @@ const EditIncomePage = () => {
             <BackButton to="/admin/finance/income" label="Back" />
             <div>
               <h1 className="text-base font-semibold text-foreground">{isEditing ? "Edit Income" : "Add Income"}</h1>
-              <p className="text-gray-600">{isEditing ? "Update income details" : "Add a new income record"}</p>
+              <p className="text-muted-foreground">{isEditing ? "Update income details" : "Add a new income record"}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

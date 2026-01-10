@@ -235,43 +235,43 @@ const SupportPage = () => {
   const getPlatformColor = (platform: SocialPlatform) => {
     switch (platform) {
       case "whatsapp":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success/10 text-success border-success";
       case "facebook":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-primary/10 text-primary border-primary";
       case "instagram":
         return "bg-pink-100 text-pink-800 border-pink-200";
       case "twitter":
         return "bg-sky-100 text-sky-800 border-sky-200";
       case "linkedin":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-primary/10 text-primary border-primary";
       case "email":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-gray-800 border-gray-200";
       case "website":
         return "bg-purple-100 text-purple-800 border-purple-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-foreground border-border";
     }
   };
 
   const getStatusBadge = (status: QueryStatus) => {
     const variants = {
-      new: "bg-blue-100 text-blue-800 border-blue-200",
-      in_progress: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      new: "bg-primary/10 text-primary border-primary",
+      in_progress: "bg-warning/10 text-warning border-warning",
       waiting_for_customer: "bg-orange-100 text-orange-800 border-orange-200",
-      resolved: "bg-green-100 text-green-800 border-green-200",
-      closed: "bg-gray-100 text-gray-800 border-gray-200"
+      resolved: "bg-success/10 text-success border-success",
+      closed: "bg-muted text-foreground border-border"
     };
-    return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status] || "bg-muted text-foreground border-border";
   };
 
   const getPriorityBadge = (priority: QueryPriority) => {
     const variants = {
-      low: "bg-green-100 text-green-800 border-green-200",
-      medium: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      low: "bg-success/10 text-success border-success",
+      medium: "bg-warning/10 text-warning border-warning",
       high: "bg-orange-100 text-orange-800 border-orange-200",
-      urgent: "bg-red-100 text-red-800 border-red-200"
+      urgent: "bg-destructive/10 text-destructive border-destructive"
     };
-    return variants[priority] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[priority] || "bg-muted text-foreground border-border";
   };
 
   const getPriorityIcon = (priority: QueryPriority) => {
@@ -499,7 +499,7 @@ const SupportPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Support Center</h1>
-            <p className="text-gray-600">Manage customer queries from all social media platforms</p>
+            <p className="text-muted-foreground">Manage customer queries from all social media platforms</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm">
@@ -523,24 +523,11 @@ const SupportPage = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">New Queries</p>
-                  <p className="font-semibold text-blue-600">{metrics.newQueries}</p>
+                  <p className="text-sm font-medium text-muted-foreground">New Queries</p>
+                  <p className="font-semibold text-primary">{metrics.newQueries}</p>
                 </div>
-                <div className="p-3 rounded-full bg-blue-100">
-                  <Bell className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-border bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">In Progress</p>
-                  <p className="font-semibold text-yellow-600">{metrics.inProgressQueries}</p>
-                </div>
-                <div className="p-3 rounded-full bg-yellow-100">
-                  <Clock className="h-6 w-6 text-yellow-600" />
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Bell className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
@@ -549,11 +536,11 @@ const SupportPage = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Resolved Today</p>
-                  <p className="font-semibold text-green-600">{metrics.resolvedToday}</p>
+                  <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                  <p className="font-semibold text-warning">{metrics.inProgressQueries}</p>
                 </div>
-                <div className="p-3 rounded-full bg-green-100">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+                <div className="p-3 rounded-full bg-warning/10">
+                  <Clock className="h-6 w-6 text-warning" />
                 </div>
               </div>
             </CardContent>
@@ -562,7 +549,20 @@ const SupportPage = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Response Time</p>
+                  <p className="text-sm font-medium text-muted-foreground">Resolved Today</p>
+                  <p className="font-semibold text-success">{metrics.resolvedToday}</p>
+                </div>
+                <div className="p-3 rounded-full bg-success/10">
+                  <CheckCircle className="h-6 w-6 text-success" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Avg Response Time</p>
                   <p className="font-semibold text-purple-600">{metrics.averageResponseTime}m</p>
                 </div>
                 <div className="p-3 rounded-full bg-purple-100">
@@ -585,11 +585,11 @@ const SupportPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {Object.entries(metrics.platformBreakdown).map(([platform, count]) => (
                 <div key={platform} className="text-center">
-                  <div className="p-3 rounded-lg bg-gray-50 mb-2">
+                  <div className="p-3 rounded-lg bg-muted mb-2">
                     {getPlatformIcon(platform as SocialPlatform)}
                   </div>
                   <p className="text-sm font-medium text-foreground">{count}</p>
-                  <p className="text-xs text-gray-600 capitalize">{platform}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{platform}</p>
                 </div>
               ))}
             </div>
@@ -602,7 +602,7 @@ const SupportPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
               <div className="lg:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search queries, names, or tags..."
                     value={searchTerm}
@@ -685,7 +685,7 @@ const SupportPage = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-foreground truncate">{query.senderName}</h3>
-                        <p className="text-sm text-gray-600 truncate">@{query.senderHandle}</p>
+                        <p className="text-sm text-muted-foreground truncate">@{query.senderHandle}</p>
                       </div>
                       <Badge className={`text-xs ${getPlatformColor(query.platform)}`}>
                         {query.platform}
@@ -698,8 +698,8 @@ const SupportPage = () => {
                         {query.priority}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{query.message}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{query.message}</p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
                       <span>{getTimeAgo(query.createdAt)}</span>
                       <span>•</span>
                       <span>{query.responses.length} responses</span>
@@ -777,9 +777,9 @@ const SupportPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-foreground">Social Media Messages</h2>
-              <p className="text-sm text-gray-600">Mentions and messages from connected social media platforms</p>
+              <p className="text-sm text-muted-foreground">Mentions and messages from connected social media platforms</p>
             </div>
-            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+            <Badge className="bg-primary/10 text-primary border-primary">
               {socialMessages.length} messages
             </Badge>
           </div>
@@ -814,7 +814,7 @@ const SupportPage = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="text-lg font-semibold text-foreground truncate">{message.senderName || 'Unknown'}</h3>
-                            <p className="text-sm text-gray-600 truncate">@{message.senderHandle || 'unknown'}</p>
+                            <p className="text-sm text-muted-foreground truncate">@{message.senderHandle || 'unknown'}</p>
                           </div>
                           <Badge className={`text-xs ${getPlatformColor(message.platform.toLowerCase() as SocialPlatform)}`}>
                             {message.platform}
@@ -827,8 +827,8 @@ const SupportPage = () => {
                             {message.priority}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{message.content}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{message.content}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
                           <span>{getTimeAgo(message.createdAt)}</span>
                           <span>•</span>
                           <span>{message.responses?.length || 0} responses</span>
@@ -930,7 +930,7 @@ const SupportPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-foreground">Website Queries</h2>
-              <p className="text-sm text-gray-600">Customer inquiries submitted through the website contact form</p>
+              <p className="text-sm text-muted-foreground">Customer inquiries submitted through the website contact form</p>
             </div>
             <Badge className="bg-purple-100 text-purple-800 border-purple-200">
               {websiteQueries.length} queries
@@ -949,7 +949,7 @@ const SupportPage = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-foreground truncate">{query.senderName}</h3>
-                          <p className="text-sm text-gray-600 truncate">{query.senderHandle}</p>
+                          <p className="text-sm text-muted-foreground truncate">{query.senderHandle}</p>
                         </div>
                         <Badge className={`text-xs ${getPlatformColor(query.platform)}`}>
                           {query.platform}
@@ -962,8 +962,8 @@ const SupportPage = () => {
                           {query.priority}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{query.message}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{query.message}</p>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
                         <span>{getTimeAgo(query.createdAt)}</span>
                         <span>•</span>
                         <span>{query.responses.length} responses</span>
@@ -1040,7 +1040,7 @@ const SupportPage = () => {
         {/* Response Modal */}
         {showResponseModal && selectedQuery && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[600px] flex flex-col">
+            <div className="bg-card rounded-lg shadow-xl w-full max-w-4xl h-[600px] flex flex-col">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -1049,7 +1049,7 @@ const SupportPage = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">Respond to {selectedQuery.senderName}</h3>
-                    <p className="text-sm text-gray-600">via {selectedQuery.platform}</p>
+                    <p className="text-sm text-muted-foreground">via {selectedQuery.platform}</p>
                   </div>
                 </div>
                 <Button
@@ -1066,9 +1066,9 @@ const SupportPage = () => {
               </div>
 
               {/* Original Message */}
-              <div className="p-4 border-b border-border bg-gray-50">
+              <div className="p-4 border-b border-border bg-muted">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-white">
+                  <div className="p-2 rounded-lg bg-card">
                     {getPlatformIcon(selectedQuery.platform)}
                   </div>
                   <div className="flex-1">
@@ -1077,9 +1077,9 @@ const SupportPage = () => {
                       <Badge className={`text-xs ${getPlatformColor(selectedQuery.platform)}`}>
                         {selectedQuery.platform}
                       </Badge>
-                      <span className="text-xs text-gray-500">{getTimeAgo(selectedQuery.createdAt)}</span>
+                      <span className="text-xs text-muted-foreground">{getTimeAgo(selectedQuery.createdAt)}</span>
                     </div>
-                    <p className="text-sm text-gray-700">{selectedQuery.message}</p>
+                    <p className="text-sm text-foreground">{selectedQuery.message}</p>
                   </div>
                 </div>
               </div>
@@ -1096,9 +1096,9 @@ const SupportPage = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-foreground">{response.responderName}</span>
-                          <span className="text-xs text-gray-500">{getTimeAgo(response.createdAt)}</span>
+                          <span className="text-xs text-muted-foreground">{getTimeAgo(response.createdAt)}</span>
                         </div>
-                        <p className="text-sm text-gray-700">{response.message}</p>
+                        <p className="text-sm text-foreground">{response.message}</p>
                       </div>
                     </div>
                   ))}

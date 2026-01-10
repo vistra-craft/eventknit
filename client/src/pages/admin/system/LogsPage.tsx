@@ -119,12 +119,12 @@ const LogsPage = () => {
 
   const getLevelBadge = (level: string) => {
     const variants = {
-      info: "bg-blue-100 text-blue-800 border-blue-200",
-      warning: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      error: "bg-red-100 text-red-800 border-red-200",
-      success: "bg-green-100 text-green-800 border-green-200"
+      info: "bg-primary/10 text-primary border-primary/20",
+      warning: "bg-warning/10 text-warning border-warning/20",
+      error: "bg-destructive/10 text-destructive border-destructive/20",
+      success: "bg-success/10 text-success border-success/20"
     };
-    return variants[level as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[level as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getLevelIcon = (level: string) => {
@@ -149,7 +149,7 @@ const LogsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">System Logs</h1>
-            <p className="text-gray-600">Monitor system events and troubleshoot issues</p>
+            <p className="text-muted-foreground">Monitor system events and troubleshoot issues</p>
           </div>
           <div className="flex items-center gap-3">
             <Button 
@@ -174,7 +174,7 @@ const LogsPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="lg:col-span-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search logs..."
                     value={searchTerm}
@@ -232,13 +232,13 @@ const LogsPage = () => {
                       <Badge variant="outline" className="text-xs">
                         {log.service}
                       </Badge>
-                      <span className="text-sm text-gray-500">{log.timestamp}</span>
+                      <span className="text-sm text-muted-foreground">{log.timestamp}</span>
                     </div>
                     <p className="font-medium text-foreground mb-2">{log.message}</p>
                     {log.details && (
-                      <p className="text-sm text-gray-600 mb-2">{log.details}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{log.details}</p>
                     )}
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       {log.userId && (
                         <span>User: {log.userId}</span>
                       )}
@@ -256,8 +256,8 @@ const LogsPage = () => {
         {filteredLogs.length === 0 && (
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
-              <div className="text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <div className="text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-muted" />
                 <h3 className="text-lg font-medium mb-2">No logs found</h3>
                 <p>Try adjusting your search or filter criteria</p>
               </div>
@@ -269,34 +269,34 @@ const LogsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-blue-600 mb-2">
+              <div className="font-semibold text-primary mb-2">
                 {mockLogs.filter(log => log.level === "info").length}
               </div>
-              <p className="text-sm text-gray-600">Info Logs</p>
+              <p className="text-sm text-muted-foreground">Info Logs</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-yellow-600 mb-2">
+              <div className="font-semibold text-warning mb-2">
                 {mockLogs.filter(log => log.level === "warning").length}
               </div>
-              <p className="text-sm text-gray-600">Warnings</p>
+              <p className="text-sm text-muted-foreground">Warnings</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-red-600 mb-2">
+              <div className="font-semibold text-destructive mb-2">
                 {mockLogs.filter(log => log.level === "error").length}
               </div>
-              <p className="text-sm text-gray-600">Errors</p>
+              <p className="text-sm text-muted-foreground">Errors</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-green-600 mb-2">
+              <div className="font-semibold text-success mb-2">
                 {mockLogs.filter(log => log.level === "success").length}
               </div>
-              <p className="text-sm text-gray-600">Success</p>
+              <p className="text-sm text-muted-foreground">Success</p>
             </CardContent>
           </Card>
         </div>

@@ -86,13 +86,13 @@ const RefundsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      completed: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      processing: "bg-blue-100 text-blue-800 border-blue-200",
-      failed: "bg-red-100 text-red-800 border-red-200",
-      cancelled: "bg-gray-100 text-gray-800 border-gray-200",
+      completed: "bg-success/10 text-success border-success/20",
+      pending: "bg-warning/10 text-warning border-warning/20",
+      processing: "bg-primary/10 text-primary border-primary/20",
+      failed: "bg-destructive/10 text-destructive border-destructive/20",
+      cancelled: "bg-muted text-muted-foreground border-border",
     };
-    return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status] || "bg-muted text-muted-foreground border-border";
   };
 
   const filteredRefunds = refunds.filter((r) => {
@@ -115,7 +115,7 @@ const RefundsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Refunds</h1>
-            <p className="text-gray-600">Manage event refunds and cancellations</p>
+            <p className="text-muted-foreground">Manage event refunds and cancellations</p>
           </div>
           <Button onClick={() => navigate("/admin/finance/refunds/create")}>
             <Plus className="h-4 w-4 mr-2" />
@@ -128,15 +128,15 @@ const RefundsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Total Refunded</div>
-                <div className="font-semibold text-red-600">
+                <div className="text-sm text-muted-foreground">Total Refunded</div>
+                <div className="font-semibold text-destructive">
                   {formatCurrency(summary.totalRefunded)}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Platform Fee Refunded</div>
+                <div className="text-sm text-muted-foreground">Platform Fee Refunded</div>
                 <div className="font-semibold text-orange-600">
                   {formatCurrency(summary.totalPlatformFeeRefunded)}
                 </div>
@@ -144,13 +144,13 @@ const RefundsPage = () => {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Full Refunds</div>
+                <div className="text-sm text-muted-foreground">Full Refunds</div>
                 <div className="font-semibold">{summary.fullRefunds}</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-sm text-gray-600">Partial Refunds</div>
+                <div className="text-sm text-muted-foreground">Partial Refunds</div>
                 <div className="font-semibold">{summary.partialRefunds}</div>
               </CardContent>
             </Card>
@@ -168,7 +168,7 @@ const RefundsPage = () => {
                 className="flex-1"
               />
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search refunds..."
                   value={filters.search}
@@ -202,13 +202,13 @@ const RefundsPage = () => {
           </CardHeader>
           <CardContent>
             {!filters.eventId ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 Please enter an Event ID to view refunds
               </div>
             ) : loading ? (
               <div className="text-center py-8">Loading...</div>
             ) : filteredRefunds.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No refunds found</div>
+              <div className="text-center py-8 text-muted-foreground">No refunds found</div>
             ) : (
               <Table>
                 <TableHeader>
@@ -234,14 +234,14 @@ const RefundsPage = () => {
                         <Badge
                           className={
                             r.refundType === "full"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-purple-100 text-purple-800"
+                              ? "bg-primary/10 text-primary"
+                              : "bg-purple-500/10 text-purple-600"
                           }
                         >
                           {r.refundType}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-semibold text-red-600">
+                      <TableCell className="font-semibold text-destructive">
                         {formatCurrency(r.refundAmount, r.currency)}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">{r.refundReason}</TableCell>

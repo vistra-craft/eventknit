@@ -410,7 +410,7 @@ const UpcomingEventsPage = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
+                      <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
                       <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
                         Active
                       </Badge>
@@ -567,8 +567,8 @@ const UpcomingEventsPage = () => {
         {filteredEvents.length === 0 && (
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
-              <div className="text-gray-500">
-                <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <div className="text-muted-foreground">
+                <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-medium mb-2">No upcoming events found</h3>
                 <p>Try adjusting your search or filter criteria</p>
               </div>

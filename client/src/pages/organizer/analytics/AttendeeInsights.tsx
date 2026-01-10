@@ -205,13 +205,13 @@ const AttendeeInsights = () => {
                     </p>
                     <div className="flex items-center">
                       {stat.changeType === "positive" ? (
-                        <ArrowUpRight className="h-3 w-3 text-green-600 mr-1" />
+                        <ArrowUpRight className="h-3 w-3 text-success mr-1" />
                       ) : (
-                        <ArrowDownRight className="h-3 w-3 text-red-600 mr-1" />
+                        <ArrowDownRight className="h-3 w-3 text-destructive mr-1" />
                       )}
                       <span
                         className={`text-xs font-medium ${
-                          stat.changeType === "positive" ? "text-green-600" : "text-red-600"
+                          stat.changeType === "positive" ? "text-success" : "text-destructive"
                         }`}
                       >
                         {stat.change}

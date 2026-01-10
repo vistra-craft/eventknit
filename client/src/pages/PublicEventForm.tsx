@@ -100,10 +100,10 @@ const PublicEventForm = () => {
 
   const getTemplateColor = (type: string) => {
     switch (type) {
-      case 'attendee': return 'bg-blue-100 text-blue-800';
+      case 'attendee': return 'bg-primary/10 text-primary';
       case 'speaker': return 'bg-purple-100 text-purple-800';
-      case 'exhibitor': return 'bg-green-100 text-green-800';
-      case 'sponsor': return 'bg-yellow-100 text-yellow-800';
+      case 'exhibitor': return 'bg-success/10 text-success';
+      case 'sponsor': return 'bg-warning/10 text-warning';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -265,8 +265,8 @@ const PublicEventForm = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-success" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Registration Successful!</h2>
             <p className="text-muted-foreground mb-6">
@@ -360,11 +360,11 @@ const PublicEventForm = () => {
                     <div key={field.id} className="space-y-2">
                       <Label htmlFor={field.id} className="flex items-center gap-2">
                         {field.label}
-                        {field.required && <span className="text-red-500">*</span>}
+                        {field.required && <span className="text-destructive">*</span>}
                       </Label>
                       {renderField(field)}
                       {errors[field.id] && (
-                        <p className="text-sm text-red-500">{errors[field.id]}</p>
+                        <p className="text-sm text-destructive">{errors[field.id]}</p>
                       )}
                       {field.description && (
                         <p className="text-sm text-muted-foreground">{field.description}</p>

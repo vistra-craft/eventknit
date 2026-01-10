@@ -73,7 +73,7 @@ const SupportDashboard = () => {
   const getEventStatusBadge = (status: string) => {
     switch (status) {
       case 'APPROVED':
-        return <Badge className="bg-green-500">Active</Badge>;
+        return <Badge className="bg-success/50">Active</Badge>;
       case 'PENDING':
         return <Badge variant="outline">Pending</Badge>;
       case 'CANCELLED':
@@ -96,7 +96,7 @@ const SupportDashboard = () => {
       {/* Header */}
       <div>
         <h1 className="text-base font-semibold text-foreground">Support Dashboard</h1>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Manage support requests and view your assigned events
         </p>
       </div>

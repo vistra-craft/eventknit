@@ -259,7 +259,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
                       </Badge>
                     )}
                     {isComplete && (
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <CheckCircle2 className="w-4 h-4 text-success" />
                     )}
                   </div>
 

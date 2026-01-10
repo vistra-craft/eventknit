@@ -284,7 +284,7 @@ const UserRolesPage = () => {
                 const colors: Record<UserRoleEnum, string> = {
                   [UserRoleEnum.SUPERADMIN]: "bg-destructive/10 text-destructive",
                   [UserRoleEnum.ADMIN_STAFF]: "bg-primary/10 text-primary",
-                  [UserRoleEnum.MARKETER]: "bg-accent-coral/10 text-accent-coral",
+                  [UserRoleEnum.MARKETER]: "bg-purple-500/10 text-purple-600",
                   [UserRoleEnum.SUPPORT]: "bg-secondary/10 text-secondary",
                   [UserRoleEnum.TELLER]: "bg-success/10 text-success",
                   [UserRoleEnum.ORGANIZER]: "bg-warning/10 text-warning",

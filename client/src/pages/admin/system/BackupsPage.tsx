@@ -115,35 +115,35 @@ const BackupsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      completed: "bg-green-100 text-green-800 border-green-200",
-      in_progress: "bg-blue-100 text-blue-800 border-blue-200",
-      failed: "bg-red-100 text-red-800 border-red-200",
-      scheduled: "bg-yellow-100 text-yellow-800 border-yellow-200"
+      completed: "bg-success/10 text-success border-success/20",
+      in_progress: "bg-primary/10 text-primary border-primary/20",
+      failed: "bg-destructive/10 text-destructive border-destructive/20",
+      scheduled: "bg-warning/10 text-warning border-warning/20"
     };
-    return variants[status as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeBadge = (type: string) => {
     const variants = {
       full: "bg-purple-100 text-purple-800 border-purple-200",
-      incremental: "bg-blue-100 text-blue-800 border-blue-200",
+      incremental: "bg-primary/10 text-primary border-primary/20",
       differential: "bg-orange-100 text-orange-800 border-orange-200"
     };
-    return variants[type as keyof typeof variants] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[type as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-success" />;
       case "in_progress":
-        return <Clock className="h-4 w-4 text-blue-600" />;
+        return <Clock className="h-4 w-4 text-primary" />;
       case "failed":
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+        return <AlertTriangle className="h-4 w-4 text-destructive" />;
       case "scheduled":
-        return <Calendar className="h-4 w-4 text-yellow-600" />;
+        return <Calendar className="h-4 w-4 text-warning" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -158,7 +158,7 @@ const BackupsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Backup Management</h1>
-            <p className="text-gray-600">Manage database backups and restore operations</p>
+            <p className="text-muted-foreground">Manage database backups and restore operations</p>
           </div>
           <div className="flex items-center gap-3">
             <Button 
@@ -181,34 +181,34 @@ const BackupsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-green-600 mb-2">
+              <div className="font-semibold text-success mb-2">
                 {mockBackups.filter(b => b.status === "completed").length}
               </div>
-              <p className="text-sm text-gray-600">Completed</p>
+              <p className="text-sm text-muted-foreground">Completed</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-blue-600 mb-2">
+              <div className="font-semibold text-primary mb-2">
                 {mockBackups.filter(b => b.status === "in_progress").length}
               </div>
-              <p className="text-sm text-gray-600">In Progress</p>
+              <p className="text-sm text-muted-foreground">In Progress</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-red-600 mb-2">
+              <div className="font-semibold text-destructive mb-2">
                 {mockBackups.filter(b => b.status === "failed").length}
               </div>
-              <p className="text-sm text-gray-600">Failed</p>
+              <p className="text-sm text-muted-foreground">Failed</p>
             </CardContent>
           </Card>
           <Card className="border-border bg-card">
             <CardContent className="p-6 text-center">
-              <div className="font-semibold text-yellow-600 mb-2">
+              <div className="font-semibold text-warning mb-2">
                 {mockBackups.filter(b => b.status === "scheduled").length}
               </div>
-              <p className="text-sm text-gray-600">Scheduled</p>
+              <p className="text-sm text-muted-foreground">Scheduled</p>
             </CardContent>
           </Card>
         </div>
@@ -270,7 +270,7 @@ const BackupsPage = () => {
                         {backup.type}
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-2">
                       <div className="flex items-center gap-1">
                         <HardDrive className="h-4 w-4" />
                         <span>{backup.size}</span>
@@ -290,10 +290,10 @@ const BackupsPage = () => {
                       </div>
                     </div>
                     {backup.description && (
-                      <p className="text-sm text-gray-600 mb-2">{backup.description}</p>
+                      <p className="text-sm text-muted-foreground mb-2">{backup.description}</p>
                     )}
                     {backup.completedAt && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         Completed: {formatDate(backup.completedAt)}
                       </p>
                     )}
@@ -330,8 +330,8 @@ const BackupsPage = () => {
         {filteredBackups.length === 0 && (
           <Card className="border-border bg-card">
             <CardContent className="p-8 text-center">
-              <div className="text-gray-500">
-                <HardDrive className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <div className="text-muted-foreground">
+                <HardDrive className="h-12 w-12 mx-auto mb-4 text-muted" />
                 <h3 className="text-lg font-medium mb-2">No backups found</h3>
                 <p>Try adjusting your search or filter criteria</p>
               </div>
@@ -351,7 +351,7 @@ const BackupsPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Create a complete backup of the entire database
                 </p>
                 <Button className="w-full">
@@ -369,7 +369,7 @@ const BackupsPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Restore database from a previous backup
                 </p>
                 <Button variant="outline" className="w-full">
@@ -387,7 +387,7 @@ const BackupsPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Set up automated backup schedules
                 </p>
                 <Button variant="outline" className="w-full">

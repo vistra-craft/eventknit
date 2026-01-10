@@ -250,11 +250,11 @@ const OrganizersContent = () => {
           </Select>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="hover:bg-primary  transition-colors">
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="hover:bg-primary  transition-colors">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -356,7 +356,7 @@ const OrganizersContent = () => {
               {filteredOrganizers.map((organizer) => (
                 <div
                   key={organizer.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <Avatar
@@ -394,7 +394,6 @@ const OrganizersContent = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => navigate(`/admin/users/organizers/${organizer.id}/preview`)}
-                        className="hover:bg-gray-900 hover:text-white transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
@@ -404,7 +403,6 @@ const OrganizersContent = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditOrganizer(organizer.id)}
-                          className="hover:bg-gray-900 hover:text-white transition-colors"
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
@@ -415,7 +413,7 @@ const OrganizersContent = () => {
                           size="sm"
                           disabled
                           title="You do not have permission to modify organizer accounts"
-                          className="hover:bg-gray-900 hover:text-white transition-colors"
+                          className="hover:bg-primary  transition-colors"
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit

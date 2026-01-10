@@ -78,32 +78,32 @@ const FinanceDashboard = () => {
   const getStatusBadge = (status: string) => {
     const normalizedStatus = status.toLowerCase();
     const variants: Record<string, string> = {
-      completed: "bg-green-100 text-green-800 border-green-200",
-      received: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      cancelled: "bg-red-100 text-red-800 border-red-200"
+      completed: "bg-success/10 text-success border-success/20",
+      received: "bg-success/10 text-success border-success/20",
+      pending: "bg-warning/10 text-warning border-warning/20",
+      cancelled: "bg-destructive/10 text-destructive border-destructive/20"
     };
-    return variants[normalizedStatus] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[normalizedStatus] || "bg-muted text-muted-foreground border-border";
   };
 
   const getTypeBadge = (type: string) => {
     return type === "income"
-      ? "bg-green-100 text-green-800 border-green-200"
-      : "bg-red-100 text-red-800 border-red-200";
+      ? "bg-success/10 text-success border-success/20"
+      : "bg-destructive/10 text-destructive border-destructive/20";
   };
 
   const getPaymentMethodBadge = (method?: string) => {
-    if (!method) return "bg-gray-100 text-gray-800 border-gray-200";
+    if (!method) return "bg-muted text-muted-foreground border-border";
     const normalizedMethod = method.toLowerCase();
     const variants: Record<string, string> = {
-      cash: "bg-gray-100 text-gray-800 border-gray-200",
-      bank_transfer: "bg-blue-100 text-blue-800 border-blue-200",
-      credit_card: "bg-purple-100 text-purple-800 border-purple-200",
-      check: "bg-orange-100 text-orange-800 border-orange-200",
-      mobile_money: "bg-teal-100 text-teal-800 border-teal-200",
-      mpesa: "bg-green-100 text-green-800 border-green-200"
+      cash: "bg-muted text-muted-foreground border-border",
+      bank_transfer: "bg-primary/10 text-primary border-primary/20",
+      credit_card: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+      check: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+      mobile_money: "bg-teal-500/10 text-teal-600 border-teal-500/20",
+      mpesa: "bg-success/10 text-success border-success/20"
     };
-    return variants[normalizedMethod] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[normalizedMethod] || "bg-muted text-muted-foreground border-border";
   };
 
   const formatCurrency = (amount: number) => {
@@ -155,7 +155,7 @@ const FinanceDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Finance Dashboard</h1>
-            <p className="text-gray-600">Track income, expenses, and financial performance</p>
+            <p className="text-muted-foreground">Track income, expenses, and financial performance</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => navigate('/admin/finance/expenses/new')}>
@@ -174,15 +174,15 @@ const FinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-green-100">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
+                <div className="p-3 rounded-lg bg-success/10">
+                  <TrendingUp className="h-6 w-6 text-success" />
                 </div>
-                <span className="text-green-600 text-sm font-medium">{summary?.incomeCount || 0} entries</span>
+                <span className="text-success text-sm font-medium">{summary?.incomeCount || 0} entries</span>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Total Income</h3>
-                <p className="font-semibold text-green-600">{formatCurrency(totalIncome)}</p>
-                <p className="text-sm text-gray-600">All time</p>
+                <p className="font-semibold text-success">{formatCurrency(totalIncome)}</p>
+                <p className="text-sm text-muted-foreground">All time</p>
               </div>
             </CardContent>
           </Card>
@@ -190,15 +190,15 @@ const FinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-red-100">
-                  <TrendingDown className="h-6 w-6 text-red-600" />
+                <div className="p-3 rounded-lg bg-destructive/10">
+                  <TrendingDown className="h-6 w-6 text-destructive" />
                 </div>
-                <span className="text-red-600 text-sm font-medium">{summary?.expenseCount || 0} entries</span>
+                <span className="text-destructive text-sm font-medium">{summary?.expenseCount || 0} entries</span>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Total Expenses</h3>
-                <p className="font-semibold text-red-600">{formatCurrency(totalExpenses)}</p>
-                <p className="text-sm text-gray-600">All time</p>
+                <p className="font-semibold text-destructive">{formatCurrency(totalExpenses)}</p>
+                <p className="text-sm text-muted-foreground">All time</p>
               </div>
             </CardContent>
           </Card>
@@ -206,19 +206,19 @@ const FinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-blue-100">
-                  <DollarSign className="h-6 w-6 text-blue-600" />
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <DollarSign className="h-6 w-6 text-primary" />
                 </div>
-                <span className={`text-sm font-medium ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-sm font-medium ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {netProfit >= 0 ? 'Profit' : 'Loss'}
                 </span>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Net Profit</h3>
-                <p className={`font-semibold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`font-semibold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {formatCurrency(netProfit)}
                 </p>
-                <p className="text-sm text-gray-600">All time</p>
+                <p className="text-sm text-muted-foreground">All time</p>
               </div>
             </CardContent>
           </Card>
@@ -236,7 +236,7 @@ const FinanceDashboard = () => {
                 <p className="font-semibold text-purple-600">
                   {formatCurrency(pendingAmount)}
                 </p>
-                <p className="text-sm text-gray-600">Awaiting processing</p>
+                <p className="text-sm text-muted-foreground">Awaiting processing</p>
               </div>
             </CardContent>
           </Card>
@@ -248,7 +248,7 @@ const FinanceDashboard = () => {
             <h2 className="text-base font-semibold text-foreground">Recent Transactions</h2>
             <div className="flex items-center gap-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search transactions..."
                   value={searchTerm}
@@ -298,11 +298,11 @@ const FinanceDashboard = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className={`p-2 rounded-lg ${transaction.type === "income" ? "bg-green-100" : "bg-red-100"}`}>
+                          <div className={`p-2 rounded-lg ${transaction.type === "income" ? "bg-success/10" : "bg-destructive/10"}`}>
                             {transaction.type === "income" ? (
-                              <TrendingUp className="h-5 w-5 text-green-600" />
+                              <TrendingUp className="h-5 w-5 text-success" />
                             ) : (
-                              <TrendingDown className="h-5 w-5 text-red-600" />
+                              <TrendingDown className="h-5 w-5 text-destructive" />
                             )}
                           </div>
                           <h3 className="text-lg font-semibold text-foreground">{transaction.description}</h3>
@@ -318,7 +318,7 @@ const FinanceDashboard = () => {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                           <span className="font-medium">{transaction.category}</span>
                           {transaction.source && (
                             <span>From: {transaction.source}</span>
@@ -330,7 +330,7 @@ const FinanceDashboard = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`font-semibold ${transaction.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                        <p className={`font-semibold ${transaction.type === "income" ? "text-success" : "text-destructive"}`}>
                           {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
                         </p>
                       </div>

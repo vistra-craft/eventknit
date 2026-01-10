@@ -121,23 +121,23 @@ const PartnershipDetailsPage = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'sponsor': return 'bg-yellow-100 text-yellow-800';
-      case 'venue': return 'bg-green-100 text-green-800';
-      case 'media': return 'bg-blue-100 text-blue-800';
+      case 'sponsor': return 'bg-warning/10 text-warning';
+      case 'venue': return 'bg-success/10 text-success';
+      case 'media': return 'bg-primary/10 text-primary';
       case 'vendor': return 'bg-purple-100 text-purple-800';
       case 'influencer': return 'bg-pink-100 text-pink-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'expired': return 'bg-red-100 text-red-800';
-      case 'negotiating': return 'bg-blue-100 text-blue-800';
+      case 'active': return 'bg-success/10 text-success';
+      case 'pending': return 'bg-warning/10 text-warning';
+      case 'expired': return 'bg-destructive/10 text-destructive';
+      case 'negotiating': return 'bg-primary/10 text-primary';
       case 'pending_approval': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -276,7 +276,7 @@ Generated on: ${new Date().toLocaleDateString()}
             <BackButton to="/admin/marketing/partnerships" label="Back to Partnerships" />
             <div>
               <h1 className="text-lg font-semibold text-foreground">Partnership Details</h1>
-              <p className="text-gray-600">View and manage partnership information</p>
+              <p className="text-muted-foreground">View and manage partnership information</p>
             </div>
           </div>
           
@@ -299,14 +299,14 @@ Generated on: ${new Date().toLocaleDateString()}
         </div>
 
         {/* Document Header */}
-        <div className="text-center mb-8 pb-6 border-b border-gray-200">
+        <div className="text-center mb-8 pb-6 border-b border-border">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-20 h-20 bg-eventknit rounded-xl flex items-center justify-center text-eventknit-foreground font-bold text-2xl shadow-lg">
+            <div className="w-20 h-20 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-2xl shadow-lg">
               EK
             </div>
           </div>
-          <h1 className="text-lg font-semibold text-foreground mb-2"><span className="text-eventknit">EventKnit</span></h1>
-          <p className="text-gray-600 text-lg mb-4">Connecting Events, Creating Opportunities</p>
+          <h1 className="text-lg font-semibold text-foreground mb-2"><span className="text-primary">EventKnit</span></h1>
+          <p className="text-muted-foreground text-lg mb-4">Connecting Events, Creating Opportunities</p>
           <div className="flex items-center justify-center space-x-4">
             <Badge className={`text-lg px-4 py-2 ${getTypeColor(partnership.type)}`}>
               {partnership.type.toUpperCase()} PARTNERSHIP AGREEMENT
@@ -332,15 +332,15 @@ Generated on: ${new Date().toLocaleDateString()}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Partnership Name</label>
+                  <label className="text-sm font-medium text-foreground">Partnership Name</label>
                   <p className="text-lg font-semibold text-foreground">{partnership.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Organizer</label>
+                  <label className="text-sm font-medium text-foreground">Organizer</label>
                   <p className="text-lg font-semibold text-foreground">{partnership.organizer}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Partnership Type</label>
+                  <label className="text-sm font-medium text-foreground">Partnership Type</label>
                   <div className="flex items-center space-x-2 mt-1">
                     <Badge className={`${getTypeColor(partnership.type)} flex items-center space-x-1`}>
                       {getTypeIcon(partnership.type)}
@@ -349,36 +349,36 @@ Generated on: ${new Date().toLocaleDateString()}
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Partnership Value</label>
-                  <p className="font-semibold text-green-600">${partnership.value.toLocaleString()}</p>
+                  <label className="text-sm font-medium text-foreground">Partnership Value</label>
+                  <p className="font-semibold text-success">${partnership.value.toLocaleString()}</p>
                 </div>
               </div>
               
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Contact Person</label>
+                  <label className="text-sm font-medium text-foreground">Contact Person</label>
                   <p className="text-lg font-semibold text-foreground">{partnership.contactPerson}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Email Address</label>
-                  <p className="text-lg font-semibold text-blue-600">{partnership.email}</p>
+                  <label className="text-sm font-medium text-foreground">Email Address</label>
+                  <p className="text-lg font-semibold text-primary">{partnership.email}</p>
                 </div>
                 {partnership.phone && (
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                    <label className="text-sm font-medium text-foreground">Phone Number</label>
                     <p className="text-lg font-semibold text-foreground">{partnership.phone}</p>
                   </div>
                 )}
                 {partnership.location && (
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Location</label>
+                    <label className="text-sm font-medium text-foreground">Location</label>
                     <p className="text-lg font-semibold text-foreground">{partnership.location}</p>
                   </div>
                 )}
                 {partnership.website && (
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Website</label>
-                    <p className="text-lg font-semibold text-blue-600">{partnership.website}</p>
+                    <label className="text-sm font-medium text-foreground">Website</label>
+                    <p className="text-lg font-semibold text-primary">{partnership.website}</p>
                   </div>
                 )}
               </div>
@@ -397,26 +397,26 @@ Generated on: ${new Date().toLocaleDateString()}
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Start Date</label>
+                <label className="text-sm font-medium text-foreground">Start Date</label>
                 <p className="text-lg font-semibold text-foreground">{new Date(partnership.startDate).toLocaleDateString()}</p>
               </div>
               {partnership.endDate && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">End Date</label>
+                  <label className="text-sm font-medium text-foreground">End Date</label>
                   <p className="text-lg font-semibold text-foreground">{new Date(partnership.endDate).toLocaleDateString()}</p>
                 </div>
               )}
               {partnership.rating && (
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Partnership Rating</label>
+                  <label className="text-sm font-medium text-foreground">Partnership Rating</label>
                   <div className="flex items-center space-x-1 mt-1">
                     {[...Array(5)].map((_, i) => (
                       <Star 
                         key={i} 
-                        className={`h-4 w-4 ${i < partnership.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                        className={`h-4 w-4 ${i < partnership.rating! ? 'text-yellow-400 fill-current' : 'text-muted-foreground'}`} 
                       />
                     ))}
-                    <span className="ml-2 text-sm text-gray-600">({partnership.rating}/5)</span>
+                    <span className="ml-2 text-sm text-muted-foreground">({partnership.rating}/5)</span>
                   </div>
                 </div>
               )}
@@ -430,7 +430,7 @@ Generated on: ${new Date().toLocaleDateString()}
             <CardTitle>Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 leading-relaxed">{partnership.description}</p>
+            <p className="text-foreground leading-relaxed">{partnership.description}</p>
           </CardContent>
         </Card>
 
@@ -440,7 +440,7 @@ Generated on: ${new Date().toLocaleDateString()}
             <CardTitle>Partnership Purpose</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 leading-relaxed">{partnership.purpose}</p>
+            <p className="text-foreground leading-relaxed">{partnership.purpose}</p>
           </CardContent>
         </Card>
 
@@ -453,8 +453,8 @@ Generated on: ${new Date().toLocaleDateString()}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {partnership.benefits.map((benefit, index) => (
                 <div key={index} className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-gray-700">{benefit}</span>
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  <span className="text-foreground">{benefit}</span>
                 </div>
               ))}
             </div>
@@ -470,8 +470,8 @@ Generated on: ${new Date().toLocaleDateString()}
             <div className="space-y-2">
               {partnership.events.map((event, index) => (
                 <div key={index} className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-blue-500" />
-                  <span className="text-gray-700">{event}</span>
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="text-foreground">{event}</span>
                 </div>
               ))}
             </div>
@@ -485,27 +485,27 @@ Generated on: ${new Date().toLocaleDateString()}
               <CardTitle>Additional Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 leading-relaxed">{partnership.notes}</p>
+              <p className="text-foreground leading-relaxed">{partnership.notes}</p>
             </CardContent>
           </Card>
         )}
 
         {/* Document Footer */}
-        <div className="text-center pt-8 border-t border-gray-200">
+        <div className="text-center pt-8 border-t border-border">
           <div className="space-y-4">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               <p>Document ID: {partnership.id}</p>
               <p>Generated on: {new Date().toLocaleDateString()}</p>
               <p>Terms Accepted: {partnership.acceptedTerms ? 'Yes' : 'No'}</p>
             </div>
             <div className="flex items-center justify-center space-x-8">
               <div className="text-center">
-                <div className="border-b border-gray-300 w-32 mb-2"></div>
-                <p className="text-sm text-gray-600"><span className="text-eventknit">EventKnit</span> Representative</p>
+                <div className="border-b border-border w-32 mb-2"></div>
+                <p className="text-sm text-muted-foreground"><span className="text-primary">EventKnit</span> Representative</p>
               </div>
               <div className="text-center">
-                <div className="border-b border-gray-300 w-32 mb-2"></div>
-                <p className="text-sm text-gray-600">{partnership.contactPerson}</p>
+                <div className="border-b border-border w-32 mb-2"></div>
+                <p className="text-sm text-muted-foreground">{partnership.contactPerson}</p>
               </div>
             </div>
           </div>

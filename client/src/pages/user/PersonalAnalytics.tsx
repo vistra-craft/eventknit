@@ -140,8 +140,8 @@ const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: DollarSign,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-100",
+      color: "text-success",
+      bgColor: "bg-success/10",
     },
   ];
 

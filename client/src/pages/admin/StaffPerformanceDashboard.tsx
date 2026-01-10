@@ -81,8 +81,8 @@ const StaffPerformanceDashboard = () => {
 
   const getPerformanceBadge = (metrics: StaffPerformanceMetrics) => {
     const score = metrics.totalScans + metrics.eventsCompleted * 10;
-    if (score >= 100) return <Badge className="bg-green-500">Top Performer</Badge>;
-    if (score >= 50) return <Badge className="bg-blue-500">Good</Badge>;
+    if (score >= 100) return <Badge className="bg-success/50">Top Performer</Badge>;
+    if (score >= 50) return <Badge className="bg-primary/50">Good</Badge>;
     if (score >= 20) return <Badge variant="outline">Average</Badge>;
     return <Badge variant="outline" className="text-muted-foreground">New</Badge>;
   };
@@ -106,7 +106,7 @@ const StaffPerformanceDashboard = () => {
             <h1 className="text-base font-semibold text-foreground">
               Staff Performance Dashboard
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Track and analyze staff performance metrics
             </p>
           </div>

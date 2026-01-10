@@ -292,13 +292,13 @@ const FinancialManagement = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Platform Fees</span>
-                      <span className="text-red-600">
+                      <span className="text-destructive">
                         -{formatCurrency(profitLoss.revenue.platformFees)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
                       <span className="font-semibold">Net Revenue</span>
-                      <span className="font-bold text-green-600">
+                      <span className="font-bold text-success">
                         {formatCurrency(profitLoss.revenue.net)}
                       </span>
                     </div>
@@ -312,7 +312,7 @@ const FinancialManagement = () => {
                   <CardContent className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Total Expenses</span>
-                      <span className="font-semibold text-red-600">
+                      <span className="font-semibold text-destructive">
                         -{formatCurrency(profitLoss.expenses.total)}
                       </span>
                     </div>
@@ -336,8 +336,8 @@ const FinancialManagement = () => {
                         <p
                           className={`text-3xl font-bold ${
                             profitLoss.profit.amount >= 0
-                              ? "text-green-600"
-                              : "text-red-600"
+                              ? "text-success"
+                              : "text-destructive"
                           }`}
                         >
                           {formatCurrency(profitLoss.profit.amount)}
@@ -347,9 +347,9 @@ const FinancialManagement = () => {
                         </p>
                       </div>
                       {profitLoss.profit.amount >= 0 ? (
-                        <TrendingUp className="h-12 w-12 text-green-600" />
+                        <TrendingUp className="h-12 w-12 text-success" />
                       ) : (
-                        <TrendingDown className="h-12 w-12 text-red-600" />
+                        <TrendingDown className="h-12 w-12 text-destructive" />
                       )}
                     </div>
                   </CardContent>

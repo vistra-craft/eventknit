@@ -125,13 +125,13 @@ const ServicePointEvents: React.FC = () => {
   const getStatusColor = (status: "upcoming" | "ongoing" | "completed") => {
     switch (status) {
       case "upcoming":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-primary/10 text-primary border-primary";
       case "ongoing":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-success/10 text-success border-success";
       case "completed":
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-gray-800 border-gray-200";
     }
   };
 
@@ -242,7 +242,7 @@ const ServicePointEvents: React.FC = () => {
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as EventStatusFilter)}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="all">All ({statusCounts.all})</TabsTrigger>
-              <TabsTrigger value="live" className="text-green-700">
+              <TabsTrigger value="live" className="text-success">
                 Live ({statusCounts.live})
               </TabsTrigger>
               <TabsTrigger value="upcoming">Upcoming ({statusCounts.upcoming})</TabsTrigger>

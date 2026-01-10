@@ -161,7 +161,7 @@ const CreateOrganizerModal = ({ open, onOpenChange, onSuccess }: CreateOrganizer
               required
               minLength={8}
             />
-            <p className="text-xs text-gray-500">Minimum 8 characters</p>
+            <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
           </div>
 
           <div className="space-y-2">

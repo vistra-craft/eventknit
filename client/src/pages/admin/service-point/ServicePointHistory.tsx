@@ -275,8 +275,8 @@ const ServicePointHistory: React.FC = () => {
 
   const getStatusColor = (isValid: boolean) => {
     return isValid 
-      ? "bg-green-100 text-green-800 border-green-200"
-      : "bg-red-100 text-red-800 border-red-200";
+      ? "bg-success/10 text-success border-success"
+      : "bg-destructive/10 text-destructive border-destructive";
   };
 
   const getStatusIcon = (isValid: boolean) => {
@@ -288,14 +288,14 @@ const ServicePointHistory: React.FC = () => {
   const getScanTypeColor = (scanType: ScanType) => {
     switch (scanType) {
       case ScanType.CHECK_IN:
-        return "bg-blue-100 text-blue-800";
+        return "bg-primary/10 text-primary";
       case ScanType.CHECK_OUT:
         return "bg-purple-100 text-purple-800";
       case ScanType.MANUAL_CHECK_IN:
       case ScanType.MANUAL_CHECK_OUT:
         return "bg-orange-100 text-orange-800";
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+        return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-200";
     }
   };
 
@@ -445,9 +445,9 @@ const ServicePointHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Valid Scans</p>
-                      <p className="font-semibold text-green-600">{stats.approvedScans}</p>
+                      <p className="font-semibold text-success">{stats.approvedScans}</p>
                     </div>
-                    <CheckCircle className="h-8 w-8 text-green-600" />
+                    <CheckCircle className="h-8 w-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -457,9 +457,9 @@ const ServicePointHistory: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Invalid Scans</p>
-                      <p className="font-semibold text-red-600">{stats.rejectedScans}</p>
+                      <p className="font-semibold text-destructive">{stats.rejectedScans}</p>
                     </div>
-                    <XCircle className="h-8 w-8 text-red-600" />
+                    <XCircle className="h-8 w-8 text-destructive" />
                   </div>
                 </CardContent>
               </Card>
@@ -592,11 +592,11 @@ const ServicePointHistory: React.FC = () => {
                                     {getSessionIconFromName(scan.session || '')}
                                     <span className="text-xs text-gray-500">{scan.session || 'Unknown'}</span>
                                   </div>
-                                  <span className="text-xs text-gray-400">•</span>
+                                  <span className="text-xs text-muted-foreground">•</span>
                                   <span className="text-xs text-gray-500">{scan.scannedBy}</span>
                                   {scan.isReEntry && (
                                     <>
-                                      <span className="text-xs text-gray-400">•</span>
+                                      <span className="text-xs text-muted-foreground">•</span>
                                       <Badge variant="secondary" className="text-xs">Re-entry</Badge>
                                     </>
                                   )}
@@ -770,8 +770,8 @@ const ServicePointHistory: React.FC = () => {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="text-center">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Zap className="w-8 h-8 text-green-600" />
+                        <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Zap className="w-8 h-8 text-success" />
                         </div>
                         <h3 className="font-semibold text-foreground">
                           {stats.totalScans > 0 ? Math.round((stats.approvedScans / stats.totalScans) * 100) : 0}%

@@ -831,7 +831,7 @@ const CommunicationsPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Search announcements..."
                         value={searchTerm}
@@ -915,7 +915,7 @@ const CommunicationsPage = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{announcement.content}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span>Views: {announcement.views.toLocaleString()}</span>
                           <span>Created: {formatDate(announcement.createdAt)}</span>
                           {announcement.scheduledAt && (
@@ -992,7 +992,7 @@ const CommunicationsPage = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mb-3">{notification.message}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span>Views: {notification.views.toLocaleString()}</span>
                           <span>Clicks: {notification.clicks.toLocaleString()}</span>
                           <span>Start: {formatDate(notification.startDate)}</span>
@@ -1062,7 +1062,7 @@ const CommunicationsPage = () => {
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{template.description || 'No description'}</p>
                         <p className="text-sm font-medium text-foreground mb-3">Subject: {template.subject || 'No subject'}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span>Usage: {template.usageCount.toLocaleString()}</span>
                           <span>Updated: {formatDate(template.updatedAt)}</span>
                           <span>Created: {formatDate(template.createdAt)}</span>
@@ -1143,7 +1143,7 @@ const CommunicationsPage = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{message.content}</p>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>Recipients: {message.totalRecipients.toLocaleString()}</span>
                             <span>Sent: {message.sentCount.toLocaleString()}</span>
                             {message.failedCount > 0 && (
@@ -1439,14 +1439,14 @@ const CommunicationsPage = () => {
                   rows={12}
                   className="font-mono text-sm"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Use variables like {`{{user_name}}`}, {`{{event_title}}`}, etc. for dynamic content
                 </p>
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="template-active">Active Status</Label>
-                  <p className="text-xs text-gray-500">Enable or disable this template</p>
+                  <p className="text-xs text-muted-foreground">Enable or disable this template</p>
                 </div>
                 <Switch
                   id="template-active"
@@ -1490,7 +1490,7 @@ const CommunicationsPage = () => {
                 <div className="prose max-w-none">
                   <p className="whitespace-pre-wrap">{viewingAnnouncement.content}</p>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   <p>Created: {formatDate(viewingAnnouncement.createdAt)}</p>
                   <p>Views: {viewingAnnouncement.views.toLocaleString()}</p>
                   {viewingAnnouncement.scheduledAt && (
@@ -1527,7 +1527,7 @@ const CommunicationsPage = () => {
                 <div className="prose max-w-none">
                   <p className="whitespace-pre-wrap">{viewingNotification.message}</p>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   <p>Created: {formatDate(viewingNotification.createdAt)}</p>
                   <p>Views: {viewingNotification.views.toLocaleString()}</p>
                   <p>Clicks: {viewingNotification.clicks.toLocaleString()}</p>
@@ -1562,7 +1562,7 @@ const CommunicationsPage = () => {
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Subject:</h4>
-                  <p className="text-sm bg-gray-50 p-2 rounded">{viewingTemplate.subject || 'No subject'}</p>
+                  <p className="text-sm bg-muted p-2 rounded">{viewingTemplate.subject || 'No subject'}</p>
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Description:</h4>
@@ -1571,11 +1571,11 @@ const CommunicationsPage = () => {
                 <div>
                   <h4 className="font-medium mb-2">Email Content Preview:</h4>
                   <div
-                    className="border rounded p-4 max-h-96 overflow-y-auto text-sm bg-white"
+                    className="border rounded p-4 max-h-96 overflow-y-auto text-sm bg-background"
                     dangerouslySetInnerHTML={{ __html: viewingTemplate.htmlContent }}
                   />
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   <p>Created: {formatDate(viewingTemplate.createdAt)}</p>
                   <p>Last Updated: {formatDate(viewingTemplate.updatedAt)}</p>
                   <p>Usage: {viewingTemplate.usageCount.toLocaleString()} times</p>
@@ -1701,7 +1701,7 @@ const CommunicationsPage = () => {
                   value={bulkMessageForm.scheduledAt}
                   onChange={(e) => setBulkMessageForm(prev => ({ ...prev, scheduledAt: e.target.value }))}
                 />
-                <p className="text-xs text-gray-500 mt-1">Leave empty to send immediately</p>
+                <p className="text-xs text-muted-foreground mt-1">Leave empty to send immediately</p>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => { setShowBulkMessageForm(false); resetBulkMessageForm(); setEditingBulkMessage(null); }}>
@@ -1738,7 +1738,7 @@ const CommunicationsPage = () => {
                 <div className="prose max-w-none">
                   <p className="whitespace-pre-wrap">{viewingBulkMessage.content}</p>
                 </div>
-                <div className="text-sm text-gray-500 space-y-1">
+                <div className="text-sm text-muted-foreground space-y-1">
                   <p>Recipients: {viewingBulkMessage.totalRecipients.toLocaleString()}</p>
                   <p>Sent: {viewingBulkMessage.sentCount.toLocaleString()}</p>
                   {viewingBulkMessage.failedCount > 0 && (
@@ -1767,7 +1767,7 @@ const CommunicationsPage = () => {
         {/* Chat Modal */}
         {showChat && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[600px] flex flex-col scrollbar-hide">
+            <div className="bg-card rounded-lg shadow-xl w-full max-w-4xl h-[600px] flex flex-col scrollbar-hide">
               {/* Chat Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-3">
@@ -1804,7 +1804,7 @@ const CommunicationsPage = () => {
                     >
                       <p className="text-sm">{message.message}</p>
                       <p className={`text-xs mt-1 ${
-                        message.type === "sent" ? "text-primary-foreground/70" : "text-gray-500"
+                        message.type === "sent" ? "text-primary-foreground/70" : "text-muted-foreground"
                       }`}>
                         {message.sender} • {formatDate(message.timestamp)}
                       </p>

@@ -142,7 +142,7 @@ export const TicketSelectionStep = ({
                       <AlertCircle className="w-3 h-3" /> {availability.reason}
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-green-600">
+                    <span className="flex items-center gap-1 text-success">
                       <CheckCircle className="w-3 h-3" /> Available
                     </span>
                   )}

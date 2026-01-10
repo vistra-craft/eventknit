@@ -82,14 +82,14 @@ const IncomeStatementPage: React.FC = () => {
 
   const getTrendIcon = (value: number) => {
     return value >= 0 ? (
-      <TrendingUp className="h-4 w-4 text-emerald-600" />
+      <TrendingUp className="h-4 w-4 text-success" />
     ) : (
-      <TrendingDown className="h-4 w-4 text-red-500" />
+      <TrendingDown className="h-4 w-4 text-destructive" />
     );
   };
 
   const getTrendColor = (value: number) => {
-    return value >= 0 ? 'text-emerald-600' : 'text-red-500';
+    return value >= 0 ? 'text-success' : 'text-destructive';
   };
 
   return (
@@ -162,13 +162,13 @@ const IncomeStatementPage: React.FC = () => {
               <Card className="border-border bg-card hover:shadow-card transition-all duration-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 rounded-lg bg-emerald-50">
-                      <TrendingUp className="h-5 w-5 text-emerald-600" />
+                    <div className="p-2 rounded-lg bg-success/5">
+                      <TrendingUp className="h-5 w-5 text-success" />
                     </div>
-                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">+12.5%</Badge>
+                    <Badge className="bg-success/5 text-emerald-700 border-emerald-200">+12.5%</Badge>
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Revenue</h3>
-                  <p className="font-semibold text-emerald-600">
+                  <p className="font-semibold text-success">
                     {formatCurrency(incomeStatementData.revenue.totalRevenue)}
                   </p>
                 </CardContent>
@@ -177,13 +177,13 @@ const IncomeStatementPage: React.FC = () => {
               <Card className="border-border bg-card hover:shadow-card transition-all duration-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 rounded-lg bg-red-50">
-                      <TrendingDown className="h-5 w-5 text-red-500" />
+                    <div className="p-2 rounded-lg bg-destructive/5">
+                      <TrendingDown className="h-5 w-5 text-destructive" />
                     </div>
-                    <Badge className="bg-red-50 text-red-700 border-red-200">+8.2%</Badge>
+                    <Badge className="bg-destructive/5 text-destructive border-destructive">+8.2%</Badge>
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Expenses</h3>
-                  <p className="font-semibold text-red-500">
+                  <p className="font-semibold text-destructive">
                     {formatCurrency(incomeStatementData.expenses.totalExpenses)}
                   </p>
                 </CardContent>
@@ -192,25 +192,25 @@ const IncomeStatementPage: React.FC = () => {
               <Card className="border-border bg-card hover:shadow-card transition-all duration-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 rounded-lg bg-blue-50">
-                      <DollarSign className="h-5 w-5 text-blue-600" />
+                    <div className="p-2 rounded-lg bg-primary/5">
+                      <DollarSign className="h-5 w-5 text-primary" />
                     </div>
-                    <Badge className="bg-blue-50 text-blue-700 border-blue-200">+15.3%</Badge>
+                    <Badge className="bg-primary/5 text-primary border-primary">+15.3%</Badge>
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Gross Profit</h3>
-                  <p className="font-semibold text-blue-600">
+                  <p className="font-semibold text-primary">
                     {formatCurrency(incomeStatementData.grossProfit)}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className={`border-border bg-card hover:shadow-card transition-all duration-200 ${incomeStatementData.netIncome >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
+              <Card className={`border-border bg-card hover:shadow-card transition-all duration-200 ${incomeStatementData.netIncome >= 0 ? 'border-emerald-200' : 'border-destructive'}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div className={`p-2 rounded-lg ${incomeStatementData.netIncome >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                    <div className={`p-2 rounded-lg ${incomeStatementData.netIncome >= 0 ? 'bg-success/5' : 'bg-destructive/5'}`}>
                       {getTrendIcon(incomeStatementData.netIncome)}
                     </div>
-                    <Badge className={incomeStatementData.netIncome >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}>
+                    <Badge className={incomeStatementData.netIncome >= 0 ? 'bg-success/5 text-emerald-700 border-emerald-200' : 'bg-destructive/5 text-destructive border-destructive'}>
                       {incomeStatementData.netIncome >= 0 ? '+15.3%' : '-5.2%'}
                     </Badge>
                   </div>
@@ -242,7 +242,7 @@ const IncomeStatementPage: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-border">
                       {/* Revenue Section */}
-                      <tr className="bg-emerald-50/30">
+                      <tr className="bg-success/5/30">
                         <td className="py-4 px-6">
                           <div className="font-semibold text-emerald-700 text-lg">REVENUE</div>
                         </td>
@@ -252,7 +252,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Event Registration Fees</td>
-                        <td className="py-4 px-6 text-right font-medium text-emerald-600">
+                        <td className="py-4 px-6 text-right font-medium text-success">
                           {formatCurrency(incomeStatementData.revenue.eventRegistration)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -262,7 +262,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Subscription Revenue</td>
-                        <td className="py-4 px-6 text-right font-medium text-emerald-600">
+                        <td className="py-4 px-6 text-right font-medium text-success">
                           {formatCurrency(incomeStatementData.revenue.subscriptions)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -272,7 +272,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Platform Fees</td>
-                        <td className="py-4 px-6 text-right font-medium text-emerald-600">
+                        <td className="py-4 px-6 text-right font-medium text-success">
                           {formatCurrency(incomeStatementData.revenue.platformFees)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -282,7 +282,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Other Income</td>
-                        <td className="py-4 px-6 text-right font-medium text-emerald-600">
+                        <td className="py-4 px-6 text-right font-medium text-success">
                           {formatCurrency(incomeStatementData.revenue.otherIncome)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -290,18 +290,18 @@ const IncomeStatementPage: React.FC = () => {
                         </td>
                       </tr>
                       
-                      <tr className="bg-emerald-50/50 border-t-2 border-emerald-200">
+                      <tr className="bg-success/5/50 border-t-2 border-emerald-200">
                         <td className="py-4 px-6 font-bold text-emerald-700">Total Revenue</td>
-                        <td className="py-4 px-6 text-right font-bold text-emerald-600 text-lg">
+                        <td className="py-4 px-6 text-right font-bold text-success text-lg">
                           {formatCurrency(incomeStatementData.revenue.totalRevenue)}
                         </td>
-                        <td className="py-4 px-6 text-right font-bold text-emerald-600">100.0%</td>
+                        <td className="py-4 px-6 text-right font-bold text-success">100.0%</td>
                       </tr>
 
                       {/* Expenses Section */}
-                      <tr className="bg-red-50/30">
+                      <tr className="bg-destructive/5/30">
                         <td className="py-4 px-6">
-                          <div className="font-semibold text-red-600 text-lg">EXPENSES</div>
+                          <div className="font-semibold text-destructive text-lg">EXPENSES</div>
                         </td>
                         <td className="py-4 px-6"></td>
                         <td className="py-4 px-6"></td>
@@ -309,7 +309,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Cost of Goods Sold</td>
-                        <td className="py-4 px-6 text-right font-medium text-red-500">
+                        <td className="py-4 px-6 text-right font-medium text-destructive">
                           {formatCurrency(incomeStatementData.expenses.costOfGoodsSold)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -319,7 +319,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Marketing & Advertising</td>
-                        <td className="py-4 px-6 text-right font-medium text-red-500">
+                        <td className="py-4 px-6 text-right font-medium text-destructive">
                           {formatCurrency(incomeStatementData.expenses.marketing)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -329,7 +329,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Wages & Salaries</td>
-                        <td className="py-4 px-6 text-right font-medium text-red-500">
+                        <td className="py-4 px-6 text-right font-medium text-destructive">
                           {formatCurrency(incomeStatementData.expenses.wages)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -339,7 +339,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Utilities & Rent</td>
-                        <td className="py-4 px-6 text-right font-medium text-red-500">
+                        <td className="py-4 px-6 text-right font-medium text-destructive">
                           {formatCurrency(incomeStatementData.expenses.utilities)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -349,7 +349,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Office Supplies</td>
-                        <td className="py-4 px-6 text-right font-medium text-red-500">
+                        <td className="py-4 px-6 text-right font-medium text-destructive">
                           {formatCurrency(incomeStatementData.expenses.officeSupplies)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -359,7 +359,7 @@ const IncomeStatementPage: React.FC = () => {
                       
                       <tr className="hover:bg-muted/20 transition-colors">
                         <td className="py-4 px-6 pl-8 text-muted-foreground">Other Expenses</td>
-                        <td className="py-4 px-6 text-right font-medium text-red-500">
+                        <td className="py-4 px-6 text-right font-medium text-destructive">
                           {formatCurrency(incomeStatementData.expenses.otherExpenses)}
                         </td>
                         <td className="py-4 px-6 text-right text-muted-foreground">
@@ -367,20 +367,20 @@ const IncomeStatementPage: React.FC = () => {
                         </td>
                       </tr>
                       
-                      <tr className="bg-red-50/50 border-t-2 border-red-200">
-                        <td className="py-4 px-6 font-bold text-red-600">Total Expenses</td>
-                        <td className="py-4 px-6 text-right font-bold text-red-500 text-lg">
+                      <tr className="bg-destructive/5/50 border-t-2 border-destructive">
+                        <td className="py-4 px-6 font-bold text-destructive">Total Expenses</td>
+                        <td className="py-4 px-6 text-right font-bold text-destructive text-lg">
                           {formatCurrency(incomeStatementData.expenses.totalExpenses)}
                         </td>
-                        <td className="py-4 px-6 text-right font-bold text-red-500">
+                        <td className="py-4 px-6 text-right font-bold text-destructive">
                           {formatPercentage(incomeStatementData.expenses.totalExpenses, incomeStatementData.revenue.totalRevenue)}%
                         </td>
                       </tr>
 
                       {/* Net Income */}
-                      <tr className={`${incomeStatementData.netIncome >= 0 ? 'bg-emerald-50/50' : 'bg-red-50/50'} border-t-4 ${incomeStatementData.netIncome >= 0 ? 'border-emerald-300' : 'border-red-300'}`}>
+                      <tr className={`${incomeStatementData.netIncome >= 0 ? 'bg-success/5/50' : 'bg-destructive/5/50'} border-t-4 ${incomeStatementData.netIncome >= 0 ? 'border-emerald-300' : 'border-red-300'}`}>
                         <td className="py-6 px-6 font-bold text-lg">
-                          <span className={incomeStatementData.netIncome >= 0 ? 'text-emerald-700' : 'text-red-600'}>
+                          <span className={incomeStatementData.netIncome >= 0 ? 'text-emerald-700' : 'text-destructive'}>
                             NET INCOME
                           </span>
                         </td>
@@ -419,7 +419,7 @@ const IncomeStatementPage: React.FC = () => {
                       </div>
                       <div className="w-full bg-muted/30 rounded-full h-2">
                         <div 
-                          className="bg-emerald-500 h-2 rounded-full transition-all duration-300" 
+                          className="bg-success/50 h-2 rounded-full transition-all duration-300" 
                           style={{ width: `${formatPercentage(incomeStatementData.revenue.eventRegistration, incomeStatementData.revenue.totalRevenue)}%` }}
                         ></div>
                       </div>
@@ -432,7 +432,7 @@ const IncomeStatementPage: React.FC = () => {
                       </div>
                       <div className="w-full bg-muted/30 rounded-full h-2">
                         <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                          className="bg-primary/50 h-2 rounded-full transition-all duration-300" 
                           style={{ width: `${formatPercentage(incomeStatementData.revenue.subscriptions, incomeStatementData.revenue.totalRevenue)}%` }}
                         ></div>
                       </div>
@@ -463,28 +463,28 @@ const IncomeStatementPage: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-4 bg-emerald-50/50 rounded-lg border border-emerald-200">
+                    <div className="p-4 bg-success/5/50 rounded-lg border border-emerald-200">
                       <div className="flex items-center mb-2">
-                        <TrendingUp className="h-4 w-4 text-emerald-600 mr-2" />
+                        <TrendingUp className="h-4 w-4 text-success mr-2" />
                         <span className="font-medium text-emerald-800">Strong Revenue Growth</span>
                       </div>
                       <p className="text-sm text-emerald-700">Revenue increased by 12.5% compared to last month</p>
                     </div>
                     
-                    <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-200">
+                    <div className="p-4 bg-primary/5/50 rounded-lg border border-primary">
                       <div className="flex items-center mb-2">
-                        <DollarSign className="h-4 w-4 text-blue-600 mr-2" />
-                        <span className="font-medium text-blue-800">Healthy Profit Margin</span>
+                        <DollarSign className="h-4 w-4 text-primary mr-2" />
+                        <span className="font-medium text-primary">Healthy Profit Margin</span>
                       </div>
-                      <p className="text-sm text-blue-700">Net profit margin of {formatPercentage(incomeStatementData.netIncome, incomeStatementData.revenue.totalRevenue)}%</p>
+                      <p className="text-sm text-primary">Net profit margin of {formatPercentage(incomeStatementData.netIncome, incomeStatementData.revenue.totalRevenue)}%</p>
                     </div>
                     
-                    <div className="p-4 bg-yellow-50/50 rounded-lg border border-yellow-200">
+                    <div className="p-4 bg-warning/5/50 rounded-lg border border-warning">
                       <div className="flex items-center mb-2">
-                        <TrendingDown className="h-4 w-4 text-yellow-600 mr-2" />
-                        <span className="font-medium text-yellow-800">Expense Management</span>
+                        <TrendingDown className="h-4 w-4 text-warning mr-2" />
+                        <span className="font-medium text-warning">Expense Management</span>
                       </div>
-                      <p className="text-sm text-yellow-700">Consider optimizing wage costs which represent {formatPercentage(incomeStatementData.expenses.wages, incomeStatementData.revenue.totalRevenue)}% of revenue</p>
+                      <p className="text-sm text-warning">Consider optimizing wage costs which represent {formatPercentage(incomeStatementData.expenses.wages, incomeStatementData.revenue.totalRevenue)}% of revenue</p>
                     </div>
                   </div>
                 </CardContent>

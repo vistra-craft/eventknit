@@ -106,12 +106,12 @@ const PaymentTransactionsPage = () => {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      success: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      failed: "bg-red-100 text-red-800 border-red-200",
-      cancelled: "bg-gray-100 text-gray-800 border-gray-200",
+      success: "bg-success/10 text-success border-success/20",
+      pending: "bg-warning/10 text-warning border-warning/20",
+      failed: "bg-destructive/10 text-destructive border-destructive/20",
+      cancelled: "bg-muted text-muted-foreground border-border",
     };
-    return variants[status] || "bg-gray-100 text-gray-800 border-gray-200";
+    return variants[status] || "bg-muted text-muted-foreground border-border";
   };
 
   const filteredTransactions = transactions.filter((tx) => {
@@ -135,14 +135,14 @@ const PaymentTransactionsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Payment Transactions</h1>
-            <p className="text-gray-600">View and manage all event payment transactions</p>
+            <p className="text-muted-foreground">View and manage all event payment transactions</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="hover:bg-gray-900 hover:text-white transition-colors">
+            <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} className="hover:bg-primary  transition-colors">
               <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing..." : "Sync from Paystack"}
             </Button>
-            <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+            <Button variant="outline" size="sm" className="hover:bg-primary  transition-colors">
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -154,7 +154,7 @@ const PaymentTransactionsPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search transactions..."
                   value={filters.search}
@@ -187,7 +187,7 @@ const PaymentTransactionsPage = () => {
             {loading ? (
               <div className="text-center py-8">Loading...</div>
             ) : filteredTransactions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No transactions found</div>
+              <div className="text-center py-8 text-muted-foreground">No transactions found</div>
             ) : (
               <>
                 <Table>
@@ -210,13 +210,13 @@ const PaymentTransactionsPage = () => {
                         <TableCell>
                           <div>
                             <div className="font-medium">{tx.event?.title || "N/A"}</div>
-                            <div className="text-sm text-gray-500">{tx.event?.organizer.organizationName || ""}</div>
+                            <div className="text-sm text-muted-foreground">{tx.event?.organizer.organizationName || ""}</div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">{tx.attendeeName || "N/A"}</div>
-                            <div className="text-sm text-gray-500">{tx.attendeeEmail}</div>
+                            <div className="text-sm text-muted-foreground">{tx.attendeeEmail}</div>
                           </div>
                         </TableCell>
                         <TableCell className="font-semibold">{formatCurrency(tx.amount, tx.currency)}</TableCell>
@@ -228,10 +228,10 @@ const PaymentTransactionsPage = () => {
                           {tx.platformFee ? (
                             <div className="text-sm">
                               <div className="font-medium">{formatCurrency(tx.platformFee.feeAmount, tx.currency)}</div>
-                              <div className="text-gray-500">Fee: {tx.platformFee.status}</div>
+                              <div className="text-muted-foreground">Fee: {tx.platformFee.status}</div>
                             </div>
                           ) : (
-                            <span className="text-gray-400">N/A</span>
+                            <span className="text-muted-foreground">N/A</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -251,7 +251,7 @@ const PaymentTransactionsPage = () => {
                 {/* Pagination */}
                 {pagination.totalPages > 1 && (
                   <div className="flex items-center justify-between mt-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
                     </div>
                     <div className="flex gap-2">

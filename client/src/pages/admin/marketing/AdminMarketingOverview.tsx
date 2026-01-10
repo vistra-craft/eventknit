@@ -159,15 +159,15 @@ const AdminMarketingOverview = () => {
       title: "Total Shares",
       value: socialMetrics ? formatNumber(socialMetrics.totalShares) : "0",
       icon: Share2,
-      color: "text-green-600",
-      bgColor: "bg-green-50"
+      color: "text-success",
+      bgColor: "bg-success/5"
     },
     {
       title: "Total Clicks",
       value: socialMetrics ? formatNumber(socialMetrics.totalClicks) : "0",
       icon: MousePointerClick,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
+      color: "text-primary",
+      bgColor: "bg-primary/5"
     },
     {
       title: "Top Platform",
@@ -184,14 +184,14 @@ const AdminMarketingOverview = () => {
       description: "Manage all platform marketing campaigns",
       href: "/admin/marketing/campaigns",
       icon: Megaphone,
-      color: "bg-blue-500"
+      color: "bg-primary/50"
     },
     {
       title: "Email Marketing",
       description: "Platform-wide email marketing management",
       href: "/admin/marketing/email",
       icon: Mail,
-      color: "bg-green-500"
+      color: "bg-success/50"
     },
     {
       title: "Social Media",
@@ -313,13 +313,13 @@ const AdminMarketingOverview = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-100 text-green-800";
+        return "bg-success/10 text-success";
       case "completed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-primary/10 text-primary";
       case "paused":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-warning/10 text-warning";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-muted text-foreground";
     }
   };
 
@@ -332,7 +332,7 @@ const AdminMarketingOverview = () => {
             <h1 className="text-lg font-semibold text-foreground">
               Platform Marketing
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Manage platform-wide marketing campaigns and analytics
             </p>
           </div>
@@ -429,7 +429,7 @@ const AdminMarketingOverview = () => {
                     <div className={`p-2 rounded-lg bg-white/80`}>
                       <metric.icon className={`h-5 w-5 ${metric.color}`} />
                     </div>
-                    <span className="text-sm font-medium text-gray-600">{metric.title}</span>
+                    <span className="text-sm font-medium text-muted-foreground">{metric.title}</span>
                   </div>
                   <p className={`text-2xl font-bold ${metric.color}`}>{metric.value}</p>
                 </div>
@@ -468,15 +468,15 @@ const AdminMarketingOverview = () => {
                       </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="flex items-center gap-1">
-                          <Heart className="h-3 w-3 text-red-500" />
+                          <Heart className="h-3 w-3 text-destructive" />
                           {post.likes}
                         </span>
                         <span className="flex items-center gap-1">
-                          <MessageCircle className="h-3 w-3 text-blue-500" />
+                          <MessageCircle className="h-3 w-3 text-primary" />
                           {post.comments}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Share2 className="h-3 w-3 text-green-500" />
+                          <Share2 className="h-3 w-3 text-success" />
                           {post.shares}
                         </span>
                       </div>
@@ -542,8 +542,8 @@ const AdminMarketingOverview = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-foreground">{organizer.name}</h3>
                     <div className="flex items-center space-x-1">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-600">
+                      <TrendingUp className="h-4 w-4 text-success" />
+                      <span className="text-sm font-medium text-success">
                         +{organizer.growth}%
                       </span>
                     </div>

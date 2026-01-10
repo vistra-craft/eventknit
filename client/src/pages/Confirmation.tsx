@@ -51,7 +51,7 @@ const Confirmation = () => {
       {/* Increased top padding and added safety margin */}
       <div className="max-w-4xl mx-auto p-4 md:p-6 pb-16">
         <div className="text-center mb-8 mt-32">
-          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <CheckCircle2 className="w-16 h-16 text-success mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
           <p className="text-muted-foreground">
             Thank you for your purchase. Your order has been confirmed.

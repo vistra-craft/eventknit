@@ -657,43 +657,43 @@ const EventDetailsPage = () => {
                         <p className="text-sm text-foreground">{eventData.title}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Category</label>
+                        <label className="text-sm font-medium text-muted-foreground">Category</label>
                         <p className="text-sm text-foreground">{eventData.category}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Date & Time</label>
+                        <label className="text-sm font-medium text-muted-foreground">Date & Time</label>
                         <p className="text-sm text-foreground">
                           {eventData.date} at {eventData.time}
                           {eventData.endTime && ` - ${eventData.endTime}`}
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Location</label>
+                        <label className="text-sm font-medium text-muted-foreground">Location</label>
                         <p className="text-sm text-foreground">{eventData.location}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Venue</label>
+                        <label className="text-sm font-medium text-muted-foreground">Venue</label>
                         <p className="text-sm text-foreground">{eventData.venue}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Capacity</label>
+                        <label className="text-sm font-medium text-muted-foreground">Capacity</label>
                         <p className="text-sm text-foreground">{eventData.capacity} attendees</p>
                       </div>
                     </div>
                     
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Description</label>
+                      <label className="text-sm font-medium text-muted-foreground">Description</label>
                       <p className="text-sm text-foreground mt-1">{eventData.description}</p>
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Full Description</label>
+                      <label className="text-sm font-medium text-muted-foreground">Full Description</label>
                       <p className="text-sm text-foreground mt-1">{eventData.fullDescription}</p>
                     </div>
 
                     {eventData.requirements && eventData.requirements.length > 0 && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Requirements</label>
+                        <label className="text-sm font-medium text-muted-foreground">Requirements</label>
                         <ul className="text-sm text-foreground mt-1 list-disc list-inside">
                           {eventData.requirements.map((requirement, index) => (
                             <li key={index}>{requirement}</li>
@@ -712,20 +712,20 @@ const EventDetailsPage = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Organizer Name</label>
+                        <label className="text-sm font-medium text-muted-foreground">Organizer Name</label>
                         <p className="text-sm text-foreground">{eventData.organizer.name}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Organizer ID</label>
+                        <label className="text-sm font-medium text-muted-foreground">Organizer ID</label>
                         <p className="text-sm text-foreground">{eventData.organizer.id}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Email</label>
+                        <label className="text-sm font-medium text-muted-foreground">Email</label>
                         <p className="text-sm text-foreground">{eventData.organizer.email}</p>
                       </div>
                       {eventData.organizer.phone && (
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Phone</label>
+                          <label className="text-sm font-medium text-muted-foreground">Phone</label>
                           <p className="text-sm text-foreground">{eventData.organizer.phone}</p>
                         </div>
                       )}
@@ -741,7 +741,7 @@ const EventDetailsPage = () => {
                     </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600 mb-2 block">
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">
                         Current Access Level
                       </label>
                       <div className="flex items-center gap-3 mb-4">
@@ -751,7 +751,7 @@ const EventDetailsPage = () => {
                               ? 'bg-warning/10 text-warning border-warning/20'
                               : eventData.organizerDataAccess === 'STANDARD'
                               ? 'bg-primary/10 text-primary border-primary/20'
-                              : 'bg-success-light text-success border-success/20'
+                              : 'bg-success/10 text-success border-success/20'
                           }
                         >
                           {eventData.organizerDataAccess || 'RESTRICTED'}
@@ -839,22 +839,22 @@ const EventDetailsPage = () => {
                       <span className="text-sm font-medium text-foreground">{eventData.views.toLocaleString()}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Conversion Rate</span>
+                      <span className="text-sm text-muted-foreground">Conversion Rate</span>
                       <span className="text-sm font-medium text-foreground">{eventData.conversion}%</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Rating</span>
+                      <span className="text-sm text-muted-foreground">Rating</span>
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-warning fill-current" />
                         <span className="text-sm font-medium text-foreground">{eventData.rating}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Attendance Rate</span>
+                      <span className="text-sm text-muted-foreground">Attendance Rate</span>
                       <span className="text-sm font-medium text-foreground">{metrics.attendanceRate}%</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Average Ticket Price</span>
+                      <span className="text-sm text-muted-foreground">Average Ticket Price</span>
                       <span className="text-sm font-medium text-foreground">{formatCurrency(metrics.averageTicketPrice)}</span>
                     </div>
                   </CardContent>
@@ -866,35 +866,35 @@ const EventDetailsPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Type</span>
+                      <span className="text-sm text-muted-foreground">Type</span>
                       <Badge className={`text-xs ${getTypeBadge(eventData.type)}`}>
                         {eventData.type}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Price</span>
+                      <span className="text-sm text-muted-foreground">Price</span>
                       <Badge className={`text-xs ${getPriceBadge(eventData.price)}`}>
                         {eventData.price}
                       </Badge>
                     </div>
                     {eventData.ticketPrice && (
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Ticket Price</span>
+                        <span className="text-sm text-muted-foreground">Ticket Price</span>
                         <span className="text-sm font-medium text-foreground">{formatCurrency(eventData.ticketPrice)}</span>
                       </div>
                     )}
                     {eventData.registrationDeadline && (
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Registration Deadline</span>
+                        <span className="text-sm text-muted-foreground">Registration Deadline</span>
                         <span className="text-sm font-medium text-foreground">{formatDate(eventData.registrationDeadline)}</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Created</span>
+                      <span className="text-sm text-muted-foreground">Created</span>
                       <span className="text-sm font-medium text-foreground">{formatDateTime(eventData.createdAt)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Last Updated</span>
+                      <span className="text-sm text-muted-foreground">Last Updated</span>
                       <span className="text-sm font-medium text-foreground">{formatDateTime(eventData.updatedAt)}</span>
                     </div>
                   </CardContent>
@@ -967,7 +967,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{registrations.length}</div>
-                  <p className="text-sm text-gray-600">Total Attendees</p>
+                  <p className="text-sm text-muted-foreground">Total Attendees</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -975,7 +975,7 @@ const EventDetailsPage = () => {
                   <div className="text-base font-semibold text-primary mb-2">
                     {registrations.filter(r => r.status === 'CONFIRMED').length}
                   </div>
-                  <p className="text-sm text-gray-600">Confirmed</p>
+                  <p className="text-sm text-muted-foreground">Confirmed</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -983,7 +983,7 @@ const EventDetailsPage = () => {
                   <div className="text-base font-semibold text-warning mb-2">
                     {registrations.filter(r => r.status === 'PENDING').length}
                   </div>
-                  <p className="text-sm text-gray-600">Pending</p>
+                  <p className="text-sm text-muted-foreground">Pending</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -991,7 +991,7 @@ const EventDetailsPage = () => {
                   <div className="text-base font-semibold text-primary mb-2">
                     {registrations.filter(r => r.paymentStatus === 'COMPLETED').length}
                   </div>
-                  <p className="text-sm text-gray-600">Paid</p>
+                  <p className="text-sm text-muted-foreground">Paid</p>
                 </CardContent>
               </Card>
             </div>
@@ -1002,7 +1002,7 @@ const EventDetailsPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="lg:col-span-2">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Search attendees..."
                         className="pl-10"
@@ -1054,22 +1054,22 @@ const EventDetailsPage = () => {
                       const hasPaid = reg.paymentStatus === 'COMPLETED';
 
                       return (
-                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                               <User className="h-5 w-5 text-primary" />
                             </div>
                             <div>
                               <h4 className="font-medium text-foreground">{attendeeName}</h4>
-                              <p className="text-sm text-gray-600">{reg.attendee.email}</p>
+                              <p className="text-sm text-muted-foreground">{reg.attendee.email}</p>
                               {reg.attendee.phoneNumber && (
-                                <p className="text-xs text-gray-500">{reg.attendee.phoneNumber}</p>
+                                <p className="text-xs text-muted-foreground">{reg.attendee.phoneNumber}</p>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
                             <Badge className={`text-xs ${
-                              isConfirmed ? 'bg-success-light text-success border-success/20' :
+                              isConfirmed ? 'bg-success/10 text-success border-success/20' :
                               isPending ? 'bg-warning/10 text-warning border-warning/20' :
                               'bg-destructive/10 text-destructive border-destructive/20'
                             }`}>
@@ -1081,11 +1081,11 @@ const EventDetailsPage = () => {
                               </Badge>
                             )}
                             {hasPaid && (
-                              <Badge className="text-xs bg-success-light text-success border-success/20">
+                              <Badge className="text-xs bg-success/10 text-success border-success/20">
                                 Paid
                               </Badge>
                             )}
-                            <span className="text-sm text-gray-600">{formatDate(reg.createdAt)}</span>
+                            <span className="text-sm text-muted-foreground">{formatDate(reg.createdAt)}</span>
                             <Button variant="outline" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -1096,9 +1096,9 @@ const EventDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <Users className="h-12 w-12 text-muted mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No attendees yet</h3>
-                    <p className="text-sm text-gray-600">No one has registered for this event yet</p>
+                    <p className="text-sm text-muted-foreground">No one has registered for this event yet</p>
                   </div>
                 )}
               </CardContent>
@@ -1112,7 +1112,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.totalRevenue)}</div>
-                  <p className="text-sm text-gray-600">Total Revenue</p>
+                  <p className="text-sm text-muted-foreground">Total Revenue</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1124,13 +1124,13 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-warning mb-2">{metrics.pendingPayments}</div>
-                  <p className="text-sm text-gray-600">Pending</p>
+                  <p className="text-sm text-muted-foreground">Pending</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-destructive mb-2">{metrics.failedPayments}</div>
-                  <p className="text-sm text-gray-600">Failed</p>
+                  <p className="text-sm text-muted-foreground">Failed</p>
                 </CardContent>
               </Card>
             </div>
@@ -1147,7 +1147,7 @@ const EventDetailsPage = () => {
                       <div key={method} className="text-center p-4 border border-border rounded-lg">
                         <CreditCard className="h-8 w-8 text-primary mx-auto mb-2" />
                         <div className="text-base font-semibold">{method}</div>
-                        <div className="text-sm text-gray-600">{data.count} payment{data.count !== 1 ? 's' : ''}</div>
+                        <div className="text-sm text-muted-foreground">{data.count} payment{data.count !== 1 ? 's' : ''}</div>
                         <div className="text-sm font-medium text-primary">{formatCurrency(data.total)}</div>
                       </div>
                     ))}
@@ -1163,7 +1163,7 @@ const EventDetailsPage = () => {
                   <CardTitle>Payment Transactions</CardTitle>
                   <div className="flex items-center gap-2">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Search by name, email, or transaction ID..."
                         value={paymentSearch}
@@ -1201,18 +1201,18 @@ const EventDetailsPage = () => {
                       const isFailed = paymentStatus === 'FAILED';
 
                       return (
-                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                               <CreditCard className="h-5 w-5 text-primary" />
                             </div>
                             <div>
                               <h4 className="font-medium text-foreground">{attendeeName}</h4>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 {reg.attendee.email}
                                 {reg.paymentTransactionId && ` • ${reg.paymentTransactionId}`}
                               </p>
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className="text-xs text-muted-foreground mt-1">
                                 {reg.paymentMethod || 'N/A'} • {reg.ticketType || 'General'} • Qty: {reg.quantity}
                               </p>
                             </div>
@@ -1220,10 +1220,10 @@ const EventDetailsPage = () => {
                           <div className="flex items-center gap-4">
                             <div className="text-right">
                               <div className="font-medium text-foreground">{formatCurrency(amount || 0)}</div>
-                              <div className="text-sm text-gray-600">{formatDateTime(reg.createdAt)}</div>
+                              <div className="text-sm text-muted-foreground">{formatDateTime(reg.createdAt)}</div>
                             </div>
                             <Badge className={`text-xs ${
-                              isSuccessful ? 'bg-success-light text-success border-success/20' :
+                              isSuccessful ? 'bg-success/10 text-success border-success/20' :
                               isPending ? 'bg-warning/10 text-warning border-warning/20' :
                               isFailed ? 'bg-destructive/10 text-destructive border-destructive/20' :
                               'bg-muted text-muted-foreground border-border'
@@ -1240,9 +1240,9 @@ const EventDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <CreditCard className="h-12 w-12 text-muted mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No payments found</h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {paymentSearch || paymentFilter !== "all" 
                         ? "Try adjusting your search or filter criteria"
                         : "No payment transactions for this event yet"}
@@ -1261,19 +1261,19 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-success mb-2">{formatCurrency(metrics.totalRefunds)}</div>
-                  <p className="text-sm text-gray-600">Total Refunds</p>
+                  <p className="text-sm text-muted-foreground">Total Refunds</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{metrics.processedRefunds}</div>
-                  <p className="text-sm text-gray-600">Processed</p>
+                  <p className="text-sm text-muted-foreground">Processed</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-warning mb-2">{metrics.pendingRefunds}</div>
-                  <p className="text-sm text-gray-600">Pending</p>
+                  <p className="text-sm text-muted-foreground">Pending</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1317,30 +1317,30 @@ const EventDetailsPage = () => {
                 ) : refunds.length > 0 ? (
                   <div className="space-y-3">
                     {refunds.map((refund) => (
-                      <div key={refund.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div key={refund.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                             <RefreshCw className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <h4 className="font-medium text-foreground">{refund.registration?.attendee?.firstName} {refund.registration?.attendee?.lastName}</h4>
-                            <p className="text-sm text-gray-600">{refund.reason || 'No reason provided'}</p>
+                            <p className="text-sm text-muted-foreground">{refund.reason || 'No reason provided'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <div className="font-medium text-foreground">{formatCurrency(refund.amount)}</div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-muted-foreground">
                               Requested: {formatDateTime(refund.createdAt)}
                             </div>
                             {refund.processedAt && (
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-muted-foreground">
                                 Processed: {formatDateTime(refund.processedAt)}
                               </div>
                             )}
                           </div>
                           <Badge className={`text-xs ${
-                            refund.status === 'COMPLETED' || refund.status === 'PROCESSED' ? 'bg-success-light text-success border-success/20' :
+                            refund.status === 'COMPLETED' || refund.status === 'PROCESSED' ? 'bg-success/10 text-success border-success/20' :
                             refund.status === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' :
                             refund.status === 'FAILED' || refund.status === 'REJECTED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
                             'bg-muted text-muted-foreground border-border'
@@ -1368,9 +1368,9 @@ const EventDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <RefreshCw className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <RefreshCw className="h-12 w-12 text-muted mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No refunds yet</h3>
-                    <p className="text-sm text-gray-600">No refund requests for this event</p>
+                    <p className="text-sm text-muted-foreground">No refund requests for this event</p>
                   </div>
                 )}
               </CardContent>
@@ -1386,7 +1386,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{formatCurrency(metrics.organizerAmount)}</div>
-                  <p className="text-sm text-gray-600">Total to Organizer</p>
+                  <p className="text-sm text-muted-foreground">Total to Organizer</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1398,13 +1398,13 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">{metrics.remittancesSent}</div>
-                  <p className="text-sm text-gray-600">Sent</p>
+                  <p className="text-sm text-muted-foreground">Sent</p>
                 </CardContent>
               </Card>
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-warning mb-2">{metrics.remittancesPending}</div>
-                  <p className="text-sm text-gray-600">Pending</p>
+                  <p className="text-sm text-muted-foreground">Pending</p>
                 </CardContent>
               </Card>
             </div>
@@ -1419,14 +1419,14 @@ const EventDetailsPage = () => {
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
                       <h4 className="font-medium text-foreground">Total Event Revenue</h4>
-                      <p className="text-sm text-gray-600">From all ticket sales</p>
+                      <p className="text-sm text-muted-foreground">From all ticket sales</p>
                     </div>
                     <div className="text-right">
                       <div className="text-base font-semibold text-primary">{formatCurrency(metrics.totalRevenue)}</div>
                       <div className="text-sm text-muted-foreground">100%</div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-green-50">
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-success/10">
                     <div>
                       <h4 className="font-medium text-foreground">Organizer Share</h4>
                       <p className="text-sm text-muted-foreground">Amount to be paid to organizer</p>
@@ -1439,7 +1439,7 @@ const EventDetailsPage = () => {
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-primary/5">
                     <div>
                       <h4 className="font-medium text-foreground">Platform Fees</h4>
-                      <p className="text-sm text-muted-foreground"><span className="text-eventknit">EventKnit</span> commission</p>
+                      <p className="text-sm text-muted-foreground"><span className="text-primary">EventKnit</span> commission</p>
                     </div>
                     <div className="text-right">
                       <div className="text-base font-semibold text-primary">{formatCurrency(metrics.platformFees)}</div>
@@ -1476,14 +1476,14 @@ const EventDetailsPage = () => {
                 ) : disbursements.length > 0 ? (
                   <div className="space-y-3">
                     {disbursements.map((disbursement) => (
-                      <div key={disbursement.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div key={disbursement.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                             <DollarSign className="h-5 w-5 text-primary" />
                           </div>
                           <div>
                             <h4 className="font-medium text-foreground">Disbursement #{disbursement.id.slice(-8)}</h4>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                               {disbursement.paymentMethod || 'Bank Transfer'} • {disbursement.transactionReference || 'Pending'}
                             </p>
                           </div>
@@ -1491,10 +1491,10 @@ const EventDetailsPage = () => {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <div className="font-medium text-foreground">{formatCurrency(disbursement.amount)}</div>
-                            <div className="text-sm text-gray-600">{formatDateTime(disbursement.createdAt)}</div>
+                            <div className="text-sm text-muted-foreground">{formatDateTime(disbursement.createdAt)}</div>
                           </div>
                           <Badge className={`text-xs ${
-                            disbursement.status === 'COMPLETED' || disbursement.status === 'PROCESSED' ? 'bg-success-light text-success border-success/20' :
+                            disbursement.status === 'COMPLETED' || disbursement.status === 'PROCESSED' ? 'bg-success/10 text-success border-success/20' :
                             disbursement.status === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' :
                             disbursement.status === 'FAILED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
                             'bg-muted text-muted-foreground border-border'
@@ -1510,9 +1510,9 @@ const EventDetailsPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <DollarSign className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <DollarSign className="h-12 w-12 text-muted mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No disbursements yet</h3>
-                    <p className="text-sm text-gray-600">No payments have been sent to the organizer yet</p>
+                    <p className="text-sm text-muted-foreground">No payments have been sent to the organizer yet</p>
                   </div>
                 )}
               </CardContent>
@@ -1529,19 +1529,19 @@ const EventDetailsPage = () => {
                     <h4 className="font-medium text-foreground mb-3">Bank Details</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Account Name:</span>
+                        <span className="text-muted-foreground">Account Name:</span>
                         <span className="text-foreground">Tech Events Inc.</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Account Number:</span>
+                        <span className="text-muted-foreground">Account Number:</span>
                         <span className="text-foreground">****1234</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Bank:</span>
+                        <span className="text-muted-foreground">Bank:</span>
                         <span className="text-foreground">Chase Bank</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Routing:</span>
+                        <span className="text-muted-foreground">Routing:</span>
                         <span className="text-foreground">****5678</span>
                       </div>
                     </div>
@@ -1550,19 +1550,19 @@ const EventDetailsPage = () => {
                     <h4 className="font-medium text-foreground mb-3">Payment Schedule</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Frequency:</span>
+                        <span className="text-muted-foreground">Frequency:</span>
                         <span className="text-foreground">Monthly</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Next Payment:</span>
+                        <span className="text-muted-foreground">Next Payment:</span>
                         <span className="text-foreground">March 1, 2024</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Minimum Threshold:</span>
+                        <span className="text-muted-foreground">Minimum Threshold:</span>
                         <span className="text-foreground">{formatCurrency(100)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Payment Method:</span>
+                        <span className="text-muted-foreground">Payment Method:</span>
                         <span className="text-foreground">Bank Transfer</span>
                       </div>
                     </div>

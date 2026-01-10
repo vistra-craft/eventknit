@@ -21,7 +21,7 @@ const TIER_CONFIG = {
   STANDARD: {
     label: 'Standard',
     icon: Zap,
-    className: 'bg-blue-100 text-blue-700 border-blue-300',
+    className: 'bg-primary/10 text-primary border-primary',
   },
   PREMIUM: {
     label: 'Premium',

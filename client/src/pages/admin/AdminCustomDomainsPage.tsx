@@ -290,11 +290,11 @@ const AdminCustomDomainsPage = () => {
                 <CardContent>
                   <div className="space-y-4">
                     {domain.status === 'PENDING' && domain.verificationCode && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p className="font-medium text-yellow-900 mb-2">
+                      <div className="bg-warning/5 border border-warning rounded-lg p-4">
+                        <p className="font-medium text-warning mb-2">
                           DNS Verification Required
                         </p>
-                        <p className="text-sm text-yellow-700 mb-2">
+                        <p className="text-sm text-warning mb-2">
                           Add the following TXT record to your DNS:
                         </p>
                         <div className="bg-white rounded p-2 font-mono text-sm">
@@ -312,13 +312,13 @@ const AdminCustomDomainsPage = () => {
                     )}
 
                     {domain.status === 'VERIFIED' && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-center gap-2 text-green-700">
+                      <div className="bg-success/5 border border-success rounded-lg p-4">
+                        <div className="flex items-center gap-2 text-success">
                           <CheckCircle className="h-4 w-4" />
                           <span className="font-medium">Domain verified and active</span>
                         </div>
                         {domain.verifiedAt && (
-                          <p className="text-sm text-green-600 mt-1">
+                          <p className="text-sm text-success mt-1">
                             Verified on {new Date(domain.verifiedAt).toLocaleDateString()}
                           </p>
                         )}
@@ -326,9 +326,9 @@ const AdminCustomDomainsPage = () => {
                     )}
 
                     {domain.status === 'FAILED' && domain.failureReason && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="font-medium text-red-900 mb-1">Verification Failed</p>
-                        <p className="text-sm text-red-700">{domain.failureReason}</p>
+                      <div className="bg-destructive/5 border border-destructive rounded-lg p-4">
+                        <p className="font-medium text-destructive mb-1">Verification Failed</p>
+                        <p className="text-sm text-destructive">{domain.failureReason}</p>
                       </div>
                     )}
 

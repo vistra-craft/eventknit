@@ -260,7 +260,7 @@ const DeclinedEventsPage = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-foreground truncate">{event.title}</h3>
+                      <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
                       <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
                         Declined
                       </Badge>
