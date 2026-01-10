@@ -239,7 +239,7 @@ export class TicketService {
       const eventDate = this.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime);
 
       // Generate Google Calendar link
-      // eslint-disable-next-line no-undef
+       
       const googleCalendarParams = new URLSearchParams({
         action: 'TEMPLATE',
         text: event.title,
@@ -250,7 +250,7 @@ export class TicketService {
       const googleCalendarUrl = `https://calendar.google.com/calendar/render?${googleCalendarParams.toString()}`;
 
       // Generate Outlook Calendar link
-      // eslint-disable-next-line no-undef
+       
       const outlookCalendarParams = new URLSearchParams({
         subject: event.title,
         startdt: new Date(event.startDate).toISOString(),

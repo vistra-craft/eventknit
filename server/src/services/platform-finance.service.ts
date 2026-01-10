@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Prisma, FinancialEntryStatus, PaymentMethodType } from '@prisma/client';
 
@@ -78,23 +78,25 @@ export class PlatformExpenseService {
     notes?: string;
     createdBy?: string;
   }) {
+    const expenseData: any = {
+      category: data.category,
+      description: data.description,
+      amount: new Prisma.Decimal(data.amount),
+      currency: data.currency || 'KES',
+      paymentMethod: data.paymentMethod,
+      recipient: data.recipient,
+      reference: data.reference,
+      receiptUrl: data.receiptUrl,
+      receiptDate: data.receiptDate,
+      taxAmount: data.taxAmount ? new Prisma.Decimal(data.taxAmount) : null,
+      taxRate: data.taxRate ? new Prisma.Decimal(data.taxRate) : null,
+      notes: data.notes,
+      recordedBy: data.createdBy, // Mapping createdBy to recordedBy in schema
+      status: 'COMPLETED',
+    };
+
     const expense = await prisma.platformExpense.create({
-      data: {
-        category: data.category,
-        description: data.description,
-        amount: new Prisma.Decimal(data.amount),
-        currency: data.currency || 'KES',
-        paymentMethod: data.paymentMethod,
-        recipient: data.recipient,
-        reference: data.reference,
-        receiptUrl: data.receiptUrl,
-        receiptDate: data.receiptDate,
-        taxAmount: data.taxAmount ? new Prisma.Decimal(data.taxAmount) : null,
-        taxRate: data.taxRate ? new Prisma.Decimal(data.taxRate) : null,
-        notes: data.notes,
-        createdBy: data.createdBy,
-        status: 'COMPLETED' as FinancialEntryStatus,
-      },
+      data: expenseData,
     });
 
     logger.info(`Created platform expense: ${expense.id}`);
@@ -121,7 +123,7 @@ export class PlatformExpenseService {
       throw new NotFoundError('Expense not found');
     }
 
-    const updateData: Prisma.PlatformExpenseUpdateInput = {};
+    const updateData: any = {};
 
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
@@ -135,7 +137,7 @@ export class PlatformExpenseService {
     if (data.taxAmount !== undefined) updateData.taxAmount = new Prisma.Decimal(data.taxAmount);
     if (data.taxRate !== undefined) updateData.taxRate = new Prisma.Decimal(data.taxRate);
     if (data.notes !== undefined) updateData.notes = data.notes;
-    if (data.status !== undefined) updateData.status = data.status as FinancialEntryStatus;
+    if (data.status !== undefined) updateData.status = data.status;
 
     const expense = await prisma.platformExpense.update({
       where: { id },
@@ -246,21 +248,23 @@ export class PlatformIncomeService {
     notes?: string;
     createdBy?: string;
   }) {
+    const incomeData: any = {
+      category: data.category,
+      description: data.description,
+      amount: new Prisma.Decimal(data.amount),
+      currency: data.currency || 'KES',
+      source: data.source,
+      reference: data.reference,
+      paymentMethod: data.paymentMethod,
+      eventId: data.eventId,
+      transactionId: data.transactionId,
+      notes: data.notes,
+      recordedBy: data.createdBy, // Mapping createdBy to recordedBy in schema
+      status: 'COMPLETED',
+    };
+
     const income = await prisma.platformIncome.create({
-      data: {
-        category: data.category,
-        description: data.description,
-        amount: new Prisma.Decimal(data.amount),
-        currency: data.currency || 'KES',
-        source: data.source,
-        reference: data.reference,
-        paymentMethod: data.paymentMethod,
-        eventId: data.eventId,
-        transactionId: data.transactionId,
-        notes: data.notes,
-        createdBy: data.createdBy,
-        status: 'COMPLETED' as FinancialEntryStatus,
-      },
+      data: incomeData,
     });
 
     logger.info(`Created platform income: ${income.id}`);
@@ -284,7 +288,7 @@ export class PlatformIncomeService {
       throw new NotFoundError('Income not found');
     }
 
-    const updateData: Prisma.PlatformIncomeUpdateInput = {};
+    const updateData: any = {};
 
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
@@ -295,7 +299,7 @@ export class PlatformIncomeService {
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.eventId !== undefined) updateData.eventId = data.eventId;
     if (data.notes !== undefined) updateData.notes = data.notes;
-    if (data.status !== undefined) updateData.status = data.status as FinancialEntryStatus;
+    if (data.status !== undefined) updateData.status = data.status;
 
     const income = await prisma.platformIncome.update({
       where: { id },

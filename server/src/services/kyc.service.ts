@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { NotFoundError, ValidationError, ConflictError } from '../utils/errors.js';
+import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { KYCStatus, KYCDocumentType, OrganizerEntityType } from '@prisma/client';
 import {
@@ -398,7 +398,7 @@ export class KYCService {
     });
 
     const missingDocuments: string[] = [];
-    const incompleteDocuments: string[] = [];
+    const _incompleteDocuments: string[] = [];
 
     for (const req of requirements) {
       if (!req.isRequired || req.isConditional) continue; // Skip conditionals for now

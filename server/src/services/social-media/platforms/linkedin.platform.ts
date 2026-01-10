@@ -304,7 +304,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
             Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify(registerBody),
-        }
+        },
       );
 
       if (!registerResponse.ok) {
@@ -345,7 +345,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -385,7 +385,7 @@ export class LinkedInPlatform implements SocialMediaPlatform {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {

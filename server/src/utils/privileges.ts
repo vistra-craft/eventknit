@@ -5,7 +5,8 @@ import { AuthorizationError } from './errors.js';
  * Role hierarchy for privilege checking
  */
 export const roleHierarchy: Record<UserRole, number> = {
-  SUPERADMIN: 9,
+  SUPERADMIN: 10,
+  ADMIN: 9,
   ADMIN_STAFF: 8,
   MARKETER: 7,
   SUPPORT: 6,
@@ -22,6 +23,18 @@ export const roleHierarchy: Record<UserRole, number> = {
 const roleCreationRules: Record<UserRole, UserRole[]> = {
   SUPERADMIN: [
     UserRole.SUPERADMIN,
+    UserRole.ADMIN,
+    UserRole.ADMIN_STAFF,
+    UserRole.MARKETER,
+    UserRole.SUPPORT,
+    UserRole.TELLER,
+    UserRole.ORGANIZER,
+    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_TELLER,
+    UserRole.ATTENDEE,
+  ],
+  ADMIN: [
+    UserRole.ADMIN,
     UserRole.ADMIN_STAFF,
     UserRole.MARKETER,
     UserRole.SUPPORT,
@@ -82,7 +95,7 @@ export const canModifyUser = (userRole: UserRole, targetUserRole: UserRole): boo
 
   // MARKETER cannot modify SUPERADMIN or ADMIN_STAFF
   if (userRole === UserRole.MARKETER &&
-      (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
+    (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
     return false;
   }
 
@@ -109,7 +122,7 @@ export const canDeleteUser = (userRole: UserRole, targetUserRole: UserRole): boo
 
   // MARKETER cannot delete SUPERADMIN or ADMIN_STAFF
   if (userRole === UserRole.MARKETER &&
-      (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
+    (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
     return false;
   }
 

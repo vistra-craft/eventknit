@@ -218,7 +218,7 @@ export class PromoCodeService {
     if (promoCode.firstTimeOnly) {
       const previousPurchases = await prisma.eventRegistration.count({
         where: {
-          userId,
+          attendeeId: userId,
           paymentStatus: 'COMPLETED',
         },
       });
@@ -237,7 +237,7 @@ export class PromoCodeService {
 
     // Check for tiered discounts
     if (promoCode.isTiered && promoCode.discountTiers) {
-      const tiers = promoCode.discountTiers as DiscountTier[];
+      const tiers = promoCode.discountTiers as unknown as DiscountTier[];
       const currentUsage = promoCode.usedCount;
 
       // Find applicable tier based on current usage
@@ -405,7 +405,7 @@ export class PromoCodeService {
         campaignName: data.campaignName || null,
         campaignSource: data.campaignSource || null,
         isTiered: data.isTiered || false,
-        discountTiers: data.discountTiers || null,
+        discountTiers: (data.discountTiers as any) || null,
       },
       include: {
         event: {
@@ -530,7 +530,7 @@ export class PromoCodeService {
             campaignName: data.campaignName || null,
             campaignSource: data.campaignSource || null,
             isTiered: data.isTiered || false,
-            discountTiers: data.discountTiers || null,
+            discountTiers: (data.discountTiers as any) || null,
           },
         });
         createdCodes.push(code);

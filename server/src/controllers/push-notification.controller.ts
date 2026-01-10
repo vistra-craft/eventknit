@@ -61,7 +61,7 @@ export const pushNotificationController = {
       userId,
       subscriptionData,
       userAgent,
-      deviceId
+      deviceId,
     );
 
     return res.status(201).json({
@@ -193,7 +193,7 @@ export const pushNotificationController = {
    * Admin: Cleanup stale subscriptions
    */
   cleanup: asyncHandler(async (req: Request, res: Response) => {
-    const daysInactive = parseInt(req.query.days as string) || 30;
+    const daysInactive = parseInt(req.query.days as string, 10) || 30;
 
     const result = await pushNotificationService.cleanupStaleSubscriptions(daysInactive);
 

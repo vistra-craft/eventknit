@@ -208,7 +208,7 @@ export class WhiteLabelService {
         const value = data[field as keyof CreateBrandingData];
         if (value) {
           try {
-            new URL(value);
+            new URL(value as string);
           } catch {
             throw new ValidationError(`Invalid URL format for ${field}`);
           }
@@ -633,9 +633,9 @@ export class WhiteLabelService {
                     ${branding.emailHeaderImage || branding.logoUrl ? `
                       <tr>
                         <td align="center" style="padding: 30px 20px; background-color: ${branding.primaryColor || '#4a6cf7'};">
-                          ${branding.emailHeaderImage ? 
+                          ${branding.emailHeaderImage ?
     `<img src="${branding.emailHeaderImage}" alt="${branding.brandName || 'Logo'}" style="max-width: 200px; height: auto;">` :
-    branding.logoUrl ? 
+    branding.logoUrl ?
       `<img src="${branding.logoUrl}" alt="${branding.brandName || 'Logo'}" style="max-width: 200px; height: auto;">` :
       ''
 }

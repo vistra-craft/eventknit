@@ -137,7 +137,7 @@ export class FacilityService {
     options?: {
       includeStats?: boolean;
       activeOnly?: boolean;
-    }
+    },
   ): Promise<FacilityWithStats[]> {
     const where: Prisma.EventFacilityWhereInput = { eventId };
 
@@ -162,7 +162,7 @@ export class FacilityService {
           ...facility,
           stats,
         };
-      })
+      }),
     );
 
     return facilitiesWithStats;
@@ -193,7 +193,7 @@ export class FacilityService {
    */
   static async updateFacility(
     id: string,
-    data: Partial<FacilityData>
+    data: Partial<FacilityData>,
   ): Promise<FacilityWithStats> {
     const facility = await prisma.eventFacility.findUnique({
       where: { id },
@@ -289,7 +289,7 @@ export class FacilityService {
    */
   static async reorderFacilities(
     eventId: string,
-    orderedIds: string[]
+    orderedIds: string[],
   ): Promise<FacilityWithStats[]> {
     // Update sort order for each facility
     await Promise.all(
@@ -297,8 +297,8 @@ export class FacilityService {
         prisma.eventFacility.update({
           where: { id },
           data: { sortOrder: index + 1 },
-        })
-      )
+        }),
+      ),
     );
 
     return this.getFacilities(eventId);

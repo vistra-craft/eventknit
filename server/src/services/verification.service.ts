@@ -110,7 +110,7 @@ export class VerificationService {
     const documentTypes = [
       { type: 'BUSINESS_LICENSE', url: data.businessLicenseUrl },
       { type: 'TAX_ID', url: data.taxDocumentUrl, number: data.taxId },
-    ];
+    ] as { type: any, url: string | undefined, number?: string }[];
 
     for (const doc of documentTypes) {
       if (doc.url) {
@@ -135,7 +135,7 @@ export class VerificationService {
           await prisma.kYCDocument.create({
             data: {
               userId,
-              documentType: doc.type,
+              documentType: doc.type as any,
               documentUrl: doc.url,
               documentNumber: doc.number,
               status: 'PENDING',

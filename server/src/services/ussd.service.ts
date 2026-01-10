@@ -35,17 +35,7 @@ interface USSDRequest {
   text: string; // Input text, separated by * for multi-level
 }
 
-interface EventInfo {
-  id: string;
-  title: string;
-  isFree: boolean;
-  price: number;
-  currency: string;
-  ticketTypeId?: string;
-  ticketTypeName?: string;
-  startDate: Date;
-  venue?: string;
-}
+// Removed unused EventInfo interface
 
 export class USSDService {
   // Session timeout in milliseconds (3 minutes for USSD)
@@ -68,7 +58,7 @@ export class USSDService {
       // Update session with new input
       if (text) {
         await this.updateSessionPath(session.id, inputs);
-        session = (await prisma.uSSDSession.findUnique({
+        session = (await (prisma as any).uSSDSession.findUnique({
           where: { id: session.id },
         }))!;
       }
@@ -95,7 +85,7 @@ export class USSDService {
     phoneNumber: string,
   ) {
     // Try to find existing session
-    let session = await prisma.uSSDSession.findUnique({
+    let session = await (prisma as any).uSSDSession.findUnique({
       where: { sessionId },
     });
 
@@ -103,7 +93,7 @@ export class USSDService {
       // Check if session is expired
       if (new Date() > session.expiresAt) {
         // Mark as expired and create new
-        await prisma.uSSDSession.update({
+        await (prisma as any).uSSDSession.update({
           where: { id: session.id },
           data: { completed: true },
         });
@@ -113,7 +103,7 @@ export class USSDService {
 
     if (!session) {
       // Create new session
-      session = await prisma.uSSDSession.create({
+      session = await (prisma as any).uSSDSession.create({
         data: {
           sessionId,
           serviceCode,
@@ -133,7 +123,7 @@ export class USSDService {
    * Update session with menu path
    */
   private static async updateSessionPath(sessionId: string, inputs: string[]) {
-    await prisma.uSSDSession.update({
+    await (prisma as any).uSSDSession.update({
       where: { id: sessionId },
       data: {
         menuPath: inputs,
@@ -167,23 +157,23 @@ export class USSDService {
     const mainSelection = inputs[0];
 
     switch (mainSelection) {
-      case '1':
-        // Register for event
-        return this.handleEventRegistration(session, inputs.slice(1));
+    case '1':
+      // Register for event
+      return this.handleEventRegistration(session, inputs.slice(1));
 
-      case '2':
-        // Check registration status
-        return this.handleCheckStatus(session);
+    case '2':
+      // Check registration status
+      return this.handleCheckStatus(session);
 
-      case '3':
-        // Help
-        return this.showHelp();
+    case '3':
+      // Help
+      return this.showHelp();
 
-      default:
-        return {
-          type: 'CON',
-          message: 'Invalid selection.\n\n' + this.getMainMenuText(),
-        };
+    default:
+      return {
+        type: 'CON',
+        message: `Invalid selection.\n\n${this.getMainMenuText()}`,
+      };
     }
   }
 
@@ -216,42 +206,42 @@ export class USSDService {
     const step = inputs.length;
 
     switch (step) {
-      case 0:
-        // Ask for event code
-        return {
-          type: 'CON',
-          message: 'Enter the event code:',
-        };
+    case 0:
+      // Ask for event code
+      return {
+        type: 'CON',
+        message: 'Enter the event code:',
+      };
 
-      case 1:
-        // Validate event code
-        return this.validateEventCode(session, inputs[0]);
+    case 1:
+      // Validate event code
+      return this.validateEventCode(session, inputs[0]);
 
-      case 2:
-        // Get first name
-        return this.collectFirstName(session, inputs[1]);
+    case 2:
+      // Get first name
+      return this.collectFirstName(session, inputs[1]);
 
-      case 3:
-        // Get last name
-        return this.collectLastName(session, inputs[2]);
+    case 3:
+      // Get last name
+      return this.collectLastName(session, inputs[2]);
 
-      case 4:
-        // Get email (optional)
-        return this.collectEmail(session, inputs[3]);
+    case 4:
+      // Get email (optional)
+      return this.collectEmail(session, inputs[3]);
 
-      case 5:
-        // Show confirmation or payment
-        return this.showConfirmation(session, inputs[4]);
+    case 5:
+      // Show confirmation or payment
+      return this.showConfirmation(session, inputs[4]);
 
-      case 6:
-        // Process confirmation
-        return this.processConfirmation(session, inputs[5]);
+    case 6:
+      // Process confirmation
+      return this.processConfirmation(session, inputs[5]);
 
-      default:
-        return {
-          type: 'END',
-          message: 'Session timeout. Please dial again.',
-        };
+    default:
+      return {
+        type: 'END',
+        message: 'Session timeout. Please dial again.',
+      };
     }
   }
 
@@ -332,7 +322,7 @@ export class USSDService {
     }
 
     // Update session with event info
-    await prisma.uSSDSession.update({
+    await (prisma as any).uSSDSession.update({
       where: { id: session.id },
       data: {
         eventId: event.id,
@@ -354,9 +344,9 @@ export class USSDService {
     if (paymentRequired) {
       message += `Price: ${paymentCurrency} ${paymentAmount}\n`;
     } else {
-      message += `Price: FREE\n`;
+      message += 'Price: FREE\n';
     }
-    message += `\nEnter your first name:`;
+    message += '\nEnter your first name:';
 
     return {
       type: 'CON',
@@ -378,7 +368,7 @@ export class USSDService {
       };
     }
 
-    await prisma.uSSDSession.update({
+    await (prisma as any).uSSDSession.update({
       where: { id: session.id },
       data: { firstName: firstName.trim() },
     });
@@ -403,7 +393,7 @@ export class USSDService {
       };
     }
 
-    await prisma.uSSDSession.update({
+    await (prisma as any).uSSDSession.update({
       where: { id: session.id },
       data: { lastName: lastName.trim() },
     });
@@ -435,13 +425,13 @@ export class USSDService {
       validEmail = email.toLowerCase().trim();
     }
 
-    await prisma.uSSDSession.update({
+    await (prisma as any).uSSDSession.update({
       where: { id: session.id },
       data: { email: validEmail },
     });
 
     // Refresh session data
-    const updatedSession = await prisma.uSSDSession.findUnique({
+    const updatedSession = await (prisma as any).uSSDSession.findUnique({
       where: { id: session.id },
     });
 
@@ -479,14 +469,14 @@ export class USSDService {
    */
   private static async showConfirmation(
     session: Awaited<ReturnType<typeof this.getOrCreateSession>>,
-    input: string,
+    _input: string,
   ): Promise<USSDResponse> {
     // This step is handled by processConfirmation
     // Just refresh and show confirmation again
-    const updatedSession = await prisma.uSSDSession.findUnique({
+    const _updatedSession = await (prisma as any).uSSDSession.findUnique({
       where: { id: session.id },
     });
-    return this.buildConfirmationMessage(updatedSession!);
+    return this.buildConfirmationMessage(_updatedSession!);
   }
 
   /**
@@ -497,7 +487,7 @@ export class USSDService {
     selection: string,
   ): Promise<USSDResponse> {
     if (selection === '2') {
-      await prisma.uSSDSession.update({
+      await (prisma as any).uSSDSession.update({
         where: { id: session.id },
         data: { cancelled: true, completed: true },
       });
@@ -509,7 +499,7 @@ export class USSDService {
 
     if (selection !== '1') {
       // Refresh session
-      const updatedSession = await prisma.uSSDSession.findUnique({
+      const _updatedSession = await (prisma as any).uSSDSession.findUnique({
         where: { id: session.id },
       });
       return {
@@ -519,7 +509,7 @@ export class USSDService {
     }
 
     // Refresh session data
-    const updatedSession = await prisma.uSSDSession.findUnique({
+    const updatedSession = await (prisma as any).uSSDSession.findUnique({
       where: { id: session.id },
     });
 
@@ -567,7 +557,7 @@ export class USSDService {
       });
 
       // Update session with payment info
-      await prisma.uSSDSession.update({
+      await (prisma as any).uSSDSession.update({
         where: { id: session.id },
         data: {
           currentMenu: 'awaiting_payment',
@@ -585,8 +575,8 @@ export class USSDService {
         message:
           `M-Pesa payment request sent to ${session.phoneNumber}.\n\n` +
           `Amount: KES ${session.paymentAmount}\n\n` +
-          `Enter your M-Pesa PIN when prompted.\n\n` +
-          `You will receive SMS confirmation.`,
+          'Enter your M-Pesa PIN when prompted.\n\n' +
+          'You will receive SMS confirmation.',
       };
     } catch (error) {
       logger.error('Failed to initiate USSD payment:', error);
@@ -604,7 +594,7 @@ export class USSDService {
    */
   private static async handleAwaitingPayment(
     session: Awaited<ReturnType<typeof this.getOrCreateSession>>,
-    input: string,
+    _input: string,
   ): Promise<USSDResponse> {
     // User dialed back during payment wait
     // Check payment status
@@ -648,14 +638,15 @@ export class USSDService {
         const email =
           session.email || `${session.phoneNumber.replace(/\D/g, '')}@ussd.eventknit.com`;
 
-        user = await AuthService.register({
+        const authResponse = await AuthService.register({
           email,
           firstName: session.firstName || 'Guest',
           lastName: session.lastName || 'User',
           phoneNumber: session.phoneNumber,
           role: UserRole.ATTENDEE,
-          password: undefined,
+          password: undefined as any,
         });
+        user = (authResponse as any).user as any;
       } else {
         // Update user name if provided
         if (session.firstName || session.lastName) {
@@ -670,28 +661,33 @@ export class USSDService {
       }
 
       // Link user to session
-      await prisma.uSSDSession.update({
-        where: { id: session.id },
-        data: { userId: user.id },
-      });
+      if (user?.id) {
+        await (prisma as any).uSSDSession.update({
+          where: { id: session.id },
+          data: { userId: user.id },
+        });
+      }
 
       // Register for event
       await EventService.registerForEvent(
-        session.eventId,
-        user.id,
+        session.eventId as string,
+        (user as any).id,
         {
-          firstName: session.firstName,
-          lastName: session.lastName,
-          email: session.email,
-          phoneNumber: session.phoneNumber,
-          registrationSource: 'USSD',
-        },
-        session.ticketTypeId,
+          ticketType: session.ticketTypeId as string,
+          registrationData: {
+            firstName: session.firstName,
+            lastName: session.lastName,
+            email: session.email,
+            phoneNumber: session.phoneNumber,
+            registrationSource: 'USSD',
+          },
+        } as any,
+        'USSD-Gateway',
         undefined,
       );
 
       // Mark session as completed
-      await prisma.uSSDSession.update({
+      await (prisma as any).uSSDSession.update({
         where: { id: session.id },
         data: {
           completed: true,
@@ -705,7 +701,7 @@ export class USSDService {
         message:
           `Successfully registered for "${session.eventTitle}"!\n\n` +
           `Name: ${session.firstName} ${session.lastName}\n` +
-          `Check your email for ticket details or visit eventknit.com`,
+          'Check your email for ticket details or visit eventknit.com',
       });
 
       logger.info(`USSD registration completed for session ${session.id}`);
@@ -806,11 +802,11 @@ export class USSDService {
     resultCode: number,
     resultDesc: string,
     mpesaReceiptNumber?: string,
-    amount?: number,
+    _amount?: number,
   ): Promise<void> {
     try {
       // Find session by payment reference
-      const session = await prisma.uSSDSession.findFirst({
+      const session = await (prisma as any).uSSDSession.findFirst({
         where: {
           paymentReference: checkoutRequestId,
           paymentStatus: 'initiated',
@@ -824,7 +820,7 @@ export class USSDService {
 
       if (resultCode === 0) {
         // Payment successful
-        await prisma.uSSDSession.update({
+        await (prisma as any).uSSDSession.update({
           where: { id: session.id },
           data: {
             paymentStatus: 'completed',
@@ -839,7 +835,7 @@ export class USSDService {
         logger.info(`USSD payment completed for session ${session.id}`);
       } else {
         // Payment failed
-        await prisma.uSSDSession.update({
+        await (prisma as any).uSSDSession.update({
           where: { id: session.id },
           data: {
             paymentStatus: 'failed',
@@ -852,7 +848,7 @@ export class USSDService {
           to: session.phoneNumber,
           message:
             `Payment failed: ${resultDesc}\n\n` +
-            `To retry, dial the USSD code again or register online at eventknit.com`,
+            'To retry, dial the USSD code again or register online at eventknit.com',
         });
 
         logger.info(`USSD payment failed for session ${session.id}: ${resultDesc}`);
@@ -869,14 +865,14 @@ export class USSDService {
     let cleaned = phone.replace(/\D/g, '');
 
     if (cleaned.startsWith('0')) {
-      cleaned = '254' + cleaned.slice(1);
+      cleaned = `254${cleaned.slice(1)}`;
     } else if (cleaned.startsWith('+')) {
       cleaned = cleaned.slice(1);
     } else if (!cleaned.startsWith('254')) {
-      cleaned = '254' + cleaned;
+      cleaned = `254${cleaned}`;
     }
 
-    return '+' + cleaned;
+    return `+${cleaned}`;
   }
 
   /**
@@ -891,7 +887,7 @@ export class USSDService {
    */
   private static truncate(str: string, maxLength: number): string {
     if (str.length <= maxLength) return str;
-    return str.slice(0, maxLength - 3) + '...';
+    return `${str.slice(0, maxLength - 3)}...`;
   }
 
   /**
@@ -899,7 +895,7 @@ export class USSDService {
    */
   static async cleanupExpiredSessions(): Promise<void> {
     try {
-      const deleted = await prisma.uSSDSession.deleteMany({
+      const deleted = await (prisma as any).uSSDSession.deleteMany({
         where: {
           expiresAt: { lt: new Date() },
           completed: false,

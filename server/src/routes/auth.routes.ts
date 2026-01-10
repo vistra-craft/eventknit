@@ -271,15 +271,16 @@ router.get('/profile', AuthController.getProfile);
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
   import('../utils/upload.js').then(({ uploadSingleImage }) => {
     uploadSingleImage(req, res, (err: unknown) => {
-      if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
+      if (err instanceof (multer as any).MulterError || (err as any).code?.startsWith('LIMIT_')) {
+        const multerErr = err as any;
+        if (multerErr.code === 'LIMIT_FILE_SIZE') {
           res.status(413).json({
             success: false,
             message: 'File too large. Maximum file size is 5MB.',
           });
           return;
         }
-        if (err.code === 'LIMIT_FILE_COUNT') {
+        if (multerErr.code === 'LIMIT_FILE_COUNT') {
           res.status(400).json({
             success: false,
             message: 'Too many files. Only one file is allowed.',
@@ -288,11 +289,11 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
         }
         res.status(400).json({
           success: false,
-          message: err.message || 'File upload error',
+          message: multerErr.message || 'File upload error',
         });
         return;
       }
-      
+
       if (err instanceof Error) {
         // Handle file filter errors (e.g., "Only image files are allowed")
         if (err.message.includes('Only image files are allowed')) {
@@ -303,11 +304,11 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
           return;
         }
       }
-      
+
       if (err) {
         return next(err);
       }
-      
+
       next();
     });
   }).catch(next);

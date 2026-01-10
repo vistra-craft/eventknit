@@ -543,6 +543,7 @@ export class AdminController {
 function getRoleDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
     [UserRole.SUPERADMIN]: 'Full system access with all permissions',
+    [UserRole.ADMIN]: 'Platform administrator with broad system-wide permissions',
     [UserRole.ADMIN_STAFF]: 'Administrative staff with management capabilities',
     [UserRole.MARKETER]: 'Marketing team member with event promotion access',
     [UserRole.SUPPORT]: 'Customer support team member',

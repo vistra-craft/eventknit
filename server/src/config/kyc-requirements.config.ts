@@ -1765,34 +1765,3 @@ export function requiresDirectorsOrShareholders(entityType: OrganizerEntityType)
   };
 }
 
-
-
-export interface DocumentRequirement {
-  documentType: KYCDocumentType;
-  category: 'contract' | 'identity' | 'registration' | 'financial' | 'authorization' | 'industry' | 'organization' | 'special';
-  minQuantity: number;
-  maxQuantity?: number; // undefined means no limit
-  validityPeriodDays?: number; // e.g., 365 for CR12
-  isRequired: boolean;
-  isConditional: boolean; // If true, only required under certain conditions
-  conditionalKey?: string; // Key to check in conditional requirements (e.g., industry type)
-  conditionalValue?: string | string[]; // Value(s) that trigger this requirement
-  description: string;
-  helpText?: string;
-}
-
-export interface EntityTypeRequirements {
-  entityType: OrganizerEntityType;
-  displayName: string;
-  category: 'individual' | 'business' | 'organization' | 'government';
-  requiresDirectors: boolean;
-  requiresShareholders: boolean;
-  minDirectors?: number;
-  maxDirectorsToCollect?: number; // If > 5, only collect top 5
-  documents: DocumentRequirement[];
-  conditionalRequirements?: {
-    [key: string]: DocumentRequirement[]; // e.g., industry-based requirements
-  };
-}
-
-

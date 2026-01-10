@@ -116,7 +116,7 @@ export class MpesaGateway implements PaymentGateway {
     }
 
     const auth = Buffer.from(
-      `${this.mpesaConfig.consumerKey}:${this.mpesaConfig.consumerSecret}`
+      `${this.mpesaConfig.consumerKey}:${this.mpesaConfig.consumerSecret}`,
     ).toString('base64');
 
     try {
@@ -127,7 +127,7 @@ export class MpesaGateway implements PaymentGateway {
           headers: {
             Authorization: `Basic ${auth}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -137,7 +137,7 @@ export class MpesaGateway implements PaymentGateway {
       const data = await response.json() as { access_token: string; expires_in: string };
       this.accessToken = data.access_token;
       // Token expires in 3599 seconds, we'll refresh 5 minutes before expiry
-      this.tokenExpiry = new Date(Date.now() + (parseInt(data.expires_in) - 300) * 1000);
+      this.tokenExpiry = new Date(Date.now() + (parseInt(data.expires_in, 10) - 300) * 1000);
 
       return this.accessToken;
     } catch (error) {
@@ -155,7 +155,7 @@ export class MpesaGateway implements PaymentGateway {
       .replace(/[-:T.Z]/g, '')
       .slice(0, 14);
     const password = Buffer.from(
-      `${this.mpesaConfig.shortcode}${this.mpesaConfig.passkey}${timestamp}`
+      `${this.mpesaConfig.shortcode}${this.mpesaConfig.passkey}${timestamp}`,
     ).toString('base64');
     return { password, timestamp };
   }
@@ -169,11 +169,11 @@ export class MpesaGateway implements PaymentGateway {
 
     // Handle various formats
     if (cleaned.startsWith('0')) {
-      cleaned = '254' + cleaned.slice(1);
+      cleaned = `254${cleaned.slice(1)}`;
     } else if (cleaned.startsWith('+')) {
       cleaned = cleaned.slice(1);
     } else if (!cleaned.startsWith('254')) {
-      cleaned = '254' + cleaned;
+      cleaned = `254${cleaned}`;
     }
 
     return cleaned;
@@ -215,7 +215,7 @@ export class MpesaGateway implements PaymentGateway {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const data = await response.json() as STKPushResponse;
@@ -261,7 +261,7 @@ export class MpesaGateway implements PaymentGateway {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       const data = await response.json() as STKQueryResponse;
@@ -388,15 +388,15 @@ export class MpesaGateway implements PaymentGateway {
     if (isSuccess && callback.CallbackMetadata?.Item) {
       for (const item of callback.CallbackMetadata.Item) {
         switch (item.Name) {
-          case 'Amount':
-            amount = item.Value as number;
-            break;
-          case 'MpesaReceiptNumber':
-            mpesaReceiptNumber = item.Value as string;
-            break;
-          case 'PhoneNumber':
-            phoneNumber = item.Value?.toString();
-            break;
+        case 'Amount':
+          amount = item.Value as number;
+          break;
+        case 'MpesaReceiptNumber':
+          mpesaReceiptNumber = item.Value as string;
+          break;
+        case 'PhoneNumber':
+          phoneNumber = item.Value?.toString();
+          break;
         }
       }
     }
@@ -444,18 +444,18 @@ export class MpesaGateway implements PaymentGateway {
     if (isSuccess && callback.CallbackMetadata?.Item) {
       for (const item of callback.CallbackMetadata.Item) {
         switch (item.Name) {
-          case 'Amount':
-            result.amount = item.Value as number;
-            break;
-          case 'MpesaReceiptNumber':
-            result.mpesaReceiptNumber = item.Value as string;
-            break;
-          case 'PhoneNumber':
-            result.phoneNumber = item.Value?.toString();
-            break;
-          case 'TransactionDate':
-            result.transactionDate = item.Value?.toString();
-            break;
+        case 'Amount':
+          result.amount = item.Value as number;
+          break;
+        case 'MpesaReceiptNumber':
+          result.mpesaReceiptNumber = item.Value as string;
+          break;
+        case 'PhoneNumber':
+          result.phoneNumber = item.Value?.toString();
+          break;
+        case 'TransactionDate':
+          result.transactionDate = item.Value?.toString();
+          break;
         }
       }
     }

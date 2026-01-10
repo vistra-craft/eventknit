@@ -10,19 +10,9 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 
-// Multer file type
-interface MulterFile {
-  fieldname: string;
-  originalname: string;
-  encoding: string;
-  mimetype: string;
-  size: number;
-  buffer: Buffer;
-}
-
 // Extend AuthenticatedRequest to include multer file
 interface ImportRequest extends AuthenticatedRequest {
-  file?: MulterFile;
+  file?: any;
 }
 
 /**

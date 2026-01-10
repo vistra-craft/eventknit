@@ -101,7 +101,8 @@ export const authorize = (...allowedRoles: UserRole[]) => {
  * ORGANIZER > ORGANIZER_STAFF > ORGANIZER_TELLER
  */
 const roleHierarchy: Record<UserRole, number> = {
-  SUPERADMIN: 9,
+  SUPERADMIN: 10,
+  ADMIN: 9,
   ADMIN_STAFF: 8,
   MARKETER: 7,
   SUPPORT: 6,

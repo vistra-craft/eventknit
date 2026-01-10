@@ -90,7 +90,7 @@ export class BadgeTemplateService {
           sizePreset: data.sizePreset ?? '4x3',
           orientation: data.orientation ?? 'landscape',
           backgroundColor: data.backgroundColor ?? '#ffffff',
-          elements: data.elements ?? [],
+          elements: (data.elements ?? []) as any,
           isDefault: data.isDefault ?? false,
           organizerId: data.organizerId,
           eventId: data.eventId,
@@ -245,7 +245,7 @@ export class BadgeTemplateService {
         where: { id },
         data: {
           ...data,
-          elements: data.elements as Prisma.InputJsonValue,
+          elements: data.elements as any,
           updatedAt: new Date(),
         },
       });
@@ -310,7 +310,7 @@ export class BadgeTemplateService {
           sizePreset: original.sizePreset,
           orientation: original.orientation,
           backgroundColor: original.backgroundColor,
-          elements: original.elements as Prisma.InputJsonValue,
+          elements: original.elements as any,
           isDefault: false,
           organizerId: original.organizerId,
           eventId: original.eventId,

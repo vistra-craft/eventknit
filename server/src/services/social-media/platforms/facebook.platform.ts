@@ -76,7 +76,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
       });
 
       const response = await fetch(
-        `${GRAPH_API_BASE}/oauth/access_token?${params.toString()}`
+        `${GRAPH_API_BASE}/oauth/access_token?${params.toString()}`,
       );
 
       if (!response.ok) {
@@ -114,7 +114,7 @@ export class FacebookPlatform implements SocialMediaPlatform {
     });
 
     const response = await fetch(
-      `${GRAPH_API_BASE}/oauth/access_token?${params.toString()}`
+      `${GRAPH_API_BASE}/oauth/access_token?${params.toString()}`,
     );
 
     if (!response.ok) {

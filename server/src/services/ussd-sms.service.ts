@@ -6,7 +6,7 @@ import { ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Prisma, UserRole } from '@prisma/client';
 import { getPaymentGatewayManager } from './payment-gateway-manager.js';
-import { MpesaGateway } from './payment-gateways/mpesa-gateway.js';
+// Removed unused MpesaGateway import
 
 export type SessionType = 'registration' | 'event_code' | 'support' | 'info';
 
@@ -795,7 +795,7 @@ export class USSDSMSService {
       });
 
       // Update session with payment info
-      await prisma.sMSSession.update({
+      await (prisma as any).sMSSession.update({
         where: { id: sessionId },
         data: {
           currentStep: 'awaiting_payment',
@@ -841,7 +841,7 @@ export class USSDSMSService {
         to: state.phoneNumber,
         message: 'Registration cancelled. If payment was made, it will be refunded.',
       });
-      await prisma.sMSSession.update({
+      await (prisma as any).sMSSession.update({
         where: { id: sessionId },
         data: {
           paymentStatus: 'cancelled',
@@ -853,7 +853,7 @@ export class USSDSMSService {
 
     if (response === 'STATUS' || response === 'CHECK') {
       // Check payment status
-      const session = await prisma.sMSSession.findUnique({
+      const session = await (prisma as any).sMSSession.findUnique({
         where: { id: sessionId },
       });
 
@@ -882,7 +882,7 @@ export class USSDSMSService {
               to: state.phoneNumber,
               message: 'Payment was cancelled. Reply PAY to try again or CANCEL to abort registration.',
             });
-            await prisma.sMSSession.update({
+            await (prisma as any).sMSSession.update({
               where: { id: sessionId },
               data: {
                 currentStep: 'payment',
@@ -894,7 +894,7 @@ export class USSDSMSService {
               to: state.phoneNumber,
               message: `Payment failed: ${queryResult.ResultDesc}. Reply PAY to try again or CANCEL to abort.`,
             });
-            await prisma.sMSSession.update({
+            await (prisma as any).sMSSession.update({
               where: { id: sessionId },
               data: {
                 currentStep: 'payment',
@@ -941,7 +941,7 @@ export class USSDSMSService {
   ): Promise<void> {
     try {
       // Update session payment status
-      await prisma.sMSSession.update({
+      await (prisma as any).sMSSession.update({
         where: { id: sessionId },
         data: {
           paymentStatus: 'completed',
@@ -972,11 +972,11 @@ export class USSDSMSService {
     resultCode: number,
     resultDesc: string,
     mpesaReceiptNumber?: string,
-    amount?: number,
+    _amount?: number,
   ): Promise<void> {
     try {
       // Find session by payment reference
-      const session = await prisma.sMSSession.findFirst({
+      const session = await (prisma as any).sMSSession.findFirst({
         where: {
           paymentReference: checkoutRequestId,
           paymentStatus: 'initiated',
@@ -995,7 +995,7 @@ export class USSDSMSService {
         await this.completePaymentAndRegistration(session.id, state, mpesaReceiptNumber);
       } else {
         // Payment failed
-        await prisma.sMSSession.update({
+        await (prisma as any).sMSSession.update({
           where: { id: session.id },
           data: {
             paymentStatus: 'failed',
@@ -1125,7 +1125,7 @@ export class USSDSMSService {
       }
 
       // Mark session as completed
-      await prisma.sMSSession.update({
+      await (prisma as any).sMSSession.update({
         where: { id: sessionId },
         data: {
           completed: true,
@@ -1150,7 +1150,7 @@ export class USSDSMSService {
       logger.error('Failed to complete registration:', error);
       await smsService.sendSMS({
         to: state.phoneNumber,
-        message: `Registration failed. Please try again or contact support. Error: ${  error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Registration failed. Please try again or contact support. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     }
   }
@@ -1226,14 +1226,14 @@ export class USSDSMSService {
       break;
 
     case 'payment':
-      message = `Payment Required\n\n`;
+      message = 'Payment Required\n\n';
       message += `Event: ${state.eventTitle || 'Event Registration'}\n`;
       if (state.ticketTypeName) {
         message += `Ticket: ${state.ticketTypeName}\n`;
       }
       message += `Amount: ${state.paymentCurrency || 'KES'} ${state.paymentAmount}\n\n`;
-      message += `Reply PAY to receive M-Pesa payment prompt.\n`;
-      message += `Reply CANCEL to abort registration.`;
+      message += 'Reply PAY to receive M-Pesa payment prompt.\n';
+      message += 'Reply CANCEL to abort registration.';
       break;
 
     case 'awaiting_payment':
@@ -1308,7 +1308,7 @@ export class USSDSMSService {
     const expiresAt = new Date(Date.now() + this.SESSION_TIMEOUT_MS);
 
     // Check for existing active session
-    const existing = await prisma.sMSSession.findFirst({
+    const existing = await (prisma as any).sMSSession.findFirst({
       where: {
         phoneNumber,
         sessionType,
@@ -1320,7 +1320,7 @@ export class USSDSMSService {
 
     if (existing) {
       // Update existing session
-      return await prisma.sMSSession.update({
+      return await (prisma as any).sMSSession.update({
         where: { id: existing.id },
         data: {
           state: initialState as unknown as Prisma.InputJsonValue,
@@ -1331,7 +1331,7 @@ export class USSDSMSService {
     }
 
     // Create new session
-    return await prisma.sMSSession.create({
+    return await (prisma as any).sMSSession.create({
       data: {
         phoneNumber,
         sessionType,
@@ -1351,7 +1351,7 @@ export class USSDSMSService {
     step: RegistrationStep,
     state: SMSRegistrationState,
   ) {
-    await prisma.sMSSession.update({
+    await (prisma as any).sMSSession.update({
       where: { id: sessionId },
       data: {
         currentStep: step,
@@ -1366,14 +1366,14 @@ export class USSDSMSService {
    */
   private static async getActiveSession(phoneNumber: string) {
     // Clean up expired sessions first
-    await prisma.sMSSession.deleteMany({
+    await (prisma as any).sMSSession.deleteMany({
       where: {
         expiresAt: { lt: new Date() },
         completed: false,
       },
     });
 
-    return await prisma.sMSSession.findFirst({
+    return await (prisma as any).sMSSession.findFirst({
       where: {
         phoneNumber,
         completed: false,
@@ -1387,7 +1387,7 @@ export class USSDSMSService {
    * Cancel session
    */
   private static async cancelSession(sessionId: string, phoneNumber: string) {
-    await prisma.sMSSession.update({
+    await (prisma as any).sMSSession.update({
       where: { id: sessionId },
       data: { completed: true },
     });
@@ -1438,7 +1438,7 @@ export class USSDSMSService {
    */
   static async cleanupExpiredSessions(): Promise<void> {
     try {
-      const deleted = await prisma.sMSSession.deleteMany({
+      const deleted = await (prisma as any).sMSSession.deleteMany({
         where: {
           expiresAt: { lt: new Date() },
           completed: false,

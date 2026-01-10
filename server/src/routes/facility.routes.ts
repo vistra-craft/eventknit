@@ -16,7 +16,7 @@ router.use(authenticate);
 router.post(
   '/events/:eventId/reorder',
   requireMinRole(UserRole.ADMIN_STAFF),
-  FacilityController.reorderFacilities
+  FacilityController.reorderFacilities,
 );
 
 /**
@@ -27,7 +27,7 @@ router.post(
 router.post(
   '/events/:eventId/create-default',
   requireMinRole(UserRole.ADMIN_STAFF),
-  FacilityController.createDefaultFacility
+  FacilityController.createDefaultFacility,
 );
 
 /**
@@ -38,7 +38,7 @@ router.post(
 router.post(
   '/events/:eventId/ensure-default',
   requireMinRole(UserRole.TELLER),
-  FacilityController.ensureDefaultFacility
+  FacilityController.ensureDefaultFacility,
 );
 
 /**
@@ -49,7 +49,7 @@ router.post(
 router.post(
   '/events/:eventId',
   requireMinRole(UserRole.ADMIN_STAFF),
-  FacilityController.createFacility
+  FacilityController.createFacility,
 );
 
 /**
@@ -60,7 +60,7 @@ router.post(
 router.get(
   '/events/:eventId',
   requireMinRole(UserRole.TELLER),
-  FacilityController.getFacilities
+  FacilityController.getFacilities,
 );
 
 /**
@@ -71,7 +71,7 @@ router.get(
 router.get(
   '/events/:eventId/:id',
   requireMinRole(UserRole.TELLER),
-  FacilityController.getFacilityById
+  FacilityController.getFacilityById,
 );
 
 /**
@@ -82,7 +82,7 @@ router.get(
 router.put(
   '/events/:eventId/:id',
   requireMinRole(UserRole.ADMIN_STAFF),
-  FacilityController.updateFacility
+  FacilityController.updateFacility,
 );
 
 /**
@@ -93,7 +93,7 @@ router.put(
 router.delete(
   '/events/:eventId/:id',
   requireMinRole(UserRole.ADMIN_STAFF),
-  FacilityController.deleteFacility
+  FacilityController.deleteFacility,
 );
 
 /**
@@ -104,7 +104,7 @@ router.delete(
 router.get(
   '/events/:eventId/:id/stats',
   requireMinRole(UserRole.TELLER),
-  FacilityController.getFacilityStats
+  FacilityController.getFacilityStats,
 );
 
 export default router;

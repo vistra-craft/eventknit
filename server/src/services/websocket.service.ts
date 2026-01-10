@@ -204,6 +204,19 @@ class WebSocketService {
   }
 
   /**
+   * Emit event to any room
+   */
+  emitToRoom(room: string, event: string, data: any): void {
+    if (!this.io) {
+      logger.warn(`WebSocket server not initialized, cannot emit to room: ${room}`);
+      return;
+    }
+
+    this.io.to(room).emit(event, data);
+    logger.debug(`Emitted ${event} to room: ${room}`);
+  }
+
+  /**
    * Send statistics update to event room
    */
   async sendStatisticsUpdate(eventId: string): Promise<void> {

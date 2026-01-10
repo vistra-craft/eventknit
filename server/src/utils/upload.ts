@@ -5,8 +5,7 @@ import { Request } from 'express';
 const storage = multer.memoryStorage(); // Store files in memory for Cloudinary upload
 
 // File filter for images only
-// eslint-disable-next-line no-undef
-const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (_req: Request, file: any, cb: any) => {
   // Check if file is an image
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
@@ -16,7 +15,7 @@ const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFil
 };
 
 // Multer configuration
-export const upload = multer({
+export const upload: any = multer({
   storage,
   fileFilter,
   limits: {

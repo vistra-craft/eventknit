@@ -19,7 +19,6 @@ import { PermissionService } from '../services/permission.service.js';
 import { KYCService } from '../services/kyc.service.js';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { ConsentService } from '../services/consent.service.js';
-import { DataAccessService } from '../services/data-access.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class OrganizerDashboardController {

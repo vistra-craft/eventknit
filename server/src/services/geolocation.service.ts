@@ -85,9 +85,9 @@ export class GeolocationService {
    */
   private static async getLocationFromIPApiCo(ipAddress: string): Promise<GeolocationData | null> {
     try {
-      // eslint-disable-next-line no-undef
+       
       const response = await fetch(`https://ipapi.co/${ipAddress}/json/`, {
-        // eslint-disable-next-line no-undef
+         
         signal: AbortSignal.timeout(5000),
       });
 
@@ -118,11 +118,11 @@ export class GeolocationService {
    */
   private static async getLocationFromIPApiCom(ipAddress: string): Promise<GeolocationData | null> {
     try {
-      // eslint-disable-next-line no-undef
+       
       const response = await fetch(
         `http://ip-api.com/json/${ipAddress}?fields=status,message,city,country,countryCode,region,regionName`,
         {
-          // eslint-disable-next-line no-undef
+           
           signal: AbortSignal.timeout(5000),
         },
       );

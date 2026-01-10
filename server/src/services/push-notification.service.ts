@@ -57,7 +57,7 @@ class PushNotificationService {
    * Check if push notifications are configured
    */
   isConfigured(): boolean {
-    return isConfigured;
+    return !!isConfigured;
   }
 
   /**
@@ -84,7 +84,7 @@ class PushNotificationService {
     userId: string,
     subscription: PushSubscriptionData,
     userAgent?: string,
-    deviceId?: string
+    deviceId?: string,
   ) {
     // Verify user exists
     const user = await prisma.user.findUnique({
@@ -196,7 +196,7 @@ class PushNotificationService {
    */
   async sendToSubscription(
     subscription: { endpoint: string; p256dh: string; auth: string },
-    payload: PushNotificationPayload
+    payload: PushNotificationPayload,
   ): Promise<boolean> {
     if (!isConfigured) {
       logger.warn('Cannot send push notification - VAPID keys not configured');
@@ -218,7 +218,7 @@ class PushNotificationService {
         {
           TTL: 60 * 60 * 24, // 24 hours
           urgency: 'normal',
-        }
+        },
       );
       return true;
     } catch (error: any) {
@@ -231,7 +231,7 @@ class PushNotificationService {
           data: { isActive: false },
         });
       } else {
-        logger.error(`Failed to send push notification:`, error);
+        logger.error('Failed to send push notification:', error);
         // Increment fail count
         await prisma.pushSubscription.updateMany({
           where: { endpoint: subscription.endpoint },

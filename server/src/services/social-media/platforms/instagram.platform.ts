@@ -82,7 +82,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
       });
 
       const response = await fetch(
-        `${GRAPH_API_BASE}/oauth/access_token?${params.toString()}`
+        `${GRAPH_API_BASE}/oauth/access_token?${params.toString()}`,
       );
 
       if (!response.ok) {
@@ -102,7 +102,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
       });
 
       const longLivedResponse = await fetch(
-        `${GRAPH_API_BASE}/oauth/access_token?${longLivedParams.toString()}`
+        `${GRAPH_API_BASE}/oauth/access_token?${longLivedParams.toString()}`,
       );
 
       if (!longLivedResponse.ok) {
@@ -188,7 +188,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     try {
       // Get Facebook pages
       const pagesResponse = await fetch(
-        `${GRAPH_API_BASE}/me/accounts?access_token=${accessToken}`
+        `${GRAPH_API_BASE}/me/accounts?access_token=${accessToken}`,
       );
 
       if (!pagesResponse.ok) {
@@ -201,7 +201,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
       // Find a page with connected Instagram account
       for (const page of pages) {
         const igResponse = await fetch(
-          `${GRAPH_API_BASE}/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+          `${GRAPH_API_BASE}/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`,
         );
 
         if (igResponse.ok) {
@@ -249,7 +249,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
 
       const containerResponse = await fetch(
         `${GRAPH_API_BASE}/${igAccount.id}/media?${mediaParams.toString()}`,
-        { method: 'POST' }
+        { method: 'POST' },
       );
 
       if (!containerResponse.ok) {
@@ -268,7 +268,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
 
       const publishResponse = await fetch(
         `${GRAPH_API_BASE}/${igAccount.id}/media_publish?${publishParams.toString()}`,
-        { method: 'POST' }
+        { method: 'POST' },
       );
 
       if (!publishResponse.ok) {
@@ -335,7 +335,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
         });
 
         const insightsResponse = await fetch(
-          `${GRAPH_API_BASE}/${postId}/insights?${insightsParams.toString()}`
+          `${GRAPH_API_BASE}/${postId}/insights?${insightsParams.toString()}`,
         );
 
         if (insightsResponse.ok) {
@@ -364,7 +364,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
     }
   }
 
-  async deletePost(accessToken: string, postId: string): Promise<boolean> {
+  async deletePost(_accessToken: string, _postId: string): Promise<boolean> {
     // Instagram doesn't support deleting posts via API
     logger.warn('Instagram: Post deletion is not supported via API');
     return false;
@@ -378,7 +378,7 @@ export class InstagramPlatform implements SocialMediaPlatform {
 
     try {
       const response = await fetch(
-        `${GRAPH_API_BASE}/me?access_token=${accessToken}`
+        `${GRAPH_API_BASE}/me?access_token=${accessToken}`,
       );
       return response.ok;
     } catch (error) {

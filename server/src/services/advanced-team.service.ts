@@ -1,7 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, AuthorizationError } from '../utils/errors.js';
-import { PermissionService } from './permission.service.js';
+// Removed unused PermissionService import
 
 export class AdvancedTeamService {
   /**
@@ -155,7 +155,7 @@ export class AdvancedTeamService {
     },
   ) {
     try {
-      const template = await this.getRoleTemplateById(templateId, organizerId);
+      const _template = await this.getRoleTemplateById(templateId, organizerId);
 
       // Validate permissions if provided
       if (data.permissionKeys) {
@@ -212,7 +212,7 @@ export class AdvancedTeamService {
    */
   static async deleteRoleTemplate(templateId: string, organizerId: string) {
     try {
-      const template = await this.getRoleTemplateById(templateId, organizerId);
+      const _template = await this.getRoleTemplateById(templateId, organizerId);
 
       // Check if role is in use
       const staffCount = await prisma.user.count({

@@ -696,7 +696,7 @@ export class OrganizerService {
               }
             }
           });
-        } catch (error) {
+        } catch (_error) {
           // Invalid ticketTypes JSON, skip
         }
       }

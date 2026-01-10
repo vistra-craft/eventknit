@@ -34,7 +34,7 @@ export class SavedEventService {
       limit?: number;
       search?: string;
       category?: string;
-    }
+    },
   ): Promise<{
     events: SavedEventWithDetails[];
     total: number;
@@ -65,7 +65,7 @@ export class SavedEventService {
     }
 
     const [events, total] = await Promise.all([
-      prisma.savedEvent.findMany({
+      (prisma as any).savedEvent.findMany({
         where,
         skip,
         take: limit,
@@ -88,8 +88,8 @@ export class SavedEventService {
             },
           },
         },
-      }),
-      prisma.savedEvent.count({ where }),
+      }) as any,
+      (prisma as any).savedEvent.count({ where }),
     ]);
 
     return {
@@ -106,7 +106,7 @@ export class SavedEventService {
   static async saveEvent(
     userId: string,
     eventId: string,
-    notes?: string
+    notes?: string,
   ): Promise<SavedEventWithDetails> {
     // Check if event exists
     const event = await prisma.event.findUnique({
@@ -122,7 +122,7 @@ export class SavedEventService {
     }
 
     // Check if already saved
-    const existing = await prisma.savedEvent.findUnique({
+    const existing = await (prisma as any).savedEvent.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -135,7 +135,7 @@ export class SavedEventService {
       throw new ValidationError('Event is already saved');
     }
 
-    const savedEvent = await prisma.savedEvent.create({
+    const savedEvent = await (prisma as any).savedEvent.create({
       data: {
         userId,
         eventId,
@@ -162,14 +162,14 @@ export class SavedEventService {
     });
 
     logger.info(`User ${userId} saved event ${eventId}`);
-    return savedEvent as SavedEventWithDetails;
+    return savedEvent as any;
   }
 
   /**
    * Remove a saved event
    */
   static async unsaveEvent(userId: string, eventId: string): Promise<void> {
-    const savedEvent = await prisma.savedEvent.findUnique({
+    const savedEvent = await (prisma as any).savedEvent.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -182,7 +182,7 @@ export class SavedEventService {
       throw new NotFoundError('Saved event not found');
     }
 
-    await prisma.savedEvent.delete({
+    await (prisma as any).savedEvent.delete({
       where: {
         userId_eventId: {
           userId,
@@ -198,7 +198,7 @@ export class SavedEventService {
    * Check if an event is saved by a user
    */
   static async isEventSaved(userId: string, eventId: string): Promise<boolean> {
-    const savedEvent = await prisma.savedEvent.findUnique({
+    const savedEvent = await (prisma as any).savedEvent.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -215,9 +215,9 @@ export class SavedEventService {
    */
   static async getEventsSavedStatus(
     userId: string,
-    eventIds: string[]
+    eventIds: string[],
   ): Promise<Record<string, boolean>> {
-    const savedEvents = await prisma.savedEvent.findMany({
+    const savedEvents = await (prisma as any).savedEvent.findMany({
       where: {
         userId,
         eventId: { in: eventIds },
@@ -225,13 +225,13 @@ export class SavedEventService {
       select: { eventId: true },
     });
 
-    const savedSet = new Set(savedEvents.map((s) => s.eventId));
+    const savedSet = new Set(savedEvents.map((s: any) => s.eventId));
     return eventIds.reduce(
       (acc, id) => {
         acc[id] = savedSet.has(id);
         return acc;
       },
-      {} as Record<string, boolean>
+      {} as Record<string, boolean>,
     );
   }
 
@@ -241,9 +241,9 @@ export class SavedEventService {
   static async updateNotes(
     userId: string,
     eventId: string,
-    notes: string
+    notes: string,
   ): Promise<SavedEventWithDetails> {
-    const savedEvent = await prisma.savedEvent.findUnique({
+    const savedEvent = await (prisma as any).savedEvent.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -256,7 +256,7 @@ export class SavedEventService {
       throw new NotFoundError('Saved event not found');
     }
 
-    const updated = await prisma.savedEvent.update({
+    const updated = await (prisma as any).savedEvent.update({
       where: {
         userId_eventId: {
           userId,
@@ -284,14 +284,14 @@ export class SavedEventService {
       },
     });
 
-    return updated as SavedEventWithDetails;
+    return updated as any;
   }
 
   /**
    * Get saved event count for a user
    */
   static async getSavedCount(userId: string): Promise<number> {
-    return prisma.savedEvent.count({
+    return (prisma as any).savedEvent.count({
       where: { userId },
     });
   }

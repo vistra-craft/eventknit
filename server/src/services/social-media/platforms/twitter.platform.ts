@@ -23,7 +23,6 @@ import { config } from '../../../config/index.js';
 import crypto from 'crypto';
 
 const TWITTER_API_BASE = 'https://api.twitter.com/2';
-const TWITTER_UPLOAD_API = 'https://upload.twitter.com/1.1';
 
 export class TwitterPlatform implements SocialMediaPlatform {
   private codeVerifier: string = '';
@@ -83,7 +82,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
       const codeVerifier = this.codeVerifier || 'challenge';
 
       const credentials = Buffer.from(
-        `${this.getClientId()}:${this.getClientSecret()}`
+        `${this.getClientId()}:${this.getClientSecret()}`,
       ).toString('base64');
 
       const body = new URLSearchParams({
@@ -131,7 +130,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
 
     try {
       const credentials = Buffer.from(
-        `${this.getClientId()}:${this.getClientSecret()}`
+        `${this.getClientId()}:${this.getClientSecret()}`,
       ).toString('base64');
 
       const body = new URLSearchParams({
@@ -181,7 +180,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -219,7 +218,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
 
       // Add hashtags if provided
       if (post.hashtags?.length) {
-        tweetText += '\n\n' + post.hashtags.map((h) => (h.startsWith('#') ? h : `#${h}`)).join(' ');
+        tweetText += `\n\n${post.hashtags.map((h) => (h.startsWith('#') ? h : `#${h}`)).join(' ')}`;
       }
 
       // Add link if provided
@@ -302,7 +301,7 @@ export class TwitterPlatform implements SocialMediaPlatform {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
