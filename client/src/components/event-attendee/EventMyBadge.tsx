@@ -171,14 +171,14 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
                   />
 
                   {/* Name & Details */}
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                  <h3 className="text-2xl font-bold text-muted-foreground mb-1">
                     {user.name}
                   </h3>
                   {user.title && (
-                    <p className="text-gray-600 font-medium">{user.title}</p>
+                    <p className="text-muted-foreground font-medium">{user.title}</p>
                   )}
                   {user.company && (
-                    <p className="text-gray-500">{user.company}</p>
+                    <p className="text-muted-foreground">{user.company}</p>
                   )}
 
                   {/* Badge Type */}
@@ -197,10 +197,10 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
                         className="w-32 h-32 rounded-xl"
                       />
                     ) : (
-                      <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center">
+                      <div className="w-32 h-32 bg-muted border-2 border-dashed border-border rounded-xl flex items-center justify-center">
                         <div className="text-center">
-                          <QrCode className="w-12 h-12 text-gray-400 mx-auto" />
-                          <p className="text-xs text-gray-400 mt-1">
+                          <QrCode className="w-12 h-12 text-muted-foreground mx-auto" />
+                          <p className="text-xs text-muted-foreground mt-1">
                             {event.registrationId ? 'Loading...' : 'No ticket'}
                           </p>
                         </div>
@@ -209,9 +209,9 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
                   </div>
 
                   {/* Badge Code */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-500 mb-1">Badge Code</p>
-                    <p className="text-lg font-mono font-bold text-gray-900 tracking-wider">
+                  <div className="bg-muted rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground mb-1">Badge Code</p>
+                    <p className="text-lg font-mono font-bold text-muted-foreground tracking-wider">
                       {badgeCode}
                     </p>
                   </div>
@@ -219,7 +219,7 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
               </CardContent>
 
               {/* Badge Footer */}
-              <div className="bg-gray-50 px-6 py-4 text-center border-t border-gray-100">
+              <div className="bg-muted px-6 py-4 text-center border-t border-border">
                 {event.hashtag && (
                   <p className="text-sm text-primary font-medium">
                     #{event.hashtag}

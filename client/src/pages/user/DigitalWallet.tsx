@@ -303,14 +303,12 @@ const DigitalWallet = () => {
                       Automatically add new tickets to wallet
                     </p>
                   </div>
-                  <input
+                  <Checkbox
                     id="auto-add-tickets"
-                    type="checkbox"
                     checked={wallet.autoAddTickets}
-                    onChange={(e) =>
-                      handleUpdatePreferences({ autoAddTickets: e.target.checked })
+                    onCheckedChange={(checked) =>
+                      handleUpdatePreferences({ autoAddTickets: !!checked })
                     }
-                    className="rounded"
                   />
                   </div>
                   <div className="flex items-center justify-between">
@@ -322,14 +320,12 @@ const DigitalWallet = () => {
                         Enable cloud backup for tickets
                       </p>
                     </div>
-                    <input
-                    id="backup-enabled"
-                      type="checkbox"
+                    <Checkbox
+                      id="backup-enabled"
                       checked={wallet.backupEnabled}
-                      onChange={(e) =>
-                        handleUpdatePreferences({ backupEnabled: e.target.checked })
+                      onCheckedChange={(checked) =>
+                        handleUpdatePreferences({ backupEnabled: !!checked })
                       }
-                      className="rounded"
                     />
                   </div>
                   {wallet.lastSyncedAt && (

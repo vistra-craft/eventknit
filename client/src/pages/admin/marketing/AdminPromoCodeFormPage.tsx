@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -257,17 +258,15 @@ const AdminPromoCodeFormPage = () => {
                 <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
                   {events.map((e) => (
                     <label key={e.id} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={(formData.eventIds || []).includes(e.id)}
-                        onChange={(ev) => {
+                        onCheckedChange={(checked) => {
                           const ids = formData.eventIds || [];
                           setFormData({
                             ...formData,
-                            eventIds: ev.target.checked ? [...ids, e.id] : ids.filter(i => i !== e.id)
+                            eventIds: !!checked ? [...ids, e.id] : ids.filter(i => i !== e.id)
                           });
                         }}
-                        className="h-4 w-4 rounded"
                       />
                       <span className="text-sm">{e.title}</span>
                     </label>

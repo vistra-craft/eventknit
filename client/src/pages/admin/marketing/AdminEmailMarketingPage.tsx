@@ -212,8 +212,8 @@ const AdminEmailMarketingPage = () => {
     switch (type) {
       case 'newsletter': return "bg-primary/10 text-primary";
       case 'promotional': return "bg-success/10 text-success";
-      case 'transactional': return "bg-purple-100 text-purple-800";
-      case 'welcome': return "bg-orange-100 text-orange-800";
+      case 'transactional': return "bg-muted text-muted-foreground";
+      case 'welcome': return "bg-warning/10 text-warning";
       case 'reminder': return "bg-warning/10 text-warning";
       default: return "bg-muted text-foreground";
     }
@@ -226,7 +226,7 @@ const AdminEmailMarketingPage = () => {
       case 'sending': return "bg-warning/10 text-warning";
       case 'draft': return "bg-muted text-foreground";
       case 'paused': return "bg-destructive/10 text-destructive";
-      case 'pending_approval': return "bg-orange-100 text-orange-800";
+      case 'pending_approval': return "bg-warning/10 text-warning";
       default: return "bg-muted text-foreground";
     }
   };

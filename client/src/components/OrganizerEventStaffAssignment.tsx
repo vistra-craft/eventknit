@@ -237,7 +237,7 @@ export const OrganizerEventStaffAssignment: React.FC<OrganizerEventStaffAssignme
       SUPERVISOR: "bg-destructive/10 text-destructive",
       TICKET_SELLER: "bg-warning/10 text-warning",
     };
-    return colors[role] || "bg-gray-100 text-gray-800";
+    return colors[role] || "bg-muted text-muted-foreground";
   };
 
   // Filter out already assigned staff
@@ -337,7 +337,7 @@ export const OrganizerEventStaffAssignment: React.FC<OrganizerEventStaffAssignme
                             Active
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                          <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
                             <XCircle className="h-3 w-3 mr-1" />
                             Inactive
                           </Badge>

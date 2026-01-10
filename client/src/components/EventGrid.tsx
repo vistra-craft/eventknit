@@ -156,7 +156,7 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
               <Button
                 variant="outline"
                 onClick={() => fetchEvents({ status: EventStatus.APPROVED, limit: 100 })}
-                className="border border-gray-300 hover:bg-gray-900 hover:text-white transition-colors"
+                className="border border-border hover:bg-success-light hover:text-success transition-colors"
               >
                 Try Again
               </Button>

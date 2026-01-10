@@ -178,7 +178,7 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
       case "HIGH":
         return <Badge variant="default" className="bg-orange-500">High</Badge>;
       case "MEDIUM":
-        return <Badge variant="default" className="bg-blue-500">Medium</Badge>;
+        return <Badge variant="default" className="bg-primary/50">Medium</Badge>;
       case "LOW":
         return <Badge variant="secondary">Low</Badge>;
       default:

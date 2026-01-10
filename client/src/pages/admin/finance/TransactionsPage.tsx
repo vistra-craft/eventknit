@@ -114,8 +114,8 @@ const TransactionsPage = () => {
     const variants: Record<string, string> = {
       cash: "bg-muted text-muted-foreground border-border",
       bank_transfer: "bg-primary/10 text-primary border-primary/20",
-      credit_card: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-      check: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+      credit_card: "bg-muted text-muted-foreground border-border",
+      check: "bg-warning/10 text-warning border-warning",
       mobile_money: "bg-teal-500/10 text-teal-600 border-teal-500/20",
       mpesa: "bg-success/10 text-success border-success/20"
     };

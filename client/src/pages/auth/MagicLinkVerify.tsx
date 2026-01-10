@@ -86,7 +86,7 @@ const MagicLinkVerify = () => {
           <CardHeader className="text-center pb-4">
             <div className="mx-auto w-16 h-16 bg-gradient-to-br from-eventknit/10 to-eventknit/20 rounded-full flex items-center justify-center mb-4">
               {status === 'loading' && <Loader size="lg" />}
-              {status === 'success' && <CheckCircle className="w-8 h-8 text-green-600" />}
+              {status === 'success' && <CheckCircle className="w-8 h-8 text-success" />}
               {status === 'error' && <XCircle className="w-8 h-8 text-destructive" />}
             </div>
             <CardTitle className="text-xl font-semibold text-foreground">
@@ -106,7 +106,7 @@ const MagicLinkVerify = () => {
 
             {status === 'success' && (
               <div className="text-center space-y-4">
-                <p className="text-green-600 font-medium">
+                <p className="text-success font-medium">
                   You have been successfully logged in!
                 </p>
                 <p className="text-sm text-muted-foreground">

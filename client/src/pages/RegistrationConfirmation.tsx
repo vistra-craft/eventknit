@@ -295,8 +295,8 @@ const RegistrationConfirmation: React.FC = () => {
       <main className="max-w-lg mx-auto px-4 py-8 space-y-6">
         {/* Success Header */}
         <div className="text-center space-y-3">
-          <div className="mx-auto w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-            <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+          <div className="mx-auto w-14 h-14 rounded-full bg-success/10 dark:bg-green-900/30 flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-success dark:text-success" />
           </div>
           <h1 className="text-2xl font-bold">You're Registered!</h1>
           <p className="text-muted-foreground">
@@ -373,9 +373,9 @@ const RegistrationConfirmation: React.FC = () => {
 
         {/* Password Set Success */}
         {passwordSetSuccess && (
-          <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-4 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-800 dark:text-green-200">
+          <div className="rounded-xl border border-success bg-success-light p-4 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+            <p className="text-sm text-success">
               Password set! You can now log in anytime.
             </p>
           </div>

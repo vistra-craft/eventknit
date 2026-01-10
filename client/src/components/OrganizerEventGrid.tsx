@@ -121,7 +121,7 @@ export const OrganizerEventGrid = () => {
               <p className="text-destructive">{error}</p>
               <button
                 onClick={() => handleFilterChange(selectedFilter)}
-                className="mt-4 px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-200"
+                className="mt-4 px-8 py-3 bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded-lg font-semibold transition-all duration-200"
               >
                 Try Again
               </button>
@@ -156,7 +156,7 @@ export const OrganizerEventGrid = () => {
         </div>
 
         <div className="text-center mt-12">
-          <button className="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-all duration-200">
+          <button className="px-8 py-3 bg-secondary hover:bg-secondary/90 text-secondary-foreground rounded-lg font-semibold transition-all duration-200">
             Load More Events
           </button>
         </div>

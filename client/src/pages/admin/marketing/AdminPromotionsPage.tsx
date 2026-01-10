@@ -371,7 +371,7 @@ const AdminPromotionsPage = () => {
                         </Badge>
                         {getStatusBadge(code)}
                         {code.firstTimeOnly && (
-                          <Badge variant="outline" className="text-purple-600 border-purple-200">
+                          <Badge variant="outline" className="text-muted-foreground border-border">
                             <Sparkles className="h-3 w-3 mr-1" />
                             First-time only
                           </Badge>
@@ -600,7 +600,7 @@ const AdminPromotionsPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeletingCodeId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

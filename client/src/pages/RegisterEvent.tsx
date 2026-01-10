@@ -7,6 +7,7 @@ import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -638,13 +639,10 @@ const EventRegistration = () => {
             <div className="space-y-2">
               {field.options.map((option) => (
                 <div key={option} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     id={`${fieldId}-${option}`}
-                    name={field.name}
                     checked={formData[field.id] === option}
-                    onChange={(e) => handleInputChange(field.id, e.target.checked ? option : '')}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    onCheckedChange={(checked) => handleInputChange(field.id, checked ? option : '')}
                   />
                   <Label htmlFor={`${fieldId}-${option}`} className="text-sm font-normal">
                     {option}
@@ -1177,12 +1175,10 @@ const EventRegistration = () => {
                       
                       <div className="space-y-3">
                         <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             id="marketingConsent"
                             checked={marketingConsent}
-                            onChange={(e) => setMarketingConsent(e.target.checked)}
-                            className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                            onCheckedChange={(checked) => setMarketingConsent(!!checked)}
                           />
                           <label htmlFor="marketingConsent" className="text-sm text-foreground cursor-pointer flex-1">
                             <span className="font-medium">Marketing Communications</span>
@@ -1193,12 +1189,10 @@ const EventRegistration = () => {
                         </div>
 
                         <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             id="demographicsConsent"
                             checked={demographicsConsent}
-                            onChange={(e) => setDemographicsConsent(e.target.checked)}
-                            className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                            onCheckedChange={(checked) => setDemographicsConsent(!!checked)}
                           />
                           <label htmlFor="demographicsConsent" className="text-sm text-foreground cursor-pointer flex-1">
                             <span className="font-medium">Demographic Data (Premium Feature)</span>
@@ -1209,12 +1203,10 @@ const EventRegistration = () => {
                         </div>
 
                         <div className="flex items-start gap-3">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             id="analyticsConsent"
                             checked={analyticsConsent}
-                            onChange={(e) => setAnalyticsConsent(e.target.checked)}
-                            className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                            onCheckedChange={(checked) => setAnalyticsConsent(!!checked)}
                           />
                           <label htmlFor="analyticsConsent" className="text-sm text-foreground cursor-pointer flex-1">
                             <span className="font-medium">Engagement Analytics (Premium Feature)</span>
@@ -1237,11 +1229,9 @@ const EventRegistration = () => {
                     {/* Terms & Conditions */}
                     <div className="pt-6 border-t bg-primary/5 -mx-6 px-6">
                       <div className="flex items-start gap-3 mb-4">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           id="termsConsent"
                           required
-                          className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                         />
                         <label htmlFor="termsConsent" className="text-sm text-muted-foreground">
                           I agree to the{" "}

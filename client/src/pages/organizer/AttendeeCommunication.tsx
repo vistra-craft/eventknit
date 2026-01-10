@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -366,22 +367,18 @@ const SendMessageForm = ({
 
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="sendEmail"
             checked={sendEmail}
-            onChange={(e) => setSendEmail(e.target.checked)}
-            className="rounded"
+            onCheckedChange={(checked) => setSendEmail(!!checked)}
           />
           <Label htmlFor="sendEmail">Send Email</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="sendNotification"
             checked={sendNotification}
-            onChange={(e) => setSendNotification(e.target.checked)}
-            className="rounded"
+            onCheckedChange={(checked) => setSendNotification(!!checked)}
           />
           <Label htmlFor="sendNotification">Send In-App Notification</Label>
         </div>

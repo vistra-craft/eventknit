@@ -40,7 +40,7 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
 
     if (now < eventDate) return { label: 'Upcoming', color: 'bg-primary/10 text-primary' };
     if (now >= eventDate && now <= endDate) return { label: 'Ongoing', color: 'bg-success/10 text-success' };
-    return { label: 'Completed', color: 'bg-gray-100 text-gray-800' };
+    return { label: 'Completed', color: 'bg-success/10 text-success' };
   };
 
   const status = getEventStatus();

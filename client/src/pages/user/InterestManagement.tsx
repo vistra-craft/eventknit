@@ -120,8 +120,8 @@ const InterestManagement: React.FC = () => {
             key={star}
             className={`h-4 w-4 cursor-pointer transition-colors ${
               star <= weight
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-gray-300"
+                ? "fill-warning text-warning"
+                : "text-muted-foreground"
             }`}
             onClick={() => onChange && onChange(star)}
           />

@@ -624,7 +624,7 @@ const ServicePointEventDashboard: React.FC = () => {
                 <p className="font-semibold text-foreground">
                   {statistics?.totalAttendees || 0}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Checked In: {statistics?.checkedIn || 0}
                 </p>
               </div>
@@ -817,7 +817,7 @@ const ServicePointEventDashboard: React.FC = () => {
                           <h4 className="font-medium text-foreground">{attendee.attendeeName}</h4>
                           <p className="text-sm text-muted-foreground">{attendee.email}</p>
                           {attendee.phoneNumber && (
-                            <p className="text-sm text-gray-500">{attendee.phoneNumber}</p>
+                            <p className="text-sm text-muted-foreground">{attendee.phoneNumber}</p>
                           )}
                         </div>
                       </div>
@@ -1024,7 +1024,7 @@ const ServicePointEventDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <Shield className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No sessions yet</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                       Create sessions to define check-in points for this event
@@ -1200,7 +1200,7 @@ const ServicePointEventDashboard: React.FC = () => {
             <AlertDialogAction
               onClick={handleDeleteSession}
               disabled={deletingSession}
-              className="bg-red-600 hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deletingSession ? (
                 <>

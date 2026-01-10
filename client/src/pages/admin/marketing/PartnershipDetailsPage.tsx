@@ -413,7 +413,7 @@ Generated on: ${new Date().toLocaleDateString()}
                     {[...Array(5)].map((_, i) => (
                       <Star 
                         key={i} 
-                        className={`h-4 w-4 ${i < partnership.rating! ? 'text-yellow-400 fill-current' : 'text-muted-foreground'}`} 
+                        className={`h-4 w-4 ${i < partnership.rating! ? 'text-warning fill-current' : 'text-muted-foreground'}`} 
                       />
                     ))}
                     <span className="ml-2 text-sm text-muted-foreground">({partnership.rating}/5)</span>

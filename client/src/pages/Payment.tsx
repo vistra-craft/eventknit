@@ -256,7 +256,7 @@ const PaymentPage = () => {
                       <span>KES {subtotal.toLocaleString()}</span>
                     </div>
                     {discount > 0 && (
-                      <div className="flex justify-between text-sm text-green-600">
+                      <div className="flex justify-between text-sm text-success">
                         <span>Discount {paymentData.promoCode && `(${paymentData.promoCode})`}</span>
                         <span>-KES {discount.toLocaleString()}</span>
                       </div>

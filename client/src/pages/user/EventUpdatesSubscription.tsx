@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
@@ -312,12 +313,10 @@ const SubscribeForm = ({
         <div className="space-y-2 mt-2">
           {["SCHEDULE", "VENUE", "CANCELLATION", "ANNOUNCEMENT", "OTHER"].map((type) => (
             <div key={type} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id={`type-${type}`}
                 checked={formData.updateTypes.includes(type)}
-                onChange={() => toggleUpdateType(type)}
-                className="rounded"
+                onCheckedChange={() => toggleUpdateType(type)}
               />
               <Label htmlFor={`type-${type}`} className="cursor-pointer">
                 {type}
@@ -331,12 +330,10 @@ const SubscribeForm = ({
         <div className="space-y-2 mt-2">
           {["EMAIL", "PUSH", "IN_APP", "SMS"].map((channel) => (
             <div key={channel} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id={`channel-${channel}`}
                 checked={formData.channels.includes(channel)}
-                onChange={() => toggleChannel(channel)}
-                className="rounded"
+                onCheckedChange={() => toggleChannel(channel)}
               />
               <Label htmlFor={`channel-${channel}`} className="cursor-pointer">
                 {channel}
@@ -391,12 +388,10 @@ const SubscriptionPreferencesForm = ({
         <div className="space-y-2 mt-2">
           {["SCHEDULE", "VENUE", "CANCELLATION", "ANNOUNCEMENT", "OTHER"].map((type) => (
             <div key={type} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id={`pref-type-${type}`}
                 checked={updateTypes.includes(type)}
-                onChange={() => toggleUpdateType(type)}
-                className="rounded"
+                onCheckedChange={() => toggleUpdateType(type)}
               />
               <Label htmlFor={`pref-type-${type}`} className="cursor-pointer">
                 {type}
@@ -410,12 +405,10 @@ const SubscriptionPreferencesForm = ({
         <div className="space-y-2 mt-2">
           {["EMAIL", "PUSH", "IN_APP", "SMS"].map((channel) => (
             <div key={channel} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id={`pref-channel-${channel}`}
                 checked={channels.includes(channel)}
-                onChange={() => toggleChannel(channel)}
-                className="rounded"
+                onCheckedChange={() => toggleChannel(channel)}
               />
               <Label htmlFor={`pref-channel-${channel}`} className="cursor-pointer">
                 {channel}

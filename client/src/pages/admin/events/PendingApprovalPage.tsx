@@ -572,9 +572,9 @@ const PendingApprovalPage = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <Alert className="border-orange-200 bg-orange-50">
-                <Shield className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-orange-900">
+              <Alert className="border-warning bg-warning/10">
+                <Shield className="h-4 w-4 text-warning" />
+                <AlertDescription className="text-warning">
                   <strong>Important:</strong> The organizer will not be able to receive payouts from ticket sales until they complete identity verification. 
                   You can still approve the event, but they will need to verify their identity to receive funds.
                 </AlertDescription>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Save, Trash2, Bell, Filter, X } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
@@ -514,10 +515,8 @@ const AdvancedSearch: React.FC = () => {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="notify"
-                  className="rounded"
                 />
                 <Label htmlFor="notify">Notify me when new events match this search</Label>
               </div>

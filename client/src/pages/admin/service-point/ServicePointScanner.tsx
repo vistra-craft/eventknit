@@ -982,9 +982,9 @@ const ServicePointScanner: React.FC = () => {
                     </div>
                     {syncing && syncProgress.total > 0 && (
                       <div className="mt-3">
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-muted rounded-full h-2">
                           <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
                             style={{ width: `${(syncProgress.synced / syncProgress.total) * 100}%` }}
                           />
                         </div>
@@ -1126,8 +1126,8 @@ const ServicePointScanner: React.FC = () => {
                       className={`relative bg-muted rounded-lg overflow-hidden ${
                         isMobile ? 'aspect-square' : 'aspect-video'
                       } ${
-                        flashStatus === 'success' ? 'bg-green-200' : 
-                        flashStatus === 'error' ? 'bg-red-200' : ''
+                        flashStatus === 'success' ? 'bg-success-light' : 
+                        flashStatus === 'error' ? 'bg-destructive/20' : ''
                       } transition-colors duration-500`}
                     >
                       <div id="qr-reader" ref={scannerContainerRef} className="w-full h-full" />
@@ -1280,7 +1280,7 @@ const ServicePointScanner: React.FC = () => {
                 <CardContent>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {scanResults.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-muted-foreground">
                         <Scan className="w-8 h-8 mx-auto mb-2" />
                         <p>No scans yet</p>
                       </div>
@@ -1312,7 +1312,7 @@ const ServicePointScanner: React.FC = () => {
                             <Badge className={`text-xs ${getStatusColor(result.status)}`}>
                               {result.status === 'success' ? 'Success' : 'Error'}
                             </Badge>
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {formatTime(result.scannedAt)}
                             </p>
                           </div>
@@ -1455,7 +1455,7 @@ const ServicePointScanner: React.FC = () => {
               )}
 
               {searchTerm && searchResults.length === 0 && !searching && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <Search className="w-8 h-8 mx-auto mb-2" />
                   <p>No attendees found</p>
                 </div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -605,16 +606,14 @@ const ExpenseForm = ({
         </div>
       </div>
       <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="isTaxDeductible"
           checked={formData.isTaxDeductible}
-          onChange={(e) =>
-            setFormData({ ...formData, isTaxDeductible: e.target.checked })
+          onCheckedChange={(checked) =>
+            setFormData({ ...formData, isTaxDeductible: !!checked })
           }
-          className="rounded"
         />
-        <Label htmlFor="isTaxDeductible">Tax Deductible</Label>
+        <Label htmlFor="isTaxDeductible">Tax-deductible</Label>
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>

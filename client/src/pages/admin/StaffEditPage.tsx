@@ -397,7 +397,7 @@ const StaffEditPage = () => {
         {success && (
           <Alert className="border-success bg-success/5 dark:bg-green-900/20 dark:border-green-800">
             <CheckCircle className="h-4 w-4 text-success" />
-            <AlertDescription className="text-success dark:text-green-400">{success}</AlertDescription>
+            <AlertDescription className="text-success dark:text-success">{success}</AlertDescription>
           </Alert>
         )}
 

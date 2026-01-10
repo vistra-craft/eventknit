@@ -589,8 +589,8 @@ const AdminPartnershipsPage = () => {
       case 'sponsor': return "bg-warning/10 text-warning";
       case 'venue': return "bg-primary/10 text-primary";
       case 'media': return "bg-success/10 text-success";
-      case 'vendor': return "bg-purple-100 text-purple-800";
-      case 'influencer': return "bg-pink-100 text-pink-800";
+      case 'vendor': return "bg-muted text-muted-foreground";
+      case 'influencer': return "bg-muted text-muted-foreground";
       default: return "bg-muted text-foreground";
     }
   };
@@ -601,7 +601,7 @@ const AdminPartnershipsPage = () => {
       case 'pending': return "bg-warning/10 text-warning";
       case 'expired': return "bg-destructive/10 text-destructive";
       case 'negotiating': return "bg-primary/10 text-primary";
-      case 'pending_approval': return "bg-orange-100 text-orange-800";
+      case 'pending_approval': return "bg-warning/10 text-warning";
       default: return "bg-muted text-foreground";
     }
   };

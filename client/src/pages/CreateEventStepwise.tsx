@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -2255,13 +2256,12 @@ export default function CreateEventStepwise() {
               {ticket.type === 'paid' && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       id={`complementary-${ticket.id}`}
                       checked={ticket.isComplementary || false}
-                      onChange={(e) => {
+                      onCheckedChange={(checked) => {
                         const updatedTickets = [...ticketTypes];
-                        if (e.target.checked) {
+                        if (checked) {
                           updatedTickets[index] = {
                             ...ticket,
                             isComplementary: true,
@@ -2277,7 +2277,6 @@ export default function CreateEventStepwise() {
                         }
                         setTicketTypes(updatedTickets);
                       }}
-                      className="h-4 w-4"
                     />
                     <Label htmlFor={`complementary-${ticket.id}`} className="flex items-center gap-2">
                       <Gift className="w-4 h-4" />
@@ -2287,19 +2286,17 @@ export default function CreateEventStepwise() {
                   {ticket.isComplementary && (
                     <div className="pl-6 space-y-2 border-l-2 border-primary">
                       <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           id={`invitation-${ticket.id}`}
                           checked={ticket.requiresInvitation || false}
-                          onChange={(e) => {
+                          onCheckedChange={(checked) => {
                             const updatedTickets = [...ticketTypes];
                             updatedTickets[index] = {
                               ...ticket,
-                              requiresInvitation: e.target.checked,
+                              requiresInvitation: !!checked,
                             };
                             setTicketTypes(updatedTickets);
                           }}
-                          className="h-4 w-4"
                         />
                         <Label htmlFor={`invitation-${ticket.id}`}>
                           Requires invitation
@@ -2317,13 +2314,12 @@ export default function CreateEventStepwise() {
               {ticket.type === 'paid' && !ticket.isComplementary && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       id={`discount-${ticket.id}`}
                       checked={!!ticket.originalPrice}
-                      onChange={(e) => {
+                      onCheckedChange={(checked) => {
                         const updatedTickets = [...ticketTypes];
-                        if (e.target.checked) {
+                        if (checked) {
                           updatedTickets[index] = {
                             ...ticket,
                             originalPrice: ticket.price || '0',
@@ -2337,7 +2333,6 @@ export default function CreateEventStepwise() {
                         }
                         setTicketTypes(updatedTickets);
                       }}
-                      className="h-4 w-4"
                     />
                     <Label htmlFor={`discount-${ticket.id}`} className="flex items-center gap-2">
                       <Percent className="w-4 h-4" />
@@ -3133,7 +3128,7 @@ export default function CreateEventStepwise() {
                         </Select>
                       ) : field.type === 'checkbox' ? (
                         <div className="flex items-center space-x-2">
-                          <input type="checkbox" id={`preview-${field.id}`} disabled className="bg-muted" />
+                          <Checkbox id={`preview-${field.id}`} disabled />
                           <Label htmlFor={`preview-${field.id}`} className="font-normal">{field.placeholder || field.label}</Label>
                         </div>
                       ) : (

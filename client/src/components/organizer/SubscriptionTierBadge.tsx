@@ -16,7 +16,7 @@ const TIER_CONFIG = {
   BASIC: {
     label: 'Basic',
     icon: Shield,
-    className: 'bg-gray-100 text-gray-700 border-gray-300',
+    className: 'bg-muted text-muted-foreground border-border',
   },
   STANDARD: {
     label: 'Standard',

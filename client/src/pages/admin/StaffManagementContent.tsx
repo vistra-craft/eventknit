@@ -259,7 +259,7 @@ const StaffManagementContent = () => {
           <p className="text-muted-foreground">Manage company employees and event staff</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             Showing {staffMembers.length} of {total || staffMembers.length} staff
           </div>
           <Select value={limit.toString()} onValueChange={(value) => {

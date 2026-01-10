@@ -173,8 +173,8 @@ const AdminMarketingOverview = () => {
       title: "Top Platform",
       value: socialMetrics?.topPlatform || "N/A",
       icon: Share2,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      color: "text-muted-foreground",
+      bgColor: "bg-muted"
     }
   ];
 
@@ -198,21 +198,21 @@ const AdminMarketingOverview = () => {
       description: "Platform social media oversight",
       href: "/admin/marketing/social",
       icon: Share2,
-      color: "bg-purple-500"
+      color: "bg-muted"
     },
     {
       title: "Promotions",
       description: "Platform-wide promotion management",
       href: "/admin/marketing/promotions",
       icon: Gift,
-      color: "bg-orange-500"
+      color: "bg-warning/10"
     },
     {
       title: "Partnerships",
       description: "Strategic platform partnerships",
       href: "/admin/marketing/partnerships",
       icon: Handshake,
-      color: "bg-indigo-500"
+      color: "bg-muted"
     },
     {
       title: "Marketing Analytics",

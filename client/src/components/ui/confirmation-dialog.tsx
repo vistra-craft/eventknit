@@ -105,9 +105,9 @@ const ConfirmationDialog = ({
             disabled={loading}
             className={cn(
               type === "danger" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-              type === "warning" && "bg-yellow-600 text-white hover:bg-yellow-700",
-              type === "info" && "bg-blue-600 text-white hover:bg-blue-700",
-              type === "success" && "bg-green-600 text-white hover:bg-green-700"
+              type === "warning" && "bg-warning text-white hover:bg-warning/90",
+              type === "info" && "bg-primary text-primary-foreground hover:bg-primary/90",
+              type === "success" && "bg-success text-success-foreground hover:bg-success/90"
             )}
           >
             {loading ? "Processing..." : confirmText}

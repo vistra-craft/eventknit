@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
@@ -328,7 +329,7 @@ const PartnershipTemplateBuilder = () => {
                   <div className="mt-1 space-y-2">
                     {field.options?.map(option => (
                       <div key={option} className="flex items-center space-x-2">
-                        <input type="checkbox" disabled className="rounded" />
+                        <Checkbox disabled />
                         <span className="text-sm text-muted-foreground">{option}</span>
                       </div>
                     ))}
@@ -336,7 +337,7 @@ const PartnershipTemplateBuilder = () => {
                 ) : field.type === 'rating' ? (
                   <div className="mt-1 flex space-x-1">
                     {[1, 2, 3, 4, 5].map(star => (
-                      <Star key={star} className="h-5 w-5 text-yellow-400" />
+                      <Star key={star} className="h-5 w-5 text-warning" />
                     ))}
                   </div>
                 ) : field.type === 'signature' ? (

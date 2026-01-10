@@ -52,12 +52,12 @@ const ExhibitorDetailsModal: React.FC<ExhibitorDetailsModalProps> = ({ exhibitor
 
   const getSponsorTypeColor = (type: string) => {
     switch (type) {
-      case 'platinum': return 'bg-gray-100 text-gray-800';
+      case 'platinum': return 'bg-muted text-muted-foreground';
       case 'gold': return 'bg-warning/10 text-warning';
-      case 'silver': return 'bg-gray-100 text-gray-600';
+      case 'silver': return 'bg-muted text-muted-foreground';
       case 'bronze': return 'bg-orange-100 text-orange-800';
       case 'partner': return 'bg-primary/10 text-primary';
-      default: return 'bg-gray-100 text-gray-600';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 

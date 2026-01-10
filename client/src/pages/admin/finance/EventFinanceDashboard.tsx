@@ -213,13 +213,13 @@ const EventFinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-purple-100">
-                  <CreditCard className="h-6 w-6 text-purple-600" />
+                <div className="p-3 rounded-lg bg-muted">
+                  <CreditCard className="h-6 w-6 text-muted-foreground" />
                 </div>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Pending Disbursements</h3>
-                <p className="font-semibold text-purple-600">
+                <p className="font-semibold text-muted-foreground">
                   {formatCurrency(stats.pendingDisbursements)}
                 </p>
                 <p className="text-sm text-muted-foreground">Awaiting payout to organizers</p>

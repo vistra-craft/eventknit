@@ -61,13 +61,13 @@ export function AttendeeDetailModal({
       case 'ACTIVE':
         return 'bg-success/10 text-success';
       case 'DEACTIVATED':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
       case 'EXPIRED':
         return 'bg-warning/10 text-warning';
       case 'CANCELLED':
         return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   };
 

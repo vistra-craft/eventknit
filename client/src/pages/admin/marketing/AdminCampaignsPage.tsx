@@ -150,9 +150,9 @@ const AdminCampaignsPage = () => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'email': return "bg-primary/10 text-primary";
-      case 'social': return "bg-purple-100 text-purple-800";
+      case 'social': return "bg-muted text-muted-foreground";
       case 'promotion': return "bg-success/10 text-success";
-      case 'referral': return "bg-orange-100 text-orange-800";
+      case 'referral': return "bg-warning/10 text-warning";
       case 'paid': return "bg-destructive/10 text-destructive";
       default: return "bg-muted text-foreground";
     }
@@ -164,7 +164,7 @@ const AdminCampaignsPage = () => {
       case 'paused': return "bg-warning/10 text-warning";
       case 'completed': return "bg-muted text-foreground";
       case 'draft': return "bg-primary/10 text-primary";
-      case 'scheduled': return "bg-purple-100 text-purple-800";
+      case 'scheduled': return "bg-muted text-muted-foreground";
       default: return "bg-muted text-foreground";
     }
   };

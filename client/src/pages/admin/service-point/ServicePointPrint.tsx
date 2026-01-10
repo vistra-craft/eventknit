@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Printer,
@@ -882,11 +883,9 @@ const ServicePointPrint: React.FC = () => {
                           onClick={() => handleSelectAttendee(attendee.registrationId)}
                         >
                           <div className="flex items-center gap-4">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={selectedAttendees.includes(attendee.registrationId)}
-                              onChange={() => {}}
-                              className="w-4 h-4 rounded border-gray-300"
+                              onCheckedChange={() => {}}
                             />
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                               <span className="text-sm font-medium text-primary">

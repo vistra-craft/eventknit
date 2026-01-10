@@ -1,57 +1,70 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Users } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import { useMultiStepForm, validateStepFields } from '@/hooks/useMultiStepForm';
 import { UserRole } from '@/types/auth';
+import {
+  attendeeRegistrationSchema,
+  type AttendeeRegistrationData,
+} from '@/lib/validations/auth';
 
 const AttendeeRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { register } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
+  const { register: registerUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Get email from previous step
   const emailFromPrevious = location.state?.email || '';
-  
-  const [formData, setFormData] = useState({
-    // Basic Info
-    firstName: '',
-    lastName: '',
-    email: emailFromPrevious, // Pre-fill email from previous step
-    password: '',
-    confirmPassword: '',
-    phoneNumber: '',
-    
-    // Interests & Preferences
-    interests: [] as string[],
-    eventTypes: [] as string[],
-    location: '',
-    notificationPreferences: {
-      email: true,
-      sms: false,
-      push: true,
+
+  // Initialize React Hook Form
+  const form = useForm<AttendeeRegistrationData>({
+    resolver: zodResolver(attendeeRegistrationSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: emailFromPrevious,
+      password: '',
+      confirmPassword: '',
+      phoneNumber: '',
+      interests: [],
+      eventTypes: [],
+      location: '',
+      notificationPreferences: {
+        email: true,
+        sms: false,
+        push: true,
+      },
+      dateOfBirth: '',
+      gender: '',
+      bio: '',
+      profilePicture: null,
     },
-    
-    // Profile Information
-    dateOfBirth: '',
-    gender: '',
-    bio: '',
-    profilePicture: null as File | null,
+    mode: 'onChange', // Validate on change for better UX
+  });
+
+  // Multi-step form management
+  const multiStep = useMultiStepForm({
+    form,
+    steps: 3,
   });
 
   const interests = [
-    'Music', 'Technology', 'Business', 'Arts & Culture', 'Sports', 
+    'Music', 'Technology', 'Business', 'Arts & Culture', 'Sports',
     'Food & Drink', 'Travel', 'Wellness', 'Education', 'Networking',
     'Comedy', 'Gaming', 'Photography', 'Fashion', 'Science'
   ];
@@ -61,110 +74,58 @@ const AttendeeRegistration = () => {
     'Seminars', 'Exhibitions', 'Parties', 'Sports Events', 'Cultural Events'
   ];
 
-  const handleInputChange = (field: string, value: string | boolean | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  // Get current form values for conditional rendering
+  const watchPassword = form.watch('password');
+  const watchInterests = form.watch('interests');
+  const watchEventTypes = form.watch('eventTypes');
 
   const handleInterestToggle = (interest: string) => {
-    setFormData(prev => ({
-      ...prev,
-      interests: prev.interests.includes(interest)
-        ? prev.interests.filter(item => item !== interest)
-        : [...prev.interests, interest]
-    }));
+    const currentInterests = form.getValues('interests');
+    const newInterests = currentInterests.includes(interest)
+      ? currentInterests.filter(item => item !== interest)
+      : [...currentInterests, interest];
+    form.setValue('interests', newInterests, { shouldValidate: true });
   };
 
   const handleEventTypeToggle = (eventType: string) => {
-    setFormData(prev => ({
-      ...prev,
-      eventTypes: prev.eventTypes.includes(eventType)
-        ? prev.eventTypes.filter(item => item !== eventType)
-        : [...prev.eventTypes, eventType]
-    }));
-  };
-
-  const handleNotificationChange = (type: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      notificationPreferences: {
-        ...prev.notificationPreferences,
-        [type]: checked
-      }
-    }));
-  };
-
-  // Password validation (Eventbrite-style: 8+ chars, 1 letter, 1 number)
-  const validatePassword = (password: string): string | null => {
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
-    }
-    if (password.length > 128) {
-      return 'Password must be no more than 128 characters';
-    }
-    if (!/[a-zA-Z]/.test(password)) {
-      return 'Password must contain at least one letter';
-    }
-    if (!/\d/.test(password)) {
-      return 'Password must contain at least one number';
-    }
-    return null;
+    const currentEventTypes = form.getValues('eventTypes');
+    const newEventTypes = currentEventTypes.includes(eventType)
+      ? currentEventTypes.filter(item => item !== eventType)
+      : [...currentEventTypes, eventType];
+    form.setValue('eventTypes', newEventTypes, { shouldValidate: true });
   };
 
   const handleNext = async () => {
-    if (currentStep < 3) {
+    setError('');
+
+    if (multiStep.currentStep < 3) {
       // Validate current step before proceeding
-      if (currentStep === 1) {
-        // Validate step 1 fields
-        if (!formData.firstName.trim()) {
-          setError('First name is required');
-          return;
-        }
-        if (!formData.lastName.trim()) {
-          setError('Last name is required');
-          return;
-        }
-        if (!formData.email.trim()) {
-          setError('Email is required');
-          return;
-        }
-        if (!formData.password) {
-          setError('Password is required');
-          return;
-        }
-        const passwordError = validatePassword(formData.password);
-        if (passwordError) {
-          setError(passwordError);
-          return;
-        }
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
-          return;
-        }
-        setError('');
+      let fieldsToValidate: (keyof AttendeeRegistrationData)[] = [];
+
+      if (multiStep.currentStep === 1) {
+        fieldsToValidate = ['firstName', 'lastName', 'email', 'password', 'confirmPassword', 'phoneNumber'];
+      } else if (multiStep.currentStep === 2) {
+        fieldsToValidate = ['interests', 'eventTypes', 'location'];
       }
-      setCurrentStep(currentStep + 1);
+
+      const isValid = await validateStepFields(form, fieldsToValidate);
+
+      if (isValid) {
+        multiStep.goToNextStep();
+      }
     } else {
       // Final step - submit registration
+      const isValid = await form.trigger(); // Validate all fields
+
+      if (!isValid) {
+        setError('Please fill in all required fields correctly');
+        return;
+      }
+
       setIsLoading(true);
-      setError('');
-      
+
       try {
-        // Validate final step
-        if (formData.interests.length === 0) {
-          setError('Please select at least one interest');
-          setIsLoading(false);
-          return;
-        }
-        if (formData.eventTypes.length === 0) {
-          setError('Please select at least one event type');
-          setIsLoading(false);
-          return;
-        }
-        if (!formData.location.trim()) {
-          setError('Location is required');
-          setIsLoading(false);
-          return;
-        }
+        const formData = form.getValues();
 
         // Prepare registration data
         const registrationData = {
@@ -177,7 +138,7 @@ const AttendeeRegistration = () => {
         };
 
         // Call registration API
-        await register(registrationData);
+        await registerUser(registrationData);
         // Navigation will happen automatically via useAuth hook
       } catch (err: unknown) {
         const errorMessage =
@@ -191,8 +152,8 @@ const AttendeeRegistration = () => {
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (!multiStep.isFirstStep) {
+      multiStep.goToPreviousStep();
     } else {
       navigate('/auth/user-type');
     }
@@ -210,109 +171,115 @@ const AttendeeRegistration = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName">First Name *</Label>
-          <Input
-            id="firstName"
-            value={formData.firstName}
-            onChange={(e) => handleInputChange('firstName', e.target.value)}
-            placeholder="Enter your first name"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name *</Label>
-          <Input
-            id="lastName"
-            value={formData.lastName}
-            onChange={(e) => handleInputChange('lastName', e.target.value)}
-            placeholder="Enter your last name"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="email">Email Address *</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          placeholder="your.email@example.com"
-          required
+        <FormField
+          control={form.control}
+          name="firstName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>First Name *</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter your first name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Last Name *</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter your last name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Email Address *</FormLabel>
+            <FormControl>
+              <Input {...field} type="email" placeholder="your.email@example.com" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="password">Password *</Label>
-          <Input
-            id="password"
-            type="password"
-            value={formData.password}
-            onChange={(e) => {
-              handleInputChange('password', e.target.value);
-              setError('');
-            }}
-            placeholder="Create a password"
-            required
-          />
-          {formData.password && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-foreground">Password requirements:</p>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li className={`flex items-center gap-2 ${formData.password.length >= 8 ? 'text-success' : ''}`}>
-                  <span className={formData.password.length >= 8 ? 'text-success' : 'text-muted-foreground'}>
-                    {formData.password.length >= 8 ? '✓' : '○'}
-                  </span>
-                  At least 8 characters
-                </li>
-                <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? 'text-success' : ''}`}>
-                  <span className={/[a-zA-Z]/.test(formData.password) ? 'text-success' : 'text-muted-foreground'}>
-                    {/[a-zA-Z]/.test(formData.password) ? '✓' : '○'}
-                  </span>
-                  At least one letter
-                </li>
-                <li className={`flex items-center gap-2 ${/\d/.test(formData.password) ? 'text-success' : ''}`}>
-                  <span className={/\d/.test(formData.password) ? 'text-success' : 'text-muted-foreground'}>
-                    {/\d/.test(formData.password) ? '✓' : '○'}
-                  </span>
-                  At least one number
-                </li>
-              </ul>
-            </div>
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password *</FormLabel>
+              <FormControl>
+                <Input {...field} type="password" placeholder="Create a password" />
+              </FormControl>
+              {watchPassword && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-xs font-medium text-foreground">Password requirements:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li className={`flex items-center gap-2 ${watchPassword.length >= 8 ? 'text-success' : ''}`}>
+                      <span className={watchPassword.length >= 8 ? 'text-success' : 'text-muted-foreground'}>
+                        {watchPassword.length >= 8 ? '✓' : '○'}
+                      </span>
+                      At least 8 characters
+                    </li>
+                    <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(watchPassword) ? 'text-success' : ''}`}>
+                      <span className={/[a-zA-Z]/.test(watchPassword) ? 'text-success' : 'text-muted-foreground'}>
+                        {/[a-zA-Z]/.test(watchPassword) ? '✓' : '○'}
+                      </span>
+                      At least one letter
+                    </li>
+                    <li className={`flex items-center gap-2 ${/\d/.test(watchPassword) ? 'text-success' : ''}`}>
+                      <span className={/\d/.test(watchPassword) ? 'text-success' : 'text-muted-foreground'}>
+                        {/\d/.test(watchPassword) ? '✓' : '○'}
+                      </span>
+                      At least one number
+                    </li>
+                  </ul>
+                </div>
+              )}
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm Password *</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={(e) => {
-              handleInputChange('confirmPassword', e.target.value);
-              setError('');
-            }}
-            placeholder="Confirm your password"
-            required
-          />
-        </div>
-      </div>
-      {error && currentStep === 1 && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
-
-      <div className="space-y-2">
-        <Label htmlFor="phoneNumber">Phone Number</Label>
-        <Input
-          id="phoneNumber"
-          type="tel"
-          value={formData.phoneNumber}
-          onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-          placeholder="+1 (555) 123-4567"
+        />
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password *</FormLabel>
+              <FormControl>
+                <Input {...field} type="password" placeholder="Confirm your password" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="phoneNumber"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Phone Number</FormLabel>
+            <FormControl>
+              <Input {...field} type="tel" placeholder="+1 (555) 123-4567" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 
@@ -328,60 +295,77 @@ const AttendeeRegistration = () => {
       </div>
 
       {/* Interests */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">What are you interested in? *</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {interests.map((interest) => (
-            <Button
-              key={interest}
-              type="button"
-              variant={formData.interests.includes(interest) ? "default" : "outline"}
-              onClick={() => handleInterestToggle(interest)}
-              className={`h-10 text-sm ${
-                formData.interests.includes(interest)
-                  ? ''
-                  : 'border-border hover:bg-muted hover:border-border'
-              }`}
-            >
-              {interest}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <FormField
+        control={form.control}
+        name="interests"
+        render={() => (
+          <FormItem>
+            <FormLabel>What are you interested in? *</FormLabel>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {interests.map((interest) => (
+                <Button
+                  key={interest}
+                  type="button"
+                  variant={watchInterests.includes(interest) ? "default" : "outline"}
+                  onClick={() => handleInterestToggle(interest)}
+                  className={`h-10 text-sm ${
+                    watchInterests.includes(interest)
+                      ? ''
+                      : 'border-border hover:bg-muted hover:border-border'
+                  }`}
+                >
+                  {interest}
+                </Button>
+              ))}
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Event Types */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">What types of events do you enjoy? *</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {eventTypes.map((eventType) => (
-            <Button
-              key={eventType}
-              type="button"
-              variant={formData.eventTypes.includes(eventType) ? "default" : "outline"}
-              onClick={() => handleEventTypeToggle(eventType)}
-              className={`h-10 text-sm ${
-                formData.eventTypes.includes(eventType)
-                  ? ''
-                  : 'border-border hover:bg-muted hover:border-border'
-              }`}
-            >
-              {eventType}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <FormField
+        control={form.control}
+        name="eventTypes"
+        render={() => (
+          <FormItem>
+            <FormLabel>What types of events do you enjoy? *</FormLabel>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {eventTypes.map((eventType) => (
+                <Button
+                  key={eventType}
+                  type="button"
+                  variant={watchEventTypes.includes(eventType) ? "default" : "outline"}
+                  onClick={() => handleEventTypeToggle(eventType)}
+                  className={`h-10 text-sm ${
+                    watchEventTypes.includes(eventType)
+                      ? ''
+                      : 'border-border hover:bg-muted hover:border-border'
+                  }`}
+                >
+                  {eventType}
+                </Button>
+              ))}
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Location */}
-      <div className="space-y-2">
-        <Label htmlFor="location">Where are you located? *</Label>
-        <Input
-          id="location"
-          value={formData.location}
-          onChange={(e) => handleInputChange('location', e.target.value)}
-          placeholder="City, State or Country"
-          required
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="location"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Where are you located? *</FormLabel>
+            <FormControl>
+              <Input {...field} placeholder="City, State or Country" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 
@@ -398,40 +382,57 @@ const AttendeeRegistration = () => {
 
       {/* Profile Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="dateOfBirth">Date of Birth</Label>
-          <Input
-            id="dateOfBirth"
-            type="date"
-            value={formData.dateOfBirth}
-            onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="gender">Gender</Label>
-          <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
-            <SelectTrigger className="h-11">
-              <SelectValue placeholder="Select gender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="non-binary">Non-binary</SelectItem>
-              <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="bio">Bio (Optional)</Label>
-        <Input
-          id="bio"
-          value={formData.bio}
-          onChange={(e) => handleInputChange('bio', e.target.value)}
-          placeholder="Tell us a bit about yourself..."
+        <FormField
+          control={form.control}
+          name="dateOfBirth"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date of Birth</FormLabel>
+              <FormControl>
+                <Input {...field} type="date" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="gender"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Gender</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="non-binary">Non-binary</SelectItem>
+                  <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="bio"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Bio (Optional)</FormLabel>
+            <FormControl>
+              <Input {...field} placeholder="Tell us a bit about yourself..." />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Profile Picture */}
       <div className="space-y-2">
@@ -449,30 +450,48 @@ const AttendeeRegistration = () => {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Notification Preferences</h3>
         <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="email-notifications"
-              checked={formData.notificationPreferences.email}
-              onCheckedChange={(checked) => handleNotificationChange('email', checked as boolean)}
-            />
-            <Label htmlFor="email-notifications">Email notifications about events</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="sms-notifications"
-              checked={formData.notificationPreferences.sms}
-              onCheckedChange={(checked) => handleNotificationChange('sms', checked as boolean)}
-            />
-            <Label htmlFor="sms-notifications">SMS notifications</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="push-notifications"
-              checked={formData.notificationPreferences.push}
-              onCheckedChange={(checked) => handleNotificationChange('push', checked as boolean)}
-            />
-            <Label htmlFor="push-notifications">Push notifications</Label>
-          </div>
+          <FormField
+            control={form.control}
+            name="notificationPreferences.email"
+            render={({ field }) => (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="email-notifications"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+                <Label htmlFor="email-notifications">Email notifications about events</Label>
+              </div>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="notificationPreferences.sms"
+            render={({ field }) => (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sms-notifications"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+                <Label htmlFor="sms-notifications">SMS notifications</Label>
+              </div>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="notificationPreferences.push"
+            render={({ field }) => (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="push-notifications"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+                <Label htmlFor="push-notifications">Push notifications</Label>
+              </div>
+            )}
+          />
         </div>
       </div>
     </div>
@@ -487,14 +506,14 @@ const AttendeeRegistration = () => {
             <BackButton to="/auth/user-type" label="Back" />
             <Logo />
           </div>
-          
+
           {/* Progress Indicator */}
           <div className="flex items-center justify-center space-x-4 mb-6">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step <= currentStep
+                    step <= multiStep.currentStep
                       ? 'bg-primary text-white'
                       : 'bg-muted text-muted-foreground'
                   }`}
@@ -504,7 +523,7 @@ const AttendeeRegistration = () => {
                 {step < 3 && (
                   <div
                     className={`w-12 h-0.5 mx-2 ${
-                      step < currentStep ? 'bg-primary' : 'bg-muted'
+                      step < multiStep.currentStep ? 'bg-primary' : 'bg-muted'
                     }`}
                   />
                 )}
@@ -516,45 +535,49 @@ const AttendeeRegistration = () => {
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
           <CardContent className="p-8">
-            {currentStep === 1 && renderStep1()}
-            {currentStep === 2 && renderStep2()}
-            {currentStep === 3 && renderStep3()}
+            <Form {...form}>
+              {multiStep.currentStep === 1 && renderStep1()}
+              {multiStep.currentStep === 2 && renderStep2()}
+              {multiStep.currentStep === 3 && renderStep3()}
 
-            {/* Error Message */}
-            {error && (
-              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive">{error}</p>
+              {/* Error Message */}
+              {error && (
+                <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between mt-8">
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  className="px-6 h-11"
+                  disabled={isLoading}
+                  type="button"
+                >
+                  Back
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={handleNext}
+                  className="px-6 h-11"
+                  disabled={isLoading}
+                  type="button"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader size="sm" className="mr-2" />
+                      Registering...
+                    </>
+                  ) : multiStep.isLastStep ? (
+                    'Complete registration'
+                  ) : (
+                    'Continue'
+                  )}
+                </Button>
               </div>
-            )}
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                className="px-6 h-11"
-                disabled={isLoading}
-              >
-                Back
-              </Button>
-              <Button
-                variant="default"
-                onClick={handleNext}
-                className="px-6 h-11"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader size="sm" className="mr-2" />
-                    Registering...
-                  </>
-                ) : currentStep === 3 ? (
-                  'Complete registration'
-                ) : (
-                  'Continue'
-                )}
-              </Button>
-            </div>
+            </Form>
           </CardContent>
         </Card>
 

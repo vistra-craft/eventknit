@@ -297,25 +297,23 @@ export const RegistrationStep = ({
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
-            <div className="space-y-2">
-              {field.options.map((option) => (
-                <div key={option} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={`${fieldId}-${option}`}
-                    name={field.name}
-                    checked={formData[field.id] === option}
-                    onChange={(e) =>
-                      handleInputChange(field.id, e.target.checked ? option : '')
-                    }
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                  />
-                  <Label htmlFor={`${fieldId}-${option}`} className="text-sm font-normal">
-                    {option}
-                  </Label>
-                </div>
-              ))}
-            </div>
+              <div className="space-y-2">
+                {field.options.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${fieldId}-${option}`}
+                      checked={formData[field.id] === option}
+                      onCheckedChange={(checked) =>
+                        handleInputChange(field.id, !!checked ? option : '')
+                      }
+                      className="h-4 w-4 text-primary focus:ring-primary border-border rounded focus:bg-muted"
+                    />
+                    <Label htmlFor={`${fieldId}-${option}`} className="text-sm font-normal">
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
             {fieldError && (
               <p className="text-destructive text-sm mt-1">{fieldError}</p>
             )}

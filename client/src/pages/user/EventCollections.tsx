@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, FolderPlus, Users, Calendar, MapPin } from "lucide-react";
@@ -183,12 +184,10 @@ const EventCollections: React.FC = () => {
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="isPublic"
                   checked={collectionData.isPublic}
-                  onChange={(e) => setCollectionData({ ...collectionData, isPublic: e.target.checked })}
-                  className="rounded"
+                  onCheckedChange={(checked) => setCollectionData({ ...collectionData, isPublic: !!checked })}
                 />
                 <Label htmlFor="isPublic">Make this collection public</Label>
               </div>

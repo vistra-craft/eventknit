@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -453,70 +454,62 @@ const InviteCollaboratorForm = ({
       </div>
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canEdit"
             checked={formData.canEdit}
-            onChange={(e) => setFormData({ ...formData, canEdit: e.target.checked })}
-            className="rounded"
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canEdit: !!checked })
+            }
           />
           <Label htmlFor="canEdit">Can Edit Event</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canManageAttendees"
             checked={formData.canManageAttendees}
-            onChange={(e) =>
-              setFormData({ ...formData, canManageAttendees: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canManageAttendees: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canManageAttendees">Can Manage Attendees</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canManageTickets"
             checked={formData.canManageTickets}
-            onChange={(e) =>
-              setFormData({ ...formData, canManageTickets: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canManageTickets: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canManageTickets">Can Manage Tickets</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canViewAnalytics"
             checked={formData.canViewAnalytics}
-            onChange={(e) =>
-              setFormData({ ...formData, canViewAnalytics: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canViewAnalytics: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canViewAnalytics">Can View Analytics</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canManageStaff"
             checked={formData.canManageStaff}
-            onChange={(e) =>
-              setFormData({ ...formData, canManageStaff: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canManageStaff: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canManageStaff">Can Manage Staff</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canPublish"
             checked={formData.canPublish}
-            onChange={(e) => setFormData({ ...formData, canPublish: e.target.checked })}
-            className="rounded"
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canPublish: !!checked })
+            }
           />
           <Label htmlFor="canPublish">Can Publish</Label>
         </div>
@@ -568,70 +561,62 @@ const PermissionsForm = ({
       </div>
       <div className="space-y-2">
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canEdit"
             checked={formData.canEdit}
-            onChange={(e) => setFormData({ ...formData, canEdit: e.target.checked })}
-            className="rounded"
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canEdit: !!checked })
+            }
           />
           <Label htmlFor="canEdit">Can Edit Event</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canManageAttendees"
             checked={formData.canManageAttendees}
-            onChange={(e) =>
-              setFormData({ ...formData, canManageAttendees: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canManageAttendees: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canManageAttendees">Can Manage Attendees</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canManageTickets"
             checked={formData.canManageTickets}
-            onChange={(e) =>
-              setFormData({ ...formData, canManageTickets: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canManageTickets: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canManageTickets">Can Manage Tickets</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canViewAnalytics"
             checked={formData.canViewAnalytics}
-            onChange={(e) =>
-              setFormData({ ...formData, canViewAnalytics: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canViewAnalytics: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canViewAnalytics">Can View Analytics</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canManageStaff"
             checked={formData.canManageStaff}
-            onChange={(e) =>
-              setFormData({ ...formData, canManageStaff: e.target.checked })
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canManageStaff: !!checked })
             }
-            className="rounded"
           />
           <Label htmlFor="canManageStaff">Can Manage Staff</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
+          <Checkbox
             id="canPublish"
             checked={formData.canPublish}
-            onChange={(e) => setFormData({ ...formData, canPublish: e.target.checked })}
-            className="rounded"
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, canPublish: !!checked })
+            }
           />
           <Label htmlFor="canPublish">Can Publish</Label>
         </div>

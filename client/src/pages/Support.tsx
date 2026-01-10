@@ -54,14 +54,14 @@ const Support = () => {
       icon: Ticket,
       title: "Ticket Issues",
       description: "Problems with event tickets or registration",
-      color: "bg-blue-100 text-blue-600",
+      color: "bg-primary/10 text-primary",
       count: "Most Common"
     },
     {
       icon: CreditCard,
       title: "Payment Problems",
       description: "Billing, refunds, and payment questions",
-      color: "bg-green-100 text-green-600",
+      color: "bg-success/10 text-success",
       count: "Quick Fix"
     },
     {
@@ -111,15 +111,15 @@ const Support = () => {
   ];
 
   const contactMethods = [
-    { icon: MessageCircle, title: "Live Chat", desc: "Instant help", avail: "Available now", response: "Minutes", color: "text-green-600" },
-    { icon: Mail, title: "Email", desc: "Detailed support", avail: "24/7", response: "4 hours", color: "text-blue-600" },
+    { icon: MessageCircle, title: "Live Chat", desc: "Instant help", avail: "Available now", response: "Minutes", color: "text-success" },
+    { icon: Mail, title: "Email", desc: "Detailed support", avail: "24/7", response: "4 hours", color: "text-primary" },
     { icon: Phone, title: "Phone", desc: "Direct support", avail: "Mon-Fri 9AM-6PM", response: "Immediate", color: "text-purple-600" },
     { icon: Video, title: "Video Call", desc: "Screen sharing", avail: "By appointment", response: "Same day", color: "text-orange-600" }
   ];
 
   const stats = [
-    { icon: CheckCircle, value: "98%", label: "Satisfaction", color: "text-green-600" },
-    { icon: Clock, value: "<2min", label: "Response Time", color: "text-blue-600" },
+    { icon: CheckCircle, value: "98%", label: "Satisfaction", color: "text-success" },
+    { icon: Clock, value: "<2min", label: "Response Time", color: "text-primary" },
     { icon: Star, value: "24/7", label: "Support", color: "text-purple-600" }
   ];
 
@@ -155,8 +155,8 @@ const Support = () => {
           <CardHeader className="pb-3 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <MessageCircle className="w-4 h-4 text-green-600" />
+                <div className="w-8 h-8 bg-success/10 rounded-full flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-success" />
                 </div>
                 <div>
                   <h3 className="font-semibold">Live Chat Support</h3>
@@ -164,8 +164,8 @@ const Support = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs text-green-600">Online</span>
+                <div className="w-2 h-2 bg-success/50 rounded-full"></div>
+                <span className="text-xs text-success">Online</span>
               </div>
             </div>
           </CardHeader>

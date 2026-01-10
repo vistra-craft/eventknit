@@ -118,8 +118,8 @@ const FeedbackPage: React.FC = () => {
             <Star
               className={`h-6 w-6 transition-colors ${
                 value !== null && star <= value
-                  ? "fill-yellow-400 text-yellow-400"
-                  : "text-gray-300 hover:text-yellow-300"
+                  ? "fill-warning text-warning"
+                  : "text-muted-foreground hover:text-warning"
               }`}
             />
           </button>
@@ -200,10 +200,10 @@ const FeedbackPage: React.FC = () => {
                     className={`flex-1 py-3 rounded-lg font-medium transition-all ${
                       npsScore === score
                         ? score <= 6
-                          ? "bg-red-500 text-white"
+                          ? "bg-destructive/50 text-white"
                           : score <= 8
-                          ? "bg-yellow-500 text-white"
-                          : "bg-green-500 text-white"
+                          ? "bg-warning/50 text-white"
+                          : "bg-success/50 text-white"
                         : "bg-muted hover:bg-muted/80"
                     }`}
                   >
@@ -214,17 +214,17 @@ const FeedbackPage: React.FC = () => {
               {npsScore !== null && (
                 <p className="text-center text-sm">
                   {npsScore <= 6 && (
-                    <span className="text-red-600">
+                    <span className="text-destructive">
                       We're sorry to hear that. Please tell us how we can improve.
                     </span>
                   )}
                   {npsScore >= 7 && npsScore <= 8 && (
-                    <span className="text-yellow-600">
+                    <span className="text-warning">
                       Thanks! What would make your experience even better?
                     </span>
                   )}
                   {npsScore >= 9 && (
-                    <span className="text-green-600">
+                    <span className="text-success">
                       Awesome! We're glad you had a great experience.
                     </span>
                   )}

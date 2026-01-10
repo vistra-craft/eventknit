@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Calendar,
@@ -104,7 +105,7 @@ const PublicEventForm = () => {
       case 'speaker': return 'bg-purple-100 text-purple-800';
       case 'exhibitor': return 'bg-success/10 text-success';
       case 'sponsor': return 'bg-warning/10 text-warning';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -171,45 +172,9 @@ const PublicEventForm = () => {
             value={value as string}
             onChange={(e) => handleInputChange(field.id, e.target.value)}
             placeholder={field.placeholder}
-            className={error ? 'border-red-500' : ''}
+            className={error ? 'border-destructive' : ''}
             rows={4}
           />
-        );
-      
-      case 'select':
-        return (
-          <Select value={value as string} onValueChange={(val) => handleInputChange(field.id, val)}>
-            <SelectTrigger className={error ? 'border-red-500' : ''}>
-              <SelectValue placeholder={field.placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {field.options?.map(option => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      
-      case 'radio':
-        return (
-          <div className="space-y-2">
-            {field.options?.map(option => (
-              <div key={option} className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id={`${field.id}_${option}`}
-                  name={field.id}
-                  value={option}
-                  checked={value === option}
-                  onChange={(e) => handleInputChange(field.id, e.target.value)}
-                  className="text-primary"
-                />
-                <Label htmlFor={`${field.id}_${option}`}>{option}</Label>
-              </div>
-            ))}
-          </div>
         );
       
       case 'checkbox':
@@ -217,18 +182,16 @@ const PublicEventForm = () => {
           <div className="space-y-2">
             {field.options?.map(option => (
               <div key={option} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id={`${field.id}_${option}`}
                   checked={(value as string[])?.includes(option) || false}
-                  onChange={(e) => {
+                  onCheckedChange={(checked) => {
                     const currentValues = (value as string[]) || [];
-                    const newValues = e.target.checked
+                    const newValues = !!checked
                       ? [...currentValues, option]
                       : currentValues.filter(v => v !== option);
                     handleInputChange(field.id, newValues);
                   }}
-                  className="text-primary"
                 />
                 <Label htmlFor={`${field.id}_${option}`}>{option}</Label>
               </div>
@@ -243,7 +206,7 @@ const PublicEventForm = () => {
             value={value as string}
             onChange={(e) => handleInputChange(field.id, e.target.value)}
             placeholder={field.placeholder}
-            className={error ? 'border-red-500' : ''}
+            className={error ? 'border-destructive' : ''}
           />
         );
     }
@@ -251,7 +214,7 @@ const PublicEventForm = () => {
 
   if (!template) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading form...</p>
@@ -262,7 +225,7 @@ const PublicEventForm = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -282,7 +245,7 @@ const PublicEventForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 py-6">

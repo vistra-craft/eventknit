@@ -237,8 +237,8 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
       `}</style>
 
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60] overflow-auto">
-        <div className="bg-gray-900 w-full max-w-5xl max-h-[95vh] flex flex-col rounded-lg shadow-2xl border border-gray-700">
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="bg-muted w-full max-w-5xl max-h-[95vh] flex flex-col rounded-lg shadow-2xl border border-border">
+          <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="text-xl font-bold text-white">
               {singleTagMode ? 'Single Ticket Preview' : 'Grid Preview'}
             </h2>
@@ -248,7 +248,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => setSingleTagMode(!singleTagMode)}
-                className="text-white hover:bg-gray-700"
+                className="text-muted-foreground hover:bg-muted"
               >
                 {singleTagMode ? (
                   <>
@@ -268,7 +268,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
                 <select
                   value={paperSize.name}
                   onChange={(e) => handlePaperSizeChange(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 text-white rounded px-2 py-1 text-sm"
+                  className="bg-muted border border-border text-muted-foreground rounded px-2 py-1 text-sm"
                 >
                   {PAPER_SIZES.map((size) => (
                     <option key={size.name} value={size.name}>
@@ -283,7 +283,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
                 <Button
                   size="sm"
                   onClick={() => toSingleTagPDF()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <FileDown size={18} className="mr-2" />
                   Download PDF
@@ -292,7 +292,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
                 <Button
                   size="sm"
                   onClick={() => toGridPDF()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   <FileDown size={18} className="mr-2" />
                   Download Grid PDF
@@ -303,7 +303,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
               <Button
                 size="sm"
                 onClick={handleBrowserPrint}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-success hover:opacity-90 text-success-foreground"
               >
                 <Printer size={18} className="mr-2" />
                 Print
@@ -320,7 +320,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 p-6 overflow-y-auto bg-gray-100">
+          <div className="flex-1 p-6 overflow-y-auto bg-muted">
             {singleTagMode ? (
               <div className="flex justify-center">
                 <div
@@ -360,7 +360,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
                 {Array.from({ length: Math.min(10, tagsPerPage) }).map((_, i) => (
                   <div
                     key={i}
-                    className="bg-white border border-gray-300"
+                    className="bg-white border border-border"
                     style={{
                       width: `${tagWidthPx}px`,
                       height: `${tagHeightPx}px`,
@@ -379,7 +379,7 @@ const PrintPreview: React.FC<PrintPreviewProps> = ({
             )}
           </div>
 
-          <div className="p-3 border-t border-gray-700 text-gray-400 text-sm">
+          <div className="p-3 border-t border-border text-muted-foreground text-sm">
             {singleTagMode ? (
               <div>
                 Viewing single ticket • PDF dimensions: {Math.round(tagWidthPx * 0.264583)}mm ×{' '}

@@ -98,8 +98,8 @@ const FinanceDashboard = () => {
     const variants: Record<string, string> = {
       cash: "bg-muted text-muted-foreground border-border",
       bank_transfer: "bg-primary/10 text-primary border-primary/20",
-      credit_card: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-      check: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+      credit_card: "bg-muted text-muted-foreground border-border",
+      check: "bg-warning/10 text-warning border-warning",
       mobile_money: "bg-teal-500/10 text-teal-600 border-teal-500/20",
       mpesa: "bg-success/10 text-success border-success/20"
     };
@@ -226,14 +226,14 @@ const FinanceDashboard = () => {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-purple-100">
-                  <CreditCard className="h-6 w-6 text-purple-600" />
+                <div className="p-3 rounded-lg bg-muted">
+                  <CreditCard className="h-6 w-6 text-muted-foreground" />
                 </div>
-                <span className="text-purple-600 text-sm font-medium">{pendingCount}</span>
+                <span className="text-muted-foreground text-sm font-medium">{pendingCount}</span>
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold text-foreground">Pending Payments</h3>
-                <p className="font-semibold text-purple-600">
+                <p className="font-semibold text-muted-foreground">
                   {formatCurrency(pendingAmount)}
                 </p>
                 <p className="text-sm text-muted-foreground">Awaiting processing</p>

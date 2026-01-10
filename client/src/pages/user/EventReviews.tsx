@@ -173,8 +173,8 @@ const EventReviews: React.FC = () => {
             key={star}
             className={`h-5 w-5 ${
               star <= rating
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-gray-300"
+                ? "fill-warning text-warning"
+                : "text-muted-foreground"
             } ${interactive ? "cursor-pointer hover:scale-110 transition-transform" : ""}`}
             onClick={() => interactive && onChange && onChange(star)}
           />

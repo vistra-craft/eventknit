@@ -225,7 +225,7 @@ export const Hero = () => {
                     size="icon"
                     onClick={() => setIsFavorited(!isFavorited)}
                     className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 border-0 ${
-                      isFavorited ? 'text-red-400' : 'text-white'
+                      isFavorited ? 'text-destructive' : 'text-white'
                     }`}
                   >
                     <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />

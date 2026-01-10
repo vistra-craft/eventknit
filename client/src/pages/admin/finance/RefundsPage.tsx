@@ -137,7 +137,7 @@ const RefundsPage = () => {
             <Card>
               <CardContent className="p-4">
                 <div className="text-sm text-muted-foreground">Platform Fee Refunded</div>
-                <div className="font-semibold text-orange-600">
+                <div className="font-semibold text-warning">
                   {formatCurrency(summary.totalPlatformFeeRefunded)}
                 </div>
               </CardContent>

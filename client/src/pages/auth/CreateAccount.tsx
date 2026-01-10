@@ -169,8 +169,8 @@ const CreateAccount = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-success" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Account Created!</h2>
             <p className="text-muted-foreground mb-4">
@@ -240,20 +240,20 @@ const CreateAccount = () => {
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium text-foreground">Password requirements:</p>
                   <ul className="text-xs text-muted-foreground space-y-1">
-                    <li className={`flex items-center gap-2 ${password.length >= 8 ? 'text-green-600' : ''}`}>
-                      <span className={password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                    <li className={`flex items-center gap-2 ${password.length >= 8 ? 'text-success' : ''}`}>
+                      <span className={password.length >= 8 ? 'text-success' : 'text-muted-foreground'}>
                         {password.length >= 8 ? '✓' : '○'}
                       </span>
                       At least 8 characters
                     </li>
-                    <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(password) ? 'text-green-600' : ''}`}>
-                      <span className={/[a-zA-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                    <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(password) ? 'text-success' : ''}`}>
+                      <span className={/[a-zA-Z]/.test(password) ? 'text-success' : 'text-muted-foreground'}>
                         {/[a-zA-Z]/.test(password) ? '✓' : '○'}
                       </span>
                       At least one letter
                     </li>
-                    <li className={`flex items-center gap-2 ${/\d/.test(password) ? 'text-green-600' : ''}`}>
-                      <span className={/\d/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                    <li className={`flex items-center gap-2 ${/\d/.test(password) ? 'text-success' : ''}`}>
+                      <span className={/\d/.test(password) ? 'text-success' : 'text-muted-foreground'}>
                         {/\d/.test(password) ? '✓' : '○'}
                       </span>
                       At least one number

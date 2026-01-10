@@ -167,7 +167,7 @@ const AdminSocialMediaPage = () => {
       engagement: 4.2,
       status: "connected",
       icon: Facebook,
-      color: "bg-blue-600"
+      color: "bg-primary"
     },
     {
       platform: "twitter",
@@ -176,7 +176,7 @@ const AdminSocialMediaPage = () => {
       engagement: 6.8,
       status: "connected",
       icon: Twitter,
-      color: "bg-sky-500"
+      color: "bg-primary"
     },
     {
       platform: "instagram",
@@ -185,7 +185,7 @@ const AdminSocialMediaPage = () => {
       engagement: 8.5,
       status: "connected",
       icon: Instagram,
-      color: "bg-pink-600"
+      color: "bg-primary"
     },
     {
       platform: "linkedin",
@@ -194,7 +194,7 @@ const AdminSocialMediaPage = () => {
       engagement: 3.1,
       status: "connected",
       icon: Linkedin,
-      color: "bg-blue-700"
+      color: "bg-primary"
     },
     {
       platform: "youtube",
@@ -203,7 +203,7 @@ const AdminSocialMediaPage = () => {
       engagement: 12.3,
       status: "disconnected",
       icon: Youtube,
-      color: "bg-red-600"
+      color: "bg-destructive"
     }
   ];
 
@@ -319,12 +319,12 @@ const AdminSocialMediaPage = () => {
   // Helper to get platform color class
   function getPlatformColorClass(platform: string): string {
     switch (platform) {
-      case 'facebook': return "bg-blue-600";
-      case 'twitter': return "bg-sky-500";
-      case 'instagram': return "bg-pink-600";
-      case 'linkedin': return "bg-blue-700";
-      case 'youtube': return "bg-red-600";
-      default: return "bg-gray-600";
+      case 'facebook': return "bg-primary";
+      case 'twitter': return "bg-primary";
+      case 'instagram': return "bg-primary";
+      case 'linkedin': return "bg-primary";
+      case 'youtube': return "bg-destructive";
+      default: return "bg-muted";
     }
   }
 
@@ -341,21 +341,21 @@ const AdminSocialMediaPage = () => {
 
   const getPlatformColor = (platform: string) => {
     switch (platform) {
-      case 'facebook': return "bg-blue-600";
-      case 'twitter': return "bg-sky-500";
-      case 'instagram': return "bg-pink-600";
-      case 'linkedin': return "bg-blue-700";
-      case 'youtube': return "bg-red-600";
-      default: return "bg-gray-600";
+      case 'facebook': return "bg-primary";
+      case 'twitter': return "bg-primary";
+      case 'instagram': return "bg-primary";
+      case 'linkedin': return "bg-primary";
+      case 'youtube': return "bg-destructive";
+      default: return "bg-muted";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return "bg-success/10 text-success dark:bg-green-900/30 dark:text-green-400";
-      case 'scheduled': return "bg-primary/10 text-primary dark:bg-blue-900/30 dark:text-blue-400";
-      case 'draft': return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-      default: return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+      case 'published': return "bg-success/10 text-success dark:bg-success/20 dark:text-success";
+      case 'scheduled': return "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary";
+      case 'draft': return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-muted-foreground";
+      default: return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-muted-foreground";
     }
   };
 

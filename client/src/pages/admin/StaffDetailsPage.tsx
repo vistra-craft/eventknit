@@ -750,7 +750,7 @@ const StaffDetailsPage = () => {
               <CardContent>
                 <div className="space-y-3">
                   {earningsRecords.map((earning) => (
-                    <div key={earning.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={earning.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <DollarSign className="h-5 w-5 text-primary" />
@@ -787,14 +787,14 @@ const StaffDetailsPage = () => {
                     <Loader />
                   </div>
                 ) : staffEvents.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p>No event assignments found</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {staffEvents.map((assignment) => (
-                      <div key={assignment.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div key={assignment.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                             <Calendar className="h-5 w-5 text-primary" />
@@ -823,7 +823,7 @@ const StaffDetailsPage = () => {
                               )}
                             </div>
                             {assignment.notes && (
-                              <p className="text-xs text-gray-500 mt-1">{assignment.notes}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{assignment.notes}</p>
                             )}
                           </div>
                         </div>
@@ -834,7 +834,7 @@ const StaffDetailsPage = () => {
                                 {assignment.facility}
                               </div>
                             )}
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-muted-foreground">
                               Assigned {new Date(assignment.assignedAt).toLocaleDateString()}
                             </div>
                           </div>
@@ -863,7 +863,7 @@ const StaffDetailsPage = () => {
               <CardContent>
                 <div className="space-y-3">
                   {staffData.documents?.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={doc.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <FileText className="h-5 w-5 text-primary" />
@@ -889,8 +889,8 @@ const StaffDetailsPage = () => {
                       </div>
                     </div>
                   )) || (
-                    <div className="text-center py-8 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                       <p>No documents found</p>
                     </div>
                   )}

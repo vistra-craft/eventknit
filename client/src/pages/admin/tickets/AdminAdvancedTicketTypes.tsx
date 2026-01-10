@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -542,14 +543,12 @@ const CreatePackageForm = ({
       </div>
 
       <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id="hasReservedSeating"
           checked={formData.hasReservedSeating}
-          onChange={(e) =>
-            setFormData({ ...formData, hasReservedSeating: e.target.checked })
+          onCheckedChange={(checked) =>
+            setFormData({ ...formData, hasReservedSeating: !!checked })
           }
-          className="rounded"
         />
         <Label htmlFor="hasReservedSeating">Has Reserved Seating</Label>
       </div>

@@ -121,15 +121,27 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
           <div className="flex items-center gap-2">
             <div
               className={cn(
-                `p-2 rounded-lg bg-${config.color}-100 dark:bg-${config.color}-950`
+                'p-2 rounded-lg',
+                type === 'operational' && 'bg-success/10',
+                type === 'marketing' && 'bg-primary/10',
+                type === 'demographics' && 'bg-accent/10',
+                type === 'analytics' && 'bg-warning/10'
               )}
             >
-              <Icon className={`h-4 w-4 text-${config.color}-600 dark:text-${config.color}-400`} />
+              <Icon
+                className={cn(
+                  'h-4 w-4',
+                  type === 'operational' && 'text-success',
+                  type === 'marketing' && 'text-primary',
+                  type === 'demographics' && 'text-accent-foreground',
+                  type === 'analytics' && 'text-warning'
+                )}
+              />
             </div>
             <div>
               <p className="text-sm font-medium">{config.label}</p>
               {isLocked && (
-                <Badge variant="outline" className="text-xs mt-1 bg-purple-50 text-purple-700 border-purple-300">
+                <Badge variant="outline" className="text-xs mt-1 bg-accent/10 text-accent-foreground border-accent/20">
                   Premium Only
                 </Badge>
               )}
@@ -150,7 +162,7 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
             <div
               className={cn(
                 `h-full rounded-full bg-${config.color}-600 transition-all`,
-                isLocked && 'bg-gray-400'
+                isLocked && 'bg-muted'
               )}
               style={{ width: isLocked ? '50%' : `${stat.percentage}%` }}
             />
@@ -234,14 +246,14 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
         </div>
 
         {!isPremium && (
-          <Alert className="mt-6 border-purple-200 bg-purple-50">
-            <Lock className="h-4 w-4 text-purple-600" />
-            <AlertDescription className="text-purple-900">
+          <Alert className="mt-6 border-border bg-muted">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            <AlertDescription className="text-muted-foreground">
               Upgrade to <strong>Premium</strong> to access demographic and engagement analytics data.
               <Button
                 variant="link"
                 size="sm"
-                className="ml-2 h-auto p-0 text-purple-700"
+                className="ml-2 h-auto p-0 text-muted-foreground"
                 onClick={() => window.location.href = '/organizer/subscription'}
               >
                 View Plans

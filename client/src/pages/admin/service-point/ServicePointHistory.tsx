@@ -590,10 +590,10 @@ const ServicePointHistory: React.FC = () => {
                                 <div className="flex items-center gap-2 mt-1">
                                   <div className="flex items-center gap-1">
                                     {getSessionIconFromName(scan.session || '')}
-                                    <span className="text-xs text-gray-500">{scan.session || 'Unknown'}</span>
+                                    <span className="text-xs text-muted-foreground">{scan.session || 'Unknown'}</span>
                                   </div>
                                   <span className="text-xs text-muted-foreground">•</span>
-                                  <span className="text-xs text-gray-500">{scan.scannedBy}</span>
+                                  <span className="text-xs text-muted-foreground">{scan.scannedBy}</span>
                                   {scan.isReEntry && (
                                     <>
                                       <span className="text-xs text-muted-foreground">•</span>
@@ -617,7 +617,7 @@ const ServicePointHistory: React.FC = () => {
                                 {scan.ticketType && (
                                   <p className="text-sm text-muted-foreground mt-1">{scan.ticketType}</p>
                                 )}
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-muted-foreground mt-1">
                                   {new Date(scan.scannedAt).toLocaleString()}
                                 </p>
                                 {/* errorMessage not in TicketScanRecord type */}
