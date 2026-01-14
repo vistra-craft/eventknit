@@ -4,10 +4,12 @@ import { googleAuth } from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { extractErrorMessage } from '@/lib/utils/error';
-import type { UserRole } from '@/types/auth';
+
+// OAuth only supports ORGANIZER and ATTENDEE registration
+type OAuthRole = 'ORGANIZER' | 'ATTENDEE';
 
 interface UseGoogleAuthOptions {
-  role: UserRole;
+  role: OAuthRole;
   onSuccess?: () => void;
   onError?: (error: string) => void;
 }
