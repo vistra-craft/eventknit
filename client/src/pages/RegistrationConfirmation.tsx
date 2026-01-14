@@ -295,7 +295,7 @@ const RegistrationConfirmation: React.FC = () => {
       <main className="max-w-lg mx-auto px-4 py-8 space-y-6">
         {/* Success Header */}
         <div className="text-center space-y-3">
-          <div className="mx-auto w-14 h-14 rounded-full bg-success/10 dark:bg-green-900/30 flex items-center justify-center">
+          <div className="mx-auto w-14 h-14 rounded-full bg-success/10 flex items-center justify-center">
             <CheckCircle2 className="w-8 h-8 text-success dark:text-success" />
           </div>
           <h1 className="text-2xl font-bold">You're Registered!</h1>

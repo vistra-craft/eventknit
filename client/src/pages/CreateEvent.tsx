@@ -982,7 +982,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                       <div className="bg-primary/5 border border-blue-200 rounded-lg p-4 mb-4">
                         <div className="flex items-center">
                           <AlertCircle className="w-4 h-4 text-primary mr-2" />
-                          <p className="text-sm text-blue-800">
+                          <p className="text-sm text-primary">
                             The first three fields (First Name, Last Name, Email) are required and cannot be removed.
                           </p>
                         </div>
@@ -1001,7 +1001,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeRegistrationField(index)}
-                                className="text-destructive hover:text-red-800"
+                                className="text-destructive hover:text-destructive/80"
                               >
                                 <Minus className="w-4 h-4" />
                               </Button>
@@ -1114,7 +1114,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                                       onClick={() =>
                                         removeSelectOption(index, optionIndex)
                                       }
-                                      className="text-destructive hover:text-red-800"
+                                      className="text-destructive hover:text-destructive/80"
                                     >
                                       <X className="w-4 h-4" />
                                     </Button>
