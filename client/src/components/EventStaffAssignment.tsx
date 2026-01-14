@@ -28,7 +28,7 @@ import {
   type AssignStaffToEventData,
 } from "@/lib/admin-api";
 import { UserRole } from "@/types/auth";
-// TanStack Query hooks
+// TanStack Query hooks - Admin
 import { useEventStaff, useAvailableStaff } from "@/hooks/queries";
 import {
   useAssignStaff,
@@ -36,10 +36,18 @@ import {
   useUpdateStaffAssignment,
   useRemoveStaff,
 } from "@/hooks/mutations";
+// TanStack Query hooks - Organizer
+import { useOrganizerEventStaff, useOrganizerStaff } from "@/hooks/queries";
+import {
+  useAssignOrganizerStaff,
+  useUpdateOrganizerStaffAssignment,
+  useRemoveOrganizerStaff,
+} from "@/hooks/mutations";
 
 interface EventStaffAssignmentProps {
   eventId: string;
   eventTitle?: string;
+  variant?: 'admin' | 'organizer';
 }
 
 const EVENT_STAFF_ROLES: EventStaffRole[] = [
@@ -62,6 +70,7 @@ const STAFF_ROLES: UserRole[] = [
 export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   eventId,
   eventTitle,
+  variant = 'admin',
 }) => {
   const { toast } = useToast();
 
@@ -84,25 +93,32 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   const [facility, setFacility] = useState("");
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
-  // TanStack Query hooks
-  const { data: eventStaffData, isLoading: loading } = useEventStaff(eventId, {
-    role: filterRole,
-    staffType: filterStaffType !== "all" ? (filterStaffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF') : undefined,
-    isActive: filterActive !== "all" ? filterActive === "true" : undefined,
-  });
+  // TanStack Query hooks - conditionally use admin or organizer hooks based on variant
+  const isAdmin = variant === 'admin';
 
-  const { data: availableStaff = [] } = useAvailableStaff();
+  const { data: eventStaffData, isLoading: loading } = isAdmin
+    ? useEventStaff(eventId, {
+        role: filterRole,
+        staffType: filterStaffType !== "all" ? (filterStaffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF') : undefined,
+        isActive: filterActive !== "all" ? filterActive === "true" : undefined,
+      })
+    : useOrganizerEventStaff(eventId, {
+        role: filterRole,
+        isActive: filterActive !== "all" ? filterActive === "true" : undefined,
+      });
 
-  // Mutation hooks
-  const assignStaffMutation = useAssignStaff();
-  const bulkAssignMutation = useBulkAssignStaff();
-  const updateStaffMutation = useUpdateStaffAssignment();
-  const removeStaffMutation = useRemoveStaff();
+  const { data: availableStaff = [] } = isAdmin ? useAvailableStaff() : useOrganizerStaff();
+
+  // Mutation hooks - conditionally use admin or organizer mutations
+  const assignStaffMutation = isAdmin ? useAssignStaff() : useAssignOrganizerStaff();
+  const bulkAssignMutation = isAdmin ? useBulkAssignStaff() : null;
+  const updateStaffMutation = isAdmin ? useUpdateStaffAssignment() : useUpdateOrganizerStaffAssignment();
+  const removeStaffMutation = isAdmin ? useRemoveStaff() : useRemoveOrganizerStaff();
 
   const assignments = eventStaffData?.assignments || [];
   const assigning =
     assignStaffMutation.isPending ||
-    bulkAssignMutation.isPending ||
+    (bulkAssignMutation?.isPending ?? false) ||
     updateStaffMutation.isPending ||
     removeStaffMutation.isPending;
 
@@ -146,20 +162,22 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
       return;
     }
 
-    bulkAssignMutation.mutate(
-      {
-        eventId,
-        staffIds: selectedStaffIds,
-        role: selectedRole,
-        notes: notes || undefined,
-      },
-      {
-        onSuccess: () => {
-          resetForm();
-          setShowBulkAssignDialog(false);
+    if (bulkAssignMutation) {
+      bulkAssignMutation.mutate(
+        {
+          eventId,
+          staffIds: selectedStaffIds,
+          role: selectedRole,
+          notes: notes || undefined,
         },
-      }
-    );
+        {
+          onSuccess: () => {
+            resetForm();
+            setShowBulkAssignDialog(false);
+          },
+        }
+      );
+    }
   };
 
   const handleUpdate = (assignment: EventStaffAssignmentType) => {
@@ -260,14 +278,16 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
               )}
             </CardTitle>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowBulkAssignDialog(true)}
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Bulk Assign
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowBulkAssignDialog(true)}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Bulk Assign
+                </Button>
+              )}
               <Button
                 size="sm"
                 onClick={() => {
@@ -301,19 +321,21 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1">
-              <Label>Staff Type</Label>
-              <Select value={filterStaffType} onValueChange={setFilterStaffType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="ADMIN_STAFF">Admin Staff</SelectItem>
-                  <SelectItem value="ORGANIZER_STAFF">Organizer Staff</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {isAdmin && (
+              <div className="flex-1">
+                <Label>Staff Type</Label>
+                <Select value={filterStaffType} onValueChange={setFilterStaffType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="ADMIN_STAFF">Admin Staff</SelectItem>
+                    <SelectItem value="ORGANIZER_STAFF">Organizer Staff</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex-1">
               <Label>Status</Label>
               <Select value={filterActive} onValueChange={setFilterActive}>
@@ -538,8 +560,9 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Assign Dialog */}
-      <Dialog open={showBulkAssignDialog} onOpenChange={setShowBulkAssignDialog}>
+      {/* Bulk Assign Dialog - Admin only */}
+      {isAdmin && (
+        <Dialog open={showBulkAssignDialog} onOpenChange={setShowBulkAssignDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Bulk Assign Staff</DialogTitle>
@@ -636,6 +659,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 };

@@ -42,7 +42,7 @@ import type { EventData } from "../../types/event";
 import { shareEvent } from "../../lib/utils/share";
 import { exportEventData } from "../../lib/utils/export";
 import { useToast } from "../../hooks/useToast";
-import { OrganizerEventStaffAssignment } from "../../components/OrganizerEventStaffAssignment";
+import { EventStaffAssignment } from "../../components/EventStaffAssignment";
 import { sendToEventRegistrations, getCommunicationHistory } from "../../lib/organizer-dashboard-api";
 import { Textarea } from "../../components/ui/textarea";
 import { Switch } from "../../components/ui/switch";
@@ -1201,9 +1201,10 @@ const EventManagement = () => {
         return (
           <div className="space-y-6">
             {eventId && (
-              <OrganizerEventStaffAssignment
+              <EventStaffAssignment
                 eventId={eventId}
                 eventTitle={eventData?.title}
+                variant="organizer"
               />
             )}
           </div>
