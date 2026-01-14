@@ -110,12 +110,7 @@ const ServicePointTemplates: React.FC = () => {
   const [history, setHistory] = useState<BadgeTemplate[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  // Load templates on mount
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await getBadgeTemplates();
@@ -138,7 +133,12 @@ const ServicePointTemplates: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentTemplate, toast]);
+
+  // Load templates on mount
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   // History management
   const pushToHistory = useCallback((template: BadgeTemplate) => {
@@ -553,7 +553,7 @@ const ServicePointTemplates: React.FC = () => {
                       <div className="w-24">
                         <Slider
                           value={[zoom]}
-                          onValueChange={([value]) => setZoom(value)}
+                          onValueChange={([value]: number[]) => setZoom(value)}
                           min={50}
                           max={150}
                           step={10}
@@ -829,7 +829,7 @@ const ServicePointTemplates: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Slider
                             value={[selectedElementData.borderRadius || 0]}
-                            onValueChange={([value]) => updateElement(selectedElement!, { borderRadius: value })}
+                            onValueChange={([value]: number[]) => updateElement(selectedElement!, { borderRadius: value })}
                             onValueCommit={() => pushToHistory(currentTemplate!)}
                             min={0}
                             max={20}
@@ -844,7 +844,7 @@ const ServicePointTemplates: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Slider
                             value={[(selectedElementData.opacity || 1) * 100]}
-                            onValueChange={([value]) => updateElement(selectedElement!, { opacity: value / 100 })}
+                            onValueChange={([value]: number[]) => updateElement(selectedElement!, { opacity: value / 100 })}
                             onValueCommit={() => pushToHistory(currentTemplate!)}
                             min={0}
                             max={100}
@@ -910,7 +910,7 @@ const ServicePointTemplates: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Slider
                             value={[selectedElementData.rotation || 0]}
-                            onValueChange={([value]) => updateElement(selectedElement!, { rotation: value })}
+                            onValueChange={([value]: number[]) => updateElement(selectedElement!, { rotation: value })}
                             onValueCommit={() => pushToHistory(currentTemplate!)}
                             min={-180}
                             max={180}

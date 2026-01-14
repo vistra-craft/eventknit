@@ -63,7 +63,8 @@ const EditWagePage = () => {
           notes: wage.notes || ""
         });
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       toast({
         variant: "destructive",
         title: "Error",
@@ -153,7 +154,8 @@ const EditWagePage = () => {
         });
       }
       navigate("/admin/finance/wages");
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       toast({
         variant: "destructive",
         title: "Error",

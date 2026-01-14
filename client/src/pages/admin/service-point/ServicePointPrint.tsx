@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,40 +95,83 @@ const ServicePointPrint: React.FC = () => {
     venue: ""
   });
 
-  // Load data on mount
-  useEffect(() => {
-    if (eventId) {
-      loadData();
-    } else {
-      setIsLoading(false);
-    }
+  const loadDemoData = useCallback(() => {
+    // Demo attendees for testing
+    const demoAttendees = [
+      {
+        registrationId: "reg-001",
+        attendeeName: "Sarah Johnson",
+        email: "sarah@techcorp.com",
+        phoneNumber: "+254 700 123 456",
+        ticketType: "VIP",
+        ticketStatus: TicketStatus.ACTIVE,
+        checkedInAt: null,
+        checkedOutAt: null,
+        isCurrentlyInside: false,
+        reEntryCount: 0,
+        lastScanFacility: null,
+      },
+      {
+        registrationId: "reg-002",
+        attendeeName: "Michael Chen",
+        email: "michael@innovatelab.io",
+        phoneNumber: "+254 700 234 567",
+        ticketType: "Standard",
+        ticketStatus: TicketStatus.ACTIVE,
+        checkedInAt: new Date(),
+        checkedOutAt: null,
+        isCurrentlyInside: true,
+        reEntryCount: 0,
+        lastScanFacility: "Main Entrance",
+      },
+      {
+        registrationId: "reg-003",
+        attendeeName: "Emma Wilson",
+        email: "emma@university.edu",
+        phoneNumber: "+254 700 345 678",
+        ticketType: "Student",
+        ticketStatus: TicketStatus.ACTIVE,
+        checkedInAt: null,
+        checkedOutAt: null,
+        isCurrentlyInside: false,
+        reEntryCount: 0,
+        lastScanFacility: null,
+      },
+      {
+        registrationId: "reg-004",
+        attendeeName: "David Kim",
+        email: "david@startuphub.co",
+        phoneNumber: "+254 700 456 789",
+        ticketType: "VIP",
+        ticketStatus: TicketStatus.ACTIVE,
+        checkedInAt: null,
+        checkedOutAt: null,
+        isCurrentlyInside: false,
+        reEntryCount: 0,
+        lastScanFacility: null,
+      },
+    ] as unknown as EventAttendee[];
+
+    setAttendees(demoAttendees);
+    setFilteredAttendees(demoAttendees);
+    setCurrentEvent({
+      id: eventId || "demo-1",
+      title: "Seamless East Africa 2025",
+      date: "July 2-3, 2025",
+      location: "Nairobi, Kenya",
+      venue: "Kenyatta International Convention Centre"
+    });
+    setEventStats({
+      totalAttendees: 4,
+      checkedIn: 1,
+      currentlyInside: 1,
+      checkedOut: 0,
+      reEntries: 0,
+      scansToday: 1,
+    });
   }, [eventId]);
 
-  // Filter attendees when search or filter changes
-  useEffect(() => {
-    let filtered = attendees;
-
-    // Apply search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(a =>
-        a.attendeeName.toLowerCase().includes(term) ||
-        a.email.toLowerCase().includes(term) ||
-        (a.phoneNumber && a.phoneNumber.includes(term))
-      );
-    }
-
-    // Apply status filter
-    if (filterStatus === 'printed') {
-      filtered = filtered.filter(a => printedBadges.has(a.registrationId));
-    } else if (filterStatus === 'not_printed') {
-      filtered = filtered.filter(a => !printedBadges.has(a.registrationId));
-    }
-
-    setFilteredAttendees(filtered);
-  }, [searchTerm, filterStatus, attendees, printedBadges]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -185,83 +228,18 @@ const ServicePointPrint: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [eventId, toast, loadDemoData]);
 
-  const loadDemoData = () => {
-    // Demo attendees for testing
-    const demoAttendees: EventAttendee[] = [
-      {
-        registrationId: "reg-001",
-        attendeeName: "Sarah Johnson",
-        email: "sarah@techcorp.com",
-        phoneNumber: "+254 700 123 456",
-        ticketType: "VIP",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: null,
-        checkedOutAt: null,
-        isCurrentlyInside: false,
-        reEntryCount: 0,
-        lastScanFacility: null,
-      },
-      {
-        registrationId: "reg-002",
-        attendeeName: "Michael Chen",
-        email: "michael@innovatelab.io",
-        phoneNumber: "+254 700 234 567",
-        ticketType: "Standard",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: new Date(),
-        checkedOutAt: null,
-        isCurrentlyInside: true,
-        reEntryCount: 0,
-        lastScanFacility: "Main Entrance",
-      },
-      {
-        registrationId: "reg-003",
-        attendeeName: "Emma Wilson",
-        email: "emma@university.edu",
-        phoneNumber: "+254 700 345 678",
-        ticketType: "Student",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: null,
-        checkedOutAt: null,
-        isCurrentlyInside: false,
-        reEntryCount: 0,
-        lastScanFacility: null,
-      },
-      {
-        registrationId: "reg-004",
-        attendeeName: "David Kim",
-        email: "david@startuphub.co",
-        phoneNumber: "+254 700 456 789",
-        ticketType: "VIP",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: null,
-        checkedOutAt: null,
-        isCurrentlyInside: false,
-        reEntryCount: 0,
-        lastScanFacility: null,
-      },
-    ];
+  // Load data on mount
+  useEffect(() => {
+    if (eventId) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [eventId, loadData]);
 
-    setAttendees(demoAttendees);
-    setFilteredAttendees(demoAttendees);
-    setCurrentEvent({
-      id: eventId || "demo-1",
-      title: "Seamless East Africa 2025",
-      date: "July 2-3, 2025",
-      location: "Nairobi, Kenya",
-      venue: "Kenyatta International Convention Centre"
-    });
-    setEventStats({
-      totalAttendees: 4,
-      checkedIn: 1,
-      currentlyInside: 1,
-      checkedOut: 0,
-      reEntries: 0,
-      scansToday: 1,
-    });
-  };
+
 
   // Generate QR code as data URL
   const generateQRCode = async (data: string): Promise<string> => {

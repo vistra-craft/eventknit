@@ -51,7 +51,8 @@ const EditIncomePage = () => {
           notes: income.notes || ""
         });
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       toast({
         variant: "destructive",
         title: "Error",
@@ -130,7 +131,8 @@ const EditIncomePage = () => {
         });
       }
       navigate("/admin/finance/income");
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       toast({
         variant: "destructive",
         title: "Error",

@@ -1196,7 +1196,7 @@ export default function CreateEventStepwise() {
         console.error('Error restoring draft state:', error);
       }
     }
-  }, [isEditMode, editEventId]);
+  }, [isEditMode, editEventId, templateId]);
 
   // Clear form when navigating to create a new event (not in edit mode) and after successful submission
   useEffect(() => {
@@ -1257,9 +1257,9 @@ export default function CreateEventStepwise() {
   }, [location.pathname, isEditMode, editEventId, resetForm]); // Reset when route changes
 
   // Clear draft after successful submission
-  const clearDraft = () => {
+  const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_STORAGE_KEY);
-  };
+  }, []);
 
   // Handle image upload
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1410,7 +1410,7 @@ export default function CreateEventStepwise() {
     setFaqs(updatedFaqs);
   };
 
-  const validateStep = (step: number) => {
+  const validateStep = useCallback((step: number) => {
     const errors: Record<string, string> = {};
 
     if (step === 1) { // Basic Info
@@ -1480,7 +1480,7 @@ export default function CreateEventStepwise() {
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [eventData, eventType, ticketTypes]);
 
   const transformFormDataToAPI = useCallback((): CreateEventData => {
     // Determine if event is free
@@ -1588,7 +1588,7 @@ export default function CreateEventStepwise() {
     };
 
     return apiData;
-  }, [ticketTypes, eventData, categories, tags, speakers, agenda, exhibitors, sponsors, socialLinks, faqs, registrationFields, eventType, isPrivate]);
+  }, [ticketTypes, eventData, categories, tags, speakers, agenda, exhibitors, sponsors, socialLinks, faqs, registrationFields, eventType, isPrivate, timezone]);
 
   const handleSubmit = useCallback(async () => {
     // Final validation

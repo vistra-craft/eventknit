@@ -1,5 +1,4 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,19 +15,7 @@ import { cn } from "@/lib/utils";
  * <Loader className="text-success" /> - Custom color
  */
 
-export const loaderVariants = cva("", {
-  variants: {
-    size: {
-      sm: "",
-      default: "",
-      lg: "",
-      xl: "",
-    },
-  },
-  defaultVariants: {
-    size: "default",
-  },
-});
+
 
 // Size mappings for different loader types
 const sizeMap = {
@@ -39,9 +26,9 @@ const sizeMap = {
 };
 
 export interface LoaderProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof loaderVariants> {
+  extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "spinner" | "dots" | "pulse" | "bars";
+  size?: "sm" | "default" | "lg" | "xl";
 }
 
 /**

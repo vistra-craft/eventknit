@@ -19,8 +19,8 @@ import {
   getPublicCollections as fetchPublicCollectionsApi,
   createCollection,
   getCollectionById,
-  EventCollectionData,
-  CollectionWithEvents,
+  type EventCollectionData,
+  type CollectionWithEvents,
 } from "@/lib/event-collection-api";
 
 const EventCollections: React.FC = () => {
@@ -119,10 +119,11 @@ const EventCollections: React.FC = () => {
         setShowCreateDialog(false);
         fetchCollections();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }, message?: string };
       toast({
         title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to create collection",
+        description: err.response?.data?.message || err.message || "Failed to create collection",
         variant: "destructive",
       });
     } finally {

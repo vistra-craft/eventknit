@@ -17,8 +17,8 @@ import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { getUserRegisteredEvents } from "../../lib/event-api";
 import { downloadTicketPDF } from "../../lib/ticket-api";
 import { shareEvent } from "../../lib/utils/share";
+import { Badge } from "../../components/ui/badge";
 import { useToast } from "../../hooks/useToast";
-import { useAuth } from "../../hooks/useAuth";
 import EmptyState from "../../components/EmptyState";
 
 interface TicketEvent {
@@ -37,20 +37,14 @@ interface TicketEvent {
 const MyTickets: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user: authUser } = useAuth();
+  // const { user: authUser } = useAuth(); // Removed unused variable
   const [tickets, setTickets] = useState<TicketEvent[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<TicketEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
 
-  const user = authUser ? {
-    name: `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || authUser.email || 'User',
-    email: authUser.email || '',
-  } : {
-    name: 'User',
-    email: '',
-  };
+
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -61,11 +55,11 @@ const MyTickets: React.FC = () => {
           const eventsWithTickets = response.data.events.map((event: { id: string; title: string; date?: string; location?: string; type?: string; image?: string; status?: string; category?: string; ticketId?: string; registrationId?: string; backupCode?: string }) => ({
             id: event.id,
             title: event.title,
-            date: event.date,
-            location: event.location,
+            date: event.date || "",
+            location: event.location || "",
             type: event.type || 'In-Person',
             image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-            status: event.status || 'upcoming',
+            status: (event.status as 'upcoming' | 'ongoing' | 'completed') || 'upcoming',
             category: event.category || '',
             ticketId: event.backupCode || `TKT-${event.id.slice(0, 8).toUpperCase()}`,
             registrationId: event.registrationId,
