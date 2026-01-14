@@ -1086,7 +1086,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
                           </div>
 
                           {/* Select/Radio Options */}
-                          {(field.type === "select" || field.type === "radio") && (
+                          {field.type === "select" && (
                             <div className="space-y-2">
                               <Label>Options</Label>
                               <div className="space-y-2">
