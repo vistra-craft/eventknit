@@ -162,16 +162,12 @@ import ServicePointTemplates from "./pages/admin/service-point/ServicePointTempl
 import ServicePointHistory from "./pages/admin/service-point/ServicePointHistory";
 // Auth imports
 import SignIn from "./pages/auth/SignIn";
-// import SignUp from "./pages/auth/SignUp";
-import SimpleRegistration from "./pages/auth/SimpleRegistration";
-// import EmailEntry from "./pages/auth/EmailEntry";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import MagicLinkVerify from "./pages/auth/MagicLinkVerify";
 import CreateAccount from "./pages/auth/CreateAccount";
-// import UserTypeSelection from "./pages/auth/UserTypeSelection";
-// import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
-// import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
+import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
+import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
 
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider
@@ -360,13 +356,11 @@ const App = () => (
       <Route path="/support" element={<Support />} />
       {/* Auth Routes */}
       <Route path="/auth/signin" element={<SignIn />} />
-      <Route path="/auth/signup" element={<SimpleRegistration />} />
-      <Route path="/auth/register" element={<SimpleRegistration />} />
-      {/* Legacy registration routes - redirect to simple registration */}
-      <Route path="/auth/email-entry" element={<SimpleRegistration />} />
-      <Route path="/auth/user-type" element={<SimpleRegistration />} />
-      <Route path="/auth/register/organizer" element={<SimpleRegistration />} />
-      <Route path="/auth/register/attendee" element={<SimpleRegistration />} />
+      <Route path="/auth/signup" element={<AttendeeRegistration />} />
+      <Route path="/auth/register" element={<AttendeeRegistration />} />
+      {/* Role-specific registration routes */}
+      <Route path="/auth/register/organizer" element={<OrganizerRegistration />} />
+      <Route path="/auth/register/attendee" element={<AttendeeRegistration />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/reset-password" element={<ResetPassword />} />
       <Route path="/auth/magic-link/verify" element={<MagicLinkVerify />} />
