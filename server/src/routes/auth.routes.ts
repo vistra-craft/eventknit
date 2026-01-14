@@ -81,15 +81,15 @@ router.post(
 );
 
 /**
- * @route   POST /api/v1/auth/facebook
- * @desc    Facebook OAuth login/registration
+ * @route   POST /api/v1/auth/apple
+ * @desc    Apple Sign In OAuth login/registration
  * @access  Public
  */
 router.post(
-  '/facebook',
+  '/apple',
   authRateLimiter,
-  validate(authValidations.facebookAuth),
-  AuthController.facebookAuth,
+  validate(authValidations.appleAuth),
+  AuthController.appleAuth,
 );
 
 /**

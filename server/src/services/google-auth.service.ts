@@ -172,9 +172,14 @@ export class GoogleAuthService {
       throw new ValidationError('Google account does not have an email address');
     }
 
-    // Check if user already exists
-    let user = await prisma.user.findUnique({
-      where: { email: googleUser.email },
+    // Check if user already exists with this googleId or email
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { googleId: googleUser.id },
+          { email: googleUser.email },
+        ],
+      },
     });
 
     if (user) {
@@ -183,12 +188,17 @@ export class GoogleAuthService {
         throw new AuthenticationError('Your account has been suspended. Please contact support');
       }
 
-      // Update last login and avatar if not set
+      // Update googleId if not set, update last login and avatar if not set
       const updateData: Record<string, unknown> = {
         lastLoginAt: new Date(),
         failedLoginAttempts: 0,
         lockedUntil: null,
       };
+
+      // Update googleId if not set
+      if (!user.googleId) {
+        updateData.googleId = googleUser.id;
+      }
 
       // Update avatar if user doesn't have one and Google provides one
       if (!user.avatar && googleUser.picture) {
@@ -217,6 +227,7 @@ export class GoogleAuthService {
       user = await prisma.user.create({
         data: {
           email: googleUser.email,
+          googleId: googleUser.id,
           firstName: firstName || null,
           lastName: lastName || null,
           avatar: googleUser.picture || null,

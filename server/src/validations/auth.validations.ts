@@ -136,9 +136,12 @@ export const authValidations = {
     }),
   }),
 
-  facebookAuth: Joi.object({
-    accessToken: Joi.string().required().messages({
-      'any.required': 'Facebook access token is required',
+  appleAuth: Joi.object({
+    authorizationCode: Joi.string().optional().messages({
+      'string.base': 'Authorization code must be a string',
+    }),
+    idToken: Joi.string().required().messages({
+      'any.required': 'Apple ID token is required',
     }),
     role: Joi.string()
       .valid('ATTENDEE', 'ORGANIZER')
@@ -147,6 +150,12 @@ export const authValidations = {
       .messages({
         'any.only': 'Role must be either ATTENDEE or ORGANIZER',
       }),
+    user: Joi.object({
+      name: Joi.object({
+        firstName: Joi.string().optional(),
+        lastName: Joi.string().optional(),
+      }).optional(),
+    }).optional(),
   }),
 
   googleAuth: Joi.object({

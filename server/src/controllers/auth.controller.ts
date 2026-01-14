@@ -480,17 +480,18 @@ export class AuthController {
   }
 
   /**
-   * Facebook OAuth login/registration
+   * Apple Sign In OAuth login/registration
    */
-  static async facebookAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  static async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
-      const { FacebookAuthService } = await import('../services/facebook-auth.service');
-      const result = await FacebookAuthService.authenticateWithFacebook(
-        req.body.accessToken,
+      const { AppleAuthService } = await import('../services/apple-auth.service.js');
+      const result = await AppleAuthService.authenticateWithApple(
+        req.body.idToken,
         req.body.role,
+        req.body.user,
         ipAddress,
         userAgent,
       );
@@ -505,7 +506,7 @@ export class AuthController {
 
       res.status(200).json({
         success: true,
-        message: 'Facebook authentication successful',
+        message: 'Apple Sign In authentication successful',
         data: {
           user: result.user,
           accessToken: result.accessToken,
