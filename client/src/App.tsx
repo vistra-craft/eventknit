@@ -1,4 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { queryClient } from "./lib/queryClient";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleViewProvider } from "./contexts/RoleViewContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -183,11 +186,12 @@ const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
 };
 
 const App = () => (
-  <ThemeProvider>
-    <AuthProvider>
-      <BrowserRouter>
-        <RoleViewWrapper>
-          <Routes>
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <RoleViewWrapper>
+            <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/about" element={<About />} />
       <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -375,12 +379,14 @@ const App = () => (
       <Route path="/admin/service-point/print" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointPrint /></ProtectedRoute>} />
       <Route path="/admin/service-point/templates" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><ServicePointTemplates /></ProtectedRoute>} />
       <Route path="/admin/service-point/history" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointHistory /></ProtectedRoute>} />
-        </Routes>
-      </RoleViewWrapper>
-      <Toaster />
-    </BrowserRouter>
+          </Routes>
+        </RoleViewWrapper>
+        <Toaster />
+      </BrowserRouter>
     </AuthProvider>
-  </ThemeProvider>
+    </ThemeProvider>
+    <ReactQueryDevtools initialIsOpen={false} />
+  </QueryClientProvider>
 );
 
 export default App;

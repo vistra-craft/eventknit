@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   UserPlus,
   Users,
@@ -23,17 +23,19 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/useToast";
 import {
-  assignAdminStaffToEvent,
-  getEventStaff,
-  updateStaffAssignment,
-  removeStaffFromEvent,
-  bulkAssignStaff,
   type EventStaffAssignment as EventStaffAssignmentType,
   type EventStaffRole,
   type AssignStaffToEventData,
 } from "@/lib/admin-api";
-import { getUsers, type User } from "@/lib/admin-api";
 import { UserRole } from "@/types/auth";
+// TanStack Query hooks
+import { useEventStaff, useAvailableStaff } from "@/hooks/queries";
+import {
+  useAssignStaff,
+  useBulkAssignStaff,
+  useUpdateStaffAssignment,
+  useRemoveStaff,
+} from "@/hooks/mutations";
 
 interface EventStaffAssignmentProps {
   eventId: string;
@@ -62,13 +64,13 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   eventTitle,
 }) => {
   const { toast } = useToast();
-  const [assignments, setAssignments] = useState<EventStaffAssignmentType[]>([]);
-  const [availableStaff, setAvailableStaff] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [assigning, setAssigning] = useState(false);
+
+  // Dialog state
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<EventStaffAssignmentType | null>(null);
+
+  // Filter state
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStaffType, setFilterStaffType] = useState<string>("all");
   const [filterActive, setFilterActive] = useState<string>("all");
@@ -82,64 +84,29 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   const [facility, setFacility] = useState("");
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
-  const fetchAssignments = useCallback(async () => {
-    try {
-      setLoading(true);
-      const filters: {
-        role?: string;
-        staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
-        isActive?: boolean;
-      } = {};
+  // TanStack Query hooks
+  const { data: eventStaffData, isLoading: loading } = useEventStaff(eventId, {
+    role: filterRole,
+    staffType: filterStaffType !== "all" ? (filterStaffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF') : undefined,
+    isActive: filterActive !== "all" ? filterActive === "true" : undefined,
+  });
 
-      if (filterRole !== "all") filters.role = filterRole;
-      if (filterStaffType !== "all") {
-        filters.staffType = filterStaffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
-      }
-      if (filterActive !== "all") {
-        filters.isActive = filterActive === "true";
-      }
+  const { data: availableStaff = [] } = useAvailableStaff();
 
-      const response = await getEventStaff(eventId, filters);
-      if (response.success && response.data) {
-        setAssignments(response.data.assignments);
-      }
-    } catch (error) {
-      console.error("Error fetching assignments:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load staff assignments",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [eventId, filterRole, filterStaffType, filterActive, toast]);
+  // Mutation hooks
+  const assignStaffMutation = useAssignStaff();
+  const bulkAssignMutation = useBulkAssignStaff();
+  const updateStaffMutation = useUpdateStaffAssignment();
+  const removeStaffMutation = useRemoveStaff();
 
-  const fetchAvailableStaff = useCallback(async () => {
-    try {
-      const response = await getUsers({
-        role: undefined, // Get all staff roles
-        status: "ACTIVE",
-      });
+  const assignments = eventStaffData?.assignments || [];
+  const assigning =
+    assignStaffMutation.isPending ||
+    bulkAssignMutation.isPending ||
+    updateStaffMutation.isPending ||
+    removeStaffMutation.isPending;
 
-      if (response.success && response.data) {
-        // Filter to only staff roles
-        const staff = response.data.users.filter((user) =>
-          STAFF_ROLES.includes(user.role as UserRole)
-        );
-        setAvailableStaff(staff);
-      }
-    } catch (error) {
-      console.error("Error fetching staff:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAssignments();
-    fetchAvailableStaff();
-  }, [fetchAssignments, fetchAvailableStaff]);
-
-  const handleAssign = async () => {
+  const handleAssign = () => {
     if (!selectedStaffId) {
       toast({
         title: "Error",
@@ -149,38 +116,27 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
       return;
     }
 
-    try {
-      setAssigning(true);
-      const data: AssignStaffToEventData = {
-        staffId: selectedStaffId,
-        role: selectedRole,
-        notes: notes || undefined,
-        shiftStart: shiftStart || undefined,
-        shiftEnd: shiftEnd || undefined,
-        facility: facility || undefined,
-      };
+    const data: AssignStaffToEventData = {
+      staffId: selectedStaffId,
+      role: selectedRole,
+      notes: notes || undefined,
+      shiftStart: shiftStart || undefined,
+      shiftEnd: shiftEnd || undefined,
+      facility: facility || undefined,
+    };
 
-      await assignAdminStaffToEvent(eventId, data);
-      toast({
-        title: "Success",
-        description: "Staff assigned to event successfully",
-      });
-      resetForm();
-      setShowAssignDialog(false);
-      fetchAssignments();
-    } catch (error) {
-      console.error("Error assigning staff:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to assign staff",
-        variant: "destructive",
-      });
-    } finally {
-      setAssigning(false);
-    }
+    assignStaffMutation.mutate(
+      { eventId, data },
+      {
+        onSuccess: () => {
+          resetForm();
+          setShowAssignDialog(false);
+        },
+      }
+    );
   };
 
-  const handleBulkAssign = async () => {
+  const handleBulkAssign = () => {
     if (selectedStaffIds.length === 0) {
       toast({
         title: "Error",
@@ -190,81 +146,54 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
       return;
     }
 
-    try {
-      setAssigning(true);
-      await bulkAssignStaff(eventId, selectedStaffIds, selectedRole, notes || undefined);
-      toast({
-        title: "Success",
-        description: `${selectedStaffIds.length} staff members assigned successfully`,
-      });
-      resetForm();
-      setShowBulkAssignDialog(false);
-      fetchAssignments();
-    } catch (error) {
-      console.error("Error bulk assigning staff:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to assign staff",
-        variant: "destructive",
-      });
-    } finally {
-      setAssigning(false);
-    }
-  };
-
-  const handleUpdate = async (assignment: EventStaffAssignmentType) => {
-    try {
-      setAssigning(true);
-      await updateStaffAssignment(eventId, assignment.staffId, {
+    bulkAssignMutation.mutate(
+      {
+        eventId,
+        staffIds: selectedStaffIds,
         role: selectedRole,
         notes: notes || undefined,
-        isActive: assignment.isActive,
-        shiftStart: shiftStart || null,
-        shiftEnd: shiftEnd || null,
-        facility: facility || null,
-      });
-      toast({
-        title: "Success",
-        description: "Assignment updated successfully",
-      });
-      resetForm();
-      setEditingAssignment(null);
-      fetchAssignments();
-    } catch (error) {
-      console.error("Error updating assignment:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update assignment",
-        variant: "destructive",
-      });
-    } finally {
-      setAssigning(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          resetForm();
+          setShowBulkAssignDialog(false);
+        },
+      }
+    );
   };
 
-  const handleRemove = async (assignment: EventStaffAssignmentType) => {
+  const handleUpdate = (assignment: EventStaffAssignmentType) => {
+    updateStaffMutation.mutate(
+      {
+        eventId,
+        staffId: assignment.staffId,
+        data: {
+          role: selectedRole,
+          notes: notes || undefined,
+          isActive: assignment.isActive,
+          shiftStart: shiftStart || null,
+          shiftEnd: shiftEnd || null,
+          facility: facility || null,
+        },
+      },
+      {
+        onSuccess: () => {
+          resetForm();
+          setEditingAssignment(null);
+        },
+      }
+    );
+  };
+
+  const handleRemove = (assignment: EventStaffAssignmentType) => {
     if (!confirm(`Are you sure you want to remove ${assignment.staff.firstName} ${assignment.staff.lastName} from this event?`)) {
       return;
     }
 
-    try {
-      setAssigning(true);
-      await removeStaffFromEvent(eventId, assignment.staffId);
-      toast({
-        title: "Success",
-        description: "Staff removed from event successfully",
-      });
-      fetchAssignments();
-    } catch (error) {
-      console.error("Error removing staff:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to remove staff",
-        variant: "destructive",
-      });
-    } finally {
-      setAssigning(false);
-    }
+    removeStaffMutation.mutate({
+      eventId,
+      staffId: assignment.staffId,
+    });
   };
 
   const resetForm = () => {
