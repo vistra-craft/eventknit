@@ -15,7 +15,7 @@ export const ticketTypeSchema = z.object({
   id: z.number(),
   name: requiredString('Ticket name'),
   type: z.enum(['free', 'paid'], {
-    required_error: 'Ticket type is required',
+    message: 'Ticket type is required',
   }),
   price: z.string().refine(
     (val) => {
@@ -42,7 +42,7 @@ export type Speaker = z.infer<typeof speakerSchema>;
 export const sponsorSchema = z.object({
   name: requiredString('Sponsor name'),
   level: z.enum(['gold', 'silver', 'bronze'], {
-    required_error: 'Sponsor level is required',
+    message: 'Sponsor level is required',
   }),
   logo: z.string().optional(), // URL to logo image
 });

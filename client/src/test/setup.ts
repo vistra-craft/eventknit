@@ -10,8 +10,7 @@ Object.defineProperty(window, 'URL', {
 
 // Mock global for Node.js compatibility
 if (typeof global === 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (global as any) = globalThis
+  (global as unknown as typeof globalThis) = globalThis
 }
 
 // Fix for webidl-conversions issue in GitHub Actions
@@ -23,8 +22,7 @@ if (typeof process !== 'undefined') {
 if (typeof window !== 'undefined') {
   // Ensure URL is available
   if (!window.URL) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).URL = URL
+    (window as unknown as { URL: typeof URL }).URL = URL
   }
 }
 

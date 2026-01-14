@@ -14,7 +14,7 @@ export const promoCodeSchema = z
     eventId: z.string().optional(),
 
     discountType: z.enum(['PERCENTAGE', 'FIXED_AMOUNT'], {
-      required_error: 'Discount type is required',
+      message: 'Discount type is required',
     }),
 
     discountValue: stringToPositiveNumber('Discount value'),

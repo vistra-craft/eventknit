@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
   const [newTag, setNewTag] = useState("");
 
   const form = useForm<CreateEventData>({
-    resolver: zodResolver(createEventSchema) as any,
+    resolver: zodResolver(createEventSchema) as unknown as Resolver<CreateEventData, any>,
     defaultValues: {
       // Basic Info
       title: "",
