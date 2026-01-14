@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Save, X } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
@@ -39,13 +39,7 @@ const EditWagePage = () => {
     notes: ""
   });
 
-  useEffect(() => {
-    if (isEditing && id) {
-      fetchWage(id);
-    }
-  }, [id, isEditing]);
-
-  const fetchWage = async (wageId: string) => {
+  const fetchWage = useCallback(async (wageId: string) => {
     try {
       setLoading(true);
       const response = await getWageById(wageId);
@@ -69,16 +63,22 @@ const EditWagePage = () => {
           notes: wage.notes || ""
         });
       }
-    } catch (error: any) {
+    } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.response?.data?.message || "Failed to load wage details",
+        description: err.response?.data?.message || "Failed to load wage details",
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (isEditing && id) {
+      fetchWage(id);
+    }
+  }, [id, isEditing, fetchWage]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -153,11 +153,11 @@ const EditWagePage = () => {
         });
       }
       navigate("/admin/finance/wages");
-    } catch (error: any) {
+    } catch (err: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} wage`,
+        description: err.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} wage`,
       });
     } finally {
       setSaving(false);

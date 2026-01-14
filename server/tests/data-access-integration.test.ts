@@ -23,7 +23,7 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }
@@ -128,7 +128,7 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
       },
     });
 
-    const registration3 = await prisma.eventRegistration.create({
+    const _registration3 = await prisma.eventRegistration.create({
       data: {
         eventId,
         attendeeId: attendee3Id,
@@ -168,8 +168,8 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
 
       expect(registrations.length).toBeGreaterThan(0);
       // BASIC tier should not expose attendee PII
-      const hasAttendeeData = registrations.some((r: any) => 
-        r.attendee && (r.attendee.email || r.attendee.firstName)
+      const hasAttendeeData = registrations.some((r: any) =>
+        r.attendee && (r.attendee.email || r.attendee.firstName),
       );
       expect(hasAttendeeData).toBe(false);
     });
@@ -191,7 +191,7 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
 
       // Should only return consented attendees (2 out of 3)
       expect(registrations.length).toBe(2);
-      
+
       // Should have attendee data
       expect(registrations[0]).toHaveProperty('attendee');
       expect(registrations[0].attendee).toHaveProperty('email');
@@ -231,10 +231,10 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
       );
 
       // Should return consented attendees
-      const withDemographics = registrations.find((r: any) => 
-        r.attendee?.email === 'attendee1@integration.test'
+      const withDemographics = registrations.find((r: any) =>
+        r.attendee?.email === 'attendee1@integration.test',
       );
-      
+
       expect(withDemographics).toBeDefined();
       // PREMIUM tier with demographics consent should include location
       if (withDemographics?.attendee) {
@@ -259,10 +259,10 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
 
       // Should only have 2 (consented), not 3
       expect(registrations.length).toBe(2);
-      
+
       // Should not include attendee3 (no consent)
-      const hasAttendee3 = registrations.some((r: any) => 
-        r.attendee?.email === 'attendee3@integration.test'
+      const hasAttendee3 = registrations.some((r: any) =>
+        r.attendee?.email === 'attendee3@integration.test',
       );
       expect(hasAttendee3).toBe(false);
     });

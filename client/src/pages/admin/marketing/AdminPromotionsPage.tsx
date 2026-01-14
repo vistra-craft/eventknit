@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -103,12 +103,7 @@ const AdminPromotionsPage = () => {
 
   const [saving, setSaving] = useState(false);
 
-  // Load data
-  useEffect(() => {
-    loadData();
-  }, [pagination.page, filterScope, filterStatus, searchTerm]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [codesRes, statsRes] = await Promise.all([
@@ -130,8 +125,8 @@ const AdminPromotionsPage = () => {
       if (statsRes.success && statsRes.data) {
         setStats(statsRes.data);
       }
-    } catch (error) {
-      console.error("Error loading data:", error);
+    } catch (err: unknown) {
+      console.error("Error loading data:", err);
       toast({
         title: "Error",
         description: "Failed to load promo codes",
@@ -140,7 +135,12 @@ const AdminPromotionsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterScope, filterStatus, pagination.limit, pagination.page, searchTerm, toast]);
+
+  // Load data
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleDelete = async () => {
     if (!deletingCodeId) return;
@@ -155,7 +155,7 @@ const AdminPromotionsPage = () => {
       } else {
         toast({ title: "Error", description: response.message || "Failed to delete", variant: "destructive" });
       }
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to delete promo code", variant: "destructive" });
     }
   };
@@ -167,7 +167,7 @@ const AdminPromotionsPage = () => {
         toast({ title: "Success", description: response.data?.isActive ? "Promo code activated" : "Promo code deactivated" });
         loadData();
       }
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to toggle status", variant: "destructive" });
     }
   };
@@ -198,7 +198,7 @@ const AdminPromotionsPage = () => {
       } else {
         toast({ title: "Error", description: response.message || "Failed to generate", variant: "destructive" });
       }
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to generate promo codes", variant: "destructive" });
     } finally {
       setSaving(false);

@@ -187,7 +187,7 @@ const EventCollections: React.FC = () => {
                 <Checkbox
                   id="isPublic"
                   checked={collectionData.isPublic}
-                  onCheckedChange={(checked) => setCollectionData({ ...collectionData, isPublic: !!checked })}
+                  onCheckedChange={(checked) => setCollectionData({ ...collectionData, isPublic: Boolean(checked) })}
                 />
                 <Label htmlFor="isPublic">Make this collection public</Label>
               </div>
@@ -339,7 +339,7 @@ const EventCollections: React.FC = () => {
       </Tabs>
 
       {/* Collection Detail Dialog */}
-      <Dialog open={!!selectedCollection || loadingCollection} onOpenChange={() => setSelectedCollection(null)}>
+      <Dialog open={Boolean(selectedCollection) || loadingCollection} onOpenChange={() => setSelectedCollection(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {loadingCollection ? (
             <div className="flex items-center justify-center py-12">

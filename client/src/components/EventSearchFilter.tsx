@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, MapPin, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
-import { EVENT_CATEGORIES, getCategoriesByGroup } from "@/lib/event-categories";
+import { getCategoriesByGroup } from "@/lib/event-categories";
 
 export interface SearchFilters {
   search?: string;

@@ -14,14 +14,14 @@ import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
-import { EVENT_CATEGORIES, getCategoriesByGroup } from "@/lib/event-categories";
+import { getCategoriesByGroup } from "@/lib/event-categories";
 import { bulkUpdateOrganizerDataAccess, getAdminStaffEvents } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/useToast";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { getEventStatusBadgeClass, getEventTypeBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;

@@ -307,7 +307,7 @@ const DigitalWallet = () => {
                     id="auto-add-tickets"
                     checked={wallet.autoAddTickets}
                     onCheckedChange={(checked) =>
-                      handleUpdatePreferences({ autoAddTickets: !!checked })
+                      handleUpdatePreferences({ autoAddTickets: Boolean(checked) })
                     }
                   />
                   </div>
@@ -324,7 +324,7 @@ const DigitalWallet = () => {
                       id="backup-enabled"
                       checked={wallet.backupEnabled}
                       onCheckedChange={(checked) =>
-                        handleUpdatePreferences({ backupEnabled: !!checked })
+                        handleUpdatePreferences({ backupEnabled: Boolean(checked) })
                       }
                     />
                   </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Save, X } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
@@ -32,13 +32,7 @@ const EditExpensePage = () => {
     notes: ""
   });
 
-  useEffect(() => {
-    if (isEditing) {
-      loadExpense();
-    }
-  }, [id]);
-
-  const loadExpense = async () => {
+  const loadExpense = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
@@ -55,8 +49,8 @@ const EditExpensePage = () => {
         receipt: expense.receiptUrl || "",
         notes: expense.notes || ""
       });
-    } catch (error) {
-      console.error("Error loading expense:", error);
+    } catch (saveError) {
+      console.error("Error loading expense:", saveError);
       toast({
         title: "Error",
         description: "Failed to load expense",
@@ -65,7 +59,13 @@ const EditExpensePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, toast]);
+
+  useEffect(() => {
+    if (isEditing) {
+      loadExpense();
+    }
+  }, [isEditing, loadExpense]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({

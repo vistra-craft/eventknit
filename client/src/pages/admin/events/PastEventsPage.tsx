@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Loader } from "../../../components/ui/loader";
 import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
-import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;

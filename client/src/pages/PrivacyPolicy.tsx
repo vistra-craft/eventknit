@@ -1,6 +1,6 @@
 import MinimalHeader from "@/components/MinimalHeader";
 import LegalFooter from "@/components/LegalFooter";
-import { Shield, Eye, Lock, Database, Mail, Phone } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
 
 const PrivacyPolicy = () => {
   return (

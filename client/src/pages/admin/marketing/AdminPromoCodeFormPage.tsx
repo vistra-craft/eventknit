@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,12 +29,12 @@ import {
   type DiscountType,
   type CreateAdminPromoCodeData,
 } from "@/lib/admin-promo-code-api";
-import { getEvents } from "@/lib/event-api";
+import { getEvents, EventStatus } from "@/lib/event-api";
 
 const AdminPromoCodeFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const isEditing = !!id;
+  const isEditing = Boolean(id);
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(isEditing);
@@ -59,13 +59,9 @@ const AdminPromoCodeFormPage = () => {
     discountTiers: [],
   });
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
-      const eventsRes = await getEvents({ status: "APPROVED", limit: 100 });
+      const eventsRes = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
       if (eventsRes.success && eventsRes.data?.events) {
         setEvents(eventsRes.data.events.map((e) => ({ id: e.id, title: e.title })));
       }
@@ -103,13 +99,17 @@ const AdminPromoCodeFormPage = () => {
           navigate("/admin/marketing/promo-codes");
         }
       }
-    } catch (error) {
-      console.error("Error loading data:", error);
+    } catch (err: unknown) {
+      console.error("Error loading data:", err);
       toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, isEditing, navigate, toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,7 +151,7 @@ const AdminPromoCodeFormPage = () => {
       } else {
         toast({ title: "Error", description: response.message || "Failed to save", variant: "destructive" });
       }
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to save promo code", variant: "destructive" });
     } finally {
       setSaving(false);
@@ -264,7 +264,7 @@ const AdminPromoCodeFormPage = () => {
                           const ids = formData.eventIds || [];
                           setFormData({
                             ...formData,
-                            eventIds: !!checked ? [...ids, e.id] : ids.filter(i => i !== e.id)
+                            eventIds: checked ? [...ids, e.id] : ids.filter(i => i !== e.id)
                           });
                         }}
                       />

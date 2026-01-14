@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Bell,
   Mail,
@@ -28,7 +27,6 @@ import DashboardNavbar from "./DashboardNavbar";
 import BackButton from "@/components/BackButton";
 
 const NotificationPreferencesPage = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);

@@ -241,7 +241,7 @@ const EventUpdatesSubscription = () => {
         )}
 
         {selectedSubscription && (
-          <Dialog open={!!selectedSubscription} onOpenChange={() => setSelectedSubscription(null)}>
+          <Dialog open={Boolean(selectedSubscription)} onOpenChange={() => setSelectedSubscription(null)}>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Subscription Preferences</DialogTitle>

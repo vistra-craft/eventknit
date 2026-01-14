@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, AlertCircle, Check, RefreshCw, User, Ticket, Minus, Plus, Crown, Clock, CheckCircle, X } from "lucide-react";
+import { Calendar, MapPin, AlertCircle, Check, RefreshCw, User, Ticket, Minus, Plus, Crown, Clock, CheckCircle, X } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 
 // UI Components

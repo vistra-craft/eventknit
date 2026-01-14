@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "@/components/BackButton";
-import { Button } from "@/components/ui/button";
 import Logo from "@/components/Logo";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";

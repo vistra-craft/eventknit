@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   User,
   Save,
@@ -30,7 +29,6 @@ import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
 
 const UserProfilePage = () => {
-  const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

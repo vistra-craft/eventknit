@@ -208,7 +208,7 @@ const Invoices = () => {
       </Tabs>
 
       {selectedInvoice && invoiceHTML && (
-        <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
+        <Dialog open={Boolean(selectedInvoice)} onOpenChange={() => setSelectedInvoice(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Invoice Preview</DialogTitle>

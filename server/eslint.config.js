@@ -11,7 +11,8 @@ export default [
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: "module",
-        project: "./tsconfig.json",
+        project: true,
+        tsconfigRootDir: import.meta.dirname,
       },
       globals: {
         process: "readonly",
@@ -27,6 +28,7 @@ export default [
         clearTimeout: "readonly",
         setInterval: "readonly",
         clearInterval: "readonly",
+        fetch: "readonly",
       },
     },
     plugins: {

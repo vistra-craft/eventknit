@@ -19,14 +19,14 @@ describe('DataAccessService', () => {
   let eventId: string;
   let registration1Id: string;
   let registration2Id: string;
-  let registration3Id: string;
+  let _registration3Id: string;
 
   beforeAll(async () => {
     try {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }
@@ -141,7 +141,7 @@ describe('DataAccessService', () => {
         totalAmount: 0,
       },
     });
-    registration3Id = registration3.id;
+    _registration3Id = registration3.id;
   });
 
   describe('filterAttendeeData - BASIC tier', () => {

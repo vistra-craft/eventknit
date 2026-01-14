@@ -151,9 +151,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
   // Watch values for conditional rendering
   const watchIsOnline = form.watch("isOnline");
   const watchIsRecurring = form.watch("isRecurring");
-  const watchIsPrivate = form.watch("isPrivate");
   const watchTags = form.watch("tags");
-  const watchEventType = form.watch("isOnline") ? "online" : "in-person"; // Simplified event type logic
 
   const fieldTypes = [
     { value: "text", label: "Text" },

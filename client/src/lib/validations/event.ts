@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import {
   requiredString,
-  optionalString,
   urlSchema,
   stringToPositiveNumber,
   stringToNonNegativeNumber,

@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
  * <Loader className="text-success" /> - Custom color
  */
 
-const loaderVariants = cva("", {
+export const loaderVariants = cva("", {
   variants: {
     size: {
       sm: "",

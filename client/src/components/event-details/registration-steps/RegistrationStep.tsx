@@ -85,14 +85,13 @@ export const RegistrationStep = ({
     if (user && isAuthenticated && !isLoading) {
       setIsLoading(false);
       // Pre-fill form data with user info
-      const updatedFormData = {
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         email: user.email || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         phoneNumber: user.phoneNumber || '',
-      };
-      setFormData(updatedFormData);
+      }));
 
       // If no custom fields, proceed immediately
       if (!event.registrationFields || event.registrationFields.length === 0) {
@@ -102,12 +101,16 @@ export const RegistrationStep = ({
           firstName: user.firstName,
           lastName: user.lastName,
           phoneNumber: user.phoneNumber || undefined,
-          registrationData: updatedFormData,
+          registrationData: {
+            email: user.email || '',
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            phoneNumber: user.phoneNumber || '',
+          },
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isAuthenticated, isLoading]);
+  }, [user, isAuthenticated, isLoading, event.registrationFields, onContinue, event.title]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,7 +307,7 @@ export const RegistrationStep = ({
                       id={`${fieldId}-${option}`}
                       checked={formData[field.id] === option}
                       onCheckedChange={(checked) =>
-                        handleInputChange(field.id, !!checked ? option : '')
+                        handleInputChange(field.id, checked ? option : '')
                       }
                       className="h-4 w-4 text-primary focus:ring-primary border-border rounded focus:bg-muted"
                     />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,11 +63,7 @@ const PlatformFeedbackPage: React.FC = () => {
   const [triggering, setTriggering] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchData();
-  }, [filters]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [feedbackRes, analyticsRes] = await Promise.all([
@@ -84,8 +80,8 @@ const PlatformFeedbackPage: React.FC = () => {
       if (analyticsRes.success && analyticsRes.data) {
         setAnalytics(analyticsRes.data);
       }
-    } catch (error) {
-      console.error("Error fetching feedback:", error);
+    } catch (err: unknown) {
+      console.error("Error fetching feedback:", err);
       toast({
         title: "Error",
         description: "Failed to load feedback data",
@@ -94,7 +90,11 @@ const PlatformFeedbackPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleViewDetails = async (id: string) => {
     try {

@@ -1,6 +1,6 @@
 import MinimalHeader from "@/components/MinimalHeader";
 import LegalFooter from "@/components/LegalFooter";
-import { Cookie, Settings, BarChart3, Shield, Eye, Database } from "lucide-react";
+
 
 const CookiePolicy = () => {
   return (

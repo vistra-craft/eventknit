@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   User,
   Save,
@@ -31,7 +30,7 @@ import { UserRole, UserStatus } from "@/types/auth";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 const AdminProfilePage = () => {
-  const navigate = useNavigate();
+
   const { user, refreshProfile } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

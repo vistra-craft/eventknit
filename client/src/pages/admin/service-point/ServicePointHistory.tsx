@@ -43,7 +43,6 @@ interface ScanStats {
 }
 
 const ServicePointHistory: React.FC = () => {
-  const navigate = useNavigate();
   const { eventId } = useParams<{ eventId?: string }>();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();

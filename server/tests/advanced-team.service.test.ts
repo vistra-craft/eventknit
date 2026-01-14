@@ -13,14 +13,14 @@ const hashPassword = async (password: string): Promise<string> => {
 describe('AdvancedTeamService', () => {
   let dbConnected = false;
   let organizerId: string;
-  let permissionIds: Record<string, string> = {};
+  const permissionIds: Record<string, string> = {};
 
   beforeAll(async () => {
     try {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }
@@ -305,7 +305,7 @@ describe('AdvancedTeamService', () => {
         return;
       }
 
-      const updated = await AdvancedTeamService.updateRoleTemplate(
+      const _updated = await AdvancedTeamService.updateRoleTemplate(
         roleTemplateId,
         organizerId,
         {
@@ -433,78 +433,6 @@ describe('AdvancedTeamService', () => {
       expect(rolePermissions[0].permission.key).toBe('events.view');
     });
   });
-
-  describe('applyRoleTemplate', () => {
-    let roleTemplateId: string;
-
-    beforeEach(async () => {
-      if (!dbConnected) return;
-
-      const permission = await prisma.permission.findFirst({
-        where: { key: 'events.view' },
-      });
-      if (!permission) throw new Error('Permission not found');
-
-      const roleTemplate = await prisma.teamRoleTemplate.create({
-        data: {
-          organizerId,
-          name: 'Template Role',
-          permissions: {
-            create: {
-              permissionId: permission.id,
-            },
-          },
-        },
-      });
-      roleTemplateId = roleTemplate.id;
-    });
-
-    it('should return permission keys when template found', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      const result = await AdvancedTeamService.applyRoleTemplate(roleTemplateId, organizerId);
-
-      expect(result).toContain('events.view');
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it('should throw when template not found', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      await expect(
-        AdvancedTeamService.applyRoleTemplate('non-existent-id', organizerId),
-      ).rejects.toBeInstanceOf(NotFoundError);
-    });
-  });
-});
-
-
-    it('should create role template without permissions', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      const template = await AdvancedTeamService.createRoleTemplate(organizerId, {
-        name: 'Basic Role',
-      });
-
-      expect(template.id).toBeDefined();
-      expect(template.name).toBe('Basic Role');
-
-      const rolePermissions = await prisma.teamRolePermission.findMany({
-        where: { roleId: template.id },
-      });
-      expect(rolePermissions.length).toBe(0);
-    });
-  });
-
   describe('getRoleTemplates', () => {
     beforeEach(async () => {
       if (!dbConnected) return;
@@ -698,7 +626,7 @@ describe('AdvancedTeamService', () => {
         return;
       }
 
-      const updated = await AdvancedTeamService.updateRoleTemplate(
+      const _updated = await AdvancedTeamService.updateRoleTemplate(
         roleTemplateId,
         organizerId,
         {

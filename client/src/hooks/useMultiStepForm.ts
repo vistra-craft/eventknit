@@ -33,7 +33,6 @@ export interface UseMultiStepFormReturn {
  * if (multiStep.isLastStep) { handleSubmit(); }
  */
 export function useMultiStepForm<T extends FieldValues>({
-  form: _form,
   steps,
   onStepChange,
 }: UseMultiStepFormProps<T>): UseMultiStepFormReturn {

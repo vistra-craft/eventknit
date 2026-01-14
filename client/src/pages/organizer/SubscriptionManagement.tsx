@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CheckCircle2, 
   AlertCircle,
@@ -79,11 +79,7 @@ const SubscriptionManagement = () => {
   const [billingEmail, setBillingEmail] = useState('');
   const [billingEmailError, setBillingEmailError] = useState('');
 
-  useEffect(() => {
-    loadSubscription();
-  }, []);
-
-  const loadSubscription = async () => {
+  const loadSubscription = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getSubscription();
@@ -91,16 +87,20 @@ const SubscriptionManagement = () => {
         setSubscription(response.data.subscription);
         setBillingEmail(response.data.subscription.billingEmail || '');
       }
-    } catch (error: unknown) {
+    } catch (err: unknown) {
       toast({
         title: 'Failed to load subscription',
-        description: error instanceof Error ? error.message : 'An error occurred',
+        description: err instanceof Error ? err.message : 'An error occurred',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadSubscription();
+  }, [loadSubscription]);
 
   const handleUpgrade = (tier: SubscriptionTier) => {
     setTargetTier(tier);

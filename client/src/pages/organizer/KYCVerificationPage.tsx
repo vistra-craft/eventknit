@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
@@ -52,11 +52,7 @@ const KYCVerificationPage = () => {
   const [requiresDirectors, setRequiresDirectors] = useState(false);
   const [minDirectors, setMinDirectors] = useState<number>();
 
-  useEffect(() => {
-    loadKYCData();
-  }, []);
-
-  const loadKYCData = async () => {
+  const loadKYCData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -91,16 +87,20 @@ const KYCVerificationPage = () => {
 
       setDocuments(documentsRes.data.documents);
       setDirectors(directorsRes.data.directors);
-    } catch (error: unknown) {
+    } catch (err: unknown) {
       toast({
         title: 'Failed to load KYC data',
-        description: error instanceof Error ? error.message : 'An error occurred',
+        description: err instanceof Error ? err.message : 'An error occurred',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadKYCData();
+  }, [loadKYCData]);
 
   const handleEntityTypeSelect = async (type: OrganizerEntityType) => {
     setSelectedEntityType(type);

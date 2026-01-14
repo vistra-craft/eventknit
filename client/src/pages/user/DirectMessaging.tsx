@@ -350,7 +350,7 @@ const DirectMessaging: React.FC = () => {
 
       {/* Message Detail Dialog */}
       {selectedMessage && (
-        <Dialog open={!!selectedMessage} onOpenChange={() => setSelectedMessage(null)}>
+        <Dialog open={Boolean(selectedMessage)} onOpenChange={() => setSelectedMessage(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{selectedMessage.subject || "Message"}</DialogTitle>

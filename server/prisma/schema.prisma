@@ -9,6 +9,7 @@ datasource db {
 
 enum UserRole {
   SUPERADMIN
+  ADMIN
   ADMIN_STAFF
   MARKETER
   SUPPORT
@@ -70,6 +71,8 @@ enum KYCDocumentType {
   CANCELLED_CHEQUE
   BANK_LETTER
   LETTER_AUTHORIZING_ENTRY
+  BUSINESS_LICENSE
+  TAX_ID
   
   // Company-specific
   CR12
@@ -614,6 +617,7 @@ model Event {
 
   // Location
   venue       String?
+  venueName   String? // For backward compatibility/specific UI needs
   location    String // City, State or full address
   address     String? // Full street address
   isOnline    Boolean @default(false)
@@ -623,6 +627,7 @@ model Event {
   // Pricing
   isFree      Boolean  @default(false)
   price       Decimal? @db.Decimal(10, 2) // Single price for simple events
+  basePrice   Decimal? @db.Decimal(10, 2) // For backward compatibility
   currency    String   @default("USD") // Currency code (e.g., "USD", "KES", "NGN")
   ticketTypes Json? // Array of ticket types with prices
   timezone    String? // Event timezone
@@ -632,11 +637,14 @@ model Event {
   availableSlots Int? // Calculated available slots
 
   // Media
-  image  String? // Image URL
-  images String[] // Array of image URLs
+  image       String? // Image URL
+  coverImage  String? // For backward compatibility
+  bannerImage String? // For banner/header use
+  images      String[] // Array of image URLs
 
   // Event details
   type           EventType   @default(PUBLIC)
+  eventType      String?     @default("PUBLIC") // For backward compatibility/specific UI needs
   status         EventStatus @default(PENDING)
   requirements   String[] // Array of requirements
   ageRestriction String? // e.g., "18+", "All Ages"
@@ -782,6 +790,8 @@ model EventRegistration {
   backupCode       String? // Backup ticket code for manual entry (if QR code fails)
 
   // QR Code (generated at registration time, like Eventbrite/vf-ticket)
+  qrCode            String? // Content/secret of the QR code
+  ticketNumber      String? // Visible ticket number
   qrCodeDataUrl     String?   @db.Text // Base64 data URL of QR code image (stored for fast access)
   qrCodeGeneratedAt DateTime? // When QR code was generated
   qrSecret          String?   @default(uuid()) // Secret key for QR validation and easier voiding
@@ -4285,6 +4295,7 @@ model PlatformExpense {
   expenseDate DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  notes       String?  @db.Text
 
   @@index([category])
   @@index([expenseDate])
@@ -4326,6 +4337,7 @@ model PlatformIncome {
   incomeDate DateTime @default(now())
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  notes      String?  @db.Text
 
   @@index([category])
   @@index([incomeDate])

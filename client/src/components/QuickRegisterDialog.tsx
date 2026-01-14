@@ -33,7 +33,6 @@ import {
   CheckCircle,
   AlertCircle,
   Printer,
-  QrCode,
   Copy,
   Check,
 } from 'lucide-react';

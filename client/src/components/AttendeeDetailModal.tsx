@@ -19,7 +19,6 @@ import {
   Mail,
   Phone,
   Ticket,
-  QrCode,
   Printer,
   CheckCircle,
   XCircle,

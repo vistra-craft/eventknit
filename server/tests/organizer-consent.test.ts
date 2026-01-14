@@ -13,7 +13,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
   let dbConnected = false;
   let organizerToken: string;
   let organizerId: string;
-  let attendeeToken: string;
+  let _attendeeToken: string;
   let eventId: string;
   let registrationId: string;
 
@@ -22,7 +22,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }
@@ -112,7 +112,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
         email: 'attendee@consent.test',
         password: 'Attendee123!@$',
       });
-    attendeeToken = attendeeLogin.body.data.accessToken;
+    _attendeeToken = attendeeLogin.body.data.accessToken;
   });
 
   describe('GET /api/v1/organizer-dashboard/events/:eventId/consent-stats', () => {
@@ -120,7 +120,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
       if (!dbConnected) return;
       // Create some consents
       const { ConsentService } = await import('../src/services/consent.service.js');
-      
+
       await ConsentService.createConsent(registrationId, (await prisma.user.findUnique({
         where: { email: 'attendee@consent.test' },
       }))!.id, eventId, {
@@ -166,7 +166,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
         return;
       }
 
-      const otherOrg = await prisma.user.create({
+      const _otherOrg = await prisma.user.create({
         data: {
           email: 'otherorg@consent.test',
           password: await hashPassword('Pass123!'),

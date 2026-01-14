@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import MinimalHeader from "@/components/MinimalHeader";
 import LegalFooter from "@/components/LegalFooter";
-import { Scale, AlertTriangle, Users, CreditCard, Shield, Clock, RefreshCcw } from "lucide-react";
+import { Shield, Clock, RefreshCcw } from "lucide-react";
 
 const TermsOfService = () => {
   const location = useLocation();

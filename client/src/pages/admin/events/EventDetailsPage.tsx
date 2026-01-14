@@ -477,9 +477,6 @@ const EventDetailsPage = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleBack = () => {
-    navigate("/admin/events");
-  };
 
   const handleEdit = () => {
     navigate(`/organizer/events/create?edit=${eventData.id}`);

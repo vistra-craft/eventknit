@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -8,9 +8,7 @@ import { useToast } from '@/hooks/useToast';
 import {
   getAllBrandings,
   updateBrandingStatus,
-  verifyCustomDomain,
   type WhiteLabelBranding,
-  type CustomDomain,
 } from '@/lib/white-label-api';
 import {
   Search,
@@ -19,7 +17,6 @@ import {
   Eye,
   Palette,
   Globe,
-  Building,
   Mail,
   ExternalLink,
   AlertCircle,

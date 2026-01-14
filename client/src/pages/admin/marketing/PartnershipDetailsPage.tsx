@@ -46,7 +46,6 @@ interface Partnership {
 
 const PartnershipDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [partnership, setPartnership] = useState<Partnership | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPrintMode, setIsPrintMode] = useState(false);

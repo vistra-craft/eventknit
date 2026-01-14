@@ -17,7 +17,7 @@ describe('SubscriptionService', () => {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       dbConnected = true;
-    } catch (error) {
+    } catch (_error) {
       console.warn('⚠️  Database not available. Tests will be skipped.');
       dbConnected = false;
     }

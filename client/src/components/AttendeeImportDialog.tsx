@@ -22,7 +22,6 @@ import {
   Download,
   AlertCircle,
   CheckCircle,
-  XCircle,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import {
@@ -31,7 +30,6 @@ import {
   downloadImportTemplate,
   type ValidationResult,
   type ImportResult,
-  type ImportRowError,
 } from '@/lib/attendee-import-api';
 
 interface AttendeeImportDialogProps {
@@ -81,7 +79,7 @@ export function AttendeeImportDialog({
   const handleDownloadTemplate = useCallback(async () => {
     try {
       await downloadImportTemplate(eventId);
-    } catch (err) {
+    } catch {
       setError('Failed to download template');
     }
   }, [eventId]);

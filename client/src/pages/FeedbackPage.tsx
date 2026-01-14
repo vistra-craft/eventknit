@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,16 +44,7 @@ const FeedbackPage: React.FC = () => {
   const [wouldUseAgain, setWouldUseAgain] = useState<boolean | null>(null);
   const [wouldRecommend, setWouldRecommend] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    if (token) {
-      validateToken();
-    } else {
-      setError("Invalid feedback link");
-      setLoading(false);
-    }
-  }, [token]);
-
-  const validateToken = async () => {
+  const validateToken = useCallback(async () => {
     try {
       const res = await validateFeedbackToken(token!);
       if (res.success && res.data?.valid) {
@@ -66,7 +57,16 @@ const FeedbackPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      validateToken();
+    } else {
+      setError("Invalid feedback link");
+      setLoading(false);
+    }
+  }, [token, validateToken]);
 
   const handleSubmit = async () => {
     if (npsScore === null) {

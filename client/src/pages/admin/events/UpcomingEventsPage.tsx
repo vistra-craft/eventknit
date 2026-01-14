@@ -20,7 +20,7 @@ import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { useToast } from "../../../hooks/useToast";
 import { getCategoriesByGroup } from "@/lib/event-categories";
-import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import CheckoutHeader from "@/components/CheckoutHeader";

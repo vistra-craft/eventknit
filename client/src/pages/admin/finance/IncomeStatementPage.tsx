@@ -14,7 +14,7 @@ import {
   BarChart3,
   PieChart
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+
 import BackButton from "@/components/BackButton";
 
 interface IncomeStatementData {
@@ -41,7 +41,7 @@ interface IncomeStatementData {
 }
 
 const IncomeStatementPage: React.FC = () => {
-  const navigate = useNavigate();
+
   const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const [viewMode, setViewMode] = useState<'statement' | 'chart'>('statement');
 

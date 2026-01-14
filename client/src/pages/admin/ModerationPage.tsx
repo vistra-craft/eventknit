@@ -282,7 +282,8 @@ const ModerationPage = () => {
         description: `${selectedUser.username} has been suspended.`,
       });
       setSuspendDialogOpen(false);
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       toast({
         variant: "destructive",
         title: "Failed to suspend user",
@@ -313,7 +314,8 @@ const ModerationPage = () => {
         description: `${selectedUser.username} has been permanently banned.`,
       });
       setBanDialogOpen(false);
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       toast({
         variant: "destructive",
         title: "Failed to ban user",
@@ -341,7 +343,8 @@ const ModerationPage = () => {
         title: "User reactivated",
         description: `${violation.username} has been reactivated.`,
       });
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       toast({
         variant: "destructive",
         title: "Failed to reactivate user",

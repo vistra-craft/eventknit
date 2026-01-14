@@ -610,7 +610,7 @@ describe('Ticket Email System', () => {
         : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
       // Generate Google Calendar link (similar to service)
-      // eslint-disable-next-line no-undef
+       
       const googleCalendarParams = new URLSearchParams({
         action: 'TEMPLATE',
         text: registration.event.title,
@@ -652,7 +652,7 @@ describe('Ticket Email System', () => {
         : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
       // Generate Outlook Calendar link (similar to service)
-      // eslint-disable-next-line no-undef
+       
       const outlookCalendarParams = new URLSearchParams({
         subject: registration.event.title,
         startdt: startDate.toISOString(),
