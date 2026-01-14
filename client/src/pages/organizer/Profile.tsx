@@ -1,11 +1,20 @@
 import { useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ButtonLoader } from "@/components/ui/loader";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import OrganizerLayout from "./OrganizerLayout";
 import {
   User,
@@ -20,6 +29,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { updateProfile } from "@/lib/auth-api";
+import { profileUpdateSchema, type ProfileUpdateData } from "@/lib/validations/profile";
 
 const Profile = () => {
   const { user, refreshProfile } = useAuth();
@@ -28,50 +38,45 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [profileData, setProfileData] = useState({
-    firstName: "",
-    lastName: "",
-    otherName: "",
-    email: "",
-    phone: "",
-    company: "",
-    organizationName: "",
-    businessEmail: "",
+
+  // Initialize form with React Hook Form + Zod
+  const form = useForm<ProfileUpdateData>({
+    resolver: zodResolver(profileUpdateSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      otherName: "",
+      phoneNumber: "",
+      companyAffiliation: "",
+      organizationName: "",
+      businessEmail: "",
+    },
   });
 
-  // Load user data on mount and when user changes
+  // Load user data when user changes
   useEffect(() => {
     if (user) {
-      setProfileData({
+      form.reset({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         otherName: user.otherName || "",
-        email: user.email || "",
-        phone: user.phoneNumber || "",
-        company: user.companyAffiliation || "",
+        phoneNumber: user.phoneNumber || "",
+        companyAffiliation: user.companyAffiliation || "",
         organizationName: user.organizationName || "",
         businessEmail: user.businessEmail || "",
       });
     }
-  }, [user]);
-
-  const handleInputChange = (field: string, value: string) => {
-    setProfileData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  }, [user, form]);
 
   const handleCancel = () => {
     // Reset to original user data
     if (user) {
-      setProfileData({
+      form.reset({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         otherName: user.otherName || "",
-        email: user.email || "",
-        phone: user.phoneNumber || "",
-        company: user.companyAffiliation || "",
+        phoneNumber: user.phoneNumber || "",
+        companyAffiliation: user.companyAffiliation || "",
         organizationName: user.organizationName || "",
         businessEmail: user.businessEmail || "",
       });
@@ -80,20 +85,20 @@ const Profile = () => {
     setError(null);
   };
 
-  const handleSave = async () => {
+  const onSubmit = async (data: ProfileUpdateData) => {
     try {
       setLoading(true);
       setError(null);
       setSuccess(null);
 
       const response = await updateProfile({
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        otherName: profileData.otherName || undefined,
-        phoneNumber: profileData.phone || undefined,
-        companyAffiliation: profileData.company || undefined,
-        organizationName: profileData.organizationName || undefined,
-        businessEmail: profileData.businessEmail || undefined,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        otherName: data.otherName || undefined,
+        phoneNumber: data.phoneNumber || undefined,
+        companyAffiliation: data.companyAffiliation || undefined,
+        organizationName: data.organizationName || undefined,
+        businessEmail: data.businessEmail || undefined,
       });
 
       if (response.success) {
@@ -158,7 +163,7 @@ const Profile = () => {
                 <Button variant="outline" onClick={handleCancel} disabled={loading}>
                   Cancel
                 </Button>
-                <Button onClick={handleSave} disabled={loading}>
+                <Button onClick={form.handleSubmit(onSubmit)} disabled={loading}>
                   {loading ? (
                     <ButtonLoader />
                   ) : (
@@ -203,7 +208,7 @@ const Profile = () => {
             <div className="flex items-center space-x-6">
               <Avatar
                 src={user?.avatar || undefined}
-                name={profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : undefined}
+                name={user ? `${user.firstName} ${user.lastName}` : undefined}
                 alt="Profile"
                 size="xl"
                 className="h-24 w-24"
@@ -237,127 +242,170 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <User className="h-5 w-5 mr-2" />
-              Personal Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  value={profileData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={profileData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="otherName">Other Name</Label>
-                <Input
-                  id="otherName"
-                  value={profileData.otherName}
-                  onChange={(e) => handleInputChange('otherName', e.target.value)}
-                  disabled={!isEditing}
-                  placeholder="Optional"
-                />
-              </div>
-            </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            {/* Personal Information */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  Personal Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={!isEditing} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={!isEditing} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="otherName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Other Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={!isEditing} placeholder="Optional" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={profileData.email}
-                  disabled={true}
-                  className="pl-10 bg-muted"
+                <div className="space-y-2">
+                  <FormLabel htmlFor="email">Email Address</FormLabel>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={user?.email || ""}
+                      disabled={true}
+                      className="pl-10 bg-muted"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="tel"
+                            disabled={!isEditing}
+                            className="pl-10"
+                            placeholder="+1 (555) 123-4567"
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <p className="text-xs text-muted-foreground">Email cannot be changed</p>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={profileData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  disabled={!isEditing}
-                  className="pl-10"
-                  placeholder="+1 (555) 123-4567"
+            {/* Professional Information */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Building2 className="h-5 w-5 mr-2" />
+                  Professional Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="companyAffiliation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company/Affiliation</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          disabled={!isEditing}
+                          placeholder="Your company or organization"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Professional Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building2 className="h-5 w-5 mr-2" />
-              Professional Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="company">Company/Affiliation</Label>
-              <Input
-                id="company"
-                value={profileData.company}
-                onChange={(e) => handleInputChange('company', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Your company or organization"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="organizationName">Organization Name</Label>
-              <Input
-                id="organizationName"
-                value={profileData.organizationName}
-                onChange={(e) => handleInputChange('organizationName', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Your organization name (for organizers)"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="businessEmail">Business Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="businessEmail"
-                  type="email"
-                  value={profileData.businessEmail}
-                  onChange={(e) => handleInputChange('businessEmail', e.target.value)}
-                  disabled={!isEditing}
-                  className="pl-10"
-                  placeholder="business@company.com"
+                <FormField
+                  control={form.control}
+                  name="organizationName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organization Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          disabled={!isEditing}
+                          placeholder="Your organization name (for organizers)"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+                <FormField
+                  control={form.control}
+                  name="businessEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Email</FormLabel>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            disabled={!isEditing}
+                            className="pl-10"
+                            placeholder="business@company.com"
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </form>
+        </Form>
 
         {/* Account Info */}
         <Card>

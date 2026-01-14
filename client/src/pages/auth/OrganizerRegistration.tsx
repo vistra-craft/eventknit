@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -11,59 +12,80 @@ import { Loader } from '@/components/ui/loader';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import { useMultiStepForm, validateStepFields } from '@/hooks/useMultiStepForm';
 import { UserRole } from '@/types/auth';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  organizerRegistrationSchema,
+  type OrganizerRegistrationData,
+} from '@/lib/validations/auth';
 
 const OrganizerRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { register } = useAuth();
-  const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Get email from previous step
   const emailFromPrevious = location.state?.email || '';
-  
-  const [formData, setFormData] = useState({
-    // Basic Info
-    firstName: '',
-    lastName: '',
-    email: emailFromPrevious, // Pre-fill email from previous step
-    password: '',
-    confirmPassword: '',
-    
-    // Event Preferences
-    eventTypes: [] as string[],
-    organizationType: '',
-    eventsPerYear: '',
-    isRecurringSeries: false,
-    
-    // KYC Information
-    businessName: '',
-    businessType: '',
-    taxId: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: '',
-    phoneNumber: '',
-    
-    // Verification Documents (placeholders)
-    idDocument: null as File | null,
-    businessLicense: null as File | null,
-    taxDocument: null as File | null,
+
+  // Initialize form with React Hook Form + Zod
+  const form = useForm<OrganizerRegistrationData>({
+    resolver: zodResolver(organizerRegistrationSchema),
+    defaultValues: {
+      // Step 1: Event Preferences
+      eventTypes: [],
+      organizationType: '',
+      eventsPerYear: '',
+      isRecurringSeries: false,
+
+      // Step 2: Basic Info
+      firstName: '',
+      lastName: '',
+      email: emailFromPrevious,
+      password: '',
+      confirmPassword: '',
+      phoneNumber: '',
+
+      // Step 3: Business Info
+      businessName: '',
+      businessType: '',
+      taxId: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: '',
+      idDocument: null,
+      businessLicense: null,
+      taxDocument: null,
+    },
+    mode: 'onChange',
+  });
+
+  // Multi-step form management
+  const multiStep = useMultiStepForm({
+    form,
+    steps: 3,
   });
 
   const eventTypes = [
-    'Music', 'Comedy', 'Food & Drink', 'Community & Culture', 
-    'Hobbies & Special Interest', 'Performing & Visual Arts', 
+    'Music', 'Comedy', 'Food & Drink', 'Community & Culture',
+    'Hobbies & Special Interest', 'Performing & Visual Arts',
     'Parties', 'Technology', 'Business', 'Sports', 'Education'
   ];
 
   const organizationTypes = [
     'Music Nightlife & Parties',
-    'Music Promoter', 
+    'Music Promoter',
     'Music Artist or Performer',
     'Music Venue',
     'Music Festival',
@@ -74,164 +96,99 @@ const OrganizerRegistration = () => {
     'Other'
   ];
 
-  const handleInputChange = (field: string, value: string | boolean | string[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleEventTypeToggle = (eventType: string) => {
-    setFormData(prev => ({
-      ...prev,
-      eventTypes: prev.eventTypes.includes(eventType)
-        ? prev.eventTypes.filter(type => type !== eventType)
-        : [...prev.eventTypes, eventType]
-    }));
-  };
+    const currentTypes = form.getValues('eventTypes');
+    const newTypes = currentTypes.includes(eventType)
+      ? currentTypes.filter(type => type !== eventType)
+      : [...currentTypes, eventType];
 
-
-  // Password validation (Eventbrite-style: 8+ chars, 1 letter, 1 number)
-  const validatePassword = (password: string): string | null => {
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
-    }
-    if (password.length > 128) {
-      return 'Password must be no more than 128 characters';
-    }
-    if (!/[a-zA-Z]/.test(password)) {
-      return 'Password must contain at least one letter';
-    }
-    if (!/\d/.test(password)) {
-      return 'Password must contain at least one number';
-    }
-    return null;
+    form.setValue('eventTypes', newTypes, { shouldValidate: true });
   };
 
   const handleNext = async () => {
-    if (currentStep < 3) {
-      // Validate current step before proceeding
-      if (currentStep === 1) {
-        // Validate step 1 fields
-        if (formData.eventTypes.length === 0) {
-          setError('Please select at least one event type');
-          return;
-        }
-        if (!formData.organizationType) {
-          setError('Organization type is required');
-          return;
-        }
-        if (!formData.eventsPerYear) {
-          setError('Please select how many events you plan to organize');
-          return;
-        }
-        setError('');
-      } else if (currentStep === 2) {
-        // Validate step 2 fields
-        if (!formData.firstName.trim()) {
-          setError('First name is required');
-          return;
-        }
-        if (!formData.lastName.trim()) {
-          setError('Last name is required');
-          return;
-        }
-        if (!formData.email.trim()) {
-          setError('Email is required');
-          return;
-        }
-        if (!formData.password) {
-          setError('Password is required');
-          return;
-        }
-        const passwordError = validatePassword(formData.password);
-        if (passwordError) {
-          setError(passwordError);
-          return;
-        }
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
-          return;
-        }
-        if (!formData.phoneNumber.trim()) {
-          setError('Phone number is required');
-          return;
-        }
-        setError('');
-      }
-      setCurrentStep(currentStep + 1);
-    } else {
-      // Final step - submit registration
-      setIsLoading(true);
-      setError('');
-      
-      try {
-        // Validate final step
-        if (!formData.businessName.trim()) {
-          setError('Business name is required');
-          setIsLoading(false);
-          return;
-        }
-        if (!formData.businessType) {
-          setError('Business type is required');
-          setIsLoading(false);
-          return;
-        }
-        if (!formData.taxId.trim()) {
-          setError('Tax ID is required');
-          setIsLoading(false);
-          return;
-        }
-        if (!formData.address.trim()) {
-          setError('Business address is required');
-          setIsLoading(false);
-          return;
-        }
-        if (!formData.city.trim()) {
-          setError('City is required');
-          setIsLoading(false);
-          return;
-        }
-        if (!formData.state.trim()) {
-          setError('State is required');
-          setIsLoading(false);
-          return;
-        }
-        if (!formData.zipCode.trim()) {
-          setError('ZIP code is required');
-          setIsLoading(false);
-          return;
-        }
+    setError('');
 
-        // Prepare registration data
-        const registrationData = {
-          email: formData.email,
-          password: formData.password,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber,
-          organizationName: formData.businessName,
-          role: UserRole.ORGANIZER,
-        };
-
-        // Call registration API
-        await register(registrationData);
-        // Navigation will happen automatically via useAuth hook
-      } catch (err: unknown) {
-        const errorMessage =
-          err && typeof err === 'object' && 'message' in err
-            ? (err.message as string)
-            : 'Registration failed. Please try again.';
-        setError(errorMessage);
-        setIsLoading(false);
+    if (multiStep.currentStep === 1) {
+      // Validate step 1 fields
+      const isValid = await validateStepFields(form, [
+        'eventTypes',
+        'organizationType',
+        'eventsPerYear',
+      ]);
+      if (isValid) {
+        multiStep.goToNextStep();
       }
+    } else if (multiStep.currentStep === 2) {
+      // Validate step 2 fields
+      const isValid = await validateStepFields(form, [
+        'firstName',
+        'lastName',
+        'email',
+        'password',
+        'confirmPassword',
+        'phoneNumber',
+      ]);
+      if (isValid) {
+        multiStep.goToNextStep();
+      }
+    } else if (multiStep.currentStep === 3) {
+      // Final step - validate and submit
+      const isValid = await validateStepFields(form, [
+        'businessName',
+        'businessType',
+        'taxId',
+        'address',
+        'city',
+        'state',
+        'zipCode',
+      ]);
+
+      if (isValid) {
+        await handleSubmit();
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const formData = form.getValues();
+
+      // Prepare registration data
+      const registrationData = {
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        organizationName: formData.businessName,
+        role: UserRole.ORGANIZER,
+      };
+
+      // Call registration API
+      await register(registrationData);
+      // Navigation will happen automatically via useAuth hook
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === 'object' && 'message' in err
+          ? (err.message as string)
+          : 'Registration failed. Please try again.';
+      setError(errorMessage);
+      setIsLoading(false);
     }
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (!multiStep.isFirstStep) {
+      multiStep.goToPreviousStep();
     } else {
       navigate('/auth/user-type');
     }
   };
+
+  const watchPassword = form.watch('password');
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -245,71 +202,106 @@ const OrganizerRegistration = () => {
       </div>
 
       {/* Event Types */}
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">What type of events do you host? *</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {eventTypes.map((type) => (
-            <Button
-              key={type}
-              type="button"
-              variant={formData.eventTypes.includes(type) ? "default" : "outline"}
-              onClick={() => handleEventTypeToggle(type)}
-              className={`h-10 text-sm ${
-                formData.eventTypes.includes(type)
-                  ? ''
-                  : 'border-border hover:bg-muted hover:border-border'
-              }`}
-            >
-              {type}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <FormField
+        control={form.control}
+        name="eventTypes"
+        render={() => (
+          <FormItem>
+            <FormLabel className="text-sm font-medium">What type of events do you host? *</FormLabel>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {eventTypes.map((type) => {
+                const isSelected = form.watch('eventTypes').includes(type);
+                return (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    onClick={() => handleEventTypeToggle(type)}
+                    className={`h-10 text-sm ${
+                      isSelected
+                        ? ''
+                        : 'border-border hover:bg-muted hover:border-border'
+                    }`}
+                  >
+                    {type}
+                  </Button>
+                );
+              })}
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Organization Type */}
-      <div className="space-y-2">
-        <Label htmlFor="organizationType" className="text-sm font-medium">Which best describes your organization? *</Label>
-        <Select value={formData.organizationType} onValueChange={(value) => handleInputChange('organizationType', value)}>
-          <SelectTrigger className="h-11">
-            <SelectValue placeholder="Select your organization type" />
-          </SelectTrigger>
-          <SelectContent>
-            {organizationTypes.map((type) => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <FormField
+        control={form.control}
+        name="organizationType"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel htmlFor="organizationType">Which best describes your organization? *</FormLabel>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <FormControl>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Select your organization type" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {organizationTypes.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Events Per Year */}
-      <div className="space-y-2">
-        <Label htmlFor="eventsPerYear" className="text-sm font-medium">How many events do you plan to organize in the next year? *</Label>
-        <Select value={formData.eventsPerYear} onValueChange={(value) => handleInputChange('eventsPerYear', value)}>
-          <SelectTrigger className="h-11">
-            <SelectValue placeholder="Number of events" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1-2">1-2 events</SelectItem>
-            <SelectItem value="3-5">3-5 events</SelectItem>
-            <SelectItem value="5-10">5-10 events</SelectItem>
-            <SelectItem value="10-20">10-20 events</SelectItem>
-            <SelectItem value="20+">20+ events</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      {error && currentStep === 1 && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      <FormField
+        control={form.control}
+        name="eventsPerYear"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel htmlFor="eventsPerYear">How many events do you plan to organize in the next year? *</FormLabel>
+            <Select value={field.value} onValueChange={field.onChange}>
+              <FormControl>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Number of events" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="1-2">1-2 events</SelectItem>
+                <SelectItem value="3-5">3-5 events</SelectItem>
+                <SelectItem value="5-10">5-10 events</SelectItem>
+                <SelectItem value="10-20">10-20 events</SelectItem>
+                <SelectItem value="20+">20+ events</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Recurring Series */}
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="isRecurringSeries"
-          checked={formData.isRecurringSeries}
-          onCheckedChange={(checked) => handleInputChange('isRecurringSeries', checked)}
-        />
-        <Label htmlFor="isRecurringSeries">My events are part of a recurring series</Label>
-      </div>
+      <FormField
+        control={form.control}
+        name="isRecurringSeries"
+        render={({ field }) => (
+          <FormItem className="flex items-center space-x-2 space-y-0">
+            <FormControl>
+              <Checkbox
+                id="isRecurringSeries"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            </FormControl>
+            <FormLabel htmlFor="isRecurringSeries" className="!mt-0 cursor-pointer">
+              My events are part of a recurring series
+            </FormLabel>
+          </FormItem>
+        )}
+      />
     </div>
   );
 
@@ -325,110 +317,115 @@ const OrganizerRegistration = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName">First Name *</Label>
-          <Input
-            id="firstName"
-            value={formData.firstName}
-            onChange={(e) => handleInputChange('firstName', e.target.value)}
-            placeholder="Enter your first name"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName">Last Name *</Label>
-          <Input
-            id="lastName"
-            value={formData.lastName}
-            onChange={(e) => handleInputChange('lastName', e.target.value)}
-            placeholder="Enter your last name"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="email">Email Address *</Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => handleInputChange('email', e.target.value)}
-          placeholder="your.email@example.com"
-          required
+        <FormField
+          control={form.control}
+          name="firstName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>First Name *</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter your first name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Last Name *</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Enter your last name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Email Address *</FormLabel>
+            <FormControl>
+              <Input {...field} type="email" placeholder="your.email@example.com" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="password">Password *</Label>
-          <Input
-            id="password"
-            type="password"
-            value={formData.password}
-            onChange={(e) => {
-              handleInputChange('password', e.target.value);
-              setError('');
-            }}
-            placeholder="Create a password"
-            required
-          />
-          {formData.password && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-foreground">Password requirements:</p>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li className={`flex items-center gap-2 ${formData.password.length >= 8 ? 'text-success' : ''}`}>
-                  <span className={formData.password.length >= 8 ? 'text-success' : 'text-muted-foreground'}>
-                    {formData.password.length >= 8 ? '✓' : '○'}
-                  </span>
-                  At least 8 characters
-                </li>
-                <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(formData.password) ? 'text-success' : ''}`}>
-                  <span className={/[a-zA-Z]/.test(formData.password) ? 'text-success' : 'text-muted-foreground'}>
-                    {/[a-zA-Z]/.test(formData.password) ? '✓' : '○'}
-                  </span>
-                  At least one letter
-                </li>
-                <li className={`flex items-center gap-2 ${/\d/.test(formData.password) ? 'text-success' : ''}`}>
-                  <span className={/\d/.test(formData.password) ? 'text-success' : 'text-muted-foreground'}>
-                    {/\d/.test(formData.password) ? '✓' : '○'}
-                  </span>
-                  At least one number
-                </li>
-              </ul>
-            </div>
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password *</FormLabel>
+              <FormControl>
+                <Input {...field} type="password" placeholder="Create a password" />
+              </FormControl>
+              {watchPassword && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-xs font-medium text-foreground">Password requirements:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li className={`flex items-center gap-2 ${watchPassword.length >= 8 ? 'text-success' : ''}`}>
+                      <span className={watchPassword.length >= 8 ? 'text-success' : 'text-muted-foreground'}>
+                        {watchPassword.length >= 8 ? '✓' : '○'}
+                      </span>
+                      At least 8 characters
+                    </li>
+                    <li className={`flex items-center gap-2 ${/[a-zA-Z]/.test(watchPassword) ? 'text-success' : ''}`}>
+                      <span className={/[a-zA-Z]/.test(watchPassword) ? 'text-success' : 'text-muted-foreground'}>
+                        {/[a-zA-Z]/.test(watchPassword) ? '✓' : '○'}
+                      </span>
+                      At least one letter
+                    </li>
+                    <li className={`flex items-center gap-2 ${/\d/.test(watchPassword) ? 'text-success' : ''}`}>
+                      <span className={/\d/.test(watchPassword) ? 'text-success' : 'text-muted-foreground'}>
+                        {/\d/.test(watchPassword) ? '✓' : '○'}
+                      </span>
+                      At least one number
+                    </li>
+                  </ul>
+                </div>
+              )}
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm Password *</Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={(e) => {
-              handleInputChange('confirmPassword', e.target.value);
-              setError('');
-            }}
-            placeholder="Confirm your password"
-            required
-          />
-        </div>
-      </div>
-      {error && currentStep === 2 && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
-
-      <div className="space-y-2">
-        <Label htmlFor="phoneNumber">Phone Number *</Label>
-        <Input
-          id="phoneNumber"
-          type="tel"
-          value={formData.phoneNumber}
-          onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-          placeholder="+1 (555) 123-4567"
-          required
+        />
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password *</FormLabel>
+              <FormControl>
+                <Input {...field} type="password" placeholder="Confirm your password" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="phoneNumber"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Phone Number *</FormLabel>
+            <FormControl>
+              <Input {...field} type="tel" placeholder="+1 (555) 123-4567" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 
@@ -446,89 +443,116 @@ const OrganizerRegistration = () => {
       {/* Business Information */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Business Details</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="businessName">Business Name *</Label>
-            <Input
-              id="businessName"
-              value={formData.businessName}
-              onChange={(e) => handleInputChange('businessName', e.target.value)}
-              placeholder="Your business or organization name"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="businessType">Business Type *</Label>
-            <Select value={formData.businessType} onValueChange={(value) => handleInputChange('businessType', value)}>
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Select business type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="corporation">Corporation</SelectItem>
-                <SelectItem value="llc">LLC</SelectItem>
-                <SelectItem value="partnership">Partnership</SelectItem>
-                <SelectItem value="sole-proprietorship">Sole Proprietorship</SelectItem>
-                <SelectItem value="non-profit">Non-Profit</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="taxId">Tax ID / EIN *</Label>
-          <Input
-            id="taxId"
-            value={formData.taxId}
-            onChange={(e) => handleInputChange('taxId', e.target.value)}
-            placeholder="XX-XXXXXXX"
-            required
+          <FormField
+            control={form.control}
+            name="businessName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Business Name *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Your business or organization name" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="businessType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Business Type *</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select business type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="corporation">Corporation</SelectItem>
+                    <SelectItem value="llc">LLC</SelectItem>
+                    <SelectItem value="partnership">Partnership</SelectItem>
+                    <SelectItem value="sole-proprietorship">Sole Proprietorship</SelectItem>
+                    <SelectItem value="non-profit">Non-Profit</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="address">Business Address *</Label>
-          <Input
-            id="address"
-            value={formData.address}
-            onChange={(e) => handleInputChange('address', e.target.value)}
-            placeholder="Street address"
-            required
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="taxId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tax ID / EIN *</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="XX-XXXXXXX" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Business Address *</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="Street address" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="city">City *</Label>
-            <Input
-              id="city"
-              value={formData.city}
-              onChange={(e) => handleInputChange('city', e.target.value)}
-              placeholder="City"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="state">State *</Label>
-            <Input
-              id="state"
-              value={formData.state}
-              onChange={(e) => handleInputChange('state', e.target.value)}
-              placeholder="State"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="zipCode">ZIP Code *</Label>
-            <Input
-              id="zipCode"
-              value={formData.zipCode}
-              onChange={(e) => handleInputChange('zipCode', e.target.value)}
-              placeholder="ZIP Code"
-              required
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="City" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="State" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="zipCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>ZIP Code *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="ZIP Code" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
       </div>
 
@@ -543,7 +567,7 @@ const OrganizerRegistration = () => {
           <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
             <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mb-2">Government-issued ID</p>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" type="button">
               Upload Document
             </Button>
           </div>
@@ -551,7 +575,7 @@ const OrganizerRegistration = () => {
           <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
             <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mb-2">Business License</p>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" type="button">
               Upload Document
             </Button>
           </div>
@@ -559,15 +583,12 @@ const OrganizerRegistration = () => {
           <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
             <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mb-2">Tax Documentation</p>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" type="button">
               Upload Document
             </Button>
           </div>
         </div>
       </div>
-      {error && currentStep === 3 && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
     </div>
   );
 
@@ -580,14 +601,14 @@ const OrganizerRegistration = () => {
             <BackButton to="/auth/user-type" label="Back" />
             <Logo />
           </div>
-          
+
           {/* Progress Indicator */}
           <div className="flex items-center justify-center space-x-4 mb-6">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step <= currentStep
+                    step <= multiStep.currentStep
                       ? 'bg-primary text-white'
                       : 'bg-muted text-muted-foreground'
                   }`}
@@ -597,7 +618,7 @@ const OrganizerRegistration = () => {
                 {step < 3 && (
                   <div
                     className={`w-12 h-0.5 mx-2 ${
-                      step < currentStep ? 'bg-primary' : 'bg-muted'
+                      step < multiStep.currentStep ? 'bg-primary' : 'bg-muted'
                     }`}
                   />
                 )}
@@ -609,45 +630,51 @@ const OrganizerRegistration = () => {
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
           <CardContent className="p-8">
-            {currentStep === 1 && renderStep1()}
-            {currentStep === 2 && renderStep2()}
-            {currentStep === 3 && renderStep3()}
+            <Form {...form}>
+              <form onSubmit={(e) => e.preventDefault()}>
+                {multiStep.currentStep === 1 && renderStep1()}
+                {multiStep.currentStep === 2 && renderStep2()}
+                {multiStep.currentStep === 3 && renderStep3()}
 
-            {/* Error Message */}
-            {error && (
-              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-            )}
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                className="px-6 h-11"
-                disabled={isLoading}
-              >
-                Back
-              </Button>
-              <Button
-                variant="default"
-                onClick={handleNext}
-                className="px-6 h-11"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader size="sm" className="mr-2" />
-                    Registering...
-                  </>
-                ) : currentStep === 3 ? (
-                  'Complete registration'
-                ) : (
-                  'Continue'
+                {/* Error Message */}
+                {error && (
+                  <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
                 )}
-              </Button>
-            </div>
+
+                {/* Navigation Buttons */}
+                <div className="flex justify-between mt-8">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    className="px-6 h-11"
+                    disabled={isLoading}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    onClick={handleNext}
+                    className="px-6 h-11"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader size="sm" className="mr-2" />
+                        Registering...
+                      </>
+                    ) : multiStep.isLastStep ? (
+                      'Complete registration'
+                    ) : (
+                      'Continue'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </CardContent>
         </Card>
 

@@ -62,9 +62,19 @@ export type AttendeeStep2Data = z.infer<typeof attendeeStep2Schema>;
 export type AttendeeStep3Data = z.infer<typeof attendeeStep3Schema>;
 
 /**
- * Organizer Registration - Step 1 (Basic Info)
+ * Organizer Registration - Step 1 (Event Preferences)
  */
-export const organizerStep1Schema = z
+export const organizerStep1Schema = z.object({
+  eventTypes: z.array(z.string()).min(1, 'Select at least one event type'),
+  organizationType: requiredString('Organization type'),
+  eventsPerYear: requiredString('Events per year'),
+  isRecurringSeries: z.boolean(),
+});
+
+/**
+ * Organizer Registration - Step 2 (Basic Info)
+ */
+export const organizerStep2Schema = z
   .object({
     firstName: requiredString('First name'),
     lastName: requiredString('Last name'),
@@ -79,33 +89,17 @@ export const organizerStep1Schema = z
   });
 
 /**
- * Organizer Registration - Step 2 (Business Info)
+ * Organizer Registration - Step 3 (Business Info & KYC)
  */
-export const organizerStep2Schema = z.object({
+export const organizerStep3Schema = z.object({
   businessName: requiredString('Business name'),
   businessType: requiredString('Business type'),
-  taxId: z.string().optional(),
-  address: requiredString('Address'),
+  taxId: requiredString('Tax ID / EIN'),
+  address: requiredString('Business address'),
   city: requiredString('City'),
   state: requiredString('State'),
   zipCode: requiredString('ZIP code'),
-  country: requiredString('Country'),
-});
-
-/**
- * Organizer Registration - Step 3 (Event Preferences)
- */
-export const organizerStep3Schema = z.object({
-  eventTypes: z.array(z.string()).min(1, 'Select at least one event type'),
-  organizationType: requiredString('Organization type'),
-  eventsPerYear: z.string().optional(),
-  isRecurringSeries: z.boolean(),
-});
-
-/**
- * Organizer Registration - Step 4 (Documents - Optional for initial registration)
- */
-export const organizerStep4Schema = z.object({
+  country: z.string().optional(),
   idDocument: z.instanceof(File).optional().nullable(),
   businessLicense: z.instanceof(File).optional().nullable(),
   taxDocument: z.instanceof(File).optional().nullable(),
@@ -116,14 +110,12 @@ export const organizerStep4Schema = z.object({
  */
 export const organizerRegistrationSchema = organizerStep1Schema
   .merge(organizerStep2Schema)
-  .merge(organizerStep3Schema)
-  .merge(organizerStep4Schema);
+  .merge(organizerStep3Schema);
 
 export type OrganizerRegistrationData = z.infer<typeof organizerRegistrationSchema>;
 export type OrganizerStep1Data = z.infer<typeof organizerStep1Schema>;
 export type OrganizerStep2Data = z.infer<typeof organizerStep2Schema>;
 export type OrganizerStep3Data = z.infer<typeof organizerStep3Schema>;
-export type OrganizerStep4Data = z.infer<typeof organizerStep4Schema>;
 
 /**
  * Simple Registration (Email + Password only)
