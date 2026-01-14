@@ -1,6 +1,3 @@
-export { default as AnalyticsOverview } from './AnalyticsOverview';
-export { default as EventPerformance } from './EventPerformance';
-export { default as AttendeeInsights } from './AttendeeInsights';
-export { default as RevenueReports } from './RevenueReports';
-export { default as TestAnalytics } from './TestAnalytics';
-
+// All analytics pages have been archived to _archived/ directory
+// These components were not imported anywhere in the codebase
+// See docs/ARCHIVED_FILES.md for details
