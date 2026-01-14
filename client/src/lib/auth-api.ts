@@ -118,13 +118,20 @@ export const verifyEmailOAuthCode = async (
 };
 
 /**
- * Facebook OAuth login/registration
+ * Apple OAuth login/registration
  */
-export const facebookAuth = async (
-  accessToken: string,
-  role?: 'ATTENDEE' | 'ORGANIZER'
+export const appleAuth = async (
+  authorizationCode: string,
+  idToken: string,
+  role?: 'ATTENDEE' | 'ORGANIZER',
+  user?: { name?: { firstName?: string; lastName?: string } }
 ): Promise<LoginResponse> => {
-  return apiPost<LoginResponse>('/auth/facebook', { accessToken, role });
+  return apiPost<LoginResponse>('/auth/apple', {
+    authorizationCode,
+    idToken,
+    role,
+    user,
+  });
 };
 
 /**

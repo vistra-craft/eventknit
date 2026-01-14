@@ -9,7 +9,7 @@ import { Loader } from '@/components/ui/loader';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
 import * as authApi from '@/lib/auth-api';
-import { googleAuth, facebookAuth } from '@/lib/auth-api';
+import { googleAuth, appleAuth } from '@/lib/auth-api';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { extractErrorMessage } from '@/lib/utils/error';
@@ -94,30 +94,52 @@ const SimpleRegistration = () => {
     }
   };
 
-  // Facebook OAuth signup
-  const handleFacebookSignUp = async () => {
+  // Apple OAuth signup
+  const handleAppleSignUp = async () => {
     if (!selectedRole) return;
 
     setIsLoading(true);
     setError('');
     try {
-      if (!window.FB) {
-        window.fbAsyncInit = function() {
-          window.FB?.init({ appId: import.meta.env.VITE_FACEBOOK_APP_ID || '', cookie: true, xfbml: true, version: 'v18.0' });
-        };
+      // Load Apple JS SDK if not already loaded
+      if (!window.AppleID) {
         const script = document.createElement('script');
-        script.src = 'https://connect.facebook.net/en_US/sdk.js';
+        script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
         script.async = true;
         script.defer = true;
         document.body.appendChild(script);
         await new Promise((resolve) => {
-          const checkFB = setInterval(() => { if (window.FB) { clearInterval(checkFB); resolve(true); } }, 100);
+          const checkApple = setInterval(() => {
+            if (window.AppleID) {
+              clearInterval(checkApple);
+              resolve(true);
+            }
+          }, 100);
         });
       }
-      window.FB?.login(async (response) => {
-        if (response.authResponse) {
+
+      // Initialize Apple Sign In
+      if (window.AppleID) {
+        window.AppleID.auth.init({
+          clientId: import.meta.env.VITE_APPLE_CLIENT_ID || '',
+          scope: 'name email',
+          redirectURI: window.location.origin,
+          state: selectedRole,
+          usePopup: true,
+        });
+
+        // Trigger Apple Sign In
+        const response = await window.AppleID.auth.signIn();
+
+        if (response.authorization) {
           try {
-            const result = await facebookAuth(response.authResponse.accessToken, selectedRole);
+            const result = await appleAuth(
+              response.authorization.code,
+              response.authorization.id_token,
+              selectedRole,
+              response.user
+            );
+
             if (result.success && result.data) {
               setAccessToken(result.data.accessToken);
               dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
@@ -136,15 +158,15 @@ const SimpleRegistration = () => {
               }
             }
           } catch (err) {
-            setError(extractErrorMessage(err, 'Facebook sign up failed. Please try again.'));
+            setError(extractErrorMessage(err, 'Apple sign in failed. Please try again.'));
             setIsLoading(false);
           }
         } else {
           setIsLoading(false);
         }
-      }, { scope: 'email' });
+      }
     } catch (err) {
-      setError(extractErrorMessage(err, 'Facebook sign up failed. Please try again.'));
+      setError(extractErrorMessage(err, 'Apple sign in failed. Please try again.'));
       setIsLoading(false);
     }
   };
@@ -320,7 +342,7 @@ const SimpleRegistration = () => {
               {step === 'role'
                 ? 'Choose how you want to use EventKnit. You can always switch later.'
                 : step === 'email'
-                ? 'Use your Google or Facebook account, or continue with email.'
+                ? 'Use your Google or Apple account, or continue with email.'
                 : 'Enter the 6-digit code we sent and create your password.'}
             </p>
           </CardHeader>
@@ -388,14 +410,14 @@ const SimpleRegistration = () => {
                   <Button
                     variant="outline"
                     className="flex-1 h-11"
-                    onClick={handleFacebookSignUp}
+                    onClick={handleAppleSignUp}
                     disabled={isLoading}
                     type="button"
                   >
-                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="#1877F2">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                     </svg>
-                    Facebook
+                    Apple
                   </Button>
                 </div>
 
