@@ -1,6 +1,6 @@
 import { WebhookService } from '../src/services/webhook.service.js';
 import { NotFoundError } from '../src/utils/errors.js';
-import { prisma } from '../src/config/database';
+import { prisma } from '../src/config/database.js';
 
 jest.mock('../src/config/database', () => ({
   prisma: {

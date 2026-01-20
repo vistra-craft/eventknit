@@ -364,7 +364,7 @@ export class EventService {
 
     // Auto-generate default invitation links for the event
     try {
-      const { InvitationService } = await import('./invitation.service');
+      const { InvitationService } = await import('./invitation.service.js');
 
       // Generate default links for different invite types
       const defaultInviteTypes: InviteType[] = [InviteType.ATTENDEE, InviteType.SPEAKER, InviteType.EXHIBITOR];
@@ -1077,7 +1077,7 @@ export class EventService {
         }
 
         // Check early bird availability
-        const { isTicketTypeAvailable } = await import('../utils/ticket-helpers');
+        const { isTicketTypeAvailable } = await import('../utils/ticket-helpers.js');
         const availability = isTicketTypeAvailable(ticketConfig);
         if (!availability.available) {
           throw new ValidationError(
@@ -1526,8 +1526,8 @@ export class EventService {
           ticketLineItems?: Array<{
             ticketType: string;
             quantity: number;
-            unitPrice: any; // Decimal from Prisma
-            totalPrice: any; // Decimal from Prisma
+            unitPrice: number; // Decimal from Prisma
+            totalPrice: number; // Decimal from Prisma
           }>;
         };
 
@@ -1541,15 +1541,15 @@ export class EventService {
         try {
           logger.debug('[registerForEvent] Authenticated user - extracting ticketLineItems');
           // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
-          const lineItems = (registrationWithLineItems as any).ticketLineItems;
+          const lineItems = (registrationWithLineItems as unknown as { ticketLineItems?: unknown[] }).ticketLineItems;
           logger.debug('[registerForEvent] Authenticated user - ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
             ticketLineItems = lineItems.map((item: {
               ticketType: string;
               quantity: number;
-              unitPrice: any;
-              totalPrice: any;
+              unitPrice: number;
+              totalPrice: number;
             }) => ({
               ticketType: item.ticketType,
               quantity: item.quantity,
@@ -2462,7 +2462,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Import InvitationService here to avoid circular dependency
-    const { InvitationService } = await import('./invitation.service');
+    const { InvitationService } = await import('./invitation.service.js');
 
     // Get and validate invitation
     const invitation = await InvitationService.getInvitationByToken(token);
@@ -2976,7 +2976,7 @@ export class EventService {
         }
 
         // Check early bird availability
-        const { isTicketTypeAvailable } = await import('../utils/ticket-helpers');
+        const { isTicketTypeAvailable } = await import('../utils/ticket-helpers.js');
         const availability = isTicketTypeAvailable(ticketConfig);
         if (!availability.available) {
           throw new ValidationError(
@@ -3291,8 +3291,8 @@ export class EventService {
           ticketLineItems?: Array<{
             ticketType: string;
             quantity: number;
-            unitPrice: any; // Decimal from Prisma
-            totalPrice: any; // Decimal from Prisma
+            unitPrice: number; // Decimal from Prisma
+            totalPrice: number; // Decimal from Prisma
           }>;
         };
 
@@ -3307,15 +3307,15 @@ export class EventService {
         try {
           logger.debug('[registerForEvent] Extracting ticketLineItems from registration');
           // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
-          const lineItems = (registrationWithLineItems as any).ticketLineItems;
+          const lineItems = (registrationWithLineItems as unknown as { ticketLineItems?: unknown[] }).ticketLineItems;
           logger.debug('[registerForEvent] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
             ticketLineItems = lineItems.map((item: {
               ticketType: string;
               quantity: number;
-              unitPrice: any;
-              totalPrice: any;
+              unitPrice: number;
+              totalPrice: number;
             }) => ({
               ticketType: item.ticketType,
               quantity: item.quantity,

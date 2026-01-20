@@ -349,7 +349,7 @@ const ServicePointEvents: React.FC = () => {
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     <div>
-                      <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                      <h3 className="text-base font-semibold text-foreground truncate">
                         {event.title}
                       </h3>
                       {event.organizerName && (

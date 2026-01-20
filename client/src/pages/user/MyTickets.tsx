@@ -17,7 +17,6 @@ import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { getUserRegisteredEvents } from "../../lib/event-api";
 import { downloadTicketPDF } from "../../lib/ticket-api";
 import { shareEvent } from "../../lib/utils/share";
-import { Badge } from "../../components/ui/badge";
 import { useToast } from "../../hooks/useToast";
 import EmptyState from "../../components/EmptyState";
 

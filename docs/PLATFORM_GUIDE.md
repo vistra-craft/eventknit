@@ -2,15 +2,35 @@
 
 A comprehensive guide to all features and user journeys on the EventKnit platform.
 
+## Document Overview
+
+This guide provides an end-to-end walkthrough of the EventKnit ticketing and event management platform. Whether you're an administrator managing the platform, an organizer creating events, or an attendee purchasing tickets, this document covers every aspect of the system.
+
+**What You'll Learn:**
+
+- **Complete User Journeys**: Step-by-step walkthroughs for all user roles (Admin, Organizer, Attendee)
+- **Authentication**: All login methods including OAuth, magic links, and OTP
+- **Event Management**: From creation to completion, including all organizer tools
+- **Ticketing System**: Registration, payment, QR codes, seat reservations, and transfers
+- **Advanced Scanning**: Workstations, checkpoints, facilities, and service points
+- **KYC & Verification**: Multi-level organizer verification and business onboarding
+- **Payment Processing**: Multiple gateways, installment plans, and refunds
+- **Badge System**: Custom badge templates and on-demand printing
+- **Mobile App**: Native iOS/Android features and capabilities
+- **Real-time Features**: WebSocket integration for live updates
+- **API Reference**: Complete endpoint documentation for developers
+
+This guide is designed to be read sequentially for a complete understanding, or used as a reference for specific features.
+
 ---
 
 ## Table of Contents
 
 1. [Platform Overview](#platform-overview)
 2. [User Roles & Permissions](#user-roles--permissions)
-3. [Attendee Journey](#attendee-journey)
-4. [Organizer Journey](#organizer-journey)
-5. [Admin Journey](#admin-journey)
+3. [Attendee Journey (End-to-End)](#attendee-journey)
+4. [Organizer Journey (End-to-End)](#organizer-journey)
+5. [Admin Journey (End-to-End)](#admin-journey)
 6. [Event Management](#event-management)
 7. [Ticket System](#ticket-system)
 8. [Payment Processing](#payment-processing)
@@ -18,28 +38,59 @@ A comprehensive guide to all features and user journeys on the EventKnit platfor
 10. [Ticket Transfers](#ticket-transfers)
 11. [Promotions & Discounts](#promotions--discounts)
 12. [Check-In & Scanning](#check-in--scanning)
-13. [Digital Wallet](#digital-wallet)
-14. [KYC & Verification](#kyc--verification)
-15. [Notifications & Communications](#notifications--communications)
-16. [Platform Feedback](#platform-feedback)
-17. [Analytics & Reporting](#analytics--reporting)
-18. [API Reference](#api-reference)
-19. [Platform TODOs](#platform-todos)
+    - [Workstation Features](#workstation-features)
+    - [Advanced Checkpoint System](#advanced-checkpoint-system)
+    - [Service Points & Facilities](#service-points--facilities)
+    - [Re-Entry Management](#re-entry-management)
+    - [Scan Types & Real-Time Updates](#scan-types)
+13. [Badge Templates & Printing](#badge-templates--printing)
+14. [Seat Maps & Reserved Seating](#seat-maps--reserved-seating)
+15. [Digital Wallet](#digital-wallet)
+16. [Mobile Application](#mobile-application)
+17. [KYC & Verification](#kyc--verification)
+18. [Notifications & Communications](#notifications--communications)
+19. [Platform Feedback](#platform-feedback)
+20. [Analytics & Reporting](#analytics--reporting)
+21. [API Reference](#api-reference)
+22. [Platform TODOs](#platform-todos)
 
 ---
 
 ## Platform Overview
 
-EventKnit is a comprehensive event ticketing and management platform designed to handle everything from event creation and ticket sales to attendee management and check-ins.
+EventKnit is a comprehensive event ticketing and management platform designed to handle everything from event creation and ticket sales to attendee management and check-ins. The platform consists of three main components:
+
+### Platform Architecture
+
+1. **Web Application** (React/TypeScript)
+   - Admin dashboard for platform management
+   - Organizer portal for event management
+   - Public-facing event browsing and registration
+
+2. **Mobile Application** (Flutter/Dart)
+   - Attendee-focused mobile experience
+   - Event discovery and browsing
+   - Digital ticket wallet
+   - Push notifications
+   - QR code scanning
+
+3. **Backend API** (Node.js/TypeScript/Prisma)
+   - RESTful API with comprehensive endpoints
+   - Real-time WebSocket support
+   - Payment gateway integrations
+   - Advanced security features
 
 ### Core Capabilities
 
 - **Event Management**: Create, manage, and publish events of any scale
-- **Ticketing System**: Multiple ticket types, dynamic pricing, QR codes
+- **Ticketing System**: Multiple ticket types, dynamic pricing, QR codes, seat reservations
 - **Payment Processing**: Secure payments via Paystack and Stripe
 - **Attendee Management**: Registration, check-in, and engagement
+- **Advanced Scanning**: Checkpoints, workstations, service points, and facilities
+- **Badge System**: Custom badge templates and printing
 - **Analytics**: Real-time insights and reporting
 - **Multi-tenant**: Support for multiple organizers with white-label options
+- **Real-time Updates**: WebSocket-powered live updates for scanning and events
 
 ---
 
@@ -86,36 +137,174 @@ ATTENDEE (Event attendees - default role)
 
 ## Attendee Journey
 
-### 1. Account Creation
+### 1. Account Creation & Authentication
+
+EventKnit provides multiple authentication methods for user convenience and security.
 
 **Registration Options:**
-- Email/password registration
-- Google OAuth
+- Email/password registration with verification
+- Google OAuth 2.0
 - Facebook OAuth
 - Magic link (passwordless)
 
-**Registration Flow:**
-1. Select role (Attendee or Organizer)
-2. Enter email address
-3. Receive 6-digit verification code
-4. Create password (8+ chars, 1 letter, 1 number)
-5. Enter first and last name
-6. Account created
+**Email/Password Registration Flow:**
+```
+1. User clicks "Sign Up"
+2. Select role (Attendee or Organizer)
+3. Enter email address
+4. System sends 6-digit verification code to email
+5. User enters verification code
+6. Code validated (expires after 10 minutes)
+7. User creates password:
+   - Minimum 8 characters
+   - At least 1 letter
+   - At least 1 number
+8. User enters first name and last name
+9. Account created with:
+   - Unique user ID
+   - Email verified status
+   - Default role assigned
+   - Access token generated
+   - Refresh token generated
+10. User automatically logged in
+11. Redirected to dashboard
+```
 
-**Login Options:**
+**Social OAuth Registration/Login:**
+
+*Google Sign-In:*
+```
+1. User clicks "Continue with Google"
+2. Google OAuth popup/redirect
+3. User selects Google account
+4. Google returns user profile:
+   - Email
+   - Name
+   - Profile picture
+   - OAuth access token
+5. System checks if email exists:
+   - If exists: Login user
+   - If new: Create account with OAuth data
+6. Store encrypted OAuth tokens in database
+7. Generate platform access/refresh tokens
+8. User logged in
+```
+
+*Facebook Login:*
+```
+1. User clicks "Continue with Facebook"
+2. Facebook OAuth flow
+3. User authorizes app
+4. Facebook returns user profile
+5. Same account lookup logic as Google
+6. Store encrypted OAuth tokens
+7. Generate platform tokens
+8. User logged in
+```
+
+**Magic Link (Passwordless) Flow:**
+```
+1. User clicks "Login with Magic Link"
+2. Enter email address
+3. System generates unique magic link token:
+   - Token expires in 1 hour
+   - One-time use only
+   - Cryptographically secure
+4. Email sent with magic link
+5. User clicks link
+6. System validates token:
+   - Checks expiration
+   - Verifies email match
+   - Ensures not already used
+7. If valid:
+   - Mark token as used
+   - Generate access/refresh tokens
+   - Log user in
+8. If invalid/expired:
+   - Show error message
+   - Offer to send new link
+```
+
+**Email OTP (One-Time Password) Login:**
+```
+1. User clicks "Login with Code"
+2. Enter email address
+3. System sends 6-digit OTP code
+4. Code valid for 10 minutes
+5. User enters code
+6. System validates code
+7. If correct: User logged in
+8. If incorrect: Show error, allow retry (max 3 attempts)
+```
+
+**Login Options (All Methods):**
 - Email/password login
 - Google Sign-In (One-tap or popup)
 - Facebook Login
 - Magic link (passwordless email)
 - Email verification code (6-digit OTP)
+- Biometric (mobile app only)
 
-**Password Reset:**
-1. Click "Forgot password" on login page
+**Password Reset Flow:**
+```
+1. User clicks "Forgot password" on login page
 2. Enter email address
-3. Receive password reset email with link
-4. Click link (valid for 1 hour)
-5. Enter new password (8+ chars, 1 letter, 1 number)
-6. Password updated, redirected to login
+3. System validates email exists
+4. Generate password reset token:
+   - Unique token per request
+   - Expires in 1 hour
+   - One-time use only
+5. Send password reset email with link containing token
+6. User clicks link
+7. System validates token:
+   - Check expiration
+   - Verify not used
+   - Match email
+8. If valid: Show reset password form
+9. User enters new password:
+   - Minimum 8 characters
+   - At least 1 letter
+   - At least 1 number
+10. Password updated in database (hashed with bcrypt)
+11. Mark reset token as used
+12. Send confirmation email
+13. Redirect to login page
+14. User logs in with new password
+```
+
+**Password Change (Authenticated Users):**
+```
+1. User navigates to Settings > Security
+2. Clicks "Change Password"
+3. Enter current password
+4. System validates current password
+5. Enter new password (with requirements)
+6. Confirm new password
+7. Password updated
+8. All sessions invalidated except current
+9. Confirmation email sent
+```
+
+**Token Management:**
+- **Access Token**: Short-lived (15 minutes), used for API requests
+- **Refresh Token**: Long-lived (30 days), used to get new access tokens
+- **Token Refresh Flow**:
+  ```
+  1. Access token expires
+  2. Client sends refresh token to /auth/refresh
+  3. Server validates refresh token
+  4. If valid: Issue new access token
+  5. If refresh token near expiry: Issue new refresh token
+  6. Return new tokens to client
+  ```
+
+**Session Security:**
+- Tokens stored securely (httpOnly cookies or secure storage)
+- Automatic token refresh before expiration
+- Logout invalidates all tokens
+- Session tracking by device/IP
+- Suspicious activity detection
+- Rate limiting on authentication endpoints (10 attempts/minute)
 
 ### 2. Event Discovery
 
@@ -133,21 +322,206 @@ ATTENDEE (Event attendees - default role)
 - Speakers, sponsors, exhibitors
 - Event agenda
 
-### 3. Event Registration
+### 3. Event Registration & Checkout
 
-**Registration Flow:**
-1. Select ticket type(s) and quantity
-2. Apply promo code (optional)
-3. Fill registration form
-   - Personal information
-   - Custom fields (if any)
-   - Consent checkboxes
-4. Proceed to payment
+EventKnit provides a comprehensive registration and checkout flow with multiple options.
+
+**Complete Registration & Payment Flow:**
+```
+STEP 1: SELECT TICKETS
+1. User views event details page
+2. Sees available ticket types:
+   - General Admission
+   - VIP
+   - Early Bird
+   - Group tickets
+   - Custom types
+3. Each ticket type shows:
+   - Name and description
+   - Price
+   - Quantity available
+   - Sales period (start/end dates)
+   - Purchase limits per user
+4. User selects ticket type and quantity
+5. System validates:
+   - Ticket availability
+   - Purchase limits
+   - Sales period active
+6. If event has seat map:
+   - Show interactive seat selection
+   - User selects specific seats
+   - Seats temporarily reserved (15-minute timeout)
+7. Tickets added to cart
+
+STEP 2: APPLY PROMO CODE (Optional)
+1. User enters promo code
+2. System validates code:
+   - Code exists and active
+   - Valid date range
+   - Usage limits not exceeded
+   - User hasn't exceeded per-user limit
+   - Minimum order amount met
+   - Applicable to selected ticket types
+3. If valid:
+   - Calculate discount (percentage or fixed)
+   - Apply discount to total
+   - Show original and discounted price
+   - Lock promo code to this order
+4. If invalid: Show error message
+
+STEP 3: REGISTRATION FORM
+1. If user not logged in:
+   - Option to login
+   - Option to continue as guest
+   - Option to create account
+2. Fill attendee information:
+   - First name and last name (required)
+   - Email address (required)
+   - Phone number (required)
+   - Additional information (optional)
+3. Fill custom registration fields (if any):
+   - Text fields
+   - Dropdowns
+   - Checkboxes
+   - File uploads (e.g., dietary restrictions)
+4. Accept terms and conditions (required)
+5. Marketing consent (optional)
+6. Validate all required fields
+7. Proceed to payment
+
+STEP 4: PAYMENT
+1. Review order summary:
+   - Event details
+   - Ticket types and quantities
+   - Seat numbers (if applicable)
+   - Subtotal
+   - Discount (if applied)
+   - Taxes (if applicable)
+   - Platform fees
+   - Total amount
+2. Select payment method:
+   - Credit/Debit Card (Stripe or Paystack)
+   - Bank Transfer (Paystack)
+   - USSD (Paystack)
+   - Apple Pay (Stripe)
+   - Google Pay (Stripe)
+   - Payment Plan (installments, if available)
+3. Enter payment details (if card):
+   - Card number
+   - Expiry date
+   - CVV
+   - Cardholder name
+   - Billing address
+4. Click "Pay Now"
+5. Payment gateway processes:
+   - Stripe or Paystack
+   - 3D Secure authentication (if required)
+   - Real-time validation
+6. Payment gateway webhook received:
+   - Payment status: SUCCESS, FAILED, or PENDING
+7. If PAYMENT SUCCESS:
+   - Create event registration record
+   - Generate unique registration ID
+   - Generate QR code with encrypted data:
+     - Registration ID
+     - Event ID
+     - Attendee information
+     - Timestamp
+     - Digital signature for validation
+   - Generate backup alphanumeric code
+   - Assign seats (if seat map event)
+   - Mark promo code as used
+   - Send confirmation email:
+     - Registration details
+     - QR code image
+     - Ticket PDF attachment
+     - Event details
+     - Calendar invite (.ics file)
+   - Send organizer notification
+   - Redirect to success page
+8. If PAYMENT FAILED:
+   - Release reserved seats (if applicable)
+   - Show error message
+   - Release promo code
+   - Offer retry option
+9. If PAYMENT PENDING:
+   - Create registration with PENDING status
+   - Wait for webhook confirmation
+   - Send pending payment email
+   - Show pending status page
+
+STEP 5: POST-REGISTRATION
+1. User views confirmation page
+2. Options available:
+   - Download ticket PDF
+   - Add to calendar
+   - Add to Apple Wallet
+   - Add to Google Pay
+   - Share event with friends
+   - View ticket in dashboard
+3. Ticket appears in "My Tickets"
+4. If guest registration:
+   - Option to create account
+   - Use email to claim tickets later
+```
 
 **Guest Registration:**
-- Register without creating an account
-- Email required for ticket delivery
-- Can create account later to manage tickets
+```
+1. User clicks "Continue as Guest"
+2. Email required for ticket delivery
+3. No password needed
+4. Registration proceeds normally
+5. After payment:
+   - Ticket sent to email
+   - Unique link to view/manage ticket
+   - Option to create account to:
+     - View all tickets in one place
+     - Transfer tickets
+     - Request refunds
+     - Receive event updates
+```
+
+**Payment Plan (Installments):**
+```
+1. If event supports payment plans:
+   - User selects "Pay in Installments"
+   - Choose payment schedule:
+     - Weekly
+     - Bi-weekly
+     - Monthly
+   - Review installment breakdown:
+     - Number of payments
+     - Amount per payment
+     - Due dates
+     - Total amount (may include fees)
+2. Make first installment payment
+3. Setup auto-payment:
+   - Save payment method
+   - Authorize recurring charges
+   - Set up reminders
+4. Receive confirmation
+5. Future payments auto-charged
+6. Reminders sent before each payment
+7. Grace period for failed payments
+8. Ticket activated after full payment
+```
+
+**Multi-Ticket Registration:**
+```
+1. User purchases multiple tickets
+2. Option to assign tickets:
+   - Enter details for each attendee
+   - Or assign later
+3. Each ticket gets unique:
+   - Registration ID
+   - QR code
+   - Backup code
+4. All tickets sent to purchaser email
+5. Purchaser can:
+   - Transfer individual tickets
+   - Download all tickets
+   - Manage all tickets
+```
 
 ### 4. Ticket Management
 
@@ -378,16 +752,71 @@ ATTENDEE (Event attendees - default role)
 ### 9. Check-In Operations
 
 **Workstation Setup:**
-- QR code scanner
+- QR code scanner (hardware or mobile device)
+- Multiple workstation support
 - Manual check-in option
 - Re-entry tracking
-- Multiple stations
+- Multiple stations with facility assignment
+- Real-time sync across all stations
 
-**Check-In Features:**
-- Scan QR code
-- Enter backup code
-- View attendee details
-- Track entry/exit
+**Workstation Features:**
+- Scan QR code with instant validation
+- Enter backup code manually
+- Search attendees by name/email/phone
+- View complete attendee details
+- Track entry/exit times
+- Monitor currently-inside count
+- Real-time statistics dashboard
+- WebSocket live updates
+- Device tracking and logging
+
+**Checkpoint Management:**
+- Create multiple checkpoints per event
+- Assign staff to checkpoints with shifts
+- Set quotas and enforce limits
+- Define eligibility rules
+- Track scans per checkpoint
+- View checkpoint statistics
+- Duplicate checkpoints for quick setup
+- Monitor real-time checkpoint activity
+
+**Facility/Service Point Management:**
+- Create custom service points (food, merch, VIP areas)
+- Color-code facilities for easy identification
+- Add icons and locations
+- Enable/disable check-in or check-out
+- View facility usage statistics
+- Track peak times
+- Reorder facilities for display
+- Export facility data
+
+**Staff Operations:**
+- Multiple staff members scanning simultaneously
+- Staff performance tracking
+- Scan speed metrics
+- Error rate monitoring
+- Shift management
+- Staff assignment to specific checkpoints/facilities
+
+**Event-Day Operations:**
+1. Staff logs into workstation
+2. Selects event to scan
+3. Chooses facility/checkpoint (if multiple)
+4. Begins scanning:
+   - Scan QR codes
+   - Manual check-in for issues
+   - Handle re-entries
+   - Process check-outs
+5. Real-time dashboard shows:
+   - Total checked in
+   - Currently inside
+   - Scans by type
+   - Facility breakdown
+   - Denied entries
+6. End of event:
+   - View final statistics
+   - Export scan reports
+   - Download attendee lists
 
 ### 10. Financial Management
 
@@ -874,51 +1303,331 @@ Automatic discounts based on:
 
 ## Check-In & Scanning
 
+EventKnit provides a comprehensive multi-layered scanning system with workstations, checkpoints, and service point facilities.
+
 ### Workstation Features
 
+The workstation is the primary scanning interface for event check-in/check-out operations.
+
 **QR Code Scanning:**
-- Real-time ticket validation
+- Real-time ticket validation with signature verification
 - Instant feedback (success/error)
+- Code type detection (QR code, backup code)
 - Offline mode support
 - Sync when connected
+- Device tracking (device ID, type, IP address, user agent)
 
 **Manual Check-In:**
+- Search by name, email, or phone number
 - Enter backup code
-- Search by name/email
-- Admin override
+- Admin override capability
+- Manual check-out support
+
+**Check-Out Functionality:**
+- Scan-out support for exit tracking
+- Manual check-out option
+- Currently-inside status tracking
 
 ### Check-In Flow
 
 ```
-1. Attendee presents QR code
-2. Staff scans code
-3. System validates ticket
-4. Check-in recorded
-5. Success/error displayed
-6. Entry granted
+1. Attendee presents QR code or backup code
+2. Staff scans code or searches manually
+3. System validates ticket:
+   - Verifies ticket status
+   - Checks signature validity
+   - Validates event and registration
+   - Checks re-entry limits (if applicable)
+4. Check-in recorded with metadata:
+   - Scan time
+   - Scanner (staff member)
+   - Device information
+   - IP address and user agent
+   - Facility/service point (if specified)
+5. WebSocket event emitted for real-time updates
+6. Success/error displayed with attendee details
+7. Entry granted or denied
 ```
+
+### Advanced Checkpoint System
+
+Checkpoints enable sophisticated access control and flow management within events.
+
+**Checkpoint Types:**
+- Entry checkpoints (main entrance)
+- Service point checkpoints (food, merchandise, etc.)
+- Activity checkpoints (specific areas or activities)
+- Exit checkpoints
+
+**Checkpoint Features:**
+- **Name & Code**: Unique identifier and station code
+- **Location**: Physical location within venue
+- **Quota Management**: Set capacity limits per checkpoint
+- **Quota Enforcement**: Optional strict capacity limits
+- **Eligibility Rules**: JSON-based rules for access control
+- **Active Period**: Define when checkpoint is operational (activeFrom/activeTo)
+- **Staff Assignment**: Assign staff to specific checkpoints with shifts
+- **Display Order**: Control checkpoint ordering in interfaces
+
+**Checkpoint Operations:**
+- Create and manage multiple checkpoints per event
+- Duplicate checkpoints for quick setup
+- Real-time scan tracking per checkpoint
+- Checkpoint-specific statistics
+- Staff performance tracking per checkpoint
+
+**Eligibility Rules:**
+Checkpoints can have custom eligibility rules (JSON format) to control access:
+- Ticket type restrictions
+- Time-based access
+- Prerequisite checkpoint scans
+- Custom business logic
+
+### Service Points & Facilities
+
+Facilities (also called service points) allow tracking of attendee interactions at various locations within an event.
+
+**Facility Features:**
+- **Name & Code**: Unique identifier (code max 10 characters)
+- **Description**: Purpose of the facility
+- **Icon & Color**: Visual customization for easy identification
+- **Location**: Physical location within venue
+- **Check-In/Check-Out Capability**: Control what operations are allowed
+- **Active Status**: Enable/disable facilities
+- **Sort Order**: Control display ordering
+
+**Common Facility Types:**
+- Food & Beverage Stations
+- Merchandise Booths
+- VIP Lounges
+- Activity Areas
+- Information Desks
+- Restroom Areas
+- Parking Zones
+
+**Facility Statistics:**
+- Total check-ins per facility
+- Currently active at facility
+- Peak usage times
+- Average time spent
+
+**Facility Management:**
+- Create default facility for events
+- Ensure default facility exists for scanners
+- Reorder facilities for better organization
+- View facility-specific scan history
 
 ### Re-Entry Management
 
-**Settings:**
-- Allow re-entry: Yes/No
-- Max re-entries: Number
-- Re-entry window: Time period
+**Event-Level Settings:**
+- `allowReEntry`: Enable/disable re-entry (boolean)
+- `requireCheckOut`: Mandate check-out before re-entry (boolean)
+- `maxReEntries`: Maximum number of re-entries allowed (number or null for unlimited)
+- `scanSettings`: Additional JSON configuration
 
-**Tracking:**
-- Check-in time
-- Check-out time
-- Re-entry count
-- Location/station
+**Re-Entry Tracking:**
+- Check-in time and check-out time
+- Re-entry count per attendee
+- Currently inside status
+- Last scan facility/checkpoint
+- Full scan history with timestamps
 
-### Scan Statistics
+**Re-Entry Validation:**
+- Validates attendee hasn't exceeded max re-entries
+- Checks if attendee is currently inside (if check-out required)
+- Records each re-entry attempt
 
-Real-time metrics:
-- Total checked in
-- Checked in by hour
-- Re-entries
+### Scan Types
+
+The platform supports multiple scan types:
+- `CHECK_IN`: Initial entry to event
+- `CHECK_OUT`: Exit from event
+- `RE_ENTRY`: Re-entry after check-out
+- `CHECKPOINT_SCAN`: Scan at specific checkpoint
+- `FACILITY_SCAN`: Scan at service point/facility
+- `MANUAL_CHECK_IN`: Manual entry by staff
+- `MANUAL_CHECK_OUT`: Manual exit by staff
+
+### Real-Time Updates
+
+**WebSocket Integration:**
+- Scan events broadcast in real-time
+- Event-specific rooms (`event:${eventId}`)
+- Real-time statistics updates
+- Scanner notifications
+
+**Scan Event Data:**
+- Scan ID and registration ID
+- Event ID
+- Scan type and timestamp
+- Facility/checkpoint information
+- Attendee name and ticket type
+- Re-entry status
+- Signature validation result
+- Code type (QR or backup)
+
+### Scan Statistics & Reports
+
+**Real-time Metrics:**
+- Total checked in (currently inside)
+- Total scans by type
+- Scans by facility/checkpoint
+- Scans by time period
+- Re-entries count
 - Denied entries
-- Pending arrivals
+
+**Scan History:**
+- Searchable scan records
+- Filter by:
+  - Facility/checkpoint
+  - Scan type
+  - Date range
+  - Scanner (staff member)
+- Export capabilities
+- Pagination support
+
+### Search & Lookup
+
+**Attendee Search:**
+- Search by name (first or last)
+- Search by email
+- Search by phone number
+- Search by backup code
+- Filter by event
+- Real-time results
+
+**Ticket Details:**
+- View full registration information
+- See attendee profile
+- Check scan history (last 10 scans)
+- Verify ticket status
+- View check-in/check-out status
+
+---
+
+## Badge Templates & Printing
+
+EventKnit provides a comprehensive badge template system for creating custom event badges and name tags.
+
+### Badge Template Features
+
+**Template Configuration:**
+- **Name & Description**: Identify and describe the template
+- **Dimensions**: Custom width and height (in pixels or mm)
+- **Size Presets**: Pre-defined sizes (e.g., 3.5" x 2", 4" x 6")
+- **Orientation**: Portrait or Landscape
+- **Background Color**: Customize badge background
+- **Elements**: JSON-based design elements
+
+**Template Scope:**
+- **Platform Default**: Available to all organizers
+- **Organizer-Specific**: Custom templates per organizer
+- **Event-Specific**: Templates for specific events
+
+**Template Management:**
+- Create custom templates
+- Update existing templates
+- Set default templates
+- Activate/deactivate templates
+- Search and filter templates
+- Duplicate templates for quick setup
+
+**Badge Elements:**
+Templates support dynamic elements (stored as JSON):
+- Text fields (attendee name, title, company)
+- QR codes (registration ID, custom data)
+- Images (logos, photos, event branding)
+- Shapes and decorative elements
+- Custom fields from registration data
+
+**Use Cases:**
+- Conference name badges
+- VIP badges with special styling
+- Staff identification badges
+- Speaker badges
+- Exhibitor badges
+- Attendee badges with QR codes
+
+**Integration:**
+- Generate badges from registration data
+- Bulk badge generation for events
+- Print-ready PDF export
+- On-demand badge printing at check-in
+
+---
+
+## Seat Maps & Reserved Seating
+
+EventKnit supports advanced seat mapping and reservation for events with assigned seating.
+
+### Seat Map Features
+
+**Seat Map Configuration:**
+- Custom venue layout design
+- Section definition
+- Row and seat numbering
+- Multiple seating tiers (VIP, General, etc.)
+- Visual seat map editor
+
+**Seat Map Management (Organizer):**
+- Create or update seat map for events
+- Define sections with pricing
+- Set available seats per section
+- Configure seat attributes
+- Delete seat maps
+
+**Seat Selection (Attendee):**
+- View interactive seat map
+- See real-time availability
+- Select preferred seats
+- Reserve seats temporarily
+- Reservation timeout (default: configurable minutes)
+
+### Seat Reservation Flow
+
+```
+1. Attendee views event with seat map
+2. Browses available seats by section
+3. Selects desired seats
+4. Seats temporarily reserved (with timeout)
+5. Proceeds to payment
+6. Upon payment success:
+   - Reservation confirmed
+   - Seats assigned to registration
+   - Seats marked as unavailable
+7. If timeout expires without payment:
+   - Reservation released
+   - Seats become available again
+```
+
+### Seat Statuses
+
+| Status | Description |
+|--------|-------------|
+| AVAILABLE | Seat is free for selection |
+| RESERVED | Temporarily held during checkout |
+| CONFIRMED | Assigned and paid for |
+| BLOCKED | Not available for booking |
+
+### Seat Map Features
+
+**Section Management:**
+- Define multiple sections (Orchestra, Balcony, VIP, etc.)
+- Set capacity per section
+- Price per section or individual seats
+- Section-specific attributes
+
+**Real-Time Availability:**
+- Live updates of seat availability
+- Prevent double-booking
+- Handle concurrent reservations
+- Release expired reservations
+
+**Queries & Filters:**
+- Get available seats by section
+- Filter by price range
+- Filter by seat attributes
+- View seat map with availability overlay
 
 ---
 
@@ -951,6 +1660,108 @@ Real-time metrics:
 - Event details
 - Scannable barcode
 - Ticket information
+
+---
+
+## Mobile Application
+
+EventKnit provides a native mobile application (Flutter/Dart) for iOS and Android platforms, offering attendees a seamless mobile experience.
+
+### Mobile App Features
+
+**Authentication:**
+- Email/password login
+- Google Sign-In integration
+- Facebook Login integration
+- Biometric authentication (fingerprint, Face ID)
+- Secure token management
+- Persistent login sessions
+
+**Event Discovery:**
+- Browse and search events
+- Filter by category, date, location
+- Featured events carousel
+- Event recommendations
+- Bookmark/save events for later
+- Share events with others
+
+**Event Details:**
+- Full event information
+- Interactive venue map
+- Event agenda/schedule
+- Speaker information
+- Ticket types and pricing
+- Gallery and media
+
+**Ticket Management:**
+- View all registered events
+- Access digital tickets
+- Display QR codes for scanning
+- Download ticket PDFs
+- View ticket details (type, status, etc.)
+- Manage ticket transfers
+
+**Notifications:**
+- Push notifications for:
+  - Event reminders
+  - Ticket confirmations
+  - Event updates
+  - Check-in confirmations
+  - Transfer notifications
+  - Promotional offers
+- In-app notification center
+- Notification preferences
+
+**Profile & Settings:**
+- User profile management
+- Payment methods
+- Notification settings
+- Privacy settings
+- Help and support
+- App version information
+
+**Mobile-Specific Features:**
+- Offline ticket access
+- Biometric security
+- Native camera for QR scanning
+- Deep linking to events
+- Share via native sharing
+- Dark mode support
+
+### Mobile App Architecture
+
+**State Management:**
+- GetX for reactive state management
+- Controllers for business logic separation
+
+**Key Controllers:**
+- `AuthController`: Authentication and user session
+- `EventsController`: Event browsing and management
+- `TicketsController`: Ticket viewing and actions
+- `NotificationsController`: Notification handling
+- `SavedEventsController`: Bookmarked events
+- `BottomNavigationController`: Navigation state
+
+**Screens:**
+- Splash screen with branding
+- Discovery/Browse events
+- Event details
+- Saved events
+- Tickets list
+- Profile/Settings
+
+**API Integration:**
+- RESTful API client
+- Token-based authentication
+- Automatic token refresh
+- Error handling and retry logic
+- Network status monitoring
+
+**Offline Support:**
+- Cached event data
+- Stored tickets for offline access
+- Queue API calls when offline
+- Sync when connection restored
 
 ---
 
@@ -1256,6 +2067,111 @@ Body: { "refreshToken": "<refresh_token>" }
 | POST | /promo-codes/validate | Validate code |
 | POST | /promo-codes | Create code |
 | GET | /promo-codes | List codes |
+
+#### Workstation & Scanning
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /workstation/scan | Scan ticket (check-in) |
+| POST | /workstation/scan-out | Scan out (check-out) |
+| POST | /workstation/manual-check-in | Manual check-in by search |
+| POST | /workstation/manual-check-out | Manual check-out by search |
+| GET | /workstation/search | Search attendees |
+| GET | /workstation/tickets/:ticketId | Get ticket details |
+| GET | /workstation/events/:eventId | Get event with scan config |
+| GET | /workstation/events/:eventId/attendees | Get event attendees with scan status |
+| GET | /workstation/events/:eventId/scans | Get scan history for event |
+| GET | /workstation/events/:eventId/config | Get event scan configuration |
+| PUT | /workstation/events/:eventId/config | Update event scan configuration |
+
+#### Checkpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /checkpoints | Create checkpoint |
+| GET | /checkpoints/:checkpointId | Get checkpoint by ID |
+| GET | /checkpoints/event/:eventId | Get checkpoints for event |
+| PUT | /checkpoints/:checkpointId | Update checkpoint |
+| DELETE | /checkpoints/:checkpointId | Delete checkpoint |
+| POST | /checkpoints/:checkpointId/duplicate | Duplicate checkpoint |
+| POST | /checkpoints/:checkpointId/scan | Scan at checkpoint |
+| GET | /checkpoints/:checkpointId/scans | Get checkpoint scans |
+| GET | /checkpoints/:checkpointId/stats | Get checkpoint statistics |
+| GET | /checkpoints/event/:eventId/summary | Get event checkpoint summary |
+| POST | /checkpoints/:checkpointId/staff | Assign staff to checkpoint |
+| DELETE | /checkpoints/:checkpointId/staff/:staffId | Remove staff from checkpoint |
+| GET | /checkpoints/:checkpointId/staff | Get checkpoint staff |
+| GET | /checkpoints/attendee/:registrationId | Get attendee checkpoint status |
+| GET | /checkpoints/:checkpointId/eligibility/:registrationId | Check attendee eligibility |
+
+#### Facilities (Service Points)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /events/:eventId/facilities | Create facility |
+| GET | /events/:eventId/facilities | Get all facilities for event |
+| GET | /events/:eventId/facilities/:id | Get single facility |
+| PUT | /events/:eventId/facilities/:id | Update facility |
+| DELETE | /events/:eventId/facilities/:id | Delete facility |
+| GET | /events/:eventId/facilities/:id/stats | Get facility statistics |
+| POST | /events/:eventId/facilities/reorder | Reorder facilities |
+| POST | /events/:eventId/facilities/create-default | Create default facility |
+| POST | /events/:eventId/facilities/ensure-default | Ensure default facility exists |
+
+#### Badge Templates
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /badge-templates | Create badge template |
+| GET | /badge-templates/:id | Get template by ID |
+| GET | /badge-templates | Get templates (with filters) |
+| PUT | /badge-templates/:id | Update template |
+| DELETE | /badge-templates/:id | Delete template |
+| POST | /badge-templates/:id/duplicate | Duplicate template |
+
+#### Seat Maps
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /organizer-dashboard/events/:eventId/seat-map | Create/update seat map |
+| GET | /organizer-dashboard/events/:eventId/seat-map | Get seat map for event |
+| GET | /organizer-dashboard/events/:eventId/seats/available | Get available seats |
+| DELETE | /organizer-dashboard/events/:eventId/seat-map | Delete seat map |
+| GET | /events/:eventId/seat-map | Get seat map availability (public) |
+| POST | /events/:eventId/seats/reserve | Reserve seats |
+
+#### Analytics
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /analytics/events/:eventId | Get event analytics |
+| GET | /analytics/organizer/:organizerId | Get organizer analytics |
+| GET | /analytics/platform | Get platform-wide analytics (admin) |
+
+#### Feedback
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /feedback | Submit feedback (authenticated) |
+| GET | /feedback/token/:token | Validate feedback token |
+| POST | /feedback/token/:token | Submit via email token |
+| GET | /admin/feedback | List all feedback (admin) |
+| GET | /admin/feedback/analytics | Get NPS analytics (admin) |
+| GET | /admin/feedback/:id | Get single feedback (admin) |
+| PATCH | /admin/feedback/:id/notes | Add admin notes (admin) |
+| POST | /admin/feedback/trigger/:eventId | Trigger feedback emails (admin) |
+| GET | /admin/feedback/event/:eventId | Get event feedback (admin) |
+
+#### User Dashboard
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /user-dashboard/events | Get user's registered events |
+| GET | /user-dashboard/tickets | Get user's tickets |
+| POST | /user-dashboard/transfers/:registrationId | Initiate ticket transfer |
+| POST | /user-dashboard/transfers/accept/:token | Accept ticket transfer |
+| POST | /user-dashboard/transfers/:id/cancel | Cancel ticket transfer |
+| GET | /user-dashboard/transfers | Get transfer history |
+
+#### Notifications
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /notifications | Get user notifications |
+| PUT | /notifications/:id/read | Mark notification as read |
+| PUT | /notifications/read-all | Mark all as read |
+| DELETE | /notifications/:id | Delete notification |
 
 ### Rate Limiting
 

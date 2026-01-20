@@ -230,7 +230,7 @@ export class EventController {
       const normalizedRegistration = {
         ...registration,
         totalAmount: registration.totalAmount !== null && registration.totalAmount !== undefined
-          ? Number(registration.totalAmount as any).toFixed(2)
+          ? Number(registration.totalAmount as unknown as number).toFixed(2)
           : '0.00',
       };
 
@@ -554,7 +554,7 @@ export class EventController {
    */
   static async getInvitationByToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { InvitationService } = await import('../services/invitation.service');
+      const { InvitationService } = await import('../services/invitation.service.js');
       const invitation = await InvitationService.getInvitationByToken(req.params.token);
 
       res.status(200).json({
@@ -589,7 +589,7 @@ export class EventController {
           registration: {
             ...result.registration,
             totalAmount: result.registration.totalAmount !== null && result.registration.totalAmount !== undefined
-              ? Number(result.registration.totalAmount as any).toFixed(2)
+              ? Number(result.registration.totalAmount as unknown as number).toFixed(2)
               : '0.00',
           },
           user: result.user,

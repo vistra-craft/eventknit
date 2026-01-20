@@ -3,7 +3,7 @@ import { TicketService } from '../src/services/ticket.service.js';
 import { prisma } from '../src/config/database.js';
 import { logger } from '../src/utils/logger.js';
 import { TicketStatus } from '@prisma/client';
-import { cleanupTestData } from './test-helpers';
+import { cleanupTestData } from './test-helpers.js';
 import { LockService } from '../src/services/lock.service.js';
 import bcrypt from 'bcrypt';
 

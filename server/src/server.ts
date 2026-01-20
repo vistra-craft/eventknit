@@ -6,6 +6,7 @@ import { initializeJobs, stopJobs } from './jobs/index.js';
 import { ensureSuperAdmin } from './utils/ensureSuperAdmin.js';
 import { createServer } from 'http';
 import { websocketService } from './services/websocket.service.js';
+import { mobilePushService } from './services/mobile-push.service.js';
 
 const PORT = config.port;
 const HOST = config.host;
@@ -45,6 +46,18 @@ const startServer = async () => {
     } catch (error) {
       logger.error('Failed to initialize scheduled jobs:', error);
       // Don't fail server startup if jobs fail to initialize
+    }
+
+    // Initialize mobile push notification service (FCM)
+    try {
+      mobilePushService.initialize();
+      if (mobilePushService.isConfigured()) {
+        logger.info('📱 Mobile push notification service (FCM) initialized');
+      } else {
+        logger.warn('⚠️  Mobile push notifications not configured (Firebase credentials missing)');
+      }
+    } catch (error) {
+      logger.error('Failed to initialize mobile push service:', error);
     }
 
     // Create HTTP server

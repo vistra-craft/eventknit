@@ -40,6 +40,7 @@ import eventCollectionRoutes from './routes/event-collection.routes.js';
 import platformFinanceRoutes from './routes/platform-finance.routes.js';
 import pushNotificationRoutes from './routes/push-notification.routes.js';
 import attendeeImportRoutes from './routes/attendee-import.routes.js';
+import mobileRoutes from './routes/mobile.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -51,7 +52,26 @@ app.set('trust proxy', 1);
 // CORS configuration (before helmet to avoid conflicts)
 app.use(
   cors({
-    origin: config.cors.origin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      // In development, allow any localhost origin
+      if (config.env === 'development' && origin.startsWith('http://localhost:')) {
+        return callback(null, true);
+      }
+
+      // Check against configured origins
+      const allowedOrigins = Array.isArray(config.cors.origin)
+        ? config.cors.origin
+        : [config.cors.origin];
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: config.cors.credentials,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [
@@ -164,6 +184,7 @@ app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
 app.use('/api/v1/admin/promo-codes', adminPromoCodeRoutes);
 app.use('/api/v1/events', attendeeImportRoutes);
+app.use('/api/v1/mobile', mobileRoutes);
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
