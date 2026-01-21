@@ -1545,7 +1545,7 @@ export class EventService {
           logger.debug('[registerForEvent] Authenticated user - ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
-            ticketLineItems = lineItems.map((item: {
+            ticketLineItems = (lineItems as any[]).map((item: {
               ticketType: string;
               quantity: number;
               unitPrice: number;
@@ -3311,7 +3311,7 @@ export class EventService {
           logger.debug('[registerForEvent] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
-            ticketLineItems = lineItems.map((item: {
+            ticketLineItems = (lineItems as any[]).map((item: {
               ticketType: string;
               quantity: number;
               unitPrice: number;
