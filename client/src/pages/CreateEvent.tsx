@@ -53,7 +53,7 @@ export default function CreateEvent({ showLayout = true }: CreateEventProps) {
   const [newTag, setNewTag] = useState("");
 
   const form = useForm<CreateEventData>({
-    resolver: zodResolver(createEventSchema) as unknown as Resolver<CreateEventData, any>,
+    resolver: zodResolver(createEventSchema) as unknown as Resolver<CreateEventData, unknown>,
     defaultValues: {
       // Basic Info
       title: "",

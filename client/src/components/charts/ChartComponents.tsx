@@ -265,7 +265,8 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
       <PieChart>
         {/* Casting to unknown here because Recharts expects its internal ChartDataInput[] type */}
         <Pie
-          data={data as unknown}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data={data as any[]}
           cx="50%"
           cy="50%"
           labelLine={false}

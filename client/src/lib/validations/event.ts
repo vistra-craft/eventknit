@@ -62,7 +62,7 @@ export const registrationFieldSchema = z.object({
   id: requiredString('Field ID'),
   name: requiredString('Field name'),
   type: z.enum(['text', 'email', 'phone', 'textarea', 'select', 'checkbox', 'date', 'number'], {
-    required_error: 'Field type is required',
+    message: 'Field type is required',
   }),
   label: requiredString('Field label'),
   required: z.boolean().default(false),

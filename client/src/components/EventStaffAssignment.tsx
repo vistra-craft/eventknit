@@ -27,7 +27,6 @@ import {
   type EventStaffRole,
   type AssignStaffToEventData,
 } from "@/lib/admin-api";
-import { UserRole } from "@/types/auth";
 // TanStack Query hooks - Admin
 import { useEventStaff, useAvailableStaff } from "@/hooks/queries";
 import {
@@ -59,13 +58,6 @@ const EVENT_STAFF_ROLES: EventStaffRole[] = [
   'TICKET_SELLER',
 ];
 
-const STAFF_ROLES: UserRole[] = [
-  UserRole.SUPERADMIN,
-  UserRole.ADMIN_STAFF,
-  UserRole.MARKETER,
-  UserRole.SUPPORT,
-  UserRole.TELLER,
-];
 
 export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   eventId,
@@ -94,26 +86,39 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   // TanStack Query hooks - conditionally use admin or organizer hooks based on variant
+  // TanStack Query hooks - call both admin and organizer hooks unconditionally (conditional logic is inside hooks or handled by enabled flag if needed, but here we just need to satisfy order of hooks)
+  const adminEventStaff = useEventStaff(eventId, {
+    role: filterRole,
+    staffType: filterStaffType !== "all" ? (filterStaffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF') : undefined,
+    isActive: filterActive !== "all" ? filterActive === "true" : undefined,
+  });
+  
+  const organizerEventStaff = useOrganizerEventStaff(eventId, {
+    role: filterRole,
+    isActive: filterActive !== "all" ? filterActive === "true" : undefined,
+  });
+
+  const adminAvailableStaff = useAvailableStaff();
+  const organizerStaff = useOrganizerStaff();
+
+  // Mutation hooks
+  const adminAssignStaff = useAssignStaff();
+  const organizerAssignStaff = useAssignOrganizerStaff();
+  const adminBulkAssign = useBulkAssignStaff();
+  const adminUpdateStaff = useUpdateStaffAssignment();
+  const organizerUpdateStaff = useUpdateOrganizerStaffAssignment();
+  const adminRemoveStaff = useRemoveStaff();
+  const organizerRemoveStaff = useRemoveOrganizerStaff();
+
   const isAdmin = variant === 'admin';
+  const eventStaffData = isAdmin ? adminEventStaff.data : organizerEventStaff.data;
+  const loading = isAdmin ? adminEventStaff.isLoading : organizerEventStaff.isLoading;
+  const availableStaff = (isAdmin ? adminAvailableStaff.data : organizerStaff.data) || [];
 
-  const { data: eventStaffData, isLoading: loading } = isAdmin
-    ? useEventStaff(eventId, {
-        role: filterRole,
-        staffType: filterStaffType !== "all" ? (filterStaffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF') : undefined,
-        isActive: filterActive !== "all" ? filterActive === "true" : undefined,
-      })
-    : useOrganizerEventStaff(eventId, {
-        role: filterRole,
-        isActive: filterActive !== "all" ? filterActive === "true" : undefined,
-      });
-
-  const { data: availableStaff = [] } = isAdmin ? useAvailableStaff() : useOrganizerStaff();
-
-  // Mutation hooks - conditionally use admin or organizer mutations
-  const assignStaffMutation = isAdmin ? useAssignStaff() : useAssignOrganizerStaff();
-  const bulkAssignMutation = isAdmin ? useBulkAssignStaff() : null;
-  const updateStaffMutation = isAdmin ? useUpdateStaffAssignment() : useUpdateOrganizerStaffAssignment();
-  const removeStaffMutation = isAdmin ? useRemoveStaff() : useRemoveOrganizerStaff();
+  const assignStaffMutation = isAdmin ? adminAssignStaff : organizerAssignStaff;
+  const bulkAssignMutation = isAdmin ? adminBulkAssign : null;
+  const updateStaffMutation = isAdmin ? adminUpdateStaff : organizerUpdateStaff;
+  const removeStaffMutation = isAdmin ? adminRemoveStaff : organizerRemoveStaff;
 
   const assignments = eventStaffData?.assignments || [];
   const assigning =

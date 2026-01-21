@@ -79,11 +79,7 @@ const SubscriptionManagement = () => {
   const [billingEmail, setBillingEmail] = useState('');
   const [billingEmailError, setBillingEmailError] = useState('');
 
-  useEffect(() => {
-    loadSubscription();
-  }, []);
-
-  const loadSubscription = async () => {
+  const loadSubscription = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await getSubscription();
@@ -100,7 +96,11 @@ const SubscriptionManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadSubscription();
+  }, [loadSubscription]);
 
   const handleUpgrade = (tier: SubscriptionTier) => {
     setTargetTier(tier);
