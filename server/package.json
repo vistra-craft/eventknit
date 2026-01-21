@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "npm run prisma:migrate:deploy && node dist/src/server.js",
-    "dev": "tsx src/server.ts",
-    "dev:watch": "tsx --watch src/server.ts",
+    "dev": "npx tsx src/server.ts",
+    "dev:watch": "npx tsx --watch src/server.ts",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -26,7 +26,7 @@
     "prisma:migrate:deploy": "npx dotenv-cli -e .env.development -- node scripts/prisma-migrate-deploy.js",
     "prisma:release-lock": "node scripts/release-prisma-lock.js",
     "prisma:studio": "npx dotenv-cli -e .env.development -- prisma studio",
-    "prisma:seed": "npx dotenv-cli -e .env.development -- tsx prisma/seed.ts",
+    "prisma:seed": "npx dotenv-cli -e .env.development -- npx tsx prisma/seed.ts",
     "seed:test-users": "node scripts/seed-test-users.js",
     "seed:dummy-data": "node scripts/seed-dummy-data.js",
     "seed:events": "node scripts/seed-events.js",
@@ -35,7 +35,7 @@
     "verify-test-users": "node scripts/verify-test-users.js"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   },
   "repository": {
     "type": "git",
@@ -70,8 +70,10 @@
     "@types/nodemailer": "^7.0.3",
     "@types/sharp": "^0.31.1",
     "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/twilio": "^3.19.2",
     "@types/web-push": "^3.6.4",
+    "@types/yamljs": "^0.2.34",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.2",
     "husky": "^9.1.7",
@@ -82,7 +84,7 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
-    "tsx": "^4.20.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.51.0"
   },
@@ -123,17 +125,18 @@
     "redis": "^5.8.3",
     "socket.io": "^4.8.1",
     "stripe": "^17.7.0",
+    "swagger-ui-express": "^5.0.1",
     "twilio": "^5.10.3",
     "uuid": "^11.0.3",
     "web-push": "^3.6.7",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "yamljs": "^0.3.0"
   },
   "lint-staged": {
     "*.ts": [
-      "eslint --fix",
-      "git add"
+      "npx eslint --fix"
     ]
   }
 }

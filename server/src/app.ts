@@ -2,6 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { config } from './config/index.js';
 import { stream, logger } from './utils/logger.js';
 import authRoutes from './routes/auth.routes.js';
@@ -113,6 +117,15 @@ logger.info('[App] Starting server with environment:', {
 });
 
 app.use('/api', rateLimiter);
+
+// Swagger API Documentation
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const swaggerDocument = YAML.load(join(__dirname, '..', 'swagger.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'EventKnit API Documentation',
+}));
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

@@ -75,6 +75,7 @@ const startServer = async () => {
       logger.info(`🔍 Health check: http://localhost:${PORT}/health`);
       logger.info(`📋 API status: http://localhost:${PORT}/api/v1/status`);
       logger.info(`🔐 Auth routes: http://localhost:${PORT}/api/v1/auth`);
+      logger.info(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
       logger.info('🔌 WebSocket server initialized');
     });
 

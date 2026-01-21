@@ -124,6 +124,23 @@ npm run dev
 
 The server will start at `http://localhost:3001`.
 
+### 7. Access API Documentation
+
+Once the server is running, access the interactive API documentation at:
+
+```
+http://localhost:3001/api-docs
+```
+
+The Swagger UI provides:
+- 📚 Complete API reference with all endpoints
+- 🔍 Interactive testing interface
+- 🔐 Built-in authentication support
+- 📝 Request/response examples
+- ✅ Schema validation
+
+See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for detailed usage guide.
+
 ---
 
 ## 🐳 Docker Commands

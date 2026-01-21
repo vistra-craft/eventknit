@@ -5011,4 +5011,537 @@ This comprehensive improvement plan transforms EventKnit from a solid MVP into a
 4. Begin Phase 1 implementation
 5. Measure, iterate, and adapt
 
+
+
+
+
+# EventKnit Platform - Technical Improvements Guide
+
+> **Document Purpose**: Track required backend enhancements for future mobile features
+> **Last Updated**: January 21, 2026
+> **Status**: Awaiting Backend Implementation
+
+---
+
+## Backend Requirements for Offline Caching Feature
+
+### Overview
+
+The EventKnit mobile app requires offline caching capabilities for the ticket scanner functionality. This feature is critical for event staff who may encounter poor network connectivity at event venues. Currently, the backend has **NO** offline support infrastructure.
+
+**Priority**: High
+**Complexity**: Medium
+**Estimated Backend Work**: 3-5 days
+**Mobile Work (Pending Backend)**: 2-3 days
+
+---
+
+## Required Backend Endpoints
+
+### 1. Sync Endpoint for Offline Operations
+
+**Endpoint**: `POST /api/v1/workstation/sync`
+
+**Purpose**: Accept batch of scan/check-in operations performed while offline and sync them to the server.
+
+**Request Body**:
+```json
+{
+  "deviceId": "string",
+  "lastSyncTimestamp": "2026-01-21T10:30:00Z",
+  "operations": [
+    {
+      "operationType": "CHECK_IN" | "CHECK_OUT",
+      "ticketId": "string",
+      "eventId": "string",
+      "scannedAt": "2026-01-21T10:35:00Z",
+      "facilityId": "string",
+      "localTimestamp": "2026-01-21T10:35:00Z",
+      "offlineId": "uuid-generated-locally"
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "syncedCount": 5,
+  "conflicts": [
+    {
+      "offlineId": "uuid",
+      "ticketId": "string",
+      "reason": "DUPLICATE_SCAN",
+      "serverTimestamp": "2026-01-21T10:34:00Z",
+      "resolution": "KEPT_SERVER" | "KEPT_CLIENT" | "REQUIRES_MANUAL"
+    }
+  ],
+  "lastSyncTimestamp": "2026-01-21T10:40:00Z"
+}
+```
+
+**Business Logic**:
+- Validate all operations
+- Detect duplicate scans (same ticket scanned multiple times)
+- Handle timestamp conflicts (offline scan vs server scan)
+- Apply conflict resolution rules:
+  - If ticket already checked in: keep earliest timestamp
+  - If ticket checked out then checked in offline: flag for manual review
+  - If ticket suspended: reject offline scan
+- Return detailed conflict report
+- Update device's last sync timestamp
+
+**Database Changes**:
+- Add `device_syncs` table to track sync history
+- Add `offline_operations` table for conflict tracking
+- Add `conflict_resolution_log` table
+
+**File Location**: `eventknit/server/src/routes/workstation.routes.ts`
+**Controller**: `eventknit/server/src/controllers/workstation.controller.ts`
+**Service**: Create new `eventknit/server/src/services/offline-sync.service.ts`
+
+---
+
+### 2. Event Snapshot Endpoint
+
+**Endpoint**: `GET /api/v1/workstation/events/:eventId/snapshot`
+
+**Purpose**: Download complete event data bundle for offline use by scanner devices.
+
+**Query Parameters**:
+- `includeScans` (boolean, default: true) - Include previous scan history
+- `includeAttendees` (boolean, default: true) - Include full attendee list
+- `compress` (boolean, default: true) - Gzip compress response
+
+**Response**:
+```json
+{
+  "eventId": "string",
+  "snapshotTimestamp": "2026-01-21T10:00:00Z",
+  "event": {
+    "id": "string",
+    "title": "string",
+    "startDate": "2026-01-25T18:00:00Z",
+    "endDate": "2026-01-25T23:00:00Z",
+    "status": "APPROVED",
+    "facilities": [
+      {
+        "id": "string",
+        "name": "Main Entrance",
+        "type": "ENTRY"
+      }
+    ]
+  },
+  "attendees": [
+    {
+      "ticketId": "string",
+      "userId": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "email": "string",
+      "ticketType": "GENERAL_ADMISSION",
+      "status": "ACTIVE",
+      "qrCode": "string"
+    }
+  ],
+  "scans": [
+    {
+      "ticketId": "string",
+      "scanType": "CHECK_IN",
+      "scannedAt": "2026-01-20T18:05:00Z",
+      "facilityId": "string",
+      "scannedBy": "string"
+    }
+  ],
+  "config": {
+    "allowCheckOut": true,
+    "requireFacility": true,
+    "maxReentries": 3
+  }
+}
+```
+
+**Business Logic**:
+- Bundle all essential event data
+- Include only ACTIVE tickets (exclude CANCELLED, REFUNDED)
+- Limit scan history to last 24 hours (configurable)
+- Compress response if requested (can be 10MB+ for large events)
+- Cache snapshot for 5 minutes (reduce DB load)
+
+**Performance Considerations**:
+- Use database indexing on eventId + status
+- Implement pagination for very large events (10,000+ attendees)
+- Consider splitting into multiple calls if > 5MB
+- Add Redis caching layer
+
+**File Location**: `eventknit/server/src/routes/workstation.routes.ts`
+**Controller**: `eventknit/server/src/controllers/workstation.controller.ts`
+**Service**: Update `eventknit/server/src/services/workstation.service.ts`
+
+---
+
+### 3. Incremental Sync Endpoint
+
+**Endpoint**: `GET /api/v1/workstation/events/:eventId/delta-sync`
+
+**Purpose**: Fetch only changes since last sync to reduce bandwidth.
+
+**Query Parameters**:
+- `since` (ISO 8601 timestamp, required) - Last sync timestamp
+- `types` (comma-separated, optional) - Filter by change types: `attendees,scans,config`
+
+**Response**:
+```json
+{
+  "eventId": "string",
+  "syncTimestamp": "2026-01-21T10:40:00Z",
+  "changes": {
+    "newAttendees": [
+      {
+        "ticketId": "string",
+        "userId": "string",
+        "firstName": "string",
+        "lastName": "string",
+        "addedAt": "2026-01-21T10:35:00Z"
+      }
+    ],
+    "updatedAttendees": [
+      {
+        "ticketId": "string",
+        "status": "SUSPENDED",
+        "updatedAt": "2026-01-21T10:37:00Z"
+      }
+    ],
+    "newScans": [
+      {
+        "ticketId": "string",
+        "scanType": "CHECK_IN",
+        "scannedAt": "2026-01-21T10:38:00Z"
+      }
+    ],
+    "configChanges": {
+      "allowCheckOut": false,
+      "updatedAt": "2026-01-21T10:30:00Z"
+    }
+  }
+}
+```
+
+**Business Logic**:
+- Query only records modified after `since` timestamp
+- Group changes by type for efficient mobile processing
+- Include deletion markers for removed/cancelled tickets
+- Return empty arrays if no changes
+
+**Database Optimization**:
+- Add `updated_at` column to `tickets`, `scans`, `event_config` tables
+- Create index on `updated_at` + `event_id`
+- Use database triggers to auto-update `updated_at`
+
+**File Location**: `eventknit/server/src/routes/workstation.routes.ts`
+**Controller**: `eventknit/server/src/controllers/workstation.controller.ts`
+
+---
+
+### 4. Conflict Resolution Endpoint
+
+**Endpoint**: `POST /api/v1/workstation/sync/resolve-conflicts`
+
+**Purpose**: Allow admin/organizer to manually resolve sync conflicts.
+
+**Request Body**:
+```json
+{
+  "conflictId": "string",
+  "resolution": "KEEP_SERVER" | "KEEP_CLIENT" | "MERGE",
+  "resolvedBy": "userId",
+  "notes": "string"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "conflictId": "string",
+  "finalState": {
+    "ticketId": "string",
+    "scanType": "CHECK_IN",
+    "scannedAt": "2026-01-21T10:35:00Z",
+    "resolvedTimestamp": "2026-01-21T11:00:00Z"
+  }
+}
+```
+
+**Business Logic**:
+- Fetch conflict from `conflict_resolution_log`
+- Apply resolution strategy
+- Update ticket scan state
+- Log resolution action
+- Notify affected devices to re-sync
+
+**File Location**: `eventknit/server/src/routes/workstation.routes.ts`
+**Controller**: Create new `eventknit/server/src/controllers/conflict-resolution.controller.ts`
+
+---
+
+## Database Schema Changes
+
+### New Tables
+
+#### `device_syncs`
+```sql
+CREATE TABLE device_syncs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  device_id VARCHAR(255) NOT NULL,
+  event_id UUID NOT NULL REFERENCES events(id),
+  last_sync_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+  sync_status VARCHAR(50) NOT NULL, -- 'SUCCESS', 'PARTIAL', 'FAILED'
+  operations_count INTEGER DEFAULT 0,
+  conflicts_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  INDEX idx_device_event (device_id, event_id),
+  INDEX idx_last_sync (last_sync_timestamp)
+);
+```
+
+#### `offline_operations`
+```sql
+CREATE TABLE offline_operations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  offline_id UUID NOT NULL UNIQUE, -- Client-generated UUID
+  device_id VARCHAR(255) NOT NULL,
+  event_id UUID NOT NULL REFERENCES events(id),
+  ticket_id UUID NOT NULL REFERENCES tickets(id),
+  operation_type VARCHAR(50) NOT NULL, -- 'CHECK_IN', 'CHECK_OUT'
+  facility_id UUID REFERENCES facilities(id),
+  local_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+  server_received_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  sync_status VARCHAR(50) NOT NULL, -- 'PENDING', 'SYNCED', 'CONFLICT'
+  conflict_reason VARCHAR(255),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  INDEX idx_offline_id (offline_id),
+  INDEX idx_sync_status (sync_status),
+  INDEX idx_ticket (ticket_id)
+);
+```
+
+#### `conflict_resolution_log`
+```sql
+CREATE TABLE conflict_resolution_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  offline_operation_id UUID REFERENCES offline_operations(id),
+  server_scan_id UUID REFERENCES scans(id),
+  conflict_type VARCHAR(50) NOT NULL, -- 'DUPLICATE_SCAN', 'TIMESTAMP_CONFLICT', 'STATUS_CONFLICT'
+  resolution_strategy VARCHAR(50), -- 'KEPT_SERVER', 'KEPT_CLIENT', 'MANUAL'
+  resolved_by UUID REFERENCES users(id),
+  resolution_notes TEXT,
+  resolved_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  INDEX idx_resolution (resolved_at)
+);
+```
+
+### Modified Tables
+
+#### `scans` table
+```sql
+ALTER TABLE scans ADD COLUMN IF NOT EXISTS offline_id UUID;
+ALTER TABLE scans ADD COLUMN IF NOT EXISTS sync_source VARCHAR(50) DEFAULT 'ONLINE'; -- 'ONLINE', 'OFFLINE'
+CREATE INDEX idx_scans_offline_id ON scans(offline_id) WHERE offline_id IS NOT NULL;
+```
+
+#### `events` table
+```sql
+ALTER TABLE events ADD COLUMN IF NOT EXISTS offline_config JSONB DEFAULT '{
+  "allowOfflineSync": true,
+  "maxOfflineDuration": 86400,
+  "requireManualConflictResolution": false
+}'::jsonb;
+```
+
+---
+
+## Mobile Implementation (Pending Backend)
+
+Once backend endpoints are ready, mobile implementation will include:
+
+### 1. Offline Storage Service
+- SQLite database for local caching
+- Sync queue for pending operations
+- Conflict tracking
+
+### 2. Sync Manager
+- Background sync scheduler
+- Network connectivity detection
+- Retry logic with exponential backoff
+
+### 3. UI Components
+- Offline mode indicator
+- Sync status badge
+- Conflict resolution dialog
+- Manual sync button
+
+### 4. Files to Create
+```
+lib/core/services/offline_storage_service.dart
+lib/core/services/sync_manager.dart
+lib/presentation/workstation/controllers/offline_scanner_controller.dart
+lib/presentation/workstation/widgets/sync_status_indicator.dart
+lib/presentation/workstation/widgets/conflict_resolution_dialog.dart
+```
+
+**Estimated Mobile Implementation Time**: 2-3 days (after backend is ready)
+
+---
+
+## Testing Requirements
+
+### Backend Tests Needed
+
+1. **Sync Endpoint Tests**
+   - Test batch sync with 100+ operations
+   - Test conflict detection (duplicate scans)
+   - Test timestamp conflict resolution
+   - Test invalid ticket IDs
+   - Test suspended ticket handling
+
+2. **Snapshot Endpoint Tests**
+   - Test large event (10,000+ attendees)
+   - Test compression
+   - Test caching behavior
+   - Test partial data requests
+
+3. **Delta Sync Tests**
+   - Test incremental changes
+   - Test empty response (no changes)
+   - Test multiple change types
+
+4. **Performance Tests**
+   - Sync 1000 operations in < 5 seconds
+   - Snapshot generation < 10 seconds
+   - Delta sync < 2 seconds
+
+### Mobile Tests Needed (After Backend)
+
+1. Unit tests for sync logic
+2. Integration tests for offline scenarios
+3. E2E tests for conflict resolution
+
+---
+
+## Security Considerations
+
+### Authentication
+- Require device registration before first sync
+- Generate device-specific API tokens
+- Implement token rotation
+
+### Data Protection
+- Encrypt offline database with device key
+- Clear offline data after event ends
+- Implement data retention policies
+
+### Audit Trail
+- Log all sync operations
+- Track conflict resolutions
+- Monitor suspicious sync patterns (e.g., same ticket scanned from multiple devices)
+
+---
+
+## Rollout Plan
+
+### Phase 1: Backend Development (Week 1-2)
+1. Create database tables
+2. Implement sync endpoint
+3. Implement snapshot endpoint
+4. Write backend tests
+5. Deploy to staging
+
+### Phase 2: Mobile Development (Week 3)
+1. Implement offline storage
+2. Implement sync manager
+3. Update scanner UI
+4. Write mobile tests
+
+### Phase 3: Testing (Week 4)
+1. Integration testing
+2. Load testing (simulate 100 concurrent syncs)
+3. Network failure testing
+4. UAT with event organizers
+
+### Phase 4: Production Rollout (Week 5)
+1. Deploy backend to production
+2. Release mobile app update
+3. Monitor sync metrics
+4. Gather user feedback
+
+---
+
+## Metrics to Track
+
+### Backend Metrics
+- Sync operation success rate
+- Average sync duration
+- Conflict rate (%)
+- Snapshot download time
+- API error rate
+
+### Mobile Metrics
+- Offline mode usage (% of scans)
+- Sync frequency
+- Conflict resolution time
+- User satisfaction (NPS)
+
+---
+
+## Alternative Solutions (If Backend Not Available)
+
+### Short-term Workaround
+1. **Manual reconciliation**: Export offline scans as CSV, manually import to server
+2. **Reduced functionality**: Disable scanner offline mode until backend ready
+3. **Third-party sync**: Use Firebase Realtime Database for temporary offline support
+
+### Long-term Without Custom Backend
+- Consider migrating to Firebase for built-in offline support
+- Use PouchDB/CouchDB for automatic sync
+- Implement custom WebSocket-based sync
+
+---
+
+## Dependencies
+
+### Backend Dependencies
+- PostgreSQL 14+ (for JSONB and UUID support)
+- Redis (for snapshot caching)
+- Node.js 18+ (for async/await support)
+
+### Mobile Dependencies
+- `sqflite` - SQLite database
+- `connectivity_plus` - Network detection
+- `workmanager` - Background sync
+- `shared_preferences` - Sync metadata
+
+---
+
+## Contact
+
+**Backend Lead**: TBD
+**Mobile Lead**: TBD
+**Product Manager**: TBD
+
+---
+
+**Status**: ⏳ Awaiting Backend Implementation
+**Priority**: High
+**Est. Completion**: 4-5 weeks after backend work starts
+
+---
+
+*Document created: January 21, 2026*
+*Next review: When backend team is assigned*
+
+
 Good luck building EventKnit 2.0! 🚀
