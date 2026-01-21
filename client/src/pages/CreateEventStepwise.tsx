@@ -102,6 +102,7 @@ interface ExhibitorItem {
   name: string;
   description?: string;
   logo?: string;
+  contactEmail?: string;
   booth?: string;
 }
 
@@ -1563,10 +1564,31 @@ export default function CreateEventStepwise() {
         ? eventData.requirements.split(/[,\n]/).map(r => r.trim()).filter(Boolean)
         : undefined,
       ageRestriction: eventData.ageRestriction?.trim() || undefined,
-      speakers: speakers.length > 0 ? speakers : undefined,
-      agenda: agenda.length > 0 ? agenda : undefined,
-      exhibitors: exhibitors.length > 0 ? exhibitors : undefined,
-      sponsors: sponsors.length > 0 ? sponsors : undefined,
+      speakers: speakers.length > 0 ? speakers.map(s => ({
+        name: s.name,
+        title: s.title || '',
+        bio: s.bio || '',
+        image: s.image
+      })) : undefined,
+      agenda: agenda.length > 0 ? agenda.map(a => ({
+        title: a.title,
+        description: a.description || '',
+        startTime: a.startTime || '',
+        endTime: a.endTime || '',
+        speakers: a.speakers || []
+      })) : undefined,
+      exhibitors: exhibitors.length > 0 ? exhibitors.map(e => ({
+        name: e.name,
+        description: e.description || '',
+        logo: e.logo || '',
+        contactEmail: e.contactEmail || '',
+        booth: e.booth || ''
+      })) : undefined,
+      sponsors: sponsors.length > 0 ? sponsors.map(s => ({
+        name: s.name,
+        level: s.level || '',
+        logo: s.logo || ''
+      })) : undefined,
       socialLinks: socialLinks && Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
       faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()).length > 0
         ? faqs.filter(faq => faq.question.trim() && faq.answer.trim()).map(faq => ({
@@ -2173,10 +2195,33 @@ export default function CreateEventStepwise() {
   const renderAgendaStep = () => (
     <div className="space-y-6">
       <AgendaBuilderStep
-        agenda={agenda}
-        speakers={speakers}
-        exhibitors={exhibitors}
-        sponsors={sponsors}
+        agenda={agenda.map(a => ({
+          title: a.title,
+          description: a.description || '',
+          date: a.date,
+          startTime: a.startTime || '',
+          endTime: a.endTime || '',
+          speakers: a.speakers || []
+        }))}
+        speakers={speakers.map(s => ({
+          id: s.id || Date.now().toString(),
+          name: s.name,
+          title: s.title || '',
+          bio: s.bio || '',
+          image: s.image || ''
+        }))}
+        exhibitors={exhibitors.map(e => ({
+          name: e.name,
+          description: e.description || '',
+          logo: e.logo || '',
+          contactEmail: e.contactEmail || '',
+          booth: e.booth || ''
+        }))}
+        sponsors={sponsors.map(s => ({
+          name: s.name,
+          level: s.level || '',
+          logo: s.logo || ''
+        }))}
         eventStartDate={eventData.date}
         onUpdate={handleAgendaUpdate}
       />

@@ -4,7 +4,7 @@
  * Type definitions for user dashboard API responses.
  */
 
-import { EventData } from './event';
+import type { EventData } from './event';
 
 // ========== Common Types ==========
 

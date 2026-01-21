@@ -15,7 +15,7 @@ import { Input } from "../../components/ui/input";
 import { EventThumbnail } from "../../components/ui/event-thumbnail";
 import { useToast } from "../../hooks/useToast";
 import EmptyState from "../../components/EmptyState";
-import { getSavedEvents, unsaveEvent, SavedEventData } from "../../lib/saved-events-api";
+import { getSavedEvents, unsaveEvent, type SavedEventData } from "../../lib/saved-events-api";
 
 const SavedEvents: React.FC = () => {
   const navigate = useNavigate();

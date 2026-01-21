@@ -224,11 +224,14 @@ export const SESSION_COLORS = [
 ] as const;
 
 // Re-export with old names for backward compatibility during migration
-export {
+export type {
   EventSession as EventFacility,
   SessionStats as FacilityStats,
   CreateSessionRequest as CreateFacilityRequest,
   UpdateSessionRequest as UpdateFacilityRequest,
+};
+
+export {
   getSessions as getFacilities,
   getSessionById as getFacilityById,
   createSession as createFacility,

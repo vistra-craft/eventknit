@@ -68,13 +68,16 @@ export interface Disbursement {
   organizerId: string;
   eventId: string;
   totalAmount: number;
+  amount: number;
   currency: string;
   paymentMethod: string;
   status: string;
   scheduledDate: string | null;
   processedAt: string | null;
   completedAt: string | null;
+  createdAt: string;
   paymentReference: string | null;
+  transactionReference: string | null;
   event?: {
     id: string;
     title: string;
@@ -96,17 +99,27 @@ export interface Refund {
   refundNumber: string;
   transactionId: string;
   refundAmount: number;
+  amount: number;
   currency: string;
   refundReason: string;
+  reason: string;
   refundType: 'full' | 'partial';
   status: string;
   requestedAt: string;
+  createdAt: string;
   processedAt: string | null;
   completedAt: string | null;
   refundReference: string | null;
   eventId: string;
   registrationId: string;
   platformFeeRefund: number | null;
+  registration?: {
+    id: string;
+    attendee?: {
+      firstName: string;
+      lastName: string;
+    };
+  };
   transaction?: {
     id: string;
     transactionNumber: string;

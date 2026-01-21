@@ -31,7 +31,7 @@ export function useAvailableStaff() {
       });
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to fetch staff');
+        throw new Error('Failed to fetch staff');
       }
 
       // Filter to only staff roles

@@ -80,7 +80,7 @@ const OrganizerPromoCodeManager = () => {
       // Fetch events first
       const eventsResponse = await getOrganizerEvents();
       if (eventsResponse.success && eventsResponse.data?.events) {
-        setEvents(eventsResponse.data.events);
+        setEvents(eventsResponse.data.events as OrganizerEvent[]);
       }
 
       // Fetch promo codes

@@ -9,7 +9,14 @@ import type { EventData, User } from "../../components/event-attendee";
 import { getEventById, getUserRegisteredEvents } from "../../lib/event-api";
 import { useAuth } from "../../hooks/useAuth";
 
-const DashboardMyEvent: React.FC = () => {
+interface DashboardMyEventProps {
+  // Optional props passed from UserDashboard but not used (component fetches its own data)
+  eventData?: unknown;
+  registration?: unknown;
+  user?: unknown;
+}
+
+const DashboardMyEvent: React.FC<DashboardMyEventProps> = () => {
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
   const { user: authUser } = useAuth();

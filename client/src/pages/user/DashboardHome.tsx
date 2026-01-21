@@ -51,8 +51,11 @@ interface User {
   initials: string;
 }
 
-interface DashboardHomeProps {
+export interface DashboardHomeProps {
   user: User;
+  // Optional props passed from UserDashboard but not used
+  eventData?: unknown;
+  registration?: unknown;
 }
 
 type FilterTab = 'all' | 'upcoming' | 'completed';

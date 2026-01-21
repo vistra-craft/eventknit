@@ -39,11 +39,12 @@ import {
   getFeedbackById,
   addAdminNotes,
   triggerFeedbackEmails,
-  Feedback,
-  FeedbackAnalytics,
-  FeedbackFilters,
+  type Feedback,
+  type FeedbackAnalytics,
+  type FeedbackFilters,
 } from "@/lib/feedback-api";
 import { useToast } from "@/hooks/useToast";
+import type { ApiResponse } from "@/lib/api";
 
 const PlatformFeedbackPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -69,7 +70,7 @@ const PlatformFeedbackPage: React.FC = () => {
       const [feedbackRes, analyticsRes] = await Promise.all([
         getAllFeedback(filters),
         getFeedbackAnalytics(),
-      ]);
+      ]) as [ApiResponse<{ feedback: Feedback[]; totalPages: number; page: number }>, ApiResponse<FeedbackAnalytics>];
 
       if (feedbackRes.success && feedbackRes.data) {
         setFeedback(feedbackRes.data.feedback || []);
@@ -98,7 +99,7 @@ const PlatformFeedbackPage: React.FC = () => {
 
   const handleViewDetails = async (id: string) => {
     try {
-      const res = await getFeedbackById(id);
+      const res = await getFeedbackById(id) as ApiResponse<{ feedback: Feedback }>;
       if (res.success && res.data?.feedback) {
         setSelectedFeedback(res.data.feedback);
         setAdminNotes(res.data.feedback.adminNotes || "");
@@ -144,7 +145,7 @@ const PlatformFeedbackPage: React.FC = () => {
 
     try {
       setTriggering(true);
-      const res = await triggerFeedbackEmails(triggerEventId.trim());
+      const res = await triggerFeedbackEmails(triggerEventId.trim()) as ApiResponse<{ attendees?: { sent: number }; organizer?: boolean }>;
       if (res.success) {
         toast({
           title: "Success",

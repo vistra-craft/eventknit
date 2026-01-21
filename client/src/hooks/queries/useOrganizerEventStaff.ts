@@ -42,7 +42,7 @@ export function useOrganizerEventStaff(eventId: string, options: UseOrganizerEve
       const response = await getOrganizerEventStaff(eventId, filters);
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to fetch organizer event staff');
+        throw new Error('Failed to fetch organizer event staff');
       }
 
       return response.data;

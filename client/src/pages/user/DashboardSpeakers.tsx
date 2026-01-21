@@ -5,28 +5,16 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Pagination } from "../../components/ui/pagination";
+import { Loader } from "../../components/ui/loader";
 import { getEventById } from "../../lib/event-api";
 import { SocialConnections } from "../../components/SocialConnections";
-
-interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  type: string;
-  image: string;
-  registrationDate: string;
-  venue?: string;
-  description?: string;
-  status?: 'upcoming' | 'ongoing' | 'completed';
-  category?: string;
-}
+import type { EventData as DashboardEvent } from "../../types/event";
 
 interface Speaker {
   id: string;
   name: string;
-  title: string;
-  bio: string;
+  title?: string;
+  bio?: string;
   image?: string;
   company?: string;
   country?: string;
@@ -55,7 +43,7 @@ interface Speaker {
 }
 
 interface DashboardSpeakersProps {
-  eventData?: EventData;
+  eventData?: DashboardEvent;
 }
 
 const SpeakerCard: React.FC<{ speaker: Speaker; onClick: () => void }> = ({ speaker, onClick }) => {
@@ -279,15 +267,16 @@ const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
     const fetchSpeakers = async () => {
       try {
         setLoading(true);
-        const response = await getEventById(eventData.id);
+        if (!eventData?.id) return;
+        const response = await getEventById(eventData?.id);
         if (response.success && response.data?.event?.speakers) {
           // Transform speakers data to match our Speaker interface
           const eventSpeakers = response.data.event.speakers.map((speaker, index) => ({
             id: `speaker-${index}`,
-            name: speaker.name,
-            title: speaker.title,
-            bio: speaker.bio,
-            image: speaker.image,
+            name: speaker.name || '',
+            title: speaker.title || '',
+            bio: speaker.bio || '',
+            image: speaker.image || ''
           }));
           setSpeakers(eventSpeakers);
         }
@@ -299,146 +288,154 @@ const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
     };
 
     fetchSpeakers();
-  }, [eventData.id]);
+  }, [eventData?.id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-          
-          {/* Left Sidebar - Event Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-card rounded-2xl shadow-lg p-6 sticky top-24 border border-border">
-              <div className="text-right mb-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-xs"
-                  onClick={() => window.history.back()}
-                >
-                  <ArrowLeft className="w-3 h-3 mr-1" />
-                  Back
-                </Button>
-              </div>
-              
-              {/* Event Image */}
-              <div className="mb-6">
-                <img 
-                  src={eventData.image}
-                  alt={eventData.title}
-                  className="w-full h-32 object-cover rounded-xl"
-                />
-              </div>
-              
-              {/* Event Details */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">{eventData.title}</h3>
-                  <p className="text-sm text-muted-foreground">{eventData.description}</p>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <span>{eventData.date}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span>{eventData.venue || eventData.location}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4 text-primary" />
-                    <span>{eventData.type}</span>
-                  </div>
-                </div>
-                
-                {eventData.category && (
-                  <div className="pt-4 border-t border-border">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      {eventData.category}
-                    </Badge>
-                  </div>
-                )}
-              </div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!eventData ? (
+          <div className="text-center py-12">
+            <Loader size="lg" className="text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading event information...</p>
+            <div className="mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs"
+                onClick={() => window.history.back()}
+              >
+                <ArrowLeft className="w-3 h-3 mr-1" />
+                Back
+              </Button>
             </div>
           </div>
-
-          {/* Main Content - Speakers Grid */}
-          <div className="lg:col-span-3">
-            <div className="mb-8">
-              <h1 className="text-page-title mb-2">Event Speakers</h1>
-              <p className="text-muted-foreground">
-                Meet the industry experts and thought leaders speaking at this event
-              </p>
-            </div>
-
-            {/* Speakers Grid - 4 per row */}
-            {loading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Loading speakers...</p>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            {/* Left Sidebar - Event Card */}
+            <div className="lg:col-span-1">
+              <div className="bg-card rounded-2xl shadow-lg p-6 sticky top-24 border border-border">
+                <div className="text-right mb-4">
+                </div>
+                
+                {/* Event Image */}
+                <div className="mb-6">
+                  <img
+                    src={eventData?.image || ''}
+                    alt={eventData?.title || 'Event'}
+                    className="w-full h-32 object-cover rounded-xl"
+                  />
+                </div>
+                
+                {/* Event Details */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground mb-2">{eventData?.title}</h3>
+                    <p className="text-sm text-muted-foreground">{eventData?.description}</p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      <span>{eventData?.date}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      <span>{eventData?.venue || eventData?.location}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4 text-primary" />
+                      <span>{eventData?.type}</span>
+                    </div>
+                  </div>
+                  
+                  {eventData?.category && (
+                    <div className="pt-4 border-t border-border">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        {eventData?.category}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               </div>
-            ) : speakers.length > 0 ? (
-              <>
-                <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {speakersStartIndex + 1}-{Math.min(speakersEndIndex, speakers.length)} of {speakers.length} speakers
-                  </div>
-                  <Select value={limit.toString()} onValueChange={(value) => {
-                    setLimit(parseInt(value, 10));
-                    setPage(1);
-                  }}>
-                    <SelectTrigger className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="12">12</SelectItem>
-                      <SelectItem value="24">24</SelectItem>
-                      <SelectItem value="48">48</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                  {paginatedSpeakers.map((speaker, index) => (
-                    <SpeakerCard 
-                      key={speaker.id || `speaker-${index}`} 
-                      speaker={speaker} 
-                      onClick={() => setSelectedSpeaker(speaker)}
-                    />
-                  ))}
-                </div>
-                {totalPages > 1 && (
-                  <div className="mt-6">
-                    <Pagination
-                      currentPage={page}
-                      totalPages={totalPages}
-                      onPageChange={(newPage) => {
-                        setPage(newPage);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                    />
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">No Speakers Yet</h3>
-                <p className="text-muted-foreground mb-6">
-                  Speaker information will be available soon.
+            </div>
+            
+            {/* Main Content - Speakers Grid */}
+            <div className="lg:col-span-3">
+              <div className="mb-8">
+                <h1 className="text-page-title mb-2">Event Speakers</h1>
+                <p className="text-muted-foreground">
+                  Meet the industry experts and thought leaders speaking at this event
                 </p>
               </div>
-            )}
+              
+              {/* Speakers Grid - 4 per row */}
+              {loading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Loading speakers...</p>
+                </div>
+              ) : speakers.length > 0 ? (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {speakersStartIndex + 1}-{Math.min(speakersEndIndex, speakers.length)} of {speakers.length} speakers
+                    </div>
+                    <Select value={limit.toString()} onValueChange={(value) => {
+                      setLimit(parseInt(value, 10));
+                      setPage(1);
+                    }}>
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="12">12</SelectItem>
+                        <SelectItem value="24">24</SelectItem>
+                        <SelectItem value="48">48</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    {paginatedSpeakers.map((speaker, index) => (
+                      <SpeakerCard 
+                        key={speaker.id || `speaker-${index}`} 
+                        speaker={speaker} 
+                        onClick={() => setSelectedSpeaker(speaker)}
+                      />
+                    ))}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="mt-6">
+                      <Pagination
+                        currentPage={page}
+                        totalPages={totalPages}
+                        onPageChange={(newPage) => {
+                          setPage(newPage);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">No Speakers Yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Speaker information will be available soon.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Speaker Modal */}
       {selectedSpeaker && (
-        <SpeakerModal 
-          speaker={selectedSpeaker} 
-          onClose={() => setSelectedSpeaker(null)} 
+        <SpeakerModal
+          speaker={selectedSpeaker}
+          onClose={() => setSelectedSpeaker(null)}
         />
       )}
     </div>
@@ -446,4 +443,3 @@ const DashboardSpeakers: React.FC<DashboardSpeakersProps> = ({ eventData }) => {
 };
 
 export default DashboardSpeakers;
-

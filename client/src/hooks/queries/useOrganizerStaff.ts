@@ -18,7 +18,7 @@ export function useOrganizerStaff() {
       const response = await getOrganizerStaff();
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to fetch organizer staff');
+        throw new Error('Failed to fetch organizer staff');
       }
 
       return response.data.staff;

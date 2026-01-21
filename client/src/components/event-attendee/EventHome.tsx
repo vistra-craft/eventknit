@@ -17,8 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import type { EventData, User, Sponsor } from "./EventAttendeeView";
 
+type TabKey = 'home' | 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge';
+
 interface TabConfig {
-  key: string;
+  key: TabKey;
   label: string;
   icon: React.ElementType;
   available: boolean;

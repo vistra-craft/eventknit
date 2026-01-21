@@ -83,7 +83,7 @@ export interface BackendEvent {
   speakers?: Array<{ name: string; title: string; bio: string; image?: string }> | null;
   sponsors?: Array<{ name: string; level: string; logo: string }> | null;
   exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }> | null;
-  timezone?: string;
+  timezone?: string | null;
   agenda?: Array<{ title: string; description?: string; startTime: string; endTime: string; speakers?: string[] }> | null;
   socialLinks?: Record<string, string> | null;
   faqs?: Array<{ question: string; answer: string }> | null;

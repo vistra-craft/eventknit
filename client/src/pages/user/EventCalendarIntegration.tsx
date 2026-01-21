@@ -46,7 +46,7 @@ const EventCalendarIntegration = () => {
       setLoading(true);
       const response = await getUserCalendarSyncs();
       if (response.success && response.data) {
-        setSyncs(response.data.syncs || []);
+        setSyncs((response.data.syncs || []) as unknown as CalendarSync[]);
       }
     } catch (error) {
       console.error("Error loading calendar syncs:", error);
@@ -81,11 +81,14 @@ const EventCalendarIntegration = () => {
         
         // Trigger download if iCal format
         if (data.calendarType === "ICAL" && response.data.calendarData) {
-          const blob = new Blob([response.data.calendarData.data], { type: 'text/calendar' });
+          const calendarData = response.data.calendarData as { data?: string; filename?: string } | string;
+          const icsContent = typeof calendarData === 'string' ? calendarData : (calendarData.data || '');
+          const filename = typeof calendarData === 'string' ? 'calendar.ics' : (calendarData.filename || 'calendar.ics');
+          const blob = new Blob([icsContent], { type: 'text/calendar' });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = response.data.calendarData.filename;
+          a.download = filename;
           a.click();
           window.URL.revokeObjectURL(url);
         }

@@ -119,8 +119,8 @@ export const PaymentStep = ({
         registrationData: registrationData.registrationData,
       });
 
-      if (response.success && response.data?.registrationId) {
-        return response.data.registrationId;
+      if (response.success && response.data?.registration?.id) {
+        return response.data.registration.id;
       }
       throw new Error(response.message || 'Failed to create registration');
     } catch (err) {
@@ -219,10 +219,15 @@ export const PaymentStep = ({
 
       if (paymentMethod === 'card') {
         // Step 2: Initialize and process Paystack payment
+        if (!regId) {
+          setError('Registration ID is required for card payment.');
+          setIsProcessing(false);
+          return;
+        }
         await handlePaystackPayment(regId);
       } else if (paymentMethod === 'mpesa') {
         // M-Pesa is handled via SMS/USSD flow
-        setError('M-Pesa payment is available via SMS registration. Please use card payment here or dial ' + (event.registrationCode ? `*384*${event.registrationCode}#` : 'our USSD code') + ' to pay with M-Pesa.');
+        setError('M-Pesa payment is available via SMS registration. Please use card payment here or check your event confirmation for M-Pesa payment instructions.');
         setIsProcessing(false);
       }
     } catch (err) {

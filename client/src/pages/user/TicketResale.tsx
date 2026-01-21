@@ -69,12 +69,12 @@ const TicketResale = () => {
       if (activeTab === "marketplace") {
         const response = await getMarketplaceTickets();
         if (response.success && response.data) {
-          setMarketplaceTickets(response.data.tickets || []);
+          setMarketplaceTickets((response.data.tickets || []) as unknown as ResaleTicket[]);
         }
       } else if (activeTab === "my-listings") {
         const response = await getUserResales();
         if (response.success && response.data) {
-          setMyResales(response.data.resales || []);
+          setMyResales((response.data.resales || []) as unknown as ResaleTicket[]);
         }
       }
     } catch (error) {

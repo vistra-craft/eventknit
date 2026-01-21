@@ -46,7 +46,7 @@ const FeedbackPage: React.FC = () => {
 
   const validateToken = useCallback(async () => {
     try {
-      const res = await validateFeedbackToken(token!);
+      const res = await validateFeedbackToken(token!) as { success: boolean; data?: { valid: boolean; eventTitle?: string } };
       if (res.success && res.data?.valid) {
         setEventTitle(res.data.eventTitle || "your event");
       } else {

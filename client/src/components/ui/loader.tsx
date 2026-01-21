@@ -21,14 +21,16 @@ import { cn } from "@/lib/utils";
 const sizeMap = {
   sm: { spinner: "w-4 h-4", dots: "w-1.5 h-1.5", bars: "w-0.5 h-3", pulse: "w-4 h-4" },
   default: { spinner: "w-6 h-6", dots: "w-2 h-2", bars: "w-1 h-4", pulse: "w-6 h-6" },
+  md: { spinner: "w-8 h-8", dots: "w-2.5 h-2.5", bars: "w-1 h-5", pulse: "w-8 h-8" },
   lg: { spinner: "w-10 h-10", dots: "w-3 h-3", bars: "w-1.5 h-6", pulse: "w-10 h-10" },
   xl: { spinner: "w-16 h-16", dots: "w-4 h-4", bars: "w-2 h-8", pulse: "w-16 h-16" },
+  "2xl": { spinner: "w-20 h-20", dots: "w-5 h-5", bars: "w-2.5 h-10", pulse: "w-20 h-20" },
 };
 
 export interface LoaderProps
   extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "spinner" | "dots" | "pulse" | "bars";
-  size?: "sm" | "default" | "lg" | "xl";
+  size?: "sm" | "default" | "md" | "lg" | "xl" | "2xl";
 }
 
 /**

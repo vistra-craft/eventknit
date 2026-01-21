@@ -54,6 +54,7 @@ export interface ScanRequest {
   code: string; // QR code or backup code
   eventId: string;
   facility?: string | null;
+  session?: string | null;
   deviceId?: string | null;
   deviceType?: 'MOBILE' | 'TABLET' | 'DESKTOP' | 'KIOSK' | null;
 }
@@ -71,6 +72,7 @@ export interface ScanResponse {
     ticketType: string | null;
     scanType: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
     facility: string | null;
+    session: string | null;
     scannedAt: Date;
     isReEntry: boolean;
     signatureValid: boolean;
@@ -279,11 +281,13 @@ export interface TicketScanRecord {
   scanType: ScanType;
   scannedAt: Date | string;
   facility: string | null;
+  session: string | null;
   attendeeName: string;
   ticketType: string | null;
   isReEntry: boolean;
   isValid: boolean;
   scannedBy: string;
+  scanLocation: string | null; // New property added
 }
 
 /**
@@ -291,6 +295,7 @@ export interface TicketScanRecord {
  */
 export interface ScanHistoryFilters {
   facility?: string | null;
+  session?: string | null;
   scanType?: ScanType | null;
   status?: ScanType | null; // Alias for scanType (backward compatibility)
   dateFrom?: Date | string | null;

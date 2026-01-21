@@ -870,7 +870,7 @@ const EventDetailsPage = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Price</span>
-                      <Badge className={`text-xs ${getPriceBadge(eventData.price)}`}>
+                      <Badge className={`text-xs ${getPriceBadge(eventData.price === 'free')}`}>
                         {eventData.price}
                       </Badge>
                     </div>

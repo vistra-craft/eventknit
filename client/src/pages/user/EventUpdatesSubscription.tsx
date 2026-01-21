@@ -56,7 +56,7 @@ const EventUpdatesSubscription = () => {
       setLoading(true);
       const response = await getUserSubscriptions(true);
       if (response.success && response.data) {
-        setSubscriptions(response.data.subscriptions || []);
+        setSubscriptions((response.data.subscriptions || []) as unknown as Subscription[]);
       }
     } catch (error) {
       console.error("Error loading subscriptions:", error);

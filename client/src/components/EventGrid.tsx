@@ -195,7 +195,6 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
                   price={price}
                   currency={currency}
                   category={event.category || ''}
-                  tags={event.tags}
                 />
               );
             })

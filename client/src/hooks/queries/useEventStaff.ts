@@ -37,8 +37,8 @@ export function useEventStaff(eventId: string, options: UseEventStaffOptions = {
         filters.role = options.role;
       }
 
-      if (options.staffType && options.staffType !== 'all') {
-        filters.staffType = options.staffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+      if (options.staffType) {
+        filters.staffType = options.staffType;
       }
 
       if (options.isActive !== undefined) {
@@ -48,7 +48,7 @@ export function useEventStaff(eventId: string, options: UseEventStaffOptions = {
       const response = await getEventStaff(eventId, filters);
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to fetch event staff');
+        throw new Error('Failed to fetch event staff');
       }
 
       return response.data;

@@ -24,9 +24,11 @@ import {
   createDirector,
   deleteDirector,
   OrganizerEntityType,
+  KYCDocumentType,
   type DocumentRequirement,
   type KYCDocument,
   type OrganizerDirector,
+  type CreateDirectorData,
 } from '@/lib/organizer-api';
 
 import { useToast } from '@/hooks/useToast';
@@ -147,8 +149,21 @@ const KYCVerificationPage = () => {
     }
   };
 
-  const handleDocumentUpload = async (data: { file: File; documentType: string; description?: string }) => {
-    const result = await createKYCDocument(data);
+  const handleDocumentUpload = async (data: {
+    documentType: KYCDocumentType;
+    documentNumber?: string;
+    documentUrl: string;
+    issueDate?: string;
+    expiryDate?: string;
+  }) => {
+    // Convert to the format expected by createKYCDocument
+    const result = await createKYCDocument({
+      documentType: data.documentType,
+      documentNumber: data.documentNumber,
+      documentUrl: data.documentUrl,
+      issueDate: data.issueDate,
+      expiryDate: data.expiryDate,
+    });
     if (result.success) {
       await loadKYCData();
     }
@@ -161,7 +176,7 @@ const KYCVerificationPage = () => {
     }
   };
 
-  const handleDirectorAdd = async (data: { name: string; position: string; shareholdingPercentage?: number; idNumber?: string; nationality?: string }) => {
+  const handleDirectorAdd = async (data: CreateDirectorData) => {
     const result = await createDirector(data);
     if (result.success) {
       await loadKYCData();

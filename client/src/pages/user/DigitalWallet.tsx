@@ -47,7 +47,7 @@ interface Wallet {
   appleWalletId?: string;
   googlePayId?: string;
   lastSyncedAt?: string;
-  walletTickets: WalletTicket[];
+  walletTickets?: WalletTicket[];
 }
 
 const DigitalWallet = () => {
@@ -62,7 +62,7 @@ const DigitalWallet = () => {
       setLoading(true);
       const response = await getWallet();
       if (response.success && response.data) {
-        setWallet(response.data.wallet);
+        setWallet(response.data.wallet as Wallet);
       }
     } catch (error) {
       console.error("Error loading wallet:", error);
@@ -171,7 +171,7 @@ const DigitalWallet = () => {
           title: "Success",
           description: "Wallet preferences updated",
         });
-        setWallet(response.data.wallet);
+        setWallet(response.data.wallet as Wallet);
       }
     } catch (error) {
       toast({
@@ -225,7 +225,7 @@ const DigitalWallet = () => {
           <TabsContent value="tickets" className="space-y-4">
             {loading ? (
               <div className="text-center py-8">Loading wallet...</div>
-            ) : !wallet || wallet.walletTickets.length === 0 ? (
+            ) : !wallet || !wallet.walletTickets || wallet.walletTickets.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <WalletIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -234,7 +234,7 @@ const DigitalWallet = () => {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {wallet.walletTickets.map((ticket) => (
+                {wallet.walletTickets?.map((ticket) => (
                   <Card key={ticket.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <CardTitle className="text-lg line-clamp-2">

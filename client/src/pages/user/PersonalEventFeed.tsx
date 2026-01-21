@@ -68,7 +68,7 @@ const PersonalEventFeed = () => {
       setLoading(true);
       const response = await getFeed();
       if (response.success && response.data) {
-        setFeed(response.data.feed);
+        setFeed(response.data.feed as unknown as Feed);
       }
     } catch (error) {
       console.error("Error loading feed:", error);
@@ -135,7 +135,7 @@ const PersonalEventFeed = () => {
           description: "Feed preferences updated",
         });
         setIsSettingsDialogOpen(false);
-        setFeed(response.data.feed);
+        setFeed(response.data.feed as unknown as Feed);
       }
     } catch (error) {
       toast({

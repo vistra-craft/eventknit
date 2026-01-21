@@ -37,7 +37,7 @@ export const CategoryFilter = ({ selectedCategory = "all", onCategoryChange }: C
             return (
               <Button
                 key={category.id}
-                variant="category"
+                variant="ghost"
                 size="lg"
                 onClick={() => handleCategoryClick(category.id)}
                 className={`flex items-center gap-3 px-6 py-3 group transition-all ${

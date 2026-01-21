@@ -121,19 +121,19 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
   const [activeTab, setActiveTab] = useState<TabKey>('home');
 
   // Determine which tabs are available based on event data
-  const tabs = useMemo<TabConfig[]>(() => {
+  const tabs = useMemo((): TabConfig[] => {
     const hasAgenda = event.agenda && event.agenda.length > 0;
     const hasSpeakers = event.speakers && event.speakers.length > 0;
     const hasExhibitors = event.exhibitors && event.exhibitors.length > 0;
 
     return [
-      { key: 'home', label: 'Home', icon: Home, available: true },
-      { key: 'agenda', label: 'Agenda', icon: CalendarDays, available: !!hasAgenda },
-      { key: 'speakers', label: 'Speakers', icon: Mic2, available: !!hasSpeakers },
-      { key: 'exhibitors', label: 'Exhibitors', icon: Building2, available: !!hasExhibitors },
-      { key: 'my-event', label: 'My Event', icon: Heart, available: true },
-      { key: 'my-badge', label: 'My Badge', icon: BadgeCheck, available: true },
-    ].filter(tab => tab.available);
+      { key: 'home' as TabKey, label: 'Home', icon: Home, available: true },
+      { key: 'agenda' as TabKey, label: 'Agenda', icon: CalendarDays, available: !!hasAgenda },
+      { key: 'speakers' as TabKey, label: 'Speakers', icon: Mic2, available: !!hasSpeakers },
+      { key: 'exhibitors' as TabKey, label: 'Exhibitors', icon: Building2, available: !!hasExhibitors },
+      { key: 'my-event' as TabKey, label: 'My Event', icon: Heart, available: true },
+      { key: 'my-badge' as TabKey, label: 'My Badge', icon: BadgeCheck, available: true },
+    ].filter(tab => tab.available) as TabConfig[];
   }, [event]);
 
   const renderTabContent = () => {
