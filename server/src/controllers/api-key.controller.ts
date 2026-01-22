@@ -70,7 +70,7 @@ export class ApiKeyController {
    */
   static async getApiKeyById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { apiKeyId } = req.params;
+      const apiKeyId = (req.params.apiKeyId as string) as string;
       const apiKey = await ApiKeyService.getApiKeyById(apiKeyId);
 
       res.status(200).json({
@@ -87,7 +87,7 @@ export class ApiKeyController {
    */
   static async updateApiKey(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { apiKeyId } = req.params;
+      const apiKeyId = (req.params.apiKeyId as string) as string;
       const { name, description, permissions, rateLimit, rateLimitWindow, expiresAt, isActive } = req.body;
 
       const apiKey = await ApiKeyService.updateApiKey(apiKeyId, {
@@ -115,7 +115,7 @@ export class ApiKeyController {
    */
   static async deleteApiKey(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { apiKeyId } = req.params;
+      const apiKeyId = (req.params.apiKeyId as string) as string;
       await ApiKeyService.deleteApiKey(apiKeyId);
 
       res.status(200).json({
@@ -132,7 +132,7 @@ export class ApiKeyController {
    */
   static async getApiUsageStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { apiKeyId } = req.params;
+      const apiKeyId = (req.params.apiKeyId as string) as string;
       const { startDate, endDate } = req.query;
 
       const stats = await ApiKeyService.getApiUsageStats(apiKeyId, {

@@ -359,7 +359,7 @@ export class FinancialController {
       }
 
       const transaction = await prisma.eventPaymentTransaction.findUnique({
-        where: { id: req.params.id },
+        where: { id: (req.params.id as string) },
         include: {
           event: {
             select: {
@@ -581,7 +581,7 @@ export class FinancialController {
       }
 
       const organizerId = req.user.role === UserRole.ORGANIZER ? req.user.id : undefined;
-      const disbursement = await DisbursementService.getDisbursement(req.params.id, organizerId);
+      const disbursement = await DisbursementService.getDisbursement((req.params.id as string), organizerId);
 
       res.status(200).json({
         success: true,
@@ -619,7 +619,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const disbursement = await DisbursementService.processDisbursement(
-        req.params.id,
+        (req.params.id as string),
         req.body,
         req.user.id,
         ipAddress,
@@ -673,7 +673,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const disbursement = await DisbursementService.completeDisbursement(
-        req.params.id,
+        (req.params.id as string),
         paymentReference,
         req.user.id,
         ipAddress,
@@ -819,7 +819,7 @@ export class FinancialController {
         return;
       }
 
-      const refund = await RefundService.getRefund(req.params.id, req.user.id);
+      const refund = await RefundService.getRefund((req.params.id as string), req.user.id);
 
       res.status(200).json({
         success: true,
@@ -857,7 +857,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const refund = await RefundService.processRefund(
-        req.params.id,
+        (req.params.id as string),
         req.body,
         req.user.id,
         ipAddress,
@@ -911,7 +911,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const refund = await RefundService.completeRefund(
-        req.params.id,
+        (req.params.id as string),
         refundReference,
         req.user.id,
         ipAddress,
@@ -1082,7 +1082,7 @@ export class FinancialController {
         return;
       }
 
-      const reconciliation = await ReconciliationService.getReconciliation(req.params.id);
+      const reconciliation = await ReconciliationService.getReconciliation((req.params.id as string));
 
       res.status(200).json({
         success: true,
@@ -1117,7 +1117,7 @@ export class FinancialController {
       }
 
       const reconciliation = await ReconciliationService.autoFixDiscrepancies(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
       );
 

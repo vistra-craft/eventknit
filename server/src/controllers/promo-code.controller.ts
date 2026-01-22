@@ -131,7 +131,7 @@ export class PromoCodeController {
       }
 
       const organizerId = req.user.id;
-      const promoCodeId = req.params.id;
+      const promoCodeId = (req.params.id as string);
 
       const promoCode = await PromoCodeService.getPromoCodeById(promoCodeId, organizerId);
 
@@ -162,7 +162,7 @@ export class PromoCodeController {
       }
 
       const organizerId = req.user.id;
-      const promoCodeId = req.params.id;
+      const promoCodeId = (req.params.id as string);
 
       const promoCode = await PromoCodeService.updatePromoCode(
         promoCodeId,
@@ -198,7 +198,7 @@ export class PromoCodeController {
       }
 
       const organizerId = req.user.id;
-      const promoCodeId = req.params.id;
+      const promoCodeId = (req.params.id as string);
 
       await PromoCodeService.deletePromoCode(promoCodeId, organizerId);
 

@@ -54,7 +54,7 @@ export class UnifiedMessagingController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { type } = req.body; // 'open', 'click', 'unsubscribe'
 
       if (!type || !['open', 'click', 'unsubscribe'].includes(type)) {
@@ -94,7 +94,7 @@ export class UnifiedMessagingController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const stats = await UnifiedMessagingService.getEngagementStats(id);
 
       res.status(200).json({

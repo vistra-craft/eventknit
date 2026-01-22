@@ -76,7 +76,7 @@ export class OrganizerDashboardController {
 
   static async getTemplateById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const template = await EventTemplateService.getTemplateById(templateId, req.user?.id);
       res.status(200).json({ success: true, data: { template } });
     } catch (error) {
@@ -91,7 +91,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const template = await EventTemplateService.updateTemplate(templateId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { template } });
     } catch (error) {
@@ -106,7 +106,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const version = await EventTemplateService.createTemplateVersion(templateId, req.user.id, req.body);
       res.status(201).json({ success: true, data: { version } });
     } catch (error) {
@@ -121,7 +121,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const template = await EventTemplateService.shareTemplate(templateId, req.user.id);
       res.status(200).json({ success: true, data: { template } });
     } catch (error) {
@@ -136,7 +136,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const result = await EventTemplateService.useTemplate(templateId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -151,7 +151,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const result = await EventTemplateService.deleteTemplate(templateId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -166,7 +166,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const template = await EventTemplateService.createTemplateFromEvent(eventId, req.user.id, req.body);
       res.status(201).json({ success: true, data: { template } });
     } catch (error) {
@@ -215,7 +215,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { draftId } = req.params;
+      const draftId = (req.params.draftId as string) as string;
       const draft = await EventDraftService.getDraftById(draftId, req.user.id);
       res.status(200).json({ success: true, data: { draft } });
     } catch (error) {
@@ -230,7 +230,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { draftId } = req.params;
+      const draftId = (req.params.draftId as string) as string;
       const draft = await EventDraftService.updateDraft(draftId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { draft } });
     } catch (error) {
@@ -245,7 +245,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { draftId } = req.params;
+      const draftId = (req.params.draftId as string) as string;
       const version = await EventDraftService.createDraftVersion(draftId, req.user.id, req.body);
       res.status(201).json({ success: true, data: { version } });
     } catch (error) {
@@ -260,7 +260,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { draftId } = req.params;
+      const draftId = (req.params.draftId as string) as string;
       const { scheduledPublishAt } = req.body;
       const draft = await EventDraftService.scheduleDraft(draftId, req.user.id, new Date(scheduledPublishAt));
       res.status(200).json({ success: true, data: { draft } });
@@ -276,7 +276,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { draftId } = req.params;
+      const draftId = (req.params.draftId as string) as string;
       const result = await EventDraftService.publishDraft(draftId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -291,7 +291,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { draftId } = req.params;
+      const draftId = (req.params.draftId as string) as string;
       const result = await EventDraftService.deleteDraft(draftId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -341,7 +341,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { segmentId } = req.params;
+      const segmentId = (req.params.segmentId as string) as string;
       const segment = await AttendeeSegmentationService.getSegmentById(segmentId, req.user.id);
       res.status(200).json({ success: true, data: { segment } });
     } catch (error) {
@@ -356,7 +356,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { segmentId } = req.params;
+      const segmentId = (req.params.segmentId as string) as string;
       const segment = await AttendeeSegmentationService.updateSegment(segmentId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { segment } });
     } catch (error) {
@@ -371,7 +371,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { segmentId } = req.params;
+      const segmentId = (req.params.segmentId as string) as string;
       const result = await AttendeeSegmentationService.updateSegmentMembers(segmentId);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -386,7 +386,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { segmentId } = req.params;
+      const segmentId = (req.params.segmentId as string) as string;
       const { userId } = req.body;
       const member = await AttendeeSegmentationService.addMemberToSegment(segmentId, req.user.id, userId);
       res.status(200).json({ success: true, data: { member } });
@@ -402,7 +402,8 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { segmentId, userId } = req.params;
+      const segmentId = (req.params.segmentId as string) as string;
+      const userId = (req.params.userId as string) as string;
       const result = await AttendeeSegmentationService.removeMemberFromSegment(segmentId, req.user.id, userId);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -417,7 +418,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { segmentId } = req.params;
+      const segmentId = (req.params.segmentId as string) as string;
       const result = await AttendeeSegmentationService.deleteSegment(segmentId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -461,7 +462,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { tagId } = req.params;
+      const tagId = (req.params.tagId as string) as string;
       const tag = await AttendeeTagService.getTagById(tagId, req.user.id);
       res.status(200).json({ success: true, data: { tag } });
     } catch (error) {
@@ -476,7 +477,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { tagId } = req.params;
+      const tagId = (req.params.tagId as string) as string;
       const tag = await AttendeeTagService.updateTag(tagId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { tag } });
     } catch (error) {
@@ -491,7 +492,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { tagId } = req.params;
+      const tagId = (req.params.tagId as string) as string;
       const tag = await AttendeeTagService.tagUser(tagId, req.user.id, {
         ...req.body,
         taggedBy: req.user.id,
@@ -509,7 +510,8 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { tagId, userId } = req.params;
+      const tagId = (req.params.tagId as string) as string;
+      const userId = (req.params.userId as string) as string;
       const result = await AttendeeTagService.untagUser(tagId, req.user.id, userId, req.query.eventId as string | undefined);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -524,7 +526,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { tagId } = req.params;
+      const tagId = (req.params.tagId as string) as string;
       const filters = {
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -545,7 +547,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { tagId } = req.params;
+      const tagId = (req.params.tagId as string) as string;
       const result = await AttendeeTagService.deleteTag(tagId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -561,7 +563,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { segmentId } = req.params;
+      const segmentId = (req.params.segmentId as string) as string;
       const result = await AttendeeCommunicationService.sendToSegment(req.user.id, segmentId, req.body);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -576,7 +578,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { tagId } = req.params;
+      const tagId = (req.params.tagId as string) as string;
       const result = await AttendeeCommunicationService.sendToTaggedUsers(req.user.id, tagId, req.body);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -591,7 +593,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const result = await AttendeeCommunicationService.sendToEventRegistrations(req.user.id, eventId, req.body);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -629,7 +631,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const timeRange = req.query.startDate || req.query.endDate ? {
         startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
         endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
@@ -700,7 +702,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { promoCodeId } = req.params;
+      const promoCodeId = (req.params.promoCodeId as string) as string;
       const variant = await AdvancedPromoCodeService.createVariant(promoCodeId, req.user.id, req.body);
       res.status(201).json({ success: true, data: { variant } });
     } catch (error) {
@@ -715,7 +717,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { promoCodeId } = req.params;
+      const promoCodeId = (req.params.promoCodeId as string) as string;
       const analytics = await AdvancedPromoCodeService.getPromoCodeAnalytics(req.user.id, promoCodeId);
       res.status(200).json({ success: true, data: analytics });
     } catch (error) {
@@ -941,7 +943,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const collaborator = await EventCollaborationService.inviteCollaborator(eventId, req.user.id, req.body);
       res.status(201).json({ success: true, data: { collaborator } });
     } catch (error) {
@@ -956,7 +958,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { collaborationId } = req.params;
+      const collaborationId = (req.params.collaborationId as string) as string;
       const collaboration = await EventCollaborationService.acceptInvitation(collaborationId, req.user.id);
       res.status(200).json({ success: true, data: { collaboration } });
     } catch (error) {
@@ -971,7 +973,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const collaborators = await EventCollaborationService.getEventCollaborators(eventId, req.user.id);
       res.status(200).json({ success: true, data: { collaborators } });
     } catch (error) {
@@ -986,7 +988,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { collaborationId } = req.params;
+      const collaborationId = (req.params.collaborationId as string) as string;
       const collaboration = await EventCollaborationService.updateCollaboratorPermissions(
         collaborationId,
         req.user.id,
@@ -1005,7 +1007,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { collaborationId } = req.params;
+      const collaborationId = (req.params.collaborationId as string) as string;
       const result = await EventCollaborationService.removeCollaborator(collaborationId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -1020,7 +1022,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const filters = {
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -1057,7 +1059,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const filters = {
         type: req.query.type as string | undefined,
         isActive: req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
@@ -1077,7 +1079,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { packageId } = req.params;
+      const packageId = (req.params.packageId as string) as string;
       const updated = await AdvancedTicketTypesService.updateTicketPackage(packageId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { package: updated } });
     } catch (error) {
@@ -1092,7 +1094,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const seating = await AdvancedTicketTypesService.getReservedSeating(eventId, req.user.id);
       res.status(200).json({ success: true, data: { seating } });
     } catch (error) {
@@ -1107,7 +1109,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { packageId } = req.params;
+      const packageId = (req.params.packageId as string) as string;
       const result = await AdvancedTicketTypesService.deleteTicketPackage(packageId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -1137,7 +1139,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const filters = {
         type: req.query.type as string | undefined,
         isActive: req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
@@ -1157,7 +1159,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { ticketType, quantity } = req.query;
 
       const result = await DynamicPricingService.calculateDynamicPrice(
@@ -1179,7 +1181,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { ruleId } = req.params;
+      const ruleId = (req.params.ruleId as string) as string;
       const updated = await DynamicPricingService.updatePricingRule(ruleId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { rule: updated } });
     } catch (error) {
@@ -1194,7 +1196,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { ruleId } = req.params;
+      const ruleId = (req.params.ruleId as string) as string;
       const result = await DynamicPricingService.deletePricingRule(ruleId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -1243,7 +1245,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { programId } = req.params;
+      const programId = (req.params.programId as string) as string;
       const affiliate = await AffiliateProgramService.applyAsAffiliate(programId, req.user.id);
       res.status(201).json({ success: true, data: { affiliate } });
     } catch (error) {
@@ -1258,7 +1260,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { affiliateId } = req.params;
+      const affiliateId = (req.params.affiliateId as string) as string;
       const dashboard = await AffiliateProgramService.getAffiliateDashboard(affiliateId, req.user.id);
       res.status(200).json({ success: true, data: dashboard });
     } catch (error) {
@@ -1273,7 +1275,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { affiliateId } = req.params;
+      const affiliateId = (req.params.affiliateId as string) as string;
       const filters = {
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -1330,7 +1332,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { campaignId } = req.params;
+      const campaignId = (req.params.campaignId as string) as string;
       const result = await EmailMarketingService.sendCampaign(campaignId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -1345,7 +1347,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { campaignId } = req.params;
+      const campaignId = (req.params.campaignId as string) as string;
       const analytics = await EmailMarketingService.getCampaignAnalytics(campaignId, req.user.id);
       res.status(200).json({ success: true, data: analytics });
     } catch (error) {
@@ -1397,7 +1399,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { postId } = req.params;
+      const postId = (req.params.postId as string) as string;
       const post = await SocialMediaService.publishPost(postId, req.user.id);
       res.status(200).json({ success: true, data: { post } });
     } catch (error) {
@@ -1466,7 +1468,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const template = await AdvancedTeamService.getRoleTemplateById(req.params.id, req.user.id);
+      const template = await AdvancedTeamService.getRoleTemplateById((req.params.id as string), req.user.id);
       res.status(200).json({ success: true, data: { template } });
     } catch (error) {
       next(error);
@@ -1480,7 +1482,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const template = await AdvancedTeamService.updateRoleTemplate(req.params.id, req.user.id, req.body);
+      const template = await AdvancedTeamService.updateRoleTemplate((req.params.id as string), req.user.id, req.body);
       res.status(200).json({ success: true, data: { template } });
     } catch (error) {
       next(error);
@@ -1494,7 +1496,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      await AdvancedTeamService.deleteRoleTemplate(req.params.id, req.user.id);
+      await AdvancedTeamService.deleteRoleTemplate((req.params.id as string), req.user.id);
       res.status(200).json({ success: true, message: 'Role template deleted successfully' });
     } catch (error) {
       next(error);
@@ -1509,7 +1511,7 @@ export class OrganizerDashboardController {
       }
 
       const template = await AdvancedTeamService.duplicateRoleTemplate(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.body.name,
       );
@@ -1679,7 +1681,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { documentId } = req.params;
+      const documentId = (req.params.documentId as string) as string;
       const document = await KYCService.updateKYCDocument(documentId, req.user.id, {
         ...req.body,
         issueDate: req.body.issueDate ? new Date(req.body.issueDate) : undefined,
@@ -1701,7 +1703,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { documentId } = req.params;
+      const documentId = (req.params.documentId as string) as string;
       await KYCService.deleteKYCDocument(documentId, req.user.id);
       res.status(200).json({ success: true, message: 'Document deleted successfully' });
     } catch (error) {
@@ -1773,7 +1775,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { directorId } = req.params;
+      const directorId = (req.params.directorId as string) as string;
       await KYCService.deleteDirector(directorId, req.user.id);
       res.status(200).json({ success: true, message: 'Director deleted successfully' });
     } catch (error) {
@@ -1851,7 +1853,7 @@ export class OrganizerDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const stats = await ConsentService.getEventConsentStats(eventId, req.user.id);
       res.status(200).json({ success: true, data: stats });
     } catch (error) {

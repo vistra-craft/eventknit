@@ -77,7 +77,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can access system settings');
       }
 
-      const { key } = req.params;
+      const key = (req.params.key as string) as string;
       const environment = req.query.environment as string | undefined;
 
       const setting = await SystemSettingsService.getSetting(key, environment);
@@ -125,7 +125,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can update system settings');
       }
 
-      const { key } = req.params;
+      const key = (req.params.key as string) as string;
       const {
         value,
         type,
@@ -248,7 +248,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can delete system settings');
       }
 
-      const { key } = req.params;
+      const key = (req.params.key as string) as string;
 
       await SystemSettingsService.deleteSetting(key, req.user.id);
 
@@ -287,7 +287,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can access setting history');
       }
 
-      const { key } = req.params;
+      const key = (req.params.key as string) as string;
       const limit = req.query.limit
         ? parseInt(req.query.limit as string, 10)
         : 50;

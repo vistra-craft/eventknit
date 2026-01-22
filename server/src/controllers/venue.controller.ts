@@ -81,7 +81,7 @@ export class VenueController {
         return;
       }
 
-      const { venueId } = req.params;
+      const venueId = (req.params.venueId as string) as string;
       const venue = await VenueService.getVenueById(venueId, req.user.id);
       res.json({
         success: true,
@@ -110,7 +110,7 @@ export class VenueController {
         return;
       }
 
-      const { venueId } = req.params;
+      const venueId = (req.params.venueId as string) as string;
       const venue = await VenueService.updateVenue(venueId, req.user.id, req.body);
       res.json({
         success: true,
@@ -139,7 +139,7 @@ export class VenueController {
         return;
       }
 
-      const { venueId } = req.params;
+      const venueId = (req.params.venueId as string) as string;
       await VenueService.deleteVenue(venueId, req.user.id);
       res.json({
         success: true,

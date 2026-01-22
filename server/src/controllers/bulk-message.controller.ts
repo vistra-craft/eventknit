@@ -148,7 +148,7 @@ export class BulkMessageController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const message = await BulkMessageService.getBulkMessageById(id);
 
       res.status(200).json({
@@ -178,7 +178,7 @@ export class BulkMessageController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const {
         title,
         content,
@@ -245,7 +245,7 @@ export class BulkMessageController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       await BulkMessageService.deleteBulkMessage(id, req.user.id);
 
       res.status(200).json({
@@ -275,7 +275,7 @@ export class BulkMessageController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const message = await BulkMessageService.sendBulkMessage(id);
 
       res.status(200).json({
@@ -306,7 +306,7 @@ export class BulkMessageController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const message = await BulkMessageService.cancelBulkMessage(id);
 
       res.status(200).json({

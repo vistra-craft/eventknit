@@ -59,7 +59,7 @@ export class WebhookController {
    */
   static async getEndpointById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { endpointId } = req.params;
+      const endpointId = (req.params.endpointId as string) as string;
       const endpoint = await WebhookService.getEndpointById(endpointId);
 
       res.status(200).json({
@@ -76,7 +76,7 @@ export class WebhookController {
    */
   static async updateEndpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { endpointId } = req.params;
+      const endpointId = (req.params.endpointId as string) as string;
       const { name, url, description, eventTypes, secret, headers, maxRetries, retryDelay, isActive } = req.body;
 
       const endpoint = await WebhookService.updateEndpoint(endpointId, {
@@ -106,7 +106,7 @@ export class WebhookController {
    */
   static async deleteEndpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { endpointId } = req.params;
+      const endpointId = (req.params.endpointId as string) as string;
       await WebhookService.deleteEndpoint(endpointId);
 
       res.status(200).json({
@@ -123,7 +123,7 @@ export class WebhookController {
    */
   static async testEndpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { endpointId } = req.params;
+      const endpointId = (req.params.endpointId as string) as string;
       const result = await WebhookService.testEndpoint(endpointId);
 
       res.status(200).json({

@@ -197,7 +197,6 @@ model User {
 
   // OAuth provider IDs
   googleId           String?    @unique // Google OAuth user ID
-  appleId            String?    @unique // Apple Sign In user ID
   // Contact address information
   address            String?
   city               String?

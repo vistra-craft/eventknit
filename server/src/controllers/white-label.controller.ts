@@ -82,7 +82,7 @@ export class WhiteLabelController {
         return;
       }
 
-      const { brandingId } = req.params;
+      const brandingId = (req.params.brandingId as string) as string;
       const { status, rejectionReason } = req.body;
       const approvedBy = req.user?.id;
 
@@ -154,7 +154,7 @@ export class WhiteLabelController {
   static async getCustomDomainById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const organizerId = req.user?.id;
-      const { domainId } = req.params;
+      const domainId = (req.params.domainId as string) as string;
 
       const domain = await WhiteLabelService.getCustomDomainById(domainId, organizerId);
       res.json(domain);
@@ -177,7 +177,7 @@ export class WhiteLabelController {
         return;
       }
 
-      const { domainId } = req.params;
+      const domainId = (req.params.domainId as string) as string;
       const domain = await WhiteLabelService.updateCustomDomain(
         domainId,
         organizerId,
@@ -203,7 +203,7 @@ export class WhiteLabelController {
         return;
       }
 
-      const { domainId } = req.params;
+      const domainId = (req.params.domainId as string) as string;
       const { status, failureReason } = req.body;
       const verifiedBy = req.user?.id;
 
@@ -238,7 +238,7 @@ export class WhiteLabelController {
         return;
       }
 
-      const { domainId } = req.params;
+      const domainId = (req.params.domainId as string) as string;
       await WhiteLabelService.deleteCustomDomain(domainId, organizerId);
       res.json({ success: true, message: 'Custom domain deleted' });
     } catch (error: any) {
@@ -254,7 +254,7 @@ export class WhiteLabelController {
    */
   static async getActiveBranding(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { organizerId } = req.params;
+      const organizerId = (req.params.organizerId as string) as string;
       const branding = await WhiteLabelService.getActiveBranding(organizerId);
       
       if (!branding) {
@@ -276,7 +276,7 @@ export class WhiteLabelController {
    */
   static async getActiveCustomDomain(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const { organizerId } = req.params;
+      const organizerId = (req.params.organizerId as string) as string;
       const domain = await WhiteLabelService.getActiveCustomDomain(organizerId);
       
       if (!domain) {

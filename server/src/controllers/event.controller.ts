@@ -119,7 +119,7 @@ export class EventController {
    */
   static async getEventById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const event = await EventService.getEventById(req.params.id);
+      const event = await EventService.getEventById((req.params.id as string));
 
       res.status(200).json({
         success: true,
@@ -147,7 +147,7 @@ export class EventController {
       const userAgent = req.get('user-agent');
 
       const event = await EventService.updateEvent(
-        req.params.id,
+        (req.params.id as string),
         req.body,
         req.user.id,
         req.user.role,
@@ -182,7 +182,7 @@ export class EventController {
       const userAgent = req.get('user-agent');
 
       await EventService.deleteEvent(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,
@@ -214,10 +214,10 @@ export class EventController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
-      logger.debug(`[EventController.registerForEvent] Starting registration for event ${req.params.id}, user: ${req.user.id}`);
+      logger.debug(`[EventController.registerForEvent] Starting registration for event ${(req.params.id as string)}, user: ${req.user.id}`);
       
       const registration = await EventService.registerForEvent(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.body,
         ipAddress,
@@ -245,7 +245,7 @@ export class EventController {
       logger.error('[EventController.registerForEvent] Error in registration controller:', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        eventId: req.params.id,
+        eventId: (req.params.id as string),
         userId: req.user?.id,
         errorType: error?.constructor?.name || typeof error,
       });
@@ -267,7 +267,7 @@ export class EventController {
       }
 
       const registrations = await EventService.getEventRegistrations(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
       );
@@ -298,7 +298,7 @@ export class EventController {
       const userAgent = req.get('user-agent');
 
       await EventService.cancelRegistration(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         ipAddress,
         userAgent,
@@ -330,7 +330,7 @@ export class EventController {
       const userAgent = req.get('user-agent');
 
       const event = await EventService.approveEvent(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,
@@ -374,7 +374,7 @@ export class EventController {
       const userAgent = req.get('user-agent');
 
       const event = await EventService.rejectEvent(
-        req.params.id,
+        (req.params.id as string),
         rejectionReason,
         req.user.id,
         req.user.role,
@@ -409,7 +409,7 @@ export class EventController {
       const userAgent = req.get('user-agent');
 
       const event = await EventService.cancelEvent(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         req.body?.reason,
@@ -451,7 +451,7 @@ export class EventController {
       }
 
       const event = await EventService.updateOrganizerDataAccess(
-        req.params.id,
+        (req.params.id as string),
         dataAccessLevel as DataAccessLevel,
         req.user.id,
       );
@@ -555,7 +555,7 @@ export class EventController {
   static async getInvitationByToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { InvitationService } = await import('../services/invitation.service.js');
-      const invitation = await InvitationService.getInvitationByToken(req.params.token);
+      const invitation = await InvitationService.getInvitationByToken((req.params.token as string));
 
       res.status(200).json({
         success: true,
@@ -571,7 +571,7 @@ export class EventController {
    */
   static async registerAsGuest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const eventId = req.params.id;
+      const eventId = (req.params.id as string);
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
@@ -612,7 +612,7 @@ export class EventController {
       const userAgent = req.get('user-agent');
 
       const result = await EventService.registerViaInvitation(
-        req.params.token,
+        (req.params.token as string),
         req.body,
         ipAddress,
         userAgent,
@@ -643,7 +643,7 @@ export class EventController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 

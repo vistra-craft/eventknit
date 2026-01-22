@@ -28,7 +28,7 @@ export class SocialOAuthController {
         return;
       }
 
-      const { platform } = req.params;
+      const platform = (req.params.platform as string) as string;
       const { redirectUri } = req.query;
 
       const { url, state } = SocialMediaOAuthService.getAuthorizationUrl(
@@ -59,7 +59,7 @@ export class SocialOAuthController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const { platform } = req.params;
+      const platform = (req.params.platform as string) as string;
       const { code, state } = req.query;
 
       if (!code || !state) {
@@ -138,7 +138,7 @@ export class SocialOAuthController {
         return;
       }
 
-      const { accountId } = req.params;
+      const accountId = (req.params.accountId as string) as string;
       await SocialMediaOAuthService.disconnectAccount(accountId);
 
       res.json({

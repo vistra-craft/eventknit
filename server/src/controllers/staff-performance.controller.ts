@@ -24,7 +24,7 @@ export class StaffPerformanceController {
         throw new AuthorizationError('Authentication required');
       }
 
-      const { staffId } = req.params;
+      const staffId = (req.params.staffId as string) as string;
       const period = (req.query.period as PerformancePeriod) || 'all';
 
       if (!Object.values(['today', 'week', 'month', 'quarter', 'year', 'all']).includes(period)) {
@@ -173,7 +173,7 @@ export class StaffPerformanceController {
         throw new AuthorizationError('Authentication required');
       }
 
-      const { staffId } = req.params;
+      const staffId = (req.params.staffId as string) as string;
       const period = (req.query.period as PerformancePeriod) || 'month';
 
       if (!Object.values(['today', 'week', 'month', 'quarter', 'year', 'all']).includes(period)) {

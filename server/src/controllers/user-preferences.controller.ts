@@ -95,7 +95,7 @@ export class UserPreferencesController {
         return;
       }
 
-      const { key } = req.params;
+      const key = (req.params.key as string) as string;
       const { value } = req.body;
 
       if (!key) {

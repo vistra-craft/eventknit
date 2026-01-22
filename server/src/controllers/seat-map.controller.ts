@@ -26,7 +26,7 @@ export class SeatMapController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const seatMap = await SeatMapService.upsertSeatMap(req.user.id, {
         ...req.body,
         eventId,
@@ -59,7 +59,7 @@ export class SeatMapController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const seatMap = await SeatMapService.getSeatMapByEventId(eventId, req.user.id);
       res.json({
         success: true,
@@ -88,7 +88,7 @@ export class SeatMapController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const seats = await SeatMapService.getAvailableSeats(eventId, req.query as any);
       res.json({
         success: true,
@@ -117,7 +117,7 @@ export class SeatMapController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       await SeatMapService.deleteSeatMap(eventId, req.user.id);
       res.json({
         success: true,
@@ -143,7 +143,7 @@ export class SeatSelectionController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const seatMap = await SeatSelectionService.getSeatMapAvailability(eventId);
       res.json({
         success: true,
@@ -172,7 +172,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { seatIds, registrationId, reservationTimeoutMinutes } = req.body;
 
       if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
@@ -225,7 +225,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const reservation = await SeatSelectionService.confirmSeatReservation(registrationId);
       res.json({
         success: true,
@@ -254,7 +254,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       await SeatSelectionService.cancelSeatReservation(registrationId);
       res.json({
         success: true,
@@ -283,7 +283,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const selection = await SeatSelectionService.getSeatSelection(registrationId);
       res.json({
         success: true,

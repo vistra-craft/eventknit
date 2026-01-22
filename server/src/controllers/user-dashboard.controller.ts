@@ -91,7 +91,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { rating, title, review, pros, cons, registrationId } = req.body;
 
       const reviewData = await EventReviewService.createOrUpdateReview(req.user.id, eventId, {
@@ -117,7 +117,7 @@ export class UserDashboardController {
    */
   static async getEventReviews(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const filters = {
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -146,7 +146,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { reviewId } = req.params;
+      const reviewId = (req.params.reviewId as string) as string;
       const review = await EventReviewService.markReviewHelpful(reviewId, req.user.id);
 
       res.status(200).json({
@@ -168,7 +168,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const { toUserId, toEmail, message } = req.body;
 
       const transfer = await TicketTransferService.initiateTransfer(req.user.id, registrationId, {
@@ -196,7 +196,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { transferToken } = req.params;
+      const transferToken = (req.params.transferToken as string) as string;
       const result = await TicketTransferService.acceptTransfer(transferToken, req.user.id);
 
       res.status(200).json({
@@ -218,7 +218,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { transferId } = req.params;
+      const transferId = (req.params.transferId as string) as string;
       const transfer = await TicketTransferService.cancelTransfer(transferId, req.user.id);
 
       res.status(200).json({
@@ -308,7 +308,7 @@ export class UserDashboardController {
 
   static async getCollectionById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { collectionId } = req.params;
+      const collectionId = (req.params.collectionId as string) as string;
       const collection = await EventCollectionService.getCollectionById(collectionId, req.user?.id);
       res.status(200).json({ success: true, data: { collection } });
     } catch (error) {
@@ -323,7 +323,8 @@ export class UserDashboardController {
         return;
       }
 
-      const { collectionId, eventId } = req.params;
+      const collectionId = (req.params.collectionId as string) as string;
+      const eventId = (req.params.eventId as string) as string;
       const { notes } = req.body;
       const item = await EventCollectionService.addEventToCollection(collectionId, eventId, req.user.id, notes);
       res.status(200).json({ success: true, data: { item } });
@@ -339,7 +340,8 @@ export class UserDashboardController {
         return;
       }
 
-      const { collectionId, eventId } = req.params;
+      const collectionId = (req.params.collectionId as string) as string;
+      const eventId = (req.params.eventId as string) as string;
       const result = await EventCollectionService.removeEventFromCollection(collectionId, eventId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -354,7 +356,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { collectionId } = req.params;
+      const collectionId = (req.params.collectionId as string) as string;
       const result = await EventCollectionService.toggleFollowCollection(collectionId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -369,7 +371,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { collectionId } = req.params;
+      const collectionId = (req.params.collectionId as string) as string;
       const collection = await EventCollectionService.updateCollection(collectionId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { collection } });
     } catch (error) {
@@ -384,7 +386,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { collectionId } = req.params;
+      const collectionId = (req.params.collectionId as string) as string;
       const result = await EventCollectionService.deleteCollection(collectionId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -428,7 +430,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { category } = req.params;
+      const category = (req.params.category as string) as string;
       const result = await UserInterestService.removeInterest(req.user.id, category);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -443,7 +445,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { category } = req.params;
+      const category = (req.params.category as string) as string;
       const { weight } = req.body;
       const interest = await UserInterestService.updateInterestWeight(req.user.id, category, weight);
       res.status(200).json({ success: true, data: { interest } });
@@ -488,7 +490,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { searchId } = req.params;
+      const searchId = (req.params.searchId as string) as string;
       const search = await SavedSearchService.updateSavedSearch(searchId, req.user.id, req.body);
       res.status(200).json({ success: true, data: { search } });
     } catch (error) {
@@ -503,7 +505,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { searchId } = req.params;
+      const searchId = (req.params.searchId as string) as string;
       const result = await SavedSearchService.deleteSavedSearch(searchId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -518,7 +520,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { searchId } = req.params;
+      const searchId = (req.params.searchId as string) as string;
       const result = await SavedSearchService.executeSavedSearch(searchId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -587,7 +589,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { messageId } = req.params;
+      const messageId = (req.params.messageId as string) as string;
       const message = await DirectMessageService.getMessageThread(messageId, req.user.id);
       res.status(200).json({ success: true, data: { message } });
     } catch (error) {
@@ -602,7 +604,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { messageId } = req.params;
+      const messageId = (req.params.messageId as string) as string;
       const message = await DirectMessageService.markAsRead(messageId, req.user.id);
       res.status(200).json({ success: true, data: { message } });
     } catch (error) {
@@ -617,7 +619,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { messageId } = req.params;
+      const messageId = (req.params.messageId as string) as string;
       const result = await DirectMessageService.deleteMessage(messageId, req.user.id);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -633,7 +635,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const follow = await SocialNetworkingService.followUser(req.user.id, userId);
       res.status(200).json({ success: true, data: { follow } });
     } catch (error) {
@@ -648,7 +650,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const result = await SocialNetworkingService.unfollowUser(req.user.id, userId);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -658,7 +660,7 @@ export class UserDashboardController {
 
   static async getFollowers(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const filters = {
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -673,7 +675,7 @@ export class UserDashboardController {
 
   static async getFollowing(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const filters = {
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -693,7 +695,7 @@ export class UserDashboardController {
         return;
       }
 
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const result = await SocialNetworkingService.isFollowing(req.user.id, userId);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
@@ -703,7 +705,7 @@ export class UserDashboardController {
 
   static async getUserProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const profile = await SocialNetworkingService.getUserProfile(userId, req.user?.id);
       res.status(200).json({ success: true, data: { profile } });
     } catch (error) {
@@ -714,7 +716,7 @@ export class UserDashboardController {
   // Event Sharing
   static async trackShare(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const share = await EventShareService.trackShare(eventId, {
         userId: req.user?.id,
         ...req.body,
@@ -727,7 +729,7 @@ export class UserDashboardController {
 
   static async getShareAnalytics(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const analytics = await EventShareService.getEventShareAnalytics(eventId, req.user?.id);
       res.status(200).json({ success: true, data: analytics });
     } catch (error) {

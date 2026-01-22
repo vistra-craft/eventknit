@@ -81,18 +81,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/v1/auth/apple
- * @desc    Apple Sign In OAuth login/registration
- * @access  Public
- */
-router.post(
-  '/apple',
-  authRateLimiter,
-  validate(authValidations.appleAuth),
-  AuthController.appleAuth,
-);
-
-/**
  * @route   POST /api/v1/auth/google
  * @desc    Google OAuth login/registration
  * @access  Public

@@ -87,7 +87,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { resaleId } = req.params;
+      const resaleId = (req.params.resaleId as string) as string;
       const result = await TicketResaleService.purchaseResaleTicket(userId, resaleId);
 
       res.status(200).json({
@@ -107,7 +107,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { resaleId } = req.params;
+      const resaleId = (req.params.resaleId as string) as string;
       await TicketResaleService.cancelResale(userId, resaleId);
 
       res.status(200).json({
@@ -169,7 +169,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       await DigitalWalletService.removeTicketFromWallet(userId, registrationId);
 
       res.status(200).json({
@@ -213,7 +213,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const result = await DigitalWalletService.generateAppleWalletPass(userId, registrationId);
 
       res.status(200).json({
@@ -233,7 +233,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const result = await DigitalWalletService.generateGooglePayPass(userId, registrationId);
 
       res.status(200).json({
@@ -300,7 +300,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { syncId } = req.params;
+      const syncId = (req.params.syncId as string) as string;
       await EventCalendarService.removeCalendarSync(userId, syncId);
 
       res.status(200).json({
@@ -385,7 +385,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { itemId } = req.params;
+      const itemId = (req.params.itemId as string) as string;
       await PersonalEventFeedService.markItemViewed(userId, itemId);
 
       res.status(200).json({
@@ -405,7 +405,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { itemId } = req.params;
+      const itemId = (req.params.itemId as string) as string;
       await PersonalEventFeedService.dismissItem(userId, itemId);
 
       res.status(200).json({
@@ -453,7 +453,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       await EventUpdatesSubscriptionService.unsubscribeFromEvent(userId, eventId);
 
       res.status(200).json({
@@ -500,7 +500,7 @@ export class UserFeaturesController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { updateTypes, channels } = req.body;
       const subscription = await EventUpdatesSubscriptionService.updateSubscriptionPreferences(
         userId,

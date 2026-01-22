@@ -116,7 +116,7 @@ export class USSDSMSController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { phoneNumber } = req.params;
+      const phoneNumber = (req.params.phoneNumber as string) as string;
 
       if (!phoneNumber) {
         res.status(400).json({

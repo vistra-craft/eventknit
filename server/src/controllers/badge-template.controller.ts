@@ -84,7 +84,7 @@ export class BadgeTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
 
       if (!id) {
         throw new ValidationError('Template ID is required');
@@ -166,7 +166,7 @@ export class BadgeTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const {
         name,
         description,
@@ -224,7 +224,7 @@ export class BadgeTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
 
       if (!id) {
         throw new ValidationError('Template ID is required');
@@ -259,7 +259,7 @@ export class BadgeTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { name } = req.body;
 
       if (!id) {
@@ -295,7 +295,7 @@ export class BadgeTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
 
       if (!id) {
         throw new ValidationError('Template ID is required');

@@ -18,7 +18,7 @@ export const requireEventAccess = () => {
         throw new AuthorizationError('Authentication required');
       }
 
-      const eventId = req.params.eventId;
+      const eventId = (req.params.eventId as string);
 
       if (!eventId) {
         throw new AuthorizationError('Event ID is required');
@@ -51,7 +51,7 @@ export const requireOrganizerStaffAccess = () => {
         throw new AuthorizationError('Authentication required');
       }
 
-      const staffId = req.params.staffId;
+      const staffId = (req.params.staffId as string);
 
       if (!staffId) {
         throw new AuthorizationError('Staff ID is required');
@@ -83,7 +83,7 @@ export const requireOrganizerEventAccess = () => {
         throw new AuthorizationError('Authentication required');
       }
 
-      const eventId = req.params.eventId;
+      const eventId = (req.params.eventId as string);
 
       if (!eventId) {
         throw new AuthorizationError('Event ID is required');

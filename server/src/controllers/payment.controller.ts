@@ -301,7 +301,7 @@ export class PaymentController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
 
       const registration = await prisma.eventRegistration.findUnique({
         where: { id: registrationId },

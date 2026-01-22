@@ -34,7 +34,7 @@ export class InvoiceController {
    */
   static async getInvoiceById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { invoiceId } = req.params;
+      const invoiceId = (req.params.invoiceId as string) as string;
       const invoice = await InvoiceService.getInvoiceById(invoiceId);
 
       res.status(200).json({
@@ -51,7 +51,7 @@ export class InvoiceController {
    */
   static async getInvoiceByNumber(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { invoiceNumber } = req.params;
+      const invoiceNumber = (req.params.invoiceNumber as string) as string;
       const invoice = await InvoiceService.getInvoiceByNumber(invoiceNumber);
 
       res.status(200).json({
@@ -96,7 +96,7 @@ export class InvoiceController {
    */
   static async getEventInvoices(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { status, page, limit } = req.query;
 
       const result = await InvoiceService.getEventInvoices(eventId, {
@@ -119,7 +119,7 @@ export class InvoiceController {
    */
   static async generateInvoiceHTML(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { invoiceId } = req.params;
+      const invoiceId = (req.params.invoiceId as string) as string;
       const html = await InvoiceService.generateInvoiceHTML(invoiceId);
 
       res.setHeader('Content-Type', 'text/html');
@@ -134,7 +134,7 @@ export class InvoiceController {
    */
   static async downloadInvoice(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { invoiceId } = req.params;
+      const invoiceId = (req.params.invoiceId as string) as string;
       const html = await InvoiceService.generateInvoiceHTML(invoiceId);
 
       res.setHeader('Content-Type', 'text/html');
@@ -150,7 +150,7 @@ export class InvoiceController {
    */
   static async markInvoiceAsSent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { invoiceId } = req.params;
+      const invoiceId = (req.params.invoiceId as string) as string;
       const { sentTo } = req.body;
 
       const invoice = await InvoiceService.markInvoiceAsSent(invoiceId, sentTo);
@@ -170,7 +170,7 @@ export class InvoiceController {
    */
   static async updateInvoiceStatus(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { invoiceId } = req.params;
+      const invoiceId = (req.params.invoiceId as string) as string;
       const { status } = req.body;
 
       const invoice = await InvoiceService.updateInvoiceStatus(invoiceId, status);
@@ -243,7 +243,7 @@ export class InvoiceController {
    */
   static async getTemplateById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const template = await InvoiceTemplateService.getTemplateById(templateId);
 
       res.status(200).json({
@@ -276,7 +276,7 @@ export class InvoiceController {
    */
   static async updateTemplate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       const { name, description, type, htmlContent, cssContent, variables, isDefault, isActive } = req.body;
 
       const template = await InvoiceTemplateService.updateTemplate(templateId, {
@@ -305,7 +305,7 @@ export class InvoiceController {
    */
   static async deleteTemplate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { templateId } = req.params;
+      const templateId = (req.params.templateId as string) as string;
       await InvoiceTemplateService.deleteTemplate(templateId);
 
       res.status(200).json({

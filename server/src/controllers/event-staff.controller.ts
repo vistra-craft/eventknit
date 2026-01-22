@@ -23,7 +23,7 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { staffId, role, notes, shiftStart, shiftEnd, facility } = req.body;
 
       if (!staffId || typeof staffId !== 'string') {
@@ -87,7 +87,7 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { role, staffType, isActive } = req.query;
 
       const filters: {
@@ -139,7 +139,7 @@ export class EventStaffController {
         return;
       }
 
-      const { staffId } = req.params;
+      const staffId = (req.params.staffId as string) as string;
       const { status, startDate, endDate } = req.query;
 
       const filters: {
@@ -191,7 +191,8 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId, staffId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
+      const staffId = (req.params.staffId as string) as string;
       const { role, notes, isActive, shiftStart, shiftEnd, facility } = req.body;
 
       const ipAddress = req.ip || req.socket.remoteAddress;
@@ -242,7 +243,8 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId, staffId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
+      const staffId = (req.params.staffId as string) as string;
 
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
@@ -283,7 +285,7 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { staffIds, role, notes } = req.body;
 
       if (!Array.isArray(staffIds) || staffIds.length === 0) {
@@ -342,7 +344,7 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { staffId, role, notes, shiftStart, shiftEnd, facility } = req.body;
 
       if (!staffId || typeof staffId !== 'string') {
@@ -406,7 +408,7 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { role, isActive } = req.query;
 
       const filters: {
@@ -455,7 +457,7 @@ export class EventStaffController {
         return;
       }
 
-      const { staffId } = req.params;
+      const staffId = (req.params.staffId as string) as string;
       const { status, startDate, endDate } = req.query;
 
       const filters: {
@@ -507,7 +509,8 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId, staffId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
+      const staffId = (req.params.staffId as string) as string;
       const { role, notes, isActive, shiftStart, shiftEnd, facility } = req.body;
 
       const ipAddress = req.ip || req.socket.remoteAddress;
@@ -558,7 +561,8 @@ export class EventStaffController {
         return;
       }
 
-      const { eventId, staffId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
+      const staffId = (req.params.staffId as string) as string;
 
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');

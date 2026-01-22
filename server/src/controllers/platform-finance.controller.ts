@@ -34,7 +34,7 @@ export const platformFinanceController = {
   }),
 
   getExpenseById: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const expense = await PlatformExpenseService.getExpenseById(id);
 
     res.json({
@@ -67,7 +67,7 @@ export const platformFinanceController = {
   }),
 
   updateExpense: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const data = { ...req.body };
 
     if (data.amount !== undefined) {
@@ -84,7 +84,7 @@ export const platformFinanceController = {
   }),
 
   deleteExpense: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     await PlatformExpenseService.deleteExpense(id);
 
     res.json({
@@ -118,7 +118,7 @@ export const platformFinanceController = {
   }),
 
   getIncomeById: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const income = await PlatformIncomeService.getIncomeById(id);
 
     res.json({
@@ -151,7 +151,7 @@ export const platformFinanceController = {
   }),
 
   updateIncome: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const data = { ...req.body };
 
     if (data.amount !== undefined) {
@@ -168,7 +168,7 @@ export const platformFinanceController = {
   }),
 
   deleteIncome: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     await PlatformIncomeService.deleteIncome(id);
 
     res.json({
@@ -203,7 +203,7 @@ export const platformFinanceController = {
   }),
 
   getWageById: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const wage = await WageService.getWageById(id);
 
     res.json({
@@ -237,7 +237,7 @@ export const platformFinanceController = {
   }),
 
   updateWage: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const data = { ...req.body };
 
     if (data.amount !== undefined) {
@@ -257,7 +257,7 @@ export const platformFinanceController = {
   }),
 
   deleteWage: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     await WageService.deleteWage(id);
 
     res.json({

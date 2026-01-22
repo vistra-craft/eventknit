@@ -153,7 +153,7 @@ export class AnalyticsController {
         return;
       }
 
-      const { identifier } = req.params;
+      const identifier = (req.params.identifier as string) as string;
       const { startDate, endDate, platform } = req.query;
 
       const filters: {

@@ -94,7 +94,7 @@ export class EmailTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const template = await EmailTemplateService.getTemplateById(id);
 
       res.status(200).json({
@@ -124,7 +124,7 @@ export class EmailTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const template = await EmailTemplateService.updateTemplate(
         id,
         req.body,
@@ -160,7 +160,7 @@ export class EmailTemplateController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       await EmailTemplateService.deleteTemplate(id, req.user.id, req.user.role);
 
       res.status(200).json({

@@ -95,6 +95,11 @@ export class GoogleAuthService {
 
       return response.data;
     } catch (error) {
+      // Re-throw AuthenticationError with original message
+      if (error instanceof AuthenticationError) {
+        throw error;
+      }
+
       if (axios.isAxiosError(error) && error.response) {
         logger.error('Google access token verification failed:', error.response.data);
       } else {

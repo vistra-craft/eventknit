@@ -285,7 +285,7 @@ export class WorkstationController {
         return;
       }
 
-      const { ticketId } = req.params;
+      const ticketId = (req.params.ticketId as string) as string;
 
       if (!ticketId) {
         throw new ValidationError('Ticket ID is required');
@@ -667,7 +667,7 @@ export class WorkstationController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
 
       if (!eventId) {
         throw new ValidationError('Event ID is required');
@@ -766,7 +766,7 @@ export class WorkstationController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { status, facility, search, page = '1', limit = '50' } = req.query;
 
       if (!eventId) {
@@ -879,7 +879,7 @@ export class WorkstationController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { facility, scanType, scannedBy, startDate, endDate, page = '1', limit = '50' } = req.query;
 
       if (!eventId) {
@@ -1021,7 +1021,7 @@ export class WorkstationController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
 
       if (!eventId) {
         throw new ValidationError('Event ID is required');
@@ -1084,7 +1084,7 @@ export class WorkstationController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { allowReEntry, requireCheckOut, maxReEntries, scanSettings } = req.body;
 
       if (!eventId) {

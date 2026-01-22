@@ -193,7 +193,7 @@ export class FeaturedEventController {
         return;
       }
 
-      const featuredEvent = await FeaturedEventService.getFeaturedEventById(req.params.id);
+      const featuredEvent = await FeaturedEventService.getFeaturedEventById((req.params.id as string));
 
       res.status(200).json({
         success: true,
@@ -221,7 +221,7 @@ export class FeaturedEventController {
       const userAgent = req.get('user-agent');
 
       // Get existing featured event to check for old image
-      const existingEvent = await FeaturedEventService.getFeaturedEventById(req.params.id);
+      const existingEvent = await FeaturedEventService.getFeaturedEventById((req.params.id as string));
       let oldImageUrl: string | null = null;
 
       // Handle file upload if present
@@ -285,7 +285,7 @@ export class FeaturedEventController {
       };
 
       const featuredEvent = await FeaturedEventService.updateFeaturedEvent(
-        req.params.id,
+        (req.params.id as string),
         data,
         req.user.id,
         req.user.role,
@@ -328,7 +328,7 @@ export class FeaturedEventController {
       const userAgent = req.get('user-agent');
 
       await FeaturedEventService.deleteFeaturedEvent(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,

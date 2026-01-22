@@ -51,7 +51,7 @@ export class AdminPromoCodeController {
    */
   static async getPromoCodeById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const promoCode = await PromoCodeService.getPromoCodeByIdAdmin(req.params.id);
+      const promoCode = await PromoCodeService.getPromoCodeByIdAdmin((req.params.id as string));
 
       res.status(200).json({
         success: true,
@@ -118,7 +118,7 @@ export class AdminPromoCodeController {
    */
   static async updatePromoCode(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const promoCode = await PromoCodeService.updatePromoCodeAdmin(req.params.id, req.body);
+      const promoCode = await PromoCodeService.updatePromoCodeAdmin((req.params.id as string), req.body);
 
       res.status(200).json({
         success: true,
@@ -135,7 +135,7 @@ export class AdminPromoCodeController {
    */
   static async deletePromoCode(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      await PromoCodeService.deletePromoCodeAdmin(req.params.id);
+      await PromoCodeService.deletePromoCodeAdmin((req.params.id as string));
 
       res.status(200).json({
         success: true,
@@ -200,7 +200,7 @@ export class AdminPromoCodeController {
    */
   static async getCodesByBatch(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const codes = await PromoCodeService.getCodesByBatchId(req.params.batchId);
+      const codes = await PromoCodeService.getCodesByBatchId((req.params.batchId as string));
 
       res.status(200).json({
         success: true,
@@ -216,7 +216,7 @@ export class AdminPromoCodeController {
    */
   static async deleteBatch(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await PromoCodeService.deleteBatch(req.params.batchId);
+      const result = await PromoCodeService.deleteBatch((req.params.batchId as string));
 
       res.status(200).json({
         success: true,
@@ -233,8 +233,8 @@ export class AdminPromoCodeController {
    */
   static async toggleActive(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const promoCode = await PromoCodeService.getPromoCodeByIdAdmin(req.params.id);
-      const updated = await PromoCodeService.updatePromoCodeAdmin(req.params.id, {
+      const promoCode = await PromoCodeService.getPromoCodeByIdAdmin((req.params.id as string));
+      const updated = await PromoCodeService.updatePromoCodeAdmin((req.params.id as string), {
         isActive: !promoCode.isActive,
       });
 

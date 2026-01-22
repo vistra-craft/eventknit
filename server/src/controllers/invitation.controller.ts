@@ -20,7 +20,7 @@ export class InvitationController {
       const userAgent = req.get('user-agent');
 
       const invitation = await InvitationService.createInvitation(
-        req.params.eventId,
+        (req.params.eventId as string),
         req.body,
         req.user.id,
         req.user.role,
@@ -52,7 +52,7 @@ export class InvitationController {
       }
 
       const invitations = await InvitationService.getEventInvitations(
-        req.params.eventId,
+        (req.params.eventId as string),
         req.user.id,
         req.user.role,
       );
@@ -71,7 +71,7 @@ export class InvitationController {
    */
   static async getInvitationByToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const invitation = await InvitationService.getInvitationByToken(req.params.token);
+      const invitation = await InvitationService.getInvitationByToken((req.params.token as string));
 
       res.status(200).json({
         success: true,
@@ -99,7 +99,7 @@ export class InvitationController {
       const userAgent = req.get('user-agent');
 
       const invitation = await InvitationService.updateInvitation(
-        req.params.id,
+        (req.params.id as string),
         req.body,
         req.user.id,
         req.user.role,
@@ -134,7 +134,7 @@ export class InvitationController {
       const userAgent = req.get('user-agent');
 
       await InvitationService.revokeInvitation(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,
@@ -167,7 +167,7 @@ export class InvitationController {
       const userAgent = req.get('user-agent');
 
       await InvitationService.deleteInvitation(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,

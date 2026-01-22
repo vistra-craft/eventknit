@@ -314,106 +314,24 @@ export class AuthController {
 
       const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, email, avatar } = req.body;
 
-      // Email cannot be changed once registered (immutability requirement)
-      if (email !== undefined && email !== req.user.email) {
-        res.status(400).json({
-          success: false,
-          message: 'Email address cannot be changed once registered',
-        });
-        return;
-      }
+      const { ProfileService } = await import('../services/profile.service.js');
 
-      let avatarUrl: string | undefined = undefined;
-
-      // Handle avatar upload if file is provided
-      if (req.file) {
-        try {
-          const { uploadImageToCloudinary } = await import('../services/cloudinary.service.js');
-          const uploadOptions = {
-            width: 400,
-            height: 400,
-            quality: 'auto' as const,
-            format: 'auto' as const,
-          };
-          const uploadResult = await uploadImageToCloudinary(
-            req.file.buffer,
-            'user-avatars',
-            uploadOptions,
-          );
-          avatarUrl = uploadResult.secureUrl;
-        } catch (uploadError) {
-          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown error';
-          if (errorMessage.includes('not configured') || errorMessage.includes('CLOUDINARY')) {
-            res.status(400).json({
-              success: false,
-              message: 'Cloudinary is not configured. Please configure Cloudinary credentials or provide an avatar URL instead of uploading a file.',
-              error: errorMessage,
-            });
-            return;
-          }
-          res.status(500).json({
-            success: false,
-            message: 'Failed to upload avatar',
-            error: errorMessage,
-          });
-          return;
-        }
-      } else if (avatar !== undefined) {
-        // If avatar URL is provided directly (not a file upload)
-        avatarUrl = avatar && avatar.trim() !== '' ? avatar.trim() : null;
-      }
-
-      const updateData: {
-        firstName?: string;
-        lastName?: string;
-        otherName?: string | null;
-        phoneNumber?: string | null;
-        companyAffiliation?: string | null;
-        organizationName?: string | null;
-        businessEmail?: string | null;
-        avatar?: string | null;
-      } = {};
-
-      if (firstName !== undefined) updateData.firstName = firstName.trim();
-      if (lastName !== undefined) updateData.lastName = lastName.trim();
-      if (otherName !== undefined) {
-        updateData.otherName = otherName && otherName.trim() !== '' ? otherName.trim() : null;
-      }
-      if (phoneNumber !== undefined) {
-        updateData.phoneNumber = phoneNumber && phoneNumber.trim() !== '' ? phoneNumber.trim() : null;
-      }
-      if (companyAffiliation !== undefined) {
-        updateData.companyAffiliation = companyAffiliation && companyAffiliation.trim() !== '' ? companyAffiliation.trim() : null;
-      }
-      if (organizationName !== undefined) {
-        updateData.organizationName = organizationName && organizationName.trim() !== '' ? organizationName.trim() : null;
-      }
-      if (businessEmail !== undefined) {
-        updateData.businessEmail = businessEmail && businessEmail.trim() !== '' ? businessEmail.trim() : null;
-      }
-      if (avatarUrl !== undefined) {
-        updateData.avatar = avatarUrl;
-      }
-
-      const user = await prisma.user.update({
-        where: { id: req.user.id },
-        data: updateData,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          phoneNumber: true,
-          role: true,
-          status: true,
-          isEmailVerified: true,
-          organizationName: true,
-          businessEmail: true,
-          avatar: true,
-          createdAt: true,
-          updatedAt: true,
+      // Update profile using ProfileService
+      const user = await ProfileService.updateProfileWithAvatar(
+        req.user.id,
+        req.file,
+        {
+          firstName,
+          lastName,
+          otherName,
+          phoneNumber,
+          companyAffiliation,
+          organizationName,
+          businessEmail,
+          email,
+          avatar,
         },
-      });
+      );
 
       res.status(200).json({
         success: true,
@@ -421,6 +339,16 @@ export class AuthController {
         data: { user },
       });
     } catch (error) {
+      // Handle Cloudinary configuration errors
+      if (error instanceof Error &&
+          (error.message.includes('not configured') || error.message.includes('CLOUDINARY'))) {
+        res.status(400).json({
+          success: false,
+          message: 'Cloudinary is not configured. Please configure Cloudinary credentials or provide an avatar URL instead of uploading a file.',
+          error: error.message,
+        });
+        return;
+      }
       next(error);
     }
   }
@@ -471,45 +399,6 @@ export class AuthController {
           user: result.user,
           accessToken: result.accessToken,
           refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
-          expiresIn: result.expiresIn,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Apple Sign In OAuth login/registration
-   */
-  static async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const ipAddress = req.ip || req.socket.remoteAddress;
-      const userAgent = req.get('user-agent');
-
-      const { AppleAuthService } = await import('../services/apple-auth.service.js');
-      const result = await AppleAuthService.authenticateWithApple(
-        req.body.idToken,
-        req.body.role,
-        req.body.user,
-        ipAddress,
-        userAgent,
-      );
-
-      // Set refresh token as HttpOnly cookie
-      res.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Apple Sign In authentication successful',
-        data: {
-          user: result.user,
-          accessToken: result.accessToken,
           expiresIn: result.expiresIn,
         },
       });

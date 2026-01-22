@@ -72,7 +72,7 @@ export class AdminController {
    */
   static async getUserById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const user = await AdminService.getUserById(req.params.id);
+      const user = await AdminService.getUserById((req.params.id as string));
 
       res.status(200).json({
         success: true,
@@ -100,7 +100,7 @@ export class AdminController {
       const userAgent = req.get('user-agent');
 
       const user = await AdminService.updateUser(
-        req.params.id,
+        (req.params.id as string),
         req.body,
         req.user.id,
         req.user.role,
@@ -135,7 +135,7 @@ export class AdminController {
       const userAgent = req.get('user-agent');
 
       await AdminService.deleteUser(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,
@@ -168,7 +168,7 @@ export class AdminController {
       const userAgent = req.get('user-agent');
 
       await AdminService.forcePasswordReset(
-        req.params.id,
+        (req.params.id as string),
         req.body.password,
         req.user.id,
         req.user.role,
@@ -311,7 +311,7 @@ export class AdminController {
       const userAgent = req.get('user-agent');
 
       const user = await AdminService.suspendUser(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         req.body.reason,
@@ -346,7 +346,7 @@ export class AdminController {
       const userAgent = req.get('user-agent');
 
       const user = await AdminService.deactivateUser(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         req.body.reason,
@@ -381,7 +381,7 @@ export class AdminController {
       const userAgent = req.get('user-agent');
 
       const user = await AdminService.activateUser(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,
@@ -450,7 +450,7 @@ export class AdminController {
 
       const { EventService } = await import('../services/event.service.js');
       const event = await EventService.recallEvent(
-        req.params.id,
+        (req.params.id as string),
         action,
         req.user.id,
         req.user.role,

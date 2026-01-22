@@ -224,7 +224,7 @@ export class AdminNotificationSettingsController {
         throw new AuthorizationError('Only admins can access notification settings');
       }
 
-      const { type } = req.params;
+      const type = (req.params.type as string) as string;
       const template = await AdminNotificationSettingsService.getTemplate(type);
 
       if (!template) {
@@ -270,7 +270,7 @@ export class AdminNotificationSettingsController {
         throw new AuthorizationError('Only admins can update notification settings');
       }
 
-      const { type } = req.params;
+      const type = (req.params.type as string) as string;
       const template = await AdminNotificationSettingsService.saveTemplate(
         type,
         req.body,
@@ -313,7 +313,7 @@ export class AdminNotificationSettingsController {
         throw new AuthorizationError('Only admins can delete notification templates');
       }
 
-      const { type } = req.params;
+      const type = (req.params.type as string) as string;
       await AdminNotificationSettingsService.deleteTemplate(type);
 
       res.status(200).json({

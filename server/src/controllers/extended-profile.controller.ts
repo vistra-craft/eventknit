@@ -12,7 +12,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const result = await ExtendedProfileService.getStaffProfile(userId);
 
       res.status(200).json({
@@ -33,7 +33,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const profile = await ExtendedProfileService.upsertStaffProfile(userId, req.body);
 
       res.status(200).json({
@@ -55,7 +55,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const result = await ExtendedProfileService.getOrganizerProfile(userId);
 
       res.status(200).json({
@@ -76,7 +76,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const profile = await ExtendedProfileService.upsertOrganizerProfile(userId, req.body);
 
       res.status(200).json({
@@ -98,7 +98,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const contact = await ExtendedProfileService.getEmergencyContact(userId);
 
       res.status(200).json({
@@ -119,7 +119,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const contact = await ExtendedProfileService.upsertEmergencyContact(userId, req.body);
 
       res.status(200).json({
@@ -141,7 +141,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       await ExtendedProfileService.deleteEmergencyContact(userId);
 
       res.status(200).json({
@@ -162,7 +162,7 @@ export class ExtendedProfileController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { userId } = req.params;
+      const userId = (req.params.userId as string) as string;
       const profile = await ExtendedProfileService.getFullUserProfile(userId);
 
       res.status(200).json({

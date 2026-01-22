@@ -20,7 +20,7 @@ export class TicketController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
 
       // Get registration to verify ownership
       const registration = await prisma.eventRegistration.findUnique({
@@ -66,7 +66,7 @@ export class TicketController {
    */
   static async getTicketPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const { email, token } = req.query;
 
       if (!email || typeof email !== 'string') {
@@ -134,7 +134,7 @@ export class TicketController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
 
       // Get registration to verify ownership
       const registration = await prisma.eventRegistration.findUnique({
@@ -200,7 +200,7 @@ export class TicketController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
 
       // Get registration to verify ownership and get full data
       const registration = await prisma.eventRegistration.findUnique({

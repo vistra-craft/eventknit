@@ -420,7 +420,7 @@ export const mobileController = {
    */
   getEventForOffline: asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user?.id;
-    const { eventId } = req.params;
+    const eventId = (req.params.eventId as string) as string;
 
     if (!userId) {
       throw new ValidationError('Authentication required');

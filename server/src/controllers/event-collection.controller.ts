@@ -91,7 +91,7 @@ export const eventCollectionController = {
    * Get collection by ID
    */
   getCollectionById: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const userId = req.user?.id;
 
     const collection = await EventCollectionService.getCollectionById(id, userId);
@@ -116,7 +116,7 @@ export const eventCollectionController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const { name, description, isPublic, coverImage } = req.body;
 
     const collection = await EventCollectionService.updateCollection(id, userId, {
@@ -142,7 +142,7 @@ export const eventCollectionController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
 
     await EventCollectionService.deleteCollection(id, userId);
 
@@ -161,7 +161,7 @@ export const eventCollectionController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
     const { eventId, notes } = req.body;
 
     if (!eventId) {
@@ -186,7 +186,8 @@ export const eventCollectionController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { id, eventId } = req.params;
+    const id = (req.params.id as string) as string;
+    const eventId = (req.params.eventId as string) as string;
 
     await EventCollectionService.removeEventFromCollection(id, eventId, userId);
 
@@ -205,7 +206,7 @@ export const eventCollectionController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { id } = req.params;
+    const id = (req.params.id as string) as string;
 
     const result = await EventCollectionService.toggleFollowCollection(id, userId);
 

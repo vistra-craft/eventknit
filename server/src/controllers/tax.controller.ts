@@ -100,7 +100,7 @@ export class TaxController {
    */
   static async getTaxRateById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { taxRateId } = req.params;
+      const taxRateId = (req.params.taxRateId as string) as string;
       const taxRate = await TaxService.getTaxRateById(taxRateId);
 
       res.status(200).json({
@@ -117,7 +117,7 @@ export class TaxController {
    */
   static async deleteTaxRate(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { taxRateId } = req.params;
+      const taxRateId = (req.params.taxRateId as string) as string;
       await TaxService.deleteTaxRate(taxRateId);
 
       res.status(200).json({

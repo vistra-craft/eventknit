@@ -34,7 +34,7 @@ export class PaymentPlanController {
    */
   static async getPaymentPlanByRegistration(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const plan = await PaymentPlanService.getPaymentPlanByRegistration(registrationId);
 
       res.status(200).json({
@@ -77,7 +77,7 @@ export class PaymentPlanController {
    */
   static async processInstallmentPayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { installmentId } = req.params;
+      const installmentId = (req.params.installmentId as string) as string;
       const { amount, transactionId, gateway, gatewayReference } = req.body;
 
       const installment = await PaymentPlanService.processInstallmentPayment(installmentId, {
@@ -125,7 +125,7 @@ export class PaymentPlanController {
         return;
       }
 
-      const { planId } = req.params;
+      const planId = (req.params.planId as string) as string;
       await PaymentPlanService.cancelPaymentPlan(planId, userId);
 
       res.status(200).json({

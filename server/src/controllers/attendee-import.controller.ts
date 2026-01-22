@@ -32,7 +32,7 @@ export const downloadTemplate = asyncHandler(async (req: AuthenticatedRequest, r
  * POST /api/v1/events/:id/import/validate
  */
 export const validateImportFile = asyncHandler(async (req: ImportRequest, res: Response) => {
-  const eventId = req.params.id;
+  const eventId = (req.params.id as string);
   const file = req.file;
 
   if (!file) {
@@ -61,7 +61,7 @@ export const validateImportFile = asyncHandler(async (req: ImportRequest, res: R
  * POST /api/v1/events/:id/import
  */
 export const executeImport = asyncHandler(async (req: ImportRequest, res: Response) => {
-  const eventId = req.params.id;
+  const eventId = (req.params.id as string);
   const userId = req.user?.id;
   const file = req.file;
 
@@ -111,7 +111,7 @@ export const executeImport = asyncHandler(async (req: ImportRequest, res: Respon
  * GET /api/v1/events/:id/imports
  */
 export const getImportHistory = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const eventId = req.params.id;
+  const eventId = (req.params.id as string);
   const limit = parseInt(req.query.limit as string, 10) || 20;
   const offset = parseInt(req.query.offset as string, 10) || 0;
 
@@ -128,7 +128,7 @@ export const getImportHistory = asyncHandler(async (req: AuthenticatedRequest, r
  * GET /api/v1/events/:id/imports/:importId
  */
 export const getImportDetails = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const importId = req.params.importId;
+  const importId = (req.params.importId as string);
 
   const importRecord = await AttendeeImportService.getImportById(importId);
 
@@ -143,7 +143,7 @@ export const getImportDetails = asyncHandler(async (req: AuthenticatedRequest, r
  * POST /api/v1/events/:id/attendees/register
  */
 export const quickRegister = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const eventId = req.params.id;
+  const eventId = (req.params.id as string);
   const userId = req.user?.id;
 
   if (!userId) {
@@ -178,7 +178,7 @@ export const quickRegister = asyncHandler(async (req: AuthenticatedRequest, res:
  * GET /api/v1/events/:id/attendees/export
  */
 export const exportAttendees = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-  const eventId = req.params.id;
+  const eventId = (req.params.id as string);
 
   logger.info(`Exporting attendees for event ${eventId}`);
 

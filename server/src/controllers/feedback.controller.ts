@@ -84,7 +84,7 @@ export class FeedbackController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const { token } = req.params;
+      const token = (req.params.token as string) as string;
 
       if (!token) {
         throw new ValidationError('Feedback token is required');
@@ -138,7 +138,7 @@ export class FeedbackController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const { token } = req.params;
+      const token = (req.params.token as string) as string;
 
       if (!token) {
         throw new ValidationError('Feedback token is required');
@@ -270,7 +270,7 @@ export class FeedbackController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const feedback = await FeedbackService.getFeedbackById(id);
 
       res.status(200).json({
@@ -300,7 +300,7 @@ export class FeedbackController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { notes } = req.body;
 
       if (!notes || typeof notes !== 'string') {
@@ -336,7 +336,7 @@ export class FeedbackController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { includeOrganizer = true, includeAttendees = true } = req.body;
 
       const results: {
@@ -380,7 +380,7 @@ export class FeedbackController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { page, limit } = req.query;
 
       const result = await FeedbackService.getEventFeedback(eventId, {

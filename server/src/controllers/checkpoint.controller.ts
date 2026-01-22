@@ -84,7 +84,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
 
       if (!checkpointId) {
         throw new ValidationError('Checkpoint ID is required');
@@ -120,7 +120,7 @@ export class CheckpointController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { type, isActive, includeStats } = req.query;
 
       if (!eventId) {
@@ -157,7 +157,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
       const {
         name,
         type,
@@ -216,7 +216,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
 
       if (!checkpointId) {
         throw new ValidationError('Checkpoint ID is required');
@@ -248,7 +248,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
       const { name } = req.body;
 
       if (!checkpointId) {
@@ -281,7 +281,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
       const { code, eventId, deviceId, deviceType, notes } = req.body;
 
       if (!checkpointId) {
@@ -358,7 +358,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
       const { page, limit, scannedBy, startDate, endDate } = req.query;
 
       if (!checkpointId) {
@@ -397,7 +397,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
 
       if (!checkpointId) {
         throw new ValidationError('Checkpoint ID is required');
@@ -433,7 +433,7 @@ export class CheckpointController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
 
       if (!eventId) {
         throw new ValidationError('Event ID is required');
@@ -465,7 +465,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
       const { staffId, shiftStart, shiftEnd } = req.body;
 
       if (!checkpointId) {
@@ -505,7 +505,8 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId, staffId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
+      const staffId = (req.params.staffId as string) as string;
 
       if (!checkpointId || !staffId) {
         throw new ValidationError('Checkpoint ID and Staff ID are required');
@@ -537,7 +538,7 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
 
       if (!checkpointId) {
         throw new ValidationError('Checkpoint ID is required');
@@ -573,7 +574,7 @@ export class CheckpointController {
         return;
       }
 
-      const { registrationId } = req.params;
+      const registrationId = (req.params.registrationId as string) as string;
       const { eventId } = req.query;
 
       if (!registrationId) {
@@ -610,7 +611,8 @@ export class CheckpointController {
         return;
       }
 
-      const { checkpointId, registrationId } = req.params;
+      const checkpointId = (req.params.checkpointId as string) as string;
+      const registrationId = (req.params.registrationId as string) as string;
 
       if (!checkpointId || !registrationId) {
         throw new ValidationError('Checkpoint ID and Registration ID are required');

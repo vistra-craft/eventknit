@@ -18,7 +18,7 @@ export class FacilityController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { name, code, description, icon, color, location, isActive, allowCheckIn, allowCheckOut, sortOrder } = req.body;
 
       if (!name || typeof name !== 'string') {
@@ -70,7 +70,7 @@ export class FacilityController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { includeStats, activeOnly } = req.query;
 
       const facilities = await FacilityService.getFacilities(eventId, {
@@ -101,7 +101,7 @@ export class FacilityController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
 
       const facility = await FacilityService.getFacilityById(id);
 
@@ -132,7 +132,7 @@ export class FacilityController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { name, code, description, icon, color, location, isActive, allowCheckIn, allowCheckOut, sortOrder } = req.body;
 
       if (code && code.length > 10) {
@@ -176,7 +176,7 @@ export class FacilityController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
 
       const result = await FacilityService.deleteFacility(id);
 
@@ -203,7 +203,7 @@ export class FacilityController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
 
       const stats = await FacilityService.getFacilityStats(id);
 
@@ -230,7 +230,7 @@ export class FacilityController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
       const { orderedIds } = req.body;
 
       if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
@@ -263,7 +263,7 @@ export class FacilityController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
 
       const facility = await FacilityService.createDefaultFacility(eventId);
 
@@ -291,7 +291,7 @@ export class FacilityController {
         return;
       }
 
-      const { eventId } = req.params;
+      const eventId = (req.params.eventId as string) as string;
 
       const facilities = await FacilityService.ensureDefaultFacility(eventId);
 

@@ -47,7 +47,7 @@ export class AdminFinancialController {
 
   static async getExpenseById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const expense = await AdminFinancialService.getExpenseById(id);
 
       res.status(200).json({
@@ -61,7 +61,7 @@ export class AdminFinancialController {
 
   static async updateExpense(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const expense = await AdminFinancialService.updateExpense(id, {
         ...req.body,
         approvedBy: req.body.status === 'approved' ? req.user?.id : undefined,
@@ -79,7 +79,7 @@ export class AdminFinancialController {
 
   static async deleteExpense(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       await AdminFinancialService.deleteExpense(id);
 
       res.status(200).json({
@@ -135,7 +135,7 @@ export class AdminFinancialController {
 
   static async getIncomeById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const income = await AdminFinancialService.getIncomeById(id);
 
       res.status(200).json({
@@ -149,7 +149,7 @@ export class AdminFinancialController {
 
   static async updateIncome(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const income = await AdminFinancialService.updateIncome(id, req.body);
 
       res.status(200).json({
@@ -164,7 +164,7 @@ export class AdminFinancialController {
 
   static async deleteIncome(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       await AdminFinancialService.deleteIncome(id);
 
       res.status(200).json({

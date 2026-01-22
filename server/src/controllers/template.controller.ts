@@ -20,7 +20,7 @@ export class TemplateController {
       const userAgent = req.get('user-agent');
 
       const template = await TemplateService.createTemplate(
-        req.params.eventId,
+        (req.params.eventId as string),
         req.body,
         req.user.id,
         req.user.role,
@@ -52,7 +52,7 @@ export class TemplateController {
       }
 
       const templates = await TemplateService.getEventTemplates(
-        req.params.eventId,
+        (req.params.eventId as string),
         req.user.id,
         req.user.role,
       );
@@ -80,7 +80,7 @@ export class TemplateController {
       }
 
       const template = await TemplateService.getTemplateById(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
       );
@@ -99,7 +99,7 @@ export class TemplateController {
    */
   static async getDefaultTemplate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const template = await TemplateService.getDefaultTemplate(req.params.eventId);
+      const template = await TemplateService.getDefaultTemplate((req.params.eventId as string));
 
       if (!template) {
         res.status(404).json({
@@ -135,7 +135,7 @@ export class TemplateController {
       const userAgent = req.get('user-agent');
 
       const template = await TemplateService.updateTemplate(
-        req.params.id,
+        (req.params.id as string),
         req.body,
         req.user.id,
         req.user.role,
@@ -170,7 +170,7 @@ export class TemplateController {
       const userAgent = req.get('user-agent');
 
       await TemplateService.deleteTemplate(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,
@@ -212,7 +212,7 @@ export class TemplateController {
       }
 
       const template = await TemplateService.duplicateTemplate(
-        req.params.id,
+        (req.params.id as string),
         name,
         req.user.id,
         req.user.role,

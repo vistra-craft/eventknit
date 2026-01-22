@@ -98,7 +98,7 @@ export class SupportController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { channel } = req.query;
 
       const query = await SupportService.getQueryById(
@@ -133,7 +133,7 @@ export class SupportController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { agentId, channel } = req.body;
 
       if (!agentId || typeof agentId !== 'string') {
@@ -174,7 +174,7 @@ export class SupportController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { status, channel } = req.body;
 
       if (!status || !Object.values(SupportQueryStatus).includes(status)) {
@@ -217,7 +217,7 @@ export class SupportController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { response, isInternal, channel } = req.body;
 
       if (!response || typeof response !== 'string') {
@@ -303,7 +303,7 @@ export class SupportController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { startDate, endDate } = req.query;
 
       const filters: {

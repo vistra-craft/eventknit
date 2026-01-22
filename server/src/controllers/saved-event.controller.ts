@@ -42,7 +42,7 @@ export const savedEventController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { eventId } = req.params;
+    const eventId = (req.params.eventId as string) as string;
     const { notes } = req.body;
 
     const savedEvent = await SavedEventService.saveEvent(userId, eventId, notes);
@@ -63,7 +63,7 @@ export const savedEventController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { eventId } = req.params;
+    const eventId = (req.params.eventId as string) as string;
 
     await SavedEventService.unsaveEvent(userId, eventId);
 
@@ -82,7 +82,7 @@ export const savedEventController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { eventId } = req.params;
+    const eventId = (req.params.eventId as string) as string;
 
     const isSaved = await SavedEventService.isEventSaved(userId, eventId);
 
@@ -128,7 +128,7 @@ export const savedEventController = {
       throw new ValidationError('User not authenticated');
     }
 
-    const { eventId } = req.params;
+    const eventId = (req.params.eventId as string) as string;
     const { notes } = req.body;
 
     if (typeof notes !== 'string') {

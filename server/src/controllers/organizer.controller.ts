@@ -76,7 +76,7 @@ export class OrganizerController {
       }
 
       const staff = await OrganizerService.getStaffById(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
       );
@@ -107,7 +107,7 @@ export class OrganizerController {
       const userAgent = req.get('user-agent');
 
       const staff = await OrganizerService.updateStaff(
-        req.params.id,
+        (req.params.id as string),
         req.body,
         req.user.id,
         req.user.role,
@@ -142,7 +142,7 @@ export class OrganizerController {
       const userAgent = req.get('user-agent');
 
       await OrganizerService.deleteStaff(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,
@@ -175,7 +175,7 @@ export class OrganizerController {
       const userAgent = req.get('user-agent');
 
       await OrganizerService.deactivateStaff(
-        req.params.id,
+        (req.params.id as string),
         req.user.id,
         req.user.role,
         ipAddress,

@@ -131,7 +131,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const account = await SocialMediaService.getAccountById(id);
 
       res.status(200).json({
@@ -161,7 +161,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const {
         accountName,
         accountHandle,
@@ -216,7 +216,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       await SocialMediaService.disconnectAccount(id);
 
       res.status(200).json({
@@ -365,7 +365,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const post = await SocialMediaService.getPostById(id);
 
       res.status(200).json({
@@ -395,7 +395,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const {
         content,
         mediaUrls,
@@ -442,7 +442,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       await SocialMediaService.deletePost(id);
 
       res.status(200).json({
@@ -472,7 +472,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { likes, comments, shares, views, clicks, reach, impressions } = req.body;
 
       const metrics = await SocialMediaService.updatePostMetrics(id, {
@@ -579,7 +579,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const message = await SocialMediaService.getMessageById(id);
 
       res.status(200).json({
@@ -609,7 +609,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { agentId } = req.body;
 
       if (!agentId || typeof agentId !== 'string') {
@@ -646,7 +646,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { status } = req.body;
 
       if (!status || !Object.values(SupportQueryStatus).includes(status)) {
@@ -685,7 +685,7 @@ export class SocialMediaController {
         return;
       }
 
-      const { id } = req.params;
+      const id = (req.params.id as string) as string;
       const { response, isInternal } = req.body;
 
       if (!response || typeof response !== 'string') {
