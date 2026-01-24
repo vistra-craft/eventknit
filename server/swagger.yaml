@@ -324,6 +324,137 @@ components:
           type: string
           format: date-time
 
+    TicketTransfer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        fromUserId:
+          type: string
+          format: uuid
+        toUserId:
+          type: string
+          format: uuid
+          nullable: true
+        toEmail:
+          type: string
+          format: email
+          nullable: true
+        transferToken:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+        message:
+          type: string
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    TicketResale:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        sellerUserId:
+          type: string
+          format: uuid
+        buyerUserId:
+          type: string
+          format: uuid
+          nullable: true
+        originalPrice:
+          type: number
+          format: decimal
+        resalePrice:
+          type: number
+          format: decimal
+        platformFee:
+          type: number
+          format: decimal
+          description: 10% platform fee
+        sellerPayout:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [LISTED, SOLD, CANCELLED]
+        notes:
+          type: string
+          nullable: true
+        listedAt:
+          type: string
+          format: date-time
+        soldAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    DigitalWallet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        autoAddTickets:
+          type: boolean
+          description: Automatically add new tickets
+        backupEnabled:
+          type: boolean
+          description: Enable backup codes
+        lastSyncedAt:
+          type: string
+          format: date-time
+          nullable: true
+        walletTickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletTicket'
+
+    WalletTicket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        walletId:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        backupCode:
+          type: string
+          description: Manual entry code (format WLT-{regId8}-{timestamp36})
+        isActive:
+          type: boolean
+        passData:
+          type: object
+          nullable: true
+          description: Apple/Google pass data
+        lastAccessedAt:
+          type: string
+          format: date-time
+          nullable: true
+        addedAt:
+          type: string
+          format: date-time
+
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid
@@ -1531,6 +1662,632 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== TICKET TRANSFERS ====================
+  /user/dashboard/transfers/{registrationId}:
+    post:
+      tags:
+        - Tickets
+      summary: Initiate ticket transfer
+      description: Transfer ticket to another user by userId or email
+      operationId: initiateTransfer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                toUserId:
+                  type: string
+                  format: uuid
+                  description: Transfer to existing user by ID
+                toEmail:
+                  type: string
+                  format: email
+                  description: Transfer to user by email (creates account if needed)
+                message:
+                  type: string
+                  description: Optional message to recipient
+              oneOf:
+                - required: [toUserId]
+                - required: [toEmail]
+      responses:
+        '201':
+          description: Transfer initiated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          transferToken:
+                            type: string
+                          status:
+                            type: string
+                            enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+                          expiresAt:
+                            type: string
+                            format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /user/dashboard/transfers/accept/{transferToken}:
+    post:
+      tags:
+        - Tickets
+      summary: Accept ticket transfer
+      description: Accept a pending ticket transfer offer
+      operationId: acceptTransfer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: transferToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transfer accepted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          newRegistrationId:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                            example: ACCEPTED
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/transfers/{transferId}/cancel:
+    post:
+      tags:
+        - Tickets
+      summary: Cancel ticket transfer
+      description: Cancel a pending ticket transfer
+      operationId: cancelTransfer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Transfer cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/transfers:
+    get:
+      tags:
+        - Tickets
+      summary: Get transfer history
+      description: Get user's ticket transfer history (sent and received)
+      operationId: getTransferHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [sent, received, all]
+            default: all
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Transfer history retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          transfers:
+                            type: array
+                            items:
+                              type: object
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== TICKET RESALE ====================
+  /user/dashboard/resale/list:
+    post:
+      tags:
+        - Tickets
+      summary: List ticket for resale
+      description: List a ticket on the resale marketplace (10% platform fee)
+      operationId: listTicketForResale
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationId
+                - resalePrice
+              properties:
+                registrationId:
+                  type: string
+                  format: uuid
+                resalePrice:
+                  type: number
+                  format: decimal
+                  description: Resale price in event currency
+                notes:
+                  type: string
+                  description: Optional notes about the ticket
+      responses:
+        '201':
+          description: Ticket listed for resale successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          resalePrice:
+                            type: number
+                          platformFee:
+                            type: number
+                            description: 10% platform fee
+                          sellerPayout:
+                            type: number
+                            description: Amount seller receives (resalePrice - platformFee)
+                          status:
+                            type: string
+                            enum: [LISTED, SOLD, CANCELLED]
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /user/dashboard/resale/marketplace:
+    get:
+      tags:
+        - Tickets
+      summary: Browse resale marketplace
+      description: Get all available tickets on the resale marketplace
+      operationId: getMarketplaceTickets
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by event
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Marketplace tickets retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          tickets:
+                            type: array
+                            items:
+                              type: object
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+
+  /user/dashboard/resale/my-listings:
+    get:
+      tags:
+        - Tickets
+      summary: Get user's resale listings
+      description: Get all resale listings for authenticated user
+      operationId: getUserResales
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [LISTED, SOLD, CANCELLED]
+      responses:
+        '200':
+          description: User resales retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/resale/{resaleId}/purchase:
+    post:
+      tags:
+        - Tickets
+      summary: Purchase resale ticket
+      description: Purchase a ticket from the resale marketplace
+      operationId: purchaseResaleTicket
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resaleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resale ticket purchased successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          newRegistrationId:
+                            type: string
+                            format: uuid
+                          paymentUrl:
+                            type: string
+                            description: URL to complete payment
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/resale/{resaleId}/cancel:
+    post:
+      tags:
+        - Tickets
+      summary: Cancel resale listing
+      description: Cancel a ticket resale listing
+      operationId: cancelResale
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resaleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resale listing cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== DIGITAL WALLET ====================
+  /user/dashboard/wallet:
+    get:
+      tags:
+        - Tickets
+      summary: Get digital wallet
+      description: Get user's digital wallet with all stored tickets
+      operationId: getWallet
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Wallet retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          userId:
+                            type: string
+                            format: uuid
+                          autoAddTickets:
+                            type: boolean
+                          backupEnabled:
+                            type: boolean
+                          walletTickets:
+                            type: array
+                            items:
+                              type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/wallet/add:
+    post:
+      tags:
+        - Tickets
+      summary: Add ticket to wallet
+      description: Add a registration ticket to digital wallet
+      operationId: addTicketToWallet
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationId
+              properties:
+                registrationId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Ticket added to wallet successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          backupCode:
+                            type: string
+                            description: Backup code for manual entry (format: WLT-{regId8}-{timestamp36})
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /user/dashboard/wallet/{registrationId}:
+    delete:
+      tags:
+        - Tickets
+      summary: Remove ticket from wallet
+      description: Remove a ticket from digital wallet
+      operationId: removeTicketFromWallet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ticket removed from wallet successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/wallet/preferences:
+    put:
+      tags:
+        - Tickets
+      summary: Update wallet preferences
+      description: Update digital wallet preferences
+      operationId: updateWalletPreferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoAddTickets:
+                  type: boolean
+                  description: Automatically add new tickets to wallet
+                backupEnabled:
+                  type: boolean
+                  description: Enable backup codes
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/wallet/{registrationId}/apple-pass:
+    get:
+      tags:
+        - Tickets
+      summary: Generate Apple Wallet pass
+      description: Generate Apple Wallet pass (PKPass format) for ticket
+      operationId: generateAppleWalletPass
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Apple Wallet pass generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          passData:
+                            type: object
+                            description: Apple PassKit formatted data
+                          downloadUrl:
+                            type: string
+                            description: URL to download .pkpass file
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/wallet/{registrationId}/google-pass:
+    get:
+      tags:
+        - Tickets
+      summary: Generate Google Pay pass
+      description: Generate Google Pay pass for ticket
+      operationId: generateGooglePayPass
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Google Pay pass generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          passData:
+                            type: object
+                            description: Google Pay formatted data
+                          saveUrl:
+                            type: string
+                            description: URL to add pass to Google Pay
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   # ==================== PAYMENTS ====================
   /payments/initialize:
