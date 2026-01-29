@@ -39,6 +39,7 @@ export interface EventData {
   endDate?: string | null; // ISO date string
   startTime?: string | null;
   endTime?: string | null;
+  registrationDeadline?: string | null; // ISO date string - when registration closes
 
   // Location
   venue?: string | null;

@@ -629,6 +629,80 @@ describe('Event Registration System', () => {
         .expect(400);
     });
 
+    it('should fail to register when registration deadline has passed', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Verify organizer exists
+      const organizer = await prisma.user.findUnique({
+        where: { id: organizerId },
+      });
+      if (!organizer) {
+        throw new Error('Organizer not found - test setup issue');
+      }
+
+      // Create event with registration deadline in the past
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event With Passed Deadline',
+          description: 'Event with registration deadline that has passed',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Event is in the future
+          registrationDeadline: new Date(Date.now() - 1000), // But deadline has passed
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(400);
+
+      expect(response.body.message).toContain('deadline');
+    });
+
+    it('should allow registration when deadline has not passed', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Verify organizer exists
+      const organizer = await prisma.user.findUnique({
+        where: { id: organizerId },
+      });
+      if (!organizer) {
+        throw new Error('Organizer not found - test setup issue');
+      }
+
+      // Create event with registration deadline in the future
+      const event = await prisma.event.create({
+        data: {
+          title: 'Event With Future Deadline',
+          description: 'Event with registration deadline in the future',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Event in 7 days
+          registrationDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Deadline in 3 days
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+        },
+      });
+
+      await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(201);
+    });
+
     it('should fail to register with quantity exceeding available slots', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');

@@ -198,6 +198,7 @@ interface EventData {
   endDate: string;
   endTime: string;
   registrationDeadline: string;
+  registrationDeadlineTime: string;
   location: string;
   venue: string;
   address: string;
@@ -342,6 +343,7 @@ export default function CreateEventStepwise() {
         endDate: "",
         endTime: "",
         registrationDeadline: "",
+        registrationDeadlineTime: "",
         location: "",
         venue: "",
         address: "",
@@ -382,6 +384,7 @@ export default function CreateEventStepwise() {
             endDate: draftData.endDate || "",
             endTime: draftData.endTime || "",
             registrationDeadline: draftData.registrationDeadline || "",
+            registrationDeadlineTime: draftData.registrationDeadlineTime || "",
             location: draftData.location || "",
             venue: draftData.venue || "",
             address: draftData.address || "",
@@ -421,6 +424,7 @@ export default function CreateEventStepwise() {
       endDate: "",
       endTime: "",
       registrationDeadline: "",
+      registrationDeadlineTime: "",
       location: "",
       venue: "",
       address: "",
@@ -470,6 +474,7 @@ export default function CreateEventStepwise() {
       endDate: "",
       endTime: "",
       registrationDeadline: "",
+      registrationDeadlineTime: "",
       location: "",
       venue: "",
       address: "",
@@ -741,6 +746,7 @@ export default function CreateEventStepwise() {
             endDate: parseDate(transformedEvent.endDate) || "",
             endTime: parseTime(transformedEvent.endTime) || "",
             registrationDeadline: parseDate((transformedEvent as { registrationDeadline?: string }).registrationDeadline) || "",
+            registrationDeadlineTime: parseTime((transformedEvent as { registrationDeadline?: string }).registrationDeadline) || "",
             location: transformedEvent.location || "",
             venue: transformedEvent.venue || "",
             address: (transformedEvent as { address?: string }).address || "",
@@ -955,6 +961,7 @@ export default function CreateEventStepwise() {
             endDate: "",
             endTime: "",
             registrationDeadline: "",
+            registrationDeadlineTime: "",
             location: templateData.location || "",
             venue: templateData.venue || "",
             address: templateData.address || "",
@@ -1511,9 +1518,9 @@ export default function CreateEventStepwise() {
       ? new Date(`${eventData.endDate}T${eventData.endTime}`).toISOString()
       : undefined;
 
-    // Build registration deadline date (date only, no time)
+    // Build registration deadline date with optional time
     const registrationDeadline = eventData.registrationDeadline
-      ? new Date(`${eventData.registrationDeadline}T00:00:00`).toISOString()
+      ? new Date(`${eventData.registrationDeadline}T${eventData.registrationDeadlineTime || '23:59'}`).toISOString()
       : undefined;
 
     // Determine single price if all tickets have same price
@@ -2013,21 +2020,71 @@ export default function CreateEventStepwise() {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="registrationDeadline" className="flex items-center gap-2">
-          <Calendar className="w-4 h-4" />
-          Registration Deadline (Optional)
-        </Label>
-        <Input 
-          id="registrationDeadline" 
-          type="date"
-          value={eventData.registrationDeadline}
-          onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
-          className="h-12 border-border focus-visible:border-primary/30"
-        />
-        <p className="text-xs text-muted-foreground">
-          Set a deadline for when registrations close. Leave empty to allow registration until event start.
-        </p>
+      {/* Registration Deadline - Toggle Section */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <Label htmlFor="hasRegistrationDeadline" className="text-sm font-medium cursor-pointer">
+                Set Registration Deadline
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Close registrations before the event starts
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="hasRegistrationDeadline"
+            checked={!!eventData.registrationDeadline}
+            onCheckedChange={(checked) => {
+              if (!checked) {
+                handleInputChange("registrationDeadline", "");
+              } else {
+                // Default to event date if available
+                handleInputChange("registrationDeadline", eventData.date || "");
+              }
+            }}
+          />
+        </div>
+
+        {/* Expandable deadline fields */}
+        {eventData.registrationDeadline !== "" && (
+          <div className="pt-3 border-t border-border animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="registrationDeadline" className="text-xs text-muted-foreground">
+                  Last Registration Date
+                </Label>
+                <Input
+                  id="registrationDeadline"
+                  type="date"
+                  value={eventData.registrationDeadline}
+                  max={eventData.date || undefined}
+                  onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
+                  className="h-10 border-border focus-visible:border-primary/30"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="registrationDeadlineTime" className="text-xs text-muted-foreground">
+                  Closing Time
+                </Label>
+                <Input
+                  id="registrationDeadlineTime"
+                  type="time"
+                  value={eventData.registrationDeadlineTime || "23:59"}
+                  onChange={(e) => handleInputChange("registrationDeadlineTime", e.target.value)}
+                  className="h-10 border-border focus-visible:border-primary/30"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Registrations will close on this date and time. After this, attendees won't be able to register.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">

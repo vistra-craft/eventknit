@@ -9,7 +9,7 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-import { Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight } from "lucide-react";
+import { Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Clock, AlertCircle } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Card } from "@/components/ui/card";
 
@@ -133,7 +133,39 @@ const EventDetails = () => {
   
   // TODO: Check if user is already registered for this event
   const userAlreadyRegistered = false;
-  
+
+  // Check if registration is open
+  const isRegistrationClosed = (() => {
+    if (!event) return false;
+    const now = new Date();
+
+    // Check if registration deadline has passed
+    if (event.registrationDeadline) {
+      const deadline = new Date(event.registrationDeadline);
+      if (deadline < now) return true;
+    }
+
+    // Check if event has already started
+    if (event.startDate) {
+      const eventStart = new Date(event.startDate);
+      if (eventStart < now) return true;
+    }
+
+    return false;
+  })();
+
+  // Format registration deadline for display
+  const formatDeadline = (deadline: string) => {
+    const date = new Date(deadline);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
   // Meta tags logic
   const getFrontendUrl = () => {
     const envUrl = import.meta.env.VITE_FRONTEND_URL;
@@ -446,16 +478,40 @@ const EventDetails = () => {
                     </div>
                   )}
 
-                  {/* Register Button */}
-                  <Button
-                    size="lg"
-                    variant="default"
-                    className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
-                    onClick={handleRegisterClick}
-                  >
-                    <Ticket className="mr-2 h-5 w-5" />
-                    {userAlreadyRegistered ? 'View My Ticket' : (event.isFree ? 'Register Free' : 'Register for Event')}
-                  </Button>
+                  {/* Registration Deadline Notice */}
+                  {event.registrationDeadline && !isRegistrationClosed && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        Registration closes {formatDeadline(event.registrationDeadline)}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Register Button or Closed Notice */}
+                  {isRegistrationClosed ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-muted border border-border">
+                        <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                        <p className="text-sm font-medium text-muted-foreground">Registration Closed</p>
+                      </div>
+                      <p className="text-xs text-center text-muted-foreground">
+                        {event.registrationDeadline
+                          ? `Registration ended on ${formatDeadline(event.registrationDeadline)}`
+                          : 'This event has already started'}
+                      </p>
+                    </div>
+                  ) : (
+                    <Button
+                      size="lg"
+                      variant="default"
+                      className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
+                      onClick={handleRegisterClick}
+                    >
+                      <Ticket className="mr-2 h-5 w-5" />
+                      {userAlreadyRegistered ? 'View My Ticket' : (event.isFree ? 'Register Free' : 'Register for Event')}
+                    </Button>
+                  )}
 
                   {/* Secondary Actions */}
                   <div className="grid grid-cols-2 gap-2 pt-2">
