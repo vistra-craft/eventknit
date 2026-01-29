@@ -640,6 +640,10 @@ model Event {
   capacity       Int? // Total capacity (null = unlimited)
   availableSlots Int? // Calculated available slots
 
+  // Venue Capacity (for facility access control)
+  venueMaxCapacity      Int? // Maximum venue occupancy (null = unlimited)
+  venueCurrentOccupancy Int  @default(0) // Current number of people in venue
+
   // Media
   image       String? // Image URL
   coverImage  String? // For backward compatibility
@@ -754,11 +758,15 @@ model Event {
   // General Accounting Relations
   incomeEntries          Income[]
   expenseEntries         Expense[]
+  // Facility Access Control Relations
+  facilityZones          FacilityZone[]
+  facilityMovements      FacilityMovement[]
   // Badge/Workstation Relations
   badgeTemplates         BadgeTemplate[]           @relation("EventBadgeTemplates")
   badgePrintJobs         BadgePrintJob[]           @relation("EventBadgePrintJobs")
   // Service Point Facilities
   facilities             EventFacility[]           @relation("EventFacilities")
+  printers               Printer[]
   // Attendee Import History
   attendeeImports        AttendeeImport[]          @relation("EventAttendeeImports")
 
@@ -856,6 +864,11 @@ model EventRegistration {
   paymentPlan         PaymentPlan?             @relation("PaymentPlanRegistration")
   // Badge/Workstation Relations
   badgePrintJobs      BadgePrintJob[]
+  // Facility Access Control Relations
+  zoneAccess          AttendeeZoneAccess[]
+  facilityMovements   FacilityMovement[]
+  // Printer Integration Relations
+  printJobs           PrintJob[]
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
@@ -1237,12 +1250,18 @@ model EventFacility {
   allowCheckIn  Boolean @default(true)
   allowCheckOut Boolean @default(true)
   sortOrder   Int      @default(0)
+
+  // Capacity Management
+  maxCapacity      Int? // Maximum simultaneous occupancy (null = unlimited)
+  currentOccupancy Int  @default(0) // Current number of people in facility
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
   event       Event        @relation("EventFacilities", fields: [eventId], references: [id], onDelete: Cascade)
   scans       TicketScan[] @relation("FacilityScans")
+  zones       FacilityZoneMapping[]
 
   @@unique([eventId, code])
   @@index([eventId])
@@ -4613,6 +4632,7 @@ model BadgeTemplate {
   sizePreset     String   @default("4x3") // 4x3, 3.5x2.25, 4x6, A6, custom
   orientation    String   @default("landscape") // landscape, portrait
   backgroundColor String  @default("#ffffff")
+  backgroundImage String?  // Cloudinary URL for background image
   elements       Json     // Array of BadgeElement objects
   isDefault      Boolean  @default(false)
   isActive       Boolean  @default(true)
@@ -4629,6 +4649,9 @@ model BadgeTemplate {
   createdBy      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  // Relations
+  printJobs      PrintJob[]
 
   @@index([organizerId])
   @@index([eventId])
@@ -4676,5 +4699,152 @@ model AttendeeImport {
 
   @@index([eventId])
   @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Facility Access Control Models (Phase 2)
+// ============================================
+
+// Facility Zone - Group facilities into access zones
+model FacilityZone {
+  id               String   @id @default(cuid())
+  eventId          String
+  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name             String   // e.g., "VIP Lounge", "Speaker Area"
+  code             String   // Short code (e.g., "VIP", "SPK")
+  description      String?  @db.Text
+  maxCapacity      Int?     // Maximum simultaneous occupancy (null = unlimited)
+  currentOccupancy Int      @default(0)
+  accessStart      DateTime? // Zone operating hours start
+  accessEnd        DateTime? // Zone operating hours end
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  facilities       FacilityZoneMapping[]
+  attendeeAccess   AttendeeZoneAccess[]
+  movementsFrom    FacilityMovement[]    @relation("MovementFrom")
+  movementsTo      FacilityMovement[]    @relation("MovementTo")
+
+  @@unique([eventId, code])
+  @@index([eventId, isActive])
+}
+
+// Mapping between facilities and zones
+model FacilityZoneMapping {
+  id         String        @id @default(cuid())
+  facilityId String
+  facility   EventFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  zoneId     String
+  zone       FacilityZone  @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+
+  @@unique([facilityId, zoneId])
+  @@index([facilityId])
+  @@index([zoneId])
+}
+
+// Attendee access permissions to zones
+model AttendeeZoneAccess {
+  id             String            @id @default(cuid())
+  registrationId String
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  zoneId         String
+  zone           FacilityZone      @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  grantedAt      DateTime          @default(now())
+  grantedBy      String            // User ID who granted access
+  expiresAt      DateTime?         // Access expiration (null = no expiration)
+  isActive       Boolean           @default(true)
+  accessCount    Int               @default(0) // Number of times accessed
+  lastAccessAt   DateTime?         // Last access timestamp
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([registrationId, zoneId])
+  @@index([registrationId])
+  @@index([zoneId, isActive])
+}
+
+// Track attendee movement between zones
+model FacilityMovement {
+  id             String            @id @default(cuid())
+  registrationId String
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventId        String
+  event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fromZoneId     String?
+  fromZone       FacilityZone?     @relation("MovementFrom", fields: [fromZoneId], references: [id], onDelete: SetNull)
+  toZoneId       String
+  toZone         FacilityZone      @relation("MovementTo", fields: [toZoneId], references: [id], onDelete: Cascade)
+  movementType   String            // "entry", "zone_change", "exit"
+  sequenceNumber Int               // Track visit order (1, 2, 3...)
+  scannedAt      DateTime          @default(now())
+  scannedBy      String            // User ID who performed scan
+  deviceInfo     Json?             // Device/scanner information
+
+  @@index([registrationId, scannedAt])
+  @@index([eventId, scannedAt])
+  @@index([fromZoneId])
+  @@index([toZoneId])
+}
+
+// ==================== Printer Integration Models ====================
+
+// Printer device configuration
+model Printer {
+  id             String    @id @default(cuid())
+  eventId        String?
+  event          Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  name           String    // User-friendly name
+  driver         String    // "cups", "windows", "printnode"
+  deviceId       String    // System printer name or cloud ID
+  host           String?   // For network printers (e.g., "192.168.1.100")
+  port           Int?      // For network printers (e.g., 9100)
+  apiKey         String?   // For PrintNode cloud printing
+  supportedSizes String[]  // ["4x3", "A6", "Letter"] JSON array
+  paperSize      String?   // Default paper size
+  orientation    String?   // "portrait" or "landscape"
+  isOnline       Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  lastChecked    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String    // User ID who added printer
+
+  printJobs PrintJob[]
+
+  @@index([eventId, isActive])
+  @@index([driver, isOnline])
+}
+
+// Print job queue with retry logic
+model PrintJob {
+  id             String            @id @default(cuid())
+  printerId      String
+  printer        Printer           @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  templateId     String
+  template       BadgeTemplate     @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  registrationId String
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  status         String            @default("queued") // "queued", "printing", "completed", "failed", "cancelled"
+  priority       Int               @default(0) // Higher = print sooner
+  copies         Int               @default(1)
+  pdfUrl         String?           // Generated PDF URL (Cloudinary)
+  sentToPrinter  DateTime?
+  printedAt      DateTime?
+  retryCount     Int               @default(0)
+  maxRetries     Int               @default(3)
+  errorMessage   String?
+  jobMetadata    Json?             // Additional job data (printer settings, etc.)
+  createdBy      String            // User ID who created print job
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([printerId, status])
+  @@index([status, priority, createdAt])
+  @@index([registrationId])
+  @@index([templateId])
   @@index([createdAt])
 }

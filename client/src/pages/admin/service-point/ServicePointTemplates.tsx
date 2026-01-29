@@ -32,11 +32,13 @@ import {
   ChevronDown,
   Sparkles,
   FileText,
-  X
+  X,
+  Award
 } from "lucide-react";
 import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
+import DraggableBadgeElement from "@/components/service-point/DraggableBadgeElement";
 import {
   getBadgeTemplates,
   createBadgeTemplate,
@@ -116,10 +118,18 @@ const ServicePointTemplates: React.FC = () => {
       const response = await getBadgeTemplates();
       if (response.success && response.data.templates) {
         setTemplates(response.data.templates);
-        // Select first template by default
-        if (response.data.templates.length > 0 && !currentTemplate) {
-          setCurrentTemplate(response.data.templates[0]);
-          setHistory([response.data.templates[0]]);
+
+        // Check for previously selected template in localStorage
+        const savedTemplateId = localStorage.getItem('selectedBadgeTemplateId');
+        const savedTemplate = savedTemplateId
+          ? response.data.templates.find(t => t.id === savedTemplateId)
+          : null;
+
+        // Select saved template or first template by default
+        const templateToSelect = savedTemplate || response.data.templates[0];
+        if (templateToSelect) {
+          setCurrentTemplate(templateToSelect);
+          setHistory([templateToSelect]);
           setHistoryIndex(0);
         }
       }
@@ -133,14 +143,24 @@ const ServicePointTemplates: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentTemplate, toast]);
+  }, [toast]);
 
   // Load templates on mount
   useEffect(() => {
     loadTemplates();
   }, [loadTemplates]);
 
-  // History management
+  // Save selected template to localStorage when it changes
+  useEffect(() => {
+    if (currentTemplate?.id) {
+      localStorage.setItem('selectedBadgeTemplateId', currentTemplate.id);
+    }
+  }, [currentTemplate?.id]);
+
+  // Keyboard shortcuts
+  const [copiedElement, setCopiedElement] = useState<BadgeElement | null>(null);
+
+  // History management - Define these before useEffect that uses them
   const pushToHistory = useCallback((template: BadgeTemplate) => {
     setHistory(prev => [...prev.slice(0, historyIndex + 1), template]);
     setHistoryIndex(prev => prev + 1);
@@ -159,6 +179,117 @@ const ServicePointTemplates: React.FC = () => {
       setCurrentTemplate(history[historyIndex + 1]);
     }
   }, [historyIndex, history]);
+
+  const updateElementWithHistory = useCallback((elementId: string, updates: Partial<BadgeElement>) => {
+    if (!currentTemplate) return;
+
+    const updatedTemplate = {
+      ...currentTemplate,
+      elements: currentTemplate.elements.map(el =>
+        el.id === elementId ? { ...el, ...updates } : el
+      ),
+    };
+
+    setCurrentTemplate(updatedTemplate);
+    pushToHistory(updatedTemplate);
+  }, [currentTemplate, pushToHistory]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Arrow keys - move element by 1mm
+      if (selectedElement && currentTemplate && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const element = currentTemplate.elements.find(el => el.id === selectedElement);
+        if (!element || element.isLocked) return;
+
+        const delta = 1; // 1mm movement
+        const updates: Partial<BadgeElement> = {};
+
+        switch (e.key) {
+          case 'ArrowUp':
+            updates.y = Math.max(0, element.y - delta);
+            break;
+          case 'ArrowDown':
+            updates.y = Math.min(currentTemplate.height - element.height, element.y + delta);
+            break;
+          case 'ArrowLeft':
+            updates.x = Math.max(0, element.x - delta);
+            break;
+          case 'ArrowRight':
+            updates.x = Math.min(currentTemplate.width - element.width, element.x + delta);
+            break;
+        }
+
+        updateElementWithHistory(selectedElement, updates);
+      }
+
+      // Delete - delete selected element
+      if (e.key === 'Delete' && selectedElement && currentTemplate) {
+        e.preventDefault();
+        const element = currentTemplate.elements.find(el => el.id === selectedElement);
+        if (!element || element.isLocked) return;
+
+        const updatedTemplate = {
+          ...currentTemplate,
+          elements: currentTemplate.elements.filter(el => el.id !== selectedElement),
+        };
+        setCurrentTemplate(updatedTemplate);
+        pushToHistory(updatedTemplate);
+        setSelectedElement(null);
+        toast({ title: "Deleted", description: "Element removed" });
+      }
+
+      // Ctrl+C - Copy element
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedElement && currentTemplate) {
+        e.preventDefault();
+        const element = currentTemplate.elements.find(el => el.id === selectedElement);
+        if (element) {
+          setCopiedElement(element);
+          toast({ title: "Copied", description: "Element copied to clipboard" });
+        }
+      }
+
+      // Ctrl+V - Paste element
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && copiedElement && currentTemplate) {
+        e.preventDefault();
+        const newElement: BadgeElement = {
+          ...copiedElement,
+          id: generateElementId(),
+          x: Math.min(currentTemplate.width - copiedElement.width, copiedElement.x + 5),
+          y: Math.min(currentTemplate.height - copiedElement.height, copiedElement.y + 5),
+        };
+
+        const updatedTemplate = {
+          ...currentTemplate,
+          elements: [...currentTemplate.elements, newElement],
+        };
+        setCurrentTemplate(updatedTemplate);
+        pushToHistory(updatedTemplate);
+        setSelectedElement(newElement.id);
+        toast({ title: "Pasted", description: "Element pasted" });
+      }
+
+      // Ctrl+Z - Undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+
+      // Ctrl+Y or Ctrl+Shift+Z - Redo
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElement, currentTemplate, copiedElement, toast, undo, redo, pushToHistory, updateElementWithHistory]);
 
   // Template operations
   const handleSelectTemplate = async (templateId: string) => {
@@ -252,23 +383,25 @@ const ServicePointTemplates: React.FC = () => {
     const newElement: BadgeElement = {
       id: generateElementId(),
       type,
-      content: type === 'text' ? 'New Text' : type === 'qr' ? '{{qrCode}}' : '',
+      content: type === 'text' ? 'New Text' : type === 'qr' ? '{{qrCode}}' : type === 'ribbon' ? 'VIP' : '',
       x: 20,
       y: 20,
-      width: type === 'qr' ? 24 : type === 'shape' ? 30 : 50,
-      height: type === 'qr' ? 24 : type === 'shape' ? 20 : 10,
+      width: type === 'qr' ? 24 : type === 'shape' ? 30 : type === 'ribbon' ? 40 : 50,
+      height: type === 'qr' ? 24 : type === 'shape' ? 20 : type === 'ribbon' ? 12 : 10,
       fontSize: 14,
       fontFamily: "Inter",
-      fontWeight: "normal",
-      textAlign: "left",
-      color: "#000000",
+      fontWeight: type === 'ribbon' ? "bold" : "normal",
+      textAlign: type === 'ribbon' ? "center" : "left",
+      color: type === 'ribbon' ? "#ffffff" : "#000000",
       backgroundColor: type === 'shape' ? "#e5e7eb" : "transparent",
-      borderRadius: 0,
+      borderRadius: type === 'ribbon' ? 4 : 0,
       opacity: 1,
       rotation: 0,
       zIndex: currentTemplate.elements.length + 1,
       isVisible: true,
       isLocked: false,
+      ribbonIcon: type === 'ribbon' ? 'crown' : undefined,
+      ribbonGradient: type === 'ribbon' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : undefined,
     };
 
     const updatedTemplate = {
@@ -292,20 +425,6 @@ const ServicePointTemplates: React.FC = () => {
     };
 
     setCurrentTemplate(updatedTemplate);
-  };
-
-  const updateElementWithHistory = (elementId: string, updates: Partial<BadgeElement>) => {
-    if (!currentTemplate) return;
-
-    const updatedTemplate = {
-      ...currentTemplate,
-      elements: currentTemplate.elements.map(el =>
-        el.id === elementId ? { ...el, ...updates } : el
-      ),
-    };
-
-    setCurrentTemplate(updatedTemplate);
-    pushToHistory(updatedTemplate);
   };
 
   const deleteElement = (elementId: string) => {
@@ -434,29 +553,49 @@ const ServicePointTemplates: React.FC = () => {
               </CardHeader>
               <CardContent className="max-h-48 overflow-y-auto">
                 <div className="space-y-2">
-                  {templates.map((template) => (
-                    <div
-                      key={template.id}
-                      className={`p-3 rounded-lg cursor-pointer transition-all duration-200 border ${
-                        currentTemplate?.id === template.id
-                          ? 'border-primary bg-primary/5 shadow-sm'
-                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                      }`}
-                      onClick={() => handleSelectTemplate(template.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{template.name}</h4>
-                          <p className="text-xs text-muted-foreground truncate">{template.description}</p>
-                        </div>
-                        <div className="flex gap-1 ml-2">
-                          {template.isDefault && (
-                            <Badge variant="secondary" className="text-xs px-1.5 py-0">Default</Badge>
-                          )}
+                  {templates.map((template) => {
+                    // Get gradient based on template name/type
+                    const getTemplateGradient = () => {
+                      const name = template.name.toLowerCase();
+                      if (name.includes('vip') || name.includes('premium')) {
+                        return 'from-blue-500/10 to-blue-600/10 hover:from-blue-500/20 hover:to-blue-600/20 border-blue-500/30';
+                      }
+                      if (name.includes('speaker') || name.includes('staff')) {
+                        return 'from-purple-500/10 to-purple-600/10 hover:from-purple-500/20 hover:to-purple-600/20 border-purple-500/30';
+                      }
+                      if (name.includes('regular') || name.includes('standard')) {
+                        return 'from-green-500/10 to-green-600/10 hover:from-green-500/20 hover:to-green-600/20 border-green-500/30';
+                      }
+                      return 'from-gray-500/10 to-gray-600/10 hover:from-gray-500/20 hover:to-gray-600/20 border-gray-500/30';
+                    };
+
+                    const gradient = getTemplateGradient();
+                    const isActive = currentTemplate?.id === template.id;
+
+                    return (
+                      <div
+                        key={template.id}
+                        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 border bg-gradient-to-br ${
+                          isActive
+                            ? 'border-primary shadow-md ring-2 ring-primary/20'
+                            : gradient
+                        }`}
+                        onClick={() => handleSelectTemplate(template.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm truncate">{template.name}</h4>
+                            <p className="text-xs text-muted-foreground truncate">{template.description || 'Custom badge template'}</p>
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            {template.isDefault && (
+                              <Badge variant="secondary" className="text-xs px-1.5 py-0">Default</Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -472,6 +611,7 @@ const ServicePointTemplates: React.FC = () => {
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => addElement('text')}
@@ -481,6 +621,7 @@ const ServicePointTemplates: React.FC = () => {
                     <span className="text-xs">Text</span>
                   </Button>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => addElement('qr')}
@@ -490,6 +631,7 @@ const ServicePointTemplates: React.FC = () => {
                     <span className="text-xs">QR Code</span>
                   </Button>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => addElement('image')}
@@ -499,6 +641,7 @@ const ServicePointTemplates: React.FC = () => {
                     <span className="text-xs">Image</span>
                   </Button>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => addElement('shape')}
@@ -506,6 +649,16 @@ const ServicePointTemplates: React.FC = () => {
                   >
                     <Square className="w-5 h-5" />
                     <span className="text-xs">Shape</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addElement('ribbon')}
+                    className="h-16 flex flex-col items-center justify-center gap-1"
+                  >
+                    <Award className="w-5 h-5" />
+                    <span className="text-xs">Ribbon</span>
                   </Button>
                 </div>
               </CardContent>
@@ -572,16 +725,17 @@ const ServicePointTemplates: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 flex items-center justify-center min-h-[500px] bg-muted/30">
+              <CardContent className="p-6 flex items-center justify-center min-h-[600px] bg-gradient-to-br from-muted/40 to-muted/60 overflow-auto">
                 {currentTemplate ? (
                   <div
-                    className="relative border-2 border-dashed border-gray-300 bg-white shadow-lg transition-all duration-200"
+                    className="relative border-2 border-dashed border-gray-400 bg-white shadow-2xl transition-all duration-200 max-w-full hover:border-primary/50"
                     style={{
                       width: `${canvasWidth}px`,
                       height: `${canvasHeight}px`,
+                      maxWidth: '100%',
                       backgroundColor: currentTemplate.backgroundColor,
                       backgroundImage: showGrid && !isPreviewMode
-                        ? 'repeating-linear-gradient(0deg, transparent, transparent 9px, #f0f0f0 9px, #f0f0f0 10px), repeating-linear-gradient(90deg, transparent, transparent 9px, #f0f0f0 9px, #f0f0f0 10px)'
+                        ? 'repeating-linear-gradient(0deg, transparent, transparent 9px, #e5e5e5 9px, #e5e5e5 10px), repeating-linear-gradient(90deg, transparent, transparent 9px, #e5e5e5 9px, #e5e5e5 10px)'
                         : 'none',
                     }}
                   >
@@ -591,60 +745,17 @@ const ServicePointTemplates: React.FC = () => {
                         : element.content;
 
                       return (
-                        <div
+                        <DraggableBadgeElement
                           key={element.id}
-                          className={`absolute cursor-pointer transition-all duration-100 ${
-                            selectedElement === element.id && !isPreviewMode
-                              ? 'ring-2 ring-primary ring-offset-1'
-                              : ''
-                          } ${element.isLocked ? 'cursor-not-allowed' : ''}`}
-                          style={{
-                            left: `${mmToPixels(element.x) * scale}px`,
-                            top: `${mmToPixels(element.y) * scale}px`,
-                            width: `${mmToPixels(element.width) * scale}px`,
-                            height: `${mmToPixels(element.height) * scale}px`,
-                            fontSize: `${(element.fontSize || 14) * scale}px`,
-                            fontFamily: element.fontFamily || 'Inter',
-                            fontWeight: element.fontWeight || 'normal',
-                            textAlign: element.textAlign || 'left',
-                            color: element.color || '#000000',
-                            backgroundColor: element.backgroundColor || 'transparent',
-                            borderRadius: `${(element.borderRadius || 0) * scale}px`,
-                            opacity: element.opacity || 1,
-                            transform: `rotate(${element.rotation || 0}deg)`,
-                            zIndex: element.zIndex,
-                            display: element.isVisible === false ? 'none' : 'flex',
-                            alignItems: 'center',
-                            justifyContent: element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start',
-                            padding: element.type === 'text' ? `${2 * scale}px` : 0,
-                            overflow: 'hidden',
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isPreviewMode && !element.isLocked) {
-                              setSelectedElement(element.id);
-                            }
-                          }}
-                        >
-                          {element.type === 'text' && (
-                            <span className="whitespace-pre-wrap break-words w-full">{content}</span>
-                          )}
-                          {element.type === 'qr' && (
-                            <div className="w-full h-full bg-white border border-gray-200 rounded flex items-center justify-center p-1">
-                              <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm flex items-center justify-center">
-                                <QrCode className="w-1/2 h-1/2 text-white" />
-                              </div>
-                            </div>
-                          )}
-                          {element.type === 'image' && (
-                            <div className="w-full h-full bg-muted border border-gray-200 rounded flex items-center justify-center">
-                              <Image className="w-1/3 h-1/3 text-muted-foreground" />
-                            </div>
-                          )}
-                          {element.type === 'shape' && (
-                            <div className="w-full h-full" style={{ backgroundColor: element.backgroundColor }} />
-                          )}
-                        </div>
+                          element={element}
+                          scale={scale}
+                          isSelected={selectedElement === element.id}
+                          isPreviewMode={isPreviewMode}
+                          content={content}
+                          onSelect={setSelectedElement}
+                          onUpdate={updateElement}
+                          onUpdateComplete={() => pushToHistory(currentTemplate!)}
+                        />
                       );
                     })}
                   </div>
@@ -661,38 +772,47 @@ const ServicePointTemplates: React.FC = () => {
           {/* Right Panel - Properties */}
           <div className="col-span-3 space-y-4">
             {selectedElementData && !isPreviewMode ? (
-              <Card>
+              <Card className="overflow-hidden">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between text-sm font-semibold">
-                    <div className="flex items-center">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center text-sm font-semibold">
                       <Settings className="w-4 h-4 mr-2" />
                       Element Properties
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => updateElementWithHistory(selectedElement!, { isLocked: !selectedElementData.isLocked })}
-                      >
-                        {selectedElementData.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => duplicateElement(selectedElement!)}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => deleteElement(selectedElement!)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardTitle>
+                    </CardTitle>
+                    <Badge variant="secondary" className="text-xs capitalize">
+                      {selectedElementData.type}
+                    </Badge>
+                  </div>
+                  {/* Action buttons row - icon-only with hover tooltips */}
+                  <div className="flex items-center gap-1.5 mt-3 pt-3 border-t">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => updateElementWithHistory(selectedElement!, { isLocked: !selectedElementData.isLocked })}
+                      title={selectedElementData.isLocked ? 'Unlock element' : 'Lock element'}
+                    >
+                      {selectedElementData.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => duplicateElement(selectedElement!)}
+                      title="Duplicate element"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 ml-auto text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => deleteElement(selectedElement!)}
+                      title="Delete element"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Tabs defaultValue="content" className="w-full">

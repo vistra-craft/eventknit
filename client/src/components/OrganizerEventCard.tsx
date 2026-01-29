@@ -107,7 +107,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
       )}
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-foreground">
+          <h3 className="text-xl font-medium text-foreground">
             {event.title}
           </h3>
           {/* Hide category badge for specific events */}

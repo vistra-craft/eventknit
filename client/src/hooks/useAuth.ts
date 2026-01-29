@@ -192,9 +192,10 @@ export const useAuth = () => {
     const initAuth = async () => {
       // If already authenticated, don't re-initialize
       if (state.user && state.isAuthenticated) {
+        dispatch({ type: 'AUTH_CLEAR_ERROR' }); // Just clear loading state
         return;
       }
-      
+
       const token = localStorage.getItem('accessToken');
       if (token) {
         // Try to fetch profile to verify token
@@ -205,6 +206,9 @@ export const useAuth = () => {
           removeAccessToken();
           dispatch({ type: 'AUTH_LOGOUT' });
         }
+      } else {
+        // No token - user is not logged in, clear loading state
+        dispatch({ type: 'AUTH_LOGOUT' });
       }
     };
 

@@ -159,6 +159,8 @@ import ServicePointScanner from "./pages/admin/service-point/ServicePointScanner
 import ServicePointPrint from "./pages/admin/service-point/ServicePointPrint";
 import ServicePointTemplates from "./pages/admin/service-point/ServicePointTemplates";
 import ServicePointHistory from "./pages/admin/service-point/ServicePointHistory";
+import FacilityZones from "./pages/admin/service-point/FacilityZones";
+import RealtimeDashboard from "./pages/admin/service-point/RealtimeDashboard";
 // Auth imports
 import SignIn from "./pages/auth/SignIn";
 import ForgotPassword from "./pages/auth/ForgotPassword";
@@ -368,9 +370,11 @@ const App = () => (
       {/* Admin Service Point Routes */}
       <Route path="/admin/service-point" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointEvents /></ProtectedRoute>} />
       <Route path="/admin/service-point/event/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointEventDashboard /></ProtectedRoute>} />
+      <Route path="/admin/service-point/dashboard/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><RealtimeDashboard /></ProtectedRoute>} />
       <Route path="/admin/service-point/scanner" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointScanner /></ProtectedRoute>} />
       <Route path="/admin/service-point/print" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointPrint /></ProtectedRoute>} />
       <Route path="/admin/service-point/templates" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><ServicePointTemplates /></ProtectedRoute>} />
+      <Route path="/admin/service-point/zones/:eventId" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><FacilityZones /></ProtectedRoute>} />
       <Route path="/admin/service-point/history" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><ServicePointHistory /></ProtectedRoute>} />
           </Routes>
         </RoleViewWrapper>

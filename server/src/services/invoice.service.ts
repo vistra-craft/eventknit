@@ -528,7 +528,15 @@ export class InvoiceService {
    */
   static async markInvoiceAsSent(invoiceId: string, sentTo: string) {
     try {
-      const invoice = await prisma.invoice.update({
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: invoiceId },
+      });
+
+      if (!invoice) {
+        throw new NotFoundError('Invoice not found');
+      }
+
+      const updated = await prisma.invoice.update({
         where: { id: invoiceId },
         data: {
           status: 'SENT',
@@ -537,10 +545,14 @@ export class InvoiceService {
         },
       });
 
-      return invoice;
+      logger.info(`Invoice marked as sent: ${invoiceId}`);
+      return updated;
     } catch (error: any) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
       logger.error('Error marking invoice as sent:', error);
-      throw new ValidationError(`Failed to update invoice: ${error.message}`);
+      throw new ValidationError(`Failed to mark invoice as sent: ${error.message}`);
     }
   }
 
@@ -554,7 +566,15 @@ export class InvoiceService {
         throw new ValidationError(`Invalid invoice status: ${status}`);
       }
 
-      const invoice = await prisma.invoice.update({
+      const invoice = await prisma.invoice.findUnique({
+        where: { id: invoiceId },
+      });
+
+      if (!invoice) {
+        throw new NotFoundError('Invoice not found');
+      }
+
+      const updated = await prisma.invoice.update({
         where: { id: invoiceId },
         data: {
           status,
@@ -562,13 +582,14 @@ export class InvoiceService {
         },
       });
 
-      return invoice;
+      logger.info(`Invoice status updated: ${invoiceId} to ${status}`);
+      return updated;
     } catch (error: any) {
-      if (error instanceof ValidationError) {
+      if (error instanceof ValidationError || error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error updating invoice status:', error);
-      throw new ValidationError(`Failed to update invoice: ${error.message}`);
+      throw new ValidationError(`Failed to update invoice status: ${error.message}`);
     }
   }
 

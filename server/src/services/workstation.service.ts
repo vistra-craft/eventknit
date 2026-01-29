@@ -1,6 +1,8 @@
 import { prisma } from '../config/database.js';
 import { TicketSecurityService } from './ticket-security.service.js';
 import { LockService } from './lock.service.js';
+import { VenueCapacityService } from './venue-capacity.service.js';
+import { AlertService } from './alert.service.js';
 import { logger } from '../utils/logger.js';
 import { TicketStatus, ScanType, EventStatus, RegistrationStatus } from '@prisma/client';
 
@@ -471,6 +473,19 @@ export class WorkstationService {
           }
         }
 
+        // Check venue capacity before allowing check-in
+        const canCheckIn = await VenueCapacityService.canCheckIn(eventId);
+        if (!canCheckIn) {
+          return {
+            success: false,
+            registrationId,
+            eventId,
+            checkedInAt: new Date(),
+            errorCode: 'VENUE_AT_CAPACITY',
+            errorMessage: 'Venue is at maximum capacity. Check-in is temporarily blocked.',
+          };
+        }
+
         const now = new Date();
 
         // Find previous scan for re-entry linking
@@ -545,6 +560,20 @@ export class WorkstationService {
         // Log signature verification status for security monitoring
         if (validation.codeType === 'QR_CODE' && validation.signatureVerified === false) {
           logger.warn(`QR code scanned with invalid signature: registrationId=${registrationId}, eventId=${eventId}`);
+        }
+
+        // Update venue occupancy and check for capacity alerts
+        try {
+          const alerts = await VenueCapacityService.incrementOccupancy(eventId);
+          if (alerts.length > 0) {
+            // Send capacity alerts asynchronously (don't block check-in)
+            AlertService.sendCapacityAlerts(alerts).catch((err) => {
+              logger.error('Failed to send capacity alerts', { error: err, eventId });
+            });
+          }
+        } catch (capacityError) {
+          // Log but don't fail the check-in if capacity tracking fails
+          logger.error('Failed to update venue occupancy', { error: capacityError, eventId });
         }
 
         return {
@@ -674,6 +703,14 @@ export class WorkstationService {
             location: location || undefined,
           },
         });
+
+        // Update venue occupancy (decrement on check-out)
+        try {
+          await VenueCapacityService.decrementOccupancy(registration.eventId);
+        } catch (capacityError) {
+          // Log but don't fail the check-out if capacity tracking fails
+          logger.error('Failed to decrement venue occupancy', { error: capacityError, eventId: registration.eventId });
+        }
 
         return {
           success: true,

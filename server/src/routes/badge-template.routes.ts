@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { BadgeTemplateController } from '../controllers/badge-template.controller.js';
 import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
+import { uploadSingleImage } from '../utils/upload.js';
 
 const router = Router();
 
@@ -81,6 +82,29 @@ router.post(
   '/:id/set-default',
   requireMinRole(UserRole.ADMIN_STAFF),
   BadgeTemplateController.setDefaultTemplate,
+);
+
+/**
+ * @route   POST /api/v1/badge-templates/:id/background
+ * @desc    Upload background image for a badge template
+ * @access  Private (ADMIN_STAFF or higher)
+ */
+router.post(
+  '/:id/background',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  uploadSingleImage,
+  BadgeTemplateController.uploadBackgroundImage,
+);
+
+/**
+ * @route   DELETE /api/v1/badge-templates/:id/background
+ * @desc    Remove background image from a badge template
+ * @access  Private (ADMIN_STAFF or higher)
+ */
+router.delete(
+  '/:id/background',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  BadgeTemplateController.removeBackgroundImage,
 );
 
 export default router;

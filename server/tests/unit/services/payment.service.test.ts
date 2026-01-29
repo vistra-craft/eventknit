@@ -239,9 +239,8 @@ describe('PaymentService', () => {
       ).rejects.toThrow(NotFoundError);
     });
 
-    it.skip('should throw error if registration is not pending', async () => {
-      // SKIPPED: Service implementation missing - needs to be added to payment.service.ts
-      // The service should validate registration.status === RegistrationStatus.PENDING
+    it('should throw error if registration is not pending', async () => {
+      // Service now validates registration.status === RegistrationStatus.PENDING
       // Arrange
       const confirmedRegistration = {
         ...mockRegistration,

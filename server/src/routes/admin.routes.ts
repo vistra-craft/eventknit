@@ -42,12 +42,17 @@ import {
   updateBrandingStatusSchema,
   verifyCustomDomainSchema,
 } from '../validations/white-label.validations.js';
+import { AdminSecurityController } from '../controllers/admin-security.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireMinRole } from '../middleware/auth.middleware.js';
+import { adminSecurityCheck } from '../middleware/admin-security.middleware.js';
 import { UserRole } from '@prisma/client';
 import Joi from 'joi';
 
 const router = Router();
+
+// Admin security middleware - check domain/IP whitelisting FIRST
+router.use(adminSecurityCheck);
 
 // All admin routes require authentication
 router.use(authenticate);
@@ -829,6 +834,119 @@ router.delete(
   '/users/:userId/emergency-contact',
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
   ExtendedProfileController.deleteEmergencyContact,
+);
+
+// ========== Admin Security Settings (SUPERADMIN only) ==========
+
+/**
+ * @route   GET /api/v1/admin/security/settings
+ * @desc    Get all admin security settings (origins & IPs)
+ * @access  Private (SUPERADMIN only)
+ */
+router.get(
+  '/security/settings',
+  requireMinRole(UserRole.SUPERADMIN),
+  AdminSecurityController.getSecuritySettings,
+);
+
+/**
+ * @route   GET /api/v1/admin/security/allowed-origins
+ * @desc    Get admin allowed origins
+ * @access  Private (SUPERADMIN only)
+ */
+router.get(
+  '/security/allowed-origins',
+  requireMinRole(UserRole.SUPERADMIN),
+  AdminSecurityController.getAllowedOrigins,
+);
+
+/**
+ * @route   PUT /api/v1/admin/security/allowed-origins
+ * @desc    Update admin allowed origins
+ * @access  Private (SUPERADMIN only)
+ */
+router.put(
+  '/security/allowed-origins',
+  requireMinRole(UserRole.SUPERADMIN),
+  validate(Joi.object({
+    origins: Joi.array().items(Joi.string().uri().allow('*.', Joi.string().regex(/^\*\..+$/))).min(0).required(),
+  })),
+  AdminSecurityController.updateAllowedOrigins,
+);
+
+/**
+ * @route   POST /api/v1/admin/security/allowed-origins
+ * @desc    Add an origin to the allowed list
+ * @access  Private (SUPERADMIN only)
+ */
+router.post(
+  '/security/allowed-origins',
+  requireMinRole(UserRole.SUPERADMIN),
+  validate(Joi.object({
+    origin: Joi.string().required(),
+  })),
+  AdminSecurityController.addAllowedOrigin,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/security/allowed-origins/:origin
+ * @desc    Remove an origin from the allowed list
+ * @access  Private (SUPERADMIN only)
+ */
+router.delete(
+  '/security/allowed-origins/:origin',
+  requireMinRole(UserRole.SUPERADMIN),
+  AdminSecurityController.removeAllowedOrigin,
+);
+
+/**
+ * @route   GET /api/v1/admin/security/allowed-ips
+ * @desc    Get admin allowed IPs
+ * @access  Private (SUPERADMIN only)
+ */
+router.get(
+  '/security/allowed-ips',
+  requireMinRole(UserRole.SUPERADMIN),
+  AdminSecurityController.getAllowedIPs,
+);
+
+/**
+ * @route   PUT /api/v1/admin/security/allowed-ips
+ * @desc    Update admin allowed IPs
+ * @access  Private (SUPERADMIN only)
+ */
+router.put(
+  '/security/allowed-ips',
+  requireMinRole(UserRole.SUPERADMIN),
+  validate(Joi.object({
+    ips: Joi.array().items(Joi.string()).min(0).required(),
+  })),
+  AdminSecurityController.updateAllowedIPs,
+);
+
+/**
+ * @route   POST /api/v1/admin/security/allowed-ips
+ * @desc    Add an IP to the allowed list
+ * @access  Private (SUPERADMIN only)
+ */
+router.post(
+  '/security/allowed-ips',
+  requireMinRole(UserRole.SUPERADMIN),
+  validate(Joi.object({
+    ip: Joi.string().required(),
+  })),
+  AdminSecurityController.addAllowedIP,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/security/allowed-ips/:ip
+ * @desc    Remove an IP from the allowed list
+ * @access  Private (SUPERADMIN only)
+ */
+router.delete(
+  '/security/allowed-ips/:ip',
+  requireMinRole(UserRole.SUPERADMIN),
+  AdminSecurityController.removeAllowedIP,
 );
 
 export default router;

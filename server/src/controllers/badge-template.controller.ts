@@ -313,6 +313,92 @@ export class BadgeTemplateController {
   }
 
   /**
+   * Upload background image for a badge template
+   * POST /api/v1/badge-templates/:id/background
+   */
+  static async uploadBackgroundImage(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' },
+        });
+        return;
+      }
+
+      const id = req.params.id as string;
+
+      if (!id) {
+        throw new ValidationError('Template ID is required');
+      }
+
+      if (!req.file) {
+        throw new ValidationError('Image file is required');
+      }
+
+      // Validate file type (accept images only)
+      const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (!validTypes.includes(req.file.mimetype)) {
+        throw new ValidationError('Invalid file type. Only PNG, JPEG, and WebP images are allowed');
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (req.file.size > maxSize) {
+        throw new ValidationError('File size too large. Maximum size is 5MB');
+      }
+
+      const template = await BadgeTemplateService.uploadBackgroundImage(id, req.file.buffer);
+
+      res.status(200).json({
+        success: true,
+        data: { template },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Remove background image from a badge template
+   * DELETE /api/v1/badge-templates/:id/background
+   */
+  static async removeBackgroundImage(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' },
+        });
+        return;
+      }
+
+      const id = req.params.id as string;
+
+      if (!id) {
+        throw new ValidationError('Template ID is required');
+      }
+
+      const template = await BadgeTemplateService.removeBackgroundImage(id);
+
+      res.status(200).json({
+        success: true,
+        data: { template },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get the default template for a scope
    * GET /api/v1/badge-templates/default
    */

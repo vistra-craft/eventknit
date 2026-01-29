@@ -110,6 +110,10 @@ export class PaymentService {
       throw new ValidationError('Payment already completed');
     }
 
+    if (registration.status !== RegistrationStatus.PENDING) {
+      throw new ValidationError('Can only initialize payment for pending registrations');
+    }
+
     // Select gateway (use specified or default)
     const gatewayType = data.gateway || this.gatewayManager.getDefaultGateway().getName() as GatewayType;
     const gatewayInstance = this.gatewayManager.getGateway(gatewayType);

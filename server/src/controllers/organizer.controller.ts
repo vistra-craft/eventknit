@@ -252,7 +252,8 @@ export class OrganizerController {
   }
 
   /**
-   * Check if organizer has dashboard access (has created at least one event)
+   * Check organizer's dashboard access tier
+   * Returns tier level and event details for proper access control
    */
   static async getDashboardAccess(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -264,15 +265,41 @@ export class OrganizerController {
         return;
       }
 
-      const hasAccess = await OrganizerService.hasEvent(req.user.id);
+      const accessInfo = await OrganizerService.getDashboardAccessTier(req.user.id);
+
+      // For backwards compatibility, hasAccess is true if tier > 0
+      const hasAccess = accessInfo.tier > 0;
+
+      // Determine appropriate message based on tier
+      let message: string;
+      switch (accessInfo.tier) {
+      case 0:
+        message = 'Create your first event to access the dashboard';
+        break;
+      case 1:
+        message = 'Your event is pending approval. You have read-only access to the dashboard.';
+        break;
+      case 2:
+        message = 'You have full access to the dashboard';
+        break;
+      case 3:
+        message = 'You have full access to the dashboard with advanced features';
+        break;
+      default:
+        message = 'Dashboard access';
+      }
 
       res.status(200).json({
         success: true,
         data: {
           hasAccess,
-          message: hasAccess
-            ? 'You have access to the dashboard'
-            : 'Create your first event to access the dashboard',
+          tier: accessInfo.tier,
+          hasApprovedEvent: accessInfo.hasApprovedEvent,
+          hasPendingEvent: accessInfo.hasPendingEvent,
+          pendingEvents: accessInfo.pendingEvents,
+          approvedEvents: accessInfo.approvedEvents,
+          verificationLevel: accessInfo.verificationLevel,
+          message,
         },
       });
     } catch (error) {

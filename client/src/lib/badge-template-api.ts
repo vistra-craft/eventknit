@@ -9,7 +9,8 @@ import { apiGet, apiPost, apiPut, apiDelete } from './api';
 // ==================== Types ====================
 
 export type BadgeSize = '4x3' | '3.5x2.25' | '4x6' | 'A6' | 'custom';
-export type ElementType = 'text' | 'image' | 'qr' | 'shape' | 'logo' | 'barcode';
+export type ElementType = 'text' | 'image' | 'qr' | 'shape' | 'logo' | 'barcode' | 'ribbon';
+export type RibbonIcon = 'crown' | 'star' | 'check-circle' | 'award' | 'badge' | 'none';
 export type TextAlign = 'left' | 'center' | 'right';
 export type FontWeight = 'normal' | 'bold' | 'light';
 
@@ -45,6 +46,9 @@ export interface BadgeElement {
   isVisible?: boolean;
   // Lock position
   isLocked?: boolean;
+  // Ribbon-specific properties
+  ribbonIcon?: RibbonIcon;
+  ribbonGradient?: string; // CSS gradient string
 }
 
 export interface BadgeTemplate {

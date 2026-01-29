@@ -641,7 +641,15 @@ const ServicePointEventDashboard: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Button
+                variant="outline"
+                className="h-20 flex flex-col items-center justify-center space-y-2"
+                onClick={() => navigate(`/admin/service-point/dashboard/${eventId}`)}
+              >
+                <Activity className="w-6 h-6 text-green-600" />
+                <span>Live Dashboard</span>
+              </Button>
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"

@@ -19,11 +19,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader } from "@/components/ui/loader";
 import OrganizerEventCard from "../../components/OrganizerEventCard";
-import { getOrganizerDashboardStats, getOrganizerDashboardEvents, getSubscription, type OrganizerDashboardEvent, type OrganizerSubscription } from "../../lib/organizer-api";
+import { getOrganizerDashboardStats, getOrganizerDashboardEvents, getSubscription, type OrganizerDashboardEvent, type OrganizerSubscription, type DashboardAccessTier } from "../../lib/organizer-api";
 import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
 
-const EnhancedDashboard = () => {
+interface EnhancedDashboardProps {
+  tier?: DashboardAccessTier;
+}
+
+const EnhancedDashboard: React.FC<EnhancedDashboardProps> = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState("30d");

@@ -497,12 +497,106 @@ export class OrganizerService {
 
   /**
    * Check if organizer has created at least one event (any status)
+   * @deprecated Use getDashboardAccessTier for proper access control
    */
   static async hasEvent(organizerId: string): Promise<boolean> {
     const event = await prisma.event.findFirst({
       where: {
         organizerId,
         deletedAt: null,
+      },
+      select: { id: true },
+    });
+    return !!event;
+  }
+
+  /**
+   * Get organizer's dashboard access tier based on event status and verification level
+   * Tier 0: No events - redirect to event creation
+   * Tier 1: Has PENDING event only - read-only dashboard (view event, edit draft)
+   * Tier 2: Has APPROVED event - full dashboard access
+   * Tier 3: Has APPROVED event + KYC verified (level 2+) - advanced features
+   */
+  static async getDashboardAccessTier(organizerId: string): Promise<{
+    tier: 0 | 1 | 2 | 3;
+    hasApprovedEvent: boolean;
+    hasPendingEvent: boolean;
+    pendingEvents: Array<{ id: string; title: string; status: string; createdAt: Date }>;
+    approvedEvents: Array<{ id: string; title: string; status: string }>;
+    verificationLevel: number;
+  }> {
+    // Get all events for this organizer
+    const events = await prisma.event.findMany({
+      where: {
+        organizerId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Get user's verification level
+    const user = await prisma.user.findUnique({
+      where: { id: organizerId },
+      select: { verificationLevel: true },
+    });
+
+    const verificationLevel = user?.verificationLevel ?? 1;
+
+    // Categorize events by status
+    const approvedEvents = events.filter(
+      (e) => e.status === 'APPROVED' || e.status === 'COMPLETED',
+    );
+    const pendingEvents = events.filter((e) => e.status === 'PENDING');
+
+    const hasApprovedEvent = approvedEvents.length > 0;
+    const hasPendingEvent = pendingEvents.length > 0;
+
+    // Determine tier
+    let tier: 0 | 1 | 2 | 3 = 0;
+
+    if (hasApprovedEvent && verificationLevel >= 2) {
+      tier = 3; // Full KYC verified with approved event
+    } else if (hasApprovedEvent) {
+      tier = 2; // Has approved event
+    } else if (hasPendingEvent) {
+      tier = 1; // Only pending events
+    }
+    // tier 0: No events at all
+
+    return {
+      tier,
+      hasApprovedEvent,
+      hasPendingEvent,
+      pendingEvents: pendingEvents.map((e) => ({
+        id: e.id,
+        title: e.title,
+        status: e.status,
+        createdAt: e.createdAt,
+      })),
+      approvedEvents: approvedEvents.map((e) => ({
+        id: e.id,
+        title: e.title,
+        status: e.status,
+      })),
+      verificationLevel,
+    };
+  }
+
+  /**
+   * Check if organizer has at least one approved event
+   */
+  static async hasApprovedEvent(organizerId: string): Promise<boolean> {
+    const event = await prisma.event.findFirst({
+      where: {
+        organizerId,
+        deletedAt: null,
+        status: { in: ['APPROVED', 'COMPLETED'] },
       },
       select: { id: true },
     });

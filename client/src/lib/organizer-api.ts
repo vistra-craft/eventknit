@@ -98,12 +98,40 @@ export interface OrganizerDashboardEventsResponse {
 }
 
 /**
- * Check if organizer has dashboard access (has created an event)
+ * Dashboard access tier levels:
+ * 0 = No events - redirect to event creation
+ * 1 = Has PENDING event only - read-only dashboard
+ * 2 = Has APPROVED event - full dashboard access
+ * 3 = Has APPROVED event + KYC verified - advanced features
+ */
+export type DashboardAccessTier = 0 | 1 | 2 | 3;
+
+export interface PendingEvent {
+  id: string;
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface ApprovedEvent {
+  id: string;
+  title: string;
+  status: string;
+}
+
+/**
+ * Check organizer's dashboard access tier
  */
 export interface DashboardAccessResponse {
   success: boolean;
   data: {
     hasAccess: boolean;
+    tier: DashboardAccessTier;
+    hasApprovedEvent: boolean;
+    hasPendingEvent: boolean;
+    pendingEvents: PendingEvent[];
+    approvedEvents: ApprovedEvent[];
+    verificationLevel: number;
     message: string;
   };
 }

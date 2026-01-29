@@ -1,3 +1,6 @@
+/* React Resizable styles for draggable badge elements - must be first */
+@import 'react-resizable/css/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -156,6 +159,15 @@
     --transition-spring: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     /* ========================================================================
+       CHART COLORS - For Recharts and other chart libraries
+       ======================================================================== */
+    --chart-1: 142 76% 36%;             /* Green - primary chart color */
+    --chart-2: 142 71% 45%;             /* Green - secondary chart color */
+    --chart-3: 204 88% 53%;             /* Blue - accent chart color */
+    --chart-4: 262 83% 58%;             /* Purple - accent chart color */
+    --chart-5: 24 95% 53%;              /* Orange - accent chart color */
+
+    /* ========================================================================
        SHADCN COMPONENT COLORS - Light Theme
        ======================================================================== */
     --card: var(--card-surface);
@@ -266,6 +278,13 @@
     --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-blue) / 0.3);
     --shadow-glow: 0 0 40px hsl(var(--color-blue-glow) / 0.5);
     --shadow-elevated: 0 20px 40px -12px hsl(var(--color-blue) / 0.3);
+
+    /* Chart Colors - Dark Theme (slightly brighter for visibility) */
+    --chart-1: 142 71% 50%;             /* Green - brighter for dark mode */
+    --chart-2: 142 71% 55%;             /* Green - secondary chart color */
+    --chart-3: 204 88% 58%;             /* Blue - accent chart color */
+    --chart-4: 262 83% 63%;             /* Purple - accent chart color */
+    --chart-5: 24 95% 58%;              /* Orange - accent chart color */
 
     /* ShadCN Component Colors - Dark Theme */
     --card: 0 0% 13%;

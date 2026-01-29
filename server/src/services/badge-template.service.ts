@@ -7,6 +7,7 @@ import { prisma } from '../config/database.js';
 import { Prisma } from '@prisma/client';
 import { ValidationError, NotFoundError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { uploadImageToCloudinary, deleteImageFromCloudinary, extractPublicIdFromUrl } from './cloudinary.service.js';
 
 export interface BadgeElement {
   id: string;
@@ -52,6 +53,7 @@ export interface UpdateBadgeTemplateInput {
   sizePreset?: string;
   orientation?: 'portrait' | 'landscape';
   backgroundColor?: string;
+  backgroundImage?: string;
   elements?: BadgeElement[];
   isDefault?: boolean;
   isActive?: boolean;
@@ -323,6 +325,96 @@ export class BadgeTemplateService {
       if (error instanceof NotFoundError) throw error;
       logger.error('Failed to duplicate badge template:', error);
       throw new ValidationError('Failed to duplicate badge template');
+    }
+  }
+
+  /**
+   * Upload background image for a badge template
+   */
+  static async uploadBackgroundImage(id: string, imageBuffer: Buffer) {
+    try {
+      // Check if template exists
+      const existing = await prisma.badgeTemplate.findUnique({
+        where: { id },
+      });
+
+      if (!existing) {
+        throw new NotFoundError('Badge template not found');
+      }
+
+      // Delete old background image if it exists
+      if (existing.backgroundImage) {
+        const publicId = extractPublicIdFromUrl(existing.backgroundImage);
+        if (publicId) {
+          await deleteImageFromCloudinary(publicId);
+        }
+      }
+
+      // Upload new background image to Cloudinary
+      const uploadResult = await uploadImageToCloudinary(
+        imageBuffer,
+        'eventknit/badge-backgrounds',
+        {
+          width: 2000, // High resolution for print quality
+          height: 2000,
+          quality: 90,
+          format: 'png', // PNG for transparency support
+        },
+      );
+
+      // Update template with new background image URL
+      const template = await prisma.badgeTemplate.update({
+        where: { id },
+        data: {
+          backgroundImage: uploadResult.secureUrl,
+          updatedAt: new Date(),
+        },
+      });
+
+      return template;
+    } catch (error) {
+      if (error instanceof NotFoundError) throw error;
+      logger.error('Failed to upload background image:', error);
+      throw new ValidationError('Failed to upload background image');
+    }
+  }
+
+  /**
+   * Remove background image from a badge template
+   */
+  static async removeBackgroundImage(id: string) {
+    try {
+      // Check if template exists
+      const existing = await prisma.badgeTemplate.findUnique({
+        where: { id },
+      });
+
+      if (!existing) {
+        throw new NotFoundError('Badge template not found');
+      }
+
+      // Delete background image from Cloudinary if it exists
+      if (existing.backgroundImage) {
+        const publicId = extractPublicIdFromUrl(existing.backgroundImage);
+        if (publicId) {
+          await deleteImageFromCloudinary(publicId);
+        }
+      }
+
+      // Remove background image URL from template
+      const template = await prisma.badgeTemplate.update({
+        where: { id },
+        data: {
+          backgroundImage: null,
+          updatedAt: new Date(),
+        },
+      });
+
+      return template;
+    } catch (error) {
+      if (error instanceof NotFoundError) throw error;
+      logger.error('Failed to remove background image:', error);
+      throw new ValidationError('Failed to remove background image');
     }
   }
 

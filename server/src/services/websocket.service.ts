@@ -32,6 +32,34 @@ export interface StatisticsUpdate {
   timestamp: Date;
 }
 
+export interface NewScanNotification {
+  scanId: string;
+  registrationId: string;
+  attendeeName: string;
+  ticketType?: string;
+  facilityName?: string;
+  zoneName?: string;
+  scannedAt: Date;
+  scannedByName: string;
+}
+
+export interface CapacityAlert {
+  zoneId: string;
+  zoneName: string;
+  currentOccupancy: number;
+  maxCapacity: number;
+  percentage: number;
+  threshold: number; // e.g., 80, 95
+}
+
+export interface StaffMetricsUpdate {
+  staffId: string;
+  staffName: string;
+  totalScans: number;
+  scansPerHour: number;
+  avgScanTime: number;
+}
+
 class WebSocketService {
   private io: SocketIOServer | null = null;
   private connectedClients: Map<string, AuthenticatedSocket> = new Map();
@@ -352,6 +380,48 @@ class WebSocketService {
 
     this.io.to(`user:${userId}:notifications`).emit('notification:deleted', { notificationId });
     logger.debug(`Notified user ${userId} that notification ${notificationId} was deleted`);
+  }
+
+  /**
+   * Emit new scan notification to event room (for real-time dashboard)
+   */
+  emitNewScan(eventId: string, notification: NewScanNotification): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot emit scan notification');
+      return;
+    }
+
+    this.io.to(`event:${eventId}`).emit('scan:new', notification);
+    logger.debug(`Emitted new scan notification to event: ${eventId}`, { scanId: notification.scanId });
+  }
+
+  /**
+   * Emit capacity alert to event room
+   */
+  emitCapacityAlert(eventId: string, alert: CapacityAlert): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot emit capacity alert');
+      return;
+    }
+
+    this.io.to(`event:${eventId}`).emit('capacity:alert', alert);
+    logger.info(`Emitted capacity alert to event: ${eventId}`, {
+      zone: alert.zoneName,
+      percentage: alert.percentage,
+    });
+  }
+
+  /**
+   * Emit staff metrics update to event room
+   */
+  emitStaffMetrics(eventId: string, metrics: StaffMetricsUpdate[]): void {
+    if (!this.io) {
+      logger.warn('WebSocket server not initialized, cannot emit staff metrics');
+      return;
+    }
+
+    this.io.to(`event:${eventId}`).emit('staff:metrics', metrics);
+    logger.debug(`Emitted staff metrics to event: ${eventId}`, { count: metrics.length });
   }
 
   /**

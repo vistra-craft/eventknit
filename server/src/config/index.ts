@@ -155,6 +155,44 @@ export const config = {
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },
+
+  admin: {
+    // Admin-specific allowed origins (separate from general CORS)
+    allowedOrigins: process.env.ADMIN_ALLOWED_ORIGINS
+      ? process.env.ADMIN_ALLOWED_ORIGINS.includes(',')
+        ? process.env.ADMIN_ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+        : [process.env.ADMIN_ALLOWED_ORIGINS]
+      : ['http://localhost:5173', 'http://localhost:3001'], // Default for development
+
+    // IP whitelist for admin access
+    allowedIPs: process.env.ADMIN_ALLOWED_IPS
+      ? process.env.ADMIN_ALLOWED_IPS.includes(',')
+        ? process.env.ADMIN_ALLOWED_IPS.split(',').map(ip => ip.trim())
+        : [process.env.ADMIN_ALLOWED_IPS]
+      : [], // Empty array means IP check is disabled by default
+
+    // Enable/disable IP whitelisting
+    enableIPWhitelist: process.env.ADMIN_ENABLE_IP_WHITELIST === 'true',
+
+    // Allow requests with no origin (mobile apps, curl) for admin endpoints
+    allowNoOrigin: process.env.ADMIN_ALLOW_NO_ORIGIN === 'true' || env === 'development',
+
+    // Allow all localhost origins in development
+    allowLocalhostInDev: process.env.ADMIN_ALLOW_LOCALHOST_IN_DEV !== 'false', // Default true
+
+    // Allow all IPs in development (disable IP whitelist in dev)
+    allowAllIPsInDev: process.env.ADMIN_ALLOW_ALL_IPS_IN_DEV !== 'false', // Default true
+
+    // Require specific subdomain for admin access (e.g., admin.eventknit.com)
+    requireSpecificSubdomain: process.env.ADMIN_REQUIRE_SUBDOMAIN === 'true',
+    requiredSubdomain: process.env.ADMIN_REQUIRED_SUBDOMAIN || 'admin.localhost', // e.g., 'admin.eventknit.com'
+
+    // Geographic restrictions (future enhancement)
+    enableGeoRestriction: process.env.ADMIN_ENABLE_GEO_RESTRICTION === 'true',
+    allowedCountries: process.env.ADMIN_ALLOWED_COUNTRIES
+      ? process.env.ADMIN_ALLOWED_COUNTRIES.split(',').map(c => c.trim())
+      : [],
+  },
 };
 
 // Validate required environment variables in production

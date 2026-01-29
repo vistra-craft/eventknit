@@ -106,12 +106,12 @@ export const EventCard: React.FC<EventCardProps> = ({
       {/* Event Details */}
       <div className="pt-4 pb-2 pl-4 space-y-2">
         {/* Title */}
-        <h3 className="text-lg font-bold text-foreground transition-colors duration-300 line-clamp-2 leading-tight">
+        <h3 className="text-lg font-medium text-foreground transition-colors duration-300 line-clamp-2 leading-tight">
           {title}
         </h3>
 
         {/* Date */}
-        <div className="flex items-center gap-2 text-sm font-medium text-primary transition-colors">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="w-4 h-4" />
           <span>{dateDisplay}</span>
         </div>

@@ -138,6 +138,27 @@ export const requireMinRole = (minRole: UserRole) => {
 };
 
 /**
+ * Middleware to check if user has one of the allowed roles
+ */
+export const requireRole = (allowedRoles: UserRole[]) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError('Authentication required');
+      }
+
+      if (!allowedRoles.includes(req.user.role)) {
+        throw new AuthorizationError('You do not have sufficient permissions');
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
  * Optional authentication - attaches user if token is present, but doesn't fail if missing
  */
 export const optionalAuth = async (

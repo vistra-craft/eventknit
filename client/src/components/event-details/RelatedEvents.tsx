@@ -47,7 +47,7 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
   if (isLoading) {
     return (
       <section className="space-y-6">
-        <h2 className="text-3xl font-bold">You Might Also Like</h2>
+        <h2 className="text-2xl font-semibold text-foreground">You Might Also Like</h2>
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" />
         </div>
@@ -61,7 +61,7 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
 
   return (
     <section className="space-y-6">
-      <h2 className="text-3xl font-bold">You Might Also Like</h2>
+      <h2 className="text-2xl font-semibold text-foreground">You Might Also Like</h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {relatedEvents.map((event, index) => (

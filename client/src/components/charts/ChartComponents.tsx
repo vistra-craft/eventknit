@@ -21,9 +21,9 @@ import {
   Scatter,
   ScatterChart,
 } from 'recharts';
-import { CHART_COLORS, CHART_COLOR_ARRAY } from './chartConstants';
+import { CHART_COLORS, CHART_COLOR_ARRAY, CHART_HOVER_COLORS, CHART_FILL_COLORS, CHART_GRID_COLORS } from './chartConstants';
 
-// Custom tooltip component
+// Custom tooltip component with theme-aware styling
 interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{
@@ -58,6 +58,29 @@ const CustomTooltip = ({ active, payload, label, formatter }: CustomTooltipProps
   return null;
 };
 
+// Helper to get hover color based on the main color
+const getHoverColor = (color: string): string => {
+  if (color === CHART_COLORS.primary) return CHART_HOVER_COLORS.primary;
+  if (color === CHART_COLORS.secondary || color === CHART_COLORS.info || color === CHART_COLORS.teal) return CHART_HOVER_COLORS.chart1;
+  if (color === CHART_COLORS.purple || color === CHART_COLORS.pink) return CHART_HOVER_COLORS.chart4;
+  if (color === CHART_COLORS.orange || color === CHART_COLORS.warning) return CHART_HOVER_COLORS.chart5;
+  if (color === CHART_COLORS.success) return CHART_HOVER_COLORS.success;
+  if (color === CHART_COLORS.indigo) return CHART_HOVER_COLORS.chart3;
+  // Default to a muted green hover
+  return CHART_HOVER_COLORS.chart2;
+};
+
+// Helper to get fill color for areas
+const getFillColor = (color: string): string => {
+  if (color === CHART_COLORS.primary) return CHART_FILL_COLORS.primary;
+  if (color === CHART_COLORS.secondary || color === CHART_COLORS.info || color === CHART_COLORS.teal) return CHART_FILL_COLORS.chart1;
+  if (color === CHART_COLORS.purple || color === CHART_COLORS.pink) return CHART_FILL_COLORS.chart4;
+  if (color === CHART_COLORS.orange || color === CHART_COLORS.warning) return CHART_FILL_COLORS.chart5;
+  if (color === CHART_COLORS.success) return CHART_FILL_COLORS.success;
+  if (color === CHART_COLORS.indigo) return CHART_FILL_COLORS.chart3;
+  return CHART_FILL_COLORS.chart2;
+};
+
 // Line Chart Component
 interface LineChartProps {
   data: unknown[];
@@ -87,22 +110,22 @@ export const CustomLineChart: React.FC<LineChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis 
-          dataKey={xAxisKey} 
-          stroke="#6b7280"
+        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLORS.grid} className="opacity-40" />}
+        <XAxis
+          dataKey={xAxisKey}
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
-        <YAxis 
-          stroke="#6b7280"
+        <YAxis
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
             cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '5 5' }}
           />
@@ -114,7 +137,7 @@ export const CustomLineChart: React.FC<LineChartProps> = ({
           stroke={color}
           strokeWidth={strokeWidth}
           dot={{ fill: color, strokeWidth: 2, r: 4 }}
-          activeDot={{ r: 6, stroke: color, strokeWidth: 2 }}
+          activeDot={{ r: 6, stroke: color, strokeWidth: 2, fill: 'hsl(var(--background))' }}
         />
       </LineChart>
     </ResponsiveContainer>
@@ -148,22 +171,22 @@ export const CustomAreaChart: React.FC<AreaChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis 
-          dataKey={xAxisKey} 
-          stroke="#6b7280"
+        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLORS.grid} className="opacity-40" />}
+        <XAxis
+          dataKey={xAxisKey}
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
-        <YAxis 
-          stroke="#6b7280"
+        <YAxis
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
             cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '5 5' }}
           />
@@ -173,7 +196,7 @@ export const CustomAreaChart: React.FC<AreaChartProps> = ({
           type="monotone"
           dataKey={dataKey}
           stroke={color}
-          fill={`${color}20`}
+          fill={getFillColor(color)}
           strokeWidth={2}
         />
       </AreaChart>
@@ -208,29 +231,29 @@ export const CustomBarChart: React.FC<BarChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis 
-          dataKey={xAxisKey} 
-          stroke="#6b7280"
+        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLORS.grid} className="opacity-40" />}
+        <XAxis
+          dataKey={xAxisKey}
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
-        <YAxis 
-          stroke="#6b7280"
+        <YAxis
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
-            cursor={{ fill: `${color}20` }}
+            cursor={{ fill: getHoverColor(color) }}
           />
         )}
         {showLegend && <Legend />}
-        <Bar 
-          dataKey={dataKey} 
+        <Bar
+          dataKey={dataKey}
           fill={color}
           radius={[4, 4, 0, 0]}
         />
@@ -272,7 +295,7 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
           labelLine={false}
           label={({ name, percent }) => `${name} ${((percent as number) * 100).toFixed(0)}%`}
           outerRadius={80}
-          fill="#8884d8"
+          fill={CHART_COLORS.primary}
           dataKey={dataKey}
         >
           {data.map((_, index) => (
@@ -280,7 +303,7 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
           ))}
         </Pie>
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
           />
         )}
@@ -320,22 +343,22 @@ export const CustomMultiLineChart: React.FC<MultiLineChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis 
-          dataKey={xAxisKey} 
-          stroke="#6b7280"
+        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLORS.grid} className="opacity-40" />}
+        <XAxis
+          dataKey={xAxisKey}
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
-        <YAxis 
-          stroke="#6b7280"
+        <YAxis
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
           />
         )}
@@ -349,7 +372,7 @@ export const CustomMultiLineChart: React.FC<MultiLineChartProps> = ({
             stroke={line.color}
             strokeWidth={line.strokeWidth || 2}
             dot={{ fill: line.color, strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6, stroke: line.color, strokeWidth: 2 }}
+            activeDot={{ r: 6, stroke: line.color, strokeWidth: 2, fill: 'hsl(var(--background))' }}
           />
         ))}
       </LineChart>
@@ -393,22 +416,22 @@ export const CustomComposedChart: React.FC<ComposedChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis 
-          dataKey={xAxisKey} 
-          stroke="#6b7280"
+        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLORS.grid} className="opacity-40" />}
+        <XAxis
+          dataKey={xAxisKey}
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
-        <YAxis 
-          stroke="#6b7280"
+        <YAxis
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
           />
         )}
@@ -431,7 +454,7 @@ export const CustomComposedChart: React.FC<ComposedChartProps> = ({
             stroke={line.color}
             strokeWidth={line.strokeWidth || 2}
             dot={{ fill: line.color, strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6, stroke: line.color, strokeWidth: 2 }}
+            activeDot={{ r: 6, stroke: line.color, strokeWidth: 2, fill: 'hsl(var(--background))' }}
           />
         ))}
       </ComposedChart>
@@ -466,14 +489,14 @@ export const CustomRadialBarChart: React.FC<RadialBarChartProps> = ({
         <RadialBar
           dataKey={dataKey}
           cornerRadius={10}
-          fill="#8884d8"
+          fill={CHART_COLORS.primary}
         >
           {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </RadialBar>
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
           />
         )}
@@ -510,29 +533,29 @@ export const CustomScatterChart: React.FC<ScatterChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ScatterChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />}
-        <XAxis 
-          dataKey={xDataKey} 
-          stroke="#6b7280"
+        {showGrid && <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLORS.grid} className="opacity-40" />}
+        <XAxis
+          dataKey={xDataKey}
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
-        <YAxis 
+        <YAxis
           dataKey={yDataKey}
-          stroke="#6b7280"
+          stroke={CHART_GRID_COLORS.axis}
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         {showTooltip && (
-          <Tooltip 
+          <Tooltip
             content={<CustomTooltip formatter={formatter} />}
           />
         )}
         {showLegend && <Legend />}
-        <Scatter 
-          dataKey={yDataKey} 
+        <Scatter
+          dataKey={yDataKey}
           fill={color}
         />
       </ScatterChart>

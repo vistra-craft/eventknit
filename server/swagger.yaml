@@ -49,6 +49,10 @@ tags:
     description: Analytics and reporting
   - name: Financial
     description: Financial management and reporting
+  - name: Service Point
+    description: Service point operations including badge templates, workstation, and facility management
+  - name: Offline Sync
+    description: Offline data synchronization for mobile devices
 
 components:
   securitySchemes:
@@ -454,6 +458,725 @@ components:
         addedAt:
           type: string
           format: date-time
+
+    # Badge Template Schemas
+    BadgeElement:
+      type: object
+      required:
+        - id
+        - type
+        - content
+        - x
+        - y
+        - width
+        - height
+        - zIndex
+      properties:
+        id:
+          type: string
+          description: Unique element identifier
+        type:
+          type: string
+          enum: [text, image, qr, shape, logo, barcode, ribbon]
+          description: Element type
+        content:
+          type: string
+          description: Element content (can include template variables like {{fullName}})
+        x:
+          type: number
+          description: X position in millimeters
+        y:
+          type: number
+          description: Y position in millimeters
+        width:
+          type: number
+          description: Width in millimeters
+        height:
+          type: number
+          description: Height in millimeters
+        fontSize:
+          type: number
+          nullable: true
+          description: Font size for text elements
+        fontFamily:
+          type: string
+          nullable: true
+          description: Font family for text elements
+        fontWeight:
+          type: string
+          enum: [normal, bold, light]
+          nullable: true
+        textAlign:
+          type: string
+          enum: [left, center, right]
+          nullable: true
+        color:
+          type: string
+          nullable: true
+          description: Text or foreground color (hex format)
+        backgroundColor:
+          type: string
+          nullable: true
+          description: Background color (hex format)
+        borderRadius:
+          type: number
+          nullable: true
+          description: Border radius in pixels
+        opacity:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+        rotation:
+          type: number
+          nullable: true
+          description: Rotation angle in degrees
+        zIndex:
+          type: integer
+          description: Layer order (higher = on top)
+        isVisible:
+          type: boolean
+          nullable: true
+        isLocked:
+          type: boolean
+          nullable: true
+        ribbonIcon:
+          type: string
+          enum: [crown, star, check-circle, award, badge, none]
+          nullable: true
+          description: Icon for ribbon elements
+        ribbonGradient:
+          type: string
+          nullable: true
+          description: CSS gradient string for ribbon background
+
+    BadgeTemplate:
+      type: object
+      required:
+        - id
+        - name
+        - width
+        - height
+        - sizePreset
+        - orientation
+        - backgroundColor
+        - elements
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Template name
+        description:
+          type: string
+          nullable: true
+          description: Template description
+        width:
+          type: number
+          description: Badge width in millimeters
+          example: 101.6
+        height:
+          type: number
+          description: Badge height in millimeters
+          example: 76.2
+        sizePreset:
+          type: string
+          enum: [4x3, 3.5x2.25, 4x6, A6, custom]
+          description: Preset badge size
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+        backgroundColor:
+          type: string
+          description: Background color (hex format)
+          example: "#ffffff"
+        backgroundImage:
+          type: string
+          nullable: true
+          description: URL to background image (Cloudinary)
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeElement'
+        isDefault:
+          type: boolean
+          description: Whether this is the default template
+        isActive:
+          type: boolean
+          description: Whether the template is active
+        organizerId:
+          type: string
+          format: uuid
+          nullable: true
+        eventId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FacilityZone:
+      type: object
+      required:
+        - id
+        - eventId
+        - name
+        - code
+        - currentOccupancy
+        - isActive
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Zone display name
+          example: "VIP Lounge"
+        code:
+          type: string
+          description: Unique zone code (max 10 chars)
+          example: "VIP"
+        description:
+          type: string
+          nullable: true
+          description: Zone description
+        maxCapacity:
+          type: integer
+          nullable: true
+          description: Maximum simultaneous occupancy (null = unlimited)
+          example: 100
+        currentOccupancy:
+          type: integer
+          description: Current number of people in zone
+          example: 25
+        accessStart:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zone opening time
+        accessEnd:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zone closing time
+        isActive:
+          type: boolean
+          description: Whether the zone is active
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FacilityZoneMapping:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        facility:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+
+    AttendeeZoneAccess:
+      type: object
+      required:
+        - id
+        - registrationId
+        - zoneId
+        - grantedBy
+        - isActive
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        grantedAt:
+          type: string
+          format: date-time
+        grantedBy:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        isActive:
+          type: boolean
+        accessCount:
+          type: integer
+          description: Number of times accessed
+        lastAccessAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ZoneCapacityInfo:
+      type: object
+      properties:
+        currentOccupancy:
+          type: integer
+          example: 75
+        maxCapacity:
+          type: integer
+          nullable: true
+          example: 100
+        availableCapacity:
+          type: integer
+          nullable: true
+          example: 25
+        isFull:
+          type: boolean
+          example: false
+        percentFull:
+          type: integer
+          description: Percentage of capacity used (0-100)
+          example: 75
+
+    FacilityMovement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        fromZoneId:
+          type: string
+          format: uuid
+          nullable: true
+        toZoneId:
+          type: string
+          format: uuid
+        movementType:
+          type: string
+          enum: [entry, zone_change, exit]
+        sequenceNumber:
+          type: integer
+          description: Movement sequence (1, 2, 3...)
+        scannedAt:
+          type: string
+          format: date-time
+        scannedBy:
+          type: string
+          format: uuid
+
+    Printer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          description: User-friendly printer name
+        driver:
+          type: string
+          enum: [cups, windows, printnode]
+          description: Printer driver type
+        deviceId:
+          type: string
+          description: System printer name or cloud ID
+        host:
+          type: string
+          nullable: true
+          description: Network printer host
+        port:
+          type: integer
+          nullable: true
+          description: Network printer port
+        apiKey:
+          type: string
+          nullable: true
+          description: PrintNode API key for cloud printing
+        supportedSizes:
+          type: array
+          items:
+            type: string
+          description: Supported paper sizes
+        paperSize:
+          type: string
+          description: Default paper size
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+          description: Default orientation
+        isOnline:
+          type: boolean
+          description: Current online status
+        isActive:
+          type: boolean
+          description: Whether printer is active (not soft-deleted)
+        lastChecked:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+
+    PrinterConfig:
+      type: object
+      required:
+        - name
+        - driver
+        - deviceId
+      properties:
+        name:
+          type: string
+          description: User-friendly printer name
+          minLength: 1
+          maxLength: 100
+        driver:
+          type: string
+          enum: [cups, windows, printnode]
+          description: Printer driver type
+        deviceId:
+          type: string
+          description: System printer name or cloud ID
+        host:
+          type: string
+          description: Network printer host
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          description: Network printer port
+        apiKey:
+          type: string
+          description: PrintNode API key (required for PrintNode driver)
+        supportedSizes:
+          type: array
+          items:
+            type: string
+          default: ['4x3', 'A6']
+          description: Supported paper sizes
+        paperSize:
+          type: string
+          default: '4x3'
+          description: Default paper size
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+          default: landscape
+          description: Default orientation
+        eventId:
+          type: string
+          format: uuid
+          description: Link printer to specific event (optional)
+
+    PrinterStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        isOnline:
+          type: boolean
+          description: Whether printer is currently online
+        driver:
+          type: string
+          enum: [cups, windows, printnode]
+        lastChecked:
+          type: string
+          format: date-time
+          nullable: true
+
+    PrintJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        printerId:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, printing, completed, failed, cancelled]
+          description: Current job status
+        priority:
+          type: integer
+          description: Higher priority jobs print first
+        copies:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Number of copies to print
+        pdfUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Generated PDF URL (Cloudinary)
+        sentToPrinter:
+          type: string
+          format: date-time
+          nullable: true
+          description: When job was sent to printer
+        printedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When job completed printing
+        retryCount:
+          type: integer
+          description: Number of retry attempts
+        maxRetries:
+          type: integer
+          default: 3
+          description: Maximum retry attempts
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if job failed
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+
+    # Offline Sync Schemas
+    OfflineEventData:
+      type: object
+      properties:
+        event:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            startDate:
+              type: string
+              format: date-time
+            endDate:
+              type: string
+              format: date-time
+        attendees:
+          type: array
+          items:
+            type: object
+            properties:
+              registrationId:
+                type: string
+              fullName:
+                type: string
+              email:
+                type: string
+                format: email
+              ticketType:
+                type: string
+                nullable: true
+              photo:
+                type: string
+                nullable: true
+              qrCode:
+                type: string
+                nullable: true
+              backupCode:
+                type: string
+                nullable: true
+              isCurrentlyInside:
+                type: boolean
+              lastCheckInAt:
+                type: string
+                format: date-time
+                nullable: true
+              authorizedZones:
+                type: array
+                items:
+                  type: string
+                description: Array of zone IDs the attendee can access
+        zones:
+          type: array
+          items:
+            type: object
+            properties:
+              zoneId:
+                type: string
+              name:
+                type: string
+              code:
+                type: string
+              maxCapacity:
+                type: integer
+                nullable: true
+              currentOccupancy:
+                type: integer
+              accessStart:
+                type: string
+                format: date-time
+                nullable: true
+              accessEnd:
+                type: string
+                format: date-time
+                nullable: true
+              isActive:
+                type: boolean
+
+    OfflineScanInput:
+      type: object
+      required:
+        - id
+        - registrationId
+        - checkpointId
+        - qrCode
+        - scannedAt
+        - scannedBy
+      properties:
+        id:
+          type: string
+          description: Mobile-generated scan ID
+        registrationId:
+          type: string
+        checkpointId:
+          type: string
+        qrCode:
+          type: string
+        codeType:
+          type: string
+          enum: [ticket, backup]
+          default: ticket
+        signatureValid:
+          type: boolean
+          default: true
+        scannedAt:
+          type: string
+          format: date-time
+        scannedBy:
+          type: string
+          description: User ID of staff member
+        deviceInfo:
+          type: object
+          nullable: true
+          description: JSON object with device metadata
+
+    BatchScanResult:
+      type: object
+      properties:
+        successCount:
+          type: integer
+          description: Number of scans successfully processed
+        failureCount:
+          type: integer
+          description: Number of scans that failed
+        conflicts:
+          type: array
+          items:
+            type: object
+            properties:
+              mobileId:
+                type: string
+                description: ID from mobile device
+              serverId:
+                type: string
+                nullable: true
+                description: ID of existing scan on server
+              reason:
+                type: string
+                enum: [duplicate_scan, processing_error]
+              details:
+                type: object
+                description: Additional conflict information
+
+    SyncStatus:
+      type: object
+      properties:
+        totalAttendees:
+          type: integer
+          description: Total confirmed registrations for event
+        totalScans:
+          type: integer
+          description: Total scans recorded
+        userScansToday:
+          type: integer
+          description: Scans by this user today
+        lastUpdated:
+          type: string
+          format: date-time
+
+    ScanConflict:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Conflict ID (format conflict-scanId1-scanId2)
+        mobileId:
+          type: string
+          description: Later scan ID (assumed from mobile)
+        serverId:
+          type: string
+          description: Earlier scan ID (assumed from server)
+        registrationId:
+          type: string
+        checkpointId:
+          type: string
+        mobileScanTime:
+          type: string
+          format: date-time
+        serverScanTime:
+          type: string
+          format: date-time
+        timeDifferenceMs:
+          type: integer
+          description: Time difference in milliseconds
+        status:
+          type: string
+          enum: [pending, resolved]
+        resolution:
+          type: string
+          enum: [keep_first, keep_latest, keep_both]
+          nullable: true
 
   responses:
     UnauthorizedError:
@@ -2948,6 +3671,2093 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== SERVICE POINT - BADGE TEMPLATES ====================
+  /badge-templates:
+    get:
+      tags:
+        - Service Point
+      summary: Get badge templates
+      description: Retrieve badge templates with optional filters
+      operationId: getBadgeTemplates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: query
+          schema:
+            type: string
+          description: Filter by organizer ID
+        - name: eventId
+          in: query
+          schema:
+            type: string
+          description: Filter by event ID
+        - name: isDefault
+          in: query
+          schema:
+            type: boolean
+          description: Filter by default status
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+          description: Filter by active status
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name or description
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          templates:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/BadgeTemplate'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+                          totalPages:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Service Point
+      summary: Create badge template
+      description: Create a new badge template
+      operationId: createBadgeTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                width:
+                  type: number
+                  default: 101.6
+                height:
+                  type: number
+                  default: 76.2
+                sizePreset:
+                  type: string
+                  enum: [4x3, 3.5x2.25, 4x6, A6, custom]
+                  default: 4x3
+                orientation:
+                  type: string
+                  enum: [portrait, landscape]
+                  default: landscape
+                backgroundColor:
+                  type: string
+                  default: "#ffffff"
+                elements:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BadgeElement'
+                  default: []
+                isDefault:
+                  type: boolean
+                  default: false
+                organizerId:
+                  type: string
+                eventId:
+                  type: string
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /badge-templates/default:
+    get:
+      tags:
+        - Service Point
+      summary: Get default template
+      description: Get the default badge template for a scope
+      operationId: getDefaultBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: query
+          schema:
+            type: string
+        - name: eventId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Default template retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /badge-templates/{id}:
+    get:
+      tags:
+        - Service Point
+      summary: Get badge template by ID
+      description: Retrieve a specific badge template
+      operationId: getBadgeTemplateById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Template ID
+      responses:
+        '200':
+          description: Template retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Service Point
+      summary: Update badge template
+      description: Update an existing badge template
+      operationId: updateBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                width:
+                  type: number
+                height:
+                  type: number
+                sizePreset:
+                  type: string
+                orientation:
+                  type: string
+                backgroundColor:
+                  type: string
+                backgroundImage:
+                  type: string
+                elements:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BadgeElement'
+                isDefault:
+                  type: boolean
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Template updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Delete badge template
+      description: Soft delete a badge template (sets isActive to false)
+      operationId: deleteBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /badge-templates/{id}/duplicate:
+    post:
+      tags:
+        - Service Point
+      summary: Duplicate badge template
+      description: Create a copy of an existing badge template
+      operationId: duplicateBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name for the duplicated template (defaults to "{original name} (Copy)")
+      responses:
+        '201':
+          description: Template duplicated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /badge-templates/{id}/set-default:
+    post:
+      tags:
+        - Service Point
+      summary: Set template as default
+      description: Set a badge template as the default for its scope
+      operationId: setDefaultBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template set as default successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /badge-templates/{id}/background:
+    post:
+      tags:
+        - Service Point
+      summary: Upload background image
+      description: Upload a background image for a badge template
+      operationId: uploadBadgeTemplateBackground
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Image file (PNG, JPEG, WebP, max 5MB)
+      responses:
+        '200':
+          description: Background image uploaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Remove background image
+      description: Remove the background image from a badge template
+      operationId: removeBadgeTemplateBackground
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Background image removed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== Facility Zone Management ====================
+  /zones:
+    post:
+      tags:
+        - Service Point
+      summary: Create facility zone
+      description: Create a new access control zone for facilities
+      operationId: createFacilityZone
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - name
+                - code
+              properties:
+                eventId:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                  example: "VIP Lounge"
+                code:
+                  type: string
+                  example: "VIP"
+                description:
+                  type: string
+                maxCapacity:
+                  type: integer
+                  example: 100
+                accessStart:
+                  type: string
+                  format: date-time
+                accessEnd:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Zone created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zone:
+                            $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /events/{eventId}/zones:
+    get:
+      tags:
+        - Service Point
+      summary: Get event zones
+      description: Get all facility zones for an event
+      operationId: getEventZones
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: includeCount
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Zones retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zones:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}:
+    get:
+      tags:
+        - Service Point
+      summary: Get zone by ID
+      description: Get a single facility zone with details
+      operationId: getFacilityZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeRelations
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Zone retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zone:
+                            $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Service Point
+      summary: Update zone
+      description: Update facility zone configuration
+      operationId: updateFacilityZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                code:
+                  type: string
+                description:
+                  type: string
+                maxCapacity:
+                  type: integer
+                  nullable: true
+                accessStart:
+                  type: string
+                  format: date-time
+                  nullable: true
+                accessEnd:
+                  type: string
+                  format: date-time
+                  nullable: true
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Zone updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zone:
+                            $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Delete zone
+      description: Delete a facility zone
+      operationId: deleteFacilityZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Zone deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /zones/{zoneId}/facilities/{facilityId}:
+    post:
+      tags:
+        - Service Point
+      summary: Assign facility to zone
+      description: Link a facility to an access control zone
+      operationId: assignFacilityToZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: facilityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Facility assigned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          mapping:
+                            $ref: '#/components/schemas/FacilityZoneMapping'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Remove facility from zone
+      description: Unlink a facility from an access control zone
+      operationId: removeFacilityFromZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: facilityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Facility removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /zones/{zoneId}/attendees/bulk-assign:
+    post:
+      tags:
+        - Service Point
+      summary: Bulk assign attendees to zone
+      description: Grant zone access to multiple attendees at once
+      operationId: bulkAssignAttendeesToZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationIds
+              properties:
+                registrationIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  example: ["reg-1", "reg-2", "reg-3"]
+                expiresAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Attendees assigned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          successCount:
+                            type: integer
+                          failureCount:
+                            type: integer
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}/attendees:
+    get:
+      tags:
+        - Service Point
+      summary: Get zone attendees
+      description: Get all attendees with access to a zone
+      operationId: getZoneAttendees
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Attendees retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          attendees:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AttendeeZoneAccess'
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}/attendees/{registrationId}:
+    delete:
+      tags:
+        - Service Point
+      summary: Revoke zone access
+      description: Remove attendee's access to a zone
+      operationId: revokeZoneAccess
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Access revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /zones/{zoneId}/access/check/{registrationId}:
+    get:
+      tags:
+        - Service Point
+      summary: Validate zone access
+      description: Check if an attendee can access a zone
+      operationId: validateZoneAccess
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Access validation result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          validation:
+                            type: object
+                            properties:
+                              allowed:
+                                type: boolean
+                              reason:
+                                type: string
+                              access:
+                                $ref: '#/components/schemas/AttendeeZoneAccess'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}/capacity:
+    get:
+      tags:
+        - Service Point
+      summary: Check zone capacity
+      description: Get current zone occupancy and capacity information
+      operationId: checkZoneCapacity
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Capacity information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          capacity:
+                            $ref: '#/components/schemas/ZoneCapacityInfo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{eventId}/movements:
+    get:
+      tags:
+        - Service Point
+      summary: Get event movements
+      description: Get attendee movement history for an event
+      operationId: getEventMovements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: zoneId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Movements retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          movements:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/FacilityMovement'
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /registrations/{registrationId}/movements:
+    get:
+      tags:
+        - Service Point
+      summary: Get attendee movements
+      description: Get movement history for a specific attendee
+      operationId: getAttendeeMovements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Movements retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          movements:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/FacilityMovement'
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== Printer Management ====================
+
+  /printers/discover:
+    get:
+      tags:
+        - Service Point
+      summary: Discover available printers
+      description: Auto-detect printers on the system using CUPS (Mac/Linux) or Windows print server
+      parameters:
+        - name: driver
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [cups, windows]
+          description: Printer driver to use for discovery
+      responses:
+        '200':
+          description: Printers discovered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                deviceId:
+                                  type: string
+                                driver:
+                                  type: string
+                                isAvailable:
+                                  type: boolean
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers:
+    post:
+      tags:
+        - Service Point
+      summary: Register a printer
+      description: Register a new printer for badge printing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterConfig'
+      responses:
+        '201':
+          description: Printer registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printer:
+                            $ref: '#/components/schemas/Printer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    get:
+      tags:
+        - Service Point
+      summary: Get all printers
+      description: Retrieve all registered printers with optional filtering
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: string
+          description: Filter printers by event ID
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include soft-deleted printers
+      responses:
+        '200':
+          description: Printers retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printers:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Printer'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers/{printerId}:
+    get:
+      tags:
+        - Service Point
+      summary: Get printer by ID
+      description: Retrieve a specific printer's details
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Printer retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printer:
+                            $ref: '#/components/schemas/Printer'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Service Point
+      summary: Update printer configuration
+      description: Update an existing printer's settings
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterConfig'
+      responses:
+        '200':
+          description: Printer updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printer:
+                            $ref: '#/components/schemas/Printer'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Delete printer
+      description: Soft delete a printer (sets isActive to false, preserves print job history)
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Printer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers/{printerId}/status:
+    get:
+      tags:
+        - Service Point
+      summary: Check printer status
+      description: Check if printer is online and update status in database
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Printer status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            $ref: '#/components/schemas/PrinterStatus'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers/{printerId}/test:
+    post:
+      tags:
+        - Service Point
+      summary: Test printer
+      description: Send a test page to verify printer connectivity
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Test page sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== Print Job Management ====================
+
+  /print-jobs:
+    post:
+      tags:
+        - Service Point
+      summary: Create print job
+      description: Create a new badge print job for an attendee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - printerId
+                - templateId
+                - registrationId
+              properties:
+                printerId:
+                  type: string
+                  description: ID of the printer to use
+                templateId:
+                  type: string
+                  description: ID of the badge template
+                registrationId:
+                  type: string
+                  description: ID of the event registration
+                copies:
+                  type: integer
+                  default: 1
+                  minimum: 1
+                  maximum: 10
+                priority:
+                  type: integer
+                  default: 0
+                  description: Higher priority jobs print first
+      responses:
+        '201':
+          description: Print job created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printJob:
+                            $ref: '#/components/schemas/PrintJob'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    get:
+      tags:
+        - Service Point
+      summary: Get print jobs
+      description: Retrieve print jobs with optional filtering
+      parameters:
+        - name: printerId
+          in: query
+          schema:
+            type: string
+          description: Filter by printer ID
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, printing, completed, failed, cancelled]
+          description: Filter by job status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Print jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          jobs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PrintJob'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /print-jobs/bulk:
+    post:
+      tags:
+        - Service Point
+      summary: Bulk create print jobs
+      description: Create multiple print jobs for multiple attendees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - printerId
+                - templateId
+                - registrationIds
+              properties:
+                printerId:
+                  type: string
+                  description: ID of the printer to use
+                templateId:
+                  type: string
+                  description: ID of the badge template
+                registrationIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of registration IDs
+                copies:
+                  type: integer
+                  default: 1
+                  minimum: 1
+                  maximum: 10
+                priority:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: Bulk print jobs created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          successCount:
+                            type: integer
+                          failureCount:
+                            type: integer
+                          total:
+                            type: integer
+                          jobs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PrintJob'
+                          errors:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                registrationId:
+                                  type: string
+                                error:
+                                  type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /print-jobs/{jobId}/cancel:
+    post:
+      tags:
+        - Service Point
+      summary: Cancel print job
+      description: Cancel a queued or printing job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Print job cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== OFFLINE SYNC ====================
+  /offline/events/{eventId}/data:
+    get:
+      tags:
+        - Offline Sync
+      summary: Download event data for offline use
+      description: Bulk download attendees, zones, and facilities for offline caching on mobile devices
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Event data retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OfflineEventData'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/batch:
+    post:
+      tags:
+        - Offline Sync
+      summary: Upload batch of scans from mobile device
+      description: Process multiple scans queued offline and detect conflicts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scans
+              properties:
+                scans:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OfflineScanInput'
+      responses:
+        '200':
+          description: Batch scan processing completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BatchScanResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/status/{eventId}:
+    get:
+      tags:
+        - Offline Sync
+      summary: Get sync status for mobile device
+      description: Retrieve pending scan counts and last sync time
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Sync status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SyncStatus'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/conflicts/{eventId}:
+    get:
+      tags:
+        - Offline Sync
+      summary: Get scan conflicts for event
+      description: Detect duplicate scans within a time window
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+        - name: timeWindow
+          in: query
+          schema:
+            type: integer
+            default: 5
+          description: Time window in minutes for conflict detection
+      responses:
+        '200':
+          description: Conflicts detected successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          conflicts:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ScanConflict'
+                          count:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/conflicts/{conflictId}/resolve:
+    post:
+      tags:
+        - Offline Sync
+      summary: Resolve scan conflict
+      description: Apply resolution strategy to duplicate scans
+      parameters:
+        - name: conflictId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the conflict (format conflict-scanId1-scanId2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resolution
+              properties:
+                resolution:
+                  type: string
+                  enum: [keep_first, keep_latest, keep_both]
+                  description: Strategy for resolving the conflict
+      responses:
+        '200':
+          description: Conflict resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== VENUE CAPACITY ====================
+  /capacity/events/{eventId}:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Get venue capacity status
+      description: Returns current occupancy, max capacity, and percentage filled
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Capacity status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      eventId:
+                        type: string
+                      maxCapacity:
+                        type: integer
+                        nullable: true
+                      currentOccupancy:
+                        type: integer
+                      availableCapacity:
+                        type: integer
+                        nullable: true
+                      percentageFilled:
+                        type: number
+                      isAtCapacity:
+                        type: boolean
+                      thresholdBreached:
+                        type: integer
+                        nullable: true
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Venue Capacity
+      summary: Set venue maximum capacity
+      description: Configure the maximum capacity for a venue (admin only)
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxCapacity:
+                  type: integer
+                  nullable: true
+                  description: Maximum capacity (null for unlimited)
+      responses:
+        '200':
+          description: Capacity updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/overview:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Get comprehensive capacity overview
+      description: Returns venue capacity and all zone capacities with summary stats
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Capacity overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      venue:
+                        type: object
+                        description: Venue capacity status
+                      zones:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            zoneId:
+                              type: string
+                            zoneName:
+                              type: string
+                            maxCapacity:
+                              type: integer
+                              nullable: true
+                            currentOccupancy:
+                              type: integer
+                            percentageFilled:
+                              type: number
+                            isAtCapacity:
+                              type: boolean
+                      summary:
+                        type: object
+                        properties:
+                          totalZones:
+                            type: integer
+                          zonesAtCapacity:
+                            type: integer
+                          totalZoneCapacity:
+                            type: integer
+                            nullable: true
+                          totalZoneOccupancy:
+                            type: integer
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/zones:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Get zone capacity statuses
+      description: Returns capacity status for all active zones
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Zone capacities retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        zoneId:
+                          type: string
+                        zoneName:
+                          type: string
+                        zoneCode:
+                          type: string
+                        maxCapacity:
+                          type: integer
+                          nullable: true
+                        currentOccupancy:
+                          type: integer
+                        availableCapacity:
+                          type: integer
+                          nullable: true
+                        percentageFilled:
+                          type: number
+                        isAtCapacity:
+                          type: boolean
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/can-check-in:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Check if venue can accept check-ins
+      description: Quick check to see if venue has capacity for more attendees
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+        - name: count
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Number of people to check in
+      responses:
+        '200':
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      canCheckIn:
+                        type: boolean
+                      requestedCount:
+                        type: integer
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/reset:
+    post:
+      tags:
+        - Venue Capacity
+      summary: Reset occupancy counters
+      description: Reset all venue and zone occupancy counters to zero (admin only)
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Occupancy reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/recalculate:
+    post:
+      tags:
+        - Venue Capacity
+      summary: Recalculate occupancy from records
+      description: Recalculate occupancy counters from check-in data (admin only)
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Occupancy recalculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      venueOccupancy:
+                        type: integer
+                      zoneOccupancies:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                  message:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
 security:
   - BearerAuth: []

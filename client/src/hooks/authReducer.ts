@@ -71,7 +71,7 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
 export const initialAuthState: AuthState = {
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start with loading=true to prevent redirect flash on refresh
   error: null,
 };
 

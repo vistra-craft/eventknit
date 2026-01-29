@@ -145,9 +145,10 @@ async function seedEvents() {
       const template = eventTemplates[i];
       // Distribute events among organizers (round-robin)
       const organizer = organizers[i % organizers.length];
-      
-      // Set date to be in the future (randomly between 1 and 60 days from now)
-      const daysToAdd = Math.floor(Math.random() * 60) + 1;
+
+      // Set date to be in the future (randomly between 7 and 120 days from now)
+      // This ensures all events are upcoming and spread across the next 4 months
+      const daysToAdd = Math.floor(Math.random() * 113) + 7; // 7 to 120 days
       const startDate = new Date();
       startDate.setDate(startDate.getDate() + daysToAdd);
       startDate.setHours(9, 0, 0, 0); // 9:00 AM
