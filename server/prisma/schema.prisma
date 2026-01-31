@@ -4848,3 +4848,32 @@ model PrintJob {
   @@index([templateId])
   @@index([createdAt])
 }
+
+// Career Inquiries - Candidates interested in joining EventKnit
+model CareerInquiry {
+  id        String   @id @default(uuid())
+  email     String
+  firstName String?  // Extracted from email response (optional)
+
+  // Status tracking
+  status       String   @default("PENDING") // PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED
+  emailSentAt  DateTime @default(now()) // When the auto-reply was sent
+  respondedAt  DateTime? // When they replied
+
+  // Notes from recruitment team
+  notes        String?  @db.Text
+  reviewedBy   String?  // User ID of recruiter who reviewed
+  reviewedAt   DateTime?
+
+  // Metadata
+  source       String?  // Where they found us (optional tracking)
+  ipAddress    String?  // For spam prevention
+  userAgent    String?  // Browser info
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}

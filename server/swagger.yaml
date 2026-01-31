@@ -53,6 +53,8 @@ tags:
     description: Service point operations including badge templates, workstation, and facility management
   - name: Offline Sync
     description: Offline data synchronization for mobile devices
+  - name: Careers
+    description: Career inquiry management for job applicants
 
 components:
   securitySchemes:
@@ -110,6 +112,62 @@ components:
         totalPages:
           type: integer
           example: 5
+
+    # Career Inquiry Schemas
+    CareerInquiry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        email:
+          type: string
+          format: email
+          description: Candidate's email address
+        firstName:
+          type: string
+          nullable: true
+          description: Candidate's first name (if provided)
+        status:
+          type: string
+          enum: [PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED]
+          description: Current status of the inquiry
+        emailSentAt:
+          type: string
+          format: date-time
+          description: When the auto-reply email was sent
+        respondedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the candidate responded
+        notes:
+          type: string
+          nullable: true
+          description: Internal notes from recruitment team
+        reviewedBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: User ID of the reviewer
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the inquiry was reviewed
+        source:
+          type: string
+          nullable: true
+          description: Where the candidate found us
+        createdAt:
+          type: string
+          format: date-time
+          description: When the inquiry was submitted
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
 
     # User Schemas
     User:
@@ -5758,6 +5816,179 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+
+  # Career Inquiry Endpoints
+  /careers:
+    post:
+      tags:
+        - Careers
+      summary: Submit career inquiry
+      description: |
+        Submit a career inquiry by providing an email address.
+        An automated email will be sent with instructions for the candidate to share their story.
+        Rate limited to one submission per email per 24 hours.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: candidate@example.com
+                  description: Candidate's email address
+                source:
+                  type: string
+                  maxLength: 100
+                  example: linkedin
+                  description: Optional tracking source
+      responses:
+        '201':
+          description: Career inquiry submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Thank you for your interest! Check your email for next steps.
+                  data:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: candidate@example.com
+        '400':
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Careers
+      summary: List career inquiries (Admin)
+      description: Get all career inquiries with pagination and filtering. Requires admin privileges.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED]
+          description: Filter by inquiry status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Items per page
+      responses:
+        '200':
+          description: List of career inquiries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      inquiries:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CareerInquiry'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /careers/{id}:
+    patch:
+      tags:
+        - Careers
+      summary: Update career inquiry (Admin)
+      description: Update the status and notes of a career inquiry. Requires admin privileges.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Career inquiry ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED]
+                  description: New inquiry status
+                notes:
+                  type: string
+                  maxLength: 5000
+                  description: Internal notes about the candidate
+      responses:
+        '200':
+          description: Inquiry updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Inquiry updated successfully
+                  data:
+                    $ref: '#/components/schemas/CareerInquiry'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
 security:
   - BearerAuth: []
