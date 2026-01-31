@@ -116,26 +116,26 @@ export const EventHome: React.FC<EventHomeProps> = ({
   return (
     <div className="relative">
       {/* Hero Section with Event Image */}
-      <div className="relative">
-        {/* Background Image */}
-        <div
-          className="h-[300px] sm:h-[350px] bg-cover bg-center"
-          style={{
-            backgroundImage: event.image
-              ? `url(${event.image})`
-              : 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%)',
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
-        </div>
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 pt-6">
+        <div className="relative rounded-xl overflow-hidden">
+          {/* Background Image */}
+          <div
+            className="h-[250px] sm:h-[300px] bg-cover bg-center"
+            style={{
+              backgroundImage: event.image
+                ? `url(${event.image})`
+                : 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%)',
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+          </div>
 
-        {/* Hero Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-          <div className="container mx-auto max-w-7xl">
+          {/* Hero Content */}
+          <div className="absolute bottom-0 left-0 right-0 p-6">
             <div className="max-w-4xl">
               {/* Event Title & Hashtag */}
-              <div className="mb-4">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
+              <div className="mb-3">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                   {event.title}
                 </h1>
                 {event.hashtag && (

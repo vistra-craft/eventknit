@@ -147,7 +147,7 @@ const UserDashboard = () => {
         activeSection={activeSection}
         eventTitle={eventData?.title}
       />
-      <main className="pt-24 flex-1">
+      <main className="pt-16 flex-1">
         {/* Success Message */}
         {successMessage && (
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 max-w-7xl">

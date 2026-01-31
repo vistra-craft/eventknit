@@ -153,7 +153,7 @@ const SignIn = () => {
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-5xl mx-auto">
-          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row min-h-[420px] max-h-[600px]">
+          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row min-h-[420px]">
           {/* Left Panel - Image with Overlay */}
           <div className="hidden lg:flex lg:w-1/2 relative">
             <img

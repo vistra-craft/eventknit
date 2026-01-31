@@ -1,20 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  MessageCircle,
-  Home,
-  Settings,
-  HelpCircle,
-  FileText,
-  LogOut,
-  Calendar,
-  Badge,
-  Heart,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Home, LogOut, User, Ticket, Heart } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import Logo from '@/components/Logo';
 import { useAuth } from "../../hooks/useAuth";
-import NotificationBell from "../../components/NotificationBell";
 import { ThemeToggle } from "../../components/ThemeToggle";
 
 interface User {
@@ -29,192 +18,84 @@ interface DashboardNavbarProps {
   eventTitle?: string;
 }
 
-const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user, activeSection, eventTitle }) => {
+const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { logout } = useAuth();
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
-  // Navigation items for mobile and secondary navigation
-  const navigationItems = [
-    { key: "home", label: "Dashboard", icon: Home },
-    { key: "my-events", label: "My Events", icon: Calendar },
-    { key: "tickets", label: "My Tickets", icon: Badge },
-    { key: "saved", label: "Saved Events", icon: Heart },
+  const menuItems = [
+    { label: "My Events", icon: Home, onClick: () => navigate("/user/dashboard") },
+    { label: "My Tickets", icon: Ticket, onClick: () => navigate("/user/dashboard?section=tickets") },
+    { label: "Saved", icon: Heart, onClick: () => navigate("/user/dashboard?section=saved") },
+    { label: "Profile", icon: User, onClick: () => navigate("/user/profile") },
   ];
 
-  const handleNavigation = (section: string) => {
-    const currentPath = location.pathname;
-    const newUrl = `${currentPath}?section=${section}`;
-    navigate(newUrl);
-  };
-
-  const handleLogout = () => {
-    // Use proper logout function from useAuth
-    logout();
-  };
-
-  // No longer need special navigation buttons - using simpler structure
-
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border shadow-sm h-16">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top Row - Main Navbar Content */}
-        <div className="flex justify-between items-center h-16">
-          {/* Left Side - Logo and Event Title */}
-          <div className="flex items-center">
-            <Logo />
-            {eventTitle && (
-              <>
-                <span className="text-muted-foreground mx-2">&gt;</span>
-                <span className="text-lg font-medium text-foreground">{eventTitle}</span>
-              </>
-            )}
-          </div>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border h-14">
+      <div className="container mx-auto px-6 h-full">
+        <div className="flex items-center justify-between h-full">
+          {/* Logo */}
+          <Logo />
 
-          {/* Right Side - Icons and Profile */}
-          <div className="flex items-center space-x-4">
-            {/* Mobile Navigation Menu */}
-            <div className="lg:hidden">
-              <Button
-                onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Calendar className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Home Icon */}
+          {/* Right Side */}
+          <div className="flex items-center gap-2">
+            {/* Home */}
             <Button
-              onClick={() => navigate("/")}
               variant="ghost"
               size="sm"
+              onClick={() => navigate("/")}
               className="text-muted-foreground hover:text-foreground"
             >
-              <Home className="h-5 w-5" />
-            </Button>
-
-            {/* Message Icon */}
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-              <MessageCircle className="h-5 w-5" />
+              <Home className="h-4 w-4" />
             </Button>
 
             {/* Theme Toggle */}
             <ThemeToggle />
 
-            {/* Notification Bell */}
-            <NotificationBell />
-
-            {/* Profile Dropdown */}
+            {/* Profile */}
             <div className="relative">
-              <Button
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="relative h-10 w-10 rounded-full bg-primary/10 text-primary hover:bg-primary/20 p-0"
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-medium flex items-center justify-center hover:bg-primary/20 transition-colors"
               >
                 {user.initials}
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-card"></div>
-              </Button>
+              </button>
 
-              {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border py-3 z-50">
-                  <div className="flex items-center gap-3 px-4 pb-3 border-b border-border">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{user.initials}</span>
+              {isOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg py-1 z-50">
+                    <div className="px-3 py-2 border-b border-border">
+                      <p className="text-sm font-medium text-foreground">{user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{user.name}</p>
+
+                    <div className="py-1">
+                      {menuItems.map((item) => (
+                        <button
+                          key={item.label}
+                          onClick={() => { item.onClick(); setIsOpen(false); }}
+                          className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted flex items-center gap-2"
+                        >
+                          <item.icon className="w-4 h-4 text-muted-foreground" />
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="border-t border-border py-1">
+                      <button
+                        onClick={() => { logout(); setIsOpen(false); }}
+                        className="w-full px-3 py-2 text-left text-sm text-destructive hover:bg-muted flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Log out
+                      </button>
                     </div>
                   </div>
-
-                  <div className="px-4 py-2">
-                    <button className="w-full text-left text-sm text-foreground hover:bg-muted py-2 px-2 rounded-lg">
-                      Edit profile &gt;
-                    </button>
-                  </div>
-
-                  <div className="border-t border-border my-2"></div>
-
-                  <div className="px-4 py-2 space-y-2">
-                    <button className="w-full text-left text-sm text-foreground hover:bg-muted flex items-center gap-2 py-2 px-2 rounded-lg">
-                      <Calendar className="h-4 w-4" />
-                      My schedule
-                    </button>
-                    <button className="w-full text-left text-sm text-foreground hover:bg-muted flex items-center gap-2 py-2 px-2 rounded-lg">
-                      <FileText className="h-4 w-4" />
-                      My bookmarks
-                    </button>
-                  </div>
-
-                  <div className="border-t border-border my-2"></div>
-
-                  <div className="px-4 py-2 space-y-2">
-                    <button className="w-full text-left text-sm text-foreground hover:bg-muted flex items-center gap-2 py-2 px-2 rounded-lg">
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </button>
-                    <button className="w-full text-left text-sm text-foreground hover:bg-muted flex items-center gap-2 py-2 px-2 rounded-lg">
-                      <MessageCircle className="h-4 w-4" />
-                      Contact app support
-                    </button>
-                    <button className="w-full text-left text-sm text-foreground hover:bg-muted flex items-center gap-2 py-2 px-2 rounded-lg">
-                      <HelpCircle className="h-4 w-4" />
-                      Resource center
-                    </button>
-                    <button className="w-full text-left text-sm text-foreground hover:bg-muted flex items-center gap-2 py-2 px-2 rounded-lg">
-                      <FileText className="h-4 w-4" />
-                      Legal &gt;
-                    </button>
-                  </div>
-
-                  <div className="border-t border-border my-2"></div>
-
-                  <div className="px-4 py-2">
-                    <button
-                      className="w-full text-left text-sm text-destructive hover:text-destructive/80 flex items-center gap-2 py-1"
-                      onClick={handleLogout}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Log out
-                    </button>
-                  </div>
-                </div>
+                </>
               )}
             </div>
-
-            {/* Mobile Navigation Dropdown */}
-            {isMobileNavOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border py-3 z-50 lg:hidden">
-                <div className="px-4 pb-3 border-b border-border">
-                  <h3 className="font-medium text-foreground">Navigation</h3>
-                </div>
-                <div className="px-4 py-2 space-y-2">
-                  {navigationItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeSection === item.key;
-                    return (
-                      <button
-                        key={item.key}
-                        onClick={() => {
-                          handleNavigation(item.key);
-                          setIsMobileNavOpen(false);
-                        }}
-                        className={`w-full text-left text-sm flex items-center gap-2 py-2 px-2 rounded-md transition-colors ${
-                          isActive
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

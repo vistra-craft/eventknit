@@ -1,92 +1,50 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Calendar,
-  MapPin,
-  Heart,
-  Trash2,
-  ExternalLink,
-  Search,
-} from "lucide-react";
+import { Calendar, MapPin, Heart, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { Input } from "../../components/ui/input";
-import { EventThumbnail } from "../../components/ui/event-thumbnail";
-import { useToast } from "../../hooks/useToast";
+import { Loader } from "../../components/ui/loader";
+import BackButton from "../../components/BackButton";
 import EmptyState from "../../components/EmptyState";
+import { useToast } from "../../hooks/useToast";
 import { getSavedEvents, unsaveEvent, type SavedEventData } from "../../lib/saved-events-api";
 
 const SavedEvents: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [savedEvents, setSavedEvents] = useState<SavedEventData[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<SavedEventData[]>([]);
+  const [events, setEvents] = useState<SavedEventData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchSavedEvents = useCallback(async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getSavedEvents({ search: searchQuery || undefined });
-      setSavedEvents(response.data);
-      setFilteredEvents(response.data);
+      const response = await getSavedEvents({});
+      setEvents(response.data);
     } catch (error) {
       console.error("Error fetching saved events:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load saved events",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load saved events", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [toast, searchQuery]);
+  }, [toast]);
 
   useEffect(() => {
-    fetchSavedEvents();
-  }, [fetchSavedEvents]);
+    fetchEvents();
+  }, [fetchEvents]);
 
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = savedEvents.filter(saved =>
-        saved.event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        saved.event.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        saved.event.category?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredEvents(filtered);
-    } else {
-      setFilteredEvents(savedEvents);
-    }
-  }, [searchQuery, savedEvents]);
-
-  const handleRemoveFromSaved = async (eventId: string) => {
+  const handleRemove = async (eventId: string) => {
     try {
       await unsaveEvent(eventId);
-      setSavedEvents(prev => prev.filter(saved => saved.eventId !== eventId));
-      toast({
-        title: "Removed",
-        description: "Event removed from saved list",
-      });
+      setEvents(prev => prev.filter(e => e.eventId !== eventId));
+      toast({ title: "Removed", description: "Event removed from saved list" });
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to remove event",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to remove event", variant: "destructive" });
     }
-  };
-
-  const handleRegisterForEvent = (eventId: string) => {
-    navigate(`/event/${eventId}`);
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+      weekday: 'short', month: 'short', day: 'numeric'
     });
   };
 
@@ -96,134 +54,76 @@ const SavedEvents: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground mb-2">Saved Events</h1>
-        <p className="text-muted-foreground">
-          Events you've bookmarked for later
-        </p>
-      </div>
+    <div className="container mx-auto px-6 py-8 max-w-3xl">
+      <BackButton to="/user/dashboard" label="Dashboard" />
 
-      {/* Search */}
-      {savedEvents.length > 0 && (
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search saved events..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-      )}
+      <h1 className="text-2xl font-bold text-foreground mb-6">Saved Events</h1>
 
-      {/* Events Grid */}
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading saved events...</p>
+        <div className="flex items-center justify-center py-16">
+          <Loader size="default" />
         </div>
-      ) : filteredEvents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((saved) => (
-            <Card
+      ) : events.length > 0 ? (
+        <div className="space-y-3">
+          {events.map((saved) => (
+            <div
               key={saved.id}
-              className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              onClick={() => navigate(`/event/${saved.eventId}`)}
+              className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
             >
-              <div className="relative overflow-hidden">
-                <EventThumbnail
-                  src={saved.event.coverImage || ''}
-                  alt={saved.event.title}
-                  category={saved.event.category || ''}
-                  size="md"
-                />
-                <button
-                  onClick={() => handleRemoveFromSaved(saved.eventId)}
-                  className="absolute top-4 right-4 z-10 p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-colors"
-                  aria-label="Remove from saved"
-                >
-                  <Heart className="h-5 w-5 text-destructive fill-red-500" />
-                </button>
-                {saved.event.category && (
-                  <div className="absolute top-4 left-4 z-10">
-                    <Badge variant="secondary" className="bg-white/90 text-gray-800">
-                      {saved.event.category}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                  {saved.event.title}
-                </h3>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(saved.event.startDate)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>{saved.event.venueName || saved.event.location || 'TBA'}</span>
-                  </div>
-                  <div className="text-sm font-medium text-primary">
+              <img
+                src={saved.event.coverImage || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop"}
+                alt={saved.event.title}
+                className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                    {saved.event.title}
+                  </h3>
+                  <Badge variant="secondary" className="text-xs flex-shrink-0 bg-primary/10 text-primary">
                     {formatPrice(saved.event.basePrice, saved.event.currency)}
-                  </div>
+                  </Badge>
                 </div>
-
-                <div className="text-xs text-muted-foreground mb-4">
-                  Saved on {new Date(saved.savedAt).toLocaleDateString()}
+                <div className="space-y-1 text-sm text-muted-foreground mb-2">
+                  <p className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {formatDate(saved.event.startDate)}
+                  </p>
+                  <p className="flex items-center gap-1.5 line-clamp-1">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                    {saved.event.venueName || saved.event.location || 'TBA'}
+                  </p>
                 </div>
-
-                <div className="flex items-center gap-2 pt-4 border-t border-border">
+                <div className="flex items-center gap-2">
                   <Button
-                    className="flex-1"
-                    onClick={() => handleRegisterForEvent(saved.eventId)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/event/${saved.eventId}`); }}
                   >
                     View Event
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    onClick={() => window.open(`/event/${saved.eventId}`, '_blank')}
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); handleRemove(saved.eventId); }}
                   >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemoveFromSaved(saved.eventId)}
-                  >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="w-3.5 h-3.5 mr-1" />
+                    Remove
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
         <EmptyState
           icon={Heart}
-          title={searchQuery ? "No Events Found" : "No Saved Events"}
-          description={
-            searchQuery
-              ? "Try adjusting your search criteria"
-              : "You haven't saved any events yet. Browse events and click the heart icon to save them for later!"
-          }
-          action={
-            searchQuery
-              ? {
-                  label: "Clear Search",
-                  onClick: () => setSearchQuery(""),
-                }
-              : {
-                  label: "Browse Events",
-                  onClick: () => navigate('/'),
-                }
-          }
+          title="No Saved Events"
+          description="Browse events and click the heart icon to save them for later."
+          action={{ label: "Browse Events", onClick: () => navigate('/') }}
         />
       )}
     </div>

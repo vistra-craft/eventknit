@@ -1,49 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Calendar,
-  MapPin,
-  Download,
-  Share2,
-  QrCode,
-  Search,
-} from "lucide-react";
-import { Loader } from "../../components/ui/loader";
+import { Calendar, MapPin, Download, Share2, QrCode } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { Input } from "../../components/ui/input";
-import { EventThumbnail } from "../../components/ui/event-thumbnail";
+import { Loader } from "../../components/ui/loader";
+import BackButton from "../../components/BackButton";
+import EmptyState from "../../components/EmptyState";
 import { getUserRegisteredEvents } from "../../lib/event-api";
 import { downloadTicketPDF } from "../../lib/ticket-api";
 import { shareEvent } from "../../lib/utils/share";
 import { useToast } from "../../hooks/useToast";
-import EmptyState from "../../components/EmptyState";
 
-interface TicketEvent {
+interface Ticket {
   id: string;
   title: string;
   date: string;
   location: string;
-  type: string;
-  image: string;
-  status?: 'upcoming' | 'ongoing' | 'completed';
-  category?: string;
-  ticketId?: string;
+  status: 'upcoming' | 'completed';
+  ticketId: string;
   registrationId?: string;
+  image: string;
 }
 
 const MyTickets: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  // const { user: authUser } = useAuth(); // Removed unused variable
-  const [tickets, setTickets] = useState<TicketEvent[]>([]);
-  const [filteredTickets, setFilteredTickets] = useState<TicketEvent[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
-
-
+  const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -51,264 +36,161 @@ const MyTickets: React.FC = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          const eventsWithTickets = response.data.events.map((event: { id: string; title: string; date?: string; location?: string; type?: string; image?: string; status?: string; category?: string; ticketId?: string; registrationId?: string; backupCode?: string }) => ({
+          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; status?: string; backupCode?: string; registrationId?: string; image?: string }) => ({
             id: event.id,
             title: event.title,
             date: event.date || "",
             location: event.location || "",
-            type: event.type || 'In-Person',
-            image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-            status: (event.status as 'upcoming' | 'ongoing' | 'completed') || 'upcoming',
-            category: event.category || '',
+            status: (event.status as 'upcoming' | 'completed') || 'upcoming',
             ticketId: event.backupCode || `TKT-${event.id.slice(0, 8).toUpperCase()}`,
             registrationId: event.registrationId,
-          }));
-          setTickets(eventsWithTickets);
-          setFilteredTickets(eventsWithTickets);
+            image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+          })));
         }
       } catch (error) {
         console.error("Error fetching tickets:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load tickets",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to load tickets", variant: "destructive" });
       } finally {
         setLoading(false);
       }
     };
-
     fetchTickets();
   }, [toast]);
 
-  useEffect(() => {
-    let filtered = tickets;
+  const filteredTickets = tickets.filter(t => filter === 'all' || t.status === filter);
 
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(ticket => ticket.status === statusFilter);
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric'
+    });
+  };
 
-    // Apply search query
-    if (searchQuery) {
-      filtered = filtered.filter(ticket => 
-        ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ticket.location.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    setFilteredTickets(filtered);
-  }, [searchQuery, statusFilter, tickets]);
-
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-
-  const handleDownloadTicket = async (ticket: TicketEvent) => {
+  const handleDownload = async (ticket: Ticket) => {
     if (!ticket.registrationId) {
-      toast({
-        title: "Error",
-        description: "Ticket not available for download",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Ticket not available", variant: "destructive" });
       return;
     }
-
     setDownloadingId(ticket.id);
     try {
       await downloadTicketPDF(ticket.registrationId);
-      toast({
-        title: "Downloaded",
-        description: "Ticket PDF downloaded successfully",
-      });
+      toast({ title: "Downloaded", description: "Ticket PDF downloaded" });
     } catch (error) {
-      console.error("Download failed:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to download ticket",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Download failed", variant: "destructive" });
     } finally {
       setDownloadingId(null);
     }
   };
 
-  const handleShareTicket = async (ticket: TicketEvent) => {
+  const handleShare = async (ticket: Ticket) => {
     const shared = await shareEvent(ticket.title, ticket.id);
-    if (shared) {
-      toast({
-        title: "Shared",
-        description: "Event shared successfully",
-      });
-    } else {
-      toast({
-        title: "Link Copied",
-        description: "Event link copied to clipboard",
-      });
-    }
+    toast({ title: shared ? "Shared" : "Link Copied", description: shared ? "Event shared" : "Link copied" });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming': return 'bg-primary/10 text-primary';
-      case 'ongoing': return 'bg-success/10 text-success';
-      case 'completed': return 'bg-muted text-muted-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
+  const tabs = [
+    { key: 'all', label: 'All' },
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'completed', label: 'Past' },
+  ];
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground mb-2">My Tickets</h1>
-        <p className="text-muted-foreground">
-          View and manage all your event tickets
-        </p>
-      </div>
+    <div className="container mx-auto px-6 py-8 max-w-3xl">
+      <BackButton to="/user/dashboard" label="Dashboard" />
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search tickets..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={statusFilter === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setStatusFilter('all')}
-          >
-            All
-          </Button>
-          <Button
-            variant={statusFilter === 'upcoming' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setStatusFilter('upcoming')}
-          >
-            Upcoming
-          </Button>
-          <Button
-            variant={statusFilter === 'completed' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setStatusFilter('completed')}
-          >
-            Past
-          </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-foreground">My Tickets</h1>
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key as 'all' | 'upcoming' | 'completed')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                filter === tab.key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Tickets Grid */}
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading tickets...</p>
+        <div className="flex items-center justify-center py-16">
+          <Loader size="default" />
         </div>
       ) : filteredTickets.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-3">
           {filteredTickets.map((ticket) => (
-            <Card 
-              key={ticket.id} 
-              className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+            <div
+              key={ticket.id}
               onClick={() => navigate(`/user/event/${ticket.id}`)}
+              className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
             >
-              <div className="relative overflow-hidden">
-                <EventThumbnail
-                  src={ticket.image}
-                  alt={ticket.title}
-                  category={ticket.category || ''}
-                  size="md"
-                />
-                <div className="absolute top-4 left-4 z-10">
-                  <Badge className={`${getStatusColor(ticket.status || 'upcoming')} border-0`}>
-                    {(ticket.status || 'upcoming').charAt(0).toUpperCase() + (ticket.status || 'upcoming').slice(1)}
+              <img
+                src={ticket.image}
+                alt={ticket.title}
+                className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                    {ticket.title}
+                  </h3>
+                  <Badge
+                    variant="secondary"
+                    className={`text-xs flex-shrink-0 ${
+                      ticket.status === 'upcoming' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {ticket.status === 'upcoming' ? 'Upcoming' : 'Past'}
                   </Badge>
                 </div>
-              </div>
-
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                  {ticket.title}
-                </h3>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>{ticket.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>{ticket.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <QrCode className="w-4 h-4" />
-                    <span className="font-mono text-xs">{ticket.ticketId}</span>
-                  </div>
+                <div className="space-y-1 text-sm text-muted-foreground mb-2">
+                  <p className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {formatDate(ticket.date)}
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {ticket.location}
+                  </p>
+                  <p className="flex items-center gap-1.5 font-mono text-xs">
+                    <QrCode className="w-3.5 h-3.5" />
+                    {ticket.ticketId}
+                  </p>
                 </div>
-
-                <div className="flex items-center gap-2 pt-4 border-t border-border">
+                <div className="flex items-center gap-2">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="flex-1"
+                    className="h-7 px-2 text-xs"
                     disabled={downloadingId === ticket.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownloadTicket(ticket);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); handleDownload(ticket); }}
                   >
-                    {downloadingId === ticket.id ? (
-                      <>
-                        <Loader size="sm" className="mr-1" />
-                        Downloading...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </>
-                    )}
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    {downloadingId === ticket.id ? "..." : "Download"}
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShareTicket(ticket);
-                    }}
+                    className="h-7 px-2 text-xs"
+                    onClick={(e) => { e.stopPropagation(); handleShare(ticket); }}
                   >
-                    <Share2 className="h-4 w-4" />
+                    <Share2 className="w-3.5 h-3.5 mr-1" />
+                    Share
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
         <EmptyState
           icon={QrCode}
-          title={searchQuery || statusFilter !== 'all' ? "No Tickets Found" : "No Tickets Yet"}
-          description={
-            searchQuery || statusFilter !== 'all'
-              ? "Try adjusting your search or filter criteria"
-              : "You don't have any tickets yet. Register for an event to get started!"
-          }
-          action={
-            searchQuery || statusFilter !== 'all'
-              ? {
-                  label: "Clear Filters",
-                  onClick: () => {
-                    setSearchQuery("");
-                    setStatusFilter('all');
-                  },
-                }
-              : {
-                  label: "Browse Events",
-                  onClick: () => navigate('/'),
-                }
-          }
+          title={filter === 'all' ? "No Tickets Yet" : filter === 'upcoming' ? "No Upcoming Tickets" : "No Past Tickets"}
+          description="Register for an event to get your tickets."
+          action={{ label: "Browse Events", onClick: () => navigate('/') }}
         />
       )}
     </div>

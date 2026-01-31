@@ -78,7 +78,6 @@ const Navbar: React.FC<NavbarProps> = () => {
 
   // Simplified navigation items - keeping only essential ones
   const navItems: NavItem[] = [
-    { name: "About", href: "/about" },
     { name: "Find Events", href: "/" },
   ];
 

@@ -1,326 +1,119 @@
 import MinimalHeader from "@/components/MinimalHeader";
 import LegalFooter from "@/components/LegalFooter";
-import { Mail, Phone } from "lucide-react";
 
 const PrivacyPolicy = () => {
+  const sections = [
+    {
+      title: "What We Collect",
+      subsections: [
+        {
+          subtitle: "Information you provide",
+          items: ["Name and email", "Payment details (processed by secure partners)", "Event preferences"]
+        },
+        {
+          subtitle: "Collected automatically",
+          items: ["Device and browser info", "IP address", "Pages visited"]
+        }
+      ]
+    },
+    {
+      title: "How We Use It",
+      items: [
+        "Process registrations and payments",
+        "Send event updates and confirmations",
+        "Improve the platform",
+        "Prevent fraud"
+      ]
+    },
+    {
+      title: "Who We Share With",
+      items: [
+        "Event organizers (to facilitate your attendance)",
+        "Payment processors (Stripe, etc.)",
+        "Analytics services",
+        "When required by law"
+      ],
+      note: "We never sell your personal information."
+    },
+    {
+      title: "Your Rights",
+      items: [
+        "Access your data",
+        "Correct inaccurate information",
+        "Request deletion",
+        "Withdraw consent"
+      ]
+    },
+    {
+      title: "Security",
+      content: "We use SSL encryption, secure storage, and regular security audits to protect your data."
+    },
+    {
+      title: "Updates",
+      content: "We may update this policy and will notify you of significant changes. Continued use means acceptance."
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <MinimalHeader />
-      
-      {/* Hero Section */}
+
       <div className="border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            Privacy Policy
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Last updated: January 15, 2025
-          </p>
+        <div className="max-w-2xl mx-auto px-6 py-8">
+          <h1 className="text-2xl font-bold text-foreground mb-1">Privacy Policy</h1>
+          <p className="text-sm text-muted-foreground">Last updated: January 2025</p>
         </div>
       </div>
 
       <div className="flex-1 py-8">
-        <div className="max-w-4xl mx-auto px-4 space-y-8">
-          
-          {/* Introduction */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">
-              Introduction
-            </h2>
-            <div className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                EventKnit ("we," "our," or "us") is committed to protecting your privacy. 
-                This Privacy Policy explains how we collect, use, disclose, and safeguard 
-                your information when you use our event management platform and services.
-              </p>
-              <p className="text-muted-foreground leading-relaxed">
-                By using our services, you agree to the collection and use of information 
-                in accordance with this policy. If you do not agree with our policies and 
-                practices, please do not use our services.
-              </p>
-            </div>
-          </section>
+        <div className="max-w-2xl mx-auto px-6 space-y-8">
+          {sections.map((section, index) => (
+            <section key={index}>
+              <h2 className="text-base font-medium text-foreground mb-2">{section.title}</h2>
 
-          {/* Information We Collect */}
-          <section className="space-y-6">
-            <h2 className="text-lg font-medium text-foreground">
-              Information We Collect
-            </h2>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-base font-medium mb-3">Personal Information</h3>
-                <ul className="space-y-2 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Name, email address, and phone number</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Payment information (processed securely through third-party providers)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Event preferences and attendance history</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Profile information and communication preferences</span>
-                  </li>
+              {section.content && (
+                <p className="text-sm text-muted-foreground leading-relaxed">{section.content}</p>
+              )}
+
+              {section.subsections && (
+                <div className="space-y-3">
+                  {section.subsections.map((sub, i) => (
+                    <div key={i}>
+                      <h3 className="text-sm text-muted-foreground mb-1">{sub.subtitle}</h3>
+                      <ul className="space-y-0.5 pl-4">
+                        {sub.items.map((item, j) => (
+                          <li key={j} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-muted-foreground/50 mt-0.5">•</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {section.items && !section.subsections && (
+                <ul className="space-y-1">
+                  {section.items.map((item, i) => (
+                    <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-muted-foreground/50 mt-0.5">•</span>
+                      {item}
+                    </li>
+                  ))}
                 </ul>
-              </div>
-              
-              <div>
-                <h3 className="text-base font-medium mb-3">Usage Information</h3>
-                <ul className="space-y-2 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Device information and IP address</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Browser type and operating system</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Pages visited and time spent on our platform</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mt-2 flex-shrink-0"></span>
-                    <span>Cookies and similar tracking technologies</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </section>
+              )}
 
-          {/* How We Use Your Information */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">
-              How We Use Your Information
-            </h2>
-            <div className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                We use the information we collect for the following purposes:
-              </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-muted-foreground/40/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-muted-foreground font-medium text-sm">1</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Service Delivery</h4>
-                      <p className="text-sm text-muted-foreground">Process event registrations and provide customer support</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-muted-foreground/40/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-muted-foreground font-medium text-sm">2</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Communication</h4>
-                      <p className="text-sm text-muted-foreground">Send event updates, confirmations, and important notices</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-muted-foreground/40/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-muted-foreground font-medium text-sm">3</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Platform Improvement</h4>
-                      <p className="text-sm text-muted-foreground">Analyze usage patterns to enhance user experience</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-muted-foreground/40/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-muted-foreground font-medium text-sm">4</span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Security</h4>
-                      <p className="text-sm text-muted-foreground">Protect against fraud and ensure platform security</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+              {section.note && (
+                <p className="text-sm text-foreground mt-2">{section.note}</p>
+              )}
+            </section>
+          ))}
 
-          {/* Information Sharing */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">Information Sharing</h2>
-            <div className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                We do not sell, trade, or rent your personal information to third parties. 
-                We may share your information only in the following circumstances:
-              </p>
-              <div className="space-y-3">
-                <div className="p-4 bg-muted-foreground/40/5 rounded-lg">
-                  <h4 className="font-medium mb-2">Event Organizers</h4>
-                  <p className="text-sm text-muted-foreground">
-                    We share necessary information with event organizers to facilitate your event participation.
-                  </p>
-                </div>
-                <div className="p-4 bg-muted-foreground/40/5 rounded-lg">
-                  <h4 className="font-medium mb-2">Service Providers</h4>
-                  <p className="text-sm text-muted-foreground">
-                    We work with trusted third-party providers for payment processing, email delivery, and analytics.
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/30 rounded-lg">
-                  <h4 className="font-medium mb-2">Legal Requirements</h4>
-                  <p className="text-sm text-muted-foreground">
-                    We may disclose information when required by law or to protect our rights and safety.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Data Security */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">
-              Data Security
-            </h2>
-            <div className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                We implement appropriate technical and organizational measures to protect your personal 
-                information against unauthorized access, alteration, disclosure, or destruction.
-              </p>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium">Security Measures</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• SSL encryption for data transmission</li>
-                    <li>• Secure data storage and access controls</li>
-                    <li>• Regular security audits and updates</li>
-                    <li>• Employee training on data protection</li>
-                  </ul>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium">Your Responsibilities</h4>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Keep your login credentials secure</li>
-                    <li>• Use strong, unique passwords</li>
-                    <li>• Log out from shared devices</li>
-                    <li>• Report suspicious activity immediately</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Your Rights */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">Your Rights</h2>
-            <div className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                You have the following rights regarding your personal information:
-              </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-muted-foreground/40/10 rounded-full flex items-center justify-center">
-                      <span className="text-muted-foreground text-xs">✓</span>
-                    </div>
-                    <span className="text-sm">Access your personal data</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-muted-foreground/40/10 rounded-full flex items-center justify-center">
-                      <span className="text-muted-foreground text-xs">✓</span>
-                    </div>
-                    <span className="text-sm">Correct inaccurate information</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-muted-foreground/40/10 rounded-full flex items-center justify-center">
-                      <span className="text-muted-foreground text-xs">✓</span>
-                    </div>
-                    <span className="text-sm">Request data deletion</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-muted-foreground/40/10 rounded-full flex items-center justify-center">
-                      <span className="text-muted-foreground text-xs">✓</span>
-                    </div>
-                    <span className="text-sm">Object to data processing</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-muted-foreground/40/10 rounded-full flex items-center justify-center">
-                      <span className="text-muted-foreground text-xs">✓</span>
-                    </div>
-                    <span className="text-sm">Data portability</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-muted-foreground/40/10 rounded-full flex items-center justify-center">
-                      <span className="text-muted-foreground text-xs">✓</span>
-                    </div>
-                    <span className="text-sm">Withdraw consent</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Contact Information */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">
-              Contact Us
-            </h2>
-            <div className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                If you have any questions about this Privacy Policy or our data practices, 
-                please contact us:
-              </p>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <div className="font-medium">Email</div>
-                      <div className="text-sm text-muted-foreground">privacy@eventknit.com</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <div className="font-medium">Phone</div>
-                      <div className="text-sm text-muted-foreground">+1 (555) 123-4567</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="font-medium">Address</div>
-                    <div className="text-sm text-muted-foreground">
-                      EventKnit Privacy Team<br />
-                      123 Event Street<br />
-                      San Francisco, CA 94105
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Policy Updates */}
-          <section className="space-y-4">
-            <h2 className="text-lg font-medium text-foreground">Policy Updates</h2>
-            <div className="space-y-4">
-              <p className="text-muted-foreground leading-relaxed">
-                We may update this Privacy Policy from time to time. We will notify you of any 
-                changes by posting the new Privacy Policy on this page and updating the "Last updated" 
-                date. We encourage you to review this Privacy Policy periodically for any changes.
-              </p>
-              <div className="p-4 bg-muted-foreground/40/5 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Note:</strong> Changes to this Privacy Policy are effective when they are 
-                  posted on this page. Your continued use of our services after any modifications 
-                  constitutes your acceptance of the updated Privacy Policy.
-                </p>
-              </div>
-            </div>
+          <section className="pt-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+              Questions? Contact us at <span className="text-foreground">privacy@eventknit.com</span>
+            </p>
           </section>
         </div>
       </div>

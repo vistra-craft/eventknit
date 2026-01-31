@@ -219,6 +219,7 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
                 alt={user.name}
                 size="sm"
                 className="cursor-pointer"
+                onClick={() => navigate('/user/profile')}
               />
             </div>
           </div>
