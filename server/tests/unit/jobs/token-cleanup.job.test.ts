@@ -11,6 +11,10 @@ jest.mock('../../../src/config/database.js', () => ({
       deleteMany: jest.fn(),
       count: jest.fn(),
     },
+    refreshToken: {
+      deleteMany: jest.fn(),
+      count: jest.fn(),
+    },
   },
 }));
 jest.mock('../../../src/utils/logger.js');
@@ -50,13 +54,14 @@ describe('TokenCleanupJob', () => {
         { timezone: 'UTC' },
       );
       expect(logger.info).toHaveBeenCalledWith(
-        'Token cleanup job scheduled: Daily at 2:00 AM UTC (removes tokens expired > 7 days ago)',
+        'Token cleanup job scheduled: Daily at 2:00 AM UTC (removes expired tokens > 7 days, revoked refresh tokens > 30 days)',
       );
     });
 
     it('should run cleanup immediately on startup', () => {
       // Arrange
       (prisma.emailVerification.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+      (prisma.refreshToken.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
 
       // Act
       TokenCleanupJob.start();
@@ -123,9 +128,13 @@ describe('TokenCleanupJob', () => {
       const now = new Date('2026-01-29T12:00:00Z');
       jest.useFakeTimers().setSystemTime(now);
 
-      const expectedCutoffDate = new Date('2026-01-22T12:00:00Z'); // 7 days ago
+      const expectedExpiredCutoffDate = new Date('2026-01-22T12:00:00Z'); // 7 days ago
+      const expectedRevokedCutoffDate = new Date('2025-12-30T12:00:00Z'); // 30 days ago
 
       (prisma.emailVerification.deleteMany as jest.Mock).mockResolvedValue({ count: 15 });
+      (prisma.refreshToken.deleteMany as jest.Mock)
+        .mockResolvedValueOnce({ count: 10 }) // expired refresh tokens
+        .mockResolvedValueOnce({ count: 5 }); // revoked refresh tokens
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -134,14 +143,31 @@ describe('TokenCleanupJob', () => {
       expect(prisma.emailVerification.deleteMany).toHaveBeenCalledWith({
         where: {
           expiresAt: {
-            lt: expectedCutoffDate,
+            lt: expectedExpiredCutoffDate,
+          },
+        },
+      });
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: {
+          expiresAt: {
+            lt: expectedExpiredCutoffDate,
+          },
+        },
+      });
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: {
+          revoked: true,
+          revokedAt: {
+            lt: expectedRevokedCutoffDate,
           },
         },
       });
       expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining('removing tokens expired before'),
       );
-      expect(logger.info).toHaveBeenCalledWith('Token cleanup completed: 15 expired tokens removed');
+      expect(logger.info).toHaveBeenCalledWith(
+        'Token cleanup completed: 15 email verification tokens, 10 expired refresh tokens, 5 revoked refresh tokens removed',
+      );
 
       jest.useRealTimers();
     });
@@ -149,12 +175,15 @@ describe('TokenCleanupJob', () => {
     it('should log when no tokens are deleted', async () => {
       // Arrange
       (prisma.emailVerification.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+      (prisma.refreshToken.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
 
       // Assert
-      expect(logger.info).toHaveBeenCalledWith('Token cleanup completed: 0 expired tokens removed');
+      expect(logger.info).toHaveBeenCalledWith(
+        'Token cleanup completed: 0 email verification tokens, 0 expired refresh tokens, 0 revoked refresh tokens removed',
+      );
     });
 
     it('should handle database connection errors gracefully', async () => {
@@ -228,14 +257,21 @@ describe('TokenCleanupJob', () => {
       jest.useFakeTimers().setSystemTime(now);
 
       (prisma.emailVerification.count as jest.Mock).mockResolvedValue(42);
+      (prisma.refreshToken.count as jest.Mock)
+        .mockResolvedValueOnce(10) // expired refresh tokens
+        .mockResolvedValueOnce(5); // revoked refresh tokens
 
       // Act
       const result = await TokenCleanupJob.getCleanupStats();
 
       // Assert
-      expect(result.expiredTokensCount).toBe(42);
-      expect(result.cutoffDate).toBeInstanceOf(Date);
-      expect(result.cutoffDate.getTime()).toBe(new Date('2026-01-22T12:00:00Z').getTime());
+      expect(result.expiredEmailVerificationCount).toBe(42);
+      expect(result.expiredRefreshTokenCount).toBe(10);
+      expect(result.revokedRefreshTokenCount).toBe(5);
+      expect(result.expiredCutoffDate).toBeInstanceOf(Date);
+      expect(result.expiredCutoffDate.getTime()).toBe(new Date('2026-01-22T12:00:00Z').getTime());
+      expect(result.revokedCutoffDate).toBeInstanceOf(Date);
+      expect(result.revokedCutoffDate.getTime()).toBe(new Date('2025-12-30T12:00:00Z').getTime());
 
       jest.useRealTimers();
     });
@@ -249,8 +285,11 @@ describe('TokenCleanupJob', () => {
       const result = await TokenCleanupJob.getCleanupStats();
 
       // Assert
-      expect(result.expiredTokensCount).toBe(0);
-      expect(result.cutoffDate).toBeInstanceOf(Date);
+      expect(result.expiredEmailVerificationCount).toBe(0);
+      expect(result.expiredRefreshTokenCount).toBe(0);
+      expect(result.revokedRefreshTokenCount).toBe(0);
+      expect(result.expiredCutoffDate).toBeInstanceOf(Date);
+      expect(result.revokedCutoffDate).toBeInstanceOf(Date);
     });
 
     it('should return 0 for P1001 error code', async () => {
@@ -262,7 +301,9 @@ describe('TokenCleanupJob', () => {
       const result = await TokenCleanupJob.getCleanupStats();
 
       // Assert
-      expect(result.expiredTokensCount).toBe(0);
+      expect(result.expiredEmailVerificationCount).toBe(0);
+      expect(result.expiredRefreshTokenCount).toBe(0);
+      expect(result.revokedRefreshTokenCount).toBe(0);
     });
 
     it('should return 0 for Prisma initialization errors', async () => {
@@ -275,7 +316,9 @@ describe('TokenCleanupJob', () => {
       const result = await TokenCleanupJob.getCleanupStats();
 
       // Assert
-      expect(result.expiredTokensCount).toBe(0);
+      expect(result.expiredEmailVerificationCount).toBe(0);
+      expect(result.expiredRefreshTokenCount).toBe(0);
+      expect(result.revokedRefreshTokenCount).toBe(0);
     });
 
     it('should throw other errors', async () => {

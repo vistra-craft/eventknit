@@ -4,12 +4,17 @@ import { logger } from '../utils/logger.js';
 
 /**
  * Token Cleanup Job
- * 
- * Removes expired EmailVerification tokens that are older than 7 days
+ *
+ * Removes:
+ * - Expired EmailVerification tokens older than 7 days
+ * - Expired RefreshTokens older than 7 days
+ * - Revoked RefreshTokens older than 30 days
+ *
  * Runs daily at 2:00 AM UTC
  */
 export class TokenCleanupJob {
   private static readonly CLEANUP_AGE_DAYS = 7;
+  private static readonly REVOKED_TOKEN_RETENTION_DAYS = 30;
   private static readonly CRON_SCHEDULE = '0 2 * * *'; // Daily at 2:00 AM UTC
   private static task: cron.ScheduledTask | null = null;
 
@@ -37,21 +42,47 @@ export class TokenCleanupJob {
         return;
       }
 
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - this.CLEANUP_AGE_DAYS);
+      const expiredCutoffDate = new Date();
+      expiredCutoffDate.setDate(expiredCutoffDate.getDate() - this.CLEANUP_AGE_DAYS);
 
-      logger.info(`Starting token cleanup job - removing tokens expired before ${cutoffDate.toISOString()}`);
+      const revokedCutoffDate = new Date();
+      revokedCutoffDate.setDate(revokedCutoffDate.getDate() - this.REVOKED_TOKEN_RETENTION_DAYS);
 
-      // Delete expired tokens that are older than CLEANUP_AGE_DAYS
-      const result = await prisma.emailVerification.deleteMany({
+      logger.info(`Starting token cleanup job - removing tokens expired before ${expiredCutoffDate.toISOString()}`);
+
+      // Delete expired EmailVerification tokens that are older than CLEANUP_AGE_DAYS
+      const emailVerificationResult = await prisma.emailVerification.deleteMany({
         where: {
           expiresAt: {
-            lt: cutoffDate,
+            lt: expiredCutoffDate,
           },
         },
       });
 
-      logger.info(`Token cleanup completed: ${result.count} expired tokens removed`);
+      // Delete expired RefreshTokens that are older than CLEANUP_AGE_DAYS
+      const expiredRefreshTokenResult = await prisma.refreshToken.deleteMany({
+        where: {
+          expiresAt: {
+            lt: expiredCutoffDate,
+          },
+        },
+      });
+
+      // Delete revoked RefreshTokens that are older than REVOKED_TOKEN_RETENTION_DAYS
+      const revokedRefreshTokenResult = await prisma.refreshToken.deleteMany({
+        where: {
+          revoked: true,
+          revokedAt: {
+            lt: revokedCutoffDate,
+          },
+        },
+      });
+
+      logger.info(
+        `Token cleanup completed: ${emailVerificationResult.count} email verification tokens, ` +
+        `${expiredRefreshTokenResult.count} expired refresh tokens, ` +
+        `${revokedRefreshTokenResult.count} revoked refresh tokens removed`
+      );
     } catch (error) {
       // Check if it's a database connection error
       if (error instanceof Error && (
@@ -89,7 +120,10 @@ export class TokenCleanupJob {
       timezone: 'UTC',
     });
 
-    logger.info(`Token cleanup job scheduled: Daily at 2:00 AM UTC (removes tokens expired > ${this.CLEANUP_AGE_DAYS} days ago)`);
+    logger.info(
+      `Token cleanup job scheduled: Daily at 2:00 AM UTC ` +
+      `(removes expired tokens > ${this.CLEANUP_AGE_DAYS} days, revoked refresh tokens > ${this.REVOKED_TOKEN_RETENTION_DAYS} days)`
+    );
   }
 
   /**
@@ -107,35 +141,65 @@ export class TokenCleanupJob {
    * Get cleanup statistics (for admin dashboard)
    */
   static async getCleanupStats(): Promise<{
-    expiredTokensCount: number;
-    cutoffDate: Date;
+    expiredEmailVerificationCount: number;
+    expiredRefreshTokenCount: number;
+    revokedRefreshTokenCount: number;
+    expiredCutoffDate: Date;
+    revokedCutoffDate: Date;
   }> {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - this.CLEANUP_AGE_DAYS);
+    const expiredCutoffDate = new Date();
+    expiredCutoffDate.setDate(expiredCutoffDate.getDate() - this.CLEANUP_AGE_DAYS);
+
+    const revokedCutoffDate = new Date();
+    revokedCutoffDate.setDate(revokedCutoffDate.getDate() - this.REVOKED_TOKEN_RETENTION_DAYS);
 
     try {
-      const expiredTokensCount = await prisma.emailVerification.count({
-        where: {
-          expiresAt: {
-            lt: cutoffDate,
-          },
-        },
-      });
+      const [expiredEmailVerificationCount, expiredRefreshTokenCount, revokedRefreshTokenCount] =
+        await Promise.all([
+          prisma.emailVerification.count({
+            where: {
+              expiresAt: {
+                lt: expiredCutoffDate,
+              },
+            },
+          }),
+          prisma.refreshToken.count({
+            where: {
+              expiresAt: {
+                lt: expiredCutoffDate,
+              },
+            },
+          }),
+          prisma.refreshToken.count({
+            where: {
+              revoked: true,
+              revokedAt: {
+                lt: revokedCutoffDate,
+              },
+            },
+          }),
+        ]);
 
       return {
-        expiredTokensCount,
-        cutoffDate,
+        expiredEmailVerificationCount,
+        expiredRefreshTokenCount,
+        revokedRefreshTokenCount,
+        expiredCutoffDate,
+        revokedCutoffDate,
       };
     } catch (error) {
-      // If database is not available, return zero count
+      // If database is not available, return zero counts
       if (error instanceof Error && (
         error.message.includes('Can\'t reach database server') ||
         error.message.includes('P1001') ||
         error.constructor.name === 'PrismaClientInitializationError'
       )) {
         return {
-          expiredTokensCount: 0,
-          cutoffDate,
+          expiredEmailVerificationCount: 0,
+          expiredRefreshTokenCount: 0,
+          revokedRefreshTokenCount: 0,
+          expiredCutoffDate,
+          revokedCutoffDate,
         };
       }
       throw error;
