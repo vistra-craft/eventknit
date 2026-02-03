@@ -149,32 +149,34 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex flex-col">
+    <div className="bg-background min-h-screen flex items-center justify-center">
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-5xl mx-auto">
-          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row min-h-[420px]">
+      <div className="p-4 w-full">
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row">
           {/* Left Panel - Image with Overlay */}
-          <div className="hidden lg:flex lg:w-1/2 relative">
-            <img
-              src={loginImage}
-              alt="Welcome to EventKnit"
-              className="w-full h-full object-cover"
-            />
-            {/* Overlay Text - Centered */}
-            <div className="absolute inset-0 flex items-center justify-center p-8 bg-black/30">
-              <div className="text-center">
-                <h2 className="text-white text-3xl font-bold mb-2">Your Event Management Hub</h2>
-                <p className="text-white/90 text-lg">Sign in to manage your events and ticketing</p>
+          <div className="hidden lg:block lg:w-1/2 relative">
+            <div className="absolute inset-0">
+              <img
+                src={loginImage}
+                alt="Welcome to EventKnit"
+                className="w-full h-full object-cover"
+              />
+              {/* Overlay Text - Centered */}
+              <div className="absolute inset-0 flex items-center justify-center p-8 bg-black/30">
+                <div className="text-center">
+                  <h2 className="text-white text-3xl font-bold mb-2">Your Event Management Hub</h2>
+                  <p className="text-white/90 text-lg">Sign in to manage your events and ticketing</p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Right Panel - Sign In Form */}
-          <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8">
+          <div className="w-full lg:w-1/2 p-5 lg:p-6">
             <div className="w-full max-w-md mx-auto">
               {/* Header */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <BackButton to="/" label="Back to home" />
                   <Logo />
@@ -184,7 +186,7 @@ const SignIn = () => {
               </div>
 
               {/* Social Login Buttons - Side by Side */}
-              <div className="mb-6 flex gap-3">
+              <div className="mb-4 flex gap-3">
                 <Button
                   variant="outline"
                   className="flex-1 h-11"
@@ -203,7 +205,7 @@ const SignIn = () => {
               </div>
 
               {/* Divider */}
-              <div className="relative mb-6">
+              <div className="relative mb-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
@@ -213,7 +215,7 @@ const SignIn = () => {
               </div>
 
               {/* Sign In Form */}
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {/* OAuth Options - Hidden by default, can be shown if needed */}
                 {(showEmailOAuthForm || emailOAuthCodeSent) && (
                   <div className="space-y-3">
@@ -310,7 +312,7 @@ const SignIn = () => {
                 )}
 
                 {/* Main Sign In Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   {authError && (
                     <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
                       {authError}
@@ -404,7 +406,7 @@ const SignIn = () => {
                 </form>
 
                 {/* Sign up link */}
-                <div className="text-center pt-2">
+                <div className="text-center pt-1">
                   <p className="text-sm text-muted-foreground">
                     Don't have an account?{' '}
                     <Button

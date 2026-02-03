@@ -49,6 +49,7 @@ import eventCollectionRoutes from './routes/event-collection.routes.js';
 import platformFinanceRoutes from './routes/platform-finance.routes.js';
 import pushNotificationRoutes from './routes/push-notification.routes.js';
 import attendeeImportRoutes from './routes/attendee-import.routes.js';
+import servicePointRegistrationRoutes from './routes/service-point-registration.routes.js';
 import mobileRoutes from './routes/mobile.routes.js';
 import careerRoutes from './routes/career.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
@@ -208,6 +209,7 @@ app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
 app.use('/api/v1/admin/promo-codes', adminPromoCodeRoutes);
 app.use('/api/v1/events', attendeeImportRoutes);
+app.use('/api/v1/events', servicePointRegistrationRoutes);
 app.use('/api/v1/mobile', mobileRoutes);
 app.use('/api/v1/careers', careerRoutes);
 

@@ -73,13 +73,13 @@ enum KYCDocumentType {
   LETTER_AUTHORIZING_ENTRY
   BUSINESS_LICENSE
   TAX_ID
-  
+
   // Company-specific
   CR12
   CR13
   PARTNERSHIP_DEED
   AFFIDAVIT
-  
+
   // Industry-specific
   MINISTRY_OF_HEALTH_LICENSE
   KMPDB_LICENSE
@@ -91,7 +91,7 @@ enum KYCDocumentType {
   KATA_MEMBERSHIP
   KCAA_REGISTRATION
   TOUR_OPERATOR_LICENSE
-  
+
   // Organization-specific
   ORGANIZATION_CONSTITUTION
   BOARD_ELECTION_MINUTES
@@ -100,14 +100,14 @@ enum KYCDocumentType {
   AGREEMENT_LETTER
   LETTER_OF_INTRODUCTION
   COUNTY_CONTRACT_FORM
-  
+
   // Special documents
   COMPANY_PROFILE
   ONLINE_LINK
   TRADE_NAME_CERTIFICATE
   GRANT_PROBATE
   AUTHORIZED_SIGNATORY_LETTER
-  
+
   // Till-specific (separate from basic KYC)
   TILL_APPLICATION_FORM
   MPESA_AUTHORIZATION_FORM
@@ -153,10 +153,10 @@ enum DiscountType {
 }
 
 enum PromoCodeScope {
-  PLATFORM      // Works on any event (admin only)
-  ORGANIZER     // Works on all events by the organizer
-  EVENT         // Works on a single event
-  MULTI_EVENT   // Works on selected multiple events
+  PLATFORM // Works on any event (admin only)
+  ORGANIZER // Works on all events by the organizer
+  EVENT // Works on a single event
+  MULTI_EVENT // Works on selected multiple events
 }
 
 enum DataAccessLevel {
@@ -186,8 +186,8 @@ enum ScanType {
 }
 
 model User {
-  id                 String     @id @default(uuid())
-  email              String     @unique
+  id                 String  @id @default(uuid())
+  email              String  @unique
   password           String? // Optional - users can set password later in profile
   firstName          String? // Optional - can be added in profile
   lastName           String? // Optional - can be added in profile
@@ -196,17 +196,17 @@ model User {
   companyAffiliation String? // Company or institutional affiliation
 
   // OAuth provider IDs
-  googleId           String?    @unique // Google OAuth user ID
+  googleId        String?    @unique // Google OAuth user ID
   // Contact address information
-  address            String?
-  city               String?
-  state              String?
-  country            String?
-  zipCode            String?
-  role               UserRole   @default(ATTENDEE)
-  status             UserStatus @default(ACTIVE)
-  isEmailVerified    Boolean    @default(false)
-  emailVerifiedAt    DateTime?
+  address         String?
+  city            String?
+  state           String?
+  country         String?
+  zipCode         String?
+  role            UserRole   @default(ATTENDEE)
+  status          UserStatus @default(ACTIVE)
+  isEmailVerified Boolean    @default(false)
+  emailVerifiedAt DateTime?
 
   // Organizer-specific fields (optional - can be added later)
   organizationName String?
@@ -219,13 +219,13 @@ model User {
   managedUsers  User[]  @relation("ManagedUsers")
 
   // KYC fields (for organizers)
-  kycStatus            KYCStatus?
-  kycSubmittedAt       DateTime?
-  kycApprovedAt        DateTime?
-  organizerEntityType  OrganizerEntityType?
-  organizerIndustry    String? // Industry/business type (for conditional requirements)
-  organizerBusinessName String? // Trade name (if different from registration name)
-  organizerCountry     String? @default("KE") // Default to Kenya, expandable for multi-country
+  kycStatus                   KYCStatus?
+  kycSubmittedAt              DateTime?
+  kycApprovedAt               DateTime?
+  organizerEntityType         OrganizerEntityType?
+  organizerIndustry           String? // Industry/business type (for conditional requirements)
+  organizerBusinessName       String? // Trade name (if different from registration name)
+  organizerCountry            String?              @default("KE") // Default to Kenya, expandable for multi-country
   organizerRegistrationNumber String? // Business registration/incorporation number
 
   // Verification levels (progressive verification system)
@@ -263,10 +263,10 @@ model User {
   passwordResets                    PasswordReset[]
   magicLinkTokens                   MagicLinkToken[]
   kycDocuments                      KYCDocument[]
-  organizerDirectors                OrganizerDirector[] @relation("OrganizerDirectors")
-  attendeeConsents                  AttendeeConsent[]   @relation("AttendeeConsents")
-  organizerSubscription             OrganizerSubscription? @relation("OrganizerSubscriptions")
-  dataAccessAuditLogs               DataAccessAuditLog[] @relation("DataAccessAuditLogs")
+  organizerDirectors                OrganizerDirector[]          @relation("OrganizerDirectors")
+  attendeeConsents                  AttendeeConsent[]            @relation("AttendeeConsents")
+  organizerSubscription             OrganizerSubscription?       @relation("OrganizerSubscriptions")
+  dataAccessAuditLogs               DataAccessAuditLog[]         @relation("DataAccessAuditLogs")
   auditLogs                         AuditLog[]
   eventsCreated                     Event[]                      @relation("EventOrganizer")
   eventRegistrations                EventRegistration[]
@@ -319,6 +319,7 @@ model User {
   savedEvents                       SavedEvent[]                 @relation("UserSavedEvents")
   activityHistory                   ActivityHistory[]            @relation("UserActivityHistory")
   ussdSessions                      USSDSession[]
+  servicePointSessions              ServicePointSession[]        @relation("ServicePointStaff")
   // Organizer Dashboard Features
   eventTemplates                    EventTemplate[]              @relation("OrganizerTemplates")
   eventDrafts                       EventDraft[]                 @relation("OrganizerDrafts")
@@ -356,9 +357,9 @@ model User {
   venues                            Venue[]                      @relation("OrganizerVenues")
 
   // Extended Profile Relations
-  staffProfile                      StaffProfile?                @relation("UserStaffProfile")
-  organizerProfile                  OrganizerProfile?            @relation("UserOrganizerProfile")
-  emergencyContact                  EmergencyContact?            @relation("UserEmergencyContact")
+  staffProfile     StaffProfile?     @relation("UserStaffProfile")
+  organizerProfile OrganizerProfile? @relation("UserOrganizerProfile")
+  emergencyContact EmergencyContact? @relation("UserEmergencyContact")
 
   @@index([email])
   @@index([role])
@@ -380,75 +381,75 @@ enum StaffDepartment {
 }
 
 model StaffProfile {
-  id            String          @id @default(uuid())
-  userId        String          @unique
-  user          User            @relation("UserStaffProfile", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation("UserStaffProfile", fields: [userId], references: [id], onDelete: Cascade)
 
   // Employment Info
-  employeeId    String?         @unique
-  department    StaffDepartment @default(OPERATIONS)
-  location      String?
-  hireDate      DateTime        @default(now())
+  employeeId String?         @unique
+  department StaffDepartment @default(OPERATIONS)
+  location   String?
+  hireDate   DateTime        @default(now())
 
   // Compensation
-  salary        Decimal?        @db.Decimal(12, 2)
-  hourlyRate    Decimal?        @db.Decimal(8, 2)
+  salary     Decimal? @db.Decimal(12, 2)
+  hourlyRate Decimal? @db.Decimal(8, 2)
 
   // Permissions (JSON object for flexibility)
-  permissions   Json?           @default("{}")
+  permissions Json? @default("{}")
 
   // Performance tracking
-  totalHours    Decimal?        @db.Decimal(10, 2) @default(0)
-  rating        Decimal?        @db.Decimal(3, 2)
+  totalHours Decimal? @default(0) @db.Decimal(10, 2)
+  rating     Decimal? @db.Decimal(3, 2)
 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([department])
   @@index([employeeId])
 }
 
 model OrganizerProfile {
-  id                String    @id @default(uuid())
-  userId            String    @unique
-  user              User      @relation("UserOrganizerProfile", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation("UserOrganizerProfile", fields: [userId], references: [id], onDelete: Cascade)
 
   // Business Info
-  website           String?
-  description       String?   @db.Text
-  businessLicense   String?
-  taxId             String?
-  bankAccountLast4  String?   // Store only last 4 digits for display
+  website          String?
+  description      String? @db.Text
+  businessLicense  String?
+  taxId            String?
+  bankAccountLast4 String? // Store only last 4 digits for display
 
   // Location
-  location          String?
+  location String?
 
   // Statistics (can be computed or cached)
-  totalEvents       Int       @default(0)
-  totalRevenue      Decimal?  @db.Decimal(14, 2) @default(0)
-  rating            Decimal?  @db.Decimal(3, 2)
+  totalEvents  Int      @default(0)
+  totalRevenue Decimal? @default(0) @db.Decimal(14, 2)
+  rating       Decimal? @db.Decimal(3, 2)
 
   // Badge/Workstation Relations
-  badgeTemplates    BadgeTemplate[]
+  badgeTemplates BadgeTemplate[]
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
 model EmergencyContact {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  user          User     @relation("UserEmergencyContact", fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation("UserEmergencyContact", fields: [userId], references: [id], onDelete: Cascade)
 
-  name          String
-  phone         String
-  relationship  String
-  email         String?
+  name         String
+  phone        String
+  relationship String
+  email        String?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
@@ -529,25 +530,25 @@ model MagicLinkToken {
 }
 
 model KYCDocument {
-  id                String          @id @default(uuid())
-  userId            String
-  documentType      KYCDocumentType
-  documentNumber    String?
-  documentUrl       String?
-  documentCategory  String? // For grouping (e.g., "identity", "registration", "financial")
-  status            KYCStatus       @default(PENDING)
-  rejectionReason   String?
-  reviewedBy        String?
-  reviewedAt        DateTime?
-  
+  id               String          @id @default(uuid())
+  userId           String
+  documentType     KYCDocumentType
+  documentNumber   String?
+  documentUrl      String?
+  documentCategory String? // For grouping (e.g., "identity", "registration", "financial")
+  status           KYCStatus       @default(PENDING)
+  rejectionReason  String?
+  reviewedBy       String?
+  reviewedAt       DateTime?
+
   // Document metadata
-  issueDate         DateTime? // When document was issued
-  expiryDate        DateTime? // When document expires
-  isRequired        Boolean   @default(true) // Whether this document is required
-  isConditional     Boolean   @default(false) // Whether this is a conditional requirement
-  
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  issueDate     DateTime? // When document was issued
+  expiryDate    DateTime? // When document expires
+  isRequired    Boolean   @default(true) // Whether this document is required
+  isConditional Boolean   @default(false) // Whether this is a conditional requirement
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -569,9 +570,9 @@ model OrganizerDirector {
   sharePercentage Decimal? @db.Decimal(5, 2) // Percentage of shares (null for directors without shares)
   isTopFive       Boolean  @default(true) // Whether this is in the top 5 by share percentage
   position        String? // Director, Shareholder, Trustee, Partner, etc.
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation("OrganizerDirectors", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -689,8 +690,8 @@ model Event {
   allowTransfers Boolean @default(true)
 
   // Refund configuration
-  refundSLA          Int?      @default(0) // Number of days before event within which refunds are allowed (0 = no refunds)
-  autoRefundEnabled Boolean   @default(false)
+  refundSLA         Int?    @default(0) // Number of days before event within which refunds are allowed (0 = no refunds)
+  autoRefundEnabled Boolean @default(false)
 
   // Scan configuration
   allowReEntry    Boolean @default(false) // Allow attendees to re-enter after check-out
@@ -707,7 +708,7 @@ model Event {
 
   // Relations
   registrations          EventRegistration[]
-  consents               AttendeeConsent[] @relation("EventConsents")
+  consents               AttendeeConsent[]         @relation("EventConsents")
   invitations            EventInvitation[]
   ticketTemplates        TicketTemplate[]
   featuredEvents         FeaturedEvent[]
@@ -767,6 +768,7 @@ model Event {
   // Service Point Facilities
   facilities             EventFacility[]           @relation("EventFacilities")
   printers               Printer[]
+  servicePointSessions   ServicePointSession[]     @relation("EventServicePointSessions")
   // Attendee Import History
   attendeeImports        AttendeeImport[]          @relation("EventAttendeeImports")
 
@@ -869,6 +871,11 @@ model EventRegistration {
   facilityMovements   FacilityMovement[]
   // Printer Integration Relations
   printJobs           PrintJob[]
+  // Service Point Registration Session
+  servicePointSession ServicePointSession?     @relation("ServicePointRegistration")
+
+  // Consent relations
+  consent AttendeeConsent?
 
   @@unique([eventId, attendeeId]) // One registration per attendee per event
   @@index([eventId])
@@ -878,34 +885,31 @@ model EventRegistration {
   @@index([ticketStatus])
   @@index([checkedInAt])
   @@index([isCurrentlyInside])
-  
-  // Consent relations
-  consent AttendeeConsent?
 }
 
 // Attendee Consent Management
 model AttendeeConsent {
-  id             String   @id @default(uuid())
+  id             String @id @default(uuid())
   attendeeId     String
   eventId        String
-  registrationId String   @unique
-  
+  registrationId String @unique
+
   // Consent flags
-  operationalConsent  Boolean  @default(true) // Required for ticket delivery
-  marketingConsent    Boolean  @default(false) // Opt-in for marketing/analytics
-  demographicsConsent Boolean  @default(false) // Opt-in for demographics (Premium)
-  analyticsConsent    Boolean  @default(false) // Opt-in for engagement tracking (Premium)
-  
+  operationalConsent  Boolean @default(true) // Required for ticket delivery
+  marketingConsent    Boolean @default(false) // Opt-in for marketing/analytics
+  demographicsConsent Boolean @default(false) // Opt-in for demographics (Premium)
+  analyticsConsent    Boolean @default(false) // Opt-in for engagement tracking (Premium)
+
   // Consent metadata
-  consentedAt    DateTime @default(now())
+  consentedAt    DateTime  @default(now())
   revokedAt      DateTime?
-  consentVersion String   @default("1.0") // Track policy version
-  
+  consentVersion String    @default("1.0") // Track policy version
+
   // Relations
-  attendee    User             @relation("AttendeeConsents", fields: [attendeeId], references: [id], onDelete: Cascade)
-  event       Event            @relation("EventConsents", fields: [eventId], references: [id], onDelete: Cascade)
+  attendee     User              @relation("AttendeeConsents", fields: [attendeeId], references: [id], onDelete: Cascade)
+  event        Event             @relation("EventConsents", fields: [eventId], references: [id], onDelete: Cascade)
   registration EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  
+
   @@index([attendeeId])
   @@index([eventId])
   @@index([registrationId])
@@ -923,17 +927,17 @@ model OrganizerSubscription {
   expiresAt   DateTime?
   isActive    Boolean          @default(true)
   canceledAt  DateTime?
-  
+
   // Billing information (if Premium)
   billingEmail    String?
   nextBillingDate DateTime?
-  
+
   // Relations
   organizer User @relation("OrganizerSubscriptions", fields: [organizerId], references: [id], onDelete: Cascade)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([organizerId])
   @@index([tier])
   @@index([isActive])
@@ -951,13 +955,13 @@ model DataAccessAuditLog {
   timestamp   DateTime @default(now())
   ipAddress   String?
   userAgent   String?
-  
+
   // Additional context
   details Json? // Store additional metadata (export format, filters applied, etc.)
-  
+
   // Relations
   organizer User @relation("DataAccessAuditLogs", fields: [organizerId], references: [id], onDelete: Cascade)
-  
+
   @@index([organizerId])
   @@index([attendeeId])
   @@index([eventId])
@@ -1110,13 +1114,13 @@ model FeaturedEvent {
 model PromoCode {
   id          String  @id @default(uuid())
   code        String  @unique
-  organizerId String?  // Null for platform-wide codes created by admin
-  eventId     String?  // For single-event scope (backward compatible)
+  organizerId String? // Null for platform-wide codes created by admin
+  eventId     String? // For single-event scope (backward compatible)
   event       Event?  @relation("PromoCodeEvent", fields: [eventId], references: [id], onDelete: Cascade)
 
   // Scope configuration
-  scope      PromoCodeScope @default(EVENT)
-  eventIds   String[]       // For MULTI_EVENT scope - array of event IDs
+  scope    PromoCodeScope @default(EVENT)
+  eventIds String[] // For MULTI_EVENT scope - array of event IDs
 
   // Discount details
   discountType   DiscountType
@@ -1129,9 +1133,9 @@ model PromoCode {
   isActive              Boolean  @default(true)
 
   // Advanced features
-  firstTimeOnly Boolean @default(false) // Only for users with no prior purchases
-  isStackable   Boolean @default(false) // Can be combined with other codes
-  isReferral    Boolean @default(false) // Is this a referral code
+  firstTimeOnly  Boolean @default(false) // Only for users with no prior purchases
+  isStackable    Boolean @default(false) // Can be combined with other codes
+  isReferral     Boolean @default(false) // Is this a referral code
   referrerUserId String? // User who owns this referral code
 
   // Bulk generation
@@ -1139,12 +1143,12 @@ model PromoCode {
   batchId    String? // Groups codes generated in same batch
 
   // Campaign Attribution
-  campaignName   String?  // e.g., "Summer Sale 2024"
-  campaignSource String?  // e.g., "Instagram", "Email", "Influencer"
+  campaignName   String? // e.g., "Summer Sale 2024"
+  campaignSource String? // e.g., "Instagram", "Email", "Influencer"
 
   // Tiered Discounts
-  isTiered       Boolean  @default(false)
-  discountTiers  Json?    // Array of {minUsage, maxUsage, discountValue, discountType}
+  isTiered      Boolean @default(false)
+  discountTiers Json? // Array of {minUsage, maxUsage, discountValue, discountType}
 
   // Limits
   usageLimit     Int? // Max number of uses (null = unlimited)
@@ -1158,7 +1162,7 @@ model PromoCode {
   // Tracking
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  createdBy String?  // Admin/organizer who created it
+  createdBy String? // Admin/organizer who created it
 
   // Relations
   organizer   User?                 @relation("PromoCodeOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
@@ -1238,30 +1242,33 @@ model TicketScan {
 // ============================================
 
 model EventFacility {
-  id          String   @id @default(cuid())
-  eventId     String
-  name        String   // e.g., "Main Entrance", "Lunch Area"
-  code        String   // Short code for quick identification (e.g., "ENT", "L1")
-  description String?
-  icon        String?  // Icon identifier (e.g., "shield", "utensils", "gift")
-  color       String?  // Hex color for UI display
-  location    String?  // Physical location at venue
-  isActive    Boolean  @default(true)
-  allowCheckIn  Boolean @default(true)
-  allowCheckOut Boolean @default(true)
-  sortOrder   Int      @default(0)
+  id                String       @id @default(cuid())
+  eventId           String
+  name              String // e.g., "Main Entrance", "Lunch Area"
+  code              String // Short code for quick identification (e.g., "ENT", "L1")
+  description       String?
+  icon              String? // Icon identifier (e.g., "shield", "utensils", "gift")
+  color             String? // Hex color for UI display
+  location          String? // Physical location at venue
+  isActive          Boolean      @default(true)
+  allowCheckIn      Boolean      @default(true)
+  allowCheckOut     Boolean      @default(true)
+  allowRegistration Boolean      @default(false) // Allow service point registration at this facility
+  facilityType      FacilityType @default(CHECK_IN) // Type of facility
+  sortOrder         Int          @default(0)
 
   // Capacity Management
   maxCapacity      Int? // Maximum simultaneous occupancy (null = unlimited)
   currentOccupancy Int  @default(0) // Current number of people in facility
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  event       Event        @relation("EventFacilities", fields: [eventId], references: [id], onDelete: Cascade)
-  scans       TicketScan[] @relation("FacilityScans")
-  zones       FacilityZoneMapping[]
+  event                Event                 @relation("EventFacilities", fields: [eventId], references: [id], onDelete: Cascade)
+  scans                TicketScan[]          @relation("FacilityScans")
+  zones                FacilityZoneMapping[]
+  servicePointSessions ServicePointSession[] @relation("FacilityServicePointSessions")
 
   @@unique([eventId, code])
   @@index([eventId])
@@ -1272,17 +1279,24 @@ model EventFacility {
 // Checkpoint Models (MICE Event Management)
 // ============================================
 
+// Facility type enum (for service point registration)
+enum FacilityType {
+  CHECK_IN // Check-in only facility
+  REGISTRATION // Registration only facility
+  HYBRID // Both check-in and registration
+}
+
 // Checkpoint type enum
 enum CheckpointType {
-  DOOR          // Entry/Exit (main door)
-  MEAL          // Food service (breakfast, lunch, dinner)
-  GIFT          // Gift/swag distribution
-  SESSION       // Breakout sessions/workshops
-  REGISTRATION  // Registration desk
-  NETWORKING    // Networking areas
-  EXHIBITION    // Exhibition booth visits
-  CERTIFICATE   // Certificate collection
-  CUSTOM        // Custom checkpoint type
+  DOOR // Entry/Exit (main door)
+  MEAL // Food service (breakfast, lunch, dinner)
+  GIFT // Gift/swag distribution
+  SESSION // Breakout sessions/workshops
+  REGISTRATION // Registration desk
+  NETWORKING // Networking areas
+  EXHIBITION // Exhibition booth visits
+  CERTIFICATE // Certificate collection
+  CUSTOM // Custom checkpoint type
 }
 
 // Checkpoint definition model
@@ -1292,21 +1306,21 @@ model Checkpoint {
   event   Event  @relation("EventCheckpoints", fields: [eventId], references: [id], onDelete: Cascade)
 
   // Checkpoint details
-  name        String          // e.g., "Lunch Day 1", "VIP Gift Bag", "Workshop A"
-  type        CheckpointType  @default(CUSTOM)
-  description String?         @db.Text
+  name        String // e.g., "Lunch Day 1", "VIP Gift Bag", "Workshop A"
+  type        CheckpointType @default(CUSTOM)
+  description String?        @db.Text
 
   // Location/Station
-  location   String?  // Physical location at venue
+  location    String? // Physical location at venue
   stationCode String? // Short code for quick identification (e.g., "L1", "G1", "WA")
 
   // Quota settings (per attendee)
-  quota           Int      @default(1) // How many times attendee can scan at this checkpoint (0 = unlimited)
-  quotaEnforced   Boolean  @default(true) // Whether quota is enforced
+  quota         Int     @default(1) // How many times attendee can scan at this checkpoint (0 = unlimited)
+  quotaEnforced Boolean @default(true) // Whether quota is enforced
 
   // Eligibility rules (JSON for flexibility)
   // Example: { "ticketTypes": ["VIP", "Premium"], "tags": ["speaker"], "all": false }
-  eligibilityRules Json?   // Defines who can access this checkpoint
+  eligibilityRules Json? // Defines who can access this checkpoint
 
   // Time window
   activeFrom DateTime? // When checkpoint opens
@@ -1319,10 +1333,10 @@ model Checkpoint {
   // Audit
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  createdBy String?  // Admin user ID who created
+  createdBy String? // Admin user ID who created
 
   // Relations
-  scans         CheckpointScan[]
+  scans            CheckpointScan[]
   staffAssignments CheckpointStaff[]
 
   @@unique([eventId, stationCode])
@@ -1334,16 +1348,16 @@ model Checkpoint {
 
 // Checkpoint scan record
 model CheckpointScan {
-  id             String     @id @default(uuid())
+  id             String            @id @default(uuid())
   checkpointId   String
-  checkpoint     Checkpoint @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+  checkpoint     Checkpoint        @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
   registrationId String
   registration   EventRegistration @relation("CheckpointScans", fields: [registrationId], references: [id], onDelete: Cascade)
   eventId        String
-  event          Event      @relation("EventCheckpointScans", fields: [eventId], references: [id], onDelete: Cascade)
+  event          Event             @relation("EventCheckpointScans", fields: [eventId], references: [id], onDelete: Cascade)
 
   // Scan info
-  scannedBy String   // Staff user ID who performed the scan
+  scannedBy String // Staff user ID who performed the scan
   scannedAt DateTime @default(now())
 
   // Validation
@@ -1359,7 +1373,7 @@ model CheckpointScan {
   deviceType String? // Type of device
   ipAddress  String?
   userAgent  String?
-  location   Json?   // GPS location if available
+  location   Json? // GPS location if available
   notes      String? // Optional notes by scanner
 
   @@index([checkpointId])
@@ -1379,7 +1393,7 @@ model CheckpointStaff {
 
   // Assignment details
   assignedAt DateTime @default(now())
-  assignedBy String   // Admin user ID who assigned
+  assignedBy String // Admin user ID who assigned
 
   // Shift scheduling
   shiftStart DateTime?
@@ -2280,23 +2294,23 @@ model PushSubscription {
 
 // Mobile Device for FCM Push Notifications
 model MobileDevice {
-  id       String @id @default(cuid())
-  userId   String
+  id     String @id @default(cuid())
+  userId String
 
   // FCM token
   fcmToken String @unique // Firebase Cloud Messaging token
 
   // Device information
-  platform     String   // ios, android
-  deviceId     String?  // Unique device identifier
-  deviceModel  String?  // e.g., "iPhone 14 Pro", "Samsung Galaxy S23"
-  osVersion    String?  // e.g., "17.0", "14"
-  appVersion   String?  // App version installed
+  platform    String // ios, android
+  deviceId    String? // Unique device identifier
+  deviceModel String? // e.g., "iPhone 14 Pro", "Samsung Galaxy S23"
+  osVersion   String? // e.g., "17.0", "14"
+  appVersion  String? // App version installed
 
   // Status
-  isActive    Boolean  @default(true)
-  lastUsed    DateTime @default(now())
-  failCount   Int      @default(0) // Track failed deliveries
+  isActive  Boolean  @default(true)
+  lastUsed  DateTime @default(now())
+  failCount Int      @default(0) // Track failed deliveries
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2509,10 +2523,10 @@ model SMSSession {
   updatedAt   DateTime @updatedAt
 
   // Payment tracking fields
-  paymentRequired      Boolean  @default(false)
-  paymentAmount        Decimal? @db.Decimal(10, 2)
-  paymentCurrency      String?  @default("KES")
-  paymentStatus        String?  @default("pending") // pending, initiated, completed, failed, cancelled
+  paymentRequired      Boolean   @default(false)
+  paymentAmount        Decimal?  @db.Decimal(10, 2)
+  paymentCurrency      String?   @default("KES")
+  paymentStatus        String?   @default("pending") // pending, initiated, completed, failed, cancelled
   paymentGateway       String? // MPESA, PAYSTACK, etc.
   paymentReference     String? // Gateway transaction reference (e.g., CheckoutRequestID)
   paymentReceiptNumber String? // M-Pesa receipt or gateway confirmation
@@ -2529,56 +2543,98 @@ model SMSSession {
 
 // USSD Session for real-time USSD interactions (Africa's Talking style)
 model USSDSession {
-  id              String   @id @default(cuid())
-  sessionId       String   @unique // Provider session ID (from Africa's Talking)
-  serviceCode     String   // USSD service code (e.g., *123#)
-  phoneNumber     String   // User's phone number (MSISDN)
+  id          String @id @default(cuid())
+  sessionId   String @unique // Provider session ID (from Africa's Talking)
+  serviceCode String // USSD service code (e.g., *123#)
+  phoneNumber String // User's phone number (MSISDN)
 
   // Menu navigation
-  currentLevel    Int      @default(0) // Current menu level
-  menuPath        String[] // Path of selections made (e.g., ["1", "2", "3"])
-  currentMenu     String   @default("main") // Current menu state
+  currentLevel Int      @default(0) // Current menu level
+  menuPath     String[] // Path of selections made (e.g., ["1", "2", "3"])
+  currentMenu  String   @default("main") // Current menu state
 
   // Registration data collected
-  firstName       String?
-  lastName        String?
-  email           String?
-  jobTitle        String?
-  organization    String?
+  firstName    String?
+  lastName     String?
+  email        String?
+  jobTitle     String?
+  organization String?
 
   // Event registration
-  eventId         String?
-  eventCode       String?
-  eventTitle      String?
-  ticketTypeId    String?
-  ticketTypeName  String?
+  eventId        String?
+  eventCode      String?
+  eventTitle     String?
+  ticketTypeId   String?
+  ticketTypeName String?
 
   // Payment tracking
-  paymentRequired Boolean  @default(false)
-  paymentAmount   Decimal? @db.Decimal(10, 2)
-  paymentCurrency String?  @default("KES")
-  paymentStatus   String?  @default("pending") // pending, initiated, completed, failed, cancelled
-  paymentReference String? // M-Pesa CheckoutRequestID
+  paymentRequired      Boolean   @default(false)
+  paymentAmount        Decimal?  @db.Decimal(10, 2)
+  paymentCurrency      String?   @default("KES")
+  paymentStatus        String?   @default("pending") // pending, initiated, completed, failed, cancelled
+  paymentReference     String? // M-Pesa CheckoutRequestID
   paymentReceiptNumber String?
-  paymentInitiatedAt DateTime?
-  paymentCompletedAt DateTime?
+  paymentInitiatedAt   DateTime?
+  paymentCompletedAt   DateTime?
 
   // User linking
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id])
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
 
   // Session state
-  completed       Boolean  @default(false)
-  cancelled       Boolean  @default(false)
-  expiresAt       DateTime // USSD sessions typically last 2-3 minutes
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  completed Boolean  @default(false)
+  cancelled Boolean  @default(false)
+  expiresAt DateTime // USSD sessions typically last 2-3 minutes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sessionId])
   @@index([phoneNumber])
   @@index([eventCode])
   @@index([paymentReference])
   @@index([expiresAt])
+}
+
+// Service Point Registration Session (staff-assisted registration with OTP verification)
+model ServicePointSession {
+  id           String   @id @default(cuid())
+  eventId      String
+  facilityId   String?
+  phoneNumber  String // Attendee's phone number
+  otp          String // 4-digit OTP code
+  otpExpiresAt DateTime // OTP expiry (typically 5 minutes)
+  verified     Boolean  @default(false) // OTP verified
+  staffId      String // Staff member who initiated registration
+
+  // Attendee data (collected after OTP verification)
+  firstName    String?
+  lastName     String?
+  email        String?
+  company      String?
+  industry     String?
+  jobTitle     String?
+  ticketTypeId String?
+
+  // Registration outcome
+  registrationId String? @unique // Link to created registration
+  completed      Boolean @default(false)
+  cancelled      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  event        Event              @relation("EventServicePointSessions", fields: [eventId], references: [id], onDelete: Cascade)
+  facility     EventFacility?     @relation("FacilityServicePointSessions", fields: [facilityId], references: [id], onDelete: SetNull)
+  staff        User               @relation("ServicePointStaff", fields: [staffId], references: [id])
+  registration EventRegistration? @relation("ServicePointRegistration", fields: [registrationId], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([phoneNumber])
+  @@index([otp])
+  @@index([staffId])
+  @@index([verified])
+  @@index([otpExpiresAt])
 }
 
 // ============================================
@@ -2832,44 +2888,44 @@ model EventReview {
 
 // Platform Feedback (Internal use for platform improvement)
 model EventFeedback {
-  id        String   @id @default(uuid())
-  eventId   String
-  event     Event    @relation("EventFeedback", fields: [eventId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation("UserFeedback", fields: [userId], references: [id], onDelete: Cascade)
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation("EventFeedback", fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation("UserFeedback", fields: [userId], references: [id], onDelete: Cascade)
 
   // Feedback type
-  userType  String   // "ATTENDEE" | "ORGANIZER"
+  userType String // "ATTENDEE" | "ORGANIZER"
 
   // NPS Score (0-10)
-  npsScore  Int      // 0-10 Net Promoter Score
+  npsScore Int // 0-10 Net Promoter Score
 
   // Optional detailed feedback
-  comment   String?  @db.Text
+  comment String? @db.Text
 
   // Specific feedback categories
-  eventQuality      Int?     // 1-5 rating for event quality
-  platformUsability Int?     // 1-5 rating for platform ease of use
-  registrationProcess Int?   // 1-5 rating for registration experience
-  communicationQuality Int?  // 1-5 rating for event communications
+  eventQuality         Int? // 1-5 rating for event quality
+  platformUsability    Int? // 1-5 rating for platform ease of use
+  registrationProcess  Int? // 1-5 rating for registration experience
+  communicationQuality Int? // 1-5 rating for event communications
 
   // What could be improved (multi-select options stored as array)
-  improvementAreas  String[] // e.g., ["registration", "payments", "notifications", "ui"]
+  improvementAreas String[] // e.g., ["registration", "payments", "notifications", "ui"]
 
   // Would they use the platform again
-  wouldUseAgain     Boolean?
-  wouldRecommend    Boolean?
+  wouldUseAgain  Boolean?
+  wouldRecommend Boolean?
 
   // Email tracking
-  emailSentAt       DateTime?
-  feedbackToken     String?  @unique // Token for email-based feedback submission
-  tokenExpiresAt    DateTime?
-  submittedVia      String   @default("PLATFORM") // "EMAIL" | "PLATFORM"
+  emailSentAt    DateTime?
+  feedbackToken  String?   @unique // Token for email-based feedback submission
+  tokenExpiresAt DateTime?
+  submittedVia   String    @default("PLATFORM") // "EMAIL" | "PLATFORM"
 
   // Admin review
-  reviewedBy        String?
-  reviewedAt        DateTime?
-  adminNotes        String?  @db.Text
+  reviewedBy String?
+  reviewedAt DateTime?
+  adminNotes String?   @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2913,7 +2969,7 @@ model TicketTransfer {
 
   // Transfer chain
   parentTransferId String?
-  parentTransfer   TicketTransfer? @relation("TransferChain", fields: [parentTransferId], references: [id], onDelete: SetNull)
+  parentTransfer   TicketTransfer?  @relation("TransferChain", fields: [parentTransferId], references: [id], onDelete: SetNull)
   childTransfers   TicketTransfer[] @relation("TransferChain")
 
   createdAt DateTime @default(now())
@@ -4266,8 +4322,6 @@ model TeamRolePermission {
   @@index([permissionId])
 }
 
-
-
 model TeamActivityFeed {
   id          String  @id @default(uuid())
   organizerId String
@@ -4539,24 +4593,24 @@ enum PaymentMethodType {
 
 // Wage payments to employees/contractors
 model Wage {
-  id           String                 @id @default(cuid())
-  employeeId   String?
-  employeeName String
-  department   String?
-  position     String?
-  amount       Decimal                @db.Decimal(10, 2)
-  currency     String                 @default("KES")
-  payPeriod    String // e.g., "January 2025", "Q1 2025"
-  payDate      DateTime
-  status       FinancialEntryStatus   @default(PENDING)
-  paymentMethod PaymentMethodType     @default(BANK_TRANSFER)
-  reference    String?                // Payment reference/transaction ID
-  notes        String?                @db.Text
+  id            String               @id @default(cuid())
+  employeeId    String?
+  employeeName  String
+  department    String?
+  position      String?
+  amount        Decimal              @db.Decimal(10, 2)
+  currency      String               @default("KES")
+  payPeriod     String // e.g., "January 2025", "Q1 2025"
+  payDate       DateTime
+  status        FinancialEntryStatus @default(PENDING)
+  paymentMethod PaymentMethodType    @default(BANK_TRANSFER)
+  reference     String? // Payment reference/transaction ID
+  notes         String?              @db.Text
 
   // Audit
-  createdBy    String?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([employeeId])
   @@index([payDate])
@@ -4566,26 +4620,26 @@ model Wage {
 
 // Income entries (revenue sources)
 model Income {
-  id           String                 @id @default(cuid())
-  category     String                 // e.g., "Ticket Sales", "Sponsorship", "Merchandise"
-  description  String
-  source       String?                // Who/where the income came from
-  amount       Decimal                @db.Decimal(10, 2)
-  currency     String                 @default("KES")
-  date         DateTime
-  status       FinancialEntryStatus   @default(COMPLETED)
+  id            String               @id @default(cuid())
+  category      String // e.g., "Ticket Sales", "Sponsorship", "Merchandise"
+  description   String
+  source        String? // Who/where the income came from
+  amount        Decimal              @db.Decimal(10, 2)
+  currency      String               @default("KES")
+  date          DateTime
+  status        FinancialEntryStatus @default(COMPLETED)
   paymentMethod PaymentMethodType?
-  reference    String?                // Invoice/receipt number
-  notes        String?                @db.Text
+  reference     String? // Invoice/receipt number
+  notes         String?              @db.Text
 
   // Optional event association
-  eventId      String?
-  event        Event?                 @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   // Audit
-  createdBy    String?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([category])
   @@index([date])
@@ -4595,26 +4649,26 @@ model Income {
 
 // Expense entries (costs/outflows)
 model Expense {
-  id           String                 @id @default(cuid())
-  category     String                 // e.g., "Marketing", "Utilities", "Equipment", "Venue"
-  description  String
-  recipient    String?                // Who was paid
-  amount       Decimal                @db.Decimal(10, 2)
-  currency     String                 @default("KES")
-  date         DateTime
-  status       FinancialEntryStatus   @default(COMPLETED)
+  id            String               @id @default(cuid())
+  category      String // e.g., "Marketing", "Utilities", "Equipment", "Venue"
+  description   String
+  recipient     String? // Who was paid
+  amount        Decimal              @db.Decimal(10, 2)
+  currency      String               @default("KES")
+  date          DateTime
+  status        FinancialEntryStatus @default(COMPLETED)
   paymentMethod PaymentMethodType?
-  reference    String?                // Invoice/receipt number
-  notes        String?                @db.Text
+  reference     String? // Invoice/receipt number
+  notes         String?              @db.Text
 
   // Optional event association
-  eventId      String?
-  event        Event?                 @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   // Audit
-  createdBy    String?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([category])
   @@index([date])
@@ -4624,34 +4678,34 @@ model Expense {
 
 // Badge templates for printing attendee badges
 model BadgeTemplate {
-  id             String   @id @default(cuid())
-  name           String
-  description    String?  @db.Text
-  width          Float    @default(101.6) // mm (4 inches)
-  height         Float    @default(76.2)  // mm (3 inches)
-  sizePreset     String   @default("4x3") // 4x3, 3.5x2.25, 4x6, A6, custom
-  orientation    String   @default("landscape") // landscape, portrait
+  id              String  @id @default(cuid())
+  name            String
+  description     String? @db.Text
+  width           Float   @default(101.6) // mm (4 inches)
+  height          Float   @default(76.2) // mm (3 inches)
+  sizePreset      String  @default("4x3") // 4x3, 3.5x2.25, 4x6, A6, custom
+  orientation     String  @default("landscape") // landscape, portrait
   backgroundColor String  @default("#ffffff")
-  backgroundImage String?  // Cloudinary URL for background image
-  elements       Json     // Array of BadgeElement objects
-  isDefault      Boolean  @default(false)
-  isActive       Boolean  @default(true)
+  backgroundImage String? // Cloudinary URL for background image
+  elements        Json // Array of BadgeElement objects
+  isDefault       Boolean @default(false)
+  isActive        Boolean @default(true)
 
   // Ownership - can be platform-wide (null) or organizer-specific
-  organizerId    String?
-  organizer      OrganizerProfile? @relation(fields: [organizerId], references: [id], onDelete: SetNull)
+  organizerId String?
+  organizer   OrganizerProfile? @relation(fields: [organizerId], references: [id], onDelete: SetNull)
 
   // Optional event-specific template
-  eventId        String?
-  event          Event?   @relation("EventBadgeTemplates", fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+  event   Event?  @relation("EventBadgeTemplates", fields: [eventId], references: [id], onDelete: SetNull)
 
   // Audit
-  createdBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  printJobs      PrintJob[]
+  printJobs PrintJob[]
 
   @@index([organizerId])
   @@index([eventId])
@@ -4661,19 +4715,19 @@ model BadgeTemplate {
 
 // Print job history for badges
 model BadgePrintJob {
-  id              String   @id @default(cuid())
-  eventId         String
-  event           Event    @relation("EventBadgePrintJobs", fields: [eventId], references: [id], onDelete: Cascade)
-  templateId      String
-  registrationId  String
-  registration    EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  status          String   @default("pending") // pending, printing, completed, failed
-  error           String?  @db.Text
-  printedAt       DateTime?
-  printedBy       String?
-  printerInfo     Json?    // Device info
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String            @id @default(cuid())
+  eventId        String
+  event          Event             @relation("EventBadgePrintJobs", fields: [eventId], references: [id], onDelete: Cascade)
+  templateId     String
+  registrationId String
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  status         String            @default("pending") // pending, printing, completed, failed
+  error          String?           @db.Text
+  printedAt      DateTime?
+  printedBy      String?
+  printerInfo    Json? // Device info
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([eventId])
   @@index([registrationId])
@@ -4686,14 +4740,14 @@ model AttendeeImport {
   id                String    @id @default(uuid())
   eventId           String
   event             Event     @relation("EventAttendeeImports", fields: [eventId], references: [id], onDelete: Cascade)
-  importedBy        String    // User ID who initiated the import
-  fileName          String    // Original file name
-  totalRows         Int       // Total rows in file (excluding header)
+  importedBy        String // User ID who initiated the import
+  fileName          String // Original file name
+  totalRows         Int // Total rows in file (excluding header)
   successCount      Int       @default(0)
   errorCount        Int       @default(0)
   status            String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
   sendWelcomeEmails Boolean   @default(false)
-  errors            Json?     // Array of { row, field, message } error details
+  errors            Json? // Array of { row, field, message } error details
   createdAt         DateTime  @default(now())
   completedAt       DateTime?
 
@@ -4708,25 +4762,25 @@ model AttendeeImport {
 
 // Facility Zone - Group facilities into access zones
 model FacilityZone {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   eventId          String
-  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  name             String   // e.g., "VIP Lounge", "Speaker Area"
-  code             String   // Short code (e.g., "VIP", "SPK")
-  description      String?  @db.Text
-  maxCapacity      Int?     // Maximum simultaneous occupancy (null = unlimited)
-  currentOccupancy Int      @default(0)
+  event            Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name             String // e.g., "VIP Lounge", "Speaker Area"
+  code             String // Short code (e.g., "VIP", "SPK")
+  description      String?   @db.Text
+  maxCapacity      Int? // Maximum simultaneous occupancy (null = unlimited)
+  currentOccupancy Int       @default(0)
   accessStart      DateTime? // Zone operating hours start
   accessEnd        DateTime? // Zone operating hours end
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
-  facilities       FacilityZoneMapping[]
-  attendeeAccess   AttendeeZoneAccess[]
-  movementsFrom    FacilityMovement[]    @relation("MovementFrom")
-  movementsTo      FacilityMovement[]    @relation("MovementTo")
+  facilities     FacilityZoneMapping[]
+  attendeeAccess AttendeeZoneAccess[]
+  movementsFrom  FacilityMovement[]    @relation("MovementFrom")
+  movementsTo    FacilityMovement[]    @relation("MovementTo")
 
   @@unique([eventId, code])
   @@index([eventId, isActive])
@@ -4754,11 +4808,11 @@ model AttendeeZoneAccess {
   zoneId         String
   zone           FacilityZone      @relation(fields: [zoneId], references: [id], onDelete: Cascade)
   grantedAt      DateTime          @default(now())
-  grantedBy      String            // User ID who granted access
-  expiresAt      DateTime?         // Access expiration (null = no expiration)
+  grantedBy      String // User ID who granted access
+  expiresAt      DateTime? // Access expiration (null = no expiration)
   isActive       Boolean           @default(true)
   accessCount    Int               @default(0) // Number of times accessed
-  lastAccessAt   DateTime?         // Last access timestamp
+  lastAccessAt   DateTime? // Last access timestamp
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -4778,11 +4832,11 @@ model FacilityMovement {
   fromZone       FacilityZone?     @relation("MovementFrom", fields: [fromZoneId], references: [id], onDelete: SetNull)
   toZoneId       String
   toZone         FacilityZone      @relation("MovementTo", fields: [toZoneId], references: [id], onDelete: Cascade)
-  movementType   String            // "entry", "zone_change", "exit"
-  sequenceNumber Int               // Track visit order (1, 2, 3...)
+  movementType   String // "entry", "zone_change", "exit"
+  sequenceNumber Int // Track visit order (1, 2, 3...)
   scannedAt      DateTime          @default(now())
-  scannedBy      String            // User ID who performed scan
-  deviceInfo     Json?             // Device/scanner information
+  scannedBy      String // User ID who performed scan
+  deviceInfo     Json? // Device/scanner information
 
   @@index([registrationId, scannedAt])
   @@index([eventId, scannedAt])
@@ -4797,21 +4851,21 @@ model Printer {
   id             String    @id @default(cuid())
   eventId        String?
   event          Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  name           String    // User-friendly name
-  driver         String    // "cups", "windows", "printnode"
-  deviceId       String    // System printer name or cloud ID
-  host           String?   // For network printers (e.g., "192.168.1.100")
-  port           Int?      // For network printers (e.g., 9100)
-  apiKey         String?   // For PrintNode cloud printing
-  supportedSizes String[]  // ["4x3", "A6", "Letter"] JSON array
-  paperSize      String?   // Default paper size
-  orientation    String?   // "portrait" or "landscape"
+  name           String // User-friendly name
+  driver         String // "cups", "windows", "printnode"
+  deviceId       String // System printer name or cloud ID
+  host           String? // For network printers (e.g., "192.168.1.100")
+  port           Int? // For network printers (e.g., 9100)
+  apiKey         String? // For PrintNode cloud printing
+  supportedSizes String[] // ["4x3", "A6", "Letter"] JSON array
+  paperSize      String? // Default paper size
+  orientation    String? // "portrait" or "landscape"
   isOnline       Boolean   @default(false)
   isActive       Boolean   @default(true)
   lastChecked    DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  createdBy      String    // User ID who added printer
+  createdBy      String // User ID who added printer
 
   printJobs PrintJob[]
 
@@ -4831,14 +4885,14 @@ model PrintJob {
   status         String            @default("queued") // "queued", "printing", "completed", "failed", "cancelled"
   priority       Int               @default(0) // Higher = print sooner
   copies         Int               @default(1)
-  pdfUrl         String?           // Generated PDF URL (Cloudinary)
+  pdfUrl         String? // Generated PDF URL (Cloudinary)
   sentToPrinter  DateTime?
   printedAt      DateTime?
   retryCount     Int               @default(0)
   maxRetries     Int               @default(3)
   errorMessage   String?
-  jobMetadata    Json?             // Additional job data (printer settings, etc.)
-  createdBy      String            // User ID who created print job
+  jobMetadata    Json? // Additional job data (printer settings, etc.)
+  createdBy      String // User ID who created print job
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -4851,24 +4905,24 @@ model PrintJob {
 
 // Career Inquiries - Candidates interested in joining EventKnit
 model CareerInquiry {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   email     String
-  firstName String?  // Extracted from email response (optional)
+  firstName String? // Extracted from email response (optional)
 
   // Status tracking
-  status       String   @default("PENDING") // PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED
-  emailSentAt  DateTime @default(now()) // When the auto-reply was sent
-  respondedAt  DateTime? // When they replied
+  status      String    @default("PENDING") // PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED
+  emailSentAt DateTime  @default(now()) // When the auto-reply was sent
+  respondedAt DateTime? // When they replied
 
   // Notes from recruitment team
-  notes        String?  @db.Text
-  reviewedBy   String?  // User ID of recruiter who reviewed
-  reviewedAt   DateTime?
+  notes      String?   @db.Text
+  reviewedBy String? // User ID of recruiter who reviewed
+  reviewedAt DateTime?
 
   // Metadata
-  source       String?  // Where they found us (optional tracking)
-  ipAddress    String?  // For spam prevention
-  userAgent    String?  // Browser info
+  source    String? // Where they found us (optional tracking)
+  ipAddress String? // For spam prevention
+  userAgent String? // Browser info
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
